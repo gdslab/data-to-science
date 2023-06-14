@@ -17,6 +17,18 @@ def find_user_by_id(user_id: int):
     """
     return next(filter(lambda user: user["user_id"] == user_id, get_fake_users()), None)
 
+@app.post("/auth/login/", tags=["auth"])
+async def login():
+    pass
+
+@app.post("/auth/logout/", status_code=status.HTTP_204_NO_CONTENT, tags=["auth"])
+async def logout():
+    pass
+
+@app.post("/auth/changepassword/", tags=["auth"])
+async def change_password():
+    pass
+
 @app.get("/users/{user_id}/", response_model=UserOut, tags=["users"])
 async def read_user(user_id: int):
     user = find_user_by_id(user_id)
