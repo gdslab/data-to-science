@@ -10,7 +10,7 @@
     cp .env.example .env
     ```
 3. Open `.env` in a code/text editor and replace the default `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB` values.
-    Only change `POSTGRES_HOST` if you have changed the alias for the database service in the `docker-compose.yml` file. Replace the `DOCKER_COMPOSE_PREFIX` value if you would prefer a different prefix for the container names.
+    Only change `POSTGRES_SERVER` if you have changed the alias for the database service in the `docker-compose.yml` file. Replace the `PROJECT_NAME` value if you would prefer a different project name.
 ### Build the container image (can be skipped)
 1. Build the container image with the following command:
     ```
@@ -36,5 +36,5 @@ After running `docker compose up -d`, you should be able to access the web API f
 ## Running the API tests
 The `pytest` library can be used to run the API tests. Use the following command to start a test session:
 ```
-docker compose exec api pytest
+docker compose exec api pytest -p no:cacheprovider
 ```
