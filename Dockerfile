@@ -15,8 +15,9 @@ RUN python -m pip install --no-cache -r requirements.txt
 # final stage
 FROM python:3.11-slim
 
-# don't buffer log messages
+# do not buffer log messages and do not write byte code .pyc
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
 
 # install libpg-dev dependency and remove apt package info to reduce image size
 RUN apt-get update && apt-get install -y libpq-dev && rm -rf /var/lib/apt/lists/*
