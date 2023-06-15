@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, status
 
+from .dependencies import get_db
 from .models.user import get_fake_users, UserIn, UserInDB, UserOut
 
 

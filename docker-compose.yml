@@ -6,3 +6,24 @@ services:
       - ./app:/code/app
     ports:
       - "80:80"
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+  db:
+    image: postgres:15.3
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --username=${POSTGRES_USER} --dbname=${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+volumes:
+  db-data:

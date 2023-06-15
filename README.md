@@ -3,9 +3,16 @@
 ## Getting started
 ### Prerequisites
 [Docker Engine](https://docs.docker.com/engine/install/) and [Docker Compose](https://docs.docker.com/compose/install/) are required to run the container with the following instructions. If you can successfully run `docker --version` and `docker compose --version` from a terminal then you are ready to proceed to the next section.
-### Build the container image (can be skipped)
+### Set up environment variables
 1. In your terminal, navigate to the root directory for this repo. You should be at the same level as `Dockerfile` and `docker-compose.yml`.
-2. Build the container image with the following command:
+2. Copy `.env.example` to a new file named `.env`.
+    ```
+    cp .env.example .env
+    ```
+3. Open `.env` in a code/text editor and replace the default `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB` values.
+    Only change `POSTGRES_HOST` if you have changed the alias for the database service in the `docker-compose.yml` file. Replace the `DOCKER_COMPOSE_PREFIX` value if you would prefer a different prefix for the container names.
+### Build the container image (can be skipped)
+1. Build the container image with the following command:
     ```
     docker compose build
     ```
