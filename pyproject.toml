@@ -15,6 +15,7 @@ faker = "^18.10.1"
 psycopg2 = "^2.9.6"
 sqlalchemy = "^2.0.16"
 pydantic = {extras = ["email"], version = "^1.10.9"}
+alembic = "^1.11.1"
 
 [tool.poetry.group.dev.dependencies]
 httpx = "^0.24.1"
