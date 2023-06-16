@@ -1,19 +1,37 @@
+# base image
+FROM python:3.11-slim as python-base
+
+ENV POETRY_PATH=/opt/poetry \
+    VENV_PATH=/opt/.venv \
+    PATH="$POETRY_PATH/bin:$VENV_PATH/bin:$PATH"
+
 # builder stage
-FROM python:3.11-slim as builder
+FROM python-base as builder
 
 # install minimal dependencies for installing psycopg2 python module
-RUN apt-get update && apt-get install -y libpq-dev gcc
+RUN apt-get update && apt-get install -y curl libpq-dev gcc
 
-# create and activate virtual environment
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
+# install poetry
+RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=$POETRY_PATH python && \
+    cd /usr/local/bin && \
+    ln -s $POETRY_PATH/bin/poetry && \
+    poetry config virtualenvs.create false
 
-# install required python modules to virtual environment
-COPY requirements.txt .
-RUN python -m pip install --no-cache -r requirements.txt
+# install poetry environment into fresh python venv
+RUN python -m venv $VENV_PATH
+
+WORKDIR /opt
+
+COPY pyproject.toml poetry.lock .
+
+# allow installing dev dependencies to run tests
+ARG INSTALL_DEV=false
+RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install --no-root ; else poetry install --no-root --no-dev ; fi"
 
 # final stage
-FROM python:3.11-slim
+FROM python-base
+
+WORKDIR /code
 
 # do not buffer log messages and do not write byte code .pyc
 ENV PYTHONUNBUFFERED=1
@@ -26,11 +44,12 @@ RUN apt-get update && apt-get install -y libpq-dev && rm -rf /var/lib/apt/lists/
 RUN adduser --system --no-create-home --group ps2
 
 # copy over virtual environment from builder stage
-COPY --from=builder /opt/venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
+COPY --from=builder $VENV_PATH $VENV_PATH
+
+# update path to include venv bin
+ENV PATH="$VENV_PATH/bin:$PATH"
 
 # copy over application code
-WORKDIR /code
 COPY ./app /code/app
 
 USER ps2
