@@ -1,6 +1,9 @@
 services:
   api:
-    build: .
+    build:
+      context: .
+      args:
+        INSTALL_DEV: true
     command: uvicorn app.main:app --host 0.0.0.0 --port 80 --reload
     volumes:
       - ./app:/code/app
