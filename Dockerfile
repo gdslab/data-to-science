@@ -31,11 +31,12 @@ RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install --no-root ; els
 # final stage
 FROM python-base
 
-WORKDIR /code
+WORKDIR /code/
 
 # do not buffer log messages and do not write byte code .pyc
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/code/app \
+    PYTHONUNBUFFERED=1
 
 # install libpg-dev dependency and remove apt package info to reduce image size
 RUN apt-get update && apt-get install -y libpq-dev && rm -rf /var/lib/apt/lists/*
@@ -53,5 +54,3 @@ ENV PATH="$VENV_PATH/bin:$PATH"
 COPY ./app /code/app
 
 USER ps2
-
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"]
