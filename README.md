@@ -31,6 +31,13 @@ It is not necessary to explicitly run the build command. The image described in 
     ```
     docker compose stop
     ```
+### Database migrations with Alembic
+```
+docker compose exec backend alembic revision --autogenerate -m "migration comment"
+```
+```
+docker compose exec backend alembic upgrade head
+```
 ## Accessing the API
 After running `docker compose up -d`, you should be able to access the web API from [http://127.0.0.1/docs](http://127.0.1/docs) or [http://127.0.0.1/redoc](http://127.0.0.1/redoc). The first URL will display the Swagger UI documentation for the API and the second URL will display the ReDoc documentation. The API endpoints can be tried out from either URL.
 ## Running the API tests

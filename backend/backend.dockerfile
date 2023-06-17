@@ -31,18 +31,18 @@ RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install --no-root ; els
 # final stage
 FROM python-base
 
-WORKDIR /code/
+WORKDIR /app/
 
 # do not buffer log messages and do not write byte code .pyc
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONPATH=/code/app \
+    PYTHONPATH=/app \
     PYTHONUNBUFFERED=1
 
 # install libpg-dev dependency and remove apt package info to reduce image size
 RUN apt-get update && apt-get install -y libpq-dev && rm -rf /var/lib/apt/lists/*
 
 # create unprivileged ps2 user
-RUN adduser --system --no-create-home --group ps2
+#RUN adduser --system --no-create-home --group ps2
 
 # copy over virtual environment from builder stage
 COPY --from=builder $VENV_PATH $VENV_PATH
@@ -51,6 +51,6 @@ COPY --from=builder $VENV_PATH $VENV_PATH
 ENV PATH="$VENV_PATH/bin:$PATH"
 
 # copy over application code
-COPY ./app /code/app
+COPY . /app
 
-USER ps2
+#USER ps2

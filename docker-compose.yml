@@ -1,12 +1,13 @@
 services:
-  api:
+  backend:
     build:
-      context: .
+      context: ./backend
+      dockerfile: backend.dockerfile
       args:
         INSTALL_DEV: true
     command: uvicorn app.main:app --host 0.0.0.0 --port 80 --reload
     volumes:
-      - ./app:/code/app
+      - ./backend:/app
     ports:
       - "80:80"
     restart: always
@@ -19,14 +20,20 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
     restart: always
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+    env_file:
+      - .env
     healthcheck:
       test: ["CMD-SHELL", "pg_isready --username=${POSTGRES_USER} --dbname=${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
+  pgadmin:
+    image: dpage/pgadmin4
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+
 volumes:
   db-data:
