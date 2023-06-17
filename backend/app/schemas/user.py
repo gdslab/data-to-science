@@ -1,37 +1,39 @@
-from faker import Faker
+from typing import Optional
+
 from pydantic import BaseModel, EmailStr
 
 
-fake = Faker()
-
-
-def get_fake_users():
-    """Generates list of five fake users. 
-    Each user is represented by a dictionary.
-
-    Returns:
-        list: List of user dictionaries
-    """
-    Faker.seed(0)  # return same fake users every function call
-
-    return [
-        {
-            "user_id": idx + 1,
-            "hashed_password": fake.password(),
-            "email": fake.email(),
-            "full_name": fake.name()
-        } for idx in range(0, 5)
-    ]
-
+# shared properties
 class UserBase(BaseModel):
-    email: EmailStr
+    email: EmailStr | None = None
+    is_active: bool | None = True
+    is_superuser: bool = False
     full_name: str | None = None
 
-class UserIn(UserBase):
+
+# properties to receive via API on creation
+class UserCreate(UserBase):
+    email: EmailStr
     password: str
 
-class UserOut(UserBase):
+
+# properties to receive via API on update
+class UserUpdate(UserBase):
+    password: str | None = None
+
+
+class UserInDBBase(UserBase):
+    id: int | None = None
+
+    class Config:
+        orm_mode = True
+
+
+# additional properties to return via API
+class User(UserInDBBase):
     pass
 
-class UserInDB(UserBase):
+
+# additional properties stored in DB
+class UserInDB(UserInDBBase):
     hashed_password: str
