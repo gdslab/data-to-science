@@ -8,12 +8,12 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = secrets.token_urlsafe(32)
 
-    PROJECT_NAME: str
+    PROJECT_NAME: str = ""
 
-    POSTGRES_SERVER: str
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    POSTGRES_DB: str
+    POSTGRES_SERVER: str = "db"
+    POSTGRES_USER: str = "ps2"
+    POSTGRES_PASSWORD: str = ""
+    POSTGRES_DB: str = "ps2"
     SQLALCHEMY_DATABASE_URI: PostgresDsn | None = None
 
     @validator("SQLALCHEMY_DATABASE_URI", pre=True)
