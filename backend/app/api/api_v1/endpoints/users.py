@@ -1,46 +1,33 @@
-from fastapi import APIRouter, HTTPException, status
+from typing import Any
 
-from app.schemas.user import get_fake_users, UserIn, UserInDB, UserOut
+from fastapi import APIRouter, Body, Depends, HTTPException, status
+from pydantic.networks import EmailStr
+from sqlalchemy.orm import Session
+
+from app import crud, models, schemas
+from app.api import deps
+from app.core.config import settings
+
 
 router = APIRouter()
 
 
-def find_user_by_id(user_id: int):
-    """Find user by a unique id.
-
-    Args:
-        user_id (int): Unique id for a user
-
-    Returns:
-        _type_: User model or None
-    """
-    return next(filter(lambda user: user["user_id"] == user_id, get_fake_users()), None)
-
-@router.get("/{user_id}", response_model=UserOut)
-async def read_user(user_id: int):
-    user = find_user_by_id(user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+@router.post("/", response_model=schemas.User, status_code=status.HTTP_201_CREATED)
+def create_user(
+    *, 
+    db: Session = Depends(deps.get_db),
+    password: str = Body(...),  # TODO add minimal password requirements
+    email: EmailStr = Body(...),
+    full_name: str = Body(None)
+) -> Any:
+    # check if user with this email already exists
+    user = crud.user.get_by_email(db, email=email)
+    if user:
+        raise HTTPException(
+            status_code=400,
+            detail="This email address is already in use"  # TODO 
+        )
+    # create user in database
+    user_in = schemas.UserCreate(password=password, email=email, full_name=full_name)
+    user = crud.user.create(db, obj_in=user_in)
     return user
-
-@router.post("/", response_model=UserOut, status_code=status.HTTP_201_CREATED)
-async def create_user(user_in: UserIn):
-    hashed_password = "hash" + user_in.password  # not for production
-    user_in_db = UserInDB(**user_in.dict(), hashed_password=hashed_password)
-    return user_in_db
-
-@router.put("/{user_id}", response_model=UserOut)
-async def update_user(user_id: int, user_out: UserOut):
-    existing_user = find_user_by_id(user_id)
-    if not existing_user:
-        raise HTTPException(status_code=404, detail="User not found")
-    user_in_db = UserInDB(**{**get_fake_users()[user_id], **user_out.dict()})
-    return user_in_db
-
-@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_user(user_id: int):
-    existing_user = find_user_by_id(user_id)
-    if not existing_user:
-        raise HTTPException(status_code=404, detail="User not found")
-    users_in_db = get_fake_users()
-    users_in_db.pop(users_in_db.index(existing_user))

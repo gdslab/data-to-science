@@ -18,7 +18,6 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             # hashed_password=get_password_hash(obj_in.password),
             hashed_password=f"hash-{obj_in.password}",
             full_name=obj_in.full_name,
-            is_superuser=obj_in.is_superuser,
         )
         db.add(db_obj)
         db.commit()

@@ -6,8 +6,6 @@ from pydantic import BaseModel, EmailStr
 # shared properties
 class UserBase(BaseModel):
     email: EmailStr | None = None
-    is_active: bool | None = True
-    is_superuser: bool = False
     full_name: str | None = None
 
 
@@ -23,8 +21,9 @@ class UserUpdate(UserBase):
 
 
 class UserInDBBase(UserBase):
-    id: int | None = None
-
+    # add database properties here that 
+    # should be returned via API in User
+    
     class Config:
         orm_mode = True
 
@@ -36,4 +35,7 @@ class User(UserInDBBase):
 
 # additional properties stored in DB
 class UserInDB(UserInDBBase):
+    id: int | None = None
     hashed_password: str
+    is_active: bool | None = True
+    is_superuser: bool = False
