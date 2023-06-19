@@ -1,5 +1,5 @@
 # Application security
-## Password hashing and Authentication
+## Password hashing and authentication
 Library: `passlib[bcrypt]`
 
 When a user creates an account, the **bcrypt** hashing algorithm is used to generate a password hash from the plain text password. The password hash and other registration inputs are stored in the `users` table in the database. The plain text password is only used to generate the hash and it is **not** stored in the database.
