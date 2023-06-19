@@ -1,2 +1,2 @@
 # Documentation
-* [Application security]("/docs/security.md")
+* [Application security](/docs/security.md)
