@@ -26,7 +26,8 @@ class UserUpdate(UserBase):
 class UserInDBBase(UserBase):
     # add database properties here that 
     # should be returned via API in User
-    
+    id: int | None = None  
+
     class Config:
         orm_mode = True
 
@@ -38,7 +39,6 @@ class User(UserInDBBase):
 
 # additional properties stored in DB
 class UserInDB(UserInDBBase):
-    id: int | None = None
     hashed_password: str
     is_approved: bool | None = True
     is_superuser: bool = False
