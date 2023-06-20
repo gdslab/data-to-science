@@ -13,6 +13,6 @@ class User(Base):
     hashed_password = Column(String)
     first_name = Column(String)
     last_name = Column(String)
-    is_approved = Column(Boolean, default=True)
+    is_approved = Column(Boolean, default=False)
     is_superuser = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.now())

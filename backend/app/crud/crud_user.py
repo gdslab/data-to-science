@@ -45,9 +45,8 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             return None
         return user
 
-    def is_active(self, user: User) -> bool:
-        # returns false if user.is_active is None or False
-        return user.is_active
+    def is_approved(self, user: User) -> bool:
+        return user.is_approved
 
     def is_superuser(self, user: User) -> bool:
         return user.is_superuser
