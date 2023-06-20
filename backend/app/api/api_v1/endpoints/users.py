@@ -1,6 +1,7 @@
 from typing import Any
 
 from fastapi import APIRouter, Body, Depends, HTTPException, status
+from pydantic import Required
 from pydantic.networks import EmailStr
 from sqlalchemy.orm import Session
 
@@ -16,9 +17,10 @@ router = APIRouter()
 def create_user(
     *, 
     db: Session = Depends(deps.get_db),
-    password: str = Body(...),  # TODO add minimal password requirements
-    email: EmailStr = Body(...),
-    full_name: str = Body(None)
+    password: str = Body(Required),  # TODO add minimal password requirements
+    email: EmailStr = Body(Required),
+    first_name: str = Body(Required),
+    last_name: str = Body(Required),
 ) -> Any:
     # check if user with this email already exists
     user = crud.user.get_by_email(db, email=email)
@@ -28,6 +30,11 @@ def create_user(
             detail="This email address is already in use"  # TODO 
         )
     # create user in database
-    user_in = schemas.UserCreate(password=password, email=email, full_name=full_name)
+    user_in = schemas.UserCreate(
+        password=password, 
+        email=email,
+        first_name=first_name,
+        last_name=last_name,
+    )
     user = crud.user.create(db, obj_in=user_in)
     return user
