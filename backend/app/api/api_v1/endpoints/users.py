@@ -22,6 +22,7 @@ def create_user(
     first_name: str = Body(Required),
     last_name: str = Body(Required),
 ) -> Any:
+    """Create new user with unique email."""
     # check if user with this email already exists
     user = crud.user.get_by_email(db, email=email)
     if user:
@@ -38,3 +39,13 @@ def create_user(
     )
     user = crud.user.create(db, obj_in=user_in)
     return user
+
+
+@router.get("/current", response_model=schemas.User)
+def read_user_by_email_in_token(
+    *,
+    current_user: models.User = Depends(deps.get_current_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Get currently logged in user."""
+    return current_user

@@ -21,7 +21,6 @@ class GroupUpdate(GroupBase):
 class GroupInDBBase(GroupBase):
     # add database properties here that 
     # should be returned via API in Group
-    id: int
     name: str
     owner_id: int
 
@@ -36,4 +35,4 @@ class Group(GroupInDBBase):
 
 # additional properties stored in DB
 class GroupInDB(GroupInDBBase):
-    pass
+    id: int

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from pydantic import BaseModel, EmailStr
 
@@ -8,6 +8,7 @@ class UserBase(BaseModel):
     email: EmailStr | None = None
     first_name: str | None = None
     last_name: str | None = None
+    is_approved: bool | None = False
 
 
 # properties to receive via API on creation
@@ -26,8 +27,6 @@ class UserUpdate(UserBase):
 class UserInDBBase(UserBase):
     # add database properties here that 
     # should be returned via API in User
-    id: int | None = None  
-
     class Config:
         orm_mode = True
 
@@ -39,6 +38,6 @@ class User(UserInDBBase):
 
 # additional properties stored in DB
 class UserInDB(UserInDBBase):
+    id: int
     hashed_password: str
-    is_approved: bool | None = True
     is_superuser: bool = False

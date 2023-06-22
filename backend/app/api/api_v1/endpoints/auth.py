@@ -18,7 +18,6 @@ def login_access_token(
     db: Session = Depends(deps.get_db), form_data: OAuth2PasswordRequestForm = Depends()
 ) -> Any:
     """OAuth2 compatible token login, get an access token for future requests."""
-    print(form_data)
     user = crud.user.authenticate(
         db, email=form_data.username, password=form_data.password
     )

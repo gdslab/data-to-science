@@ -1,7 +1,7 @@
 import secrets
 from typing import Any
 
-from pydantic import BaseSettings, PostgresDsn, validator
+from pydantic import BaseSettings, EmailStr, PostgresDsn, validator
 
 
 class Settings(BaseSettings):
@@ -29,6 +29,8 @@ class Settings(BaseSettings):
             host=values.get("POSTGRES_SERVER"),
             path=f"/{values.get('POSTGRES_DB') or ''}",
         )
+
+    EMAIL_TEST_USER: EmailStr = "test@example.com"  # type: ignore
 
     class Config:
         case_sensitive = True
