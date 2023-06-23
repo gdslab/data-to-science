@@ -2,6 +2,7 @@ from typing import Any, Generic, Type, TypeVar
 
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.base_class import Base
@@ -60,7 +61,10 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return db_obj
 
     def remove(self, db: Session, *, id: int) -> ModelType:
-        obj: ModelType | Any = db.query(self.model).get(id)
-        db.delete(obj)
+        statement = select(self.model).where(self.model.id == id)
+        obj: ModelType | Any = db.execute(statement).one_or_none()
+        print(obj)
+        # obj: ModelType | Any = db.query(self.model).get(id)
+        db.delete(obj[0])
         db.commit()
-        return obj
+        return obj[0]

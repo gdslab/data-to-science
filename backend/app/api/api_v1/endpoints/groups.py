@@ -14,7 +14,7 @@ router = APIRouter()
 @router.post("/", response_model=schemas.Group)
 def create_group(
     group_in: schemas.GroupCreate,
-    current_user: models.User = Depends(deps.get_current_user),
+    current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ):
     """Create new group for current user."""
@@ -27,7 +27,7 @@ def create_group(
 def read_groups(
     skip: int = 0,
     limit: int = 100,
-    current_user: models.User = Depends(deps.get_current_user),
+    current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Retrieve list of groups owned by current user."""

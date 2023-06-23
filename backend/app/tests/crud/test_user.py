@@ -77,8 +77,7 @@ def test_update_user(db: Session) -> None:
         password=new_password,
         first_name=new_first_name,
     )
-    crud.user.update(db, db_obj=user, obj_in=user_in_update)
-    updated_user = crud.user.get(db, id=user.id)
+    updated_user = crud.user.update(db, db_obj=user, obj_in=user_in_update)
     assert updated_user
     assert user.email == updated_user.email
     assert user.first_name == new_first_name

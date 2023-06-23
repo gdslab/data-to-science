@@ -1,6 +1,7 @@
-from typing import Any
+from typing import Sequence, Any
 
 from fastapi.encoders import jsonable_encoder
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
@@ -17,14 +18,10 @@ class CRUDGroup(CRUDBase[Group, GroupCreate, GroupUpdate]):
         db.refresh(db_obj)
         return db_obj
 
-    def get_multi_by_owner(self, db: Session, *, owner_id: int, skip: int = 0, limit: int = 100) -> list[Group]:
-        return (
-            db.query(self.model)
-            .filter(Group.owner_id == owner_id)
-            .offset(skip)
-            .limit(limit)
-            .all()
-        )
+    def get_multi_by_owner(self, db: Session, *, owner_id: int, skip: int = 0, limit: int = 100) -> Sequence[Group]:
+        statement = select(self.model).filter(Group.owner_id == owner_id).offset(skip).limit(limit)
+        db_obj = db.scalars(statement).all()
+        return db_obj
 
 
 group = CRUDGroup(Group)

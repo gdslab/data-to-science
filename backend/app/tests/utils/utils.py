@@ -19,6 +19,11 @@ def random_group_name() -> str:
     return faker.company()
 
 
+def random_group_description() -> str:
+    """Create random group description."""
+    return faker.sentence()
+
+
 def random_password() -> str:
     """Create random password."""
     return faker.password()
