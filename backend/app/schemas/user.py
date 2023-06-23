@@ -36,6 +36,8 @@ class UserUpdate(UserBase):
 
 # properties shared by models stored in DB
 class UserInDBBase(UserBase):
+    id: int
+
     class Config:
         orm_mode = True
 
@@ -47,5 +49,5 @@ class User(UserInDBBase):
 
 # additional properties stored in DB
 class UserInDB(UserInDBBase):
-    id: int
+    
     hashed_password: str

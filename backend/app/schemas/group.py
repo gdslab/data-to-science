@@ -19,7 +19,9 @@ class GroupUpdate(GroupBase):
 
 # properties shared by models stored in DB
 class GroupInDBBase(GroupBase):
+    id: int
     title: str
+
     owner_id: int
 
     class Config:
@@ -33,4 +35,4 @@ class Group(GroupInDBBase):
 
 # additional properties stored in DB
 class GroupInDB(GroupInDBBase):
-    id: int
+    pass
