@@ -1,18 +1,27 @@
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
+
+
+if TYPE_CHECKING:
+    EmailStr = str
+else:
+    from pydantic import EmailStr
 
 
 # shared properties
 class UserBase(BaseModel):
+    # do not want to require properties during update
     email: EmailStr | None = None
     first_name: str | None = None
     last_name: str | None = None
-    is_approved: bool | None = False
+
+    is_approved: bool = False
 
 
 # properties to receive via API on creation
 class UserCreate(UserBase):
+    # all required during creation
     email: EmailStr
     password: str
     first_name: str
@@ -21,12 +30,12 @@ class UserCreate(UserBase):
 
 # properties to receive via API on update
 class UserUpdate(UserBase):
+    # provide option to update password during update
     password: str | None = None
 
 
+# properties shared by models stored in DB
 class UserInDBBase(UserBase):
-    # add database properties here that 
-    # should be returned via API in User
     class Config:
         orm_mode = True
 
@@ -40,4 +49,3 @@ class User(UserInDBBase):
 class UserInDB(UserInDBBase):
     id: int
     hashed_password: str
-    is_superuser: bool = False

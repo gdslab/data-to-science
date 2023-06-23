@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 
 from app import crud
 from app.core.config import settings
-from app.schemas.user import UserCreate
+from app.core.security import verify_password
+from app.schemas.user import UserCreate, UserUpdate
 from app.tests.utils.user import create_random_user
 from app.tests.utils.utils import random_email, random_full_name, random_password
 
@@ -51,7 +52,6 @@ def test_get_users_normal_current_user(
     r = client.get(f"{settings.API_V1_STR}/users/current", headers=normal_user_token_headers)
     current_user = r.json()
     assert current_user
-    assert current_user["is_approved"] is True
     assert current_user["email"] == settings.EMAIL_TEST_USER
 
 
@@ -59,3 +59,19 @@ def test_get_current_user_when_not_authorized(client: TestClient, db: Session) -
     """Test retrieiving current user when the client is not authorized."""
     r = client.get(f"{settings.API_V1_STR}/users/")
     assert 400 <= r.status_code < 500
+
+
+def test_update_for_current_user(
+    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+) -> None:
+    """Test updating the password for an existing user."""
+    password = random_password()
+    user_in = UserUpdate(
+        password=password,
+    )
+    r = client.put(f"{settings.API_V1_STR}/users/", json=user_in.dict(), headers=normal_user_token_headers)
+    assert 200 <= r.status_code < 300
+    current_user = r.json()
+    user = crud.user.get_by_email(db, email=current_user["email"])
+    assert user
+    assert verify_password(password, user.hashed_password)

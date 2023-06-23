@@ -1,27 +1,25 @@
-from typing import Optional
-
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 
 
 # shared properties
 class GroupBase(BaseModel):
-    name: str | None = None
+    title: str | None = None
+    description: str | None = None
 
 
 # properties to receive via API on creation
 class GroupCreate(GroupBase):
-    name: str
+    title: str
 
 
 # properties to receive via API on update
 class GroupUpdate(GroupBase):
-    name: str | None = None
+    pass
 
 
+# properties shared by models stored in DB
 class GroupInDBBase(GroupBase):
-    # add database properties here that 
-    # should be returned via API in Group
-    name: str
+    title: str
     owner_id: int
 
     class Config:

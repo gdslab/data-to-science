@@ -1,6 +1,7 @@
 from typing import Any
 
 from fastapi import APIRouter, Body, Depends, HTTPException, status
+from fastapi.encoders import jsonable_encoder
 from pydantic import Required
 from pydantic.networks import EmailStr
 from sqlalchemy.orm import Session
@@ -41,11 +42,33 @@ def create_user(
     return user
 
 
-@router.get("/current", response_model=schemas.User)
-def read_user_by_email_in_token(
+@router.put("/", response_model=schemas.User)
+def update_current_user(
     *,
-    current_user: models.User = Depends(deps.get_current_user),
+    password: str = Body(None),
+    first_name: str = Body(None),
+    last_name: str = Body(None),
+    current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    """Get currently logged in user."""
+    """Update current user."""
+    current_user_data = jsonable_encoder(current_user)
+    user_in = schemas.UserUpdate(**current_user_data)
+    if password is not None:
+        user_in.password = password
+    if first_name is not None:
+        user_in.first_name = first_name
+    if last_name is not None:
+        user_in.last_name = last_name
+    user = crud.user.update(db, db_obj=current_user, obj_in=user_in)
+    return user
+
+
+@router.get("/current", response_model=schemas.User)
+def read_current_user(
+    *,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Retrieve current user."""
     return current_user
