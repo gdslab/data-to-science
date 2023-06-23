@@ -2,9 +2,8 @@ from typing import TYPE_CHECKING
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, String
+from sqlalchemy import Boolean, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.sql import func
 
 from app.db.base_class import Base
 from app.models.utils.user import utcnow
@@ -12,6 +11,7 @@ from app.models.utils.user import utcnow
 
 if TYPE_CHECKING:
     from .group import Group
+    from .project import Project
 
 
 class User(Base):
@@ -27,5 +27,8 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=utcnow(), nullable=False)
 
     groups: Mapped[list["Group"]] = relationship(
+        back_populates="owner", cascade="all, delete-orphan"
+    )
+    projects: Mapped[list["Project"]] = relationship(
         back_populates="owner", cascade="all, delete-orphan"
     )
