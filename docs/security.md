@@ -48,3 +48,10 @@ expire = datetime.utcnow() + timedelta(minutes=60 * 24 * 7)  # 7 days
 to_encode = {"exp": expire, "sub": str(subject)}
 encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 ```
+
+## Time-based one-time password (TOPT) implementation
+Library: `pyopt`
+
+The below flowchart outlines the plan for implementing time-based one-time password (TOPT) for users interested in two factor authentication (2FA). Users that choose to opt in to 2FA will be required to provide a TOPT code when logging in with their account credentials.
+
+![TOPT Flowchart](./security/totp_flowchart.png)
