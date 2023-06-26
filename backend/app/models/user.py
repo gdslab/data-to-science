@@ -10,11 +10,13 @@ from app.models.utils.user import utcnow
 
 
 if TYPE_CHECKING:
+    from .flight import Flight
     from .group import Group
     from .project import Project
 
 
 class User(Base):
+    """Users table."""
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -26,9 +28,12 @@ class User(Base):
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=utcnow(), nullable=False)
 
+    flights: Mapped[list["Flight"]] = relationship(
+        back_populates="pilot", cascade="all, delete"
+    )
     groups: Mapped[list["Group"]] = relationship(
-        back_populates="owner", cascade="all, delete-orphan"
+        back_populates="owner", cascade="all, delete"
     )
     projects: Mapped[list["Project"]] = relationship(
-        back_populates="owner", cascade="all, delete-orphan"
+        back_populates="owner", cascade="all, delete"
     )

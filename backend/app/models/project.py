@@ -10,6 +10,7 @@ from app.db.base_class import Base
 
 
 if TYPE_CHECKING:
+    from .flight import Flight
     from .group import Group
     from .user import User
 
@@ -28,3 +29,5 @@ class Project(Base):
 
     owner: Mapped["User"] = relationship(back_populates="projects")
     group: Mapped["Group"] = relationship(back_populates="projects")
+
+    flights: Mapped[list["Flight"]] = relationship(back_populates="project", cascade="all, delete")
