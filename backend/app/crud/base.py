@@ -1,4 +1,4 @@
-from typing import Any, Generic, Type, TypeVar
+from typing import Sequence, Any, Generic, Type, TypeVar
 
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
@@ -25,12 +25,14 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self.model = model
 
     def get(self, db: Session, id: Any) -> ModelType | None:
-        return db.query(self.model).filter(self.model.id == id).first()
+        stmt = select(self.model).where(self.model.id == id)
+        return db.scalars(stmt).first()
 
     def get_multi(
         self, db: Session, *, skip: int = 0, limit: int = 100
-    ) -> list[ModelType]:
-        return db.query(self.model).offset(skip).limit(limit).all()
+    ) -> Sequence[ModelType]:
+        stmt = select(self.model).offset(skip).limit(limit)
+        return db.scalars(stmt).all()
 
     def create(self, db: Session, *, obj_in: CreateSchemaType) -> ModelType:
         obj_in_data = jsonable_encoder(obj_in)
@@ -61,10 +63,8 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return db_obj
 
     def remove(self, db: Session, *, id: int) -> ModelType:
-        statement = select(self.model).where(self.model.id == id)
-        obj: ModelType | Any = db.execute(statement).one_or_none()
-        print(obj)
-        # obj: ModelType | Any = db.query(self.model).get(id)
-        db.delete(obj[0])
+        stmt = select(self.model).where(self.model.id == id)
+        obj: ModelType | Any = db.scalars(stmt).one_or_none()
+        db.delete(obj)
         db.commit()
-        return obj[0]
+        return obj
