@@ -39,8 +39,7 @@ def test_not_authenticate_user(db: Session) -> None:
 def test_check_if_user_is_not_approved_by_default(db: Session) -> None:
     """Test that newly created user is not approved."""
     user = create_random_user(db)
-    is_approved = crud.user.is_approved(user)
-    assert is_approved is False
+    assert crud.user.is_approved(user) is False
 
 
 def test_check_if_user_is_normal_user_by_default(db: Session) -> None:

@@ -19,7 +19,10 @@ class Group(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String(300), nullable=False)
-    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
 
     owner: Mapped["User"] = relationship(back_populates="groups")
     projects: Mapped[list["Project"]] = relationship(back_populates="group")
+
+    def __repr__(self) -> str:
+        return f"Group(id={self.id!r}, title={self.title!r}, description={self.description!r}, owner_id={self.owner_id!r})"

@@ -31,8 +31,8 @@ class Flight(Base):
     forward_overlap: Mapped[float] = mapped_column(Float, nullable=False)
     sensor: Mapped[enumerate] = mapped_column(SENSOR_ENUM, nullable=False)
     platform: Mapped[enumerate] = mapped_column(PLATFORM_ENUM, nullable=False)
-    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id"), nullable=False)    
-    pilot_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    project_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("projects.id"), nullable=False)    
+    pilot_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
 
     project: Mapped["Project"] = relationship(back_populates="flights")
     pilot: Mapped["User"] = relationship(back_populates="flights")
@@ -42,3 +42,6 @@ class Flight(Base):
     raw_data: Mapped[list["RawData"]] = relationship(
         back_populates="flight", cascade="all, delete"
     )
+
+    def __repr__(self) -> str:
+        return f"Flight(id={self.id!r}, acquisition_date={self.acquisition_date!r}, altitude={self.altitude!r}, side_overlap={self.side_overlap!r}, forward_overlap={self.forward_overlap!r}, sensor={self.sensor!r}, platform={self.platform!r}, project_id={self.project_id!r}, pilot_id={self.pilot_id!r})"

@@ -7,7 +7,6 @@ from app.tests.utils.user import create_random_user
 from app.tests.utils.utils import random_group_description, random_group_name
 
 
-
 def test_create_group(db: Session) -> None:
     title = random_group_name()
     description = random_group_description()
@@ -35,7 +34,7 @@ def test_update_group(db: Session) -> None:
     group_update = crud.group.update(db=db, db_obj=group, obj_in=group_in_update)
     assert group.id == group_update.id
     assert group.title == group_update.title
-    assert group_update.description == new_description
+    assert new_description == group_update.description
     assert group.owner_id == group_update.owner_id
 
 

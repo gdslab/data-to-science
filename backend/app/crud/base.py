@@ -27,7 +27,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     def get(self, db: Session, id: Any) -> ModelType | None:
         stmt = select(self.model).where(self.model.id == id)
-        return db.scalars(stmt).first()
+        return db.scalars(stmt).one_or_none()
 
     def get_multi(
         self, db: Session, *, skip: int = 0, limit: int = 100
@@ -68,5 +68,9 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         stmt = select(self.model).where(self.model.id == id)
         obj: ModelType | Any = db.scalars(stmt).one_or_none()
         db.delete(obj)
-        db.commit()
+        try:
+            db.commit()
+        except Exception as e:
+            db.rollback()
+
         return obj

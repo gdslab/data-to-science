@@ -1,4 +1,5 @@
 from typing import Sequence, Any
+from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
@@ -10,7 +11,7 @@ from app.schemas.project import ProjectCreate, ProjectUpdate
 
 
 class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
-    def create_with_owner(self, db: Session, *, obj_in: ProjectCreate, owner_id: int) -> Project:
+    def create_with_owner(self, db: Session, *, obj_in: ProjectCreate, owner_id: UUID) -> Project:
         obj_in_data = jsonable_encoder(obj_in)
         db_obj = self.model(**obj_in_data, owner_id=owner_id)
         db.add(db_obj)
@@ -18,7 +19,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         db.refresh(db_obj)
         return db_obj
 
-    def create_with_owner_and_group(self, db: Session, *, obj_in: ProjectCreate, owner_id: int, group_id: int) -> Project:
+    def create_with_owner_and_group(self, db: Session, *, obj_in: ProjectCreate, owner_id: UUID, group_id: UUID) -> Project:
         obj_in_data = jsonable_encoder(obj_in)
         db_obj = self.model(**obj_in_data, owner_id=owner_id, group_id=group_id)
         db.add(db_obj)

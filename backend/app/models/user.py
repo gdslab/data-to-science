@@ -39,3 +39,6 @@ class User(Base):
     projects: Mapped[list["Project"]] = relationship(
         back_populates="owner", cascade="all, delete"
     )
+
+    def __repr__(self) -> str:
+        return f"User(id={self.id!r}, email={self.email!r}, first_name={self.first_name!r}, last_name={self.last_name!r}, is_approved={self.is_approved!r}, is_superuser={self.is_superuser!r}, created_at={self.created_at!r})"

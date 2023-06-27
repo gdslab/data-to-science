@@ -16,7 +16,7 @@ from app.tests.utils.utils import random_group_name, random_group_description
 faker = Faker()
 
 
-def create_random_project_without_group(
+def create_random_project(
     db: Session,
     title: str | None = None,
     description: str | None = None,
@@ -24,6 +24,7 @@ def create_random_project_without_group(
     planting_date: datetime | None = None,
     harvest_date: datetime | None = None,
     owner_id: UUID | None = None,
+    group_id: UUID | None = None
 ) -> models.Project:
     """Create random project with no group association."""
     if owner_id is None:
@@ -47,7 +48,11 @@ def create_random_project_without_group(
         planting_date=planting_date,
         harvest_date=harvest_date,
     )
-    return crud.project.create_with_owner(db=db, obj_in=project_in, owner_id=owner_id)
+
+    if group_id:
+        return crud.project.create_with_owner_and_group(db=db, obj_in=project_in, owner_id=owner_id, group_id=group_id)
+    else:
+        return crud.project.create_with_owner(db=db, obj_in=project_in, owner_id=owner_id)
 
 
 def random_geojson_location() -> dict:

@@ -21,6 +21,9 @@ class DataProduct(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     data_path: Mapped[str] = mapped_column(String, nullable=False)
     data_type: Mapped[enumerate] = mapped_column(DATA_TYPE_ENUM, nullable=False)
-    flight_id: Mapped[int] = mapped_column(ForeignKey("flights.id"), nullable=False)    
+    flight_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("flights.id"), nullable=False)    
 
     flight: Mapped["Flight"] = relationship(back_populates="data_products")
+
+    def __repr__(self) -> str:
+        return f"DataProduct(id={self.id!r}, data_path={self.data_path!r}, data_type={self.data_type!r}, flight_id={self.flight_id!r})"
