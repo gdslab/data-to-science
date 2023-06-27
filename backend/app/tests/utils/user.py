@@ -58,5 +58,4 @@ def authentication_token_from_email(
 
     user_in_update = UserUpdate(password=password, is_approved=True)
     user = crud.user.update(db, db_obj=user, obj_in=user_in_update)
-    
     return user_authenticate_headers(client=client, email=email, password=password)

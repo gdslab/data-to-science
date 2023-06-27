@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from pydantic import BaseModel
 
 
@@ -19,10 +21,10 @@ class GroupUpdate(GroupBase):
 
 # properties shared by models stored in DB
 class GroupInDBBase(GroupBase):
-    id: int
+    id: UUID
     title: str
 
-    owner_id: int
+    owner_id: UUID
 
     class Config:
         orm_mode = True

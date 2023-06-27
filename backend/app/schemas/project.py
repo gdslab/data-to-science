@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -25,15 +26,15 @@ class ProjectUpdate(ProjectBase):
 
 # properties shared by models stored in DB
 class ProjectInDBBase(ProjectBase):
-    id: int
+    id: UUID
     title: str
     description: str
     location: dict
     planting_date: datetime
     harvest_date: datetime
 
-    owner_id: int | None = None
-    group_id: int | None = None
+    owner_id: UUID | None = None
+    group_id: UUID | None = None
 
     class Config:
         orm_mode = True

@@ -1,4 +1,5 @@
 from typing import Sequence, Any, Generic, Type, TypeVar
+from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
@@ -62,7 +63,8 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         db.refresh(db_obj)
         return db_obj
 
-    def remove(self, db: Session, *, id: int) -> ModelType:
+    def remove(self, db: Session, *, id: UUID) -> ModelType:
+        # toggle user is_approved to False, do not remove
         stmt = select(self.model).where(self.model.id == id)
         obj: ModelType | Any = db.scalars(stmt).one_or_none()
         db.delete(obj)

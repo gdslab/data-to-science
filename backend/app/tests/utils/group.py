@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy.orm import Session
 
 from app import crud, models
@@ -11,7 +13,7 @@ def create_random_group(
     *, 
     title: str | None = None,
     description: str | None = None,
-    owner_id: int | None = None
+    owner_id: UUID | None = None
 ) -> models.Group:
     if owner_id is None:
         user = create_random_user(db)

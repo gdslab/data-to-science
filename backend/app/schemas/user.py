@@ -1,3 +1,4 @@
+from uuid import UUID
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
@@ -36,7 +37,7 @@ class UserUpdate(UserBase):
 
 # properties shared by models stored in DB
 class UserInDBBase(UserBase):
-    id: int
+    id: UUID
 
     class Config:
         orm_mode = True
@@ -48,6 +49,6 @@ class User(UserInDBBase):
 
 
 # additional properties stored in DB
-class UserInDB(UserInDBBase):
-    
+class UserInDB(UserInDBBase):    
     hashed_password: str
+    is_superuser: bool
