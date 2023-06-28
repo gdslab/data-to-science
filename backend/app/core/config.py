@@ -5,6 +5,7 @@ from pydantic import BaseSettings, EmailStr, PostgresDsn, validator
 
 
 class Settings(BaseSettings):
+    ENV: str = "dev"
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = secrets.token_urlsafe(32)
     # 60 minutes * 24 hours * 8 days = 8 days
@@ -31,6 +32,8 @@ class Settings(BaseSettings):
         )
 
     EMAIL_TEST_USER: EmailStr = "test@example.com"  # type: ignore
+
+    LOGGER_FILE: str = ""
 
     class Config:
         case_sensitive = True
