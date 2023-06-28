@@ -8,9 +8,9 @@ from sqlalchemy.orm import Session
 
 from app import crud, models
 from app.schemas.project import ProjectCreate
-from app.tests.utils.group import create_random_group
+from app.tests.utils.team import create_random_team
 from app.tests.utils.user import create_random_user
-from app.tests.utils.utils import random_group_name, random_group_description
+from app.tests.utils.utils import random_team_name, random_team_description
 
 
 faker = Faker()
@@ -24,16 +24,16 @@ def create_random_project(
     planting_date: datetime | None = None,
     harvest_date: datetime | None = None,
     owner_id: UUID | None = None,
-    group_id: UUID | None = None
+    team_id: UUID | None = None
 ) -> models.Project:
-    """Create random project with no group association."""
+    """Create random project with no team association."""
     if owner_id is None:
         user = create_random_user(db)
         owner_id = user.id
     if title is None:
-        title = random_group_name()
+        title = random_team_name()
     if description is None:
-        description = random_group_description()
+        description = random_team_description()
     if location is None:
         location = random_geojson_location()
     if planting_date is None:
@@ -49,8 +49,8 @@ def create_random_project(
         harvest_date=harvest_date,
     )
 
-    if group_id:
-        return crud.project.create_with_owner_and_group(db=db, obj_in=project_in, owner_id=owner_id, group_id=group_id)
+    if team_id:
+        return crud.project.create_with_owner(db=db, obj_in=project_in, owner_id=owner_id, team_id=team_id)
     else:
         return crud.project.create_with_owner(db=db, obj_in=project_in, owner_id=owner_id)
 
@@ -67,7 +67,7 @@ def random_geojson_location() -> dict:
                 ]
         },
         "properties": {
-            "name": random_group_name()
+            "name": random_team_name()
         }
     } 
 

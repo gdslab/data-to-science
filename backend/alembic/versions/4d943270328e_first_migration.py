@@ -1,8 +1,8 @@
-"""initial migration with uuids
+"""first migration
 
-Revision ID: 1ddad0ea3f41
+Revision ID: 4d943270328e
 Revises: 
-Create Date: 2023-06-27 13:33:22.300504
+Create Date: 2023-06-28 15:32:12.023659
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '1ddad0ea3f41'
+revision = '4d943270328e'
 down_revision: str | None = None
 branch_labels: str | None = None
 depends_on: str | None = None
@@ -30,7 +30,7 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
-    op.create_table('groups',
+    op.create_table('teams',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('title', sa.String(length=255), nullable=False),
     sa.Column('description', sa.String(length=300), nullable=False),
@@ -46,9 +46,9 @@ def upgrade() -> None:
     sa.Column('planting_date', sa.DateTime(), nullable=False),
     sa.Column('harvest_date', sa.DateTime(), nullable=False),
     sa.Column('owner_id', sa.UUID(), nullable=False),
-    sa.Column('group_id', sa.UUID(), nullable=True),
-    sa.ForeignKeyConstraint(['group_id'], ['groups.id'], ),
+    sa.Column('team_id', sa.UUID(), nullable=True),
     sa.ForeignKeyConstraint(['owner_id'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['team_id'], ['teams.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('flights',
@@ -89,7 +89,7 @@ def downgrade() -> None:
     op.drop_table('data_products')
     op.drop_table('flights')
     op.drop_table('projects')
-    op.drop_table('groups')
+    op.drop_table('teams')
     op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')
     # ### end Alembic commands ###

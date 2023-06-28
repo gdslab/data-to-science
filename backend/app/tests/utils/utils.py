@@ -16,13 +16,13 @@ def random_full_name() -> dict[str, str]:
     return {"first": faker.first_name(), "last": faker.last_name()}
 
 
-def random_group_name() -> str:
-    """Create random group name."""
+def random_team_name() -> str:
+    """Create random team name."""
     return faker.company()
 
 
-def random_group_description() -> str:
-    """Create random group description."""
+def random_team_description() -> str:
+    """Create random team description."""
     return faker.sentence()
 
 

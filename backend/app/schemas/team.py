@@ -4,23 +4,23 @@ from pydantic import BaseModel
 
 
 # shared properties
-class GroupBase(BaseModel):
+class TeamBase(BaseModel):
     title: str | None = None
     description: str | None = None
 
 
 # properties to receive via API on creation
-class GroupCreate(GroupBase):
+class TeamCreate(TeamBase):
     title: str
 
 
 # properties to receive via API on update
-class GroupUpdate(GroupBase):
+class TeamUpdate(TeamBase):
     pass
 
 
 # properties shared by models stored in DB
-class GroupInDBBase(GroupBase):
+class TeamInDBBase(TeamBase):
     id: UUID
     title: str
 
@@ -31,10 +31,10 @@ class GroupInDBBase(GroupBase):
 
 
 # additional properties to return via API
-class Group(GroupInDBBase):
+class Team(TeamInDBBase):
     pass
 
 
 # additional properties stored in DB
-class GroupInDB(GroupInDBBase):
+class TeamInDB(TeamInDBBase):
     pass

@@ -11,19 +11,17 @@ from app.tests.utils.utils import random_email, random_full_name, random_passwor
 
 def test_create_user_new_email(client: TestClient, db: Session) -> None:
     """Test creating a new user account."""
-    email = random_email()
-    password = random_password()
     full_name = random_full_name()
     data = {
-        "email": email,
-        "password": password,
+        "email": random_email(),
+        "password": random_password(),
         "first_name": full_name["first"],
         "last_name": full_name["last"],
     }
     r = client.post(f"{settings.API_V1_STR}/users/", json=data)
-    assert 200 <= r.status_code < 300
+    assert r.status_code == 201
     created_user = r.json()
-    user = crud.user.get_by_email(db, email=email)
+    user = crud.user.get_by_email(db, email=data["email"])
     assert user
     assert user.email == created_user["email"]
 

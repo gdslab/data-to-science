@@ -13,16 +13,16 @@ if TYPE_CHECKING:
     from .user import User
 
 
-class Group(Base):
-    __tablename__ = "groups"
+class Team(Base):
+    __tablename__ = "teams"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String(300), nullable=False)
     owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
 
-    owner: Mapped["User"] = relationship(back_populates="groups")
-    projects: Mapped[list["Project"]] = relationship(back_populates="group")
+    owner: Mapped["User"] = relationship(back_populates="teams")
+    projects: Mapped[list["Project"]] = relationship(back_populates="team")
 
     def __repr__(self) -> str:
-        return f"Group(id={self.id!r}, title={self.title!r}, description={self.description!r}, owner_id={self.owner_id!r})"
+        return f"Team(id={self.id!r}, title={self.title!r}, description={self.description!r}, owner_id={self.owner_id!r})"

@@ -13,7 +13,7 @@ from app.models.utils.user import utcnow
 
 if TYPE_CHECKING:
     from .flight import Flight
-    from .group import Group
+    from .team import Team
     from .project import Project
 
 
@@ -33,10 +33,10 @@ class User(Base):
     flights: Mapped[list["Flight"]] = relationship(
         back_populates="pilot", cascade="all, delete"
     )
-    groups: Mapped[list["Group"]] = relationship(
+    projects: Mapped[list["Project"]] = relationship(
         back_populates="owner", cascade="all, delete"
     )
-    projects: Mapped[list["Project"]] = relationship(
+    teams: Mapped[list["Team"]] = relationship(
         back_populates="owner", cascade="all, delete"
     )
 

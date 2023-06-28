@@ -1,3 +1,4 @@
+import logging
 from typing import Sequence, Any, Generic, Type, TypeVar
 from uuid import UUID
 
@@ -11,6 +12,9 @@ from app.db.base_class import Base
 ModelType = TypeVar("ModelType", bound=Base)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
+
+
+logger = logging.getLogger("__name__")
 
 
 class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
@@ -65,12 +69,14 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     def remove(self, db: Session, *, id: UUID) -> ModelType:
         # toggle user is_approved to False, do not remove
+        print("id:", id)
+        print("self.model", self.model)
         stmt = select(self.model).where(self.model.id == id)
         obj: ModelType | Any = db.scalars(stmt).one_or_none()
-        db.delete(obj)
+        print(stmt)
         try:
+            db.delete(obj)
             db.commit()
         except Exception as e:
             db.rollback()
-
         return obj
