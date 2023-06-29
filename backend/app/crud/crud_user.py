@@ -1,4 +1,3 @@
-import logging
 from typing import Any
 
 from sqlalchemy import select
@@ -8,9 +7,6 @@ from app.core.security import get_password_hash, verify_password
 from app.crud.base import CRUDBase
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate
-
-
-logger = logging.getLogger("__name__")
 
 
 class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):

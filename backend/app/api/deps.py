@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
@@ -11,6 +13,9 @@ from app.core.config import settings
 from app.db.session import SessionLocal
 
 
+logger = logging.getLogger("__name__")
+
+
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/auth/access-token"
 )
@@ -21,6 +26,10 @@ def get_db():
     db = SessionLocal()
     try:
         yield db
+    except Exception:
+        logger.exception("Session raised exception - issuing rollback")
+        db.rollback()
+        raise
     finally:
         db.close()
 

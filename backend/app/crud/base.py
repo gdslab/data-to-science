@@ -1,4 +1,3 @@
-import logging
 from typing import Sequence, Any, Generic, Type, TypeVar
 from uuid import UUID
 
@@ -14,9 +13,6 @@ CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 
 
-logger = logging.getLogger("__name__")
-
-
 class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     def __init__(self, model: Type[ModelType]):
         """
@@ -30,8 +26,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self.model = model
 
     def get(self, db: Session, id: Any) -> ModelType | None:
-        stmt = select(self.model).where(self.model.id == id)
-        return db.scalars(stmt).one_or_none()
+        return db.get(self.model, id)
 
     def get_multi(
         self, db: Session, *, skip: int = 0, limit: int = 100
@@ -41,15 +36,9 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     def create(self, db: Session, *, obj_in: CreateSchemaType) -> ModelType:
         obj_in_data = jsonable_encoder(obj_in)
-        db_obj = self.model(**obj_in_data)  # type: ignore
-        try:
-            db.add(db_obj)
-        except Exception as e:
-            logger.error(str(e))
-            db.rollback()
-            raise
-        else:
-            db.commit()
+        db_obj = self.model(**obj_in_data)
+        db.add(db_obj)
+        db.commit()
         db.refresh(db_obj)
         return db_obj
 
@@ -68,18 +57,14 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         for field in obj_data:
             if field in update_data:
                 setattr(db_obj, field, update_data[field])
-        db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
+            db.add(db_obj)
+            db.commit()
+            db.refresh(db_obj)
         return db_obj
 
     def remove(self, db: Session, *, id: Any) -> ModelType:
         # toggle user is_approved to False, do not remove
-        stmt = select(self.model).where(self.model.id == id)
-        obj: ModelType | Any = db.scalars(stmt).one_or_none()
-        try:
-            db.delete(obj)
-            db.commit()
-        except Exception as e:
-            db.rollback()
+        obj: ModelType | Any = db.get(self.model, id)
+        db.delete(obj)
+        db.commit()
         return obj
