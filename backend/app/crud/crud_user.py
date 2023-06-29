@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 from sqlalchemy import select
@@ -7,6 +8,9 @@ from app.core.security import get_password_hash, verify_password
 from app.crud.base import CRUDBase
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate
+
+
+logger = logging.getLogger("__name__")
 
 
 class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
@@ -33,7 +37,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             update_data = obj_in
         else:
             update_data = obj_in.dict(exclude_unset=True)
-        if update_data["password"]:
+        if "password" in update_data and update_data["password"]:
             hashed_password = get_password_hash(update_data["password"])
             del update_data["password"]
             update_data["hashed_password"] = hashed_password

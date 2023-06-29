@@ -10,7 +10,6 @@ from app.tests.utils.utils import random_team_name, random_team_description
 
 def create_random_team(
     db: Session,
-    *, 
     title: str | None = None,
     description: str | None = None,
     owner_id: UUID | None = None

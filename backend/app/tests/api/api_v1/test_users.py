@@ -2,8 +2,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app import crud
+from app.api.deps import get_current_user
 from app.core.config import settings
-from app.core.security import verify_password
 from app.schemas.user import UserCreate, UserUpdate
 from app.tests.utils.user import create_random_user
 from app.tests.utils.utils import random_email, random_full_name, random_password
@@ -59,17 +59,22 @@ def test_get_current_user_when_not_authorized(client: TestClient, db: Session) -
     assert 400 <= r.status_code < 500
 
 
-def test_update_for_current_user(
+def test_update_user(
     client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
 ) -> None:
-    """Test updating the password for an existing user."""
-    password = random_password()
+    """Test updating current user."""
+    current_user = get_current_user(db, normal_user_token_headers["Authorization"].split(" ")[1])
+    full_name = random_full_name()
     user_in = UserUpdate(
-        password=password,
+        first_name=full_name["first"],
+        last_name=full_name["last"],
     )
-    r = client.put(f"{settings.API_V1_STR}/users/", json=user_in.dict(), headers=normal_user_token_headers)
+    
+    r = client.put(f"{settings.API_V1_STR}/users/{current_user.id}", json=user_in.dict(), headers=normal_user_token_headers)
+    
     assert 200 <= r.status_code < 300
-    current_user = r.json()
-    user = crud.user.get_by_email(db, email=current_user["email"])
-    assert user
-    assert verify_password(password, user.hashed_password)
+    updated_user = r.json()
+    assert updated_user
+    assert current_user.id == updated_user["id"]
+    assert full_name["first"] == updated_user["first_name"]
+    assert full_name["last"] == updated_user["last_name"]

@@ -42,8 +42,14 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     def create(self, db: Session, *, obj_in: CreateSchemaType) -> ModelType:
         obj_in_data = jsonable_encoder(obj_in)
         db_obj = self.model(**obj_in_data)  # type: ignore
-        db.add(db_obj)
-        db.commit()
+        try:
+            db.add(db_obj)
+        except Exception as e:
+            logger.error(str(e))
+            db.rollback()
+            raise
+        else:
+            db.commit()
         db.refresh(db_obj)
         return db_obj
 
@@ -67,13 +73,10 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         db.refresh(db_obj)
         return db_obj
 
-    def remove(self, db: Session, *, id: UUID) -> ModelType:
+    def remove(self, db: Session, *, id: Any) -> ModelType:
         # toggle user is_approved to False, do not remove
-        print("id:", id)
-        print("self.model", self.model)
         stmt = select(self.model).where(self.model.id == id)
         obj: ModelType | Any = db.scalars(stmt).one_or_none()
-        print(stmt)
         try:
             db.delete(obj)
             db.commit()

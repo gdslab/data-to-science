@@ -16,7 +16,6 @@ router = APIRouter()
 
 @router.post("/", response_model=schemas.User, status_code=status.HTTP_201_CREATED)
 def create_user(
-    *, 
     db: Session = Depends(deps.get_db),
     password: str = Body(Required),  # TODO add minimal password requirements
     email: EmailStr = Body(Required),
@@ -24,14 +23,12 @@ def create_user(
     last_name: str = Body(Required),
 ) -> Any:
     """Create new user with unique email."""
-    # check if user with this email already exists
     user = crud.user.get_by_email(db, email=email)
     if user:
         raise HTTPException(
             status_code=400,
             detail="This email address is already in use"  # TODO 
         )
-    # create user in database
     user_in = schemas.UserCreate(
         password=password, 
         email=email,
@@ -42,31 +39,34 @@ def create_user(
     return user
 
 
-@router.put("/", response_model=schemas.User)
+@router.put("/{user_id}", response_model=schemas.User)
 def update_current_user(
-    *,
+    user_id: str,
     password: str = Body(None),
     first_name: str = Body(None),
     last_name: str = Body(None),
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    """Update current user."""
-    current_user_data = jsonable_encoder(current_user)
-    user_in = schemas.UserUpdate(**current_user_data)
+    """Update user by id."""
+    user = crud.user.get(db=db, id=user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    if user.id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Permission denied")
+    user_in = schemas.UserUpdate(**user.__dict__)
     if password is not None:
         user_in.password = password
     if first_name is not None:
         user_in.first_name = first_name
     if last_name is not None:
         user_in.last_name = last_name
-    user = crud.user.update(db, db_obj=current_user, obj_in=user_in)
+    user = crud.user.update(db, db_obj=user, obj_in=user_in)
     return user
 
 
 @router.get("/current", response_model=schemas.User)
 def read_current_user(
-    *,
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
