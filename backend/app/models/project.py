@@ -11,7 +11,7 @@ from app.db.base_class import Base
 
 
 if TYPE_CHECKING:
-    from .flight import Flight
+    from .dataset import Dataset
     from .team import Team
     from .user import User
 
@@ -31,7 +31,7 @@ class Project(Base):
     owner: Mapped["User"] = relationship(back_populates="projects")
     team: Mapped["Team"] = relationship(back_populates="projects")
 
-    flights: Mapped[list["Flight"]] = relationship(back_populates="project", cascade="all, delete")
+    datasets: Mapped[list["Dataset"]] = relationship(back_populates="project", cascade="all, delete")
 
     def __repr__(self) -> str:
         return f"Project(id={self.id!r}, title={self.title!r}, description={self.description!r}, location={self.location!r}, planting_date={self.planting_date!r}, harvest_date={self.harvest_date!r}, owner_id={self.owner_id!r}, team_id={self.team_id!r})"

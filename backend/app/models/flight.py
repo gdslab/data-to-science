@@ -12,7 +12,7 @@ from app.db.base_class import Base
 
 if TYPE_CHECKING:
     from .data_product import DataProduct
-    from .project import Project
+    from .dataset import Dataset
     from .raw_data import RawData
     from .user import User
 
@@ -31,10 +31,10 @@ class Flight(Base):
     forward_overlap: Mapped[float] = mapped_column(Float, nullable=False)
     sensor: Mapped[enumerate] = mapped_column(SENSOR_ENUM, nullable=False)
     platform: Mapped[enumerate] = mapped_column(PLATFORM_ENUM, nullable=False)
-    project_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("projects.id"), nullable=False)    
+    dataset_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("datasets.id"), nullable=False)    
     pilot_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
 
-    project: Mapped["Project"] = relationship(back_populates="flights")
+    dataset: Mapped["Dataset"] = relationship(back_populates="flight")
     pilot: Mapped["User"] = relationship(back_populates="flights")
     data_products: Mapped[list["DataProduct"]] = relationship(
         back_populates="flight", cascade="all, delete"
