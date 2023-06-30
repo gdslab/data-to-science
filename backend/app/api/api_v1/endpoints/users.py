@@ -26,11 +26,10 @@ def create_user(
     user = crud.user.get_by_email(db, email=email)
     if user:
         raise HTTPException(
-            status_code=400,
-            detail="This email address is already in use"  # TODO 
+            status_code=400, detail="This email address is already in use"  # TODO
         )
     user_in = schemas.UserCreate(
-        password=password, 
+        password=password,
         email=email,
         first_name=first_name,
         last_name=last_name,
@@ -51,9 +50,13 @@ def update_current_user(
     """Update user by id."""
     user = crud.user.get(db=db, id=user_id)
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
     if user.id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Permission denied")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Permission denied"
+        )
     user_in = schemas.UserUpdate(**user.__dict__)
     if password is not None:
         user_in.password = password

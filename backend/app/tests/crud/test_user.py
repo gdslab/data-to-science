@@ -23,7 +23,9 @@ def test_authenticate_user(db: Session) -> None:
     """Test that user is authenticated when proper credentials provided."""
     user_in = create_random_user_in()
     user = crud.user.create(db=db, obj_in=user_in)
-    authenticated_user = crud.user.authenticate(db, email=user_in.email, password=user_in.password)
+    authenticated_user = crud.user.authenticate(
+        db, email=user_in.email, password=user_in.password
+    )
     assert authenticated_user
     assert user.email == authenticated_user.email
 

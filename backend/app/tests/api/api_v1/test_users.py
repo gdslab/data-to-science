@@ -47,7 +47,9 @@ def test_get_users_normal_current_user(
     client: TestClient, normal_user_token_headers: dict[str, str]
 ) -> None:
     """Test retrieving current user using normal user token headers."""
-    r = client.get(f"{settings.API_V1_STR}/users/current", headers=normal_user_token_headers)
+    r = client.get(
+        f"{settings.API_V1_STR}/users/current", headers=normal_user_token_headers
+    )
     current_user = r.json()
     assert current_user
     assert current_user["email"] == settings.EMAIL_TEST_USER
@@ -63,15 +65,21 @@ def test_update_user(
     client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
 ) -> None:
     """Test updating current user."""
-    current_user = get_current_user(db, normal_user_token_headers["Authorization"].split(" ")[1])
+    current_user = get_current_user(
+        db, normal_user_token_headers["Authorization"].split(" ")[1]
+    )
     full_name = random_full_name()
     user_in = UserUpdate(
         first_name=full_name["first"],
         last_name=full_name["last"],
     )
-    
-    r = client.put(f"{settings.API_V1_STR}/users/{current_user.id}", json=user_in.dict(), headers=normal_user_token_headers)
-    
+
+    r = client.put(
+        f"{settings.API_V1_STR}/users/{current_user.id}",
+        json=user_in.dict(),
+        headers=normal_user_token_headers,
+    )
+
     assert 200 <= r.status_code < 300
     updated_user = r.json()
     assert updated_user

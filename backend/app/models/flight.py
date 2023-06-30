@@ -24,14 +24,18 @@ SENSOR_ENUM = ENUM("RGB", "Multispectral", "LiDAR", "Other", name="sensor_type")
 class Flight(Base):
     __tablename__ = "flights"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
     acquisition_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     altitude: Mapped[float] = mapped_column(Float, nullable=False)
     side_overlap: Mapped[float] = mapped_column(Float, nullable=False)
     forward_overlap: Mapped[float] = mapped_column(Float, nullable=False)
     sensor: Mapped[enumerate] = mapped_column(SENSOR_ENUM, nullable=False)
     platform: Mapped[enumerate] = mapped_column(PLATFORM_ENUM, nullable=False)
-    dataset_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("datasets.id"), nullable=False)    
+    dataset_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("datasets.id"), nullable=False
+    )
     pilot_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
 
     dataset: Mapped["Dataset"] = relationship(back_populates="flight")

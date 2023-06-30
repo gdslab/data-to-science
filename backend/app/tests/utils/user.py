@@ -17,7 +17,7 @@ def user_authenticate_headers(
     r = client.post(f"{settings.API_V1_STR}/auth/access-token", data=data)
     response = r.json()
     auth_token = response["access_token"]
-    headers = {"Authorization": f"Bearer {auth_token}"}    
+    headers = {"Authorization": f"Bearer {auth_token}"}
     return headers
 
 

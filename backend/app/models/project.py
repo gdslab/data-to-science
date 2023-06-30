@@ -19,7 +19,9 @@ if TYPE_CHECKING:
 class Project(Base):
     __tablename__ = "projects"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String(300))
     location: Mapped[dict] = mapped_column(JSONB, nullable=False)
@@ -31,7 +33,9 @@ class Project(Base):
     owner: Mapped["User"] = relationship(back_populates="projects")
     team: Mapped["Team"] = relationship(back_populates="projects")
 
-    datasets: Mapped[list["Dataset"]] = relationship(back_populates="project", cascade="all, delete")
+    datasets: Mapped[list["Dataset"]] = relationship(
+        back_populates="project", cascade="all, delete"
+    )
 
     def __repr__(self) -> str:
         return f"Project(id={self.id!r}, title={self.title!r}, description={self.description!r}, location={self.location!r}, planting_date={self.planting_date!r}, harvest_date={self.harvest_date!r}, owner_id={self.owner_id!r}, team_id={self.team_id!r})"

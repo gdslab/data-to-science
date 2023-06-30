@@ -15,7 +15,9 @@ def test_create_team(db: Session) -> None:
     # team owner
     user = create_random_user(db)
     # create team
-    team = create_random_team(db, title=title, description=description, owner_id=user.id)
+    team = create_random_team(
+        db, title=title, description=description, owner_id=user.id
+    )
 
     assert team.title == title
     assert team.description == description
@@ -38,7 +40,7 @@ def test_get_team(db: Session) -> None:
 
 def test_update_team(db: Session) -> None:
     """Test updating an existing team."""
-    # create team 
+    # create team
     team = create_random_team(db)
     # generate new values for fields to be updated
     new_description = random_team_description()

@@ -14,24 +14,32 @@ router = APIRouter()
 def create_project(
     project_in: schemas.ProjectCreate,
     current_user: models.User = Depends(deps.get_current_approved_user),
-    db: Session = Depends(deps.get_db)
+    db: Session = Depends(deps.get_db),
 ) -> Any:
     """Create new project for current user."""
-    project = crud.project.create_with_owner(db, obj_in=project_in, owner_id=current_user.id)
+    project = crud.project.create_with_owner(
+        db, obj_in=project_in, owner_id=current_user.id
+    )
 
 
 @router.get("/{project_id}", response_model=schemas.Project)
 def read_project(
     project_id: str,
     current_user: models.User = Depends(deps.get_current_approved_user),
-    db: Session = Depends(deps.get_db)
+    db: Session = Depends(deps.get_db),
 ) -> Any:
     """Retrieve project by id."""
     project = crud.project.get(db=db, id=project_id)
     if not project:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found.")
-    if project.owner_id != current_user.id:  # TODO team members with access to project will be able to view
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Permission denied")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found."
+        )
+    if (
+        project.owner_id != current_user.id
+    ):  # TODO team members with access to project will be able to view
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Permission denied"
+        )
     return project
 
 
@@ -40,10 +48,12 @@ def read_projects(
     skip: int = 0,
     limit: int = 100,
     current_user: models.User = Depends(deps.get_current_approved_user),
-    db: Session = Depends(deps.get_db)
+    db: Session = Depends(deps.get_db),
 ) -> Any:
     """Retrieve list of projects owned by current user."""
-    projects = crud.project.get_multi_by_owner(db, owner_id=current_user.id, skip=skip, limit=limit)
+    projects = crud.project.get_multi_by_owner(
+        db, owner_id=current_user.id, skip=skip, limit=limit
+    )
     return projects
 
 

@@ -12,7 +12,7 @@ def create_random_team(
     db: Session,
     title: str | None = None,
     description: str | None = None,
-    owner_id: UUID | None = None
+    owner_id: UUID | None = None,
 ) -> models.Team:
     if owner_id is None:
         user = create_random_user(db)

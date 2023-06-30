@@ -3,7 +3,12 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.schemas.project import ProjectCreate, ProjectUpdate
 from app.tests.utils.team import create_random_team
-from app.tests.utils.project import create_random_project, random_geojson_location, random_harvest_date, random_planting_date
+from app.tests.utils.project import (
+    create_random_project,
+    random_geojson_location,
+    random_harvest_date,
+    random_planting_date,
+)
 from app.tests.utils.user import create_random_user
 from app.tests.utils.utils import random_team_description, random_team_name
 
@@ -20,8 +25,8 @@ def test_create_project_without_team(db: Session) -> None:
     user = create_random_user(db)
     # create project
     project = create_random_project(
-        db, 
-        title=title, 
+        db,
+        title=title,
         description=description,
         planting_date=planting_date,
         harvest_date=harvest_date,
@@ -48,8 +53,8 @@ def test_create_project_with_team(db: Session) -> None:
     team = create_random_team(db, owner_id=user.id)
     # create project
     project = create_random_project(
-        db, 
-        title=title, 
+        db,
+        title=title,
         description=description,
         planting_date=planting_date,
         harvest_date=harvest_date,
@@ -88,9 +93,11 @@ def test_update_project(db: Session) -> None:
     # generate new values for fields to be updated
     new_title = random_team_name()
     new_planting_date = random_planting_date()
-    # update the project 
+    # update the project
     project_in_update = ProjectUpdate(title=new_title, planting_date=new_planting_date)
-    project_update = crud.project.update(db=db, db_obj=project, obj_in=project_in_update)
+    project_update = crud.project.update(
+        db=db, db_obj=project, obj_in=project_in_update
+    )
 
     assert project.id == project_update.id
     assert new_title == project_update.title

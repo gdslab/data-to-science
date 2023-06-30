@@ -34,7 +34,9 @@ def get_db():
         db.close()
 
 
-def get_current_user(db: Session = Depends(get_db), token: str = Depends(reusable_oauth2)) -> models.User:
+def get_current_user(
+    db: Session = Depends(get_db), token: str = Depends(reusable_oauth2)
+) -> models.User:
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
@@ -43,11 +45,13 @@ def get_current_user(db: Session = Depends(get_db), token: str = Depends(reusabl
     except (JWTError, ValidationError):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Could not validate credentials"
+            detail="Could not validate credentials",
         )
     user = crud.user.get(db, id=token_data.sub)
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
     return user
 
 
@@ -55,5 +59,7 @@ def get_current_approved_user(
     current_user: models.User = Depends(get_current_user),
 ) -> models.User:
     if not crud.user.is_approved(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User account needs approval")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="User account needs approval"
+        )
     return current_user

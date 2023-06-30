@@ -22,12 +22,16 @@ def login_access_token(
         db, email=form_data.username, password=form_data.password
     )
     if not user:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid credentials")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid credentials"
+        )
     elif not crud.user.is_approved(user):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Account needs approval")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Account needs approval"
+        )
     return {
         "access_token": security.create_access_token(user.id),
-        "token_type": "bearer"
+        "token_type": "bearer",
     }
 
 

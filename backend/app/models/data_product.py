@@ -18,10 +18,14 @@ DATA_TYPE_ENUM = ENUM("Ortho", "DSM", "PointCloud", "Other", name="data_product_
 class DataProduct(Base):
     __tablename__ = "data_products"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
     data_path: Mapped[str] = mapped_column(String, nullable=False)
     data_type: Mapped[enumerate] = mapped_column(DATA_TYPE_ENUM, nullable=False)
-    flight_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("flights.id"), nullable=False)    
+    flight_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("flights.id"), nullable=False
+    )
 
     flight: Mapped["Flight"] = relationship(back_populates="data_products")
 

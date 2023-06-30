@@ -30,7 +30,9 @@ def read_teams(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Retrieve list of teams owned by current user."""
-    teams = crud.team.get_multi_by_owner(db, owner_id=current_user.id, skip=skip, limit=limit)
+    teams = crud.team.get_multi_by_owner(
+        db, owner_id=current_user.id, skip=skip, limit=limit
+    )
     return teams
 
 
@@ -38,14 +40,18 @@ def read_teams(
 def read_team(
     team_id: str,
     current_user: models.User = Depends(deps.get_current_approved_user),
-    db: Session = Depends(deps.get_db)
+    db: Session = Depends(deps.get_db),
 ) -> Any:
     """Retrieve team owned by current user."""
     team = crud.team.get(db=db, id=team_id)
     if not team:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Team not found"
+        )
     if team.owner_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Permission denied")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Permission denied"
+        )
     return team
 
 
@@ -59,11 +65,16 @@ def update_team(
     """Update a team owned by current user."""
     team = crud.team.get(db=db, id=team_id)
     if not team:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Team not found"
+        )
     if team.owner_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Permission denied")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Permission denied"
+        )
     team = crud.team.update(db=db, db_obj=team, obj_in=team_in)
     return team
+
 
 @router.delete("/{team_id}", response_model=schemas.Team)
 def delete_team(
@@ -74,8 +85,12 @@ def delete_team(
     """Delete a team owned by current user."""
     team = crud.team.get(db=db, id=team_id)
     if not team:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Team not found"
+        )
     if team.owner_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Permission denied")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Permission denied"
+        )
     team = crud.team.remove(db=db, id=team_id)
     return team

@@ -19,9 +19,13 @@ DATASET_CATEGORY_ENUM = ENUM("Field", "Ground", "UAS", name="dataset_type")
 class Dataset(Base):
     __tablename__ = "datasets"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
     category: Mapped[enumerate] = mapped_column(DATASET_CATEGORY_ENUM, nullable=False)
-    project_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("projects.id"), nullable=False)    
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("projects.id"), nullable=False
+    )
 
     project: Mapped["Project"] = relationship(back_populates="datasets")
     flight: Mapped["Flight"] = relationship(back_populates="dataset")

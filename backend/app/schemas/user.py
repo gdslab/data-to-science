@@ -49,6 +49,6 @@ class User(UserInDBBase):
 
 
 # additional properties stored in DB
-class UserInDB(UserInDBBase):    
+class UserInDB(UserInDBBase):
     hashed_password: str
     is_superuser: bool
