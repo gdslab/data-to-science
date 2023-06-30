@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import ENUM, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -31,4 +31,7 @@ class Dataset(Base):
     flight: Mapped["Flight"] = relationship(back_populates="dataset")
 
     def __repr__(self) -> str:
-        return f"Dataset(id={self.id!r}, category={self.data_path!r}, project_id={self.flight_id!r})"
+        return (
+            f"Dataset(id={self.id!r}, category={self.data_path!r}, "
+            f"project_id={self.flight_id!r})"
+        )

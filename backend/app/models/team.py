@@ -27,4 +27,7 @@ class Team(Base):
     projects: Mapped[list["Project"]] = relationship(back_populates="team")
 
     def __repr__(self) -> str:
-        return f"Team(id={self.id!r}, title={self.title!r}, description={self.description!r}, owner_id={self.owner_id!r})"
+        return (
+            f"Team(id={self.id!r}, title={self.title!r}, "
+            f"description={self.description!r}, owner_id={self.owner_id!r})"
+        )

@@ -38,4 +38,10 @@ class Project(Base):
     )
 
     def __repr__(self) -> str:
-        return f"Project(id={self.id!r}, title={self.title!r}, description={self.description!r}, location={self.location!r}, planting_date={self.planting_date!r}, harvest_date={self.harvest_date!r}, owner_id={self.owner_id!r}, team_id={self.team_id!r})"
+        return (
+            f"Project(id={self.id!r}, title={self.title!r}, "
+            f"description={self.description!r}, location={self.location!r}, "
+            f"planting_date={self.planting_date!r}, "
+            f"harvest_date={self.harvest_date!r}, owner_id={self.owner_id!r}, "
+            f"team_id={self.team_id!r})"
+        )

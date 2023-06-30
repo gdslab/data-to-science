@@ -48,4 +48,10 @@ class Flight(Base):
     )
 
     def __repr__(self) -> str:
-        return f"Flight(id={self.id!r}, acquisition_date={self.acquisition_date!r}, altitude={self.altitude!r}, side_overlap={self.side_overlap!r}, forward_overlap={self.forward_overlap!r}, sensor={self.sensor!r}, platform={self.platform!r}, project_id={self.project_id!r}, pilot_id={self.pilot_id!r})"
+        return (
+            f"Flight(id={self.id!r}, acquisition_date={self.acquisition_date!r}, "
+            f"altitude={self.altitude!r}, side_overlap={self.side_overlap!r}, "
+            f"forward_overlap={self.forward_overlap!r}, "
+            f"sensor={self.sensor!r}, platform={self.platform!r}, "
+            f"project_id={self.project_id!r}, pilot_id={self.pilot_id!r}"
+        )

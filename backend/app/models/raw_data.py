@@ -26,4 +26,7 @@ class RawData(Base):
     flight: Mapped["Flight"] = relationship(back_populates="raw_data")
 
     def __repr__(self) -> str:
-        return f"RawData(id={self.id!r}, data_path={self.data_path!r}, flight_id={self.flight_id!r})"
+        return (
+            f"RawData(id={self.id!r}, data_path={self.data_path!r}, "
+            f"flight_id={self.flight_id!r})"
+        )

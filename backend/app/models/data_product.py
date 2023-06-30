@@ -30,4 +30,7 @@ class DataProduct(Base):
     flight: Mapped["Flight"] = relationship(back_populates="data_products")
 
     def __repr__(self) -> str:
-        return f"DataProduct(id={self.id!r}, data_path={self.data_path!r}, data_type={self.data_type!r}, flight_id={self.flight_id!r})"
+        return (
+            f"DataProduct(id={self.id!r}, data_path={self.data_path!r}, "
+            f"data_type={self.data_type!r}, flight_id={self.flight_id!r})"
+        )
