@@ -1,5 +1,4 @@
 from typing import Sequence, Any, Generic, Type, TypeVar
-from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel

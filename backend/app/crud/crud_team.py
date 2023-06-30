@@ -1,4 +1,4 @@
-from typing import Sequence, Any
+from typing import Sequence
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
