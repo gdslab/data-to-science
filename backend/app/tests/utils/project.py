@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 
 from app import crud, models
 from app.schemas.project import ProjectCreate
-from app.tests.utils.team import create_random_team
 from app.tests.utils.user import create_random_user
 from app.tests.utils.utils import random_team_name, random_team_description
 
