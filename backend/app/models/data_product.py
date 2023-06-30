@@ -11,8 +11,7 @@ from app.db.base_class import Base
 if TYPE_CHECKING:
     from .flight import Flight
 
-
-DATA_TYPE_ENUM = ENUM("Ortho", "DSM", "PointCloud", "Other", name="data_product_type")
+DATA_TYPES = ["Ortho", "DSM", "PointCloud", "Other"]
 
 
 class DataProduct(Base):
@@ -22,7 +21,9 @@ class DataProduct(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     data_path: Mapped[str] = mapped_column(String, nullable=False)
-    data_type: Mapped[enumerate] = mapped_column(DATA_TYPE_ENUM, nullable=False)
+    data_type: Mapped[enumerate] = mapped_column(
+        ENUM(*DATA_TYPES, name="data_product_type"), nullable=False
+    )
     flight_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("flights.id"), nullable=False
     )

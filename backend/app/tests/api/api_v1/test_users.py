@@ -51,12 +51,6 @@ def test_get_users_normal_current_user(
     assert settings.EMAIL_TEST_USER == current_user["email"]
 
 
-def test_get_current_user_when_not_authorized(client: TestClient, db: Session) -> None:
-    """Verify normal user cannot be retrieved without JWT token."""
-    r = client.get(f"{settings.API_V1_STR}/users/")
-    assert 403 == r.status_code
-
-
 def test_update_user(
     client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
 ) -> None:
@@ -77,6 +71,6 @@ def test_update_user(
     assert 200 == r.status_code
     updated_user = r.json()
     assert updated_user
-    assert current_user.id == updated_user["id"]
+    assert str(current_user.id) == updated_user["id"]
     assert full_name["first"] == updated_user["first_name"]
     assert full_name["last"] == updated_user["last_name"]

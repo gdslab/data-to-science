@@ -12,8 +12,7 @@ if TYPE_CHECKING:
     from .flight import Flight
     from .project import Project
 
-
-DATASET_CATEGORY_ENUM = ENUM("Field", "Ground", "UAS", name="dataset_type")
+DATASET_CATEGORIES = ["Field", "Ground", "UAS"]
 
 
 class Dataset(Base):
@@ -22,7 +21,9 @@ class Dataset(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    category: Mapped[enumerate] = mapped_column(DATASET_CATEGORY_ENUM, nullable=False)
+    category: Mapped[enumerate] = mapped_column(
+        ENUM(*DATASET_CATEGORIES, name="dataset_type"), nullable=False
+    )
     project_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("projects.id"), nullable=False
     )

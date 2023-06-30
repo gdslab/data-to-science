@@ -16,9 +16,8 @@ if TYPE_CHECKING:
     from .raw_data import RawData
     from .user import User
 
-
-PLATFORM_ENUM = ENUM("Phantom_4", "M300", "M350", "Other", name="platform_type")
-SENSOR_ENUM = ENUM("RGB", "Multispectral", "LiDAR", "Other", name="sensor_type")
+PLATFORMS = ["Phantom_4", "M300", "M350", "Other"]
+SENSORS = ["RGB", "Multispectral", "LiDAR", "Other"]
 
 
 class Flight(Base):
@@ -31,8 +30,12 @@ class Flight(Base):
     altitude: Mapped[float] = mapped_column(Float, nullable=False)
     side_overlap: Mapped[float] = mapped_column(Float, nullable=False)
     forward_overlap: Mapped[float] = mapped_column(Float, nullable=False)
-    sensor: Mapped[enumerate] = mapped_column(SENSOR_ENUM, nullable=False)
-    platform: Mapped[enumerate] = mapped_column(PLATFORM_ENUM, nullable=False)
+    sensor: Mapped[enumerate] = mapped_column(
+        ENUM(*SENSORS, name="sensor_type"), nullable=False
+    )
+    platform: Mapped[enumerate] = mapped_column(
+        ENUM(*PLATFORMS, name="platform_type"), nullable=False
+    )
     dataset_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("datasets.id"), nullable=False
     )
