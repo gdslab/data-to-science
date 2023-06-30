@@ -1,7 +1,6 @@
 from typing import Any
 
-from fastapi import APIRouter, Body, Depends, HTTPException, status
-from pydantic import Required
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas

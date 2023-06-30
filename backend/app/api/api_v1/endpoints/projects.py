@@ -20,6 +20,7 @@ def create_project(
     project = crud.project.create_with_owner(
         db, obj_in=project_in, owner_id=current_user.id
     )
+    return project
 
 
 @router.get("/{project_id}", response_model=schemas.Project)
