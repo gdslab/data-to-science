@@ -25,6 +25,29 @@ pytest = "^7.3.2"
 types-python-jose = "^3.3.4.7"
 types-passlib = "^1.7.7.12"
 pytest-cov = "^4.1.0"
+black = "^23.3.0"
+flake8 = "^6.0.0"
+isort = "^5.12.0"
+
+[tool.black]
+target-version = ["py311"]
+extend-exclude = """
+(
+    versions  # alembic db migrations
+)
+"""
+
+[tool.isort]
+profile = "black"
+line_length = 88
+multi_line_output = 3
+skip_gitignore = true
+skip_glob = ["**/migrations/*", "**/core/*"]
+src_paths = ["app"]
+
+[tool.mypy]
+plugins = ["pydantic.mypy", "sqlalchemy.ext.mypy.plugin"]
+disallow_untyped_defs = true
 
 [build-system]
 requires = ["poetry-core"]
