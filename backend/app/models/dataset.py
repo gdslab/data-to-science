@@ -32,6 +32,6 @@ class Dataset(Base):
 
     def __repr__(self) -> str:
         return (
-            f"Dataset(id={self.id!r}, category={self.data_path!r}, "
-            f"project_id={self.flight_id!r})"
+            f"Dataset(id={self.id!r}, category={self.category!r}, "
+            f"project_id={self.project_id!r})"
         )

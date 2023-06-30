@@ -62,7 +62,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return db_obj
 
     def remove(self, db: Session, *, id: Any) -> ModelType:
-        # toggle user is_approved to False, do not remove
+        # TODO toggle user is_approved to False, do not remove
         obj: ModelType | Any = db.get(self.model, id)
         db.delete(obj)
         db.commit()

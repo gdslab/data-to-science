@@ -13,7 +13,16 @@ from app.tests.utils.user import authentication_token_from_email
 @pytest.fixture(scope="session")
 def db() -> Generator:
     """Generate database session for each test."""
-    yield SessionLocal()
+    db = SessionLocal()
+    try:
+        yield db
+    except Exception:
+        print("ROLLBACK")
+        db.rollback()
+        db.flush()
+        raise
+    finally:
+        db.close()
 
 
 @pytest.fixture(scope="module")

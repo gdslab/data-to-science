@@ -1167,6 +1167,17 @@ files = [
 ]
 
 [[package]]
+name = "types-psycopg2"
+version = "2.9.21.10"
+description = "Typing stubs for psycopg2"
+optional = false
+python-versions = "*"
+files = [
+    {file = "types-psycopg2-2.9.21.10.tar.gz", hash = "sha256:c2600892312ae1c34e12f145749795d93dc4eac3ef7dbf8a9c1bfd45385e80d7"},
+    {file = "types_psycopg2-2.9.21.10-py3-none-any.whl", hash = "sha256:918224a0731a3650832e46633e720703b5beef7693a064e777d9748654fcf5e5"},
+]
+
+[[package]]
 name = "types-pyasn1"
 version = "0.4.0.5"
 description = "Typing stubs for pyasn1"
@@ -1387,4 +1398,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "e5851c821028bdeb84f6158c75ea1dd7429a4a87095a154460a3aba889d4bc5b"
+content-hash = "ee57745f80f35b3fe6eea1d9776e077b032c8b6b17ef3cc9817416fa2a567fa3"
