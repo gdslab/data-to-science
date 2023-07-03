@@ -1,9 +1,9 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from datetime import datetime
+from datetime import date
 
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import Date, ForeignKey, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -25,8 +25,8 @@ class Project(Base):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String(300))
     location: Mapped[dict] = mapped_column(JSONB, nullable=False)
-    planting_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    harvest_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    planting_date: Mapped[date] = mapped_column(Date, nullable=False)
+    harvest_date: Mapped[date] = mapped_column(Date, nullable=False)
     owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
     team_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("teams.id"), nullable=True)
 

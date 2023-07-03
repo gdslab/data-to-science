@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -9,8 +9,8 @@ class ProjectBase(BaseModel):
     title: str | None = None
     description: str | None = None
     location: dict | None = None
-    planting_date: datetime | None = None
-    harvest_date: datetime | None = None
+    planting_date: date | None = None
+    harvest_date: date | None = None
 
 
 # properties to receive via API on creation
@@ -30,8 +30,8 @@ class ProjectInDBBase(ProjectBase):
     title: str
     description: str
     location: dict
-    planting_date: datetime
-    harvest_date: datetime
+    planting_date: date
+    harvest_date: date
 
     owner_id: UUID | None = None
     group_id: UUID | None = None
