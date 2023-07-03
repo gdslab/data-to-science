@@ -6,8 +6,6 @@ services:
     command: yarn start
     volumes:
       - ./frontend/:/app
-    ports:
-      - "3000:3000"
     restart: always
     depends_on:
       - backend
@@ -21,8 +19,6 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
     volumes:
       - ./backend:/app
-    ports:
-      - "5000:5000"
     restart: always
     depends_on:
       db:
@@ -37,10 +33,7 @@ services:
       - .env
     healthcheck:
       test:
-        [
-          "CMD-SHELL",
-          "pg_isready --username=${POSTGRES_USER} --dbname=${POSTGRES_DB}",
-        ]
+        ["CMD-SHELL", "pg_isready --username=${POSTGRES_USER} --dbname=${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -52,6 +45,14 @@ services:
         condition: service_healthy
     env_file:
       - .env
+  proxy:
+    build:
+      context: ./nginx
+      dockerfile: nginx.dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend
 
 volumes:
   db-data:
