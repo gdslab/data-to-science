@@ -15,7 +15,7 @@ export default function RegistrationForm() {
       <Formik
         initialValues={initialValues}
         validationSchema={validationSchema}
-        onSubmit={async (values, { setSubmitting }) => {
+        onSubmit={async (values, { setSubmitting, setStatus }) => {
           try {
             const data = {
               first_name: values.firstName,
@@ -32,6 +32,7 @@ export default function RegistrationForm() {
           } catch (err) {
             if (axios.isAxiosError(err)) {
               console.error(err);
+              setStatus(err.response?.data);
             } else {
               // do something
             }
@@ -39,7 +40,7 @@ export default function RegistrationForm() {
           setSubmitting(false);
         }}
       >
-        {({ values, isSubmitting }) => (
+        {({ values, isSubmitting, status }) => (
           <fieldset>
             <legend>Registration</legend>
             <Form>
@@ -59,6 +60,11 @@ export default function RegistrationForm() {
                   Register
                 </button>
               </div>
+              {status ? (
+                <div style={{ marginTop: 15 }}>
+                  <span style={{ color: "red" }}>{status}</span>
+                </div>
+              ) : null}
               {responseData ? (
                 <pre>{JSON.stringify(responseData, undefined, 2)}</pre>
               ) : null}
