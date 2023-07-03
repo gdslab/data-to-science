@@ -1,5 +1,18 @@
+label {
+  display: block;
+}
+
+input {
+  margin-bottom: 15px;
+}
+
+.error {
+  margin-left: 15px;
+  color: red;
+}
+
 .App {
-  text-align: center;
+  /* text-align: center; */
 }
 
 .App-logo {
