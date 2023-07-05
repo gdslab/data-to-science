@@ -12,7 +12,7 @@ export default function CustomTextField({
   return (
     <>
       <label htmlFor={name}>{label}:</label>
-      <Field type={type ? type : "text"} name={name} />
+      <Field id={name} type={type ? type : "text"} name={name} />
       <ErrorMessage className="error" name={name} component="span" />
     </>
   );

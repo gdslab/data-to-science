@@ -1,6 +1,7 @@
 import "./App.css";
 
 import CurrentUser from "./components/CurrentUser";
+import FlightForm from "./components/FlightForm/FlightForm";
 import LoginForm from "./components/LoginForm";
 import ProjectList from "./components/ProjectList";
 import ProjectForm from "./components/ProjectForm/ProjectForm";
@@ -14,6 +15,7 @@ function App() {
       <CurrentUser />
       <ProjectForm />
       <ProjectList />
+      <FlightForm />
     </div>
   );
 }
