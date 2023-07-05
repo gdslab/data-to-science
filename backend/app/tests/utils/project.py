@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date
 from random import uniform
 from uuid import UUID
 
@@ -20,8 +20,8 @@ def create_random_project(
     title: str | None = None,
     description: str | None = None,
     location: dict | None = None,
-    planting_date: datetime | None = None,
-    harvest_date: datetime | None = None,
+    planting_date: date | None = None,
+    harvest_date: date | None = None,
     owner_id: UUID | None = None,
     team_id: UUID | None = None,
 ) -> models.Project:
@@ -70,17 +70,17 @@ def random_geojson_location() -> dict:
     }
 
 
-def random_harvest_date() -> datetime:
+def random_harvest_date() -> date:
     """Create random harvest datetime between Sep. and Oct. of current year."""
-    return faker.date_time_between_dates(
-        datetime_start=datetime(datetime.today().year, 9, 1),
-        datetime_end=datetime(datetime.today().year, 10, 31),
+    return faker.date_between(
+        start_date=date(date.today().year, 9, 1),
+        end_date=date(date.today().year, 10, 31),
     )
 
 
-def random_planting_date() -> datetime:
+def random_planting_date() -> date:
     """Create random planting datetime between Apr. and May of current year."""
-    return faker.date_time_between_dates(
-        datetime_start=datetime(datetime.today().year, 4, 1),
-        datetime_end=datetime(datetime.today().year, 5, 31),
+    return faker.date_between(
+        start_date=date(date.today().year, 4, 1),
+        end_date=date(date.today().year, 5, 31),
     )
