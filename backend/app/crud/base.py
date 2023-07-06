@@ -25,20 +25,25 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self.model = model
 
     def get(self, db: Session, id: Any) -> ModelType | None:
-        return db.get(self.model, id)
+        with db as session:
+            db_obj = session.get(self.model, id)
+        return db_obj
 
     def get_multi(
         self, db: Session, *, skip: int = 0, limit: int = 100
     ) -> Sequence[ModelType]:
-        stmt = select(self.model).offset(skip).limit(limit)
-        return db.scalars(stmt).all()
+        with db as session:
+            statement = select(self.model).offset(skip).limit(limit)
+            db_obj = session.scalars(statement).all()
+        return db_obj
 
     def create(self, db: Session, *, obj_in: CreateSchemaType) -> ModelType:
         obj_in_data = jsonable_encoder(obj_in)
         db_obj = self.model(**obj_in_data)
-        db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
+        with db as session:
+            session.add(db_obj)
+            session.commit()
+            session.refresh(db_obj)
         return db_obj
 
     def update(
@@ -56,14 +61,16 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         for field in obj_data:
             if field in update_data:
                 setattr(db_obj, field, update_data[field])
-            db.add(db_obj)
-            db.commit()
-            db.refresh(db_obj)
+            with db as session:
+                session.add(db_obj)
+                session.commit()
+                session.refresh(db_obj)
         return db_obj
 
     def remove(self, db: Session, *, id: Any) -> ModelType:
         # TODO toggle user is_approved to False, do not remove
-        obj: ModelType | Any = db.get(self.model, id)
-        db.delete(obj)
-        db.commit()
+        with db as session:
+            obj: ModelType | Any = session.get(self.model, id)
+            session.delete(obj)
+            session.commit()
         return obj

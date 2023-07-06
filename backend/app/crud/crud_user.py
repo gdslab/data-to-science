@@ -21,9 +21,10 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             first_name=obj_in.first_name,
             last_name=obj_in.last_name,
         )
-        db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
+        with db as session:
+            session.add(db_obj)
+            session.commit()
+            session.refresh(db_obj)
         return db_obj
 
     def update(

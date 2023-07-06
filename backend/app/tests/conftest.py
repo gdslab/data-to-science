@@ -17,9 +17,7 @@ def db() -> Generator:
     try:
         yield db
     except Exception:
-        print("ROLLBACK")
         db.rollback()
-        db.flush()
         raise
     finally:
         db.close()

@@ -19,12 +19,10 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
     ) -> Flight:
         obj_in_data = jsonable_encoder(obj_in)
         db_obj = self.model(**obj_in_data, dataset_id=dataset_id, pilot_id=pilot_id)
-        try:
-            db.add(db_obj)
-            db.commit()
-        except Exception as e:
-            db.rollback()
-            raise e
+        with db as session:
+            session.add(db_obj)
+            session.commit()
+            session.refresh(db_obj)
         return db_obj
 
 

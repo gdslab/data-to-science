@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
 from app.models.team import Team
+from app.models.team_member import TeamMember
 from app.schemas.team import TeamCreate, TeamUpdate
 
 
@@ -17,17 +18,21 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
         *,
         obj_in: TeamCreate,
         owner_id: UUID,
-        team_id: UUID | None = None,
     ) -> Team:
+        # add team object
         obj_in_data = jsonable_encoder(obj_in)
-        if team_id:
-            db_obj = self.model(**obj_in_data, owner_id=owner_id, team_id=team_id)
-        else:
-            db_obj = self.model(**obj_in_data, owner_id=owner_id)
-        db.add(db_obj)
+        team_db_obj = self.model(**obj_in_data, owner_id=owner_id)
+        db.add(team_db_obj)
         db.commit()
-        db.refresh(db_obj)
-        return db_obj
+        # add as manager of newly created team
+        member_db_obj = TeamMember(
+            role="Manager", member_id=owner_id, team_id=team_db_obj.id
+        )
+        with db as session:
+            session.add(member_db_obj)
+            session.commit()
+            session.refresh(team_db_obj)
+        return team_db_obj
 
     def get_multi_by_owner(
         self, db: Session, *, owner_id: UUID, skip: int = 0, limit: int = 100
@@ -38,7 +43,8 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
             .offset(skip)
             .limit(limit)
         )
-        db_obj = db.scalars(statement).all()
+        with db as session:
+            db_obj = session.scalars(statement).all()
         return db_obj
 
 

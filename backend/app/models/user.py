@@ -14,6 +14,7 @@ from app.models.utils.user import utcnow
 if TYPE_CHECKING:
     from .flight import Flight
     from .team import Team
+    from .team_member import TeamMember
     from .project import Project
 
 
@@ -46,6 +47,7 @@ class User(Base):
     teams: Mapped[list["Team"]] = relationship(
         back_populates="owner", cascade="all, delete"
     )
+    team_memberships: Mapped[list["TeamMember"]] = relationship(back_populates="member")
 
     def __repr__(self) -> str:
         return (

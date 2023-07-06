@@ -24,33 +24,36 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             db_obj = self.model(**obj_in_data, owner_id=owner_id, team_id=team_id)
         else:
             db_obj = self.model(**obj_in_data, owner_id=owner_id)
-        db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
+        with db as session:
+            session.add(db_obj)
+            session.commit()
+            session.refresh(db_obj)
         return db_obj
 
     def get_multi_by_owner(
         self, db: Session, *, owner_id: UUID, skip: int = 0, limit: int = 100
     ) -> Sequence[Project]:
-        statement = (
-            select(self.model)
-            .filter(Project.owner_id == owner_id)
-            .offset(skip)
-            .limit(limit)
-        )
-        db_obj = db.scalars(statement).all()
+        with db as session:
+            statement = (
+                select(self.model)
+                .filter(Project.owner_id == owner_id)
+                .offset(skip)
+                .limit(limit)
+            )
+            db_obj = session.scalars(statement).all()
         return db_obj
 
     def get_multi_by_team(
         self, db: Session, *, team_id: int, skip: int = 0, limit: int = 100
     ) -> Sequence[Project]:
-        statement = (
-            select(self.model)
-            .filter(Project.team_id == team_id)
-            .offset(skip)
-            .limit(limit)
-        )
-        db_obj = db.scalars(statement).all()
+        with db as session:
+            statement = (
+                select(self.model)
+                .filter(Project.team_id == team_id)
+                .offset(skip)
+                .limit(limit)
+            )
+            db_obj = session.scalars(statement).all()
         return db_obj
 
 

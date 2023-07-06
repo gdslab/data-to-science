@@ -10,6 +10,7 @@ from app.db.base_class import Base
 
 if TYPE_CHECKING:
     from .project import Project
+    from .team_member import TeamMember
     from .user import User
 
 
@@ -23,6 +24,9 @@ class Team(Base):
     description: Mapped[str] = mapped_column(String(300), nullable=False)
     owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
 
+    members: Mapped[list["TeamMember"]] = relationship(
+        back_populates="team", cascade="all, delete"
+    )
     owner: Mapped["User"] = relationship(back_populates="teams")
     projects: Mapped[list["Project"]] = relationship(back_populates="team")
 
