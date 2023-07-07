@@ -47,5 +47,15 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
             db_obj = session.scalars(statement).all()
         return db_obj
 
+    def get_multi_by_member(
+        self, db: Session, *, member_id: UUID, skip: int = 0, limit: int = 100
+    ) -> Sequence[Team]:
+        statement = (
+            select(Team).join(TeamMember.team).where(TeamMember.member_id == member_id)
+        )
+        with db as session:
+            db_obj = session.scalars(statement).all()
+        return db_obj
+
 
 team = CRUDTeam(Team)
