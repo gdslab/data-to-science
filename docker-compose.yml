@@ -51,6 +51,7 @@ services:
       dockerfile: nginx.dockerfile
     ports:
       - "80:80"
+    restart: always
     depends_on:
       - frontend
 
