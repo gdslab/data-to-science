@@ -32,7 +32,21 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
             session.add(member_db_obj)
             session.commit()
             session.refresh(team_db_obj)
+            setattr(team_db_obj, "is_owner", True)
         return team_db_obj
+
+    def get_by_team_id(self, db: Session, *, id: str, user_id: UUID) -> Team | None:
+        statement = (
+            select(Team)
+            .join(TeamMember.team)
+            .where(TeamMember.member_id == user_id)
+            .where(TeamMember.team_id == id)
+        )
+        with db as session:
+            db_obj = session.scalars(statement).one_or_none()
+            if db_obj:
+                setattr(db_obj, "is_owner", db_obj.owner_id == user_id)
+        return db_obj
 
     def get_multi_by_owner(
         self, db: Session, *, owner_id: UUID, skip: int = 0, limit: int = 100
@@ -45,6 +59,9 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
         )
         with db as session:
             db_obj = session.scalars(statement).all()
+            # indicate if team member is also team owner
+            for team in db_obj:
+                setattr(team, "is_owner", owner_id == team.owner_id)
         return db_obj
 
     def get_multi_by_member(
@@ -55,6 +72,9 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
         )
         with db as session:
             db_obj = session.scalars(statement).all()
+            # indicate if team member is also team owner
+            for team in db_obj:
+                setattr(team, "is_owner", member_id == team.owner_id)
         return db_obj
 
 

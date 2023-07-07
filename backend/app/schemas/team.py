@@ -24,17 +24,15 @@ class TeamInDBBase(TeamBase):
     id: UUID
     title: str
 
-    owner_id: UUID
-
     class Config:
         orm_mode = True
 
 
 # additional properties to return via API
 class Team(TeamInDBBase):
-    pass
+    is_owner: bool = False
 
 
 # additional properties stored in DB
 class TeamInDB(TeamInDBBase):
-    pass
+    owner_id: UUID

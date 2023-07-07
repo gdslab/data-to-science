@@ -29,8 +29,8 @@ def read_teams(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Retrieve list of teams owned by current user."""
-    teams = crud.team.get_multi_by_owner(
-        db, owner_id=current_user.id, skip=skip, limit=limit
+    teams = crud.team.get_multi_by_member(
+        db, member_id=current_user.id, skip=skip, limit=limit
     )
     return teams
 
@@ -41,8 +41,8 @@ def read_team(
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    """Retrieve team owned by current user."""
-    team = crud.team.get(db=db, id=team_id)
+    """Retrieve team current user belongs to."""
+    team = crud.team.get_by_team_id(db=db, id=team_id, user_id=current_user.id)
     if not team:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Team not found"

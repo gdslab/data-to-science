@@ -50,7 +50,7 @@ def test_get_teams_by_member(db: Session) -> None:
     user = create_random_user(db=db)
     team1 = create_random_team(db=db)
     team2 = create_random_team(db=db)
-    create_random_team(db=db)  # user not memeber of this team
+    create_random_team(db=db)  # user not member of this team
     create_random_team_member(db=db, member_id=user.id, team_id=team1.id)
     create_random_team_member(db=db, member_id=user.id, team_id=team2.id)
     teams = crud.team.get_multi_by_member(db=db, member_id=user.id)
