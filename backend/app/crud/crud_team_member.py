@@ -22,6 +22,7 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
         with db as session:
             session.add(db_obj)
             session.commit()
+            session.refresh(db_obj)
         return db_obj
 
 
