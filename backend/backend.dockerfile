@@ -42,7 +42,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN apt-get update && apt-get install -y libpq-dev && rm -rf /var/lib/apt/lists/*
 
 # create unprivileged ps2 user
-#RUN adduser --system --no-create-home --group ps2
+# RUN adduser --system --no-create-home --group ps2
+RUN useradd -u 1000 ps2
 
 # copy over virtual environment from builder stage
 COPY --from=builder $VENV_PATH $VENV_PATH
@@ -53,4 +54,7 @@ ENV PATH="$VENV_PATH/bin:$PATH"
 # copy over application code
 COPY . /app
 
-#USER ps2
+# update permissions for application log file
+RUN chown -R ps2:ps2 /app
+
+USER ps2
