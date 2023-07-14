@@ -59,6 +59,7 @@ def update_team(
     team_id: str,
     team_in: schemas.TeamUpdate,
     current_user: models.User = Depends(deps.get_current_approved_user),
+    role: str | None = Depends(deps.get_team_role_for_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Update a team owned by current user."""

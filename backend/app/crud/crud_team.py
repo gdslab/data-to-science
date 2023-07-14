@@ -35,6 +35,16 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
             setattr(team_db_obj, "is_owner", True)
         return team_db_obj
 
+    def get_user_role(self, db: Session, *, team_id: str, user_id: UUID) -> str | None:
+        statement = (
+            select(TeamMember.role)
+            .where(TeamMember.team_id == team_id)
+            .where(TeamMember.member_id == user_id)
+        )
+        with db as session:
+            db_obj = session.scalars(statement).one_or_none()
+        return db_obj
+
     def get_by_team_id(self, db: Session, *, id: str, user_id: UUID) -> Team | None:
         statement = (
             select(Team)

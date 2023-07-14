@@ -59,8 +59,17 @@ def read_projects(
 
 
 @router.put("/{project_id}")
-def update_project():
+def update_project(
+    project_id: str,
+    project_in: schemas.ProjectUpdate,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+):
     pass
+    # does current user have permission to update this project id?
+    # yes if:
+    # 1) owns the project
+    # 2)
 
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
