@@ -4,6 +4,8 @@ services:
       context: ./frontend
       dockerfile: frontend.dockerfile
     command: yarn start
+    volumes:
+      - ./frontend/:/app
     restart: always
     depends_on:
       - backend
@@ -16,6 +18,8 @@ services:
       args:
         INSTALL_DEV: true
     command: uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
+    volumes:
+      - ./backend:/app
     restart: always
     depends_on:
       db:
@@ -35,6 +39,15 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
 
   proxy:
     build:
