@@ -1,9 +1,8 @@
 services:
   frontend:
     build:
-      context: ./frontend
-      dockerfile: frontend.dockerfile
-    command: yarn start
+      context: ./
+      dockerfile: frontend/frontend.dockerfile
     restart: always
     depends_on:
       - backend
@@ -15,7 +14,6 @@ services:
       dockerfile: backend.dockerfile
       args:
         INSTALL_DEV: true
-    command: uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
     restart: always
     depends_on:
       db:

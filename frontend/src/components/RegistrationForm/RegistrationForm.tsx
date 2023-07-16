@@ -32,7 +32,7 @@ export default function RegistrationForm() {
           } catch (err) {
             if (axios.isAxiosError(err)) {
               console.error(err);
-              setStatus(err.response?.data);
+              setStatus(err.response?.data.detail);
             } else {
               // do something
             }

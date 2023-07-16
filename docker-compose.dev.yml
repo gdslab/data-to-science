@@ -2,7 +2,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: frontend.dockerfile
+      dockerfile: frontend.dev.dockerfile
     command: yarn start
     volumes:
       - ./frontend/:/app

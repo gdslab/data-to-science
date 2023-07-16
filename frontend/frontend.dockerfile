@@ -1,13 +1,25 @@
-FROM node:18-bullseye-slim
+FROM node:18-bullseye-slim as build-stage
 
 WORKDIR /app/
 
-# create unprivileged ps2 user
-RUN adduser --system --no-create-home --group ps2
+COPY ./frontend/package.json ./frontend/yarn.lock ./
 
-COPY package.json yarn.lock ./
 RUN yarn install
 
-COPY . .
+COPY ./frontend .
 
-USER ps2
+RUN yarn build
+
+FROM nginxinc/nginx-unprivileged:latest
+
+WORKDIR /etc/nginx
+
+COPY --from=build-stage /app/build /usr/share/nginx/html
+
+COPY ./nginx/common.conf ../nginx/common_location.conf ./
+
+COPY ./nginx/ps2.conf /etc/nginx/conf.d/default.conf
+
+ENTRYPOINT ["nginx"]
+
+CMD ["-g", "daemon off;"]

@@ -58,3 +58,5 @@ COPY . /app
 RUN chown -R ps2:ps2 /app
 
 USER ps2
+
+CMD ["uvicorn", "app.main:app", "--proxy-headers", "--host", "0.0.0.0", "--port", "5000"]
