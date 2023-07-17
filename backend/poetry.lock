@@ -330,6 +330,24 @@ pycodestyle = ">=2.10.0,<2.11.0"
 pyflakes = ">=3.0.0,<3.1.0"
 
 [[package]]
+name = "geoalchemy2"
+version = "0.14.0"
+description = "Using SQLAlchemy with Spatial Databases"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "GeoAlchemy2-0.14.0-py3-none-any.whl", hash = "sha256:7d2a521502e1f9198f119e61a62e93f2141a336402fb193de28a70e3aaf691eb"},
+    {file = "GeoAlchemy2-0.14.0.tar.gz", hash = "sha256:8ec034309183df66319cba146ff284e682f24993731079772e045b2b1fe6ce7d"},
+]
+
+[package.dependencies]
+packaging = "*"
+SQLAlchemy = ">=1.4"
+
+[package.extras]
+shapely = ["Shapely (>=1.7)"]
+
+[[package]]
 name = "greenlet"
 version = "2.0.2"
 description = "Lightweight in-process concurrent programming"
@@ -1398,4 +1416,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "ee57745f80f35b3fe6eea1d9776e077b032c8b6b17ef3cc9817416fa2a567fa3"
+content-hash = "65a49038370a03dfc069c0ff779d0607d2486eb8f35ae9efc310905ca24bb2ea"

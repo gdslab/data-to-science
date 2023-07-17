@@ -3,8 +3,9 @@ from typing import TYPE_CHECKING
 
 from datetime import date
 
+from geoalchemy2.types import Geometry
 from sqlalchemy import Date, ForeignKey, String
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base
@@ -24,7 +25,7 @@ class Project(Base):
     )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String(300))
-    location: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    location: Mapped[dict] = mapped_column(Geometry("POLYGON", 4326), nullable=False)
     planting_date: Mapped[date] = mapped_column(Date, nullable=False)
     harvest_date: Mapped[date] = mapped_column(Date, nullable=False)
     owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)

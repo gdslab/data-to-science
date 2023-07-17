@@ -17,6 +17,7 @@ sqlalchemy = "^2.0.16"
 pydantic = {extras = ["email"], version = "^1.10.9"}
 alembic = "^1.11.1"
 python-multipart = "^0.0.6"
+geoalchemy2 = "^0.14.0"
 
 [tool.poetry.group.dev.dependencies]
 httpx = "^0.24.1"

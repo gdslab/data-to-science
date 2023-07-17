@@ -1,16 +1,17 @@
-"""first migration
+"""initial migration with postgis
 
-Revision ID: c3feea86df78
+Revision ID: 13a5c7acda9d
 Revises: 
-Create Date: 2023-06-29 15:12:53.567627
+Create Date: 2023-07-17 18:54:40.127370
 
 """
 from alembic import op
+import geoalchemy2
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = 'c3feea86df78'
+revision = '13a5c7acda9d'
 down_revision: str | None = None
 branch_labels: str | None = None
 depends_on: str | None = None
@@ -42,12 +43,21 @@ def upgrade() -> None:
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('title', sa.String(length=255), nullable=False),
     sa.Column('description', sa.String(length=300), nullable=False),
-    sa.Column('location', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-    sa.Column('planting_date', sa.DateTime(), nullable=False),
-    sa.Column('harvest_date', sa.DateTime(), nullable=False),
+    sa.Column('location', geoalchemy2.types.Geometry(geometry_type='POLYGON', srid=4326, from_text='ST_GeomFromEWKT', name='geometry', nullable=False), nullable=False),
+    sa.Column('planting_date', sa.Date(), nullable=False),
+    sa.Column('harvest_date', sa.Date(), nullable=False),
     sa.Column('owner_id', sa.UUID(), nullable=False),
     sa.Column('team_id', sa.UUID(), nullable=True),
     sa.ForeignKeyConstraint(['owner_id'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['team_id'], ['teams.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('team_members',
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('role', postgresql.ENUM('Standard', 'Manager', name='role_type'), nullable=False),
+    sa.Column('member_id', sa.UUID(), nullable=False),
+    sa.Column('team_id', sa.UUID(), nullable=False),
+    sa.ForeignKeyConstraint(['member_id'], ['users.id'], ),
     sa.ForeignKeyConstraint(['team_id'], ['teams.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -96,6 +106,7 @@ def downgrade() -> None:
     op.drop_table('data_products')
     op.drop_table('flights')
     op.drop_table('datasets')
+    op.drop_table('team_members')
     op.drop_table('projects')
     op.drop_table('teams')
     op.drop_index(op.f('ix_users_email'), table_name='users')

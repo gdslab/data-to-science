@@ -27,7 +27,7 @@ services:
     env_file: .env
 
   db:
-    image: postgres:15.3
+    image: postgis/postgis:15-3.3
     volumes:
       - db-data:/var/lib/postgresql/data
     restart: always
