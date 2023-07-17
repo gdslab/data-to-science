@@ -67,20 +67,65 @@ def get_current_approved_user(
     return current_user
 
 
-def get_team_role_for_approved_user(
+def can_read_team(
     team_id: str,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-) -> str | None:
+    current_user: models.User = Depends(get_current_approved_user),
+) -> bool:
+    """Team member with permission to read projects."""
     role = crud.team.get_user_role(db=db, team_id=team_id, user_id=current_user.id)
-    if not role:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
-    return role
+    if role:
+        return True
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="User cannot view team"
+        )
 
 
-def get_project_role_for_approved_user(
+def can_read_write_team(
+    team_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_approved_user),
+) -> bool:
+    """Team member with permission to create, read, edit, and remove projects."""
+    role = crud.team.get_user_role(db=db, team_id=team_id, user_id=current_user.id)
+    if role == "Manager":
+        return True
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="User cannot update team"
+        )
+
+
+def can_read_project(
     project_id: str,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-) -> str | None:
-    pass
+    current_user: models.User = Depends(get_current_approved_user),
+) -> bool:
+    """Project member with permission to read a project's datasets."""
+    role = crud.project.get_user_role(
+        db=db, project_id=project_id, user_id=current_user.id
+    )
+    if role:
+        return True
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="User cannot update team"
+        )
+
+
+def can_read_write_project(
+    project_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_approved_user),
+) -> bool:
+    """Project member with permission to create, read, edit, and remove datasets."""
+    role = crud.project.get_user_role(
+        db=db, project_id=project_id, user_id=current_user.id
+    )
+    if role == "Manager":
+        return True
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="User cannot update team"
+        )

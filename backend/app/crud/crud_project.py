@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
 from app.models.project import Project
+from app.models.project_member import ProjectMember
 from app.schemas.project import ProjectCreate, ProjectUpdate
 
 
@@ -28,6 +29,18 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             session.add(db_obj)
             session.commit()
             session.refresh(db_obj)
+        return db_obj
+
+    def get_user_role(
+        self, db: Session, *, project_id: str, user_id: UUID
+    ) -> str | None:
+        statement = (
+            select(ProjectMember.role)
+            .where(ProjectMember.project_id == project_id)
+            .where(ProjectMember.member_id == user_id)
+        )
+        with db as session:
+            db_obj = session.scalars(statement).one_or_none()
         return db_obj
 
     def get_multi_by_owner(

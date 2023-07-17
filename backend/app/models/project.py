@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 from datetime import date
 
-from geoalchemy2.types import Geometry
+from geoalchemy2.types import Geometry  # type: ignore
 from sqlalchemy import Date, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -13,6 +13,7 @@ from app.db.base_class import Base
 
 if TYPE_CHECKING:
     from .dataset import Dataset
+    from .project_member import ProjectMember
     from .team import Team
     from .user import User
 
@@ -30,6 +31,10 @@ class Project(Base):
     harvest_date: Mapped[date] = mapped_column(Date, nullable=False)
     owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
     team_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("teams.id"), nullable=True)
+
+    members: Mapped[list["ProjectMember"]] = relationship(
+        back_populates="project", cascade="all, delete"
+    )
 
     owner: Mapped["User"] = relationship(back_populates="projects")
     team: Mapped["Team"] = relationship(back_populates="projects")
