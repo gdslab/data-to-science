@@ -29,8 +29,8 @@ def read_teams(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Retrieve list of teams owned by current user."""
-    teams = crud.team.get_multi_by_member(
-        db, member_id=current_user.id, skip=skip, limit=limit
+    teams = crud.team.get_user_team_list(
+        db, user_id=current_user.id, skip=skip, limit=limit
     )
     return teams
 
@@ -38,18 +38,14 @@ def read_teams(
 @router.get("/{team_id}", response_model=schemas.Team)
 def read_team(
     team_id: str,
-    current_user: models.User = Depends(deps.get_current_approved_user),
+    role: bool = Depends(deps.can_read_team),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Retrieve team current user belongs to."""
-    team = crud.team.get_by_team_id(db=db, id=team_id, user_id=current_user.id)
+    team = crud.team.get(db=db, id=team_id)
     if not team:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Team not found"
-        )
-    if team.owner_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Permission denied"
         )
     return team
 
@@ -58,8 +54,7 @@ def read_team(
 def update_team(
     team_id: str,
     team_in: schemas.TeamUpdate,
-    current_user: models.User = Depends(deps.get_current_approved_user),
-    role: str | None = Depends(deps.get_team_role_for_approved_user),
+    role: str | None = Depends(deps.can_read_write_team),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Update a team owned by current user."""
@@ -67,10 +62,6 @@ def update_team(
     if not team:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Team not found"
-        )
-    if team.owner_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Permission denied"
         )
     team = crud.team.update(db=db, db_obj=team, obj_in=team_in)
     return team

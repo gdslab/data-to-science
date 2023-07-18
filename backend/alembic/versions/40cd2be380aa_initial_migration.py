@@ -1,17 +1,17 @@
-"""initial migration with postgis
+"""initial migration
 
-Revision ID: 13a5c7acda9d
+Revision ID: 40cd2be380aa
 Revises: 
-Create Date: 2023-07-17 18:54:40.127370
+Create Date: 2023-07-18 15:08:18.681667
 
 """
 from alembic import op
-import geoalchemy2
 import sqlalchemy as sa
+from geoalchemy2 import Geometry
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '13a5c7acda9d'
+revision = '40cd2be380aa'
 down_revision: str | None = None
 branch_labels: str | None = None
 depends_on: str | None = None
@@ -43,7 +43,6 @@ def upgrade() -> None:
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('title', sa.String(length=255), nullable=False),
     sa.Column('description', sa.String(length=300), nullable=False),
-    sa.Column('location', geoalchemy2.types.Geometry(geometry_type='POLYGON', srid=4326, from_text='ST_GeomFromEWKT', name='geometry', nullable=False), nullable=False),
     sa.Column('planting_date', sa.Date(), nullable=False),
     sa.Column('harvest_date', sa.Date(), nullable=False),
     sa.Column('owner_id', sa.UUID(), nullable=False),
@@ -65,6 +64,15 @@ def upgrade() -> None:
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('category', postgresql.ENUM('Field', 'Ground', 'UAS', name='dataset_type'), nullable=False),
     sa.Column('project_id', sa.UUID(), nullable=False),
+    sa.ForeignKeyConstraint(['project_id'], ['projects.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('project_members',
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('role', postgresql.ENUM('Standard', 'Manager', name='project_role_type'), nullable=False),
+    sa.Column('member_id', sa.UUID(), nullable=False),
+    sa.Column('project_id', sa.UUID(), nullable=False),
+    sa.ForeignKeyConstraint(['member_id'], ['users.id'], ),
     sa.ForeignKeyConstraint(['project_id'], ['projects.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -105,6 +113,7 @@ def downgrade() -> None:
     op.drop_table('raw_data')
     op.drop_table('data_products')
     op.drop_table('flights')
+    op.drop_table('project_members')
     op.drop_table('datasets')
     op.drop_table('team_members')
     op.drop_table('projects')

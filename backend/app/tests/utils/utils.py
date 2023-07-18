@@ -45,8 +45,22 @@ def build_sqlalchemy_uri(db_path: str) -> PostgresDsn:
     )
 
 
+def create_test_db_postgis_extension(db_path: str) -> None:
+    """Add postgis extension to test database."""
+    # connect to test database
+    engine = create_engine(build_sqlalchemy_uri(db_path=db_path), pool_pre_ping=True)
+    # attempt to add extension
+    with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as connection:
+        try:
+            connection.execute(text("CREATE EXTENSION postgis"))
+        except ProgrammingError:
+            # extension already exists
+            connection.rollback()
+
+
 def create_test_db(db_path: str) -> None:
     """Create test database if it does not already exist."""
+    already_exists = False
     # connect to default "postgres" database
     engine = create_engine(build_sqlalchemy_uri(db_path="postgres"), pool_pre_ping=True)
     # attempt to create test database
@@ -55,4 +69,8 @@ def create_test_db(db_path: str) -> None:
             connection.execute(text(f"CREATE DATABASE {db_path}"))
         except ProgrammingError:
             # duplicate database
+            already_exists = True
             connection.rollback()
+
+    if not already_exists:
+        create_test_db_postgis_extension(db_path=db_path)

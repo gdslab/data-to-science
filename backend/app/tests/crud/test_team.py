@@ -32,19 +32,6 @@ def test_get_team(db: Session) -> None:
     assert team.owner_id == stored_team.owner_id
 
 
-def test_get_teams_by_owner(db: Session) -> None:
-    """Verify retrieival of list of teams owned by a user."""
-    user = create_random_user(db=db)
-    total_teams_owned_by_user = 5
-    for idx in range(0, total_teams_owned_by_user):
-        create_random_team(db=db, owner_id=user.id)
-    teams = crud.team.get_multi_by_owner(db=db, owner_id=user.id)
-    assert type(teams) is list
-    assert len(teams) == total_teams_owned_by_user
-    for team in teams:
-        assert user.id == team.owner_id
-
-
 def test_get_teams_by_member(db: Session) -> None:
     """Verify retrieval of list of teams user belongs to."""
     user = create_random_user(db=db)
@@ -53,7 +40,7 @@ def test_get_teams_by_member(db: Session) -> None:
     create_random_team(db=db)  # user not member of this team
     create_random_team_member(db=db, member_id=user.id, team_id=team1.id)
     create_random_team_member(db=db, member_id=user.id, team_id=team2.id)
-    teams = crud.team.get_multi_by_member(db=db, member_id=user.id)
+    teams = crud.team.get_user_team_list(db=db, user_id=user.id)
     assert type(teams) is list
     assert len(teams) == 2
     for team in teams:

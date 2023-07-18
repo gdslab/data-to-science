@@ -19,11 +19,14 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
         obj_in: TeamCreate,
         owner_id: UUID,
     ) -> Team:
+        """Create new team and add user as team member."""
         # add team object
         obj_in_data = jsonable_encoder(obj_in)
         team_db_obj = self.model(**obj_in_data, owner_id=owner_id)
-        db.add(team_db_obj)
-        db.commit()
+        with db as session:
+            session.add(team_db_obj)
+            session.commit()
+            session.refresh(team_db_obj)
         # add as manager of newly created team
         member_db_obj = TeamMember(
             role="Manager", member_id=owner_id, team_id=team_db_obj.id
@@ -31,11 +34,14 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
         with db as session:
             session.add(member_db_obj)
             session.commit()
-            session.refresh(team_db_obj)
+            session.refresh(member_db_obj)
             setattr(team_db_obj, "is_owner", True)
         return team_db_obj
 
-    def get_user_role(self, db: Session, *, team_id: str, user_id: UUID) -> str | None:
+    def get_user_team_role(
+        self, db: Session, *, team_id: str, user_id: UUID
+    ) -> str | None:
+        """Team role for user."""
         statement = (
             select(TeamMember.role)
             .where(TeamMember.team_id == team_id)
@@ -45,46 +51,18 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
             db_obj = session.scalars(statement).one_or_none()
         return db_obj
 
-    def get_by_team_id(self, db: Session, *, id: str, user_id: UUID) -> Team | None:
-        statement = (
-            select(Team)
-            .join(TeamMember.team)
-            .where(TeamMember.member_id == user_id)
-            .where(TeamMember.team_id == id)
-        )
-        with db as session:
-            db_obj = session.scalars(statement).one_or_none()
-            if db_obj:
-                setattr(db_obj, "is_owner", db_obj.owner_id == user_id)
-        return db_obj
-
-    def get_multi_by_owner(
-        self, db: Session, *, owner_id: UUID, skip: int = 0, limit: int = 100
+    def get_user_team_list(
+        self, db: Session, *, user_id: UUID, skip: int = 0, limit: int = 100
     ) -> Sequence[Team]:
+        """List of teams the user belongs to."""
         statement = (
-            select(self.model)
-            .filter(Team.owner_id == owner_id)
-            .offset(skip)
-            .limit(limit)
+            select(Team).join(TeamMember.team).where(TeamMember.member_id == user_id)
         )
         with db as session:
             db_obj = session.scalars(statement).all()
             # indicate if team member is also team owner
             for team in db_obj:
-                setattr(team, "is_owner", owner_id == team.owner_id)
-        return db_obj
-
-    def get_multi_by_member(
-        self, db: Session, *, member_id: UUID, skip: int = 0, limit: int = 100
-    ) -> Sequence[Team]:
-        statement = (
-            select(Team).join(TeamMember.team).where(TeamMember.member_id == member_id)
-        )
-        with db as session:
-            db_obj = session.scalars(statement).all()
-            # indicate if team member is also team owner
-            for team in db_obj:
-                setattr(team, "is_owner", member_id == team.owner_id)
+                setattr(team, "is_owner", user_id == team.owner_id)
         return db_obj
 
 

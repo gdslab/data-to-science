@@ -5,7 +5,6 @@ from app.schemas.project import ProjectUpdate
 from app.tests.utils.team import create_random_team
 from app.tests.utils.project import (
     create_random_project,
-    random_geojson_location,
     random_harvest_date,
     random_planting_date,
 )
@@ -19,20 +18,17 @@ def test_create_project_without_team(db: Session) -> None:
     description = random_team_description()
     planting_date = random_planting_date()
     harvest_date = random_harvest_date()
-    location = random_geojson_location()
     user = create_random_user(db)
     project = create_random_project(
         db,
         title=title,
         description=description,
-        location=location,
         planting_date=planting_date,
         harvest_date=harvest_date,
         owner_id=user.id,
     )
     assert project.title == title
     assert project.description == description
-    assert project.location == location
     assert project.planting_date == planting_date
     assert project.harvest_date == harvest_date
     assert project.owner_id == user.id
@@ -44,14 +40,12 @@ def test_create_project_with_team(db: Session) -> None:
     description = random_team_description()
     planting_date = random_planting_date()
     harvest_date = random_harvest_date()
-    location = random_geojson_location()
     user = create_random_user(db)
     team = create_random_team(db, owner_id=user.id)
     project = create_random_project(
         db,
         title=title,
         description=description,
-        location=location,
         planting_date=planting_date,
         harvest_date=harvest_date,
         owner_id=user.id,

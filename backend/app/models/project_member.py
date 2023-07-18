@@ -30,7 +30,7 @@ class ProjectMember(Base):
         ForeignKey("projects.id"), nullable=False
     )
 
-    member: Mapped["User"] = relationship(back_populates="team_memberships")
+    member: Mapped["User"] = relationship(back_populates="project_memberships")
     project: Mapped["Project"] = relationship(back_populates="members")
 
     def __repr__(self) -> str:

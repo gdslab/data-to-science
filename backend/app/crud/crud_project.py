@@ -20,20 +20,34 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         owner_id: UUID,
         team_id: UUID | None = None,
     ) -> Project:
+        """Create new project and add user as project member."""
+        # add project to db
         obj_in_data = jsonable_encoder(obj_in)
         if team_id:
-            db_obj = self.model(**obj_in_data, owner_id=owner_id, team_id=team_id)
+            project_db_obj = self.model(
+                **obj_in_data, owner_id=owner_id, team_id=team_id
+            )
         else:
-            db_obj = self.model(**obj_in_data, owner_id=owner_id)
+            project_db_obj = self.model(**obj_in_data, owner_id=owner_id)
         with db as session:
-            session.add(db_obj)
+            session.add(project_db_obj)
             session.commit()
-            session.refresh(db_obj)
-        return db_obj
+            session.refresh(project_db_obj)
+        # add project memeber to db
+        member_db_obj = ProjectMember(
+            role="Manager", member_id=owner_id, project_id=project_db_obj.id
+        )
+        with db as session:
+            session.add(member_db_obj)
+            session.commit()
+            session.refresh(member_db_obj)
+            setattr(project_db_obj, "is_owner", True)
+        return project_db_obj
 
-    def get_user_role(
+    def get_user_project_role(
         self, db: Session, *, project_id: str, user_id: UUID
     ) -> str | None:
+        """Project role for user."""
         statement = (
             select(ProjectMember.role)
             .where(ProjectMember.project_id == project_id)
@@ -43,30 +57,20 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             db_obj = session.scalars(statement).one_or_none()
         return db_obj
 
-    def get_multi_by_owner(
-        self, db: Session, *, owner_id: UUID, skip: int = 0, limit: int = 100
+    def get_user_project_list(
+        self, db: Session, *, user_id: UUID, skip: int = 0, limit: int = 100
     ) -> Sequence[Project]:
+        """List of projects the user belongs to."""
+        statement = (
+            select(Project)
+            .join(ProjectMember.project)
+            .where(ProjectMember.member_id == user_id)
+        )
         with db as session:
-            statement = (
-                select(self.model)
-                .filter(Project.owner_id == owner_id)
-                .offset(skip)
-                .limit(limit)
-            )
             db_obj = session.scalars(statement).all()
-        return db_obj
-
-    def get_multi_by_team(
-        self, db: Session, *, team_id: int, skip: int = 0, limit: int = 100
-    ) -> Sequence[Project]:
-        with db as session:
-            statement = (
-                select(self.model)
-                .filter(Project.team_id == team_id)
-                .offset(skip)
-                .limit(limit)
-            )
-            db_obj = session.scalars(statement).all()
+            # indicate if project member is also project owner
+            for project in db_obj:
+                setattr(project, "is_owner", user_id == project.owner_id)
         return db_obj
 
 

@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from .team import Team
     from .team_member import TeamMember
     from .project import Project
+    from .project_member import ProjectMember
 
 
 class User(Base):
@@ -48,6 +49,9 @@ class User(Base):
         back_populates="owner", cascade="all, delete"
     )
     team_memberships: Mapped[list["TeamMember"]] = relationship(back_populates="member")
+    project_memberships: Mapped[list["ProjectMember"]] = relationship(
+        back_populates="member"
+    )
 
     def __repr__(self) -> str:
         return (

@@ -99,7 +99,7 @@ def test_get_team_not_owned_by_current_user(
     r = client.get(
         f"{settings.API_V1_STR}/teams/{team.id}", headers=normal_user_token_headers
     )
-    assert 404 == r.status_code
+    assert 403 == r.status_code
 
 
 def test_update_team(

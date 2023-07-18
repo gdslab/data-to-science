@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING
 
 from datetime import date
 
-from geoalchemy2.types import Geometry  # type: ignore
 from sqlalchemy import Date, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -26,7 +25,6 @@ class Project(Base):
     )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String(300))
-    location: Mapped[dict] = mapped_column(Geometry("POLYGON", 4326), nullable=False)
     planting_date: Mapped[date] = mapped_column(Date, nullable=False)
     harvest_date: Mapped[date] = mapped_column(Date, nullable=False)
     owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
@@ -46,7 +44,7 @@ class Project(Base):
     def __repr__(self) -> str:
         return (
             f"Project(id={self.id!r}, title={self.title!r}, "
-            f"description={self.description!r}, location={self.location!r}, "
+            f"description={self.description!r} "
             f"planting_date={self.planting_date!r}, "
             f"harvest_date={self.harvest_date!r}, owner_id={self.owner_id!r}, "
             f"team_id={self.team_id!r})"
