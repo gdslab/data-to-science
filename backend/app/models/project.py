@@ -12,6 +12,7 @@ from app.db.base_class import Base
 
 if TYPE_CHECKING:
     from .dataset import Dataset
+    from .location import Location
     from .project_member import ProjectMember
     from .team import Team
     from .user import User
@@ -27,6 +28,9 @@ class Project(Base):
     description: Mapped[str] = mapped_column(String(300))
     planting_date: Mapped[date] = mapped_column(Date, nullable=False)
     harvest_date: Mapped[date] = mapped_column(Date, nullable=False)
+    location_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("locations.id"), nullable=False
+    )
     owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
     team_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("teams.id"), nullable=True)
 
@@ -34,6 +38,7 @@ class Project(Base):
         back_populates="project", cascade="all, delete"
     )
 
+    location: Mapped["Location"] = relationship(back_populates="projects")
     owner: Mapped["User"] = relationship(back_populates="projects")
     team: Mapped["Team"] = relationship(back_populates="projects")
 

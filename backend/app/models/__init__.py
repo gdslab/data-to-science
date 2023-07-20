@@ -1,6 +1,7 @@
 from .data_product import DataProduct
 from .dataset import Dataset
 from .flight import Flight
+from .location import Location
 from .project import Project
 from .project_member import ProjectMember
 from .raw_data import RawData
