@@ -10,7 +10,6 @@ from app.tests.utils.user import create_random_user
 
 def create_random_team_member(
     db: Session,
-    role: str = "Standard",
     member_id: UUID | None = None,
     team_id: UUID | None = None,
 ) -> models.TeamMember:
@@ -20,7 +19,7 @@ def create_random_team_member(
     if team_id is None:
         team = create_random_team(db=db)
         team_id = team.id
-    team_member_in = TeamMemberCreate(role=role)
+    team_member_in = TeamMemberCreate()
     return crud.team_member.create_with_team(
         db=db, obj_in=team_member_in, member_id=member_id, team_id=team_id
     )

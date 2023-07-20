@@ -38,7 +38,6 @@ def read_teams(
 @router.get("/{team_id}", response_model=schemas.Team)
 def read_team(
     team_id: str,
-    role: bool = Depends(deps.can_read_team),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Retrieve team current user belongs to."""
@@ -54,7 +53,6 @@ def read_team(
 def update_team(
     team_id: str,
     team_in: schemas.TeamUpdate,
-    role: str | None = Depends(deps.can_read_write_team),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Update a team owned by current user."""

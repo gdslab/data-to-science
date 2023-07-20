@@ -5,12 +5,12 @@ from pydantic import BaseModel
 
 # shared properties
 class ProjectMemberBase(BaseModel):
-    role: str | None = None
+    pass
 
 
 # properties to receive via API on creation
 class ProjectMemberCreate(ProjectMemberBase):
-    role: str = "Standard"
+    pass
 
 
 # properties to receive via API on update
@@ -21,7 +21,6 @@ class ProjectMemberUpdate(ProjectMemberBase):
 # properties shared by models stored in DB
 class ProjectMemberInDBBase(ProjectMemberBase):
     id: UUID
-    role: str
 
     member_id: UUID
     project_id: UUID

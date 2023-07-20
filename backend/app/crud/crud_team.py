@@ -28,28 +28,13 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
             session.commit()
             session.refresh(team_db_obj)
         # add as manager of newly created team
-        member_db_obj = TeamMember(
-            role="Manager", member_id=owner_id, team_id=team_db_obj.id
-        )
+        member_db_obj = TeamMember(member_id=owner_id, team_id=team_db_obj.id)
         with db as session:
             session.add(member_db_obj)
             session.commit()
             session.refresh(member_db_obj)
             setattr(team_db_obj, "is_owner", True)
         return team_db_obj
-
-    def get_user_team_role(
-        self, db: Session, *, team_id: str, user_id: UUID
-    ) -> str | None:
-        """Team role for user."""
-        statement = (
-            select(TeamMember.role)
-            .where(TeamMember.team_id == team_id)
-            .where(TeamMember.member_id == user_id)
-        )
-        with db as session:
-            db_obj = session.scalars(statement).one_or_none()
-        return db_obj
 
     def get_user_team_list(
         self, db: Session, *, user_id: UUID, skip: int = 0, limit: int = 100

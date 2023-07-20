@@ -34,28 +34,13 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             session.commit()
             session.refresh(project_db_obj)
         # add project memeber to db
-        member_db_obj = ProjectMember(
-            role="Manager", member_id=owner_id, project_id=project_db_obj.id
-        )
+        member_db_obj = ProjectMember(member_id=owner_id, project_id=project_db_obj.id)
         with db as session:
             session.add(member_db_obj)
             session.commit()
             session.refresh(member_db_obj)
             setattr(project_db_obj, "is_owner", True)
         return project_db_obj
-
-    def get_user_project_role(
-        self, db: Session, *, project_id: str, user_id: UUID
-    ) -> str | None:
-        """Project role for user."""
-        statement = (
-            select(ProjectMember.role)
-            .where(ProjectMember.project_id == project_id)
-            .where(ProjectMember.member_id == user_id)
-        )
-        with db as session:
-            db_obj = session.scalars(statement).one_or_none()
-        return db_obj
 
     def get_user_project_list(
         self, db: Session, *, user_id: UUID, skip: int = 0, limit: int = 100
