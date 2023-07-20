@@ -10,11 +10,18 @@ class ProjectBase(BaseModel):
     description: str | None = None
     planting_date: date | None = None
     harvest_date: date | None = None
+    location_id: UUID | None = None
+    team_id: UUID | None = None
 
 
 # properties to receive via API on creation
 class ProjectCreate(ProjectBase):
     title: str
+    description: str
+    planting_date: date
+    harvest_date: date
+    location_id: UUID
+    team_id: UUID | None = None
 
 
 # properties to receive via API on update
@@ -29,9 +36,10 @@ class ProjectInDBBase(ProjectBase):
     description: str
     planting_date: date
     harvest_date: date
+    location_id: UUID
+    team_id: UUID | None = None
 
-    owner_id: UUID | None = None
-    group_id: UUID | None = None
+    owner_id: UUID
 
     class Config:
         orm_mode = True

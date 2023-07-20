@@ -24,11 +24,9 @@ def test_create_team(
     )
     assert 201 == r.status_code
     content = r.json()
+    assert "id" in content
     assert data["title"] == content["title"]
     assert data["description"] == content["description"]
-    assert "id" in content
-    assert "is_owner" in content
-    assert content["is_owner"]
 
 
 def test_get_teams(
@@ -43,18 +41,18 @@ def test_get_teams(
         title=random_team_name(), description=random_team_description()
     )
     team_owned_by_user = crud.team.create_with_owner(
-        db=db, obj_in=team1_in, owner_id=current_user.id
+        db, obj_in=team1_in, owner_id=current_user.id
     )
     # create a team with current user as a member (not owner)
-    other_user = create_random_user(db=db)
+    other_user = create_random_user(db)
     team2_in = TeamCreate(
         title=random_team_name(), description=random_team_description()
     )
     team_owned_by_other_user = crud.team.create_with_owner(
-        db=db, obj_in=team2_in, owner_id=other_user.id
+        db, obj_in=team2_in, owner_id=other_user.id
     )
     create_random_team_member(
-        db=db, member_id=current_user.id, team_id=team_owned_by_other_user.id
+        db, member_id=current_user.id, team_id=team_owned_by_other_user.id
     )
     r = client.get(f"{settings.API_V1_STR}/teams/", headers=normal_user_token_headers)
     assert 200 == r.status_code
@@ -87,7 +85,6 @@ def test_get_team(
     assert str(team.id) == response_team["id"]
     assert team.title == response_team["title"]
     assert team.description == response_team["description"]
-    # assert str(team.owner_id) == response_team["owner_id"]
 
 
 def test_get_team_not_owned_by_current_user(
@@ -99,7 +96,7 @@ def test_get_team_not_owned_by_current_user(
     r = client.get(
         f"{settings.API_V1_STR}/teams/{team.id}", headers=normal_user_token_headers
     )
-    assert 403 == r.status_code
+    assert 404 == r.status_code
 
 
 def test_update_team(

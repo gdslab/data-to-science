@@ -39,7 +39,7 @@ def create_random_user_in(email: str | None = None) -> UserCreate:
 def create_random_user(db: Session, email: str | None = None) -> User:
     """Create random user in database with specific email if provided."""
     user_in = create_random_user_in(email)
-    user = crud.user.create(db=db, obj_in=user_in)
+    user = crud.user.create(db, obj_in=user_in)
     return user
 
 

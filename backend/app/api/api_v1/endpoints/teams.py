@@ -17,7 +17,7 @@ def create_team(
     db: Session = Depends(deps.get_db),
 ):
     """Create new team for current user."""
-    team = crud.team.create_with_owner(db=db, obj_in=team_in, owner_id=current_user.id)
+    team = crud.team.create_with_owner(db, obj_in=team_in, owner_id=current_user.id)
     return team
 
 
@@ -39,9 +39,9 @@ def read_teams(
 def read_team(
     team_id: str,
     db: Session = Depends(deps.get_db),
+    team: models.Team = Depends(deps.can_read_write_team),
 ) -> Any:
     """Retrieve team current user belongs to."""
-    team = crud.team.get(db=db, id=team_id)
     if not team:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Team not found"
@@ -56,10 +56,10 @@ def update_team(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Update a team owned by current user."""
-    team = crud.team.get(db=db, id=team_id)
+    team = crud.team.get(db, id=team_id)
     if not team:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Team not found"
         )
-    team = crud.team.update(db=db, db_obj=team, obj_in=team_in)
+    team = crud.team.update(db, db_obj=team, obj_in=team_in)
     return team

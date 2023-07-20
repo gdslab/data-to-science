@@ -20,6 +20,7 @@ def create_project(
     project = crud.project.create_with_owner(
         db, obj_in=project_in, owner_id=current_user.id
     )
+    # put location id in ProjectCreate model?
     return project
 
 
@@ -30,7 +31,7 @@ def read_project(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Retrieve project by id."""
-    project = crud.project.get(db=db, id=project_id)
+    project = crud.project.get(db, id=project_id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Project not found."

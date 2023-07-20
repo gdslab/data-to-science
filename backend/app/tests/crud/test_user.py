@@ -11,7 +11,7 @@ from app.tests.utils.utils import random_email, random_full_name, random_passwor
 def test_create_user(db: Session) -> None:
     """Verify new user is created in database."""
     user_in = create_random_user_in()
-    user = crud.user.create(db=db, obj_in=user_in)
+    user = crud.user.create(db, obj_in=user_in)
     assert user.email == user_in.email
     assert hasattr(user, "hashed_password")
     assert not hasattr(user, "password")
@@ -56,7 +56,7 @@ def test_update_user(db: Session) -> None:
 def test_authenticate_user(db: Session) -> None:
     """Verify user is authenticated when correct credentials are provided."""
     user_in = create_random_user_in()
-    user = crud.user.create(db=db, obj_in=user_in)
+    user = crud.user.create(db, obj_in=user_in)
     authenticated_user = crud.user.authenticate(
         db, email=user_in.email, password=user_in.password
     )

@@ -46,7 +46,7 @@ def update_current_user(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Update user by id."""
-    user = crud.user.get(db=db, id=user_id)
+    user = crud.user.get(db, id=user_id)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"

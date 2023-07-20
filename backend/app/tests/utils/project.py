@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app import crud, models
 from app.schemas.project import ProjectCreate
+from app.tests.utils.location import create_random_location
 from app.tests.utils.user import create_random_user
 from app.tests.utils.utils import random_team_name, random_team_description
 
@@ -19,6 +20,7 @@ def create_random_project(
     description: str | None = None,
     planting_date: date | None = None,
     harvest_date: date | None = None,
+    location_id: UUID | None = None,
     owner_id: UUID | None = None,
     team_id: UUID | None = None,
 ) -> models.Project:
@@ -34,21 +36,24 @@ def create_random_project(
         planting_date = random_planting_date()
     if harvest_date is None:
         harvest_date = random_harvest_date()
+    if location_id is None:
+        location = create_random_location(db)
+        location_id = location.id
 
     project_in = ProjectCreate(
         title=title,
         description=description,
         planting_date=planting_date,
         harvest_date=harvest_date,
+        location_id=location_id,
+        team_id=team_id,
     )
-    if team_id:
-        return crud.project.create_with_owner(
-            db=db, obj_in=project_in, owner_id=owner_id, team_id=team_id
-        )
-    else:
-        return crud.project.create_with_owner(
-            db=db, obj_in=project_in, owner_id=owner_id
-        )
+
+    return crud.project.create_with_owner(
+        db,
+        obj_in=project_in,
+        owner_id=owner_id,
+    )
 
 
 def random_harvest_date() -> date:

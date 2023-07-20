@@ -11,16 +11,16 @@ from app.tests.utils.user import create_random_user
 
 def test_create_flight(db: Session) -> None:
     """Verify new flight is created in database."""
-    pilot = create_random_user(db=db)
-    project_owner = create_random_user(db=db)
-    project = create_random_project(db=db, owner_id=project_owner.id)
-    dataset = create_random_dataset(db=db, category="UAS", project_id=project.id)
+    pilot = create_random_user(db)
+    project_owner = create_random_user(db)
+    project = create_random_project(db, owner_id=project_owner.id)
+    dataset = create_random_dataset(db, category="UAS", project_id=project.id)
     acquisition_date = datetime.now()
     altitude = 100
     side_overlap = 60
     forward_overlap = 75
     flight = create_random_flight(
-        db=db,
+        db,
         acquisition_date=acquisition_date,
         altitude=altitude,
         side_overlap=side_overlap,

@@ -1,6 +1,8 @@
+from typing import Sequence
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
@@ -23,6 +25,27 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
             session.add(db_obj)
             session.commit()
             session.refresh(db_obj)
+        return db_obj
+
+    def get_user_team_member(
+        self, db: Session, *, user_id: UUID, team_id: UUID
+    ) -> TeamMember | None:
+        """Find team member record for user by team id."""
+        statement = (
+            select(TeamMember)
+            .where(TeamMember.member_id == user_id)
+            .where(TeamMember.team_id == team_id)
+        )
+        with db as session:
+            db_obj = session.scalars(statement).one_or_none()
+        return db_obj
+
+    def get_list_of_team_members(
+        self, db: Session, *, team_id: UUID, skip: int = 0, limit: int = 100
+    ) -> Sequence[TeamMember]:
+        statement = select(TeamMember).where(TeamMember.team_id == team_id)
+        with db as session:
+            db_obj = session.scalars(statement).all()
         return db_obj
 
 

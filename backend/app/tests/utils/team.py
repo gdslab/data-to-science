@@ -22,4 +22,4 @@ def create_random_team(
     if not description:
         description = random_team_description()
     team_in = TeamCreate(title=title, description=description)
-    return crud.team.create_with_owner(db=db, obj_in=team_in, owner_id=owner_id)
+    return crud.team.create_with_owner(db, obj_in=team_in, owner_id=owner_id)

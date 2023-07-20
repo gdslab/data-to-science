@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 
 from app import crud
 from app.schemas.project import ProjectUpdate
+from app.tests.utils.location import create_random_location
 from app.tests.utils.team import create_random_team
 from app.tests.utils.project import (
     create_random_project,
@@ -18,6 +19,7 @@ def test_create_project_without_team(db: Session) -> None:
     description = random_team_description()
     planting_date = random_planting_date()
     harvest_date = random_harvest_date()
+    location = create_random_location(db)
     user = create_random_user(db)
     project = create_random_project(
         db,
@@ -25,29 +27,23 @@ def test_create_project_without_team(db: Session) -> None:
         description=description,
         planting_date=planting_date,
         harvest_date=harvest_date,
+        location_id=location.id,
         owner_id=user.id,
     )
     assert project.title == title
     assert project.description == description
     assert project.planting_date == planting_date
     assert project.harvest_date == harvest_date
+    assert project.location_id == location.id
     assert project.owner_id == user.id
 
 
 def test_create_project_with_team(db: Session) -> None:
     """Verify new project with team association is created in database."""
-    title = random_team_name()
-    description = random_team_description()
-    planting_date = random_planting_date()
-    harvest_date = random_harvest_date()
     user = create_random_user(db)
     team = create_random_team(db, owner_id=user.id)
     project = create_random_project(
         db,
-        title=title,
-        description=description,
-        planting_date=planting_date,
-        harvest_date=harvest_date,
         owner_id=user.id,
         team_id=team.id,
     )
@@ -58,13 +54,14 @@ def test_create_project_with_team(db: Session) -> None:
 def test_get_project(db: Session) -> None:
     """Verify retrieving project by id returns correct project."""
     project = create_random_project(db)
-    stored_project = crud.project.get(db=db, id=project.id)
+    stored_project = crud.project.get(db, id=project.id)
     assert stored_project
     assert project.id == stored_project.id
     assert project.title == stored_project.title
     assert project.description == stored_project.description
     assert project.planting_date == stored_project.planting_date
     assert project.harvest_date == stored_project.harvest_date
+    assert project.location_id == stored_project.location_id
     assert project.owner_id == stored_project.owner_id
 
 
@@ -74,9 +71,7 @@ def test_update_project(db: Session) -> None:
     new_title = random_team_name()
     new_planting_date = random_planting_date()
     project_in_update = ProjectUpdate(title=new_title, planting_date=new_planting_date)
-    project_update = crud.project.update(
-        db=db, db_obj=project, obj_in=project_in_update
-    )
+    project_update = crud.project.update(db, db_obj=project, obj_in=project_in_update)
     assert project.id == project_update.id
     assert new_title == project_update.title
     assert new_planting_date == project_update.planting_date

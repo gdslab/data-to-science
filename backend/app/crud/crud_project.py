@@ -18,17 +18,14 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         *,
         obj_in: ProjectCreate,
         owner_id: UUID,
-        team_id: UUID | None = None,
     ) -> Project:
         """Create new project and add user as project member."""
         # add project to db
         obj_in_data = jsonable_encoder(obj_in)
-        if team_id:
-            project_db_obj = self.model(
-                **obj_in_data, owner_id=owner_id, team_id=team_id
-            )
-        else:
-            project_db_obj = self.model(**obj_in_data, owner_id=owner_id)
+        project_db_obj = self.model(
+            **obj_in_data,
+            owner_id=owner_id,
+        )
         with db as session:
             session.add(project_db_obj)
             session.commit()
@@ -39,7 +36,6 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             session.add(member_db_obj)
             session.commit()
             session.refresh(member_db_obj)
-            setattr(project_db_obj, "is_owner", True)
         return project_db_obj
 
     def get_user_project_list(

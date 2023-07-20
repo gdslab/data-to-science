@@ -14,12 +14,12 @@ def create_random_team_member(
     team_id: UUID | None = None,
 ) -> models.TeamMember:
     if member_id is None:
-        user = create_random_user(db=db)
+        user = create_random_user(db)
         member_id = user.id
     if team_id is None:
-        team = create_random_team(db=db)
+        team = create_random_team(db)
         team_id = team.id
     team_member_in = TeamMemberCreate()
     return crud.team_member.create_with_team(
-        db=db, obj_in=team_member_in, member_id=member_id, team_id=team_id
+        db, obj_in=team_member_in, member_id=member_id, team_id=team_id
     )
