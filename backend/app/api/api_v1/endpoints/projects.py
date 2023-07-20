@@ -20,7 +20,6 @@ def create_project(
     project = crud.project.create_with_owner(
         db, obj_in=project_in, owner_id=current_user.id
     )
-    # put location id in ProjectCreate model?
     return project
 
 
@@ -29,18 +28,12 @@ def read_project(
     project_id: str,
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
+    project: models.Project = Depends(deps.can_read_write_project),
 ) -> Any:
     """Retrieve project by id."""
-    project = crud.project.get(db, id=project_id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Project not found."
-        )
-    if (
-        project.owner_id != current_user.id
-    ):  # TODO team members with access to project will be able to view
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Permission denied"
         )
     return project
 
@@ -52,9 +45,9 @@ def read_projects(
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    """Retrieve list of projects owned by current user."""
-    projects = crud.project.get_multi_by_owner(
-        db, owner_id=current_user.id, skip=skip, limit=limit
+    """Retrieve list of projects current user belongs to."""
+    projects = crud.project.get_user_project_list(
+        db, user_id=current_user.id, skip=skip, limit=limit
     )
     return projects
 

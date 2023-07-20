@@ -38,7 +38,7 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
     def get_user_team(
         self, db: Session, *, user_id: UUID, team_id: UUID
     ) -> Team | None:
-        """Read single team by id."""
+        """Retrieve team by id."""
         statement = (
             select(Team)
             .join(TeamMember.team)
@@ -47,6 +47,9 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
         )
         with db as session:
             db_obj = session.scalars(statement).one_or_none()
+            if db_obj:
+                setattr(db_obj, "is_owner", user_id == db_obj.owner_id)
+
         return db_obj
 
     def get_user_team_list(

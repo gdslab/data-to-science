@@ -38,6 +38,22 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             session.refresh(member_db_obj)
         return project_db_obj
 
+    def get_user_project(
+        self, db: Session, *, user_id: UUID, project_id: UUID
+    ) -> Project | None:
+        """Retrieve project by id."""
+        statement = (
+            select(Project)
+            .join(ProjectMember.project)
+            .where(ProjectMember.member_id == user_id)
+            .where(ProjectMember.project_id == project_id)
+        )
+        with db as session:
+            db_obj = session.scalars(statement).one_or_none()
+            if db_obj:
+                setattr(db_obj, "is_owner", user_id == db_obj.owner_id)
+        return db_obj
+
     def get_user_project_list(
         self, db: Session, *, user_id: UUID, skip: int = 0, limit: int = 100
     ) -> Sequence[Project]:

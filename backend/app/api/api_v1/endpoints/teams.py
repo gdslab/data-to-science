@@ -28,7 +28,7 @@ def read_teams(
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    """Retrieve list of teams owned by current user."""
+    """Retrieve list of teams current user belongs to."""
     teams = crud.team.get_user_team_list(
         db, user_id=current_user.id, skip=skip, limit=limit
     )
@@ -41,7 +41,7 @@ def read_team(
     db: Session = Depends(deps.get_db),
     team: models.Team = Depends(deps.can_read_write_team),
 ) -> Any:
-    """Retrieve team current user belongs to."""
+    """Retrieve team if current user has access to it."""
     if not team:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Team not found"
@@ -53,10 +53,10 @@ def read_team(
 def update_team(
     team_id: str,
     team_in: schemas.TeamUpdate,
+    team: models.Team = Depends(deps.can_read_write_team),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    """Update a team owned by current user."""
-    team = crud.team.get(db, id=team_id)
+    """Update team if current user has access to it."""
     if not team:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Team not found"

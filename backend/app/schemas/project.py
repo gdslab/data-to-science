@@ -47,7 +47,7 @@ class ProjectInDBBase(ProjectBase):
 
 # additional properties to return via API
 class Project(ProjectInDBBase):
-    pass
+    is_owner: bool = False
 
 
 # additional properties stored in DB

@@ -5,13 +5,13 @@ from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
 from app.schemas.team import TeamCreate, TeamUpdate
+from app.schemas.team_member import TeamMemberCreate
 from app.tests.utils.user import create_random_user
 from app.tests.utils.team import (
     create_random_team,
     random_team_description,
     random_team_name,
 )
-from app.tests.utils.team_member import create_random_team_member
 
 
 def test_create_team(
@@ -32,47 +32,43 @@ def test_create_team(
 def test_get_teams(
     client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
 ) -> None:
-    """Verify retrieval of teams owned by current user."""
-    # create a team with current user as the owner
+    """Verify retrieval of teams the current user belongs to."""
+    # create two teams with current user as a member
     current_user = get_current_user(
         db, normal_user_token_headers["Authorization"].split(" ")[1]
     )
-    team1_in = TeamCreate(
-        title=random_team_name(), description=random_team_description()
+    # create team with current user as owner
+    team1 = create_random_team(db, owner_id=current_user.id)
+    # create team with a different user as owner
+    team2 = create_random_team(db)
+    # add current user as member to team2
+    team2_member_in = TeamMemberCreate(member_id=current_user.id, team_id=team2.id)
+    crud.team_member.create_with_team(
+        db, obj_in=team2_member_in, member_id=current_user.id, team_id=team2.id
     )
-    team_owned_by_user = crud.team.create_with_owner(
-        db, obj_in=team1_in, owner_id=current_user.id
-    )
-    # create a team with current user as a member (not owner)
-    other_user = create_random_user(db)
-    team2_in = TeamCreate(
-        title=random_team_name(), description=random_team_description()
-    )
-    team_owned_by_other_user = crud.team.create_with_owner(
-        db, obj_in=team2_in, owner_id=other_user.id
-    )
-    create_random_team_member(
-        db, member_id=current_user.id, team_id=team_owned_by_other_user.id
-    )
+    # create team that current user does not belong to
+    create_random_team(db)
+    # request list of teams the current user belongs to
     r = client.get(f"{settings.API_V1_STR}/teams/", headers=normal_user_token_headers)
     assert 200 == r.status_code
     teams = r.json()
     assert type(teams) is list
-    assert len(teams) > 1
+    assert len(teams) == 2
     for team in teams:
         assert "title" in team
         assert "description" in team
         assert "is_owner" in team
-        if str(team_owned_by_user.id) == team["id"]:
-            assert team["is_owner"]
-        else:
+        assert str(team1.id) == team["id"] or str(team2.id) == team["id"]
+        if str(team1.id) == team["id"]:
+            assert team["is_owner"] is True
+        if str(team2.id) == team["id"]:
             assert team["is_owner"] is False
 
 
-def test_get_team(
+def test_get_team_owned_by_current_user(
     client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
 ) -> None:
-    """Verify team belonging to current user can be retrieved by its id."""
+    """Verify retrieval of team the current user owns."""
     current_user = get_current_user(
         db, normal_user_token_headers["Authorization"].split(" ")[1]
     )
@@ -85,16 +81,41 @@ def test_get_team(
     assert str(team.id) == response_team["id"]
     assert team.title == response_team["title"]
     assert team.description == response_team["description"]
+    assert "is_owner" in response_team
+    assert response_team["is_owner"] is True
 
 
-def test_get_team_not_owned_by_current_user(
+def test_get_team_current_user_is_member_of(
     client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
 ) -> None:
-    """Verify current user must be team member to retrieve team details."""
-    different_user = create_random_user(db)
-    team = create_random_team(db, owner_id=different_user.id)
+    """Verify retrieval of team the current user is a member of but doesn't own."""
+    current_user = get_current_user(
+        db, normal_user_token_headers["Authorization"].split(" ")[1]
+    )
+    team = create_random_team(db)
+    # add current user to team
+    team_member_in = TeamMemberCreate(member_id=current_user.id, team_id=team.id)
+    crud.team_member.create_with_team(
+        db, obj_in=team_member_in, member_id=current_user.id, team_id=team.id
+    )
     r = client.get(
         f"{settings.API_V1_STR}/teams/{team.id}", headers=normal_user_token_headers
+    )
+    assert 200 == r.status_code
+    response_team = r.json()
+    assert str(team.id) == response_team["id"]
+    assert "is_owner" in response_team
+    assert response_team["is_owner"] is False
+
+
+def test_get_team_current_user_does_not_belong_to(
+    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+) -> None:
+    """Verify failure to retrieve team the current user is not a member of."""
+    team = create_random_team(db)
+    r = client.get(
+        f"{settings.API_V1_STR}/teams/{team.id}",
+        headers=normal_user_token_headers,
     )
     assert 404 == r.status_code
 

@@ -5,15 +5,13 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
-from app.schemas.project import ProjectCreate, ProjectUpdate
+from app.schemas.project_member import ProjectMemberCreate
 from app.tests.utils.location import create_random_location
-from app.tests.utils.user import create_random_user
 from app.tests.utils.project import (
     create_random_project,
     random_planting_date,
     random_harvest_date,
 )
-from app.tests.utils.project_member import create_random_project_member
 from app.tests.utils.team import random_team_name, random_team_description
 
 
@@ -43,3 +41,109 @@ def test_create_project(
     assert data["description"] == content["description"]
     assert data["planting_date"] == content["planting_date"]
     assert data["harvest_date"] == content["harvest_date"]
+
+
+def test_get_projects(
+    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+) -> None:
+    """Verify retrieval of projects the current user belongs to."""
+    # create two projects with current user as a member
+    current_user = get_current_user(
+        db, normal_user_token_headers["Authorization"].split(" ")[1]
+    )
+    # create project with current user as owner
+    project1 = create_random_project(db, owner_id=current_user.id)
+    # create project with a different user as owner
+    project2 = create_random_project(db)
+    # add current user as member to project2
+    project2_member_in = ProjectMemberCreate(
+        member_id=current_user.id, project_id=project2.id
+    )
+    crud.project_member.create_with_project(
+        db, obj_in=project2_member_in, member_id=current_user.id, project_id=project2.id
+    )
+    # create project that current user does not belong to
+    create_random_project(db)
+    # request list of projects the current user belongs to
+    r = client.get(
+        f"{settings.API_V1_STR}/projects/", headers=normal_user_token_headers
+    )
+    assert 200 == r.status_code
+    projects = r.json()
+    assert type(projects) is list
+    assert len(projects) == 2
+    for project in projects:
+        assert "title" in project
+        assert "description" in project
+        assert "planting_date" in project
+        assert "harvest_date" in project
+        assert "location_id" in project
+        assert "is_owner" in project
+        assert str(project1.id) == project["id"] or str(project2.id) == project["id"]
+        if str(project1.id) == project["id"]:
+            assert project["is_owner"] is True
+        if str(project2.id) == project["id"]:
+            assert project["is_owner"] is False
+
+
+def test_get_project_owned_by_current_user(
+    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+) -> None:
+    """Verify retrieval of project the current user owns."""
+    current_user = get_current_user(
+        db, normal_user_token_headers["Authorization"].split(" ")[1]
+    )
+    project = create_random_project(db, owner_id=current_user.id)
+    project_json = jsonable_encoder(project)
+    r = client.get(
+        f"{settings.API_V1_STR}/projects/{project.id}",
+        headers=normal_user_token_headers,
+    )
+    assert 200 == r.status_code
+    response_project = r.json()
+    assert str(project.id) == response_project["id"]
+    assert project_json["title"] == response_project["title"]
+    assert project_json["description"] == response_project["description"]
+    assert project_json["planting_date"] == response_project["planting_date"]
+    assert project_json["harvest_date"] == response_project["harvest_date"]
+    assert project_json["location_id"] == response_project["location_id"]
+    assert "is_owner" in response_project
+    assert response_project["is_owner"] is True
+
+
+def test_get_project_current_user_is_member_of(
+    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+) -> None:
+    """Verify retrieval of project the current user is a member of but doesn't own."""
+    current_user = get_current_user(
+        db, normal_user_token_headers["Authorization"].split(" ")[1]
+    )
+    project = create_random_project(db)
+    # add current user to project
+    project_member_in = ProjectMemberCreate(
+        member_id=current_user.id, project_id=project.id
+    )
+    crud.project_member.create_with_project(
+        db, obj_in=project_member_in, member_id=current_user.id, project_id=project.id
+    )
+    r = client.get(
+        f"{settings.API_V1_STR}/projects/{project.id}",
+        headers=normal_user_token_headers,
+    )
+    assert 200 == r.status_code
+    response_project = r.json()
+    assert str(project.id) == response_project["id"]
+    assert "is_owner" in response_project
+    assert response_project["is_owner"] is False
+
+
+def test_get_project_current_user_does_not_belong_to(
+    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+) -> None:
+    """Verify failure to retrieve project the current user is not a member of."""
+    project = create_random_project(db)
+    r = client.get(
+        f"{settings.API_V1_STR}/projects/{project.id}",
+        headers=normal_user_token_headers,
+    )
+    assert 404 == r.status_code

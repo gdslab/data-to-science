@@ -73,5 +73,18 @@ def can_read_write_team(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_approved_user),
 ) -> models.Team | None:
+    """Return team only if current user is a member of the team."""
     team = crud.team.get_user_team(db, user_id=current_user.id, team_id=team_id)
     return team
+
+
+def can_read_write_project(
+    project_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_approved_user),
+) -> models.Project | None:
+    """Return project only if current user is a member of the project."""
+    project = crud.project.get_user_project(
+        db, user_id=current_user.id, project_id=project_id
+    )
+    return project
