@@ -83,15 +83,3 @@ def test_update_project(db: Session) -> None:
     assert project.planting_date == project_update.planting_date
     assert project.description == project_update.description
     assert project.owner_id == project_update.owner_id
-
-
-def test_delete_project(db: Session) -> None:
-    """Verify project is removed from database."""
-    project = create_random_project(db)
-    project_removed = crud.project.remove(db=db, id=project.id)
-    project_after_remove = crud.project.get(db=db, id=project.id)
-    assert project_after_remove is None
-    assert project_removed.id == project.id
-    assert project_removed.title == project.title
-    assert project_removed.description == project.description
-    assert project_removed.owner_id == project.owner_id

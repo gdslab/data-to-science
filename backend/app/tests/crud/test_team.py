@@ -57,15 +57,3 @@ def test_update_team(db: Session) -> None:
     assert team.title == team_update.title
     assert new_description == team_update.description
     assert team.owner_id == team_update.owner_id
-
-
-def test_delete_team(db: Session) -> None:
-    """Verify team is removed from database."""
-    team = create_random_team(db)
-    team_removed = crud.team.remove(db=db, id=team.id)
-    team_after_remove = crud.team.get(db=db, id=team.id)
-    assert team_after_remove is None
-    assert team_removed.id == team.id
-    assert team_removed.title == team.title
-    assert team_removed.description == team.description
-    assert team_removed.owner_id == team.owner_id

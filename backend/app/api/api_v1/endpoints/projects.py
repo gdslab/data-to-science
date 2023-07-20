@@ -70,8 +70,3 @@ def update_project(
     # yes if:
     # 1) owns the project
     # 2)
-
-
-@router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_project():
-    pass

@@ -46,14 +46,3 @@ def test_get_datasets(db: Session) -> None:
         assert "category" in dataset.__dict__
         assert "project_id" in dataset.__dict__
         assert project.id == dataset.project_id
-
-
-def test_delete_dataset(db: Session) -> None:
-    """Verify dataset is removed from database."""
-    project = create_random_project(db=db)
-    dataset = create_random_dataset(db=db, category="UAS", project_id=project.id)
-    dataset_removed = crud.dataset.remove(db=db, id=dataset.id)
-    dataset_after_remove = crud.dataset.get(db=db, id=dataset.id)
-    assert dataset_after_remove is None
-    assert dataset.id == dataset_removed.id
-    assert dataset.category == dataset_removed.category
