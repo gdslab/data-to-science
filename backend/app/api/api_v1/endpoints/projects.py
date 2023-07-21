@@ -56,11 +56,13 @@ def read_projects(
 def update_project(
     project_id: str,
     project_in: schemas.ProjectUpdate,
-    current_user: models.User = Depends(deps.get_current_approved_user),
+    project: models.Project = Depends(deps.can_read_write_project),
     db: Session = Depends(deps.get_db),
 ):
-    pass
-    # does current user have permission to update this project id?
-    # yes if:
-    # 1) owns the project
-    # 2)
+    """Update project if current user is project owner or member."""
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+        )
+    project = crud.project.update(db, db_obj=project, obj_in=project_in)
+    return project

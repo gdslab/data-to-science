@@ -56,7 +56,7 @@ def update_team(
     team: models.Team = Depends(deps.can_read_write_team),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    """Update team if current user has access to it."""
+    """Update team if current user is team owner or member."""
     if not team:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Team not found"

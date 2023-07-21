@@ -1,12 +1,12 @@
+from fastapi.encoders import jsonable_encoder
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
-from app.schemas.team import TeamCreate, TeamUpdate
+from app.schemas.team import TeamUpdate
 from app.schemas.team_member import TeamMemberCreate
-from app.tests.utils.user import create_random_user
 from app.tests.utils.team import (
     create_random_team,
     random_team_description,
@@ -120,25 +120,77 @@ def test_get_team_current_user_does_not_belong_to(
     assert 404 == r.status_code
 
 
-def test_update_team(
+def test_update_team_owned_by_current_user(
     client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
 ) -> None:
-    """Verify update changes team attributes in database."""
+    """Verify update by team owner changes team attributes in database."""
     current_user = get_current_user(
         db, normal_user_token_headers["Authorization"].split(" ")[1]
     )
-    team = TeamCreate(title=random_team_name(), description=random_team_description())
-    team = crud.team.create_with_owner(db, obj_in=team, owner_id=current_user.id)
-    new_title = random_team_name()
-    new_description = random_team_description()
-    team_in = TeamUpdate(title=new_title, description=new_description)
+    team = create_random_team(db, owner_id=current_user.id)
+    team_in = jsonable_encoder(
+        TeamUpdate(
+            title=random_team_name(),
+            description=random_team_description(),
+        ).dict()
+    )
     r = client.put(
         f"{settings.API_V1_STR}/teams/{team.id}",
-        json=team_in.dict(),
+        json=team_in,
         headers=normal_user_token_headers,
     )
     assert 200 == r.status_code
     updated_team = r.json()
     assert str(team.id) == updated_team["id"]
-    assert new_title == updated_team["title"]
-    assert new_description == updated_team["description"]
+    assert updated_team["is_owner"] is True
+    assert team_in["title"] == updated_team["title"]
+    assert team_in["description"] == updated_team["description"]
+
+
+def test_update_team_current_user_is_member_of(
+    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+) -> None:
+    """Verify update of team the current user is a member of but doesn't own."""
+    current_user = get_current_user(
+        db, normal_user_token_headers["Authorization"].split(" ")[1]
+    )
+    team = create_random_team(db)
+    # add current user to team
+    team_member_in = TeamMemberCreate(member_id=current_user.id, team_id=team.id)
+    crud.team_member.create_with_team(
+        db, obj_in=team_member_in, member_id=current_user.id, team_id=team.id
+    )
+    team_in = jsonable_encoder(
+        TeamUpdate(
+            title=random_team_name(),
+            description=random_team_description(),
+        ).dict()
+    )
+    r = client.put(
+        f"{settings.API_V1_STR}/teams/{team.id}",
+        json=team_in,
+        headers=normal_user_token_headers,
+    )
+    assert 200 == r.status_code
+    updated_team = r.json()
+    assert str(team.id) == updated_team["id"]
+    assert updated_team["is_owner"] is False
+    assert team_in["title"] == updated_team["title"]
+    assert team_in["description"] == updated_team["description"]
+
+
+def test_update_team_current_user_does_not_belong_to(
+    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+) -> None:
+    """Verify failure to update project the current user is not a member of."""
+    team = create_random_team(db)
+    team_in = TeamUpdate(
+        title=random_team_name(),
+        description=random_team_description(),
+    )
+    r = client.put(
+        f"{settings.API_V1_STR}/teams/{team.id}",
+        json=team_in.dict(),
+        headers=normal_user_token_headers,
+    )
+    assert 404 == r.status_code

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
+from app.schemas.project import ProjectUpdate
 from app.schemas.project_member import ProjectMemberCreate
 from app.tests.utils.location import create_random_location
 from app.tests.utils.project import (
@@ -93,20 +94,19 @@ def test_get_project_owned_by_current_user(
     current_user = get_current_user(
         db, normal_user_token_headers["Authorization"].split(" ")[1]
     )
-    project = create_random_project(db, owner_id=current_user.id)
-    project_json = jsonable_encoder(project)
+    project = jsonable_encoder(create_random_project(db, owner_id=current_user.id))
     r = client.get(
-        f"{settings.API_V1_STR}/projects/{project.id}",
+        f"{settings.API_V1_STR}/projects/" + project["id"],
         headers=normal_user_token_headers,
     )
     assert 200 == r.status_code
     response_project = r.json()
-    assert str(project.id) == response_project["id"]
-    assert project_json["title"] == response_project["title"]
-    assert project_json["description"] == response_project["description"]
-    assert project_json["planting_date"] == response_project["planting_date"]
-    assert project_json["harvest_date"] == response_project["harvest_date"]
-    assert project_json["location_id"] == response_project["location_id"]
+    assert project["id"] == response_project["id"]
+    assert project["title"] == response_project["title"]
+    assert project["description"] == response_project["description"]
+    assert project["planting_date"] == response_project["planting_date"]
+    assert project["harvest_date"] == response_project["harvest_date"]
+    assert project["location_id"] == response_project["location_id"]
     assert "is_owner" in response_project
     assert response_project["is_owner"] is True
 
@@ -144,6 +144,98 @@ def test_get_project_current_user_does_not_belong_to(
     project = create_random_project(db)
     r = client.get(
         f"{settings.API_V1_STR}/projects/{project.id}",
+        headers=normal_user_token_headers,
+    )
+    assert 404 == r.status_code
+
+
+def test_update_project_owned_by_current_user(
+    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+) -> None:
+    """Verify update by project owner changes team attributes in database."""
+    current_user = get_current_user(
+        db, normal_user_token_headers["Authorization"].split(" ")[1]
+    )
+    project = create_random_project(db, owner_id=current_user.id)
+    project_in = jsonable_encoder(
+        ProjectUpdate(
+            title=random_team_name(),
+            description=random_team_description(),
+            planting_date=random_planting_date(),
+            harvest_date=random_harvest_date(),
+            location_id=create_random_location(db).id,
+        ).dict()
+    )
+    r = client.put(
+        f"{settings.API_V1_STR}/projects/{project.id}",
+        json=project_in,
+        headers=normal_user_token_headers,
+    )
+    assert 200 == r.status_code
+    updated_project = r.json()
+    assert str(project.id) == updated_project["id"]
+    assert updated_project["is_owner"] is True
+    assert project_in["title"] == updated_project["title"]
+    assert project_in["description"] == updated_project["description"]
+    assert project_in["planting_date"] == updated_project["planting_date"]
+    assert project_in["harvest_date"] == updated_project["harvest_date"]
+    assert project_in["location_id"] == updated_project["location_id"]
+
+
+def test_update_project_current_user_is_member_of(
+    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+) -> None:
+    """Verify update of project the current user is a member of but doesn't own."""
+    current_user = get_current_user(
+        db, normal_user_token_headers["Authorization"].split(" ")[1]
+    )
+    project = create_random_project(db)
+    # add current user to project
+    project_member_in = ProjectMemberCreate(
+        member_id=current_user.id, project_id=project.id
+    )
+    crud.project_member.create_with_project(
+        db, obj_in=project_member_in, member_id=current_user.id, project_id=project.id
+    )
+    project_in = jsonable_encoder(
+        ProjectUpdate(
+            title=random_team_name(),
+            description=random_team_description(),
+            planting_date=random_planting_date(),
+            harvest_date=random_harvest_date(),
+            location_id=create_random_location(db).id,
+        ).dict()
+    )
+    r = client.put(
+        f"{settings.API_V1_STR}/projects/{project.id}",
+        json=project_in,
+        headers=normal_user_token_headers,
+    )
+    assert 200 == r.status_code
+    updated_project = r.json()
+    assert str(project.id) == updated_project["id"]
+    assert project_in["title"] == updated_project["title"]
+    assert project_in["description"] == updated_project["description"]
+    assert project_in["planting_date"] == updated_project["planting_date"]
+    assert project_in["harvest_date"] == updated_project["harvest_date"]
+    assert project_in["location_id"] == updated_project["location_id"]
+
+
+def test_update_project_current_user_does_not_belong_to(
+    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+) -> None:
+    """Verify failure to update project the current user is not a member of."""
+    project = create_random_project(db)
+    project_in = ProjectUpdate(
+        title=random_team_name(),
+        description=random_team_description(),
+        planting_date=random_planting_date(),
+        harvest_date=random_harvest_date(),
+        location_id=create_random_location(db).id,
+    )
+    r = client.put(
+        f"{settings.API_V1_STR}/projects/{project.id}",
+        json=jsonable_encoder(project_in.dict()),
         headers=normal_user_token_headers,
     )
     assert 404 == r.status_code
