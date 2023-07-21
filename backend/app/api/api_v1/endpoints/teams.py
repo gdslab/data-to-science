@@ -15,7 +15,7 @@ def create_team(
     team_in: schemas.TeamCreate,
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
-):
+) -> Any:
     """Create new team for current user."""
     team = crud.team.create_with_owner(db, obj_in=team_in, owner_id=current_user.id)
     return team

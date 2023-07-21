@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app import crud
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_current_approved_user
 from app.core.config import settings
 from app.schemas.team import TeamUpdate
 from app.schemas.team_member import TeamMemberCreate
@@ -34,8 +34,8 @@ def test_get_teams(
 ) -> None:
     """Verify retrieval of teams the current user belongs to."""
     # create two teams with current user as a member
-    current_user = get_current_user(
-        db, normal_user_token_headers["Authorization"].split(" ")[1]
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_token_headers["Authorization"].split(" ")[1]),
     )
     # create team with current user as owner
     team1 = create_random_team(db, owner_id=current_user.id)
@@ -69,8 +69,8 @@ def test_get_team_owned_by_current_user(
     client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
 ) -> None:
     """Verify retrieval of team the current user owns."""
-    current_user = get_current_user(
-        db, normal_user_token_headers["Authorization"].split(" ")[1]
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_token_headers["Authorization"].split(" ")[1]),
     )
     team = create_random_team(db, owner_id=current_user.id)
     r = client.get(
@@ -89,8 +89,8 @@ def test_get_team_current_user_is_member_of(
     client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
 ) -> None:
     """Verify retrieval of team the current user is a member of but doesn't own."""
-    current_user = get_current_user(
-        db, normal_user_token_headers["Authorization"].split(" ")[1]
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_token_headers["Authorization"].split(" ")[1]),
     )
     team = create_random_team(db)
     # add current user to team
@@ -124,8 +124,8 @@ def test_update_team_owned_by_current_user(
     client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
 ) -> None:
     """Verify update by team owner changes team attributes in database."""
-    current_user = get_current_user(
-        db, normal_user_token_headers["Authorization"].split(" ")[1]
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_token_headers["Authorization"].split(" ")[1]),
     )
     team = create_random_team(db, owner_id=current_user.id)
     team_in = jsonable_encoder(
@@ -151,8 +151,8 @@ def test_update_team_current_user_is_member_of(
     client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
 ) -> None:
     """Verify update of team the current user is a member of but doesn't own."""
-    current_user = get_current_user(
-        db, normal_user_token_headers["Authorization"].split(" ")[1]
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_token_headers["Authorization"].split(" ")[1]),
     )
     team = create_random_team(db)
     # add current user to team

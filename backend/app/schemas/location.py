@@ -1,7 +1,6 @@
 from uuid import UUID
 
 from pydantic import BaseModel
-from shapely.geometry import Polygon
 
 
 # shared properties

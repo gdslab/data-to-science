@@ -214,6 +214,7 @@ def test_update_project_current_user_is_member_of(
     assert 200 == r.status_code
     updated_project = r.json()
     assert str(project.id) == updated_project["id"]
+    assert updated_project["is_owner"] is False
     assert project_in["title"] == updated_project["title"]
     assert project_in["description"] == updated_project["description"]
     assert project_in["planting_date"] == updated_project["planting_date"]

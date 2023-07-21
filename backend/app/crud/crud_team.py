@@ -57,7 +57,11 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
     ) -> Sequence[Team]:
         """List of teams the user belongs to."""
         statement = (
-            select(Team).join(TeamMember.team).where(TeamMember.member_id == user_id)
+            select(Team)
+            .join(TeamMember.team)
+            .where(TeamMember.member_id == user_id)
+            .offset(skip)
+            .limit(limit)
         )
         with db as session:
             db_obj = session.scalars(statement).all()

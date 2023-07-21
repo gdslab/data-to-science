@@ -10,7 +10,7 @@ from app.tests.utils.user import create_random_user
 
 def create_random_dataset(
     db: Session, category: str, project_id: UUID | None = None
-) -> models.Project:
+) -> models.Dataset:
     """Create random dataset for a project."""
     if project_id is None:
         project_owner = create_random_user(db)
