@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { Formik, Form } from "formik";
+import { redirect } from "react-router-dom";
 
 import CustomTextField from "../CustomTextField";
 
@@ -28,6 +29,7 @@ export default function LoginForm() {
             if (response) {
               setResponseData(response.data);
               localStorage.setItem("access_token", response.data.access_token);
+              redirect("/");
             } else {
               // do something
             }

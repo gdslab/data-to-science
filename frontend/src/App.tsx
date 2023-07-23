@@ -6,6 +6,7 @@ import LoginForm from "./components/forms/LoginForm";
 import ProjectForm from "./components/forms/ProjectForm";
 import RegistrationForm from "./components/forms/RegistrationForm";
 import Root from "./components/layout/root";
+import TeamForm from "./components/forms/TeamForm";
 
 export default function App() {
   const router = createBrowserRouter([
@@ -21,6 +22,10 @@ export default function App() {
         {
           path: "/login",
           element: <LoginForm />,
+        },
+        {
+          path: "/teams",
+          element: <TeamForm />,
         },
         {
           path: "/projects",

@@ -12,27 +12,31 @@ export default function Root() {
   return (
     <div className="wrapper">
       <div className="header">
-        <nav>{hasJWT ? <span>Logged in</span> : <span>Logged out</span>}</nav>
+        <nav>
+          {hasJWT ? (
+            <Link to="logout">Logout</Link>
+          ) : (
+            <>
+              <Link to="/register">Register</Link> <Link to="/login">Login</Link>
+            </>
+          )}
+        </nav>
       </div>
       <div className="sidebar">
         <nav>
-          <ul>
-            <li>
-              <Link to="/">Home</Link>
-            </li>
-            <li>
-              <Link to="/register">Register</Link>
-            </li>
-            <li>
-              <Link to="/login">Login</Link>
-            </li>
-            <li>
-              <Link to="/projects">Project</Link>
-            </li>
-            <li>
-              <Link to="/flights">Flight</Link>
-            </li>
-          </ul>
+          {hasJWT ? (
+            <ul>
+              <li>
+                <Link to="/">Home</Link>
+              </li>
+              <li>
+                <Link to="/teams">Teams</Link>
+              </li>
+              <li>
+                <Link to="/projects">Projects</Link>
+              </li>
+            </ul>
+          ) : null}
         </nav>
       </div>
       <div className="content">

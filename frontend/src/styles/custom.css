@@ -41,7 +41,13 @@ select {
     line-height: 100px;
     font-size: 24px;
     font-weight: 600;
-    margin: 15px;
+}
+
+.header > nav > a {
+    float: right;
+    margin-right: 15px;
+    color: #FFFFFF;
+    text-decoration: none;
 }
 
 .sidebar {
