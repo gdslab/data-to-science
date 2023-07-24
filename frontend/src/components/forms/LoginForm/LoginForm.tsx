@@ -1,7 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { Formik, Form } from "formik";
-import { redirect } from "react-router-dom";
+import { redirect, useNavigate } from "react-router-dom";
 
 import CustomTextField from "../CustomTextField";
 
@@ -9,6 +9,7 @@ import initialValues from "./initialValues";
 import validationSchema from "./validationSchema";
 
 export default function LoginForm() {
+  const navigate = useNavigate();
   const [responseData, setResponseData] = useState(null);
 
   return (
@@ -29,7 +30,7 @@ export default function LoginForm() {
             if (response) {
               setResponseData(response.data);
               localStorage.setItem("access_token", response.data.access_token);
-              redirect("/");
+              navigate("/");
             } else {
               // do something
             }

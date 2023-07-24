@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { Formik, Form } from "formik";
+import { useNavigate } from "react-router-dom";
 
 import CustomTextField from "../CustomTextField";
 
@@ -8,6 +9,7 @@ import initialValues from "./initialValues";
 import validationSchema from "./validationSchema";
 
 export default function TeamForm() {
+  const navigate = useNavigate();
   const [responseData, setResponseData] = useState(null);
 
   return (
@@ -28,6 +30,7 @@ export default function TeamForm() {
             });
             if (response) {
               setResponseData(response.data);
+              navigate("/teams");
             } else {
               // do something
             }
