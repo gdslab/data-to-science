@@ -14,6 +14,7 @@ from app.tests.utils.project import (
     random_harvest_date,
 )
 from app.tests.utils.team import random_team_name, random_team_description
+from app.tests.utils.user import create_random_user
 
 
 def test_create_project(
@@ -147,6 +148,51 @@ def test_get_project_current_user_does_not_belong_to(
         headers=normal_user_token_headers,
     )
     assert 404 == r.status_code
+
+
+def test_get_project_members_for_project(
+    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+) -> None:
+    """Verify retrieval of project members if current user has access to project."""
+    current_user = get_current_user(
+        db, normal_user_token_headers["Authorization"].split(" ")[1]
+    )
+    project = create_random_project(db)
+    # add current user to project
+    project_member_in = ProjectMemberCreate(
+        member_id=current_user.id, project_id=project.id
+    )
+    crud.project_member.create_with_project(
+        db, obj_in=project_member_in, member_id=current_user.id, project_id=project.id
+    )
+    project_member2 = create_random_user(db)
+    project_member2_in = ProjectMemberCreate(
+        member_id=project_member2.id, project_id=project.id
+    )
+    crud.project_member.create_with_project(
+        db,
+        obj_in=project_member2_in,
+        member_id=project_member2.id,
+        project_id=project.id,
+    )
+    project_member3 = create_random_user(db)
+    project_member3_in = ProjectMemberCreate(
+        member_id=project_member3.id, project_id=project.id
+    )
+    crud.project_member.create_with_project(
+        db,
+        obj_in=project_member3_in,
+        member_id=project_member3.id,
+        project_id=project.id,
+    )
+    r = client.get(
+        f"{settings.API_V1_STR}/projects/{project.id}/members",
+        headers=normal_user_token_headers,
+    )
+    assert 200 == r.status_code
+    project_members = r.json()
+    assert type(project_members) is list
+    assert len(project_members) == 4
 
 
 def test_update_project_owned_by_current_user(

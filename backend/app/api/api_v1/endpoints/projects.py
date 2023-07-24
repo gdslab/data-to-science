@@ -52,6 +52,24 @@ def read_projects(
     return projects
 
 
+@router.get("/{project_id}/members", response_model=list[schemas.ProjectMember])
+def read_project_members(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(deps.get_db),
+    project: models.Project = Depends(deps.can_read_write_project),
+) -> Any:
+    """Retrieve members of a project."""
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found."
+        )
+    project_members = crud.project_member.get_list_of_project_members(
+        db, project_id=project.id, skip=skip, limit=limit
+    )
+    return project_members
+
+
 @router.put("/{project_id}")
 def update_project(
     project_id: str,

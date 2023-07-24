@@ -9,16 +9,15 @@ from app.schemas.flight import FlightCreate, FlightUpdate
 
 
 class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
-    def create_flight(
+    def create_with_dataset(
         self,
         db: Session,
         *,
         obj_in: FlightCreate,
         dataset_id: UUID,
-        pilot_id: UUID,
     ) -> Flight:
         obj_in_data = jsonable_encoder(obj_in)
-        db_obj = self.model(**obj_in_data, dataset_id=dataset_id, pilot_id=pilot_id)
+        db_obj = self.model(**obj_in_data, dataset_id=dataset_id)
         with db as session:
             session.add(db_obj)
             session.commit()

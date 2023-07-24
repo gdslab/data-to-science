@@ -20,7 +20,5 @@ def create_random_flight(
         project = create_random_project(db, owner_id=project_owner.id)
         dataset = create_random_dataset(db, category="UAS", project_id=project.id)
         dataset_id = dataset.id
-    flight_in = FlightCreate(**kwargs)
-    return crud.flight.create_flight(
-        db, obj_in=flight_in, dataset_id=dataset_id, pilot_id=pilot_id
-    )
+    flight_in = FlightCreate(**kwargs, pilot_id=pilot_id)
+    return crud.flight.create_with_dataset(db, obj_in=flight_in, dataset_id=dataset_id)
