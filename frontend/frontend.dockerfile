@@ -18,8 +18,6 @@ COPY --from=build-stage /app/build /usr/share/nginx/html
 
 COPY ./nginx/common.conf ../nginx/common_location.conf ./
 
-COPY ./nginx/ps2.conf /etc/nginx/conf.d/default.conf
-
 ENTRYPOINT ["nginx"]
 
 CMD ["-g", "daemon off;"]
