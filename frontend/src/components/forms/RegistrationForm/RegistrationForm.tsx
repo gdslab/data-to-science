@@ -58,6 +58,10 @@ export default function RegistrationForm() {
                   type="password"
                 />
               ) : null}
+              <p>
+                New accounts will require email confirmation and manual approval before
+                use.
+              </p>
               <div>
                 <button type="submit" disabled={isSubmitting}>
                   Register
