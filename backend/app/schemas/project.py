@@ -19,7 +19,7 @@ class ProjectCreate(ProjectBase):
     title: str
     description: str
     planting_date: date
-    harvest_date: date
+    harvest_date: date | None = None
     location_id: UUID
     team_id: UUID | None = None
 
@@ -35,7 +35,7 @@ class ProjectInDBBase(ProjectBase):
     title: str
     description: str
     planting_date: date
-    harvest_date: date
+    harvest_date: date | None = None
     location_id: UUID
     team_id: UUID | None = None
 

@@ -30,10 +30,10 @@ export default function ProjectForm() {
             const data = {
               title: values.title,
               description: values.description,
-              location_id: values.locationID,
+              location_id: values.locationId,
               planting_date: values.plantingDate,
-              harvest_date: values.harvestDate,
-              team_id: values.teamID,
+              ...(values.harvestDate && { harvest_date: values.harvestDate }),
+              ...(values.teamId && { team_id: values.teamId }),
             };
             const response = await axios.post("/api/v1/projects/", data, {
               headers: {
@@ -78,8 +78,8 @@ export default function ProjectForm() {
                       },
                     });
                     if (response) {
-                      setFieldValue("locationID", response.data.id);
-                      setFieldTouched("locationID", true);
+                      setFieldValue("locationId", response.data.id);
+                      setFieldTouched("locationId", true);
                     }
                   } catch (err) {
                     if (axios.isAxiosError(err)) {
@@ -97,7 +97,7 @@ export default function ProjectForm() {
               {teams.length > 0 ? (
                 <CustomSelectField
                   label="Team"
-                  name="teamID"
+                  name="teamId"
                   options={teams.map((team) => ({
                     label: team.title,
                     value: team.id,

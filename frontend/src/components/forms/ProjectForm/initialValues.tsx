@@ -1,10 +1,10 @@
 const initialValues = {
   title: "",
   description: "",
-  locationID: "",
+  locationId: "",
   plantingDate: "",
   harvestDate: "",
-  teamID: "",
+  teamId: "",
 };
 
 export default initialValues;

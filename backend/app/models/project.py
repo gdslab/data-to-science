@@ -27,7 +27,7 @@ class Project(Base):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String(300))
     planting_date: Mapped[date] = mapped_column(Date, nullable=False)
-    harvest_date: Mapped[date] = mapped_column(Date, nullable=False)
+    harvest_date: Mapped[date] = mapped_column(Date, nullable=True)
     location_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("locations.id"), nullable=False
     )

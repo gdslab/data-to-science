@@ -7,9 +7,7 @@ const validationSchema = Yup.object({
     .required("Required"),
   locationID: Yup.string().required("Required"),
   plantingDate: Yup.date().required("Required"),
-  harvestDate: Yup.date()
-    .min(Yup.ref("plantingDate"), "Must be after planting date")
-    .required("Required"),
+  harvestDate: Yup.date().min(Yup.ref("plantingDate"), "Must be after planting date"),
   teamID: Yup.string(),
 });
 

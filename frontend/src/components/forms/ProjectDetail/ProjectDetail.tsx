@@ -16,6 +16,7 @@ export default function ProjectDetail() {
   return (
     <div>
       <h2>{project.title}</h2>
+      <h3>{project.description}</h3>
       <button
         type="button"
         onClick={async () => {
