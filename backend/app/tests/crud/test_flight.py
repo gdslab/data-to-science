@@ -2,7 +2,9 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
+from app import crud
 from app.models.flight import PLATFORMS, SENSORS
+from app.schemas.flight import FlightUpdate
 from app.tests.utils.dataset import create_random_dataset
 from app.tests.utils.flight import create_random_flight
 from app.tests.utils.project import create_random_project
@@ -31,6 +33,7 @@ def test_create_flight(db: Session) -> None:
         pilot_id=pilot.id,
     )
     assert flight
+    assert acquisition_date == flight.acquisition_date
     assert altitude == flight.altitude
     assert side_overlap == flight.side_overlap
     assert forward_overlap == flight.forward_overlap
@@ -38,3 +41,36 @@ def test_create_flight(db: Session) -> None:
     assert PLATFORMS[0] == flight.platform
     assert dataset.id == flight.dataset_id
     assert pilot.id == flight.pilot_id
+
+
+def test_get_flight(db: Session) -> None:
+    """Verify retrieving flight by id returns correct flight."""
+    flight = create_random_flight(db)
+    stored_flight = crud.flight.get(db, id=flight.id)
+    assert stored_flight
+    assert flight.id == stored_flight.id
+    assert flight.acquisition_date == stored_flight.acquisition_date
+    assert flight.altitude == stored_flight.altitude
+    assert flight.side_overlap == stored_flight.side_overlap
+    assert flight.forward_overlap == stored_flight.forward_overlap
+    assert flight.sensor == stored_flight.sensor
+    assert flight.platform == stored_flight.platform
+    assert flight.dataset_id == stored_flight.dataset_id
+    assert flight.pilot_id == stored_flight.pilot_id
+
+
+def test_update_flight(db: Session) -> None:
+    """Verify update changes flight attributes in database."""
+    flight = create_random_flight(
+        db,
+        altitude=60,
+        sensor=SENSORS[0],
+    )
+    flight_in_update = FlightUpdate(
+        altitude=100,
+        sensor=SENSORS[1],
+    )
+    flight_update = crud.flight.update(db, db_obj=flight, obj_in=flight_in_update)
+    assert flight.id == flight_update.id
+    assert flight_in_update.altitude == flight_update.altitude
+    assert flight_in_update.sensor == flight_update.sensor

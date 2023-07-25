@@ -53,9 +53,9 @@ def read_datasets(
 
 @router.get("/{dataset_id}", response_model=schemas.Dataset)
 def read_dataset(
-    dataset_id: str,
-    db: Session = Depends(deps.get_db),
+    dataset_id: UUID,
     dataset: models.Dataset = Depends(deps.can_read_write_dataset),
+    db: Session = Depends(deps.get_db),
 ) -> Any:
     """Retrieve dataset if current user has access to it."""
     if not dataset:
@@ -67,7 +67,7 @@ def read_dataset(
 
 @router.put("/{dataset_id}", response_model=schemas.Dataset)
 def update_dataset(
-    dataset_id: str,
+    dataset_id: UUID,
     dataset_in: schemas.DatasetUpdate,
     dataset: models.Dataset = Depends(deps.can_read_write_dataset),
     db: Session = Depends(deps.get_db),

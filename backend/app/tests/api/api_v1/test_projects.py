@@ -22,15 +22,14 @@ def test_create_project(
 ) -> None:
     """Verify new project is created in database."""
     location = create_random_location(db)
-    data = jsonable_encoder(
-        {
-            "title": random_team_name(),
-            "description": random_team_description(),
-            "planting_date": random_planting_date(),
-            "harvest_date": random_harvest_date(),
-            "location_id": location.id,
-        }
-    )
+    data = {
+        "title": random_team_name(),
+        "description": random_team_description(),
+        "planting_date": random_planting_date(),
+        "harvest_date": random_harvest_date(),
+        "location_id": location.id,
+    }
+    data = jsonable_encoder(data)
     r = client.post(
         f"{settings.API_V1_STR}/projects/",
         headers=normal_user_token_headers,

@@ -56,5 +56,5 @@ class Flight(Base):
             f"altitude={self.altitude!r}, side_overlap={self.side_overlap!r}, "
             f"forward_overlap={self.forward_overlap!r}, "
             f"sensor={self.sensor!r}, platform={self.platform!r}, "
-            f"project_id={self.project_id!r}, pilot_id={self.pilot_id!r}"
+            f"dataset_id={self.dataset_id!r}, pilot_id={self.pilot_id!r}"
         )
