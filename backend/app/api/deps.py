@@ -2,7 +2,8 @@ import logging
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+
+# from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
 from jose.exceptions import JWTError
 from pydantic import ValidationError
@@ -17,7 +18,7 @@ from app.db.session import SessionLocal
 logger = logging.getLogger("__name__")
 
 
-reusable_oauth2 = OAuth2PasswordBearer(
+reusable_oauth2 = security.OAuth2PasswordBearerWithCookie(
     tokenUrl=f"{settings.API_V1_STR}/auth/access-token"
 )
 
