@@ -14,14 +14,10 @@ from app.tests.utils.team import (
 )
 
 
-def test_create_team(
-    client: TestClient, normal_user_token_headers: dict[str, str]
-) -> None:
+def test_create_team(client: TestClient, normal_user_access_token: str) -> None:
     """Verify new team is created in database."""
     data = {"title": random_team_name(), "description": random_team_description()}
-    r = client.post(
-        f"{settings.API_V1_STR}/teams/", headers=normal_user_token_headers, json=data
-    )
+    r = client.post(f"{settings.API_V1_STR}/teams/", json=data)
     assert 201 == r.status_code
     content = r.json()
     assert "id" in content
@@ -30,12 +26,12 @@ def test_create_team(
 
 
 def test_get_teams(
-    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+    client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify retrieval of teams the current user belongs to."""
     # create two teams with current user as a member
     current_user = get_current_approved_user(
-        get_current_user(db, normal_user_token_headers["Authorization"].split(" ")[1]),
+        get_current_user(db, normal_user_access_token),
     )
     # create team with current user as owner
     team1 = create_random_team(db, owner_id=current_user.id)
@@ -49,7 +45,7 @@ def test_get_teams(
     # create team that current user does not belong to
     create_random_team(db)
     # request list of teams the current user belongs to
-    r = client.get(f"{settings.API_V1_STR}/teams/", headers=normal_user_token_headers)
+    r = client.get(f"{settings.API_V1_STR}/teams/")
     assert 200 == r.status_code
     teams = r.json()
     assert type(teams) is list
@@ -66,15 +62,15 @@ def test_get_teams(
 
 
 def test_get_team_owned_by_current_user(
-    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+    client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify retrieval of team the current user owns."""
     current_user = get_current_approved_user(
-        get_current_user(db, normal_user_token_headers["Authorization"].split(" ")[1]),
+        get_current_user(db, normal_user_access_token),
     )
     team = create_random_team(db, owner_id=current_user.id)
     r = client.get(
-        f"{settings.API_V1_STR}/teams/{team.id}", headers=normal_user_token_headers
+        f"{settings.API_V1_STR}/teams/{team.id}",
     )
     assert 200 == r.status_code
     response_team = r.json()
@@ -86,11 +82,11 @@ def test_get_team_owned_by_current_user(
 
 
 def test_get_team_current_user_is_member_of(
-    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+    client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify retrieval of team the current user is a member of but doesn't own."""
     current_user = get_current_approved_user(
-        get_current_user(db, normal_user_token_headers["Authorization"].split(" ")[1]),
+        get_current_user(db, normal_user_access_token),
     )
     team = create_random_team(db)
     # add current user to team
@@ -99,7 +95,7 @@ def test_get_team_current_user_is_member_of(
         db, obj_in=team_member_in, member_id=current_user.id, team_id=team.id
     )
     r = client.get(
-        f"{settings.API_V1_STR}/teams/{team.id}", headers=normal_user_token_headers
+        f"{settings.API_V1_STR}/teams/{team.id}",
     )
     assert 200 == r.status_code
     response_team = r.json()
@@ -109,23 +105,22 @@ def test_get_team_current_user_is_member_of(
 
 
 def test_get_team_current_user_does_not_belong_to(
-    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+    client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify failure to retrieve team the current user is not a member of."""
     team = create_random_team(db)
     r = client.get(
         f"{settings.API_V1_STR}/teams/{team.id}",
-        headers=normal_user_token_headers,
     )
     assert 404 == r.status_code
 
 
 def test_update_team_owned_by_current_user(
-    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+    client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify update by team owner changes team attributes in database."""
     current_user = get_current_approved_user(
-        get_current_user(db, normal_user_token_headers["Authorization"].split(" ")[1]),
+        get_current_user(db, normal_user_access_token),
     )
     team = create_random_team(db, owner_id=current_user.id)
     team_in = jsonable_encoder(
@@ -137,7 +132,6 @@ def test_update_team_owned_by_current_user(
     r = client.put(
         f"{settings.API_V1_STR}/teams/{team.id}",
         json=team_in,
-        headers=normal_user_token_headers,
     )
     assert 200 == r.status_code
     updated_team = r.json()
@@ -148,11 +142,11 @@ def test_update_team_owned_by_current_user(
 
 
 def test_update_team_current_user_is_member_of(
-    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+    client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify update of team the current user is a member of but doesn't own."""
     current_user = get_current_approved_user(
-        get_current_user(db, normal_user_token_headers["Authorization"].split(" ")[1]),
+        get_current_user(db, normal_user_access_token),
     )
     team = create_random_team(db)
     # add current user to team
@@ -169,7 +163,6 @@ def test_update_team_current_user_is_member_of(
     r = client.put(
         f"{settings.API_V1_STR}/teams/{team.id}",
         json=team_in,
-        headers=normal_user_token_headers,
     )
     assert 200 == r.status_code
     updated_team = r.json()
@@ -180,7 +173,7 @@ def test_update_team_current_user_is_member_of(
 
 
 def test_update_team_current_user_does_not_belong_to(
-    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+    client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify failure to update project the current user is not a member of."""
     team = create_random_team(db)
@@ -191,6 +184,5 @@ def test_update_team_current_user_does_not_belong_to(
     r = client.put(
         f"{settings.API_V1_STR}/teams/{team.id}",
         json=team_in.dict(),
-        headers=normal_user_token_headers,
     )
     assert 404 == r.status_code

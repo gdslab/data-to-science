@@ -1,3 +1,4 @@
+from fastapi import Request
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -40,24 +41,24 @@ def test_create_user_existing_email(client: TestClient, db: Session) -> None:
 
 
 def test_get_users_normal_current_user(
-    client: TestClient, normal_user_token_headers: dict[str, str]
+    client: TestClient,
+    normal_user_access_token: str,
 ) -> None:
     """Verify normal user can be retrieved with JWT token."""
-    r = client.get(
-        f"{settings.API_V1_STR}/users/current", headers=normal_user_token_headers
-    )
+    r = client.get(f"{settings.API_V1_STR}/users/current")
     current_user = r.json()
     assert current_user
     assert settings.EMAIL_TEST_USER == current_user["email"]
 
 
 def test_update_user(
-    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+    request: Request,
+    client: TestClient,
+    db: Session,
+    normal_user_access_token: str,
 ) -> None:
     """Verify update changes user attributes in database."""
-    current_user = get_current_user(
-        db, normal_user_token_headers["Authorization"].split(" ")[1]
-    )
+    current_user = get_current_user(db, normal_user_access_token)
     full_name = random_full_name()
     user_in = UserUpdate(
         first_name=full_name["first"],
@@ -66,7 +67,6 @@ def test_update_user(
     r = client.put(
         f"{settings.API_V1_STR}/users/{current_user.id}",
         json=user_in.dict(),
-        headers=normal_user_token_headers,
     )
     assert 200 == r.status_code
     updated_user = r.json()

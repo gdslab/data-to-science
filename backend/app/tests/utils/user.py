@@ -8,17 +8,15 @@ from app.schemas.user import UserCreate, UserUpdate
 from app.tests.utils.utils import random_email, random_full_name, random_password
 
 
-def user_authenticate_headers(
+def login_and_get_access_token(
     *, client: TestClient, email: str, password: str
 ) -> dict[str, str]:
     """Generate authorization header for provided user credentials."""
     data = {"username": email, "password": password}
 
     r = client.post(f"{settings.API_V1_STR}/auth/access-token", data=data)
-    response = r.json()
-    auth_token = response["access_token"]
-    headers = {"Authorization": f"Bearer {auth_token}"}
-    return headers
+    auth_token = r.cookies.get("access_token")
+    return auth_token.split(" ")[1].rstrip('"')
 
 
 def create_random_user_in(email: str | None = None) -> UserCreate:
@@ -58,4 +56,4 @@ def authentication_token_from_email(
 
     user_in_update = UserUpdate(password=password, is_approved=True)
     user = crud.user.update(db, db_obj=user, obj_in=user_in_update)
-    return user_authenticate_headers(client=client, email=email, password=password)
+    return login_and_get_access_token(client=client, email=email, password=password)

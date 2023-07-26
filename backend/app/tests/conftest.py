@@ -50,8 +50,8 @@ def client_fixture(db: Session) -> Generator:
     app.dependency_overrides.clear()
 
 
-@pytest.fixture(name="normal_user_token_headers")
-def normal_user_token_headers(client: TestClient, db: Session) -> dict[str, str]:
+@pytest.fixture(name="normal_user_access_token")
+def normal_user_access_token(client: TestClient, db: Session) -> str:
     """Retrieve access token header for normal (non-superuser) user."""
     return authentication_token_from_email(
         client=client, email=settings.EMAIL_TEST_USER, db=db

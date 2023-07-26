@@ -18,7 +18,7 @@ from app.tests.utils.user import create_random_user
 
 
 def test_create_project(
-    client: TestClient, normal_user_token_headers: dict[str, str], db: Session
+    client: TestClient, normal_user_access_token: str, db: Session
 ) -> None:
     """Verify new project is created in database."""
     location = create_random_location(db)
@@ -32,7 +32,6 @@ def test_create_project(
     data = jsonable_encoder(data)
     r = client.post(
         f"{settings.API_V1_STR}/projects/",
-        headers=normal_user_token_headers,
         json=data,
     )
     assert 201 == r.status_code
@@ -45,13 +44,11 @@ def test_create_project(
 
 
 def test_get_projects(
-    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+    client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify retrieval of projects the current user belongs to."""
     # create two projects with current user as a member
-    current_user = get_current_user(
-        db, normal_user_token_headers["Authorization"].split(" ")[1]
-    )
+    current_user = get_current_user(db, normal_user_access_token)
     # create project with current user as owner
     project1 = create_random_project(db, owner_id=current_user.id)
     # create project with a different user as owner
@@ -67,7 +64,7 @@ def test_get_projects(
     create_random_project(db)
     # request list of projects the current user belongs to
     r = client.get(
-        f"{settings.API_V1_STR}/projects/", headers=normal_user_token_headers
+        f"{settings.API_V1_STR}/projects/",
     )
     assert 200 == r.status_code
     projects = r.json()
@@ -88,16 +85,13 @@ def test_get_projects(
 
 
 def test_get_project_owned_by_current_user(
-    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+    client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify retrieval of project the current user owns."""
-    current_user = get_current_user(
-        db, normal_user_token_headers["Authorization"].split(" ")[1]
-    )
+    current_user = get_current_user(db, normal_user_access_token)
     project = jsonable_encoder(create_random_project(db, owner_id=current_user.id))
     r = client.get(
         f"{settings.API_V1_STR}/projects/" + project["id"],
-        headers=normal_user_token_headers,
     )
     assert 200 == r.status_code
     response_project = r.json()
@@ -112,12 +106,10 @@ def test_get_project_owned_by_current_user(
 
 
 def test_get_project_current_user_is_member_of(
-    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+    client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify retrieval of project the current user is a member of but doesn't own."""
-    current_user = get_current_user(
-        db, normal_user_token_headers["Authorization"].split(" ")[1]
-    )
+    current_user = get_current_user(db, normal_user_access_token)
     project = create_random_project(db)
     # add current user to project
     project_member_in = ProjectMemberCreate(
@@ -128,7 +120,6 @@ def test_get_project_current_user_is_member_of(
     )
     r = client.get(
         f"{settings.API_V1_STR}/projects/{project.id}",
-        headers=normal_user_token_headers,
     )
     assert 200 == r.status_code
     response_project = r.json()
@@ -138,24 +129,21 @@ def test_get_project_current_user_is_member_of(
 
 
 def test_get_project_current_user_does_not_belong_to(
-    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+    client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify failure to retrieve project the current user is not a member of."""
     project = create_random_project(db)
     r = client.get(
         f"{settings.API_V1_STR}/projects/{project.id}",
-        headers=normal_user_token_headers,
     )
     assert 404 == r.status_code
 
 
 def test_get_project_members_for_project(
-    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+    client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify retrieval of project members if current user has access to project."""
-    current_user = get_current_user(
-        db, normal_user_token_headers["Authorization"].split(" ")[1]
-    )
+    current_user = get_current_user(db, normal_user_access_token)
     project = create_random_project(db)
     # add current user to project
     project_member_in = ProjectMemberCreate(
@@ -186,7 +174,6 @@ def test_get_project_members_for_project(
     )
     r = client.get(
         f"{settings.API_V1_STR}/projects/{project.id}/members",
-        headers=normal_user_token_headers,
     )
     assert 200 == r.status_code
     project_members = r.json()
@@ -195,12 +182,10 @@ def test_get_project_members_for_project(
 
 
 def test_update_project_owned_by_current_user(
-    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+    client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify update by project owner changes team attributes in database."""
-    current_user = get_current_user(
-        db, normal_user_token_headers["Authorization"].split(" ")[1]
-    )
+    current_user = get_current_user(db, normal_user_access_token)
     project = create_random_project(db, owner_id=current_user.id)
     project_in = jsonable_encoder(
         ProjectUpdate(
@@ -214,7 +199,6 @@ def test_update_project_owned_by_current_user(
     r = client.put(
         f"{settings.API_V1_STR}/projects/{project.id}",
         json=project_in,
-        headers=normal_user_token_headers,
     )
     assert 200 == r.status_code
     updated_project = r.json()
@@ -228,12 +212,10 @@ def test_update_project_owned_by_current_user(
 
 
 def test_update_project_current_user_is_member_of(
-    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+    client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify update of project the current user is a member of but doesn't own."""
-    current_user = get_current_user(
-        db, normal_user_token_headers["Authorization"].split(" ")[1]
-    )
+    current_user = get_current_user(db, normal_user_access_token)
     project = create_random_project(db)
     # add current user to project
     project_member_in = ProjectMemberCreate(
@@ -254,7 +236,6 @@ def test_update_project_current_user_is_member_of(
     r = client.put(
         f"{settings.API_V1_STR}/projects/{project.id}",
         json=project_in,
-        headers=normal_user_token_headers,
     )
     assert 200 == r.status_code
     updated_project = r.json()
@@ -268,7 +249,7 @@ def test_update_project_current_user_is_member_of(
 
 
 def test_update_project_current_user_does_not_belong_to(
-    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+    client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify failure to update project the current user is not a member of."""
     project = create_random_project(db)
@@ -282,6 +263,5 @@ def test_update_project_current_user_does_not_belong_to(
     r = client.put(
         f"{settings.API_V1_STR}/projects/{project.id}",
         json=jsonable_encoder(project_in.dict()),
-        headers=normal_user_token_headers,
     )
     assert 404 == r.status_code
