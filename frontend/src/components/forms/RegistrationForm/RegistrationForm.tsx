@@ -1,7 +1,5 @@
-import { useState } from "react";
 import axios from "axios";
 import { Formik, Form } from "formik";
-import { useNavigate } from "react-router-dom";
 
 import CustomTextField from "../CustomTextField";
 
@@ -9,9 +7,6 @@ import initialValues from "./initialValues";
 import validationSchema from "./validationSchema";
 
 export default function RegistrationForm() {
-  const navigate = useNavigate();
-  const [responseData, setResponseData] = useState(null);
-
   return (
     <div style={{ width: 450 }}>
       <Formik
@@ -27,8 +22,7 @@ export default function RegistrationForm() {
             };
             const response = await axios.post("/api/v1/users/", data);
             if (response) {
-              setResponseData(response.data);
-              navigate("/login");
+              // do something
             } else {
               // do something
             }
@@ -71,9 +65,6 @@ export default function RegistrationForm() {
                 <div style={{ marginTop: 15 }}>
                   <span style={{ color: "red" }}>{status}</span>
                 </div>
-              ) : null}
-              {responseData ? (
-                <pre>{JSON.stringify(responseData, undefined, 2)}</pre>
               ) : null}
             </Form>
           </fieldset>

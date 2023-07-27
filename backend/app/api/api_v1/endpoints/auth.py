@@ -37,6 +37,13 @@ def login_access_token(
     return status.HTTP_200_OK
 
 
+@router.get("/remove-access-token")
+def logout_access_token(response: Response) -> Any:
+    """Remove cookie containing JWT access token."""
+    response.delete_cookie(key="access_token")
+    return status.HTTP_200_OK
+
+
 @router.post("/test-token", response_model=schemas.User)
 def test_token(current_user: models.User = Depends(deps.get_current_user)) -> Any:
     """Test access token."""

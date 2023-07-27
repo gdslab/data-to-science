@@ -1,17 +1,17 @@
-import { useState } from "react";
 import axios from "axios";
 import { Formik, Form } from "formik";
-import { redirect, useNavigate } from "react-router-dom";
+import { useContext } from "react";
+import { useNavigate } from "react-router-dom";
 
+import AuthContext from "../../../AuthContext";
 import CustomTextField from "../CustomTextField";
 
 import initialValues from "./initialValues";
 import validationSchema from "./validationSchema";
 
 export default function LoginForm() {
+  const { login } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [responseData, setResponseData] = useState(null);
-
   return (
     <div style={{ width: 450 }}>
       <Formik
@@ -24,22 +24,12 @@ export default function LoginForm() {
               username: values.email,
               password: values.password,
             };
-            const response = await axios.post("/api/v1/auth/access-token", data, {
-              headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            });
-            if (response) {
-              setResponseData(response.data);
-              localStorage.setItem("access_token", response.data.access_token);
-              navigate("/");
-            } else {
-              // do something
-            }
+            await login(data).then(() => navigate("/"));
           } catch (err) {
             if (axios.isAxiosError(err)) {
-              console.error(err.response?.data.detail);
               setStatus(err.response?.data.detail);
             } else {
-              // do something
+              setStatus(typeof err === "string" ? err : "Unknown error");
             }
           }
           setSubmitting(false);
@@ -60,9 +50,6 @@ export default function LoginForm() {
                 <div style={{ marginTop: 15 }}>
                   <span style={{ color: "red" }}>{status}</span>
                 </div>
-              ) : null}
-              {responseData ? (
-                <pre>{JSON.stringify(responseData, undefined, 2)}</pre>
               ) : null}
             </Form>
           </fieldset>

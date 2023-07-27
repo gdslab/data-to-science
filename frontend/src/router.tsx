@@ -4,6 +4,7 @@ import { createBrowserRouter } from "react-router-dom";
 import ErrorPage from "./components/ErrorPage";
 import FlightForm from "./components/forms/FlightForm";
 import LoginForm from "./components/forms/LoginForm";
+import Logout from "./components/Logout";
 import ProjectDetail from "./components/forms/ProjectDetail";
 import ProjectForm from "./components/forms/ProjectForm";
 import ProjectList from "./components/forms/ProjectList";
@@ -25,6 +26,10 @@ export const router = createBrowserRouter([
       {
         path: "/login",
         element: <LoginForm />,
+      },
+      {
+        path: "/logout",
+        element: <Logout />,
       },
       {
         path: "/teams",

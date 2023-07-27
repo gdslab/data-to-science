@@ -1,20 +1,16 @@
-import { useEffect, useState } from "react";
+import { useContext } from "react";
 import { Link, Outlet } from "react-router-dom";
 
+import AuthContext from "../../AuthContext";
+
 export default function Root() {
-  const [hasJWT, toggleHasJWT] = useState(false);
-  useEffect(() => {
-    const accessToken = localStorage.getItem("access_token");
-    if (accessToken) {
-      toggleHasJWT(true);
-    }
-  }, []);
+  const { user } = useContext(AuthContext);
   return (
     <div className="wrapper">
       <div className="header">
         <nav>
-          {hasJWT ? (
-            <Link to="logout">Logout</Link>
+          {user ? (
+            <Link to="/logout">Logout</Link>
           ) : (
             <>
               <Link to="/register">Register</Link> <Link to="/login">Login</Link>
@@ -24,7 +20,7 @@ export default function Root() {
       </div>
       <div className="sidebar">
         <nav>
-          {hasJWT ? (
+          {user ? (
             <ul>
               <li>
                 <Link to="/">Home</Link>
