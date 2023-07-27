@@ -10,16 +10,14 @@ from app.tests.utils.user import create_random_user
 
 def create_random_team_member(
     db: Session,
-    member_id: UUID | None = None,
+    email: str | None = None,
     team_id: UUID | None = None,
 ) -> models.TeamMember:
-    if member_id is None:
+    if email is None:
         user = create_random_user(db)
-        member_id = user.id
+        email = user.email
     if team_id is None:
         team = create_random_team(db)
         team_id = team.id
-    team_member_in = TeamMemberCreate()
-    return crud.team_member.create_with_team(
-        db, obj_in=team_member_in, member_id=member_id, team_id=team_id
-    )
+    team_member_in = TeamMemberCreate(email=email)
+    return crud.team_member.create_with_team(db, obj_in=team_member_in, team_id=team_id)

@@ -11,7 +11,7 @@ from app.api import deps
 router = APIRouter()
 
 
-@router.post("/", response_model=schemas.Team, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=schemas.Team, status_code=status.HTTP_201_CREATED)
 def create_team(
     team_in: schemas.TeamCreate,
     current_user: models.User = Depends(deps.get_current_approved_user),
@@ -22,7 +22,7 @@ def create_team(
     return team
 
 
-@router.get("/", response_model=list[schemas.Team])
+@router.get("", response_model=list[schemas.Team])
 def read_teams(
     skip: int = 0,
     limit: int = 100,
@@ -40,7 +40,7 @@ def read_teams(
 def read_team(
     team_id: UUID,
     db: Session = Depends(deps.get_db),
-    team: models.Team = Depends(deps.can_read_write_team),
+    team: models.Team = Depends(deps.can_read_team),
 ) -> Any:
     """Retrieve team if current user has access to it."""
     if not team:
@@ -51,11 +51,11 @@ def read_team(
 
 
 @router.get("/{team_id}/members", response_model=list[schemas.TeamMember])
-def read_project_members(
+def read_team_members(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(deps.get_db),
-    team: models.Team = Depends(deps.can_read_write_team),
+    team: models.Team = Depends(deps.can_read_team),
 ) -> Any:
     """Retrieve members of a team."""
     if not team:
@@ -82,3 +82,30 @@ def update_team(
         )
     team = crud.team.update(db, db_obj=team, obj_in=team_in)
     return team
+
+
+@router.post(
+    "/{team_id}/members",
+    response_model=schemas.TeamMember,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_team_member(
+    team_id: UUID,
+    team_member_in: schemas.TeamMemberCreate,
+    team: models.Team = Depends(deps.can_read_write_team),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Add team member to team if current user is team owner."""
+    if not team:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Team not found"
+        )
+    team_member = crud.team_member.create_with_team(
+        db, obj_in=team_member_in, team_id=team.id
+    )
+    if not team_member:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+    return team_member

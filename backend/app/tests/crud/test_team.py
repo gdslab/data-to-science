@@ -38,8 +38,8 @@ def test_get_teams_by_member(db: Session) -> None:
     team1 = create_random_team(db)
     team2 = create_random_team(db)
     create_random_team(db)  # user not member of this team
-    create_random_team_member(db, member_id=user.id, team_id=team1.id)
-    create_random_team_member(db, member_id=user.id, team_id=team2.id)
+    create_random_team_member(db, email=user.email, team_id=team1.id)
+    create_random_team_member(db, email=user.email, team_id=team2.id)
     teams = crud.team.get_user_team_list(db, user_id=user.id)
     assert type(teams) is list
     assert len(teams) == 2

@@ -1,16 +1,22 @@
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from pydantic import BaseModel
 
+if TYPE_CHECKING:
+    EmailStr = str
+else:
+    from pydantic import EmailStr
+
 
 # shared properties
 class TeamMemberBase(BaseModel):
-    pass
+    email: EmailStr | None
 
 
 # properties to receive via API on creation
 class TeamMemberCreate(TeamMemberBase):
-    pass
+    email: EmailStr
 
 
 # properties to receive via API on update
@@ -21,8 +27,8 @@ class TeamMemberUpdate(TeamMemberBase):
 # properties shared by models stored in DB
 class TeamMemberInDBBase(TeamMemberBase):
     id: UUID
-
     member_id: UUID
+
     team_id: UUID
 
     class Config:

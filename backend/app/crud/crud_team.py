@@ -13,11 +13,7 @@ from app.schemas.team import TeamCreate, TeamUpdate
 
 class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
     def create_with_owner(
-        self,
-        db: Session,
-        *,
-        obj_in: TeamCreate,
-        owner_id: UUID,
+        self, db: Session, *, obj_in: TeamCreate, owner_id: UUID
     ) -> Team:
         """Create new team and add user as team member."""
         # add team object
@@ -36,15 +32,18 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
         return team_db_obj
 
     def get_user_team(
-        self, db: Session, *, user_id: UUID, team_id: UUID
+        self, db: Session, *, user_id: UUID, team_id: UUID, only_owner: bool = False
     ) -> Team | None:
-        """Retrieve team by id."""
-        statement = (
-            select(Team)
-            .join(TeamMember.team)
-            .where(TeamMember.member_id == user_id)
-            .where(TeamMember.team_id == team_id)
-        )
+        """Retrieve team by id if user belongs to team."""
+        if only_owner:
+            statement = select(Team).filter_by(owner_id=user_id)
+        else:
+            statement = (
+                select(Team)
+                .join(TeamMember.team)
+                .where(TeamMember.member_id == user_id)
+                .where(TeamMember.team_id == team_id)
+            )
         with db as session:
             db_obj = session.scalars(statement).one_or_none()
             if db_obj:

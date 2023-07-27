@@ -11,7 +11,7 @@ def test_create_team_member(db: Session) -> None:
     team_owner = create_random_user(db)
     team = create_random_team(db, owner_id=team_owner.id)
     user = create_random_user(db)
-    team_member = create_random_team_member(db, member_id=user.id, team_id=team.id)
+    team_member = create_random_team_member(db, email=user.email, team_id=team.id)
     assert team_member
     assert user.id == team_member.member_id
     assert team.id == team_member.team_id

@@ -8,23 +8,26 @@ from sqlalchemy.orm import Session
 from app.crud.base import CRUDBase
 from app.models.team_member import TeamMember
 from app.schemas.team_member import TeamMemberCreate, TeamMemberUpdate
+from app.models.user import User
 
 
 class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
     def create_with_team(
-        self,
-        db: Session,
-        *,
-        obj_in: TeamMemberCreate,
-        member_id: UUID,
-        team_id: UUID,
-    ) -> TeamMember:
+        self, db: Session, *, obj_in: TeamMemberCreate, team_id: UUID
+    ) -> TeamMember | None:
         obj_in_data = jsonable_encoder(obj_in)
-        db_obj = self.model(**obj_in_data, member_id=member_id, team_id=team_id)
+        email = obj_in_data["email"]
+        statement = select(User).filter_by(email=email)
         with db as session:
-            session.add(db_obj)
-            session.commit()
-            session.refresh(db_obj)
+            user_obj = session.scalars(statement).one_or_none()
+            if user_obj:
+                db_obj = self.model(member_id=user_obj.id, team_id=team_id)
+                with db as session:
+                    session.add(db_obj)
+                    session.commit()
+                    session.refresh(db_obj)
+            else:
+                return None
         return db_obj
 
     def get_user_team_member(
