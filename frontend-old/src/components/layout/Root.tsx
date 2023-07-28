@@ -18,23 +18,6 @@ export default function Root() {
           )}
         </nav>
       </div>
-      <div className="sidebar">
-        <nav>
-          {user ? (
-            <ul>
-              <li>
-                <Link to="/">Home</Link>
-              </li>
-              <li>
-                <Link to="/teams">Teams</Link>
-              </li>
-              <li>
-                <Link to="/projects">Projects</Link>
-              </li>
-            </ul>
-          ) : null}
-        </nav>
-      </div>
       <div className="content">
         <Outlet />
       </div>

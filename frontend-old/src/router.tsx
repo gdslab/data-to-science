@@ -9,7 +9,7 @@ import ProjectDetail from "./components/forms/ProjectDetail";
 import ProjectForm from "./components/forms/ProjectForm";
 import ProjectList from "./components/forms/ProjectList";
 import RegistrationForm from "./components/forms/RegistrationForm";
-import Root from "./components/layout/root";
+import Root from "./components/layout/Root";
 import TeamForm from "./components/forms/TeamForm";
 import TeamList from "./components/forms/TeamList";
 

@@ -3,7 +3,7 @@ services:
     build:
       context: ./frontend
       dockerfile: frontend.dev.dockerfile
-    command: yarn start
+    command: yarn run dev -p 8080
     volumes:
       - ./frontend/:/app
     restart: always
@@ -35,7 +35,7 @@ services:
       - .env
     healthcheck:
       test:
-        ["CMD-SHELL", "pg_isready --username=${POSTGRES_USER} --dbname=${POSTGRES_DB}"]
+        ['CMD-SHELL', 'pg_isready --username=${POSTGRES_USER} --dbname=${POSTGRES_DB}']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -54,7 +54,7 @@ services:
       context: ./nginx
       dockerfile: nginx.dockerfile
     ports:
-      - "80:80"
+      - '80:80'
     restart: always
     depends_on:
       - frontend

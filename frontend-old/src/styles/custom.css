@@ -74,6 +74,7 @@ select {
 
 .content {
     grid-area: main;
+    min-height: calc(100vh);
     padding: 15px;
     background-color: #FFFFFF;
 }
