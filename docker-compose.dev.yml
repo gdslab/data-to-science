@@ -3,7 +3,7 @@ services:
     build:
       context: ./frontend
       dockerfile: frontend.dev.dockerfile
-    command: yarn run dev -p 8080
+    command: yarn run dev --host 0.0.0.0 --port 8080
     volumes:
       - ./frontend/:/app
     restart: always
