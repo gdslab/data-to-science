@@ -1,4 +1,5 @@
 from typing import Any
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -25,7 +26,7 @@ def create_project(
 
 @router.get("/{project_id}", response_model=schemas.Project)
 def read_project(
-    project_id: str,
+    project_id: UUID,
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
     project: models.Project = Depends(deps.can_read_write_project),
@@ -72,7 +73,7 @@ def read_project_members(
 
 @router.put("/{project_id}")
 def update_project(
-    project_id: str,
+    project_id: UUID,
     project_in: schemas.ProjectUpdate,
     project: models.Project = Depends(deps.can_read_write_project),
     db: Session = Depends(deps.get_db),
@@ -84,3 +85,30 @@ def update_project(
         )
     project = crud.project.update(db, db_obj=project, obj_in=project_in)
     return project
+
+
+@router.post(
+    "/{project_id}/members",
+    response_model=schemas.ProjectMember,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_project_member(
+    project_id: UUID,
+    project_member_in: schemas.ProjectMemberCreate,
+    project: models.Project = Depends(deps.can_read_write_project),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Add project member to project if current user is team owner."""
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+        )
+    project_member = crud.project_member.create_with_project(
+        db, obj_in=project_member_in, project_id=project.id
+    )
+    if not project_member:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+    return project_member

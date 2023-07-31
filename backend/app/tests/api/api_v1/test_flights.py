@@ -31,7 +31,6 @@ def test_create_flight(
     crud.project_member.create_with_project(
         db,
         obj_in=project_member_in,
-        member_id=current_user.id,
         project_id=dataset.project_id,
     )
     data = {
@@ -104,7 +103,6 @@ def test_get_flight(
     crud.project_member.create_with_project(
         db,
         obj_in=project_member_in,
-        member_id=current_user.id,
         project_id=dataset.project_id,
     )
     base_url = (
@@ -147,7 +145,6 @@ def test_update_flight(
     crud.project_member.create_with_project(
         db,
         obj_in=project_member_in,
-        member_id=current_user.id,
         project_id=dataset.project_id,
     )
     flight_in = FlightUpdate(

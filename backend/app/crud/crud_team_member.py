@@ -7,8 +7,8 @@ from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
 from app.models.team_member import TeamMember
-from app.schemas.team_member import TeamMemberCreate, TeamMemberUpdate
 from app.models.user import User
+from app.schemas.team_member import TeamMemberCreate, TeamMemberUpdate
 
 
 class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
@@ -22,12 +22,11 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
             user_obj = session.scalars(statement).one_or_none()
             if user_obj:
                 db_obj = self.model(member_id=user_obj.id, team_id=team_id)
-                with db as session:
-                    session.add(db_obj)
-                    session.commit()
-                    session.refresh(db_obj)
+                session.add(db_obj)
+                session.commit()
+                session.refresh(db_obj)
             else:
-                return None
+                db_obj = None
         return db_obj
 
     def get_user_team_member(

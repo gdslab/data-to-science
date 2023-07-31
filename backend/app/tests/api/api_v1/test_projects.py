@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app import crud
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_current_approved_user
 from app.core.config import settings
 from app.schemas.project import ProjectUpdate
 from app.schemas.project_member import ProjectMemberCreate
@@ -13,6 +13,7 @@ from app.tests.utils.project import (
     random_planting_date,
     random_harvest_date,
 )
+from app.tests.utils.project_member import create_random_project_member
 from app.tests.utils.team import random_team_name, random_team_description
 from app.tests.utils.user import create_random_user
 
@@ -58,7 +59,7 @@ def test_get_projects(
         member_id=current_user.id, project_id=project2.id
     )
     crud.project_member.create_with_project(
-        db, obj_in=project2_member_in, member_id=current_user.id, project_id=project2.id
+        db, obj_in=project2_member_in, project_id=project2.id
     )
     # create project that current user does not belong to
     create_random_project(db)
@@ -116,7 +117,7 @@ def test_get_project_current_user_is_member_of(
         member_id=current_user.id, project_id=project.id
     )
     crud.project_member.create_with_project(
-        db, obj_in=project_member_in, member_id=current_user.id, project_id=project.id
+        db, obj_in=project_member_in, project_id=project.id
     )
     r = client.get(
         f"{settings.API_V1_STR}/projects/{project.id}",
@@ -150,27 +151,21 @@ def test_get_project_members_for_project(
         member_id=current_user.id, project_id=project.id
     )
     crud.project_member.create_with_project(
-        db, obj_in=project_member_in, member_id=current_user.id, project_id=project.id
+        db, obj_in=project_member_in, project_id=project.id
     )
     project_member2 = create_random_user(db)
     project_member2_in = ProjectMemberCreate(
         member_id=project_member2.id, project_id=project.id
     )
     crud.project_member.create_with_project(
-        db,
-        obj_in=project_member2_in,
-        member_id=project_member2.id,
-        project_id=project.id,
+        db, obj_in=project_member2_in, project_id=project.id
     )
     project_member3 = create_random_user(db)
     project_member3_in = ProjectMemberCreate(
         member_id=project_member3.id, project_id=project.id
     )
     crud.project_member.create_with_project(
-        db,
-        obj_in=project_member3_in,
-        member_id=project_member3.id,
-        project_id=project.id,
+        db, obj_in=project_member3_in, project_id=project.id
     )
     r = client.get(
         f"{settings.API_V1_STR}/projects/{project.id}/members",
@@ -222,7 +217,7 @@ def test_update_project_current_user_is_member_of(
         member_id=current_user.id, project_id=project.id
     )
     crud.project_member.create_with_project(
-        db, obj_in=project_member_in, member_id=current_user.id, project_id=project.id
+        db, obj_in=project_member_in, project_id=project.id
     )
     project_in = jsonable_encoder(
         ProjectUpdate(
@@ -263,5 +258,79 @@ def test_update_project_current_user_does_not_belong_to(
     r = client.put(
         f"{settings.API_V1_STR}/projects/{project.id}",
         json=jsonable_encoder(project_in.dict()),
+    )
+    assert 404 == r.status_code
+
+
+def test_add_new_project_member_by_email_and_project_owner(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Verify project owner can add a new member by member email to the project."""
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
+    project = create_random_project(db, owner_id=current_user.id)
+    new_member = create_random_user(db)
+    data = {"email": new_member.email}
+    r = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/members",
+        json=jsonable_encoder(data),
+    )
+    assert 201 == r.status_code
+    response_data = r.json()
+    new_member.id == response_data["member_id"]
+    project.id == response_data["project_id"]
+
+
+def test_add_new_project_member_by_id_and_project_owner(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Verify project owner can add a new member by member id to the project."""
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
+    project = create_random_project(db, owner_id=current_user.id)
+    new_member = create_random_user(db)
+    data = {"member_id": new_member.id}
+    r = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/members",
+        json=jsonable_encoder(data),
+    )
+    assert 201 == r.status_code
+    response_data = r.json()
+    new_member.id == response_data["member_id"]
+    project.id == response_data["project_id"]
+
+
+def test_add_new_project_member_by_email_and_regular_project_member(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Verify failure to add new project member by another regular project member."""
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
+    project = create_random_project(db)
+    create_random_project_member(db, email=current_user.email, project_id=project.id)
+    new_member = create_random_user(db)
+    data = {"email": new_member.email}
+    r = client.post(
+        f"{settings.API_V1_STR}/project/{project.id}/members",
+        json=jsonable_encoder(data),
+    )
+    assert 404 == r.status_code
+
+
+def test_add_new_project_member_with_unused_email(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Verify proper handling of attempt to add project member with email not in db."""
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
+    project = create_random_project(db, owner_id=current_user.id)
+    data = {"email": "email@notindb.doh"}
+    r = client.post(
+        f"{settings.API_V1_STR}/project/{project.id}/members",
+        json=jsonable_encoder(data),
     )
     assert 404 == r.status_code
