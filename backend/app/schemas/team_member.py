@@ -37,7 +37,8 @@ class TeamMemberInDBBase(TeamMemberBase):
 
 # additional properties to return via API
 class TeamMember(TeamMemberInDBBase):
-    pass
+    full_name: str | None
+    email: EmailStr | None
 
 
 # additional properties stored in DB

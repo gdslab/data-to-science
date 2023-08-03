@@ -11,8 +11,9 @@ import ProjectForm from './components/forms/ProjectForm';
 import ProjectList from './components/forms/ProjectList';
 import RegistrationForm from './components/auth/RegistrationForm';
 import Root from './components/layout/Root';
+import Teams from './components/forms/Teams/Teams';
+import TeamDetail from './components/forms/TeamDetail';
 import TeamForm from './components/forms/TeamForm';
-import TeamList from './components/forms/TeamList';
 
 export const router = createBrowserRouter([
   {
@@ -38,23 +39,33 @@ export const router = createBrowserRouter([
       },
       {
         path: '/teams',
-        element: <TeamList />,
+        element: <Teams />,
         loader: async () => {
-          const response = await axios.get('/api/v1/teams/', {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-            },
-          });
+          const response = await axios.get('/api/v1/teams/');
           if (response) {
             return response.data;
           } else {
             return [];
           }
         },
-      },
-      {
-        path: '/teams/create',
-        element: <TeamForm />,
+        children: [
+          {
+            path: '/teams/:teamId',
+            element: <TeamDetail />,
+            loader: async ({ params }) => {
+              const response = await axios.get(`/api/v1/teams/${params.teamId}`);
+              if (response) {
+                return response.data;
+              } else {
+                return null;
+              }
+            },
+          },
+          {
+            path: '/teams/create',
+            element: <TeamForm />,
+          },
+        ],
       },
       {
         path: '/projects',

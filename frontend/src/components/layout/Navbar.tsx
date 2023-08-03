@@ -15,7 +15,7 @@ import brandLogo from '../../assets/brand.svg';
 
 const navigation = [
   { name: 'Home', href: '/home' },
-  { name: 'Team', href: '/teams' },
+  { name: 'Teams', href: '/teams' },
   { name: 'Projects', href: '/projects' },
 ];
 
@@ -78,15 +78,6 @@ export default function Navbar() {
               </div>
               {user ? (
                 <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
-                  {/* <button
-                    type="button"
-                    className="relative rounded-full bg-primary p-1 text-gray-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
-                  >
-                    <span className="absolute -inset-1.5" />
-                    <span className="sr-only">View notifications</span>
-                    <BellIcon className="h-6 w-6" aria-hidden="true" />
-                  </button> */}
-
                   {/* Profile dropdown */}
                   <Menu as="div" className="relative ml-3">
                     <div>
@@ -95,9 +86,9 @@ export default function Navbar() {
                         <span className="sr-only">Open user menu</span>
                         <div className="flex items-center justify-center">
                           <UserCircleIcon className="inline h-8 w-8 rounded-full" />
-                          <span className="inline ml-4">
+                          <div className="hidden md:inline ml-4">
                             {user.first_name} {user.last_name}
-                          </span>
+                          </div>
                           <ChevronDownIcon
                             className="inline h-4 w-4 ml-2"
                             aria-hidden="true"

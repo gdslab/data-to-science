@@ -26,4 +26,7 @@ class TeamMember(Base):
     team: Mapped["Team"] = relationship(back_populates="members")
 
     def __repr__(self) -> str:
-        return f"TeamMember(id={self.id!r}, " f"member_id={self.member_id!r})"
+        return (
+            f"TeamMember(id={self.id!r}, member_id={self.member_id!r}, "
+            f"team_id={self.team_id})"
+        )
