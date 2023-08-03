@@ -5,7 +5,7 @@ import MapLayersControl from './MapLayers';
 
 export default function Map() {
   return (
-    <div className="w-full h-96">
+    <div className="flex-1">
       <MapContainer
         center={[42.71473, -87.51332]}
         preferCanvas={true}

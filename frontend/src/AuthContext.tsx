@@ -1,13 +1,12 @@
-import axios from "axios";
-import { ReactNode, createContext, useState } from "react";
-import { RouterProvider } from "react-router";
+import axios from 'axios';
+import { ReactNode, createContext, useState } from 'react';
 
 interface Login {
   username: string;
   password: string;
 }
 
-interface User {
+export interface User {
   id: string;
   email: string;
   first_name: string;
@@ -29,7 +28,7 @@ const AuthContext = createContext(context);
 
 export function AuthContextProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
-    let userProfile = localStorage.getItem("userProfile");
+    let userProfile = localStorage.getItem('userProfile');
     if (userProfile) {
       return JSON.parse(userProfile);
     }
@@ -38,15 +37,15 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
 
   async function login(data: { username: string; password: string }) {
     try {
-      await axios.post("/api/v1/auth/access-token", data, {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      await axios.post('/api/v1/auth/access-token', data, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         withCredentials: true,
       });
-      const currentUser = await axios.get("/api/v1/users/current", {
+      const currentUser = await axios.get('/api/v1/users/current', {
         withCredentials: true,
       });
       if (currentUser) {
-        localStorage.setItem("userProfile", JSON.stringify(currentUser.data));
+        localStorage.setItem('userProfile', JSON.stringify(currentUser.data));
         setUser(currentUser.data);
       }
     } catch (err) {
@@ -55,9 +54,9 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout() {
-    localStorage.removeItem("userProfile");
+    localStorage.removeItem('userProfile');
     try {
-      await axios.get("/api/v1/auth/remove-access-token").then(() => setUser(null));
+      await axios.get('/api/v1/auth/remove-access-token').then(() => setUser(null));
     } catch (err) {
       throw err;
     }

@@ -1,19 +1,15 @@
 import { Outlet } from 'react-router-dom';
 
-import Footer from './Footer';
-import Header from './Header';
+import Navbar from './Navbar';
 
 export default function Root() {
   return (
-    <div className="wrapper">
-      <div className="header">
-        <Header />
+    <div className="h-screen">
+      <div>
+        <Navbar />
       </div>
-      <div className="content">
+      <div className="h-[calc(100%_-_64px)]">
         <Outlet />
-      </div>
-      <div className="footer">
-        <Footer />
       </div>
     </div>
   );

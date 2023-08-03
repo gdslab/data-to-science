@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@headlessui/react": "latest",
+    "@heroicons/react": "^2.0.18",
     "axios": "^1.4.0",
     "formik": "^2.4.2",
     "leaflet": "^1.9.4",

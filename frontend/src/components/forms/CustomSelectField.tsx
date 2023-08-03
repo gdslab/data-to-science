@@ -1,4 +1,4 @@
-import { Field, ErrorMessage } from "formik";
+import { Field, ErrorMessage } from 'formik';
 
 interface Option {
   label: string;
@@ -14,13 +14,12 @@ export default function CustomSelectField({
   name: string;
   options: Option[];
 }) {
-  console.log(options);
   return (
     <>
       <label htmlFor={name}>{label}:</label>
       <Field component="select" id={name} name={name}>
         {options.map((option) => (
-          <option key={option.value || "novalue"} value={option.value}>
+          <option key={option.value || 'novalue'} value={option.value}>
             {option.label}
           </option>
         ))}

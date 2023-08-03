@@ -1,5 +1,4 @@
-const style =
-  'bg-gray-700 text-white font-bold py-2 px-4 w-full rounded hover:bg-gray-600';
+const style = 'bg-primary text-black font-bold py-2 px-4 w-full rounded';
 
 export function CustomSubmitButton({
   disabled,
