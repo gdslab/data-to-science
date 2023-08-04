@@ -21,7 +21,7 @@ export default function LoginForm() {
           initialValues={initialValues}
           validationSchema={validationSchema}
           onSubmit={async (values, { setSubmitting, setStatus }) => {
-            setStatus('');
+            setStatus(null);
             try {
               const data = {
                 username: values.email,

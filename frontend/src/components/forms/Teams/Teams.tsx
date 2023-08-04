@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { Link, Outlet, useLoaderData, useParams } from 'react-router-dom';
-import { BellIcon } from '@heroicons/react/24/outline';
+import { BellIcon, PlusSmallIcon } from '@heroicons/react/24/outline';
 
 interface Team {
   id: string;
@@ -65,6 +65,17 @@ export default function SidebarPage() {
                   </Link>
                 </li>
               ))}
+              <li key="create-team">
+                <Link
+                  className="flex items-center font-medium text-gray-500 block rounded-lg px-4 py-2 text-sm hover:bg-gray-100 hover:text-gray-700"
+                  to={'/teams/create'}
+                >
+                  <div>
+                    <PlusSmallIcon className="h-4 w-4" aria-hidden="true" />
+                  </div>
+                  <div>Add Team</div>
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
