@@ -36,7 +36,7 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
     ) -> Team | None:
         """Retrieve team by id if user belongs to team."""
         if only_owner:
-            statement = select(Team).filter_by(owner_id=user_id)
+            statement = select(Team).filter_by(owner_id=user_id, id=team_id)
         else:
             statement = (
                 select(Team)

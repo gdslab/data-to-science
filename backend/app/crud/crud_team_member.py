@@ -1,3 +1,4 @@
+import logging
 from typing import Sequence
 from uuid import UUID
 
@@ -11,13 +12,16 @@ from app.models.user import User
 from app.schemas.team_member import TeamMemberCreate, TeamMemberUpdate
 
 
+logger = logging.getLogger("__name__")
+
+
 class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
     def create_with_team(
         self, db: Session, *, obj_in: TeamMemberCreate, team_id: UUID
     ) -> TeamMember | None:
         obj_in_data = jsonable_encoder(obj_in)
         email = obj_in_data["email"]
-        statement = select(User).filter_by(email=email)
+        statement = select(User).filter_by(email=email, is_approved=True)
         with db as session:
             user_obj = session.scalars(statement).one_or_none()
             if user_obj:

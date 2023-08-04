@@ -5,7 +5,7 @@ from fastapi import Depends, HTTPException, status
 
 # from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
-from jose.exceptions import JWTError
+from jose.exceptions import JWTError, JWSSignatureError
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
@@ -28,10 +28,18 @@ def get_db():
     db = SessionLocal()
     try:
         yield db
-    except Exception:
+    except (JWTError, JWSSignatureError):
         logger.exception("Session raised exception - issuing rollback")
         db.rollback()
-        raise
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Must sign in to access"
+        )
+    # except Exception:
+    #     logger.exception("Session raised exception - issuing rollback")
+    #     db.rollback()
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to complete request"
+    #     )
     finally:
         db.close()
 
@@ -47,7 +55,7 @@ def get_current_user(
     except (JWTError, ValidationError):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Could not validate credentials",
+            detail="Access forbidden",
         )
     except Exception as e:
         logger.error(str(e))

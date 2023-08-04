@@ -2,6 +2,7 @@ import axios from 'axios';
 import { Formik, Form } from 'formik';
 import { Link } from 'react-router-dom';
 
+import Alert from '../../Alert';
 import { CustomSubmitButton } from '../../forms/CustomButtons';
 import CustomTextField from '../../forms/CustomTextField';
 
@@ -31,10 +32,12 @@ export default function RegistrationForm() {
               }
             } catch (err) {
               if (axios.isAxiosError(err)) {
-                console.error(err);
-                setStatus(err.response?.data.detail);
+                setStatus({ type: 'error', msg: err.response?.data.detail });
               } else {
-                // do something
+                setStatus({
+                  type: 'error',
+                  msg: 'Unable to register account at this time',
+                });
               }
             }
             setSubmitting(false);
@@ -65,9 +68,9 @@ export default function RegistrationForm() {
                     Register
                   </CustomSubmitButton>
                 </div>
-                {status ? (
-                  <div style={{ marginTop: 15 }}>
-                    <span style={{ color: 'red' }}>{status}</span>
+                {status && status.type && status.msg ? (
+                  <div className="mt-4">
+                    <Alert alertType={status.type}>{status.msg}</Alert>
                   </div>
                 ) : null}
               </Form>

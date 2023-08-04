@@ -106,6 +106,7 @@ def create_team_member(
     )
     if not team_member:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Unable to find user with provided email address",
         )
     return team_member

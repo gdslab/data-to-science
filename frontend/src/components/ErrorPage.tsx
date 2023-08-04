@@ -1,17 +1,39 @@
+import axios from 'axios';
 import { Link, isRouteErrorResponse, useRouteError } from 'react-router-dom';
 
 export default function ErrorPage() {
   const error = useRouteError();
-  console.error(error);
+  let statusCode: number | undefined = 404;
+  if (axios.isAxiosError(error)) {
+    statusCode = error.response?.status;
+  }
 
   return (
-    <div className="flex flex-col w-full items-center justify-center">
-      <h1>Oops!</h1>
-      <p>Sorry, an unexpected error has occurred.</p>
-      <p>
-        <em>{isRouteErrorResponse(error) ? error.statusText : 'Not found'}</em>
-      </p>
-      <Link to="/home">Return Home</Link>
+    <div className="grid h-screen px-4 bg-white place-content-center">
+      <div className="text-center">
+        <h1 className="font-black text-gray-200 text-9xl">
+          {statusCode ? statusCode.toString() : '404'}
+        </h1>
+
+        <p className="text-2xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+          Uh-oh!
+        </p>
+
+        <p className="mt-4 text-gray-500">
+          {isRouteErrorResponse(error)
+            ? error.statusText
+            : axios.isAxiosError(error)
+            ? error.response?.data.detail
+            : "We can't find that page."}
+        </p>
+
+        <Link
+          to="/home"
+          className="inline-block px-5 py-3 mt-6 text-sm font-medium text-white bg-primary rounded hover:bg-primary focus:outline-none focus:ring"
+        >
+          Go Back Home
+        </Link>
+      </div>
     </div>
   );
 }
