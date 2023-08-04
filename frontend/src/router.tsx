@@ -15,6 +15,9 @@ import Teams from './components/forms/Teams/Teams';
 import TeamDetail from './components/forms/TeamDetail';
 import TeamForm from './components/forms/TeamForm';
 
+// data loaders
+import { loader as teamDetailLoader } from './components/forms/TeamDetail/TeamDetail';
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -52,14 +55,7 @@ export const router = createBrowserRouter([
           {
             path: '/teams/:teamId',
             element: <TeamDetail />,
-            loader: async ({ params }) => {
-              const response = await axios.get(`/api/v1/teams/${params.teamId}`);
-              if (response) {
-                return response.data;
-              } else {
-                return null;
-              }
-            },
+            loader: teamDetailLoader,
           },
           {
             path: '/teams/create',

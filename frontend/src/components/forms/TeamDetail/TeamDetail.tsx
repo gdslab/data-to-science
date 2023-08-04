@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { Formik, Form } from 'formik';
-import { useLoaderData } from 'react-router-dom';
+import { Params, useLoaderData, useNavigate } from 'react-router-dom';
 import * as Yup from 'yup';
 
 import Alert from '../../Alert';
@@ -14,18 +14,45 @@ interface Team {
   description: string;
 }
 
+export interface TeamMember {
+  id: string;
+  full_name: string;
+  email: string;
+}
+
+interface TeamData {
+  team: Team;
+  members: TeamMember[];
+}
+
+// fetches team details and team members prior to render
+export async function loader({ params }: { params: Params<string> }) {
+  try {
+    const teamResponse = await axios.get(`/api/v1/teams/${params.teamId}`);
+    const teamMembers = await axios.get(`/api/v1/teams/${params.teamId}/members`);
+    if (teamResponse && teamMembers) {
+      return { team: teamResponse.data, members: teamMembers.data };
+    } else {
+      return { team: null, members: [] };
+    }
+  } catch (err) {
+    throw err;
+  }
+}
+
 export default function TeamDetail() {
-  const team = useLoaderData() as Team;
+  const navigate = useNavigate();
+  const teamData = useLoaderData() as TeamData;
   return (
     <div>
       <div>
-        <h2>{team.title}</h2>
-        <span className="text-gray-600">{team.description}</span>
+        <h2>{teamData.team.title}</h2>
+        <span className="text-gray-600">{teamData.team.description}</span>
       </div>
       <hr className="mt-4 border-gray-700" />
       <div className="mt-9">
-        <h2>{team.title} Members</h2>
-        <TeamMemberList />
+        <h2>{teamData.team.title} Members</h2>
+        <TeamMemberList teamMembers={teamData.members} />
       </div>
       <div className="mt-4">
         <Formik
@@ -33,18 +60,18 @@ export default function TeamDetail() {
           validationSchema={Yup.object({
             email: Yup.string().email('Invalid email address').required('Required'),
           })}
-          onSubmit={async (values, { setSubmitting, setStatus }) => {
+          onSubmit={async (values, { resetForm, setSubmitting, setStatus }) => {
             setStatus({ type: '', msg: '' });
             setSubmitting(true);
             try {
               const data = { email: values.email };
               const response = await axios.post(
-                `/api/v1/teams/${team.id}/members`,
+                `/api/v1/teams/${teamData.team.id}/members`,
                 data
               );
-              if (response) {
-                setStatus({ type: 'success', msg: 'Successfully added to team' });
-                setSubmitting(false);
+              if (response && response.status === 201) {
+                resetForm();
+                navigate('.');
               } else {
                 setStatus({ type: 'error', msg: 'Unable to add user' });
                 setSubmitting(false);

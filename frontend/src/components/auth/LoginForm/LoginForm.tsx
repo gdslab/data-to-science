@@ -3,6 +3,7 @@ import { Formik, Form } from 'formik';
 import { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
+import Alert from '../../Alert';
 import AuthContext from '../../../AuthContext';
 import { CustomSubmitButton } from '../../forms/CustomButtons';
 import CustomTextField from '../../forms/CustomTextField';
@@ -29,9 +30,20 @@ export default function LoginForm() {
               await login(data).then(() => navigate('/home'));
             } catch (err) {
               if (axios.isAxiosError(err)) {
-                setStatus(err.response?.data.detail);
+                const errMsg = err.response?.data.detail;
+                if (errMsg === 'Invalid credentials') {
+                  setStatus({ type: 'warning', msg: errMsg });
+                } else if (errMsg === 'Account needs approval') {
+                  setStatus({ type: 'info', msg: errMsg });
+                } else {
+                  setStatus({ type: 'error', msg: errMsg });
+                }
               } else {
-                setStatus(typeof err === 'string' ? err : 'Unknown error');
+                setStatus(
+                  typeof err === 'string'
+                    ? { type: 'error', msg: err }
+                    : { type: 'error', msg: 'Unexpected error has occurred' }
+                );
               }
             }
             setSubmitting(false);
@@ -46,9 +58,9 @@ export default function LoginForm() {
                 <div className="mt-4">
                   <CustomSubmitButton disabled={isSubmitting}>Login</CustomSubmitButton>
                 </div>
-                {status ? (
-                  <div style={{ marginTop: 15 }}>
-                    <span style={{ color: 'red' }}>{status}</span>
+                {status && status.type && status.msg ? (
+                  <div className="mt-4">
+                    <Alert alertType={status.type}>{status.msg}</Alert>
                   </div>
                 ) : null}
               </Form>

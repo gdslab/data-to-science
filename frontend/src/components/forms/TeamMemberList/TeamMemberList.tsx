@@ -1,35 +1,6 @@
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import axios from 'axios';
+import { TeamMember } from '../TeamDetail/TeamDetail';
 
-interface TeamMember {
-  id: string;
-  full_name: string;
-  email: string;
-}
-
-export default function TeamMemberList() {
-  const { teamId } = useParams();
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  useEffect(() => {
-    async function fetchTeamMembers() {
-      try {
-        const response = await axios.get(`/api/v1/teams/${teamId}/members`);
-        if (response) {
-          setTeamMembers(response.data);
-        } else {
-          // do something
-        }
-      } catch (err) {
-        if (axios.isAxiosError(err)) {
-          console.error(err);
-        } else {
-          // do something
-        }
-      }
-    }
-    fetchTeamMembers();
-  }, []);
+export default function TeamMemberList({ teamMembers }: { teamMembers: TeamMember[] }) {
   if (teamMembers.length < 1) {
     return <div>No team members</div>;
   } else {

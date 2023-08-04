@@ -17,7 +17,7 @@ function getAlertProps(alertType: AlertType) {
   switch (alertType) {
     case 'success':
       return {
-        title: 'Request completed',
+        title: 'Success',
         color: [
           'rounded border-s-4 border-green-500 bg-green-50 p-4',
           'flex items-center gap-2 text-green-800',
@@ -32,7 +32,7 @@ function getAlertProps(alertType: AlertType) {
       };
     case 'info':
       return {
-        title: 'More details',
+        title: 'Info',
         color: [
           'rounded border-s-4 border-sky-500 bg-sky-50 p-4',
           'flex items-center gap-2 text-sky-800',
@@ -47,7 +47,7 @@ function getAlertProps(alertType: AlertType) {
       };
     case 'warning':
       return {
-        title: 'Something unexpected happened',
+        title: 'Warning',
         color: [
           'rounded border-s-4 border-amber-500 bg-amber-50 p-4',
           'flex items-center gap-2 text-amber-800',
@@ -62,7 +62,7 @@ function getAlertProps(alertType: AlertType) {
       };
     case 'error':
       return {
-        title: 'Something went wrong',
+        title: 'Error',
         color: [
           'rounded border-s-4 border-red-500 bg-red-50 p-4',
           'flex items-center gap-2 text-red-800',
