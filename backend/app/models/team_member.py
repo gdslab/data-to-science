@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.schema import UniqueConstraint
 
 from app.db.base_class import Base
 
@@ -24,6 +25,8 @@ class TeamMember(Base):
 
     member: Mapped["User"] = relationship(back_populates="team_memberships")
     team: Mapped["Team"] = relationship(back_populates="members")
+
+    __table_args__ = (UniqueConstraint("member_id", "team_id", name="unique_to_team"),)
 
     def __repr__(self) -> str:
         return (

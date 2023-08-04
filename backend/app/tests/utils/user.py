@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app import crud
@@ -19,11 +20,14 @@ def login_and_get_access_token(
     return auth_token.split(" ")[1].rstrip('"')
 
 
-def create_random_user_in(email: str | None = None) -> UserCreate:
+def create_random_user_in(
+    email: str | None = None, password: str | None = None
+) -> UserCreate:
     """Create random user model with specific email if provided."""
     if not email:
         email = random_email()
-    password = random_password()
+    if not password:
+        password = random_password()
     full_name = random_full_name()
     user_in = UserCreate(
         email=email,
@@ -34,10 +38,23 @@ def create_random_user_in(email: str | None = None) -> UserCreate:
     return user_in
 
 
-def create_random_user(db: Session, email: str | None = None) -> User:
+def create_random_user(
+    db: Session,
+    email: str | None = None,
+    password: str | None = None,
+    is_approved: bool = True,
+) -> User:
     """Create random user in database with specific email if provided."""
-    user_in = create_random_user_in(email)
+    user_in = create_random_user_in(email=email, password=password)
     user = crud.user.create(db, obj_in=user_in)
+    if is_approved:
+        statement = (
+            update(User).where(User.email == user.email).values(is_approved=True)
+        )
+        with db as session:
+            session.execute(statement)
+            session.commit()
+            user = crud.user.get(db, id=user.id)
     return user
 
 

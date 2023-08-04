@@ -33,10 +33,24 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
                 db_obj = None
         return db_obj
 
-    def get_user_team_member(
+    def get_team_member_by_email(
+        self, db: Session, *, email: str, team_id: UUID
+    ) -> TeamMember | None:
+        """Find team member record by email."""
+        statement = (
+            select(TeamMember)
+            .join(User, TeamMember.member)
+            .where(User.email == email)
+            .where(TeamMember.team_id == team_id)
+        )
+        with db as session:
+            team_member = session.scalars(statement).one_or_none()
+        return team_member
+
+    def get_team_member_by_id(
         self, db: Session, *, user_id: UUID, team_id: UUID
     ) -> TeamMember | None:
-        """Find team member record for user by team id."""
+        """Find team member record by team id."""
         statement = (
             select(TeamMember)
             .where(TeamMember.member_id == user_id)

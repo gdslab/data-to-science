@@ -215,6 +215,23 @@ def test_add_new_team_member_by_regular_team_member(
     assert 404 == r.status_code
 
 
+def test_add_existing_team_member_to_team(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Verify attempt to add existing team member to team again fails."""
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
+    team = create_random_team(db, owner_id=current_user.id)
+    team_member = create_random_user(db)
+    create_random_team_member(db, email=team_member.email, team_id=team.id)
+    data = {"email": team_member.email}
+    r = client.post(
+        f"{settings.API_V1_STR}/teams/{team.id}/members", json=jsonable_encoder(data)
+    )
+    assert 400 == r.status_code
+
+
 def test_add_new_team_member_with_unused_email(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:

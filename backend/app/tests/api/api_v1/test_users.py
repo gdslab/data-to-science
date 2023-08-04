@@ -40,6 +40,21 @@ def test_create_user_existing_email(client: TestClient, db: Session) -> None:
     assert 400 == r.status_code
 
 
+def test_create_user_is_not_approved(client: TestClient, db: Session) -> None:
+    """Verify new user is not approved by default."""
+    full_name = random_full_name()
+    data = {
+        "email": random_email(),
+        "password": random_password(),
+        "first_name": full_name["first"],
+        "last_name": full_name["last"],
+    }
+    r = client.post(f"{settings.API_V1_STR}/users/", json=data)
+    assert 201 == r.status_code
+    created_user = r.json()
+    assert created_user["is_approved"] is False
+
+
 def test_get_users_normal_current_user(
     client: TestClient,
     normal_user_access_token: str,

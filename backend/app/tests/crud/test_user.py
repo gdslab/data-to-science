@@ -1,4 +1,6 @@
+import pytest
 from fastapi.encoders import jsonable_encoder
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import crud
@@ -17,6 +19,14 @@ def test_create_user(db: Session) -> None:
     assert not hasattr(user, "password")
     assert user.first_name == user_in.first_name
     assert user.last_name == user_in.last_name
+
+
+def test_create_user_with_existing_email(db: Session) -> None:
+    """Verify cannot create new user with an existing (non-unique) email."""
+    user_in = create_random_user_in()
+    user = crud.user.create(db, obj_in=user_in)
+    with pytest.raises(IntegrityError):
+        create_random_user(db, email=user.email)
 
 
 def test_get_user_by_id(db: Session) -> None:
@@ -70,12 +80,6 @@ def test_not_authenticate_user(db: Session) -> None:
     password = random_password()
     user = crud.user.authenticate(db, email=email, password=password)
     assert user is None
-
-
-def test_check_if_user_is_not_approved_by_default(db: Session) -> None:
-    """Verify new user is not approved by default at creation."""
-    user = create_random_user(db)
-    assert crud.user.is_approved(user) is False
 
 
 def test_check_if_user_is_normal_user_by_default(db: Session) -> None:

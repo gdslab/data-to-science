@@ -1,6 +1,7 @@
 from typing import Generator
 
 import pytest
+from fastapi import HTTPException, status
 from fastapi.testclient import TestClient
 from pydantic import PostgresDsn
 from sqlalchemy import create_engine
@@ -27,9 +28,19 @@ def db_fixture() -> Generator:
     try:
         db = TestSessionLocal()
         yield db
-    except Exception:
+    except Exception as exception:
         db.rollback()
-        raise
+        exception_name = exception.__class__.__name__
+        if exception_name == "JWTError" or exception_name == "JWSSignatureError":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Must sign in to access",
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Unable to complete request",
+            )
     finally:
         db.close()
         Base.metadata.drop_all(engine)

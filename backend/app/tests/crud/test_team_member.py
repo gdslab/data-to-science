@@ -1,3 +1,5 @@
+import pytest
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import crud
@@ -15,6 +17,16 @@ def test_create_team_member(db: Session) -> None:
     assert team_member
     assert user.id == team_member.member_id
     assert team.id == team_member.team_id
+
+
+def test_create_duplicate_team_member(db: Session) -> None:
+    """Verify cannot add user more than once to a team."""
+    team_owner = create_random_user(db)
+    team = create_random_team(db, owner_id=team_owner.id)
+    user = create_random_user(db)
+    create_random_team_member(db, email=user.email, team_id=team.id)
+    with pytest.raises(IntegrityError):
+        create_random_team_member(db, email=user.email, team_id=team.id)
 
 
 def test_get_list_of_team_members(db: Session) -> None:
