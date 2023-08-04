@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { createBrowserRouter } from 'react-router-dom';
 
 import ErrorPage from './components/ErrorPage';
@@ -16,7 +15,11 @@ import TeamDetail from './components/forms/TeamDetail';
 import TeamForm from './components/forms/TeamForm';
 
 // data loaders
+import { loader as projectDetailLoader } from './components/forms/ProjectDetail/ProjectDetail';
+import { loader as projectFormLoader } from './components/forms/ProjectForm/ProjectForm';
+import { loader as projectListLoader } from './components/forms/ProjectList/ProjectList';
 import { loader as teamDetailLoader } from './components/forms/TeamDetail/TeamDetail';
+import { loader as teamsLoader } from './components/forms/Teams/Teams';
 
 export const router = createBrowserRouter([
   {
@@ -43,14 +46,7 @@ export const router = createBrowserRouter([
       {
         path: '/teams',
         element: <Teams />,
-        loader: async () => {
-          const response = await axios.get('/api/v1/teams/');
-          if (response) {
-            return response.data;
-          } else {
-            return [];
-          }
-        },
+        loader: teamsLoader,
         children: [
           {
             path: '/teams/:teamId',
@@ -66,52 +62,17 @@ export const router = createBrowserRouter([
       {
         path: '/projects',
         element: <ProjectList />,
-        loader: async () => {
-          const response = await axios.get('/api/v1/projects/', {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-            },
-          });
-          if (response) {
-            return response.data;
-          } else {
-            return [];
-          }
-        },
+        loader: projectListLoader,
       },
       {
         path: '/projects/create',
         element: <ProjectForm />,
-        loader: async () => {
-          const response = await axios.get('/api/v1/teams/', {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-            },
-          });
-          if (response) {
-            const teams = response.data;
-            teams.unshift({ title: 'No team', id: '' });
-            return teams;
-          } else {
-            return [];
-          }
-        },
+        loader: projectFormLoader,
       },
       {
         path: '/projects/:projectId',
         element: <ProjectDetail />,
-        loader: async ({ params }) => {
-          const response = await axios.get(`/api/v1/projects/${params.projectId}`, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-            },
-          });
-          if (response) {
-            return response.data;
-          } else {
-            return null;
-          }
-        },
+        loader: projectDetailLoader,
       },
       {
         path: '/projects/:projectId/datasets/:datasetId',

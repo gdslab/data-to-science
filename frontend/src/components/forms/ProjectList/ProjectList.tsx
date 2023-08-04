@@ -1,9 +1,19 @@
-import { useLoaderData, Link } from "react-router-dom";
+import axios from 'axios';
+import { useLoaderData, Link } from 'react-router-dom';
 
 interface Project {
   id: string;
   title: string;
   description: string;
+}
+
+export async function loader() {
+  const response = await axios.get('/api/v1/projects/');
+  if (response) {
+    return response.data;
+  } else {
+    return [];
+  }
 }
 
 export default function ProjectList() {

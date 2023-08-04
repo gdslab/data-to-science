@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { Link, Outlet, useLoaderData, useParams } from 'react-router-dom';
 import { BellIcon } from '@heroicons/react/24/outline';
 
@@ -9,6 +10,15 @@ interface Team {
 
 function classNames(...classes: [string, string]) {
   return classes.filter(Boolean).join(' ');
+}
+
+export async function loader() {
+  const response = await axios.get('/api/v1/teams/');
+  if (response) {
+    return response.data;
+  } else {
+    return [];
+  }
 }
 
 export default function SidebarPage() {

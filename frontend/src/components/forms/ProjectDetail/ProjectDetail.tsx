@@ -1,5 +1,5 @@
-import axios from "axios";
-import { useLoaderData, useNavigate } from "react-router-dom";
+import axios from 'axios';
+import { Params, useLoaderData, useNavigate } from 'react-router-dom';
 
 interface Project {
   id: string;
@@ -7,6 +7,19 @@ interface Project {
   description: string;
   planting_date: string;
   harvest_date: string;
+}
+
+export async function loader({ params }: { params: Params<string> }) {
+  const response = await axios.get(`/api/v1/projects/${params.projectId}`, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+    },
+  });
+  if (response) {
+    return response.data;
+  } else {
+    return null;
+  }
 }
 
 export default function ProjectDetail() {
@@ -21,13 +34,13 @@ export default function ProjectDetail() {
         type="button"
         onClick={async () => {
           try {
-            const data = { category: "UAS" };
+            const data = { category: 'UAS' };
             const response = await axios.post(
               `/api/v1/projects/${project.id}/datasets/`,
               data,
               {
                 headers: {
-                  Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+                  Authorization: `Bearer ${localStorage.getItem('access_token')}`,
                 },
               }
             );

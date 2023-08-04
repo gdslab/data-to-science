@@ -1,18 +1,29 @@
-import { useState } from "react";
-import axios from "axios";
-import { Formik, Form } from "formik";
-import { useLoaderData, useNavigate } from "react-router-dom";
+import { useState } from 'react';
+import axios from 'axios';
+import { Formik, Form } from 'formik';
+import { useLoaderData, useNavigate } from 'react-router-dom';
 
-import CustomSelectField from "../CustomSelectField";
-import CustomTextField from "../CustomTextField";
+import CustomSelectField from '../CustomSelectField';
+import CustomTextField from '../CustomTextField';
 
-import initialValues from "./initialValues";
-import validationSchema from "./validationSchema";
+import initialValues from './initialValues';
+import validationSchema from './validationSchema';
 
 interface Team {
   id: string;
   title: string;
   description: string;
+}
+
+export async function loader() {
+  const response = await axios.get('/api/v1/teams/');
+  if (response) {
+    const teams = response.data;
+    teams.unshift({ title: 'No team', id: '' });
+    return teams;
+  } else {
+    return [];
+  }
 }
 
 export default function ProjectForm() {
@@ -35,14 +46,14 @@ export default function ProjectForm() {
               ...(values.harvestDate && { harvest_date: values.harvestDate }),
               ...(values.teamId && { team_id: values.teamId }),
             };
-            const response = await axios.post("/api/v1/projects/", data, {
+            const response = await axios.post('/api/v1/projects/', data, {
               headers: {
-                Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+                Authorization: `Bearer ${localStorage.getItem('access_token')}`,
               },
             });
             if (response) {
               setResponseData(response.data);
-              navigate("/projects");
+              navigate('/projects');
             } else {
               // do something
             }
@@ -70,16 +81,16 @@ export default function ProjectForm() {
                   try {
                     const data = {
                       name: `Field ${new Date().toString()}`,
-                      geom: "SRID=4326;POLYGON((0 0,1 0,1 1,0 1,0 0))",
+                      geom: 'SRID=4326;POLYGON((0 0,1 0,1 1,0 1,0 0))',
                     };
-                    const response = await axios.post("/api/v1/locations/", data, {
+                    const response = await axios.post('/api/v1/locations/', data, {
                       headers: {
-                        Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+                        Authorization: `Bearer ${localStorage.getItem('access_token')}`,
                       },
                     });
                     if (response) {
-                      setFieldValue("locationId", response.data.id);
-                      setFieldTouched("locationId", true);
+                      setFieldValue('locationId', response.data.id);
+                      setFieldTouched('locationId', true);
                     }
                   } catch (err) {
                     if (axios.isAxiosError(err)) {
