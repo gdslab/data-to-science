@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom';
 
 import ErrorPage from './components/ErrorPage';
 import FlightForm from './components/forms/FlightForm';
+import Landing from './components/Landing';
 import LoginForm from './components/auth/LoginForm';
 import Logout from './components/auth/Logout';
 import Map from './components/map';
@@ -27,6 +28,10 @@ export const router = createBrowserRouter([
     element: <Root />,
     errorElement: <ErrorPage />,
     children: [
+      {
+        path: '/',
+        element: <Landing />,
+      },
       {
         path: '/auth/register',
         element: <RegistrationForm />,
