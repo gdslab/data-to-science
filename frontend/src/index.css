@@ -13,12 +13,12 @@ body {
 
 @layer base {
   h1 {
-    @apply text-2xl font-bold;
+    @apply mb-4 text-2xl font-bold;
   }
   h2 {
-    @apply text-xl font-bold;
+    @apply mb-4 text-xl font-bold;
   }
   h3 {
-    @apply text-lg font-bold;
+    @apply mb-4 text-lg font-bold;
   }
 }

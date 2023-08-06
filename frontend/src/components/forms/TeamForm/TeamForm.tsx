@@ -41,9 +41,9 @@ export default function TeamForm() {
           setSubmitting(false);
         }}
       >
-        {({ isSubmitting }) => (
+        {({ isSubmitting, status }) => (
           <div>
-            <span className="text-xl font-semibold">Create team</span>
+            <h1>Create team</h1>
             <Form>
               <CustomTextField label="Title" name="title" />
               <CustomTextField label="Description" name="description" />
@@ -52,6 +52,11 @@ export default function TeamForm() {
                   Create team
                 </CustomSubmitButton>
               </div>
+              {status && status.type && status.msg ? (
+                <div className="mt-4">
+                  <Alert alertType={status.type}>{status.msg}</Alert>
+                </div>
+              ) : null}
             </Form>
           </div>
         )}

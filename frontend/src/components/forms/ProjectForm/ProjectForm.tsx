@@ -3,6 +3,8 @@ import axios from 'axios';
 import { Formik, Form } from 'formik';
 import { useLoaderData, useNavigate } from 'react-router-dom';
 
+import Alert from '../../Alert';
+import { CustomButton, CustomSubmitButton } from '../CustomButtons';
 import CustomSelectField from '../CustomSelectField';
 import CustomTextField from '../CustomTextField';
 
@@ -32,11 +34,12 @@ export default function ProjectForm() {
   const [responseData, setResponseData] = useState(null);
 
   return (
-    <div style={{ width: 450 }}>
+    <div className="m-4" style={{ width: 450 }}>
       <Formik
         initialValues={initialValues}
         validationSchema={validationSchema}
         onSubmit={async (values, { setSubmitting }) => {
+          console.log('here');
           try {
             const data = {
               title: values.title,
@@ -46,12 +49,9 @@ export default function ProjectForm() {
               ...(values.harvestDate && { harvest_date: values.harvestDate }),
               ...(values.teamId && { team_id: values.teamId }),
             };
-            const response = await axios.post('/api/v1/projects/', data, {
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-              },
-            });
+            const response = await axios.post('/api/v1/projects/', data);
             if (response) {
+              console.log(response);
               setResponseData(response.data);
               navigate('/projects');
             } else {
@@ -67,42 +67,38 @@ export default function ProjectForm() {
           setSubmitting(false);
         }}
       >
-        {({ isSubmitting, setFieldTouched, setFieldValue }) => (
-          <fieldset>
-            <legend>Create Project</legend>
+        {({ isSubmitting, setFieldTouched, setFieldValue, status }) => (
+          <div>
+            <h1>Create project</h1>
             <Form>
               <CustomTextField label="Title" name="title" />
               <CustomTextField label="Description" name="description" />
-              <CustomTextField label="Location" name="locationID" />
-              <button
-                type="button"
-                style={{ marginLeft: 15 }}
-                onClick={async () => {
-                  try {
-                    const data = {
-                      name: `Field ${new Date().toString()}`,
-                      geom: 'SRID=4326;POLYGON((0 0,1 0,1 1,0 1,0 0))',
-                    };
-                    const response = await axios.post('/api/v1/locations/', data, {
-                      headers: {
-                        Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-                      },
-                    });
-                    if (response) {
-                      setFieldValue('locationId', response.data.id);
-                      setFieldTouched('locationId', true);
+              <CustomTextField label="Location" name="locationId" />
+              <div className="mt-4">
+                <CustomButton
+                  onClick={async () => {
+                    try {
+                      const data = {
+                        name: `Field ${new Date().toString()}`,
+                        geom: 'SRID=4326;POLYGON((0 0,1 0,1 1,0 1,0 0))',
+                      };
+                      const response = await axios.post('/api/v1/locations/', data);
+                      if (response) {
+                        setFieldValue('locationId', response.data.id);
+                        setFieldTouched('locationId', true);
+                      }
+                    } catch (err) {
+                      if (axios.isAxiosError(err)) {
+                        console.error(err);
+                      } else {
+                        // do something
+                      }
                     }
-                  } catch (err) {
-                    if (axios.isAxiosError(err)) {
-                      console.error(err);
-                    } else {
-                      // do something
-                    }
-                  }
-                }}
-              >
-                Add Location
-              </button>
+                  }}
+                >
+                  Add Location
+                </CustomButton>
+              </div>
               <CustomTextField type="date" label="Planting date" name="plantingDate" />
               <CustomTextField type="date" label="Harvest date" name="harvestDate" />
               {teams.length > 0 ? (
@@ -115,16 +111,18 @@ export default function ProjectForm() {
                   }))}
                 />
               ) : null}
-              <div>
-                <button type="submit" disabled={isSubmitting}>
-                  Create Project
-                </button>
-                {responseData ? (
-                  <pre>{JSON.stringify(responseData, undefined, 2)}</pre>
-                ) : null}
+              <div className="mt-4">
+                <CustomSubmitButton disabled={isSubmitting}>
+                  Create project
+                </CustomSubmitButton>
               </div>
+              {status && status.type && status.msg ? (
+                <div className="mt-4">
+                  <Alert alertType={status.type}>{status.msg}</Alert>
+                </div>
+              ) : null}
             </Form>
-          </fieldset>
+          </div>
         )}
       </Formik>
     </div>
