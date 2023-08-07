@@ -8,7 +8,7 @@ import { CustomButton, CustomSubmitButton } from '../CustomButtons';
 import CustomSelectField from '../CustomSelectField';
 import CustomTextField from '../CustomTextField';
 
-import initialValues from './initialValues';
+import initialValues, { InitialValues } from './initialValues';
 import validationSchema from './validationSchema';
 
 interface Team {
@@ -28,18 +28,23 @@ export async function loader() {
   }
 }
 
-export default function ProjectForm() {
+export default function ProjectForm({
+  editMode = false,
+  projectId = '',
+  storedValues,
+}: {
+  editMode: boolean;
+  projectId?: string;
+  storedValues?: InitialValues;
+}) {
   const navigate = useNavigate();
   const teams = useLoaderData() as Team[];
-  const [responseData, setResponseData] = useState(null);
-
   return (
     <div className="m-4" style={{ width: 450 }}>
       <Formik
-        initialValues={initialValues}
+        initialValues={storedValues ? storedValues : initialValues}
         validationSchema={validationSchema}
         onSubmit={async (values, { setSubmitting }) => {
-          console.log('here');
           try {
             const data = {
               title: values.title,
@@ -49,10 +54,10 @@ export default function ProjectForm() {
               ...(values.harvestDate && { harvest_date: values.harvestDate }),
               ...(values.teamId && { team_id: values.teamId }),
             };
-            const response = await axios.post('/api/v1/projects/', data);
+            const response = editMode
+              ? await axios.put(`/api/v1/projects/${projectId}`, data)
+              : await axios.post('/api/v1/projects/', data);
             if (response) {
-              console.log(response);
-              setResponseData(response.data);
               navigate('/projects');
             } else {
               // do something
@@ -67,38 +72,40 @@ export default function ProjectForm() {
           setSubmitting(false);
         }}
       >
-        {({ isSubmitting, setFieldTouched, setFieldValue, status }) => (
+        {({ isSubmitting, setFieldTouched, setFieldValue, status, values }) => (
           <div>
-            <h1>Create project</h1>
+            <h1>{editMode ? 'Edit project' : 'Create project'}</h1>
             <Form>
               <CustomTextField label="Title" name="title" />
               <CustomTextField label="Description" name="description" />
               <CustomTextField label="Location" name="locationId" />
-              <div className="mt-4">
-                <CustomButton
-                  onClick={async () => {
-                    try {
-                      const data = {
-                        name: `Field ${new Date().toString()}`,
-                        geom: 'SRID=4326;POLYGON((0 0,1 0,1 1,0 1,0 0))',
-                      };
-                      const response = await axios.post('/api/v1/locations/', data);
-                      if (response) {
-                        setFieldValue('locationId', response.data.id);
-                        setFieldTouched('locationId', true);
+              {!values.locationId ? (
+                <div className="mt-4">
+                  <CustomButton
+                    onClick={async () => {
+                      try {
+                        const data = {
+                          name: `Field ${new Date().toString()}`,
+                          geom: 'SRID=4326;POLYGON((0 0,1 0,1 1,0 1,0 0))',
+                        };
+                        const response = await axios.post('/api/v1/locations/', data);
+                        if (response) {
+                          setFieldValue('locationId', response.data.id);
+                          setFieldTouched('locationId', true);
+                        }
+                      } catch (err) {
+                        if (axios.isAxiosError(err)) {
+                          console.error(err);
+                        } else {
+                          // do something
+                        }
                       }
-                    } catch (err) {
-                      if (axios.isAxiosError(err)) {
-                        console.error(err);
-                      } else {
-                        // do something
-                      }
-                    }
-                  }}
-                >
-                  Add Location
-                </CustomButton>
-              </div>
+                    }}
+                  >
+                    Add Location
+                  </CustomButton>
+                </div>
+              ) : null}
               <CustomTextField type="date" label="Planting date" name="plantingDate" />
               <CustomTextField type="date" label="Harvest date" name="harvestDate" />
               {teams.length > 0 ? (
@@ -113,7 +120,7 @@ export default function ProjectForm() {
               ) : null}
               <div className="mt-4">
                 <CustomSubmitButton disabled={isSubmitting}>
-                  Create project
+                  {editMode ? 'Update project' : 'Create project'}
                 </CustomSubmitButton>
               </div>
               {status && status.type && status.msg ? (
