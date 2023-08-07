@@ -71,7 +71,7 @@ export default function ProjectList() {
                 <div className="sm:flex sm:items-end sm:justify-end">
                   <Link
                     to={`/projects/${project.id}`}
-                    className="block bg-warning px-5 py-3 text-center text-xs font-bold uppercase text-gray-900 transition hover:bg-yellow-400"
+                    className="block bg-accent2 px-5 py-3 text-center text-xs font-bold uppercase text-gray-900 transition hover:bg-yellow-400"
                   >
                     Open project
                   </Link>

@@ -1,33 +1,33 @@
 const defaultTheme = {
   primary: '#cfb991',
   secondary: '#8e6f3e',
-  info: '#daaa00',
-  warning: '#ddb945',
-  error: '#ebd99f',
+  accent1: '#daaa00',
+  accent2: '#ddb945',
+  accent3: '#ebd99f',
 };
 
 const altTheme1 = {
   primary: '#1e425e',
   secondary: '#256670',
-  info: '#ade28a',
-  warning: '#edfa8b',
-  error: '#407056',
+  accent1: '#ade28a',
+  accent2: '#edfa8b',
+  accent3: '#407056',
 };
 
 const altTheme2 = {
   primary: '#3d5a80',
   secondary: '#98c1d9',
-  info: '#e0fbfc',
-  warning: '#ee6c4d',
-  error: '#293241',
+  accent1: '#e0fbfc',
+  accent2: '#ee6c4d',
+  accent3: '#293241',
 };
 
 const altTheme3 = {
   primary: '#e6ebed',
   secondary: '#ffc100',
-  info: '#1e9adf',
-  warning: '#636466',
-  error: '#063852',
+  accent1: '#1e9adf',
+  accent2: '#636466',
+  accent3: '#063852',
 };
 
 export function loadTheme(themeName) {

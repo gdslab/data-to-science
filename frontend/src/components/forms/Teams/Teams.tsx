@@ -29,13 +29,13 @@ export default function SidebarPage() {
   return (
     <div className="flex">
       {/* sidebar */}
-      <div className="flex h-screen w-80 flex-col justify-between border-e bg-error">
+      <div className="flex h-screen w-80 flex-col justify-between border-e accent3">
         <div className="px-4 py-6">
           {/* notifications */}
           <div className="flex items-center justify-between">
             <button
               type="button"
-              className="relative rounded-full bg-error p-1 text-gray-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
+              className="relative rounded-full accent3 p-1 text-gray-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
             >
               <span className="absolute -inset-1.5" />
               <span className="sr-only">View notifications</span>

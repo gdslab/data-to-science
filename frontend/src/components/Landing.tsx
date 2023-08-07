@@ -26,7 +26,7 @@ export default function Landing() {
 
         <div className="mt-8 grid grid-cols-1 gap-8 md:mt-16 md:grid-cols-2 md:gap-12 lg:grid-cols-3">
           <div className="flex items-start gap-4">
-            <span className="shrink-0 rounded-lg bg-info p-4">
+            <span className="shrink-0 rounded-lg accent1 p-4">
               <svg
                 className="h-5 w-5"
                 fill="none"
@@ -57,7 +57,7 @@ export default function Landing() {
           </div>
 
           <div className="flex items-start gap-4">
-            <span className="shrink-0 rounded-lg bg-info p-4">
+            <span className="shrink-0 rounded-lg accent1 p-4">
               <svg
                 className="h-5 w-5"
                 fill="none"
@@ -88,7 +88,7 @@ export default function Landing() {
           </div>
 
           <div className="flex items-start gap-4">
-            <span className="shrink-0 rounded-lg bg-info p-4">
+            <span className="shrink-0 rounded-lg accent1 p-4">
               <svg
                 className="h-5 w-5"
                 fill="none"
@@ -119,7 +119,7 @@ export default function Landing() {
           </div>
 
           <div className="flex items-start gap-4">
-            <span className="shrink-0 rounded-lg bg-info p-4">
+            <span className="shrink-0 rounded-lg accent1 p-4">
               <svg
                 className="h-5 w-5"
                 fill="none"
@@ -150,7 +150,7 @@ export default function Landing() {
           </div>
 
           <div className="flex items-start gap-4">
-            <span className="shrink-0 rounded-lg bg-info p-4">
+            <span className="shrink-0 rounded-lg accent1 p-4">
               <svg
                 className="h-5 w-5"
                 fill="none"
@@ -181,7 +181,7 @@ export default function Landing() {
           </div>
 
           <div className="flex items-start gap-4">
-            <span className="shrink-0 rounded-lg bg-info p-4">
+            <span className="shrink-0 rounded-lg accent1 p-4">
               <svg
                 className="h-5 w-5"
                 fill="none"
