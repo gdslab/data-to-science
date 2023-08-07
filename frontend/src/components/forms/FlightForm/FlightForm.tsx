@@ -1,11 +1,12 @@
-import { useState } from "react";
-import axios from "axios";
-import { Formik, Form } from "formik";
+import { useState } from 'react';
+import axios from 'axios';
+import { Formik, Form } from 'formik';
 
-import CustomSelectField from "../CustomSelectField";
-import CustomTextField from "../CustomTextField";
+import { CustomSubmitButton } from '../CustomButtons';
+import CustomSelectField from '../CustomSelectField';
+import CustomTextField from '../CustomTextField';
 
-import initialValues, { PLATFORM_OPTIONS, SENSOR_OPTIONS } from "./initialValues";
+import initialValues, { PLATFORM_OPTIONS, SENSOR_OPTIONS } from './initialValues';
 
 export default function FlightForm() {
   const [responseData, setResponseData] = useState(null);
@@ -24,9 +25,9 @@ export default function FlightForm() {
               sensor: values.sensor,
               platform: values.platform,
             };
-            const response = await axios.post("/api/v1/flights/", data, {
+            const response = await axios.post('/api/v1/flights/', data, {
               headers: {
-                Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+                Authorization: `Bearer ${localStorage.getItem('access_token')}`,
               },
             });
             if (response) {
@@ -45,8 +46,8 @@ export default function FlightForm() {
         }}
       >
         {({ isSubmitting }) => (
-          <fieldset>
-            <legend>Create Flight</legend>
+          <div className="m-4">
+            <h1>Create Flight</h1>
             <Form>
               <CustomTextField
                 type="date"
@@ -66,16 +67,16 @@ export default function FlightForm() {
                 name="platform"
                 options={PLATFORM_OPTIONS}
               />
-              <div>
-                <button type="submit" disabled={isSubmitting}>
+              <div className="mt-4">
+                <CustomSubmitButton disabled={isSubmitting}>
                   Create Flight
-                </button>
+                </CustomSubmitButton>
                 {responseData ? (
                   <pre>{JSON.stringify(responseData, undefined, 2)}</pre>
                 ) : null}
               </div>
             </Form>
-          </fieldset>
+          </div>
         )}
       </Formik>
     </div>

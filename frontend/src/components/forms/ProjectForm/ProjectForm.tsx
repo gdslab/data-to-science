@@ -58,7 +58,7 @@ export default function ProjectForm({
               ? await axios.put(`/api/v1/projects/${projectId}`, data)
               : await axios.post('/api/v1/projects/', data);
             if (response) {
-              navigate('/projects');
+              editMode ? navigate(`/projects/${projectId}`) : navigate('/projects');
             } else {
               // do something
             }
@@ -74,7 +74,7 @@ export default function ProjectForm({
       >
         {({ isSubmitting, setFieldTouched, setFieldValue, status, values }) => (
           <div>
-            <h1>{editMode ? 'Edit project' : 'Create project'}</h1>
+            <h1>{editMode ? 'Project Details' : 'Create project'}</h1>
             <Form>
               <CustomTextField label="Title" name="title" />
               <CustomTextField label="Description" name="description" />

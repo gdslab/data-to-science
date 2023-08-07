@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { Params, useLoaderData, useNavigate } from 'react-router-dom';
 
+import { CustomButton } from '../CustomButtons';
 import ProjectForm from '../ProjectForm';
 
 interface Project {
@@ -25,6 +26,7 @@ export async function loader({ params }: { params: Params<string> }) {
 export default function ProjectDetail() {
   const navigate = useNavigate();
   const project = useLoaderData() as Project;
+  const datasets = [];
   const storedValues = {
     title: project.title,
     description: project.description,
@@ -46,32 +48,39 @@ export default function ProjectDetail() {
           storedValues={storedValues}
         />
       </div>
-      <button
-        type="button"
-        onClick={async () => {
-          try {
-            const data = { category: 'UAS' };
-            const response = await axios.post(
-              `/api/v1/projects/${project.id}/datasets/`,
-              data
-            );
+      <div className="m-4">
+        <h1>Datasets</h1>
+        <div>
+          {datasets.length < 1 ? <em>No datasets associated with project</em> : null}
+        </div>
+        <div className="mt-4" style={{ width: 450 }}>
+          <CustomButton
+            onClick={async () => {
+              try {
+                const data = { category: 'UAS' };
+                const response = await axios.post(
+                  `/api/v1/projects/${project.id}/datasets/`,
+                  data
+                );
 
-            if (response) {
-              navigate(`/projects/${project.id}/datasets/${response.data.id}`);
-            } else {
-              // do something
-            }
-          } catch (err) {
-            if (axios.isAxiosError(err)) {
-              console.error(err);
-            } else {
-              // do something
-            }
-          }
-        }}
-      >
-        Add Dataset
-      </button>
+                if (response) {
+                  navigate(`/projects/${project.id}/datasets/${response.data.id}`);
+                } else {
+                  // do something
+                }
+              } catch (err) {
+                if (axios.isAxiosError(err)) {
+                  console.error(err);
+                } else {
+                  // do something
+                }
+              }
+            }}
+          >
+            Add Dataset
+          </CustomButton>
+        </div>
+      </div>
     </div>
   );
 }
