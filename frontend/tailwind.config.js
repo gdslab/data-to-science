@@ -7,7 +7,7 @@ export default {
   theme: {
     colors: {
       ...colors,
-      ...loadTheme('default'),
+      ...loadTheme('alt3'),
     },
     extend: {},
   },

@@ -4,6 +4,7 @@ const defaultTheme = {
   accent1: '#daaa00',
   accent2: '#ddb945',
   accent3: '#ebd99f',
+  'accent3-dark': '#bcad7f',
 };
 
 const altTheme1 = {
@@ -12,6 +13,7 @@ const altTheme1 = {
   accent1: '#ade28a',
   accent2: '#edfa8b',
   accent3: '#407056',
+  'accent3-dark': '#335944',
 };
 
 const altTheme2 = {
@@ -20,14 +22,16 @@ const altTheme2 = {
   accent1: '#e0fbfc',
   accent2: '#ee6c4d',
   accent3: '#293241',
+  'accent3-dark': '#202834',
 };
 
 const altTheme3 = {
   primary: '#e6ebed',
   secondary: '#ffc100',
-  accent1: '#1e9adf',
+  accent1: '#237be6',
   accent2: '#636466',
-  accent3: '#063852',
+  accent3: '#003169',
+  'accent3-dark': '#002754',
 };
 
 export function loadTheme(themeName) {
