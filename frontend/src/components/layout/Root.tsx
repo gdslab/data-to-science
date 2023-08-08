@@ -2,7 +2,17 @@ import { Outlet } from 'react-router-dom';
 
 import Navbar from './Navbar';
 
-export default function Root() {
+export function RootNonUser() {
+  return (
+    <div className="h-screen">
+      <div className="h-full">
+        <Outlet />
+      </div>
+    </div>
+  );
+}
+
+export function RootUser() {
   return (
     <div className="h-screen">
       <div>

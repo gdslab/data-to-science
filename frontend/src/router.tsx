@@ -10,7 +10,7 @@ import ProjectDetail from './components/forms/ProjectDetail';
 import ProjectForm from './components/forms/ProjectForm';
 import ProjectList from './components/forms/ProjectList';
 import RegistrationForm from './components/auth/RegistrationForm';
-import Root from './components/layout/Root';
+import { RootNonUser, RootUser } from './components/layout/Root';
 import Teams from './components/forms/Teams/Teams';
 import TeamDetail from './components/forms/TeamDetail';
 import TeamForm from './components/forms/TeamForm';
@@ -25,7 +25,7 @@ import { loader as teamsLoader } from './components/forms/Teams/Teams';
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <Root />,
+    element: <RootNonUser />,
     errorElement: <ErrorPage />,
     children: [
       {

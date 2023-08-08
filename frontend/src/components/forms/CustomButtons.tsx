@@ -1,21 +1,39 @@
+import { ArrowRightIcon } from '@heroicons/react/24/outline';
+
 const style = 'bg-primary text-black font-bold py-2 px-4 w-full rounded';
-const outlineBtnStyle = '';
 
 interface Button {
   children: React.ReactNode;
   disabled?: boolean;
+  icon?: string;
   type?: 'button' | 'submit' | 'reset';
 }
 
-export function Button({ children, disabled = false, type = 'button' }: Button) {
+function getIcon(iconName: string) {
+  switch (iconName) {
+    case 'arrow':
+      return (
+        <span className="pointer-events-none absolute inset-y-0 end-0 grid w-1/4 place-content-center text-white">
+          <ArrowRightIcon className="h-6 w-6" aria-hidden="true" />
+        </span>
+      );
+    default:
+      return null;
+  }
+}
+
+export function Button({ children, disabled = false, icon, type = 'button' }: Button) {
   return (
-    <button
-      className="bg-accent3 text-white text-xl font-extrabold rounded-md p-4 w-full hover:bg-accent3-dark ease-in-out duration-300"
-      type={type}
-      disabled={disabled}
-    >
-      {children}
-    </button>
+    <div className="relative">
+      <button
+        className="bg-accent3 text-white text-xl font-extrabold rounded-md p-4 w-full hover:bg-accent3-dark ease-in-out duration-300"
+        type={type}
+        disabled={disabled}
+      >
+        {children}
+      </button>
+      {icon ? getIcon(icon) : null}
+    </div>
   );
 }
 
