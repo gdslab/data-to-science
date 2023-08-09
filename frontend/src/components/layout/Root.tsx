@@ -2,7 +2,7 @@ import { Outlet } from 'react-router-dom';
 
 import Navbar from './Navbar';
 
-export function RootNonUser() {
+export function RootPublic() {
   return (
     <div className="h-screen">
       <div className="h-full">
@@ -12,13 +12,14 @@ export function RootNonUser() {
   );
 }
 
-export function RootUser() {
+export function RootProtected() {
   return (
     <div className="h-screen">
       <div>
         <Navbar />
       </div>
-      <div className="h-[calc(100%_-_64px)]">
+      {/* subtract navbar from div height */}
+      <div className="h-[calc(100%_-_64px)] bg-gradient-to-b from-accent1 from-20% to-white to-10%">
         <Outlet />
       </div>
     </div>

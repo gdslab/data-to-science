@@ -1,1 +1,1 @@
-export { default } from "./ProjectForm";
+export { default, loader } from './ProjectForm';

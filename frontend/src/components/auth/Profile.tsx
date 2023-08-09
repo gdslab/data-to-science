@@ -9,7 +9,7 @@ import HintText from '../HintText';
 export default function Profile() {
   const { user } = useContext(AuthContext);
   return (
-    <div className="h-full flex flex-wrap items-center justify-center bg-accent1">
+    <div className="h-full flex flex-wrap items-center justify-center">
       <div className="sm:w-full md:w-1/3 max-w-xl mx-4">
         <Card>
           <div>

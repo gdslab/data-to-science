@@ -1,1 +1,1 @@
-export { default } from "./ProjectDetail";
+export { default, loader } from './ProjectDetail';
