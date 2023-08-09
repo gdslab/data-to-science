@@ -1,5 +1,6 @@
 import axios from 'axios';
-import { ReactNode, createContext, useState } from 'react';
+import { ReactNode, createContext, useContext, useState } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 
 interface Login {
   username: string;
@@ -67,6 +68,17 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
+}
+
+export function RequireAuth({ children }: { children: React.ReactNode }) {
+  const { user } = useContext(AuthContext);
+  const location = useLocation();
+
+  if (!user) {
+    return <Navigate to="/auth/login" state={{ from: location }} replace />;
+  }
+
+  return children;
 }
 
 export default AuthContext;

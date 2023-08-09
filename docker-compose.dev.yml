@@ -20,7 +20,7 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
     volumes:
       - ./backend:/app
-      - user_data:${UPLOAD_DIR}
+      # - user_data:${UPLOAD_DIR}
     restart: always
     depends_on:
       db:

@@ -33,7 +33,7 @@ export default function ProjectForm({
   projectId = '',
   storedValues,
 }: {
-  editMode: boolean;
+  editMode?: boolean;
   projectId?: string;
   storedValues?: InitialValues;
 }) {
