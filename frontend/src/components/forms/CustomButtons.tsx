@@ -6,7 +6,12 @@ interface Button {
   children: React.ReactNode;
   disabled?: boolean;
   icon?: string;
+  size?: string;
   type?: 'button' | 'submit' | 'reset';
+}
+
+function classNames(...classes: [string, string]) {
+  return classes.filter(Boolean).join(' ');
 }
 
 function getIcon(iconName: string) {
@@ -22,11 +27,20 @@ function getIcon(iconName: string) {
   }
 }
 
-export function Button({ children, disabled = false, icon, type = 'button' }: Button) {
+export function Button({
+  children,
+  disabled = false,
+  icon,
+  size = 'normal',
+  type = 'button',
+}: Button) {
   return (
     <div className="relative">
       <button
-        className="bg-accent3 text-white text-xl font-extrabold rounded-md p-2 w-full hover:bg-accent3-dark ease-in-out duration-300"
+        className={classNames(
+          size === 'sm' ? 'text-sm font-bold' : 'text-xl font-extrabold',
+          'bg-accent3 text-white rounded-md p-2 w-full hover:bg-accent3-dark ease-in-out duration-300'
+        )}
         type={type}
         disabled={disabled}
       >
@@ -37,10 +51,18 @@ export function Button({ children, disabled = false, icon, type = 'button' }: Bu
   );
 }
 
-export function OutlineButton({ children, disabled = false, type = 'button' }: Button) {
+export function OutlineButton({
+  children,
+  disabled = false,
+  size = 'normal',
+  type = 'button',
+}: Button) {
   return (
     <button
-      className="border-2 border-accent3 text-accent3 text-xl font-extrabold rounded-md p-2 w-full hover:bg-accent3 hover:text-white ease-in-out duration-300"
+      className={classNames(
+        size === 'sm' ? 'text-sm font-bold' : 'text-xl font-extrabold',
+        'border-2 border-accent3 text-accent3 rounded-md p-2 w-full hover:bg-accent3 hover'
+      )}
       type={type}
       disabled={disabled}
     >

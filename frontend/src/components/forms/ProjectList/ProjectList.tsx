@@ -20,7 +20,6 @@ export async function loader() {
 
 export default function ProjectList() {
   const projects = useLoaderData() as Project[];
-  console.log(projects);
   return (
     <div className="m-4">
       <h1>Projects</h1>

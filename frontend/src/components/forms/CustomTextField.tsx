@@ -5,6 +5,8 @@ const styles = {
   label: 'block text-sm text-gray-400 font-bold pt-2 pb-1',
   field:
     'focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none border border-gray-400 rounded py-1 px-4 block w-full appearance-none',
+  disabled:
+    'bg-gray-200 border border-gray-400 rounded py-1 px-4 block w-full appearance-none',
   errorMsg: 'text-red-500 text-sm',
 };
 
@@ -28,12 +30,14 @@ function getIcon(iconName: string) {
 }
 
 export default function CustomTextField({
+  disabled = false,
   icon,
   label,
   name,
   required = true,
   type,
 }: {
+  disabled?: boolean;
   icon?: string;
   label: string;
   name: string;
@@ -48,10 +52,11 @@ export default function CustomTextField({
           {required ? '*' : ''}
         </label>
         <Field
-          className={styles.field}
+          className={disabled ? styles.disabled : styles.field}
           id={name}
           type={type ? type : 'text'}
           name={name}
+          disabled={disabled}
         />
         {icon ? getIcon(icon) : null}
       </div>
