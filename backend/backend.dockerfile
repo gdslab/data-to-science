@@ -39,7 +39,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 # install libpg-dev dependency and remove apt package info to reduce image size
-RUN apt-get update && apt-get install -y libpq-dev && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y libpq-dev gdal-bin && rm -rf /var/lib/apt/lists/*
 
 # create unprivileged ps2 user
 # RUN adduser --system --no-create-home --group ps2
