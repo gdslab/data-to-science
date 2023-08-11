@@ -19,7 +19,7 @@ export function RootProtected() {
         <Navbar />
       </div>
       {/* subtract navbar from div height */}
-      <div className="h-[calc(100%_-_64px)] bg-gradient-to-b from-accent1 from-20% to-white to-10%">
+      <div className="h-[calc(100%_-_64px)]">
         <Outlet />
       </div>
     </div>

@@ -4,7 +4,8 @@ import { Formik, Form } from 'formik';
 import { useLoaderData, useNavigate } from 'react-router-dom';
 
 import Alert from '../../Alert';
-import { CustomButton, CustomSubmitButton } from '../CustomButtons';
+import { Button } from '../CustomButtons';
+import Card from '../../Card';
 import CustomSelectField from '../CustomSelectField';
 import CustomTextField from '../CustomTextField';
 
@@ -40,98 +41,86 @@ export default function ProjectForm({
   const navigate = useNavigate();
   const teams = useLoaderData() as Team[];
   return (
-    <div className="m-4" style={{ width: 450 }}>
-      <Formik
-        initialValues={storedValues ? storedValues : initialValues}
-        validationSchema={validationSchema}
-        onSubmit={async (values, { setSubmitting }) => {
-          try {
-            const data = {
-              title: values.title,
-              description: values.description,
-              location_id: values.locationId,
-              planting_date: values.plantingDate,
-              ...(values.harvestDate && { harvest_date: values.harvestDate }),
-              ...(values.teamId && { team_id: values.teamId }),
-            };
-            const response = editMode
-              ? await axios.put(`/api/v1/projects/${projectId}`, data)
-              : await axios.post('/api/v1/projects/', data);
-            if (response) {
-              editMode ? navigate(`/projects/${projectId}`) : navigate('/projects');
-            } else {
-              // do something
-            }
-          } catch (err) {
-            if (axios.isAxiosError(err)) {
-              console.error(err);
-            } else {
-              // do something
-            }
-          }
-          setSubmitting(false);
-        }}
-      >
-        {({ isSubmitting, setFieldTouched, setFieldValue, status, values }) => (
-          <div>
-            <h1>{editMode ? 'Project Details' : 'Create project'}</h1>
-            <Form>
-              <CustomTextField label="Title" name="title" />
-              <CustomTextField label="Description" name="description" />
-              <CustomTextField label="Location" name="locationId" />
-              {!values.locationId ? (
-                <div className="mt-4">
-                  <CustomButton
-                    onClick={async () => {
-                      try {
-                        const data = {
-                          name: `Field ${new Date().toString()}`,
-                          geom: 'SRID=4326;POLYGON((0 0,1 0,1 1,0 1,0 0))',
-                        };
-                        const response = await axios.post('/api/v1/locations/', data);
-                        if (response) {
-                          setFieldValue('locationId', response.data.id);
-                          setFieldTouched('locationId', true);
-                        }
-                      } catch (err) {
-                        if (axios.isAxiosError(err)) {
-                          console.error(err);
-                        } else {
-                          // do something
-                        }
-                      }
-                    }}
-                  >
-                    Add Location
-                  </CustomButton>
-                </div>
-              ) : null}
-              <CustomTextField type="date" label="Planting date" name="plantingDate" />
-              <CustomTextField type="date" label="Harvest date" name="harvestDate" />
-              {teams.length > 0 ? (
-                <CustomSelectField
-                  label="Team"
-                  name="teamId"
-                  options={teams.map((team) => ({
-                    label: team.title,
-                    value: team.id,
-                  }))}
-                />
-              ) : null}
-              <div className="mt-4">
-                <CustomSubmitButton disabled={isSubmitting}>
-                  {editMode ? 'Update project' : 'Create project'}
-                </CustomSubmitButton>
+    <div className="h-full flex flex-wrap items-center justify-center bg-accent1">
+      <div className="sm:w-full md:w-1/3 max-w-xl mx-4">
+        <h1 className="ml-4 text-white">
+          {editMode ? 'Project Details' : 'Create project'}
+        </h1>
+        <Card>
+          <Formik
+            initialValues={storedValues ? storedValues : initialValues}
+            validationSchema={validationSchema}
+            onSubmit={async (values, { setSubmitting }) => {
+              try {
+                const data = {
+                  title: values.title,
+                  description: values.description,
+                  location_id: values.locationId,
+                  planting_date: values.plantingDate,
+                  ...(values.harvestDate && { harvest_date: values.harvestDate }),
+                  ...(values.teamId && { team_id: values.teamId }),
+                };
+                const response = editMode
+                  ? await axios.put(`/api/v1/projects/${projectId}`, data)
+                  : await axios.post('/api/v1/projects/', data);
+                if (response) {
+                  editMode ? navigate(`/projects/${projectId}`) : navigate('/projects');
+                } else {
+                  // do something
+                }
+              } catch (err) {
+                if (axios.isAxiosError(err)) {
+                  console.error(err);
+                } else {
+                  // do something
+                }
+              }
+              setSubmitting(false);
+            }}
+          >
+            {({ isSubmitting, setFieldTouched, setFieldValue, status, values }) => (
+              <div>
+                <Form>
+                  <CustomTextField label="Title" name="title" />
+                  <CustomTextField label="Description" name="description" />
+                  <CustomTextField label="Location" name="locationId" />
+                  Upload shapefile or draw on map below
+                  <CustomTextField
+                    type="date"
+                    label="Planting date"
+                    name="plantingDate"
+                  />
+                  <CustomTextField
+                    type="date"
+                    label="Harvest date"
+                    name="harvestDate"
+                  />
+                  {teams.length > 0 ? (
+                    <CustomSelectField
+                      label="Team"
+                      name="teamId"
+                      options={teams.map((team) => ({
+                        label: team.title,
+                        value: team.id,
+                      }))}
+                    />
+                  ) : null}
+                  <div className="mt-4">
+                    <Button disabled={isSubmitting}>
+                      {editMode ? 'Update project' : 'Create project'}
+                    </Button>
+                  </div>
+                  {status && status.type && status.msg ? (
+                    <div className="mt-4">
+                      <Alert alertType={status.type}>{status.msg}</Alert>
+                    </div>
+                  ) : null}
+                </Form>
               </div>
-              {status && status.type && status.msg ? (
-                <div className="mt-4">
-                  <Alert alertType={status.type}>{status.msg}</Alert>
-                </div>
-              ) : null}
-            </Form>
-          </div>
-        )}
-      </Formik>
+            )}
+          </Formik>
+        </Card>
+      </div>
     </div>
   );
 }
