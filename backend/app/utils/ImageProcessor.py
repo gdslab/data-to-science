@@ -1,5 +1,6 @@
 from uuid import uuid4
 import json
+import multiprocessing
 import os
 import shutil
 import subprocess
@@ -40,7 +41,25 @@ def is_cog(img_path: str) -> bool:
         return False
 
 
-def convert_to_cog(img_path: str, out_path: str) -> None:
+def convert_to_cog(
+    img_path: str, out_path: str, num_threads: int | None = None
+) -> None:
     """Converts GeoTIFF to a COG."""
-    result = subprocess.run(["gdalwarp", img_path, out_path, "-of", "COG"])
+    if not num_threads:
+        num_threads = int(multiprocessing.cpu_count() / 2)
+    result = subprocess.run(
+        [
+            "gdalwarp",
+            img_path,
+            out_path,
+            "-of",
+            "COG",
+            "-co",
+            "COMPRESS=DEFLATE",
+            "-co",
+            f"NUM_THREADS={num_threads}",
+            "-co",
+            "BIGTIFF=YES",
+        ]
+    )
     result.check_returncode()
