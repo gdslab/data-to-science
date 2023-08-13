@@ -7,7 +7,10 @@ import Alert from '../../Alert';
 import { Button } from '../CustomButtons';
 import Card from '../../Card';
 import CustomSelectField from '../CustomSelectField';
-import CustomTextField from '../CustomTextField';
+import CustomTextField, { styles } from '../CustomTextField';
+import DrawFieldMap from '../../map/DrawFieldMap';
+import FileUpload from '../../FileUpload';
+import MapModal from '../../map/MapModal';
 
 import initialValues, { InitialValues } from './initialValues';
 import validationSchema from './validationSchema';
@@ -40,6 +43,7 @@ export default function ProjectForm({
 }) {
   const navigate = useNavigate();
   const teams = useLoaderData() as Team[];
+  const [open, setOpen] = useState(false);
   return (
     <div className="h-full flex flex-wrap items-center justify-center bg-accent1">
       <div className="sm:w-full md:w-1/3 max-w-xl mx-4">
@@ -83,8 +87,28 @@ export default function ProjectForm({
                 <Form>
                   <CustomTextField label="Title" name="title" />
                   <CustomTextField label="Description" name="description" />
-                  <CustomTextField label="Location" name="locationId" />
-                  Upload shapefile or draw on map below
+                  <CustomTextField
+                    label="Location ID"
+                    name="locationId"
+                    disabled={true}
+                  />
+                  <div className="mt-4">
+                    <MapModal
+                      open={open}
+                      setOpen={setOpen}
+                      setFieldValue={setFieldValue}
+                      setFieldTouched={setFieldTouched}
+                    />
+                    <Button onClick={() => setOpen(true)}>Draw on map</Button>
+                    <span className={styles.label}>or</span>
+                    <FileUpload
+                      restrictions={{
+                        allowedFileTypes: ['.shp', '.shx', '.dbf', '.prj'],
+                        maxNumberOfFiles: 1,
+                      }}
+                      upload_endpoint={`/api/v1/projects/${projectId}/upload`}
+                    />
+                  </div>
                   <CustomTextField
                     type="date"
                     label="Planting date"
@@ -106,7 +130,7 @@ export default function ProjectForm({
                     />
                   ) : null}
                   <div className="mt-4">
-                    <Button disabled={isSubmitting}>
+                    <Button type="submit" disabled={isSubmitting}>
                       {editMode ? 'Update project' : 'Create project'}
                     </Button>
                   </div>

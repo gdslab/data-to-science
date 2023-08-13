@@ -1,7 +1,7 @@
 import { Field, ErrorMessage } from 'formik';
 import { EnvelopeIcon, EyeIcon } from '@heroicons/react/24/outline';
 
-const styles = {
+export const styles = {
   label: 'block text-sm text-gray-400 font-bold pt-2 pb-1',
   field:
     'focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none border border-gray-400 rounded py-1 px-4 block w-full appearance-none',

@@ -2,7 +2,7 @@ import { ArrowRightIcon } from '@heroicons/react/24/outline';
 
 const style = 'bg-primary text-black font-bold py-2 px-4 w-full rounded';
 
-interface Button {
+interface Button extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
   disabled?: boolean;
   icon?: string;
@@ -33,6 +33,7 @@ export function Button({
   icon,
   size = 'normal',
   type = 'button',
+  ...props
 }: Button) {
   return (
     <div className="relative">
@@ -43,6 +44,7 @@ export function Button({
         )}
         type={type}
         disabled={disabled}
+        {...props}
       >
         {children}
       </button>
