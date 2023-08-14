@@ -8,7 +8,6 @@ import { Button } from '../CustomButtons';
 import Card from '../../Card';
 import CustomSelectField from '../CustomSelectField';
 import CustomTextField, { styles } from '../CustomTextField';
-import DrawFieldMap from '../../map/DrawFieldMap';
 import FileUpload from '../../FileUpload';
 import MapModal from '../../map/MapModal';
 

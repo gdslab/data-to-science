@@ -1,8 +1,11 @@
 import { createBrowserRouter } from 'react-router-dom';
 
 // pages and data loaders
+import DatasetList, {
+  loader as datasetListLoader,
+} from './components/forms/DatasetList/DatasetList';
 import ErrorPage from './components/ErrorPage';
-import FlightForm from './components/forms/FlightForm';
+import FlightForm, { loader as flightFormLoader } from './components/forms/FlightForm';
 import Landing from './components/Landing';
 import LoginForm from './components/auth/LoginForm';
 import Logout from './components/auth/Logout';
@@ -98,8 +101,14 @@ export const router = createBrowserRouter([
         loader: projectDetailLoader,
       },
       {
+        path: '/projects/:projectId/datasets',
+        element: <DatasetList />,
+        loader: datasetListLoader,
+      },
+      {
         path: '/projects/:projectId/datasets/:datasetId',
         element: <FlightForm />,
+        loader: flightFormLoader,
       },
     ],
   },

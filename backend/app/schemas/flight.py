@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 # shared properties
 class FlightBase(BaseModel):
-    acquisition_date: datetime | None = None
+    acquisition_date: date | None = None
     altitude: float | None = None
     side_overlap: float | None = None
     forward_overlap: float | None = None
@@ -16,7 +16,7 @@ class FlightBase(BaseModel):
 
 # properties to receive via API on creation
 class FlightCreate(FlightBase):
-    acquisition_date: datetime
+    acquisition_date: date
     altitude: float
     side_overlap: float
     forward_overlap: float
@@ -33,7 +33,7 @@ class FlightUpdate(FlightBase):
 # properties shared by models stored in DB
 class FlightInDBBase(FlightBase):
     id: UUID
-    acquisition_date: datetime
+    acquisition_date: date
     altitude: float
     side_overlap: float
     forward_overlap: float

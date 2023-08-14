@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { Params, useLoaderData, useNavigate } from 'react-router-dom';
+import { Link, Params, useLoaderData, useNavigate } from 'react-router-dom';
 
-import { CustomButton } from '../CustomButtons';
+import { Button } from '../CustomButtons';
 import ProjectForm from '../ProjectForm';
 
 interface Project {
@@ -36,11 +36,7 @@ export default function ProjectDetail() {
     teamId: project.team_id ? project.team_id : '',
   };
   return (
-    <div className="m-4">
-      <div>
-        <h2>{project.title}</h2>
-        <span className="text-gray-600">{project.description}</span>
-      </div>
+    <div className="">
       <div>
         <ProjectForm
           editMode={true}
@@ -54,7 +50,7 @@ export default function ProjectDetail() {
           {datasets.length < 1 ? <em>No datasets associated with project</em> : null}
         </div>
         <div className="mt-4" style={{ width: 450 }}>
-          <CustomButton
+          <Button
             onClick={async () => {
               try {
                 const data = { category: 'UAS' };
@@ -78,7 +74,12 @@ export default function ProjectDetail() {
             }}
           >
             Add Dataset
-          </CustomButton>
+          </Button>
+        </div>
+        <div className="mt-4" style={{ width: 450 }}>
+          <Link to={`/projects/${project.id}/datasets`}>
+            <Button>View Datasets</Button>
+          </Link>
         </div>
       </div>
     </div>

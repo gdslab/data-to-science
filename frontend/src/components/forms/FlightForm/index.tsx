@@ -1,1 +1,1 @@
-export { default } from "./FlightForm";
+export { default, loader } from './FlightForm';
