@@ -1,3 +1,4 @@
+import os
 import secrets
 from typing import Any
 
@@ -12,7 +13,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
 
     PROJECT_NAME: str = ""
-    UPLOAD_DIR: str = "/tmp/upload-dir"
+    UPLOAD_DIR: str = "/user-data"
 
     POSTGRES_SERVER: str = "db"
     POSTGRES_USER: str = "ps2"

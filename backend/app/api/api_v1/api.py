@@ -25,7 +25,7 @@ api_router.include_router(locations.router, prefix="/locations", tags=["location
 api_router.include_router(projects.router, prefix="/projects", tags=["projects"])
 api_router.include_router(
     raw_data.router,
-    prefix="/projects/{project_id}/datasets/{dataset_id}/flights/{flight_id}/raw_data",
+    prefix="/projects/{project_id}/datasets/{dataset_id}/raw_data",
     tags=["raw_data"],
 )
 api_router.include_router(teams.router, prefix="/teams", tags=["teams"])

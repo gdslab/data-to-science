@@ -1,9 +1,10 @@
 import { createBrowserRouter } from 'react-router-dom';
 
 // pages and data loaders
-import DatasetList, {
-  loader as datasetListLoader,
-} from './components/forms/DatasetList/DatasetList';
+import DatasetDetail, {
+  loader as datasetDetailLoader,
+} from './components/forms/DatasetDetail';
+import DatasetList from './components/forms/DatasetList';
 import ErrorPage from './components/ErrorPage';
 import FlightForm, { loader as flightFormLoader } from './components/forms/FlightForm';
 import Landing from './components/Landing';
@@ -86,14 +87,18 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        path: '/projects',
-        element: <ProjectList />,
-        loader: projectListLoader,
+        path: '/projects/:projectId/datasets/:datasetId/create',
+        element: <FlightForm />,
+        loader: flightFormLoader,
       },
       {
-        path: '/projects/create',
-        element: <ProjectForm />,
-        loader: projectFormLoader,
+        path: '/projects/:projectId/datasets/:datasetId',
+        element: <DatasetDetail />,
+        loader: datasetDetailLoader,
+      },
+      {
+        path: '/projects/:projectId/datasets',
+        element: <DatasetList />,
       },
       {
         path: '/projects/:projectId',
@@ -101,14 +106,14 @@ export const router = createBrowserRouter([
         loader: projectDetailLoader,
       },
       {
-        path: '/projects/:projectId/datasets',
-        element: <DatasetList />,
-        loader: datasetListLoader,
+        path: '/projects/create',
+        element: <ProjectForm />,
+        loader: projectFormLoader,
       },
       {
-        path: '/projects/:projectId/datasets/:datasetId',
-        element: <FlightForm />,
-        loader: flightFormLoader,
+        path: '/projects',
+        element: <ProjectList />,
+        loader: projectListLoader,
       },
     ],
   },

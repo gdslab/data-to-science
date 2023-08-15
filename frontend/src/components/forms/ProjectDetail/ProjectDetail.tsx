@@ -2,7 +2,7 @@ import axios from 'axios';
 import { Link, Params, useLoaderData, useNavigate } from 'react-router-dom';
 
 import { Button } from '../CustomButtons';
-import ProjectForm from '../ProjectForm';
+import DatasetList from '../DatasetList/DatasetList';
 
 interface Project {
   id: string;
@@ -27,23 +27,9 @@ export default function ProjectDetail() {
   const navigate = useNavigate();
   const project = useLoaderData() as Project;
   const datasets = [];
-  const storedValues = {
-    title: project.title,
-    description: project.description,
-    locationId: project.location_id,
-    plantingDate: project.planting_date,
-    harvestDate: project.harvest_date ? project.harvest_date : '',
-    teamId: project.team_id ? project.team_id : '',
-  };
+
   return (
     <div className="">
-      <div>
-        <ProjectForm
-          editMode={true}
-          projectId={project.id}
-          storedValues={storedValues}
-        />
-      </div>
       <div className="m-4">
         <h1>Datasets</h1>
         <div>
@@ -60,7 +46,9 @@ export default function ProjectDetail() {
                 );
 
                 if (response) {
-                  navigate(`/projects/${project.id}/datasets/${response.data.id}`);
+                  navigate(
+                    `/projects/${project.id}/datasets/${response.data.id}/create`
+                  );
                 } else {
                   // do something
                 }
@@ -73,13 +61,11 @@ export default function ProjectDetail() {
               }
             }}
           >
-            Add Dataset
+            Add Flight
           </Button>
         </div>
         <div className="mt-4" style={{ width: 450 }}>
-          <Link to={`/projects/${project.id}/datasets`}>
-            <Button>View Datasets</Button>
-          </Link>
+          <DatasetList />
         </div>
       </div>
     </div>

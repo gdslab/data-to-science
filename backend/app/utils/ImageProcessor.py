@@ -12,16 +12,19 @@ class ImageProcessor:
     def __init__(self, img_path):
         self.img_path = img_path
 
-        output_dir = "/tmp"
+        output_dir = os.path.dirname(self.img_path)
         output_name = str(uuid4()) + ".tif"
 
         self.out_path = os.path.join(output_dir, output_name)
 
     def run(self):
         if is_cog(self.img_path):
-            shutil.copyfile(self.img_path, self.out_path)
+            shutil.move(self.img_path, self.out_path.replace("__temp"))
         else:
             convert_to_cog(self.img_path, self.out_path)
+        os.remove(self.img_path)
+
+        return self.out_path
 
 
 def is_cog(img_path: str) -> bool:
@@ -60,6 +63,8 @@ def convert_to_cog(
             f"NUM_THREADS={num_threads}",
             "-co",
             "BIGTIFF=YES",
+            "-wm",
+            "500",
         ]
     )
     result.check_returncode()

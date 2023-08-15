@@ -54,8 +54,11 @@ ENV PATH="$VENV_PATH/bin:$PATH"
 # copy over application code
 COPY . /app
 
-# update permissions for application log file
-RUN chown -R ps2:ps2 /app
+# create directory for user uploads
+RUN mkdir /user-data
+
+# update permissions for ps2 user/group
+RUN chown -R ps2:ps2 /app && chown -R ps2:ps2 /user-data
 
 USER ps2
 

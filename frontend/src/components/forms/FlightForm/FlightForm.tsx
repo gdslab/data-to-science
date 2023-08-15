@@ -44,7 +44,6 @@ export default function FlightForm() {
   return (
     <div className="h-full flex flex-wrap items-center justify-center bg-accent1">
       <div className="sm:w-full md:w-1/3 max-w-xl mx-4">
-        <h1 className="ml-4 text-white">Create project</h1>
         <Card>
           <Formik
             initialValues={{ ...initialValues, pilotId: pilots[0].value }}
@@ -81,7 +80,7 @@ export default function FlightForm() {
           >
             {({ isSubmitting, status }) => (
               <div className="m-4">
-                <h1>Create Flight</h1>
+                <h1>Flight</h1>
                 <Form>
                   <CustomTextField
                     type="date"

@@ -37,18 +37,11 @@ def get_db():
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Must sign in to access",
             )
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Unable to complete request",
-            )
     finally:
         db.close()
 
 
-def get_current_user(
-    db: Session = Depends(get_db), token: str = Depends(reusable_oauth2)
-) -> models.User:
+def decode_jwt(token: str) -> schemas.TokenPayload:
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
@@ -61,6 +54,13 @@ def get_current_user(
         )
     except Exception as e:
         logger.error(str(e))
+    return token_data
+
+
+def get_current_user(
+    db: Session = Depends(get_db), token: str = Depends(reusable_oauth2)
+) -> models.User:
+    token_data = decode_jwt(token)
     user = crud.user.get(db, id=token_data.sub)
     if not user:
         raise HTTPException(
