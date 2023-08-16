@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from datetime import datetime
+from datetime import date
 
 from sqlalchemy import Date, Float, ForeignKey
 from sqlalchemy.dialects.postgresql import ENUM, UUID
@@ -12,7 +12,7 @@ from app.db.base_class import Base
 
 if TYPE_CHECKING:
     from .data_product import DataProduct
-    from .dataset import Dataset
+    from .project import Project
     from .raw_data import RawData
     from .user import User
 
@@ -26,7 +26,7 @@ class Flight(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    acquisition_date: Mapped[datetime] = mapped_column(Date, nullable=False)
+    acquisition_date: Mapped[date] = mapped_column(Date, nullable=False)
     altitude: Mapped[float] = mapped_column(Float, nullable=False)
     side_overlap: Mapped[float] = mapped_column(Float, nullable=False)
     forward_overlap: Mapped[float] = mapped_column(Float, nullable=False)
@@ -36,13 +36,14 @@ class Flight(Base):
     platform: Mapped[enumerate] = mapped_column(
         ENUM(*PLATFORMS, name="platform_type"), nullable=False
     )
-    dataset_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("datasets.id"), nullable=False
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("projects.id"), nullable=False
     )
     pilot_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
 
-    dataset: Mapped["Dataset"] = relationship(back_populates="flight")
+    project: Mapped["Project"] = relationship(back_populates="flights")
     pilot: Mapped["User"] = relationship(back_populates="flights")
+
     data_products: Mapped[list["DataProduct"]] = relationship(
         back_populates="flight", cascade="all, delete"
     )
@@ -56,5 +57,5 @@ class Flight(Base):
             f"altitude={self.altitude!r}, side_overlap={self.side_overlap!r}, "
             f"forward_overlap={self.forward_overlap!r}, "
             f"sensor={self.sensor!r}, platform={self.platform!r}, "
-            f"dataset_id={self.dataset_id!r}, pilot_id={self.pilot_id!r}"
+            f"project_id={self.project_id!r}, pilot_id={self.pilot_id!r}"
         )

@@ -14,17 +14,17 @@ router = APIRouter()
 @router.post("/", response_model=schemas.Flight, status_code=status.HTTP_201_CREATED)
 def create_flight(
     flight_in: schemas.FlightCreate,
-    dataset_id: UUID,
+    project_id: UUID,
     project: models.Project = Depends(deps.can_read_write_project),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    """Create new flight for a project dataset."""
+    """Create new flight for a project."""
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
         )
-    flight = crud.flight.create_with_dataset(
-        db, obj_in=flight_in, dataset_id=dataset_id
+    flight = crud.flight.create_with_project(
+        db, obj_in=flight_in, project_id=project_id
     )
     return flight
 
@@ -38,7 +38,7 @@ def read_flight(
     """Retrieve flight if current user has access to it."""
     if not flight:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
     return flight
 
@@ -53,7 +53,7 @@ def update_flight(
     """Update flight if current user has access to it."""
     if not flight:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
     flight = crud.flight.update(db, db_obj=flight, obj_in=flight_in)
     return flight

@@ -15,12 +15,55 @@ interface Project {
 }
 
 export async function loader({ params }: { params: Params<string> }) {
-  const response = await axios.get(`/api/v1/projects/${params.projectId}`);
-  if (response) {
-    return response.data;
+  const project = await axios.get(`/api/v1/projects/${params.projectId}`);
+  const datasets = await axios.get(`/api/v1/projects/${params.projectId}/datasets`);
+  if (project && datasets) {
+    return { project: project.data, datasets: datasets.data };
   } else {
     return null;
   }
+}
+
+function TableHeader({ columns }: { columns: string[] }) {
+  return (
+    <thead className="ltr:text-left rtl:text-right">
+      <tr>
+        {columns.map((col) => (
+          <th
+            key={col.replace(/\s+/g, '').toLowerCase()}
+            className="whitespace-nowrap px-4 py-2 font-medium text-gray-900"
+          >
+            {col}
+          </th>
+        ))}
+      </tr>
+    </thead>
+  );
+}
+
+function TableRow({ row }: { row: string[] }) {
+  return (
+    <tr>
+      {row.map((value) => (
+        <td
+          key={value.replace(/\s+/g, '').toLowerCase()}
+          className="whitespace-nowrap px-4 py-2 font-medium text-gray-900"
+        >
+          {value}
+        </td>
+      ))}
+    </tr>
+  );
+}
+
+function TableBody({ rows }: { rows: string[][] }) {
+  return (
+    <tbody className="divide-y divide-gray-200">
+      {rows.map((row) => (
+        <TableRow row={row} />
+      ))}
+    </tbody>
+  );
 }
 
 export default function ProjectDetail() {
@@ -31,41 +74,9 @@ export default function ProjectDetail() {
   return (
     <div className="">
       <div className="m-4">
-        <h1>Datasets</h1>
         <div>
-          {datasets.length < 1 ? <em>No datasets associated with project</em> : null}
-        </div>
-        <div className="mt-4" style={{ width: 450 }}>
-          <Button
-            onClick={async () => {
-              try {
-                const data = { category: 'UAS' };
-                const response = await axios.post(
-                  `/api/v1/projects/${project.id}/datasets/`,
-                  data
-                );
-
-                if (response) {
-                  navigate(
-                    `/projects/${project.id}/datasets/${response.data.id}/create`
-                  );
-                } else {
-                  // do something
-                }
-              } catch (err) {
-                if (axios.isAxiosError(err)) {
-                  console.error(err);
-                } else {
-                  // do something
-                }
-              }
-            }}
-          >
-            Add Flight
-          </Button>
-        </div>
-        <div className="mt-4" style={{ width: 450 }}>
-          <DatasetList />
+          <h2>{project.title}</h2>
+          <span className="text-gray-600">{project.description}</span>
         </div>
       </div>
     </div>

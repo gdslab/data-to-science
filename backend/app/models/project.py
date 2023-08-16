@@ -11,7 +11,7 @@ from app.db.base_class import Base
 
 
 if TYPE_CHECKING:
-    from .dataset import Dataset
+    from .flight import Flight
     from .location import Location
     from .project_member import ProjectMember
     from .team import Team
@@ -42,7 +42,7 @@ class Project(Base):
     owner: Mapped["User"] = relationship(back_populates="projects")
     team: Mapped["Team"] = relationship(back_populates="projects")
 
-    datasets: Mapped[list["Dataset"]] = relationship(
+    flights: Mapped[list["Flight"]] = relationship(
         back_populates="project", cascade="all, delete"
     )
 

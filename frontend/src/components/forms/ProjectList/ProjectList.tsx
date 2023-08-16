@@ -72,7 +72,7 @@ export default function ProjectList() {
                     to={`/projects/${project.id}`}
                     className="block bg-accent2 px-5 py-3 text-center text-xs font-bold uppercase text-gray-900 transition hover:bg-yellow-400"
                   >
-                    View datasets
+                    Open
                   </Link>
                 </div>
               </div>

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date
 from random import randint
 from uuid import UUID
 
@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 from app import crud, models
 from app.models.flight import PLATFORMS, SENSORS
 from app.schemas.flight import FlightCreate
-from app.tests.utils.dataset import create_random_dataset
 from app.tests.utils.project import create_random_project
 from app.tests.utils.user import create_random_user
 
@@ -17,16 +16,15 @@ faker = Faker()
 
 
 def create_random_flight(
-    db: Session, dataset_id: UUID | None = None, pilot_id: UUID | None = None, **kwargs
+    db: Session, project_id: UUID | None = None, pilot_id: UUID | None = None, **kwargs
 ) -> models.Flight:
     if pilot_id is None:
         pilot = create_random_user(db)
         pilot_id = pilot.id
-    if dataset_id is None:
+    if project_id is None:
         project_owner = create_random_user(db)
         project = create_random_project(db, owner_id=project_owner.id)
-        dataset = create_random_dataset(db, category="UAS", project_id=project.id)
-        dataset_id = dataset.id
+        project_id = project.id
     if "acquisition_date" not in kwargs:
         acquisition_date = create_random_acquisition_date()
     else:
@@ -58,15 +56,14 @@ def create_random_flight(
         forward_overlap=forward_overlap,
         sensor=sensor,
         platform=platform,
-        dataset_id=dataset_id,
         pilot_id=pilot_id,
     )
-    return crud.flight.create_with_dataset(db, obj_in=flight_in, dataset_id=dataset_id)
+    return crud.flight.create_with_project(db, obj_in=flight_in, project_id=project_id)
 
 
-def create_random_acquisition_date() -> datetime:
+def create_random_acquisition_date() -> date:
     """Create random acquisition date from current year."""
-    return faker.date_time_between(
-        start_date=datetime(datetime.today().year, 1, 1),
-        end_date=datetime(datetime.today().year, 12, 31),
+    return faker.date_between(
+        start_date=date(date.today().year, 1, 1),
+        end_date=date(date.today().year, 12, 31),
     )

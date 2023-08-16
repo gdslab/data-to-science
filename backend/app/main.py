@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from app.api.api_v1.api import api_router
 from app.core.config import settings
 from app.core.logging import setup_logger
-from app.utils import ProtectedStaticFiles
+from app.utils.ProtectedStaticFiles import ProtectedStaticFiles
 
 
 app = FastAPI(

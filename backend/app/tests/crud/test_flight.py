@@ -1,11 +1,10 @@
-from datetime import datetime
+from datetime import date
 
 from sqlalchemy.orm import Session
 
 from app import crud
 from app.models.flight import PLATFORMS, SENSORS
 from app.schemas.flight import FlightUpdate
-from app.tests.utils.dataset import create_random_dataset
 from app.tests.utils.flight import create_random_flight
 from app.tests.utils.project import create_random_project
 from app.tests.utils.user import create_random_user
@@ -16,8 +15,7 @@ def test_create_flight(db: Session) -> None:
     pilot = create_random_user(db)
     project_owner = create_random_user(db)
     project = create_random_project(db, owner_id=project_owner.id)
-    dataset = create_random_dataset(db, category="UAS", project_id=project.id)
-    acquisition_date = datetime.now()
+    acquisition_date = date.today()
     altitude = 100
     side_overlap = 60
     forward_overlap = 75
@@ -29,7 +27,7 @@ def test_create_flight(db: Session) -> None:
         forward_overlap=forward_overlap,
         sensor=SENSORS[0],
         platform=PLATFORMS[0],
-        dataset_id=dataset.id,
+        project_id=project.id,
         pilot_id=pilot.id,
     )
     assert flight
@@ -39,7 +37,7 @@ def test_create_flight(db: Session) -> None:
     assert forward_overlap == flight.forward_overlap
     assert SENSORS[0] == flight.sensor
     assert PLATFORMS[0] == flight.platform
-    assert dataset.id == flight.dataset_id
+    assert project.id == flight.project_id
     assert pilot.id == flight.pilot_id
 
 
@@ -55,7 +53,7 @@ def test_get_flight(db: Session) -> None:
     assert flight.forward_overlap == stored_flight.forward_overlap
     assert flight.sensor == stored_flight.sensor
     assert flight.platform == stored_flight.platform
-    assert flight.dataset_id == stored_flight.dataset_id
+    assert flight.project_id == stored_flight.project_id
     assert flight.pilot_id == stored_flight.pilot_id
 
 

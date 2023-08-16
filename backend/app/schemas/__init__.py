@@ -1,4 +1,3 @@
-from .dataset import Dataset, DatasetCreate, DatasetUpdate
 from .flight import Flight, FlightCreate, FlightUpdate
 from .location import Location, LocationCreate, LocationUpdate
 from .project import Project, ProjectCreate, ProjectUpdate

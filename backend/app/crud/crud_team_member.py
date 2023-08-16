@@ -70,6 +70,8 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
             )
             .join(User, TeamMember.member)
             .where(TeamMember.team_id == team_id)
+            .offset(skip)
+            .limit(limit)
         )
         team_members: list[TeamMember] = []
         with db as session:

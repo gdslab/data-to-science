@@ -113,21 +113,6 @@ def can_read_write_project(
     return project
 
 
-def can_read_write_dataset(
-    dataset_id: UUID,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_approved_user),
-    project: models.Project = Depends(can_read_write_project),
-) -> models.Dataset | None:
-    """Return dataset only if current user is a member of the project."""
-    if not project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
-        )
-    dataset = crud.dataset.get(db, id=dataset_id)
-    return dataset
-
-
 def can_read_write_flight(
     flight_id: UUID,
     db: Session = Depends(get_db),

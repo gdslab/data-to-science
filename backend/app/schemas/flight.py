@@ -40,7 +40,7 @@ class FlightInDBBase(FlightBase):
     sensor: str
     platform: str
 
-    dataset_id: UUID | None = None
+    project_id: UUID
     pilot_id: UUID | None = None
 
     class Config:

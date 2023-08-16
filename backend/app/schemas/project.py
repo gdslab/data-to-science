@@ -36,9 +36,9 @@ class ProjectInDBBase(ProjectBase):
     description: str
     planting_date: date
     harvest_date: date | None = None
+
     location_id: UUID
     team_id: UUID | None = None
-
     owner_id: UUID
 
     class Config:
