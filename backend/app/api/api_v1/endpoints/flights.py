@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Sequence
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -41,6 +41,21 @@ def read_flight(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
     return flight
+
+
+@router.get("/", response_model=Sequence[schemas.Flight])
+def read_flights(
+    project_id: UUID,
+    project: models.Project = Depends(deps.can_read_write_project),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Retrieve flights associated with project user can access."""
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+        )
+    flights = crud.flight.get_multi_by_project(db, project_id=project.id)
+    return flights
 
 
 @router.put("/{flight_id}", response_model=schemas.Flight)

@@ -57,6 +57,21 @@ def test_get_flight(db: Session) -> None:
     assert flight.pilot_id == stored_flight.pilot_id
 
 
+def test_get_flights(db: Session) -> None:
+    """Verify retrieval of flights associated with project."""
+    project = create_random_project(db)
+    other_project = create_random_project(db)
+    create_random_flight(db, project_id=project.id)
+    create_random_flight(db, project_id=project.id)
+    create_random_flight(db, project_id=project.id)
+    create_random_flight(db, project_id=other_project.id)
+    flights = crud.flight.get_multi_by_project(db, project_id=project.id)
+    assert type(flights) is list
+    assert len(flights) == 3
+    for flight in flights:
+        assert flight.project_id == project.id
+
+
 def test_update_flight(db: Session) -> None:
     """Verify update changes flight attributes in database."""
     flight = create_random_flight(

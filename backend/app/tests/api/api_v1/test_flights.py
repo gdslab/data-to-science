@@ -92,9 +92,7 @@ def test_get_flight(
         member_id=current_user.id, project_id=project.id
     )
     crud.project_member.create_with_project(
-        db,
-        obj_in=project_member_in,
-        project_id=project.id,
+        db, obj_in=project_member_in, project_id=project.id
     )
     r = client.get(
         f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}",
@@ -102,6 +100,31 @@ def test_get_flight(
     assert 200 == r.status_code
     response_data = r.json()
     assert str(flight.id) == response_data["id"]
+
+
+def test_get_flights(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Verify retrieval of flights associated with project."""
+    project = create_random_project(db)
+    create_random_flight(db, project_id=project.id)
+    create_random_flight(db, project_id=project.id)
+    create_random_flight(db, project_id=project.id)
+    current_user = get_current_user(db, normal_user_access_token)
+    project_member_in = ProjectMemberCreate(
+        member_id=current_user.id, project_id=project.id
+    )
+    crud.project_member.create_with_project(
+        db, obj_in=project_member_in, project_id=project.id
+    )
+    r = client.get(f"{settings.API_V1_STR}/projects/{project.id}/flights")
+    assert 200 == r.status_code
+    flights = r.json()
+    assert type(flights) is list
+    assert len(flights) == 3
+    for flight in flights:
+        assert "project_id" in flight
+        assert flight["project_id"] == str(project.id)
 
 
 def test_get_flight_without_project_access(
