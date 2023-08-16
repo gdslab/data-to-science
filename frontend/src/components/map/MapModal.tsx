@@ -1,37 +1,50 @@
 import { Fragment, useRef, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import axios from 'axios';
+import { useFormikContext } from 'formik';
 
 import DrawFieldMap from './DrawFieldMap';
+import Alert, { Status } from '../Alert';
+
+type Coordinates = number[][];
+
+interface GeoJSONFeature {
+  type: string;
+  geometry: {
+    type: string;
+    coordinates: Coordinates[];
+  };
+  properties: {
+    [key: string]: string;
+  };
+}
 
 interface Location {
-  geojson: {
-    geometry: {
-      type: string;
-      coordinates: number[][];
-    };
-    properties: {
-      [key: string]: string;
-    };
-    type: string;
-  };
+  geojson: GeoJSONFeature;
   center: {
     lat: number;
     lng: number;
   };
 }
 
-function coordArrayToWKT(coordArray: number[][]) {
-  let wkt: string[] = [];
+function coordArrayToWKT(coordArray: Coordinates[]) {
+  let wkt: string[][] = [];
   coordArray[0].forEach((coordPair) => {
     wkt.push([`${coordPair[0]} ${coordPair[1]}`]);
   });
   return wkt.join();
 }
 
-export default function MapModal({ open, setOpen, setFieldValue, setFieldTouched }) {
+interface Props {
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+export default function MapModal({ open, setOpen }: Props) {
   const cancelButtonRef = useRef(null);
+  const { setFieldValue, setFieldTouched } = useFormikContext();
   const [location, setLocation] = useState<Location | null>(null);
+  const [status, setStatus] = useState<Status | null>(null);
   return (
     <Transition.Root show={open} as={Fragment}>
       <Dialog
@@ -67,27 +80,43 @@ export default function MapModal({ open, setOpen, setFieldValue, setFieldTouched
                 <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                   <DrawFieldMap setLocation={setLocation} />
                 </div>
+                {status && status.type && status.msg ? (
+                  <div className="px-4 py-3">
+                    <Alert alertType={status.type}>{status.msg}</Alert>
+                  </div>
+                ) : null}
                 <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
                   <button
                     type="button"
                     className="inline-flex w-full justify-center rounded-md bg-accent3 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-accent3-dark sm:ml-3 sm:w-auto"
                     onClick={async () => {
-                      try {
-                        const data = {
-                          name: `Field ${new Date().toString()}`,
-                          center: `${location?.center.lat},${location?.center.lng}`,
-                          geom: `SRID=4326;POLYGON((${coordArrayToWKT(
-                            location?.geojson.geometry.coordinates
-                          )}))`,
-                        };
-                        const response = await axios.post('/api/v1/locations/', data);
-                        if (response) {
-                          setFieldValue('locationId', response.data.id);
-                          setFieldTouched('locationId', true);
+                      setStatus(null);
+                      if (location) {
+                        try {
+                          const data = {
+                            center: `${location.center.lat},${location.center.lng}`,
+                            geom: `SRID=4326;POLYGON((${coordArrayToWKT(
+                              location.geojson.geometry.coordinates
+                            )}))`,
+                          };
+                          const response = await axios.post<GeoJSONFeature>(
+                            '/api/v1/locations/',
+                            data
+                          );
+                          if (response) {
+                            setFieldValue('locationId', response.data.properties.id);
+                            setFieldTouched('locationId', true);
+                          }
+                          setOpen(false);
+                        } catch (err) {
+                          console.error(err);
+                          setStatus({ type: 'error', msg: 'Unable to save location' });
                         }
-                        setOpen(false);
-                      } catch (err) {
-                        console.error(err);
+                      } else {
+                        setStatus({
+                          type: 'warning',
+                          msg: 'Must draw field boundary before saving',
+                        });
                       }
                     }}
                   >
@@ -96,7 +125,11 @@ export default function MapModal({ open, setOpen, setFieldValue, setFieldTouched
                   <button
                     type="button"
                     className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
-                    onClick={() => setOpen(false)}
+                    onClick={() => {
+                      setStatus(null);
+                      setLocation(null);
+                      setOpen(false);
+                    }}
                     ref={cancelButtonRef}
                   >
                     Cancel

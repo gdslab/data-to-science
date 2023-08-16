@@ -3,15 +3,24 @@ from uuid import UUID
 from pydantic import BaseModel
 
 
+class PolygonGeometry(BaseModel):
+    type: str
+    coordinates: list[list[tuple[float, float]]]
+
+
+class PolygonGeoJSONFeature(BaseModel):
+    type: str
+    geometry: PolygonGeometry
+    properties: dict[str, str]
+
+
 # shared properties
 class LocationBase(BaseModel):
-    name: str | None = None
     geom: str | None = None
 
 
 # properties to receive via API on creation
 class LocationCreate(LocationBase):
-    name: str
     geom: str
 
 
@@ -23,7 +32,6 @@ class LocationUpdate(LocationBase):
 # properties shared by models stored in DB
 class LocationInDBBase(LocationBase):
     id: UUID
-    name: str
     geom: str
 
     class Config:

@@ -14,11 +14,27 @@ interface Project {
   team_id: string;
 }
 
+interface Flight {
+  acquisition_date: Date;
+  altitude: number;
+  side_overlap: number;
+  forward_overlap: number;
+  sensor: string;
+  platform: string;
+  project_id: string;
+  pilot_id: string;
+}
+
+interface ProjectData {
+  project: Project;
+  flights: Flight[];
+}
+
 export async function loader({ params }: { params: Params<string> }) {
   const project = await axios.get(`/api/v1/projects/${params.projectId}`);
-  const datasets = await axios.get(`/api/v1/projects/${params.projectId}/datasets`);
-  if (project && datasets) {
-    return { project: project.data, datasets: datasets.data };
+  const flights = await axios.get(`/api/v1/projects/${params.projectId}/flights`);
+  if (project && flights) {
+    return { project: project.data, datasets: flights.data };
   } else {
     return null;
   }
@@ -68,8 +84,9 @@ function TableBody({ rows }: { rows: string[][] }) {
 
 export default function ProjectDetail() {
   const navigate = useNavigate();
-  const project = useLoaderData() as Project;
-  const datasets = [];
+  const { project, flights } = useLoaderData() as ProjectData;
+  // console.log(project);
+  // console.log(flights);
 
   return (
     <div className="">

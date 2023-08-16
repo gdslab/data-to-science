@@ -13,6 +13,11 @@ interface AlertProps {
   children: React.ReactNode;
 }
 
+export interface Status {
+  type: AlertType;
+  msg: string;
+}
+
 function getAlertProps(alertType: AlertType) {
   switch (alertType) {
     case 'success':

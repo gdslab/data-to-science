@@ -81,7 +81,7 @@ export default function ProjectForm({
               setSubmitting(false);
             }}
           >
-            {({ isSubmitting, setFieldTouched, setFieldValue, status, values }) => (
+            {({ isSubmitting, status }) => (
               <div>
                 <Form>
                   <CustomTextField label="Title" name="title" />
@@ -92,12 +92,7 @@ export default function ProjectForm({
                     disabled={true}
                   />
                   <div className="mt-4">
-                    <MapModal
-                      open={open}
-                      setOpen={setOpen}
-                      setFieldValue={setFieldValue}
-                      setFieldTouched={setFieldTouched}
-                    />
+                    <MapModal open={open} setOpen={setOpen} />
                     <Button onClick={() => setOpen(true)}>Draw on map</Button>
                     <span className={styles.label}>or</span>
                     <FileUpload
