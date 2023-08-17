@@ -3,7 +3,7 @@ import { Formik, Form } from 'formik';
 import { useNavigate } from 'react-router-dom';
 
 import Alert from '../../Alert';
-import { CustomSubmitButton } from '../Buttons';
+import { Button } from '../Buttons';
 import CustomTextField from '../CustomTextField';
 
 import initialValues from './initialValues';
@@ -48,9 +48,9 @@ export default function TeamForm() {
               <CustomTextField label="Title" name="title" />
               <CustomTextField label="Description" name="description" />
               <div className="mt-4">
-                <CustomSubmitButton disabled={isSubmitting}>
+                <Button type="submit" disabled={isSubmitting}>
                   Create team
-                </CustomSubmitButton>
+                </Button>
               </div>
               {status && status.type && status.msg ? (
                 <div className="mt-4">

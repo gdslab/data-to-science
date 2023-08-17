@@ -14,7 +14,7 @@ interface Project {
   team_id: string;
 }
 
-interface Flight {
+export interface Flight {
   id: string;
   acquisition_date: Date;
   altitude: number;
@@ -47,7 +47,13 @@ interface Action {
   url: string;
 }
 
-function TableBody({ actions, rows }: { actions?: Action[][]; rows: string[][] }) {
+export function TableBody({
+  actions,
+  rows,
+}: {
+  actions?: Action[][];
+  rows: string[][];
+}) {
   return (
     <tbody className="divide-y divide-gray-200">
       {rows.map((row, i) => (
@@ -77,7 +83,7 @@ function TableBody({ actions, rows }: { actions?: Action[][]; rows: string[][] }
   );
 }
 
-function TableHead({ columns }: { columns: string[] }) {
+export function TableHead({ columns }: { columns: string[] }) {
   return (
     <thead className="bg-slate-50">
       <tr>
@@ -94,7 +100,7 @@ function TableHead({ columns }: { columns: string[] }) {
   );
 }
 
-function Table({ children }: { children: ReactNode }) {
+export function Table({ children }: { children: ReactNode }) {
   return (
     <table className="table-auto border-separate border-spacing-1 w-full border border-slate-400">
       {children}
@@ -133,22 +139,22 @@ export default function ProjectDetail() {
                   {
                     key: `action-edit-${i}`,
                     label: 'Edit',
-                    url: `/projects/${flight.id}/edit`,
+                    url: `/projects/${projectId}/flights/${flight.id}/edit`,
                   },
                   {
                     key: `action-data-${i}`,
                     label: 'Raw Data',
-                    url: `/projects/${flight.id}/data`,
+                    url: `/projects/${projectId}/flights/${flight.id}/data`,
                   },
                   {
                     key: `action-products-${i}`,
                     label: 'Data Product',
-                    url: `/projects/${flight.id}/products`,
+                    url: `/projects/${projectId}/flights/${flight.id}/products`,
                   },
                   // {
                   //   key: `action-remove-${i}`,
                   //   label: 'Remove',
-                  //   url: `/projects/${flight.id}/remove`,
+                  //   url: `/projects/${projectId}/flights/${flight.id}/remove`,
                   // },
                 ])}
               />

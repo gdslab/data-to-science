@@ -6,6 +6,7 @@ import DatasetDetail, {
 } from './components/forms/DatasetDetail';
 import DatasetList from './components/forms/DatasetList';
 import ErrorPage from './components/ErrorPage';
+import FlightData, { loader as flightDataLoader } from './components/forms/FlightData';
 import FlightForm, { loader as flightFormLoader } from './components/forms/FlightForm';
 import Landing from './components/Landing';
 import LoginForm from './components/auth/LoginForm';
@@ -90,6 +91,11 @@ export const router = createBrowserRouter([
         path: '/projects/:projectId/flights/create',
         element: <FlightForm />,
         loader: flightFormLoader,
+      },
+      {
+        path: '/projects/:projectId/flights/:flightId/data',
+        element: <FlightData />,
+        loader: flightDataLoader,
       },
       {
         path: '/projects/:projectId/datasets/:datasetId',

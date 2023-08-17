@@ -4,7 +4,7 @@ import { Params, useLoaderData, useNavigate } from 'react-router-dom';
 import * as Yup from 'yup';
 
 import Alert from '../../Alert';
-import { CustomSubmitButton } from '../Buttons';
+import { Button } from '../Buttons';
 import CustomTextField from '../../forms/CustomTextField';
 import TeamMemberList from '../TeamMemberList/TeamMemberList';
 
@@ -93,9 +93,9 @@ export default function TeamDetail() {
                   <CustomTextField type="email" label="Email" name="email" />
                 </div>
                 <div className="flex-none w-1/3">
-                  <CustomSubmitButton disabled={isSubmitting}>
+                  <Button type="submit" disabled={isSubmitting}>
                     Add new member
-                  </CustomSubmitButton>
+                  </Button>
                 </div>
                 {status && status.type && status.msg ? (
                   <div className="mt-4">
