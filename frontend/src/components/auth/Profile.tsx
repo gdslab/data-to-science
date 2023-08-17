@@ -2,7 +2,7 @@ import { useContext, useState } from 'react';
 import { Formik, Form } from 'formik';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
-import { Button, OutlineButton } from '../forms/CustomButtons';
+import { Button, OutlineButton } from '../forms/Buttons';
 import Card from '../Card';
 import CustomTextField from '../forms/CustomTextField';
 

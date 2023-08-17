@@ -87,7 +87,7 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        path: '/projects/:projectId/datasets/:datasetId/create',
+        path: '/projects/:projectId/flights/create',
         element: <FlightForm />,
         loader: flightFormLoader,
       },

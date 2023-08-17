@@ -2,7 +2,7 @@ import axios from 'axios';
 import { Params, useParams } from 'react-router-dom';
 import { useState } from 'react';
 
-import { Button } from '../CustomButtons';
+import { Button } from '../Buttons';
 import FileUpload from '../../FileUpload';
 import UploadModal from '../../UploadModal';
 

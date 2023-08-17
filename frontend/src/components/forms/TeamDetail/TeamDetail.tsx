@@ -4,7 +4,7 @@ import { Params, useLoaderData, useNavigate } from 'react-router-dom';
 import * as Yup from 'yup';
 
 import Alert from '../../Alert';
-import { CustomSubmitButton } from '../CustomButtons';
+import { CustomSubmitButton } from '../Buttons';
 import CustomTextField from '../../forms/CustomTextField';
 import TeamMemberList from '../TeamMemberList/TeamMemberList';
 

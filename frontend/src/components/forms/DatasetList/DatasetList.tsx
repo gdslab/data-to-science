@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { ArrowUpOnSquareIcon } from '@heroicons/react/24/outline';
 
-import { Button } from '../CustomButtons';
+import { Button } from '../Buttons';
 import UploadModal from '../../UploadModal';
 
 interface Dataset {

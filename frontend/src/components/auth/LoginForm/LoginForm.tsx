@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 
 import Alert from '../../Alert';
 import AuthContext from '../../../AuthContext';
-import { Button, OutlineButton } from '../../forms/CustomButtons';
+import { Button, OutlineButton } from '../../forms/Buttons';
 import Card from '../../Card';
 import CustomTextField from '../../forms/CustomTextField';
 import HintText from '../../HintText';

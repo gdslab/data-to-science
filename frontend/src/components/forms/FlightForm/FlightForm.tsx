@@ -1,14 +1,15 @@
 import axios from 'axios';
 import { Formik, Form } from 'formik';
-import { useLoaderData, useParams } from 'react-router-dom';
+import { Link, useLoaderData, useParams } from 'react-router-dom';
 import { useState } from 'react';
 
 import Alert from '../../Alert';
-import { Button } from '../CustomButtons';
+import { Button, OutlineButton } from '../Buttons';
 import Card from '../../Card';
 import CustomSelectField from '../CustomSelectField';
 import CustomTextField from '../CustomTextField';
 import UploadModal from '../../UploadModal';
+import { User } from '../../../AuthContext';
 
 import initialValues, { PLATFORM_OPTIONS, SENSOR_OPTIONS } from './initialValues';
 
@@ -18,26 +19,17 @@ interface Pilot {
 }
 
 export async function loader() {
-  // const response = await axios.get('/api/v1/teams/');
-  // if (response) {
-  //   const teams = response.data;
-  //   teams.unshift({ title: 'No team', id: '' });
-  //   return teams;
-  // } else {
-  //   return [];
-  // }
-  let currentProfile = JSON.parse(localStorage.getItem('userProfile'));
-
+  const userProfile: User = JSON.parse(localStorage.getItem('userProfile'));
   return [
     {
-      value: currentProfile.id,
-      label: `${currentProfile.first_name} ${currentProfile.last_name}`,
+      value: userProfile.id,
+      label: `${userProfile.first_name} ${userProfile.last_name}`,
     },
   ];
 }
 
 export default function FlightForm() {
-  const { projectId, datasetId } = useParams();
+  const { projectId } = useParams();
   const [open, setOpen] = useState(false);
   const pilots = useLoaderData() as Pilot[];
 
@@ -59,7 +51,7 @@ export default function FlightForm() {
                   platform: values.platform,
                 };
                 const response = await axios.post(
-                  `/api/v1/projects/${projectId}/datasets/${datasetId}/flights`,
+                  `/api/v1/projects/${projectId}/flights`,
                   data
                 );
                 if (response) {
@@ -106,20 +98,25 @@ export default function FlightForm() {
                       Create Flight
                     </Button>
                   </div>
+                  <div className="mt-4">
+                    <Link to={`/projects/${projectId}`}>
+                      <OutlineButton>Return</OutlineButton>
+                    </Link>
+                  </div>
                   {status && status.type && status.msg ? (
                     <div className="mt-4">
                       <Alert alertType={status.type}>{status.msg}</Alert>
                     </div>
                   ) : null}
                 </Form>
-                <div className="mt-4">
+                {/* <div className="mt-4">
                   <UploadModal
                     open={open}
                     setOpen={setOpen}
                     apiRoute={`/api/v1/projects/${projectId}/datasets/${datasetId}/upload`}
                   />
                   <Button onClick={() => setOpen(true)}>Upload raw data (.tif)</Button>
-                </div>
+                </div> */}
               </div>
             )}
           </Formik>

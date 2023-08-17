@@ -4,7 +4,7 @@ import { Formik, Form } from 'formik';
 import { useLoaderData, useNavigate } from 'react-router-dom';
 
 import Alert from '../../Alert';
-import { Button } from '../CustomButtons';
+import { Button } from '../Buttons';
 import Card from '../../Card';
 import CustomSelectField from '../CustomSelectField';
 import CustomTextField, { styles } from '../CustomTextField';

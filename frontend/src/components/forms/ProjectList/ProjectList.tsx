@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { useLoaderData, Link } from 'react-router-dom';
 
-import { CustomButton } from '../CustomButtons';
+import { Button } from '../Buttons';
 
 interface Project {
   id: string;
@@ -25,7 +25,7 @@ export default function ProjectList() {
       <h1>Projects</h1>
       <div className="w-48">
         <Link to="/projects/create">
-          <CustomButton aria-label="Add new project">Add new project</CustomButton>
+          <Button>Add new project</Button>
         </Link>
       </div>
       {projects.length > 0 ? (
@@ -56,11 +56,11 @@ export default function ProjectList() {
 
               <div className="flex flex-1 flex-col justify-between">
                 <div className="border-s border-gray-900/10 p-4 sm:border-l-transparent sm:p-6">
-                  <a href="#">
+                  <Link to={`/projects/${project.id}`}>
                     <h3 className="font-bold uppercase text-gray-900">
                       {project.title}
                     </h3>
-                  </a>
+                  </Link>
 
                   <p className="mt-2 line-clamp-3 text-sm/relaxed text-gray-700">
                     {project.description}

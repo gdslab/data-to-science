@@ -3,7 +3,7 @@ import { Formik, Form } from 'formik';
 import { useNavigate } from 'react-router-dom';
 
 import Alert from '../../Alert';
-import { CustomSubmitButton } from '../CustomButtons';
+import { CustomSubmitButton } from '../Buttons';
 import CustomTextField from '../CustomTextField';
 
 import initialValues from './initialValues';

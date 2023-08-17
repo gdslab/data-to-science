@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { ChevronLeftIcon } from '@heroicons/react/24/outline';
 
 import Alert from '../../Alert';
-import { Button, OutlineButton } from '../../forms/CustomButtons';
+import { Button, OutlineButton } from '../../forms/Buttons';
 import Card from '../../Card';
 import CustomTextField from '../../forms/CustomTextField';
 import HintText from '../../HintText';

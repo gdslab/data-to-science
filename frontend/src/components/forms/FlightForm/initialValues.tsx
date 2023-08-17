@@ -1,5 +1,5 @@
 export const PLATFORM_OPTIONS = [
-  { label: 'Phantom 4', value: 'Phantom 4' },
+  { label: 'Phantom 4', value: 'Phantom_4' },
   { label: 'M300', value: 'M300' },
   { label: 'M350', value: 'M350' },
   { label: 'Other', value: 'Other' },
