@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import AnyHttpUrl, BaseModel
 
 
 # shared properties
@@ -11,6 +11,7 @@ class RawDataBase(BaseModel):
 # properties to receive via API on creation
 class RawDataCreate(RawDataBase):
     filepath: str
+    original_filename: str
 
 
 # properties to receive via API on update
@@ -23,6 +24,7 @@ class RawDataInDBBase(RawDataBase):
     id: UUID
     filepath: str
     flight_id: UUID
+    original_filename: str
 
     class Config:
         orm_mode = True
@@ -30,7 +32,7 @@ class RawDataInDBBase(RawDataBase):
 
 # additional properties to return via API
 class RawData(RawDataInDBBase):
-    pass
+    url: AnyHttpUrl
 
 
 # additional properties stored in DB

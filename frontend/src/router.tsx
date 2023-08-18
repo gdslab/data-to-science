@@ -1,10 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom';
 
 // pages and data loaders
-import DatasetDetail, {
-  loader as datasetDetailLoader,
-} from './components/forms/DatasetDetail';
-import DatasetList from './components/forms/DatasetList';
 import ErrorPage from './components/ErrorPage';
 import FlightData, { loader as flightDataLoader } from './components/forms/FlightData';
 import FlightForm, { loader as flightFormLoader } from './components/forms/FlightForm';
@@ -96,15 +92,6 @@ export const router = createBrowserRouter([
         path: '/projects/:projectId/flights/:flightId/data',
         element: <FlightData />,
         loader: flightDataLoader,
-      },
-      {
-        path: '/projects/:projectId/datasets/:datasetId',
-        element: <DatasetDetail />,
-        loader: datasetDetailLoader,
-      },
-      {
-        path: '/projects/:projectId/datasets',
-        element: <DatasetList />,
       },
       {
         path: '/projects/:projectId',

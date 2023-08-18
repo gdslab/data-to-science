@@ -1,7 +1,7 @@
 import secrets
 from typing import Any
 
-from pydantic import BaseSettings, EmailStr, PostgresDsn, validator
+from pydantic import AnyHttpUrl, BaseSettings, EmailStr, PostgresDsn, validator
 
 
 class Settings(BaseSettings):
@@ -13,6 +13,8 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str = ""
     UPLOAD_DIR: str = "/user-data"
+    TEST_UPLOAD_DIR: str = "/tmp/testing"
+    STATIC_URL: AnyHttpUrl = "http://localhost/static"
 
     POSTGRES_SERVER: str = "db"
     POSTGRES_USER: str = "ps2"

@@ -19,6 +19,7 @@ class RawData(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     filepath: Mapped[str] = mapped_column(String, nullable=False)
+    original_filename: Mapped[str] = mapped_column(String, nullable=False)
     flight_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("flights.id"), nullable=False
     )

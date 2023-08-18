@@ -1,4 +1,3 @@
-from uuid import uuid4
 import json
 import multiprocessing
 import os
@@ -13,16 +12,22 @@ class ImageProcessor:
         self.img_path = img_path
 
         output_dir = os.path.dirname(self.img_path)
-        output_name = str(uuid4()) + ".tif"
+        output_name = os.path.basename(self.img_path).replace("__temp", "")
 
         self.out_path = os.path.join(output_dir, output_name)
+        self.preview_out_path = os.path.join(
+            output_dir, output_name.replace("tif", "webp")
+        )
 
     def run(self):
         if is_cog(self.img_path):
-            shutil.move(self.img_path, self.out_path.replace("__temp"))
+            shutil.move(self.img_path, self.out_path)
         else:
             convert_to_cog(self.img_path, self.out_path)
+
         os.remove(self.img_path)
+
+        create_preview_webp(self.out_path, self.preview_out_path)
 
         return self.out_path
 
@@ -65,6 +70,29 @@ def convert_to_cog(
             "BIGTIFF=YES",
             "-wm",
             "500",
+        ]
+    )
+    result.check_returncode()
+
+
+def create_preview_webp(img_path: str, out_path: str) -> None:
+    """Generates preview image in WEBP format from original image."""
+    result = subprocess.run(
+        [
+            "gdal_translate",
+            "-of",
+            "WEBP",
+            "-b",
+            "1",
+            "-b",
+            "2",
+            "-b",
+            "3",
+            img_path,
+            out_path,
+            "-outsize",
+            "6.25%",
+            "6.25%",
         ]
     )
     result.check_returncode()

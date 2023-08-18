@@ -1,6 +1,9 @@
 import axios from 'axios';
-import { Params, useLoaderData } from 'react-router-dom';
+import { useState } from 'react';
+import { Params, useLoaderData, useParams } from 'react-router-dom';
 
+import { Button } from '../Buttons';
+import UploadModal from '../../UploadModal';
 import { Flight } from '../ProjectDetail/ProjectDetail';
 import { Table, TableBody, TableHead } from '../ProjectDetail/ProjectDetail';
 
@@ -23,16 +26,22 @@ export async function loader({ params }: { params: Params<string> }) {
   }
 }
 
-interface Data {}
+interface Data {
+  original_filename: string;
+  url: string;
+}
 
 interface FlightData {
   flight: Flight;
-  data: Data;
+  data: Data[];
 }
 
 export default function FlightData() {
-  const { flight, data } = useLoaderData();
-
+  const { flight, data } = useLoaderData() as FlightData;
+  const { flightId, projectId } = useParams();
+  const [open, setOpen] = useState(false);
+  console.log(flight);
+  console.log(data);
   if (flight) {
     return (
       <div className="mx-4">
@@ -43,17 +52,47 @@ export default function FlightData() {
         </div>
         <div className="mt-4">
           <Table>
-            <TableHead
-              columns={['Platform', 'Sensor', 'Acquisition Date', 'Actions']}
-            />
+            <TableHead columns={['Platform', 'Sensor', 'Acquisition Date']} />
             <TableBody
               rows={[
-                flight.platform,
-                flight.sensor,
-                flight.acquisition_date.toString(),
+                [flight.platform, flight.sensor, flight.acquisition_date.toString()],
               ]}
             />
           </Table>
+        </div>
+        <div className="mt-4">
+          <h2>Raw Data</h2>
+          <div className="mt-4">
+            <Table>
+              <TableHead
+                columns={['Filename', 'Cloud Optimized GeoTIFF URL', 'Preview']}
+              />
+              <TableBody
+                rows={data.map((dataset) => [
+                  dataset.original_filename,
+                  <Button
+                    size="sm"
+                    onClick={() => navigator.clipboard.writeText(dataset.url)}
+                  >
+                    Copy URL
+                  </Button>,
+                  <div className="flex items-center h-32 w-32">
+                    <img src={dataset.url.replace('tif', 'webp')} />
+                  </div>,
+                ])}
+              />
+            </Table>
+          </div>
+          <div>
+            <UploadModal
+              open={open}
+              setOpen={setOpen}
+              apiRoute={`/api/v1/projects/${projectId}/flights/${flightId}/raw_data`}
+            />
+            <Button size="sm" onClick={() => setOpen(true)}>
+              Upload raw data (.tif)
+            </Button>
+          </div>
         </div>
       </div>
     );

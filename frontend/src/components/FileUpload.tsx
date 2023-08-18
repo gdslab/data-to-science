@@ -26,17 +26,17 @@ interface Restrictions {
 
 interface FileUpload {
   restrictions: Restrictions;
-  upload_endpoint: string;
+  endpoint: string;
 }
 
-export default function FileUpload({ restrictions, upload_endpoint }: FileUpload) {
-  const [uppy] = useState(() => createUppy(upload_endpoint));
+export default function FileUpload({ restrictions, endpoint }: FileUpload) {
+  const [uppy] = useState(() => createUppy(endpoint));
 
   useEffect(() => {
-    if (upload_endpoint) {
+    if (endpoint) {
       uppy.setOptions({ restrictions });
     }
-  }, [uppy, upload_endpoint]);
+  }, [uppy, endpoint]);
 
   uppy.on('restriction-failed', (file, error) => {
     uppy.info(

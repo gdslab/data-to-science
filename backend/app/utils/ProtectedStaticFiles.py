@@ -28,7 +28,7 @@ async def verify_static_file_access(request: Request) -> None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="user not found"
         )
-    project_id = request.url.path.split("/static/")[1].split("/")[0]
+    project_id = request.url.path.split("/projects/")[1].split("/")[0]
     project = crud.project.get_user_project(
         SessionLocal(), user_id=user.id, project_id=project_id
     )

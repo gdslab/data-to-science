@@ -31,7 +31,7 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
                 session.refresh(db_obj)
             else:
                 db_obj = None
-        return db_obj
+            return db_obj
 
     def get_team_member_by_email(
         self, db: Session, *, email: str, team_id: UUID
@@ -45,7 +45,7 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
         )
         with db as session:
             team_member = session.scalars(statement).one_or_none()
-        return team_member
+            return team_member
 
     def get_team_member_by_id(
         self, db: Session, *, user_id: UUID, team_id: UUID
@@ -58,7 +58,7 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
         )
         with db as session:
             db_obj = session.scalars(statement).one_or_none()
-        return db_obj
+            return db_obj
 
     def get_list_of_team_members(
         self, db: Session, *, team_id: UUID, skip: int = 0, limit: int = 100

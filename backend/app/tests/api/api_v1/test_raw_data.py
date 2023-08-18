@@ -23,7 +23,7 @@ def test_create_raw_data(
         files = {"files": data}
         project_url = f"{settings.API_V1_STR}/projects/{flight.project_id}"
         r = client.post(f"{project_url}/flights/{flight.id}/raw_data", files=files)
-        assert r.status_code == 202
+        assert r.status_code == 200
     shutil.rmtree(os.path.join(os.sep, "tmp", "testing"))
 
 
@@ -34,14 +34,14 @@ def test_get_raw_data(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_random_project(db, owner_id=current_user.id)
     flight = create_flight(db, project_id=project.id)
-    geotiff = os.path.join(os.sep, "app", "app", "tests", "utils", "./test.tif")
-    raw_data = create_raw_data(db, flight_id=flight.id, filepath=geotiff)
+    raw_data = create_raw_data(db, flight=flight)
     project_url = f"{settings.API_V1_STR}/projects/{project.id}"
     r = client.get(f"{project_url}/flights/{flight.id}/raw_data/{raw_data.id}")
     assert 200 == r.status_code
     response = r.json()
     assert str(raw_data.id) == response["id"]
-    assert geotiff == response["filepath"]
+    assert "original_filename" in response
+    assert "url" in response
 
 
 def test_get_all_raw_data(
@@ -51,10 +51,9 @@ def test_get_all_raw_data(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_random_project(db, owner_id=current_user.id)
     flight = create_flight(db, project_id=project.id)
-    geotiff = os.path.join(os.sep, "app", "app", "tests", "utils", "./test.tif")
-    create_raw_data(db, flight_id=flight.id, filepath=geotiff)
-    create_raw_data(db, flight_id=flight.id, filepath=geotiff)
-    create_raw_data(db, flight_id=flight.id, filepath=geotiff)
+    create_raw_data(db, flight=flight)
+    create_raw_data(db, flight=flight)
+    create_raw_data(db, flight=flight)
     create_raw_data(db)
     flight_url = f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}"
     r = client.get(f"{flight_url}/raw_data")
@@ -65,3 +64,5 @@ def test_get_all_raw_data(
     for raw_data in all_raw_data:
         assert "flight_id" in raw_data
         assert raw_data["flight_id"] == str(flight.id)
+        assert "original_filename" in raw_data
+        assert "url" in raw_data
