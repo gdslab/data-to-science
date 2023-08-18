@@ -12,11 +12,7 @@ from app.schemas.flight import FlightCreate, FlightUpdate
 
 class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
     def create_with_project(
-        self,
-        db: Session,
-        *,
-        obj_in: FlightCreate,
-        project_id: UUID,
+        self, db: Session, *, obj_in: FlightCreate, project_id: UUID
     ) -> Flight:
         obj_in_data = jsonable_encoder(obj_in)
         db_obj = self.model(**obj_in_data, project_id=project_id)

@@ -18,7 +18,7 @@ class RawData(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    data_path: Mapped[str] = mapped_column(String, nullable=False)
+    filepath: Mapped[str] = mapped_column(String, nullable=False)
     flight_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("flights.id"), nullable=False
     )
@@ -27,6 +27,6 @@ class RawData(Base):
 
     def __repr__(self) -> str:
         return (
-            f"RawData(id={self.id!r}, data_path={self.data_path!r}, "
+            f"RawData(id={self.id!r}, filepath={self.data_path!r}, "
             f"flight_id={self.flight_id!r})"
         )

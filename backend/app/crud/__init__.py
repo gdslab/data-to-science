@@ -2,6 +2,7 @@ from .crud_flight import flight
 from .crud_location import location
 from .crud_project import project
 from .crud_project_member import project_member
+from .crud_raw_data import raw_data
 from .crud_team import team
 from .crud_team_member import team_member
 from .crud_user import user

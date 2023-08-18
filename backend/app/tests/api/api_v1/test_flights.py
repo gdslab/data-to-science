@@ -10,15 +10,13 @@ from app.core.config import settings
 from app.models.flight import SENSORS, PLATFORMS
 from app.schemas.flight import FlightUpdate
 from app.schemas.project_member import ProjectMemberCreate
-from app.tests.utils.flight import create_random_flight, create_random_acquisition_date
+from app.tests.utils.flight import create_flight, create_acquisition_date
 from app.tests.utils.project import create_random_project
 from app.tests.utils.user import create_random_user
 
 
 def test_create_flight(
-    client: TestClient,
-    db: Session,
-    normal_user_access_token: str,
+    client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify new flight is created in database."""
     pilot = create_random_user(db)
@@ -31,7 +29,7 @@ def test_create_flight(
         db, obj_in=project_member_in, project_id=project.id
     )
     data = {
-        "acquisition_date": create_random_acquisition_date(),
+        "acquisition_date": create_acquisition_date(),
         "altitude": randint(0, 500),
         "side_overlap": randint(40, 80),
         "forward_overlap": randint(40, 80),
@@ -40,10 +38,7 @@ def test_create_flight(
         "pilot_id": pilot.id,
     }
     data = jsonable_encoder(data)
-    r = client.post(
-        f"{settings.API_V1_STR}/projects/{project.id}/flights/",
-        json=data,
-    )
+    r = client.post(f"{settings.API_V1_STR}/projects/{project.id}/flights/", json=data)
     print(r.json())
     assert 201 == r.status_code
     response_data = r.json()
@@ -65,7 +60,7 @@ def test_create_flight_without_project_access(
     pilot = create_random_user(db)
     project = create_random_project(db)
     data = {
-        "acquisition_date": create_random_acquisition_date(),
+        "acquisition_date": create_acquisition_date(),
         "altitude": randint(0, 500),
         "side_overlap": randint(40, 80),
         "forward_overlap": randint(40, 80),
@@ -86,7 +81,7 @@ def test_get_flight(
 ) -> None:
     """Verify retrieval of flight the current user can access."""
     project = create_random_project(db)
-    flight = create_random_flight(db, project_id=project.id)
+    flight = create_flight(db, project_id=project.id)
     current_user = get_current_user(db, normal_user_access_token)
     project_member_in = ProjectMemberCreate(
         member_id=current_user.id, project_id=project.id
@@ -107,9 +102,9 @@ def test_get_flights(
 ) -> None:
     """Verify retrieval of flights associated with project."""
     project = create_random_project(db)
-    create_random_flight(db, project_id=project.id)
-    create_random_flight(db, project_id=project.id)
-    create_random_flight(db, project_id=project.id)
+    create_flight(db, project_id=project.id)
+    create_flight(db, project_id=project.id)
+    create_flight(db, project_id=project.id)
     current_user = get_current_user(db, normal_user_access_token)
     project_member_in = ProjectMemberCreate(
         member_id=current_user.id, project_id=project.id
@@ -132,7 +127,7 @@ def test_get_flight_without_project_access(
 ) -> None:
     """Verify failure to retrieve flight the current user cannot access."""
     project = create_random_project(db)
-    flight = create_random_flight(db, project_id=project.id)
+    flight = create_flight(db, project_id=project.id)
     r = client.get(
         f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}",
     )
@@ -144,7 +139,7 @@ def test_update_flight(
 ) -> None:
     """Verify update of flight in project current user can access."""
     project = create_random_project(db)
-    flight = create_random_flight(db, altitude=50, project_id=project.id)
+    flight = create_flight(db, altitude=50, project_id=project.id)
     current_user = get_current_user(db, normal_user_access_token)
     project_member_in = ProjectMemberCreate(
         member_id=current_user.id, project_id=project.id
@@ -173,7 +168,7 @@ def test_update_flight_without_project_access(
 ) -> None:
     """Verify failure to update flight in project current user cannot access."""
     project = create_random_project(db)
-    flight = create_random_flight(db, altitude=50, project_id=project.id)
+    flight = create_flight(db, altitude=50, project_id=project.id)
     flight_in = FlightUpdate(
         **{k: v for k, v in flight.__dict__.items() if k != "altitude"}, altitude=100
     )

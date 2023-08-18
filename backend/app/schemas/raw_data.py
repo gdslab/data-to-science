@@ -10,7 +10,7 @@ class RawDataBase(BaseModel):
 
 # properties to receive via API on creation
 class RawDataCreate(RawDataBase):
-    pass
+    filepath: str
 
 
 # properties to receive via API on update
@@ -21,7 +21,7 @@ class RawDataUpdate(RawDataBase):
 # properties shared by models stored in DB
 class RawDataInDBBase(RawDataBase):
     id: UUID
-    data_path: str
+    filepath: str
     flight_id: UUID
 
     class Config:

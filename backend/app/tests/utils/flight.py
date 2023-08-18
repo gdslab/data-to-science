@@ -15,7 +15,7 @@ from app.tests.utils.user import create_random_user
 faker = Faker()
 
 
-def create_random_flight(
+def create_flight(
     db: Session, project_id: UUID | None = None, pilot_id: UUID | None = None, **kwargs
 ) -> models.Flight:
     if pilot_id is None:
@@ -26,7 +26,7 @@ def create_random_flight(
         project = create_random_project(db, owner_id=project_owner.id)
         project_id = project.id
     if "acquisition_date" not in kwargs:
-        acquisition_date = create_random_acquisition_date()
+        acquisition_date = create_acquisition_date()
     else:
         acquisition_date = kwargs["acquisition_date"]
     if "altitude" not in kwargs:
@@ -61,7 +61,7 @@ def create_random_flight(
     return crud.flight.create_with_project(db, obj_in=flight_in, project_id=project_id)
 
 
-def create_random_acquisition_date() -> date:
+def create_acquisition_date() -> date:
     """Create random acquisition date from current year."""
     return faker.date_between(
         start_date=date(date.today().year, 1, 1),
