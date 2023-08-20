@@ -1,8 +1,14 @@
 import axios from 'axios';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { Params, useLoaderData, useParams } from 'react-router-dom';
 
 import { Button } from '../Buttons';
+import {
+  CheckCircleIcon,
+  CogIcon,
+  XCircleIcon,
+  QuestionMarkCircleIcon,
+} from '@heroicons/react/24/outline';
 import UploadModal from '../../UploadModal';
 import { Flight } from '../ProjectDetail/ProjectDetail';
 import { Table, TableBody, TableHead } from '../ProjectDetail/ProjectDetail';
@@ -29,6 +35,7 @@ export async function loader({ params }: { params: Params<string> }) {
 interface Data {
   original_filename: string;
   url: string;
+  status: string;
 }
 
 interface FlightData {
@@ -65,7 +72,7 @@ export default function FlightData() {
           <div className="mt-4">
             <Table>
               <TableHead
-                columns={['Filename', 'Cloud Optimized GeoTIFF URL', 'Preview']}
+                columns={['Filename', 'Cloud Optimized GeoTIFF', 'Preview', 'Status']}
               />
               <TableBody
                 rows={data.map((dataset) => [
@@ -76,8 +83,34 @@ export default function FlightData() {
                   >
                     Copy URL
                   </Button>,
-                  <div className="flex items-center h-32 w-32">
+                  <div className="flex items-center justify-center h-32 w-32">
                     <img src={dataset.url.replace('tif', 'webp')} />
+                  </div>,
+                  <div className="flex items-center justify-center">
+                    {dataset.status === 'inprogress' ? (
+                      <Fragment>
+                        <CogIcon
+                          className="h-8 w-8 mr-4 animate-spin"
+                          aria-hidden="true"
+                        />
+                        Processing...
+                      </Fragment>
+                    ) : dataset.status === 'error' ? (
+                      <Fragment>
+                        <XCircleIcon className="h-8 h-8 mr-4 text-red-500" />
+                        Failed
+                      </Fragment>
+                    ) : dataset.status === 'completed' ? (
+                      <Fragment>
+                        <CheckCircleIcon className="h-8 w-8 mr-4 text-green-500" />{' '}
+                        Success
+                      </Fragment>
+                    ) : (
+                      <Fragment>
+                        <QuestionMarkCircleIcon className="h-8 w-8 mr-4" />
+                        Unknown
+                      </Fragment>
+                    )}
                   </div>,
                 ])}
               />

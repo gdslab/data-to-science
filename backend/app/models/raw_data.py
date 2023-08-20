@@ -10,6 +10,7 @@ from app.db.base_class import Base
 
 if TYPE_CHECKING:
     from .flight import Flight
+    from .job import Job
 
 
 class RawData(Base):
@@ -25,6 +26,7 @@ class RawData(Base):
     )
 
     flight: Mapped["Flight"] = relationship(back_populates="raw_data")
+    jobs: Mapped[list["Job"]] = relationship(back_populates="raw_data")
 
     def __repr__(self) -> str:
         return (
