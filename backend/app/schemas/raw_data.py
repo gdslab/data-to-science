@@ -32,6 +32,7 @@ class RawDataInDBBase(RawDataBase):
 
 # additional properties to return via API
 class RawData(RawDataInDBBase):
+    status: str | None = None
     url: AnyHttpUrl
 
 

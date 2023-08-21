@@ -1,4 +1,5 @@
 from .crud_flight import flight
+from .crud_job import job
 from .crud_location import location
 from .crud_project import project
 from .crud_project_member import project_member

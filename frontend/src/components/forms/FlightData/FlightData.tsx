@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { Fragment, useState } from 'react';
-import { Params, useLoaderData, useParams } from 'react-router-dom';
+import { Params, useLoaderData, useParams, useRevalidator } from 'react-router-dom';
 
 import { Button } from '../Buttons';
 import {
@@ -9,6 +9,7 @@ import {
   XCircleIcon,
   QuestionMarkCircleIcon,
 } from '@heroicons/react/24/outline';
+import useInterval from '../../../hooks/useInterval';
 import UploadModal from '../../UploadModal';
 import { Flight } from '../ProjectDetail/ProjectDetail';
 import { Table, TableBody, TableHead } from '../ProjectDetail/ProjectDetail';
@@ -47,8 +48,18 @@ export default function FlightData() {
   const { flight, data } = useLoaderData() as FlightData;
   const { flightId, projectId } = useParams();
   const [open, setOpen] = useState(false);
-  console.log(flight);
-  console.log(data);
+  const revalidator = useRevalidator();
+
+  if (data && data.length > 0) {
+    const processing = data.filter(({ status }) => status === 'INPROGRESS');
+    useInterval(
+      () => {
+        revalidator.revalidate();
+      },
+      processing.length > 0 ? 5000 : null
+    );
+  }
+
   if (flight) {
     return (
       <div className="mx-4">
@@ -84,10 +95,13 @@ export default function FlightData() {
                     Copy URL
                   </Button>,
                   <div className="flex items-center justify-center h-32 w-32">
-                    <img src={dataset.url.replace('tif', 'webp')} />
+                    <img
+                      className="w-full max-h-28"
+                      src={dataset.url.replace('tif', 'webp')}
+                    />
                   </div>,
                   <div className="flex items-center justify-center">
-                    {dataset.status === 'inprogress' ? (
+                    {dataset.status === 'INPROGRESS' ? (
                       <Fragment>
                         <CogIcon
                           className="h-8 w-8 mr-4 animate-spin"
@@ -95,12 +109,12 @@ export default function FlightData() {
                         />
                         Processing...
                       </Fragment>
-                    ) : dataset.status === 'error' ? (
+                    ) : dataset.status === 'FAILED' ? (
                       <Fragment>
                         <XCircleIcon className="h-8 h-8 mr-4 text-red-500" />
                         Failed
                       </Fragment>
-                    ) : dataset.status === 'completed' ? (
+                    ) : dataset.status === 'SUCCESS' ? (
                       <Fragment>
                         <CheckCircleIcon className="h-8 w-8 mr-4 text-green-500" />{' '}
                         Success
@@ -116,7 +130,7 @@ export default function FlightData() {
               />
             </Table>
           </div>
-          <div>
+          <div className="my-4">
             <UploadModal
               open={open}
               setOpen={setOpen}

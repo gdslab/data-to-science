@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.models.flight import Flight
 from app.schemas.raw_data import RawDataCreate
 from app.tests.utils.flight import create_flight
+from app.tests.utils.job import create_job
 
 
 def create_raw_data(db: Session, flight: Flight | None = None):
@@ -22,4 +23,8 @@ def create_raw_data(db: Session, flight: Flight | None = None):
     raw_data_in = RawDataCreate(
         filepath=dest_filepath, original_filename=os.path.basename(src_filepath)
     )
-    return crud.raw_data.create_with_flight(db, obj_in=raw_data_in, flight_id=flight.id)
+    raw_data = crud.raw_data.create_with_flight(
+        db, obj_in=raw_data_in, flight_id=flight.id
+    )
+    create_job(db, raw_data_id=raw_data.id)
+    return raw_data

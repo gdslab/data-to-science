@@ -30,6 +30,6 @@ class RawData(Base):
 
     def __repr__(self) -> str:
         return (
-            f"RawData(id={self.id!r}, filepath={self.data_path!r}, "
+            f"RawData(id={self.id!r}, filepath={self.filepath!r}, "
             f"flight_id={self.flight_id!r})"
         )

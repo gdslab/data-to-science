@@ -1,5 +1,6 @@
 import os
 import shutil
+from datetime import datetime
 from typing import Any, Sequence
 from uuid import UUID, uuid4
 
@@ -48,8 +49,15 @@ def upload_raw_data(
     with open(out_path, "wb") as buffer:
         shutil.copyfileobj(files.file, buffer)
 
+    job_in = schemas.job.JobCreate(
+        name="upload-raw-data",
+        state="PENDING",
+        status="WAITING",
+        start_time=datetime.now(),
+    )
+    job = crud.job.create_job(db, job_in)
     process_geotiff.apply_async(
-        args=[files.filename, out_path, project.id, flight.id],
+        args=[files.filename, out_path, project.id, flight.id, job.id],
         kwargs={},
         queue="main-queue",
     )

@@ -23,7 +23,7 @@ def test_create_raw_data(
         files = {"files": data}
         project_url = f"{settings.API_V1_STR}/projects/{flight.project_id}"
         r = client.post(f"{project_url}/flights/{flight.id}/raw_data", files=files)
-        assert r.status_code == 200
+        assert r.status_code == 202
     shutil.rmtree(os.path.join(os.sep, "tmp", "testing"))
 
 
@@ -42,6 +42,7 @@ def test_get_raw_data(
     assert str(raw_data.id) == response["id"]
     assert "original_filename" in response
     assert "url" in response
+    assert "status" in response
 
 
 def test_get_all_raw_data(
