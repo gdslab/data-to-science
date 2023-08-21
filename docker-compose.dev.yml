@@ -50,6 +50,48 @@ services:
     env_file:
       - .env
 
+  redis:
+    image: redis:alpine
+    restart: always
+
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: backend.dockerfile
+      args:
+        INSTALL_DEV: true
+    command: /app/worker-start.sh
+    volumes:
+      - ./backend:/app
+      - user-data:/user-data
+    restart: always
+    depends_on:
+      redis:
+        condition: service_started
+      db:
+        condition: service_healthy
+    env_file: .env
+
+  flower:
+    build:
+      context: ./backend
+      dockerfile: backend.dockerfile
+      args:
+        INSTALL_DEV: true
+    command: /app/flower-start.sh
+    volumes:
+      - ./backend:/app
+      - user-data:/user-data
+    ports:
+      - 5555:5555
+    restart: always
+    depends_on:
+      redis:
+        condition: service_started
+      db:
+        condition: service_healthy
+    env_file: .env
+
   proxy:
     build:
       context: ./nginx

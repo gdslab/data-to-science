@@ -1,7 +1,7 @@
 import os
 import shutil
 from typing import Any, Sequence
-from uuid import uuid4, UUID
+from uuid import UUID, uuid4
 
 from fastapi import (
     APIRouter,
@@ -16,44 +16,10 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
+from app.worker import process_geotiff
 from app.core.config import settings
 
-from app.utils.ImageProcessor import ImageProcessor
-
 router = APIRouter()
-
-
-def write_file_to_storage_and_process(
-    db: Session,
-    files: UploadFile,
-    project_id: UUID,
-    flight_id: UUID,
-    test: bool = False,
-) -> None:
-    if test:
-        upload_dir = (
-            f"{settings.TEST_UPLOAD_DIR}/projects/{project_id}/flights{flight_id}"
-        )
-    else:
-        upload_dir = f"{settings.UPLOAD_DIR}/projects/{project_id}/flights/{flight_id}"
-    if not os.path.exists(upload_dir):
-        os.makedirs(upload_dir)
-    out_path = os.path.join(upload_dir, f"{str(uuid4())}__temp.tif")
-
-    with open(out_path, "wb") as buffer:
-        shutil.copyfileobj(files.file, buffer)
-        crud.raw_data.create_with_flight(
-            db,
-            schemas.RawDataCreate(
-                filepath=out_path.replace("__temp", ""),
-                original_filename=os.path.basename(files.filename),
-            ),
-            flight_id=flight_id,
-        )
-        # create COG for uploaded GeoTIFF if necessary
-        ip = ImageProcessor(out_path)
-        ip.run()
-    return
 
 
 @router.post("/", status_code=status.HTTP_202_ACCEPTED)
@@ -69,14 +35,25 @@ def upload_raw_data(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
-    background_tasks.add_task(
-        write_file_to_storage_and_process,
-        db,
-        files,
-        project.id,
-        flight.id,
-        request.client.host == "testclient",
+    if request.client.host == "testclient":
+        upload_dir = (
+            f"{settings.TEST_UPLOAD_DIR}/projects/{project.id}/flights{flight.id}"
+        )
+    else:
+        upload_dir = f"{settings.UPLOAD_DIR}/projects/{project.id}/flights/{flight.id}"
+    if not os.path.exists(upload_dir):
+        os.makedirs(upload_dir)
+    out_path = os.path.join(upload_dir, f"{str(uuid4())}__temp.tif")
+
+    with open(out_path, "wb") as buffer:
+        shutil.copyfileobj(files.file, buffer)
+
+    process_geotiff.apply_async(
+        args=[files.filename, out_path, project.id, flight.id],
+        kwargs={},
+        queue="main-queue",
     )
+
     return {"status": "processing"}
 
 
