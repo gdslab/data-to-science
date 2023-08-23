@@ -17,6 +17,7 @@ WORKDIR /etc/nginx
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 
 COPY ./nginx/common.conf ../nginx/common_location.conf ./
+COPY ./nginx/ps2-frontend.conf ./conf.d/default.conf
 
 ENTRYPOINT ["nginx"]
 
