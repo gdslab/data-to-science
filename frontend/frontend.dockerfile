@@ -14,7 +14,7 @@ FROM nginxinc/nginx-unprivileged:latest
 
 WORKDIR /etc/nginx
 
-COPY --from=build-stage /app/build /usr/share/nginx/html
+COPY --from=build-stage /app/dist /usr/share/nginx/html
 
 COPY ./nginx/common.conf ../nginx/common_location.conf ./
 
