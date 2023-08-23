@@ -1,7 +1,7 @@
 import 'leaflet/dist/leaflet.css';
 import { MapContainer } from 'react-leaflet/MapContainer';
 
-import MapLayersControl from './MapLayers';
+import MapLayersControl from './MapLayersControl';
 
 export default function Map() {
   return (

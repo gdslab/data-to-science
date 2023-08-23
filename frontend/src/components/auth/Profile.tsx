@@ -66,7 +66,7 @@ export default function Profile() {
                   validationSchema={{}}
                   onSubmit={() => {}}
                 >
-                  {({ isSubmitting, status }) => (
+                  {() => (
                     <Form className="flex flex-col gap-4">
                       <div className="flex flex-wrap justify-between w-full">
                         <div className="md:w-36 w-full">
@@ -123,7 +123,6 @@ export default function Profile() {
                               name="newKeyword"
                               placeholder="New keyword"
                               value={newKeyword}
-                              sz
                               onChange={handleNewKeywordChange}
                             />
                             <button

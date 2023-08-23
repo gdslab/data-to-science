@@ -52,7 +52,7 @@ export function TableBody({
   rows,
 }: {
   actions?: Action[][];
-  rows: string[][];
+  rows: (string | JSX.Element)[][];
 }) {
   return (
     <tbody className="divide-y divide-gray-200">

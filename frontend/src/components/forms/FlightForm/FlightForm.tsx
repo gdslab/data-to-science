@@ -1,14 +1,12 @@
 import axios from 'axios';
 import { Formik, Form } from 'formik';
 import { Link, useLoaderData, useParams } from 'react-router-dom';
-import { useState } from 'react';
 
 import Alert from '../../Alert';
 import { Button, OutlineButton } from '../Buttons';
 import Card from '../../Card';
 import CustomSelectField from '../CustomSelectField';
 import CustomTextField from '../CustomTextField';
-import UploadModal from '../../UploadModal';
 import { User } from '../../../AuthContext';
 
 import initialValues, { PLATFORM_OPTIONS, SENSOR_OPTIONS } from './initialValues';
@@ -19,18 +17,22 @@ interface Pilot {
 }
 
 export async function loader() {
-  const userProfile: User = JSON.parse(localStorage.getItem('userProfile'));
-  return [
-    {
-      value: userProfile.id,
-      label: `${userProfile.first_name} ${userProfile.last_name}`,
-    },
-  ];
+  const userProfileLS = localStorage.getItem('userProfile');
+  if (userProfileLS) {
+    const userProfile: User = JSON.parse(userProfileLS);
+    return [
+      {
+        value: userProfile.id,
+        label: `${userProfile.first_name} ${userProfile.last_name}`,
+      },
+    ];
+  } else {
+    return [];
+  }
 }
 
 export default function FlightForm() {
   const { projectId } = useParams();
-  const [open, setOpen] = useState(false);
   const pilots = useLoaderData() as Pilot[];
 
   return (
@@ -109,14 +111,6 @@ export default function FlightForm() {
                     </div>
                   ) : null}
                 </Form>
-                {/* <div className="mt-4">
-                  <UploadModal
-                    open={open}
-                    setOpen={setOpen}
-                    apiRoute={`/api/v1/projects/${projectId}/datasets/${datasetId}/upload`}
-                  />
-                  <Button onClick={() => setOpen(true)}>Upload raw data (.tif)</Button>
-                </div> */}
               </div>
             )}
           </Formik>

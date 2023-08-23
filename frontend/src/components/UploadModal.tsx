@@ -58,7 +58,7 @@ export default function UploadModal({ open, setOpen, apiRoute }: Props) {
                     onClick={() => setOpen(false)}
                     ref={cancelButtonRef}
                   >
-                    Cancel
+                    Done
                   </button>
                 </div>
               </Dialog.Panel>

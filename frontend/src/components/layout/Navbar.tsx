@@ -3,7 +3,6 @@ import { Link, useLocation } from 'react-router-dom';
 import { Disclosure, Menu, Transition } from '@headlessui/react';
 import {
   Bars3Icon,
-  BellIcon,
   ChevronDownIcon,
   UserCircleIcon,
   XMarkIcon,

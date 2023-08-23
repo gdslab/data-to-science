@@ -100,7 +100,7 @@ export default function ProjectForm({
                         allowedFileTypes: ['.shp', '.shx', '.dbf', '.prj'],
                         maxNumberOfFiles: 1,
                       }}
-                      upload_endpoint={`/api/v1/projects/${projectId}/upload`}
+                      endpoint={`/api/v1/projects/${projectId}/upload`}
                     />
                   </div>
                   <CustomTextField

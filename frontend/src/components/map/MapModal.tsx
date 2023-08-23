@@ -12,7 +12,7 @@ interface GeoJSONFeature {
   type: string;
   geometry: {
     type: string;
-    coordinates: Coordinates[];
+    coordinates: Coordinates[] | Coordinates[][];
   };
   properties: {
     [key: string]: string;
@@ -27,7 +27,9 @@ interface Location {
   };
 }
 
-function coordArrayToWKT(coordArray: Coordinates[]) {
+export type SetLocation = React.Dispatch<React.SetStateAction<Location | null>>;
+
+function coordArrayToWKT(coordArray: Coordinates[] | Coordinates[][]) {
   let wkt: string[][] = [];
   coordArray[0].forEach((coordPair) => {
     wkt.push([`${coordPair[0]} ${coordPair[1]}`]);
