@@ -11,7 +11,7 @@ from app.api import deps
 router = APIRouter()
 
 
-@router.post("/", response_model=schemas.Project, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=schemas.Project, status_code=status.HTTP_201_CREATED)
 def create_project(
     project_in: schemas.ProjectCreate,
     current_user: models.User = Depends(deps.get_current_approved_user),
@@ -39,7 +39,7 @@ def read_project(
     return project
 
 
-@router.get("/", response_model=list[schemas.Project])
+@router.get("", response_model=list[schemas.Project])
 def read_projects(
     skip: int = 0,
     limit: int = 100,

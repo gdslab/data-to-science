@@ -23,7 +23,7 @@ from app.core.config import settings
 router = APIRouter()
 
 
-@router.post("/", status_code=status.HTTP_202_ACCEPTED)
+@router.post("", status_code=status.HTTP_202_ACCEPTED)
 def upload_raw_data(
     request: Request,
     files: UploadFile,
@@ -36,7 +36,7 @@ def upload_raw_data(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
-    if request.client.host == "testclient":
+    if request.client and request.client.host == "testclient":
         upload_dir = (
             f"{settings.TEST_UPLOAD_DIR}/projects/{project.id}/flights{flight.id}"
         )
@@ -78,7 +78,7 @@ def read_raw_data(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
-    if request.client.host == "testclient":
+    if request.client and request.client.host == "testclient":
         upload_dir = settings.TEST_UPLOAD_DIR
     else:
         upload_dir = settings.UPLOAD_DIR
@@ -88,7 +88,7 @@ def read_raw_data(
     return raw_data
 
 
-@router.get("/", response_model=Sequence[schemas.RawData])
+@router.get("", response_model=Sequence[schemas.RawData])
 def read_all_raw_data(
     request: Request,
     flight_id: UUID,
@@ -100,7 +100,7 @@ def read_all_raw_data(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
-    if request.client.host == "testclient":
+    if request.client and request.client.host == "testclient":
         upload_dir = settings.TEST_UPLOAD_DIR
     else:
         upload_dir = settings.UPLOAD_DIR

@@ -11,7 +11,7 @@ from app.api import deps
 router = APIRouter()
 
 
-@router.post("/", response_model=schemas.Flight, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=schemas.Flight, status_code=status.HTTP_201_CREATED)
 def create_flight(
     flight_in: schemas.FlightCreate,
     project_id: UUID,
@@ -43,7 +43,7 @@ def read_flight(
     return flight
 
 
-@router.get("/", response_model=Sequence[schemas.Flight])
+@router.get("", response_model=Sequence[schemas.Flight])
 def read_flights(
     project_id: UUID,
     project: models.Project = Depends(deps.can_read_write_project),

@@ -12,7 +12,7 @@ router = APIRouter()
 
 
 @router.post(
-    "/",
+    "",
     response_model=schemas.location.PolygonGeoJSONFeature,
     status_code=status.HTTP_201_CREATED,
 )
@@ -23,7 +23,5 @@ def create_location(
 ) -> Any:
     """Create new location."""
     location = crud.location.create_with_owner(db, obj_in=location_in)
-    geojson_location = crud.location.get_geojson_location(
-        db, location_id=str(location.id)
-    )
+    geojson_location = crud.location.get_geojson_location(db, location_id=location.id)
     return json.loads(geojson_location)
