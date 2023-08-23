@@ -13,5 +13,7 @@ export function setPixelColors(values: number[]) {
   return color;
 }
 
-const hasDataForAllBands = (values: number[]) =>
-  values.every((value) => value != false || isNaN(value));
+const hasDataForAllBands = (values: (number | boolean)[]) =>
+  values.every(
+    (value) => value != false || (typeof value !== 'boolean' && isNaN(value))
+  );

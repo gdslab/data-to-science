@@ -880,6 +880,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/chroma-js@npm:^2.4.0":
+  version: 2.4.0
+  resolution: "@types/chroma-js@npm:2.4.0"
+  checksum: aa91adf61a5dee8469c1e6b298d3496041d1baa8bd9938865a61050b5e392adc3425718c7c29b09a3d8dfe0d2e8a1301e98d4b458135e53c2ecb3ecca8cb7d21
+  languageName: node
+  linkType: hard
+
 "@types/geojson@npm:*, @types/geojson@npm:^7946.0.10":
   version: 7946.0.10
   resolution: "@types/geojson@npm:7946.0.10"
@@ -3936,6 +3943,7 @@ __metadata:
     "@geoman-io/leaflet-geoman-free": ^2.14.2
     "@headlessui/react": latest
     "@heroicons/react": ^2.0.18
+    "@types/chroma-js": ^2.4.0
     "@types/leaflet": ^1.9.3
     "@types/react": ^18.2.15
     "@types/react-dom": ^18.2.7

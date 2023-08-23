@@ -36,6 +36,7 @@
     "yup": "^1.2.0"
   },
   "devDependencies": {
+    "@types/chroma-js": "^2.4.0",
     "@types/leaflet": "^1.9.3",
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",
