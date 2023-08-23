@@ -39,13 +39,22 @@ export default function RegistrationForm() {
                   };
                   const response = await axios.post('/api/v1/users/', data);
                   if (response) {
-                    // do something
+                    setStatus({
+                      type: 'success',
+                      msg: 'Registration complete. Your account will be verified within N hours.',
+                    });
                   } else {
-                    // do something
+                    setStatus({
+                      type: 'warning',
+                      msg: 'Unable to complete registration',
+                    });
                   }
                 } catch (err) {
                   if (axios.isAxiosError(err)) {
-                    setStatus({ type: 'error', msg: err.response?.data.detail });
+                    setStatus({
+                      type: err.response?.status === 409 ? 'warning' : 'error',
+                      msg: err.response?.data.detail,
+                    });
                   } else {
                     setStatus({
                       type: 'error',

@@ -24,7 +24,7 @@ def create_user(
     user = crud.user.get_by_email(db, email=email)
     if user:
         raise HTTPException(
-            status_code=400, detail="This email address is already in use"  # TODO
+            status_code=status.HTTP_409_CONFLICT, detail="Email address already in use"
         )
     user_in = schemas.UserCreate(
         password=password,
