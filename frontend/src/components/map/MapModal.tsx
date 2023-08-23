@@ -102,7 +102,7 @@ export default function MapModal({ open, setOpen }: Props) {
                             )}))`,
                           };
                           const response = await axios.post<GeoJSONFeature>(
-                            '/api/v1/locations/',
+                            '/api/v1/locations',
                             data
                           );
                           if (response) {

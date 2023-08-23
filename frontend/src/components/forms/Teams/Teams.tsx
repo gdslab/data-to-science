@@ -13,7 +13,7 @@ function classNames(...classes: [string, string]) {
 }
 
 export async function loader() {
-  const response = await axios.get('/api/v1/teams/');
+  const response = await axios.get('/api/v1/teams');
   if (response) {
     return response.data;
   } else {

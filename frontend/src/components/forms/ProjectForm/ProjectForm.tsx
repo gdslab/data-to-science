@@ -21,7 +21,7 @@ interface Team {
 }
 
 export async function loader() {
-  const response = await axios.get('/api/v1/teams/');
+  const response = await axios.get('/api/v1/teams');
   if (response) {
     const teams = response.data;
     teams.unshift({ title: 'No team', id: '' });
@@ -65,7 +65,7 @@ export default function ProjectForm({
                 };
                 const response = editMode
                   ? await axios.put(`/api/v1/projects/${projectId}`, data)
-                  : await axios.post('/api/v1/projects/', data);
+                  : await axios.post('/api/v1/projects', data);
                 if (response) {
                   editMode ? navigate(`/projects/${projectId}`) : navigate('/projects');
                 } else {

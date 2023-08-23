@@ -24,7 +24,7 @@ export default function TeamForm() {
               title: values.title,
               description: values.description,
             };
-            const response = await axios.post('/api/v1/teams/', data);
+            const response = await axios.post('/api/v1/teams', data);
             if (response) {
               navigate('/teams');
               resetForm();

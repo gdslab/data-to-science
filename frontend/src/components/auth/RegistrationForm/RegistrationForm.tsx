@@ -37,7 +37,7 @@ export default function RegistrationForm() {
                     email: values.email,
                     password: values.password,
                   };
-                  const response = await axios.post('/api/v1/users/', data);
+                  const response = await axios.post('/api/v1/users', data);
                   if (response) {
                     setStatus({
                       type: 'success',

@@ -10,7 +10,7 @@ interface Project {
 }
 
 export async function loader() {
-  const response = await axios.get('/api/v1/projects/');
+  const response = await axios.get('/api/v1/projects');
   if (response) {
     return response.data;
   } else {
