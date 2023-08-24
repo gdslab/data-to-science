@@ -2,7 +2,7 @@ import { useContext, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import AuthContext from '../AuthContext';
-import { Button } from './forms/Buttons';
+import { Button } from './Buttons';
 
 export default function Landing() {
   const { user } = useContext(AuthContext);

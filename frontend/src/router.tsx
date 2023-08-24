@@ -2,26 +2,32 @@ import { createBrowserRouter } from 'react-router-dom';
 
 // pages and data loaders
 import ErrorPage from './components/ErrorPage';
-import FlightData, { loader as flightDataLoader } from './components/forms/FlightData';
-import FlightForm, { loader as flightFormLoader } from './components/forms/FlightForm';
+import FlightData, {
+  loader as flightDataLoader,
+} from './components/pages/projects/flights/FlightData';
+import FlightForm, {
+  loader as flightFormLoader,
+} from './components/pages/projects/flights/FlightForm';
 import Landing from './components/Landing';
-import LoginForm from './components/auth/LoginForm';
-import Logout from './components/auth/Logout';
-import Map from './components/map';
-import Profile from './components/auth/Profile';
+import LoginForm from './components/pages/auth/LoginForm';
+import Logout from './components/pages/auth/Logout';
+import Map from './components/maps';
+import Profile from './components/pages/auth/Profile';
 import ProjectDetail, {
   loader as projectDetailLoader,
-} from './components/forms/ProjectDetail';
+} from './components/pages/projects/ProjectDetail';
 import ProjectForm, {
   loader as projectFormLoader,
-} from './components/forms/ProjectForm';
+} from './components/pages/projects/ProjectForm';
 import ProjectList, {
   loader as projectListLoader,
-} from './components/forms/ProjectList';
-import RegistrationForm from './components/auth/RegistrationForm';
-import Teams, { loader as teamsLoader } from './components/forms/Teams';
-import TeamDetail, { loader as teamDetailLoader } from './components/forms/TeamDetail';
-import TeamForm from './components/forms/TeamForm';
+} from './components/pages/projects/ProjectList';
+import RegistrationForm from './components/pages/auth/RegistrationForm';
+import Teams, { loader as teamsLoader } from './components/pages/teams/Teams';
+import TeamDetail, {
+  loader as teamDetailLoader,
+} from './components/pages/teams/TeamDetail';
+import TeamForm from './components/pages/teams/TeamForm';
 
 import { RootPublic, RootProtected } from './components/layout/Root';
 import { RequireAuth } from './AuthContext';

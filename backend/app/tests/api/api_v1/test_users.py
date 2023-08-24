@@ -37,7 +37,7 @@ def test_create_user_existing_email(client: TestClient, db: Session) -> None:
         "last_name": existing_user.last_name,
     }
     r = client.post(f"{settings.API_V1_STR}/users/", json=data)
-    assert 400 == r.status_code
+    assert 409 == r.status_code
 
 
 def test_create_user_is_not_approved(client: TestClient, db: Session) -> None:
