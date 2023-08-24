@@ -1,10 +1,18 @@
 import 'leaflet/dist/leaflet.css';
 import { MapContainer } from 'react-leaflet/MapContainer';
 import { ZoomControl } from 'react-leaflet/ZoomControl';
+import { useLeafletContext } from '@react-leaflet/core';
 
 import GeomanControl from './GeomanControl';
 import MapLayersControl from './MapLayersControl';
 import { SetLocation } from './MapModal';
+
+// updates map (loads tiles) after container size changes
+const InvalidateSize = () => {
+  const context = useLeafletContext();
+  if (context.map) context.map.invalidateSize(true);
+  return null;
+};
 
 export default function DrawFieldMap({ setLocation }: { setLocation: SetLocation }) {
   return (
@@ -17,8 +25,9 @@ export default function DrawFieldMap({ setLocation }: { setLocation: SetLocation
       zoomControl={false}
       style={{ height: 400 }}
     >
+      <InvalidateSize />
       <MapLayersControl />
-      <GeomanControl options={{ position: 'topright' }} setLocation={setLocation} />
+      <GeomanControl options={{ position: 'topleft' }} setLocation={setLocation} />
       <ZoomControl position="topleft" />
     </MapContainer>
   );
