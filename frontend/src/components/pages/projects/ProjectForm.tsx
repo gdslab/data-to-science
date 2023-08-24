@@ -10,7 +10,7 @@ import FileUpload from '../../FileUpload';
 import MapModal from '../../maps/MapModal';
 import { SelectField, TextField } from '../../InputFields';
 
-import initialValues, { InitialValues } from './initialValues';
+import initialValues from './initialValues';
 import validationSchema from './validationSchema';
 
 interface Team {
@@ -33,11 +33,9 @@ export async function loader() {
 export default function ProjectForm({
   editMode = false,
   projectId = '',
-  storedValues,
 }: {
   editMode?: boolean;
   projectId?: string;
-  storedValues?: InitialValues;
 }) {
   const navigate = useNavigate();
   const teams = useLoaderData() as Team[];
@@ -50,7 +48,7 @@ export default function ProjectForm({
         </h1>
         <Card>
           <Formik
-            initialValues={storedValues ? storedValues : initialValues}
+            initialValues={initialValues}
             validationSchema={validationSchema}
             onSubmit={async (values, { setSubmitting }) => {
               try {
@@ -101,7 +99,12 @@ export default function ProjectForm({
                     />
                   </div>
                   <TextField type="date" label="Planting date" name="plantingDate" />
-                  <TextField type="date" label="Harvest date" name="harvestDate" />
+                  <TextField
+                    type="date"
+                    label="Harvest date"
+                    name="harvestDate"
+                    required={false}
+                  />
                   {teams.length > 0 ? (
                     <SelectField
                       label="Team"
