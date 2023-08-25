@@ -30,12 +30,9 @@ class LocationUpdate(LocationBase):
 
 
 # properties shared by models stored in DB
-class LocationInDBBase(LocationBase):
+class LocationInDBBase(LocationBase, from_attributes=True):
     id: UUID
     geom: str
-
-    class Config:
-        orm_mode = True
 
 
 # additional properties to return via API

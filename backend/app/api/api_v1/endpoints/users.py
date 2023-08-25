@@ -1,7 +1,6 @@
 from typing import Any
 
 from fastapi import APIRouter, Body, Depends, HTTPException, status
-from pydantic import Required
 from pydantic.networks import EmailStr
 from sqlalchemy.orm import Session
 
@@ -15,10 +14,10 @@ router = APIRouter()
 @router.post("", response_model=schemas.User, status_code=status.HTTP_201_CREATED)
 def create_user(
     db: Session = Depends(deps.get_db),
-    password: str = Body(Required),  # TODO add minimal password requirements
-    email: EmailStr = Body(Required),
-    first_name: str = Body(Required),
-    last_name: str = Body(Required),
+    password: str = Body(),  # TODO add minimal password requirements
+    email: EmailStr = Body(),
+    first_name: str = Body(),
+    last_name: str = Body(),
 ) -> Any:
     """Create new user with unique email."""
     user = crud.user.get_by_email(db, email=email)

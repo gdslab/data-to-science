@@ -29,6 +29,36 @@ def test_create_duplicate_team_member(db: Session) -> None:
         create_random_team_member(db, email=user.email, team_id=team.id)
 
 
+def test_get_team_member_by_email(db: Session) -> None:
+    """Verify a team member can be retrieved by email."""
+    team = create_random_team(db)
+    user = create_random_user(db)
+    create_random_team_member(db, email=user.email, team_id=team.id)
+    member = crud.team_member.get_team_member_by_email(
+        db, email=user.email, team_id=team.id
+    )
+    assert member
+    assert member.member_id == user.id
+    assert member.team_id == team.id
+    assert member.full_name == f"{user.first_name} {user.last_name}"
+    assert member.email == user.email
+
+
+def test_get_team_member_by_id(db: Session) -> None:
+    """Verify a team member can be retrieved by id."""
+    team = create_random_team(db)
+    user = create_random_user(db)
+    create_random_team_member(db, email=user.email, team_id=team.id)
+    member = crud.team_member.get_team_member_by_id(
+        db, user_id=user.id, team_id=team.id
+    )
+    assert member
+    assert member.member_id == user.id
+    assert member.team_id == team.id
+    assert member.full_name == f"{user.first_name} {user.last_name}"
+    assert member.email == user.email
+
+
 def test_get_list_of_team_members(db: Session) -> None:
     """Verify a team id can return a list of team members."""
     team = create_random_team(db)

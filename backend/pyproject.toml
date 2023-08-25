@@ -7,14 +7,14 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-fastapi = "^0.97.0"
+fastapi = "0.101.1"
 python-jose = {extras = ["crytography"], version = "^3.3.0"}
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 uvicorn = {extras = ["standard"], version = "^0.22.0"}
 faker = "^18.10.1"
 psycopg2 = "^2.9.6"
 sqlalchemy = "^2.0.16"
-pydantic = {extras = ["email"], version = "^1.10.9"}
+pydantic = "2.3.0"
 alembic = "^1.11.1"
 python-multipart = "^0.0.6"
 geoalchemy2 = "^0.14.0"
@@ -22,6 +22,10 @@ shapely = "^2.0.1"
 celery = "^5.3.1"
 redis = "^5.0.0"
 flower = "^2.0.1"
+geopandas = "^0.13.2"
+email-validator = "^2.0.0.post2"
+geojson-pydantic = "^1.0.0"
+pydantic-settings = "^2.0.3"
 
 [tool.poetry.group.dev.dependencies]
 httpx = "^0.24.1"

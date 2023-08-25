@@ -25,14 +25,11 @@ class TeamMemberUpdate(TeamMemberBase):
 
 
 # properties shared by models stored in DB
-class TeamMemberInDBBase(TeamMemberBase):
+class TeamMemberInDBBase(TeamMemberBase, from_attributes=True):
     id: UUID
     member_id: UUID
 
     team_id: UUID
-
-    class Config:
-        orm_mode = True
 
 
 # additional properties to return via API

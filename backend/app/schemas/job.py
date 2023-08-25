@@ -25,16 +25,13 @@ class JobUpdate(JobBase):
     pass
 
 
-class JobInDBBase(JobBase):
+class JobInDBBase(JobBase, from_attributes=True):
     id: UUID
     name: str
     state: str
     status: str
     start_time: datetime
     raw_data_id: UUID | None = None
-
-    class Config:
-        orm_mode = True
 
 
 class Job(JobInDBBase):

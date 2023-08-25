@@ -88,14 +88,16 @@ export default function ProjectForm({
                     <MapModal open={open} setOpen={setOpen} />
                     <Button onClick={() => setOpen(true)}>Draw on map</Button>
                     <span className="block text-sm text-gray-400 font-bold pt-2 pb-1">
-                      or
+                      or upload zipped shapefile (must include .shp, .shx, and .dbf)
                     </span>
                     <FileUpload
+                      endpoint={`/api/v1/locations/upload`}
                       restrictions={{
-                        allowedFileTypes: ['.shp', '.shx', '.dbf', '.prj'],
+                        allowedFileTypes: ['.zip'],
                         maxNumberOfFiles: 1,
+                        minNumberOfFiles: 1,
                       }}
-                      endpoint={`/api/v1/projects/${projectId}/upload`}
+                      uploadType="shp"
                     />
                   </div>
                   <TextField type="date" label="Planting date" name="plantingDate" />

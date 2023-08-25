@@ -31,7 +31,7 @@ class FlightUpdate(FlightBase):
 
 
 # properties shared by models stored in DB
-class FlightInDBBase(FlightBase):
+class FlightInDBBase(FlightBase, from_attributes=True):
     id: UUID
     acquisition_date: date
     altitude: float
@@ -42,9 +42,6 @@ class FlightInDBBase(FlightBase):
 
     project_id: UUID
     pilot_id: UUID | None = None
-
-    class Config:
-        orm_mode = True
 
 
 # additional properties to return via API

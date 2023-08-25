@@ -1,7 +1,13 @@
 import secrets
 from typing import Any
 
-from pydantic import AnyHttpUrl, BaseSettings, EmailStr, PostgresDsn, validator
+from pydantic import (
+    EmailStr,
+    field_validator,
+    FieldValidationInfo,
+    PostgresDsn,
+)
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -14,32 +20,30 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = ""
     UPLOAD_DIR: str = "/user-data"
     TEST_UPLOAD_DIR: str = "/tmp/testing"
-    STATIC_URL: AnyHttpUrl = "http://localhost/static"
+    STATIC_URL: str = "http://localhost/static"
 
-    POSTGRES_SERVER: str = "db"
-    POSTGRES_USER: str = "ps2"
+    POSTGRES_HOST: str = ""
+    POSTGRES_USER: str = ""
     POSTGRES_PASSWORD: str = ""
-    POSTGRES_DB: str = "ps2"
+    POSTGRES_DB: str = ""
     SQLALCHEMY_DATABASE_URI: PostgresDsn | None = None
 
-    @validator("SQLALCHEMY_DATABASE_URI", pre=True)
-    def assemble_db_connection(cls, v: str | None, values: dict[str, Any]) -> Any:
+    @field_validator("SQLALCHEMY_DATABASE_URI", mode="before")
+    def assemble_db_connection(cls, v: str | None, info: FieldValidationInfo) -> Any:
         if isinstance(v, str):
             return v
+        values = info.data
         return PostgresDsn.build(
             scheme="postgresql",
-            user=values.get("POSTGRES_USER"),
+            host=values.get("POSTGRES_HOST"),
+            username=values.get("POSTGRES_USER"),
             password=values.get("POSTGRES_PASSWORD"),
-            host=values.get("POSTGRES_SERVER"),
-            path=f"/{values.get('POSTGRES_DB') or ''}",
+            path=values.get("POSTGRES_DB"),
         )
 
     EMAIL_TEST_USER: EmailStr = "test@example.com"  # type: ignore
 
     LOGGER_FILE: str = ""
-
-    class Config:
-        case_sensitive = True
 
 
 settings = Settings()

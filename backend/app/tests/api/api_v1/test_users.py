@@ -81,7 +81,7 @@ def test_update_user(
     )
     r = client.put(
         f"{settings.API_V1_STR}/users/{current_user.id}",
-        json=user_in.dict(),
+        json=user_in.model_dump(),
     )
     assert 200 == r.status_code
     updated_user = r.json()

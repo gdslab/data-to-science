@@ -20,14 +20,11 @@ class RawDataUpdate(RawDataBase):
 
 
 # properties shared by models stored in DB
-class RawDataInDBBase(RawDataBase):
+class RawDataInDBBase(RawDataBase, from_attributes=True):
     id: UUID
     filepath: str
     flight_id: UUID
     original_filename: str
-
-    class Config:
-        orm_mode = True
 
 
 # additional properties to return via API

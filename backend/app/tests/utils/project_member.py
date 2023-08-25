@@ -24,7 +24,7 @@ def create_random_project_member(
     if member_id:
         project_member_in = ProjectMemberCreate(member_id=member_id)
     if email:
-        project_member_in = ProjectMemberCreate(email=email)
+        project_member_in = ProjectMemberCreate(email=email, member_id=None)
     return crud.project_member.create_with_project(
         db, obj_in=project_member_in, project_id=project_id
     )

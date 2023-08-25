@@ -29,6 +29,7 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
                 session.add(db_obj)
                 session.commit()
                 session.refresh(db_obj)
+                set_name_and_email_attr(db_obj, user_obj)
             else:
                 db_obj = None
             return db_obj
@@ -38,50 +39,63 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
     ) -> TeamMember | None:
         """Find team member record by email."""
         statement = (
-            select(TeamMember)
-            .join(User, TeamMember.member)
+            select(
+                TeamMember, Bundle("user", User.first_name, User.last_name, User.email)
+            )
+            .join(TeamMember.member)
             .where(User.email == email)
             .where(TeamMember.team_id == team_id)
         )
         with db as session:
-            team_member = session.scalars(statement).one_or_none()
-            return team_member
+            team_member = session.execute(statement).one_or_none()
+            if team_member:
+                set_name_and_email_attr(team_member[0], team_member[1])
+                return team_member[0]
+        return None
 
     def get_team_member_by_id(
         self, db: Session, *, user_id: UUID, team_id: UUID
     ) -> TeamMember | None:
         """Find team member record by team id."""
         statement = (
-            select(TeamMember)
+            select(
+                TeamMember, Bundle("user", User.first_name, User.last_name, User.email)
+            )
+            .join(TeamMember.member)
             .where(TeamMember.member_id == user_id)
             .where(TeamMember.team_id == team_id)
         )
         with db as session:
-            db_obj = session.scalars(statement).one_or_none()
-            return db_obj
+            team_member = session.execute(statement).one_or_none()
+            if team_member:
+                set_name_and_email_attr(team_member[0], team_member[1])
+                return team_member[0]
+        return None
 
     def get_list_of_team_members(
         self, db: Session, *, team_id: UUID, skip: int = 0, limit: int = 100
     ) -> Sequence[TeamMember]:
         statement = (
             select(
-                TeamMember,
-                Bundle("user", User.first_name, User.last_name, User.email),
+                TeamMember, Bundle("user", User.first_name, User.last_name, User.email)
             )
-            .join(User, TeamMember.member)
+            .join(TeamMember.member)
             .where(TeamMember.team_id == team_id)
             .offset(skip)
             .limit(limit)
         )
         team_members: list[TeamMember] = []
         with db as session:
-            for row in session.execute(statement).all():
-                full_name = f"{row.user.first_name} {row.user.last_name}"
-                setattr(row[0], "full_name", full_name)
-                setattr(row[0], "email", row.user.email)
-                team_members.append(row[0])
+            for team_member in session.execute(statement).all():
+                set_name_and_email_attr(team_member[0], team_member[1])
+                team_members.append(team_member[0])
 
         return team_members
+
+
+def set_name_and_email_attr(team_member_obj: TeamMember, user_obj: User):
+    setattr(team_member_obj, "full_name", f"{user_obj.first_name} {user_obj.last_name}")
+    setattr(team_member_obj, "email", user_obj.email)
 
 
 team_member = CRUDTeamMember(TeamMember)

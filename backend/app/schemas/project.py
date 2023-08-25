@@ -30,7 +30,7 @@ class ProjectUpdate(ProjectBase):
 
 
 # properties shared by models stored in DB
-class ProjectInDBBase(ProjectBase):
+class ProjectInDBBase(ProjectBase, from_attributes=True):
     id: UUID
     title: str
     description: str
@@ -40,9 +40,6 @@ class ProjectInDBBase(ProjectBase):
     location_id: UUID
     team_id: UUID | None = None
     owner_id: UUID
-
-    class Config:
-        orm_mode = True
 
 
 # additional properties to return via API

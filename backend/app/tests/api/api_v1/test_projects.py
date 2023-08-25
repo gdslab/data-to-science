@@ -55,9 +55,7 @@ def test_get_projects(
     # create project with a different user as owner
     project2 = create_random_project(db)
     # add current user as member to project2
-    project2_member_in = ProjectMemberCreate(
-        member_id=current_user.id, project_id=project2.id
-    )
+    project2_member_in = ProjectMemberCreate(member_id=current_user.id)
     crud.project_member.create_with_project(
         db, obj_in=project2_member_in, project_id=project2.id
     )
@@ -113,9 +111,7 @@ def test_get_project_current_user_is_member_of(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_random_project(db)
     # add current user to project
-    project_member_in = ProjectMemberCreate(
-        member_id=current_user.id, project_id=project.id
-    )
+    project_member_in = ProjectMemberCreate(member_id=current_user.id)
     crud.project_member.create_with_project(
         db, obj_in=project_member_in, project_id=project.id
     )
@@ -147,23 +143,17 @@ def test_get_project_members_for_project(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_random_project(db)
     # add current user to project
-    project_member_in = ProjectMemberCreate(
-        member_id=current_user.id, project_id=project.id
-    )
+    project_member_in = ProjectMemberCreate(member_id=current_user.id)
     crud.project_member.create_with_project(
         db, obj_in=project_member_in, project_id=project.id
     )
     project_member2 = create_random_user(db)
-    project_member2_in = ProjectMemberCreate(
-        member_id=project_member2.id, project_id=project.id
-    )
+    project_member2_in = ProjectMemberCreate(member_id=project_member2.id)
     crud.project_member.create_with_project(
         db, obj_in=project_member2_in, project_id=project.id
     )
     project_member3 = create_random_user(db)
-    project_member3_in = ProjectMemberCreate(
-        member_id=project_member3.id, project_id=project.id
-    )
+    project_member3_in = ProjectMemberCreate(member_id=project_member3.id)
     crud.project_member.create_with_project(
         db, obj_in=project_member3_in, project_id=project.id
     )
@@ -189,7 +179,7 @@ def test_update_project_owned_by_current_user(
             planting_date=random_planting_date(),
             harvest_date=random_harvest_date(),
             location_id=create_random_location(db).id,
-        ).dict()
+        ).model_dump()
     )
     r = client.put(
         f"{settings.API_V1_STR}/projects/{project.id}",
@@ -213,9 +203,7 @@ def test_update_project_current_user_is_member_of(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_random_project(db)
     # add current user to project
-    project_member_in = ProjectMemberCreate(
-        member_id=current_user.id, project_id=project.id
-    )
+    project_member_in = ProjectMemberCreate(member_id=current_user.id)
     crud.project_member.create_with_project(
         db, obj_in=project_member_in, project_id=project.id
     )
@@ -226,7 +214,7 @@ def test_update_project_current_user_is_member_of(
             planting_date=random_planting_date(),
             harvest_date=random_harvest_date(),
             location_id=create_random_location(db).id,
-        ).dict()
+        ).model_dump()
     )
     r = client.put(
         f"{settings.API_V1_STR}/projects/{project.id}",
@@ -257,7 +245,7 @@ def test_update_project_current_user_does_not_belong_to(
     )
     r = client.put(
         f"{settings.API_V1_STR}/projects/{project.id}",
-        json=jsonable_encoder(project_in.dict()),
+        json=jsonable_encoder(project_in.model_dump()),
     )
     assert 404 == r.status_code
 
@@ -271,7 +259,7 @@ def test_add_new_project_member_by_email_and_project_owner(
     )
     project = create_random_project(db, owner_id=current_user.id)
     new_member = create_random_user(db)
-    data = {"email": new_member.email}
+    data = {"email": new_member.email, "member_id": None}
     r = client.post(
         f"{settings.API_V1_STR}/projects/{project.id}/members",
         json=jsonable_encoder(data),

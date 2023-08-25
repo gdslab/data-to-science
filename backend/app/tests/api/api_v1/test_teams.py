@@ -40,7 +40,7 @@ def test_get_teams(
     # create team with a different user as owner
     team2 = create_random_team(db)
     # add current user as member to team2
-    team2_member_in = TeamMemberCreate(email=current_user.email, team_id=team2.id)
+    team2_member_in = TeamMemberCreate(email=current_user.email)
     crud.team_member.create_with_team(db, obj_in=team2_member_in, team_id=team2.id)
     # create team that current user does not belong to
     create_random_team(db)
@@ -90,7 +90,7 @@ def test_get_team_current_user_is_member_of(
     )
     team = create_random_team(db)
     # add current user to team
-    team_member_in = TeamMemberCreate(email=current_user.email, team_id=team.id)
+    team_member_in = TeamMemberCreate(email=current_user.email)
     crud.team_member.create_with_team(db, obj_in=team_member_in, team_id=team.id)
     r = client.get(
         f"{settings.API_V1_STR}/teams/{team.id}",
@@ -125,7 +125,7 @@ def test_update_team_owned_by_current_user(
         TeamUpdate(
             title=random_team_name(),
             description=random_team_description(),
-        ).dict()
+        ).model_dump()
     )
     r = client.put(
         f"{settings.API_V1_STR}/teams/{team.id}",
@@ -154,7 +154,7 @@ def test_update_team_current_user_is_member_of_but_doesnt_own(
         TeamUpdate(
             title=random_team_name(),
             description=random_team_description(),
-        ).dict()
+        ).model_dump()
     )
     r = client.put(
         f"{settings.API_V1_STR}/teams/{team.id}",
@@ -174,7 +174,7 @@ def test_update_team_current_user_does_not_belong_to(
     )
     r = client.put(
         f"{settings.API_V1_STR}/teams/{team.id}",
-        json=team_in.dict(),
+        json=team_in.model_dump(),
     )
     assert 404 == r.status_code
 

@@ -22,9 +22,7 @@ def test_create_flight(
     pilot = create_random_user(db)
     project = create_random_project(db)
     current_user = get_current_user(db, normal_user_access_token)
-    project_member_in = ProjectMemberCreate(
-        member_id=current_user.id, project_id=project.id
-    )
+    project_member_in = ProjectMemberCreate(member_id=current_user.id)
     crud.project_member.create_with_project(
         db, obj_in=project_member_in, project_id=project.id
     )
@@ -83,9 +81,7 @@ def test_get_flight(
     project = create_random_project(db)
     flight = create_flight(db, project_id=project.id)
     current_user = get_current_user(db, normal_user_access_token)
-    project_member_in = ProjectMemberCreate(
-        member_id=current_user.id, project_id=project.id
-    )
+    project_member_in = ProjectMemberCreate(member_id=current_user.id)
     crud.project_member.create_with_project(
         db, obj_in=project_member_in, project_id=project.id
     )
@@ -106,9 +102,7 @@ def test_get_flights(
     create_flight(db, project_id=project.id)
     create_flight(db, project_id=project.id)
     current_user = get_current_user(db, normal_user_access_token)
-    project_member_in = ProjectMemberCreate(
-        member_id=current_user.id, project_id=project.id
-    )
+    project_member_in = ProjectMemberCreate(member_id=current_user.id)
     crud.project_member.create_with_project(
         db, obj_in=project_member_in, project_id=project.id
     )
@@ -141,9 +135,7 @@ def test_update_flight(
     project = create_random_project(db)
     flight = create_flight(db, altitude=50, project_id=project.id)
     current_user = get_current_user(db, normal_user_access_token)
-    project_member_in = ProjectMemberCreate(
-        member_id=current_user.id, project_id=project.id
-    )
+    project_member_in = ProjectMemberCreate(member_id=current_user.id)
     crud.project_member.create_with_project(
         db,
         obj_in=project_member_in,

@@ -36,11 +36,8 @@ class UserUpdate(UserBase):
 
 
 # properties shared by models stored in DB
-class UserInDBBase(UserBase):
+class UserInDBBase(UserBase, from_attributes=True):
     id: UUID
-
-    class Config:
-        orm_mode = True
 
 
 # additional properties to return via API

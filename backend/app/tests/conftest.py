@@ -22,7 +22,9 @@ SQLALCHEMY_TEST_DATABASE_URI: PostgresDsn = build_sqlalchemy_uri(db_path=TEST_DB
 @pytest.fixture(name="db")
 def db_fixture() -> Generator:
     """Generate database session for each test."""
-    engine = create_engine(SQLALCHEMY_TEST_DATABASE_URI, pool_pre_ping=True)
+    engine = create_engine(
+        SQLALCHEMY_TEST_DATABASE_URI.unicode_string(), pool_pre_ping=True
+    )
     Base.metadata.create_all(engine)
     TestSessionLocal = sessionmaker(autoflush=False, bind=engine)
     try:
@@ -62,7 +64,7 @@ def client_fixture(db: Session) -> Generator:
 
 
 @pytest.fixture(name="normal_user_access_token")
-def normal_user_access_token(client: TestClient, db: Session) -> str:
+def normal_user_access_token(client: TestClient, db: Session) -> dict[str, str]:
     """Retrieve access token header for normal (non-superuser) user."""
     return authentication_token_from_email(
         client=client, email=settings.EMAIL_TEST_USER, db=db
@@ -73,7 +75,7 @@ def pytest_configure(config):
     """Create the test database before running tests if necessary."""
     create_test_db(db_path=TEST_DB_PATH)
     engine = create_engine(
-        SQLALCHEMY_TEST_DATABASE_URI, pool_pre_ping=True  # type: ignore
+        SQLALCHEMY_TEST_DATABASE_URI.unicode_string(), pool_pre_ping=True
     )
     # drop any existing tables in test dataase
     Base.metadata.drop_all(engine)
