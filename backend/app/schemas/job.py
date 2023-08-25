@@ -10,7 +10,7 @@ class JobBase(BaseModel):
     status: str | None = None
     start_time: datetime | None = None
     end_time: datetime | None = None
-    raw_data_id: UUID | None = None
+    data_product_id: UUID | None = None
 
 
 class JobCreate(JobBase):
@@ -18,7 +18,7 @@ class JobCreate(JobBase):
     state: str
     status: str
     start_time: datetime
-    raw_data_id: UUID | None = None
+    data_product_id: UUID | None = None
 
 
 class JobUpdate(JobBase):
@@ -31,7 +31,7 @@ class JobInDBBase(JobBase, from_attributes=True):
     state: str
     status: str
     start_time: datetime
-    raw_data_id: UUID | None = None
+    data_product_id: UUID | None = None
 
 
 class Job(JobInDBBase):

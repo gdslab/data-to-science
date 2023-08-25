@@ -12,6 +12,7 @@ JOB_STATUS = ["WAITING", "INPROGRESS", "SUCCESS", "FAILED"]
 
 
 if TYPE_CHECKING:
+    from .data_product import DataProduct
     from .raw_data import RawData
 
 
@@ -31,10 +32,13 @@ class Job(Base):
     start_time: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     end_time: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 
+    data_product_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("data_product.id"), nullable=True
+    )
+    data_product: Mapped["DataProduct"] = relationship(back_populates="jobs")
     raw_data_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("raw_data.id"), nullable=True
     )
-
     raw_data: Mapped["RawData"] = relationship(back_populates="jobs")
 
     def __repr__(self) -> str:

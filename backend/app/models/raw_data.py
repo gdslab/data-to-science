@@ -31,5 +31,5 @@ class RawData(Base):
     def __repr__(self) -> str:
         return (
             f"RawData(id={self.id!r}, filepath={self.filepath!r}, "
-            f"flight_id={self.flight_id!r})"
+            f"original_filename={self.original_filename}, flight_id={self.flight_id!r})"
         )

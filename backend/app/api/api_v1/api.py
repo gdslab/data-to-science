@@ -5,7 +5,7 @@ from app.api.api_v1.endpoints import (
     flights,
     locations,
     projects,
-    raw_data,
+    data_products,
     teams,
     users,
 )
@@ -18,9 +18,9 @@ api_router.include_router(
 api_router.include_router(locations.router, prefix="/locations", tags=["locations"])
 api_router.include_router(projects.router, prefix="/projects", tags=["projects"])
 api_router.include_router(
-    raw_data.router,
-    prefix="/projects/{project_id}/flights/{flight_id}/raw_data",
-    tags=["raw_data"],
+    data_products.router,
+    prefix="/projects/{project_id}/flights/{flight_id}/data_products",
+    tags=["data_products"],
 )
 api_router.include_router(teams.router, prefix="/teams", tags=["teams"])
 api_router.include_router(users.router, prefix="/users", tags=["users"])

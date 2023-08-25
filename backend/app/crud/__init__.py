@@ -1,3 +1,4 @@
+from .crud_data_product import data_product
 from .crud_flight import flight
 from .crud_job import job
 from .crud_location import location

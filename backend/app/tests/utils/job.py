@@ -13,13 +13,13 @@ def create_job(
     state: str = "PENDING",
     status: str = "WAITING",
     start_time: datetime = datetime.now(),
-    raw_data_id: UUID | None = None,
+    data_product_id: UUID | None = None,
 ) -> models.Job:
     job_in = JobCreate(
         name=name,
         state=state,
         status=status,
         start_time=start_time,
-        raw_data_id=raw_data_id,
+        data_product_id=data_product_id,
     )
     return crud.job.create_job(db, obj_in=job_in)

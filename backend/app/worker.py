@@ -31,20 +31,23 @@ def process_geotiff(
     db = next(get_db())
 
     job = crud.job.get(db, id=job_id)
+    if not job:
+        raise Exception
+
     crud.job.update(
         db, db_obj=job, obj_in=JobUpdate(state="STARTED", status="INPROGRESS")
     )
 
-    raw_data = crud.raw_data.create_with_flight(
+    data_product = crud.data_product.create_with_flight(
         db,
-        schemas.RawDataCreate(
+        schemas.DataProductCreate(
             filepath=out_path.replace("__temp", ""),
             original_filename=os.path.basename(filename),
         ),
         flight_id=flight_id,
     )
 
-    crud.job.update(db, db_obj=job, obj_in=JobUpdate(raw_data_id=raw_data.id))
+    crud.job.update(db, db_obj=job, obj_in=JobUpdate(data_product_id=data_product.id))
 
     # create COG for uploaded GeoTIFF if necessary
     try:
