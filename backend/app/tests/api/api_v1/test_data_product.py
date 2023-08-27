@@ -18,7 +18,7 @@ def test_create_data_product(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_random_project(db, owner_id=current_user.id)
     flight = create_flight(db, project_id=project.id)
-    geotiff = os.path.join(os.sep, "app", "app", "tests", "data", "./test.tif")
+    geotiff = os.path.join(os.sep, "app", "app", "tests", "data", "test.tif")
     with open(geotiff, "rb") as data:
         files = {"files": data}
         project_url = f"{settings.API_V1_STR}/projects/{flight.project_id}"

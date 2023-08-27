@@ -38,7 +38,7 @@ def upload_data_product(
         )
     if request.client and request.client.host == "testclient":
         upload_dir = (
-            f"{settings.TEST_UPLOAD_DIR}/projects/{project.id}/flights{flight.id}"
+            f"{settings.TEST_UPLOAD_DIR}/projects/{project.id}/flights/{flight.id}"
         )
     else:
         upload_dir = f"{settings.UPLOAD_DIR}/projects/{project.id}/flights/{flight.id}"

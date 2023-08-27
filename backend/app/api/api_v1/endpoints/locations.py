@@ -1,18 +1,14 @@
 import json
-import os
-import shutil
 from typing import Any
-from uuid import uuid4
 
 import geopandas as gpd
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile
-from fiona.errors import DriverError
+from fastapi import APIRouter, Depends, HTTPException, Request, status, UploadFile
+from fiona.io import ZipMemoryFile
 from geojson_pydantic import FeatureCollection, Polygon
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
-from app.core.config import settings
 
 router = APIRouter()
 
@@ -36,36 +32,28 @@ def create_location(
 @router.post(
     "/upload",
     response_model=FeatureCollection,
-    status_code=status.HTTP_201_CREATED,
+    status_code=status.HTTP_200_OK,
 )
 def upload_field_shapefile(
+    request: Request,
     files: UploadFile,
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    temp_name = str(uuid4())
-    upload_dir = f"{settings.UPLOAD_DIR}/{current_user.id}/locations/{temp_name}"
-    if not os.path.exists(upload_dir):
-        os.makedirs(upload_dir)
-    zip_path = os.path.join(upload_dir, f"{temp_name}.zip")
-    with open(zip_path, "wb") as buffer:
-        shutil.copyfileobj(files.file, buffer)
-        try:
-            geojson = json.loads(gpd.read_file(files.file).to_json())
-            fc = FeatureCollection(**geojson)
-            assert fc.type == "FeatureCollection"
-            assert len(fc) == 2
-            assert len(fc.features) > 0
-            assert type(fc.features[0].geometry) == Polygon
-        except DriverError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Shapefile missing or missing required file",
-            )
-        except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Unable to find shapefile in zip",
-            )
+    geojson = {}
+    try:
+        with ZipMemoryFile(files.file.read()) as zmf:
+            with zmf.open() as src:
+                gdf = gpd.GeoDataFrame.from_features(src, crs=src.crs)
+                geojson = json.loads(gdf.to_json())
+
+                fc = FeatureCollection(**geojson)
+                assert fc.type == "FeatureCollection"
+                assert len(fc.features) > 0
+                assert type(fc.features[0].geometry) == Polygon
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to unzip shapefile"
+        )
 
     return geojson
