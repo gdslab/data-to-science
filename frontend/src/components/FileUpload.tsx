@@ -28,7 +28,7 @@ interface Restrictions {
 interface FileUpload {
   restrictions: Restrictions;
   endpoint: string;
-  setUploadResponse: React.Dispatch<React.SetStateAction<FeatureCollection | null>>;
+  setUploadResponse?: React.Dispatch<React.SetStateAction<FeatureCollection | null>>;
   uploadType: string;
 }
 
@@ -59,8 +59,8 @@ export default function FileUpload({
     );
   });
 
-  uppy.on('upload-success', (file, response) => {
-    if (response.status === 200 && uploadType === 'shp') {
+  uppy.on('upload-success', (_file, response) => {
+    if (response.status === 200 && uploadType === 'shp' && setUploadResponse) {
       setUploadResponse(response.body);
     }
   });
