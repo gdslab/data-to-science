@@ -9,6 +9,7 @@ import { SelectField, TextField } from '../../../InputFields';
 import { User } from '../../../../AuthContext';
 
 import initialValues, { PLATFORM_OPTIONS, SENSOR_OPTIONS } from './initialValues';
+import validationSchema from './validationSchema';
 
 interface Pilot {
   label: string;
@@ -40,6 +41,7 @@ export default function FlightForm() {
         <Card>
           <Formik
             initialValues={{ ...initialValues, pilotId: pilots[0].value }}
+            validationSchema={validationSchema}
             onSubmit={async (values, { setSubmitting, setStatus }) => {
               try {
                 const data = {

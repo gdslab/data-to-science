@@ -50,7 +50,7 @@ def upload_data_product(
         shutil.copyfileobj(files.file, buffer)
 
     job_in = schemas.job.JobCreate(
-        name="upload-raw-data",
+        name="upload-data-products",
         state="PENDING",
         status="WAITING",
         start_time=datetime.now(),

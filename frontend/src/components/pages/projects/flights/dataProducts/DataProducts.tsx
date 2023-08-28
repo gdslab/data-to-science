@@ -103,7 +103,7 @@ export default function DataProducts() {
       </div>
       <div className="my-4">
         <UploadModal
-          apiRoute={`/api/v1/projects/${projectId}/flights/${flightId}/raw_data`}
+          apiRoute={`/api/v1/projects/${projectId}/flights/${flightId}/data_products`}
           open={open}
           setOpen={setOpen}
           uploadType="tif"

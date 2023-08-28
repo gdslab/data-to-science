@@ -19,6 +19,11 @@ interface GeoJSONFeature {
   };
 }
 
+export interface FeatureCollection {
+  type: 'FeatureCollection';
+  features: GeoJSONFeature[];
+}
+
 interface Location {
   geojson: GeoJSONFeature;
   center: {
@@ -38,11 +43,12 @@ function coordArrayToWKT(coordArray: Coordinates[] | Coordinates[][]) {
 }
 
 interface Props {
+  featureCollection: FeatureCollection | null;
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-export default function MapModal({ open, setOpen }: Props) {
+export default function MapModal({ featureCollection, open, setOpen }: Props) {
   const cancelButtonRef = useRef(null);
   const { setFieldValue, setFieldTouched } = useFormikContext();
   const [location, setLocation] = useState<Location | null>(null);
@@ -80,7 +86,10 @@ export default function MapModal({ open, setOpen }: Props) {
             >
               <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
                 <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                  <DrawFieldMap setLocation={setLocation} />
+                  <DrawFieldMap
+                    featureCollection={featureCollection}
+                    setLocation={setLocation}
+                  />
                 </div>
                 {status && status.type && status.msg ? (
                   <div className="px-4 py-3">
@@ -106,8 +115,8 @@ export default function MapModal({ open, setOpen }: Props) {
                             data
                           );
                           if (response) {
-                            setFieldValue('locationId', response.data.properties.id);
                             setFieldTouched('locationId', true);
+                            setFieldValue('locationId', response.data.properties.id);
                           }
                           setOpen(false);
                         } catch (err) {

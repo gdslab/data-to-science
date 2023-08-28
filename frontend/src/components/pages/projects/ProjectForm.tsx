@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Formik, Form } from 'formik';
 import { useLoaderData, useNavigate } from 'react-router-dom';
@@ -10,6 +10,7 @@ import FileUpload from '../../FileUpload';
 import MapModal from '../../maps/MapModal';
 import { SelectField, TextField } from '../../InputFields';
 
+import { FeatureCollection } from '../../maps/MapModal';
 import initialValues from './initialValues';
 import validationSchema from './validationSchema';
 
@@ -40,6 +41,12 @@ export default function ProjectForm({
   const navigate = useNavigate();
   const teams = useLoaderData() as Team[];
   const [open, setOpen] = useState(false);
+  const [uploadResponse, setUploadResponse] = useState<FeatureCollection | null>(null);
+
+  useEffect(() => {
+    if (uploadResponse) setOpen(true);
+  }, [uploadResponse]);
+
   return (
     <div className="h-full flex flex-wrap items-center justify-center bg-accent1">
       <div className="sm:w-full md:w-1/3 max-w-xl mx-4">
@@ -78,28 +85,37 @@ export default function ProjectForm({
               setSubmitting(false);
             }}
           >
-            {({ isSubmitting, status }) => (
+            {({ isSubmitting, status, values }) => (
               <div>
                 <Form>
                   <TextField label="Title" name="title" />
                   <TextField label="Description" name="description" />
                   <TextField label="Location ID" name="locationId" disabled={true} />
-                  <div className="mt-4">
-                    <MapModal open={open} setOpen={setOpen} />
-                    <Button onClick={() => setOpen(true)}>Draw on map</Button>
-                    <span className="block text-sm text-gray-400 font-bold pt-2 pb-1">
-                      or upload zipped shapefile (must include .shp, .shx, and .dbf)
-                    </span>
-                    <FileUpload
-                      endpoint={`/api/v1/locations/upload`}
-                      restrictions={{
-                        allowedFileTypes: ['.zip'],
-                        maxNumberOfFiles: 1,
-                        minNumberOfFiles: 1,
-                      }}
-                      uploadType="shp"
-                    />
-                  </div>
+                  {!values.locationId ? (
+                    <div className="mt-4">
+                      <MapModal
+                        open={open}
+                        setOpen={setOpen}
+                        featureCollection={uploadResponse}
+                      />
+                      <Button type="button" onClick={() => setOpen(true)}>
+                        Draw on map
+                      </Button>
+                      <span className="block text-sm text-gray-400 font-bold pt-2 pb-1">
+                        or upload zipped shapefile (must include .shp, .shx, and .dbf)
+                      </span>
+                      <FileUpload
+                        endpoint={`/api/v1/locations/upload`}
+                        restrictions={{
+                          allowedFileTypes: ['.zip'],
+                          maxNumberOfFiles: 1,
+                          minNumberOfFiles: 1,
+                        }}
+                        setUploadResponse={setUploadResponse}
+                        uploadType="shp"
+                      />
+                    </div>
+                  ) : null}
                   <TextField type="date" label="Planting date" name="plantingDate" />
                   <TextField
                     type="date"
