@@ -1,6 +1,9 @@
 import { createBrowserRouter } from 'react-router-dom';
 
 // pages and data loaders
+import DataProducts, {
+  loader as dataProductsLoader,
+} from './components/pages/projects/flights/dataProducts/DataProducts';
 import ErrorPage from './components/ErrorPage';
 import FlightData, {
   loader as flightDataLoader,
@@ -22,6 +25,9 @@ import ProjectForm, {
 import ProjectList, {
   loader as projectListLoader,
 } from './components/pages/projects/ProjectList';
+import RawData, {
+  loader as rawDataLoader,
+} from './components/pages/projects/flights/rawData/RawData';
 import RegistrationForm from './components/pages/auth/RegistrationForm';
 import Teams, { loader as teamsLoader } from './components/pages/teams/Teams';
 import TeamDetail, {
@@ -95,9 +101,21 @@ export const router = createBrowserRouter([
         loader: flightFormLoader,
       },
       {
-        path: '/projects/:projectId/flights/:flightId/data',
+        path: '/projects/:projectId/flights/:flightId',
         element: <FlightData />,
         loader: flightDataLoader,
+        children: [
+          {
+            path: '/projects/:projectId/flights/:flightId/raw',
+            element: <RawData />,
+            loader: rawDataLoader,
+          },
+          {
+            path: '/projects/:projectId/flights/:flightId/products',
+            element: <DataProducts />,
+            loader: dataProductsLoader,
+          },
+        ],
       },
       {
         path: '/projects/:projectId',

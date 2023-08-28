@@ -3,12 +3,13 @@ import { Dialog, Transition } from '@headlessui/react';
 import FileUpload from './FileUpload';
 
 interface Props {
+  apiRoute: string;
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  apiRoute: string;
+  uploadType: string;
 }
 
-export default function UploadModal({ open, setOpen, apiRoute }: Props) {
+export default function UploadModal({ apiRoute, open, setOpen, uploadType }: Props) {
   const cancelButtonRef = useRef(null);
   return (
     <Transition.Root show={open} as={Fragment}>
@@ -47,8 +48,10 @@ export default function UploadModal({ open, setOpen, apiRoute }: Props) {
                     restrictions={{
                       allowedFileTypes: ['.tif'],
                       maxNumberOfFiles: 1,
+                      minNumberOfFiles: 1,
                     }}
                     endpoint={apiRoute}
+                    uploadType={uploadType}
                   />
                 </div>
                 <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
