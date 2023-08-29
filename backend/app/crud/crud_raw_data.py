@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.crud.base import CRUDBase
-from app.models.job import Job
 from app.models.raw_data import RawData
 from app.schemas.raw_data import RawDataCreate, RawDataUpdate
 
@@ -27,19 +26,14 @@ class CRUDRawData(CRUDBase[RawData, RawDataCreate, RawDataUpdate]):
 
     def get_single_by_id(
         self, db: Session, raw_data_id: UUID, upload_dir: str
-    ) -> RawData:
-        statement = (
-            select(RawData, Job.status)
-            .join(RawData.jobs)
-            .where(RawData.id == raw_data_id)
-        )
+    ) -> RawData | None:
+        statement = select(RawData).where(RawData.id == raw_data_id)
         with db as session:
             raw_data = session.execute(statement).one_or_none()
             if raw_data:
                 set_url_attr(raw_data[0], upload_dir)
-                set_status_attr(raw_data[0], raw_data[1])
                 return raw_data[0]
-            return raw_data
+            return None
 
     def get_multi_by_flight(
         self,
@@ -49,26 +43,14 @@ class CRUDRawData(CRUDBase[RawData, RawDataCreate, RawDataUpdate]):
         skip: int = 0,
         limit: int = 100,
     ) -> Sequence[RawData]:
-        statement = (
-            select(RawData, Job.status)
-            .join(RawData.jobs)
-            .where(RawData.flight_id == flight_id)
-        )
+        statement = select(RawData).where(RawData.flight_id == flight_id)
         with db as session:
             all_raw_data = session.execute(statement).all()
             all_raw_data_with_status = []
             for raw_data in all_raw_data:
                 set_url_attr(raw_data[0], upload_dir)
-                if raw_data[1]:
-                    set_status_attr(raw_data[0], raw_data[1])
-                else:
-                    set_status_attr(raw_data[0], "UNKNOWN")
                 all_raw_data_with_status.append(raw_data[0])
         return all_raw_data_with_status
-
-
-def set_status_attr(raw_data_obj: RawData, status: str):
-    setattr(raw_data_obj, "status", status)
 
 
 def set_url_attr(raw_data_obj: RawData, upload_dir: str):

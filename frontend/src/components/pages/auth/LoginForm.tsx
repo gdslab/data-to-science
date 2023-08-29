@@ -36,7 +36,6 @@ export default function LoginForm() {
                 await login(data).then(() => navigate('/home'));
               } catch (err) {
                 if (axios.isAxiosError(err)) {
-                  console.log(err);
                   const errMsg = err.response?.data.detail;
                   if (errMsg === 'Invalid credentials') {
                     setStatus({ type: 'warning', msg: errMsg });

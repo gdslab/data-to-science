@@ -46,7 +46,7 @@ export default function UploadModal({ apiRoute, open, setOpen, uploadType }: Pro
                 <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                   <FileUpload
                     restrictions={{
-                      allowedFileTypes: ['.tif'],
+                      allowedFileTypes: uploadType === 'zip' ? ['.zip'] : ['.tif'],
                       maxNumberOfFiles: 1,
                       minNumberOfFiles: 1,
                     }}

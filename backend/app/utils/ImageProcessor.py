@@ -1,3 +1,4 @@
+import logging
 import json
 import multiprocessing
 import os
@@ -5,8 +6,15 @@ import shutil
 import subprocess
 
 
+logger = logging.getLogger("__name__")
+
+
 class ImageProcessor:
-    """Used to process uploaded GeoTIFF rasters and convert to COG if necessary."""
+    """
+    Used to process uploaded rasters in the GeoTIFF format. If the raster is not
+    using the Cloud Optimized GeoTIFF (COG) layout, one will be generated. An additional
+    compressed COG for visualization will be created along with a small preview image.
+    """
 
     def __init__(self, img_path):
         self.img_path = img_path
@@ -20,50 +28,150 @@ class ImageProcessor:
         )
 
     def run(self):
-        if is_cog(self.img_path):
+        info = get_info(self.img_path)
+        if is_cog(info):
             shutil.move(self.img_path, self.out_path)
+            convert_to_cog(self.img_path, self.out_path, info, vis_only=True)
         else:
-            convert_to_cog(self.img_path, self.out_path)
+            convert_to_cog(self.img_path, self.out_path, info)
 
         os.remove(self.img_path)
 
-        create_preview_webp(self.out_path, self.preview_out_path)
+        create_preview_webp(self.out_path, self.preview_out_path, info)
 
         return self.out_path
 
 
-def is_cog(img_path: str) -> bool:
-    """Checks gdalinfo json output for 'COG' layout."""
+def get_info(img_path: str) -> dict:
+    """Returns output from gdalinfo -json <input_dataset>.
+
+    Args:
+        img_path (str): Path to input dataset
+
+    Raises:
+        e: Raise exception
+
+    Returns:
+        dict: _description_
+    """
     result = subprocess.run(
         ["gdalinfo", "-json", img_path], stdout=subprocess.PIPE, check=True
     )
     result.check_returncode()
     try:
-        gdalinfo_json = json.loads(result.stdout)
+        gdalinfo = json.loads(result.stdout)
     except Exception as e:
-        print("Unable to load json output into dictionary")
+        logging.error(str(e))
         raise e
-    if gdalinfo_json.get("metadata").get("IMAGE_STRUCTURE").get("LAYOUT") == "COG":
-        return True
-    else:
-        return False
+    return gdalinfo
+
+
+def is_cog(info: dict) -> bool:
+    """Return True if the input raster is in COG layout.
+
+    Args:
+        info (dict): gdalinfo -json output
+
+    Returns:
+        bool: True if in COG layout, False otherwise
+    """
+    if info and info.get("metadata"):
+        metadata = info.get("metadata")
+        if type(metadata) is dict and metadata.get("IMAGE_STRUCTURE"):
+            image_struct = metadata.get("IMAGE_STRUCTURE")
+            if type(image_struct) is dict and image_struct.get("LAYOUT"):
+                layout = image_struct.get("LAYOUT")
+                return layout == "COG"
+    return False
+
+
+def get_band_count(info: dict) -> int:
+    """Return number of bands in raster. If unable to determine
+    number of bands, treat as a single band raster and return 1.
+
+    Args:
+        info (dict): gdalinfo -json output
+
+    Returns:
+        int: Number of bands
+    """
+    if info and info.get("bands"):
+        bands = info.get("bands")
+        if type(bands) is list:
+            return len(bands)
+    return 1
+
+
+def get_nodata_value(info: dict) -> int | float | None:
+    """Return no data value for band in raster. If a no data
+    value does not exist, return None.
+
+    Args:
+        info (dict): gdalinfo -json output
+
+    Returns:
+        int | float | None: Numeric no data value or None
+    """
+    if info and info.get("bands"):
+        bands = info.get("bands")
+        if type(bands) is list and len(bands) > 0:
+            band1 = bands[0]
+            if type(band1) is dict and "noDataValue" in band1:
+                return band1.get("noDataValue")
+    return None
 
 
 def convert_to_cog(
-    img_path: str, out_path: str, num_threads: int | None = None
+    img_path: str,
+    out_path: str,
+    info: dict,
+    num_threads: int | None = None,
+    vis_only: bool = False,
 ) -> None:
-    """Converts GeoTIFF to a COG."""
+    """Runs gdalwarp to generate new raster in COG layout.
+
+    Args:
+        img_path (str): Path to input raster dataset
+        out_path (str): Path for output raster dataset
+        info (dict): gdalinfo -json output
+        num_threads (int | None, optional): No. of CPUs to use. Defaults to None.
+        vis_only (bool, optional): Skips generating COG if True. Defaults to False.
+    """
     if not num_threads:
         num_threads = int(multiprocessing.cpu_count() / 2)
+    # uncompressed COG for processing
+    if not vis_only:
+        result = subprocess.run(
+            [
+                "gdalwarp",
+                img_path,
+                out_path,
+                "-of",
+                "COG",
+                "-co",
+                f"NUM_THREADS={num_threads}",
+                "-co",
+                "BIGTIFF=YES",
+                "-wm",
+                "500",
+            ]
+        )
+    # compressed COG for visualization
+    if get_band_count(info) < 3:
+        compression = "JPEG"
+    else:
+        compression = "WEBP"
     result = subprocess.run(
         [
             "gdalwarp",
             img_path,
-            out_path,
+            out_path[:-4] + "_web.tif",
             "-of",
             "COG",
             "-co",
-            "COMPRESS=DEFLATE",
+            f"COMPRESS={compression}",
+            "-co",
+            "QUALITY=75",
             "-co",
             f"NUM_THREADS={num_threads}",
             "-co",
@@ -75,24 +183,53 @@ def convert_to_cog(
     result.check_returncode()
 
 
-def create_preview_webp(img_path: str, out_path: str) -> None:
-    """Generates preview image in WEBP format from original image."""
-    result = subprocess.run(
-        [
-            "gdal_translate",
-            "-of",
-            "WEBP",
-            "-b",
-            "1",
-            "-b",
-            "2",
-            "-b",
-            "3",
-            img_path,
-            out_path,
-            "-outsize",
-            "6.25%",
-            "6.25%",
-        ]
-    )
+def create_preview_webp(img_path: str, out_path: str, info: dict) -> None:
+    """Generates preview image in WEBP format for multiband datasets and JPEG
+    for single band datasets.
+
+    Args:
+        img_path (str): Path to input dataset
+        out_path (str): Path for output dataset
+        info (dict): gdalinfo -json output
+    """
+    band_count = get_band_count(info)
+    if band_count == 3 or band_count == 4:
+        result = subprocess.run(
+            [
+                "gdal_translate",
+                "-of",
+                "WEBP",
+                "-co",
+                "QUALITY=75",
+                "-b",
+                "1",
+                "-b",
+                "2",
+                "-b",
+                "3",
+                img_path,
+                out_path,
+                "-outsize",
+                "6.25%",
+                "6.25%",
+            ]
+        )
+    else:
+        result = subprocess.run(
+            [
+                "gdal_translate",
+                "-scale",
+                "-of",
+                "JPEG",
+                "-co",
+                "QUALITY=75",
+                "-b",
+                "1",
+                img_path,
+                out_path,
+                "-outsize",
+                "6.25%",
+                "6.25%",
+            ]
+        )
     result.check_returncode()

@@ -1,11 +1,11 @@
 import os
 import shutil
-from datetime import datetime
 from typing import Any, Sequence
 from uuid import UUID, uuid4
 
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Depends,
     HTTPException,
     Request,
@@ -16,16 +16,16 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
-from app.worker import process_geotiff
 from app.core.config import settings
 
 router = APIRouter()
 
 
-@router.post("", status_code=status.HTTP_202_ACCEPTED)
-def upload_data_product(
+@router.post("", status_code=status.HTTP_200_OK)
+def upload_raw_data(
     request: Request,
     files: UploadFile,
+    background_tasks: BackgroundTasks,
     project: models.Project = Depends(deps.can_read_write_project),
     flight: models.Flight = Depends(deps.can_read_write_flight),
     db: Session = Depends(deps.get_db),
@@ -42,31 +42,33 @@ def upload_data_product(
         upload_dir = f"{settings.UPLOAD_DIR}/projects/{project.id}/flights/{flight.id}"
     if not os.path.exists(upload_dir):
         os.makedirs(upload_dir)
-    out_path = os.path.join(upload_dir, f"{str(uuid4())}__temp.tif")
+
+    out_path = os.path.join(upload_dir, f"{str(uuid4())}.zip")
 
     with open(out_path, "wb") as buffer:
         shutil.copyfileobj(files.file, buffer)
 
-    job_in = schemas.job.JobCreate(
-        name="upload-data-products",
-        state="PENDING",
-        status="WAITING",
-        start_time=datetime.now(),
+    if files.filename:
+        original_filename = os.path.basename(files.filename)
+    else:
+        original_filename = os.path.basename(out_path)
+
+    crud.raw_data.create_with_flight(
+        db,
+        schemas.RawDataCreate(
+            filepath=out_path,
+            original_filename=original_filename,
+        ),
+        flight_id=flight.id,
     )
-    job = crud.job.create_job(db, job_in)
-    process_geotiff.apply_async(
-        args=[files.filename, out_path, project.id, flight.id, job.id],
-        kwargs={},
-        queue="main-queue",
-    )
 
-    return {"status": "processing"}
+    return {"upload-status": "success"}
 
 
-@router.get("/{data_product_id}", response_model=schemas.DataProduct)
+@router.get("/{raw_data_id}", response_model=schemas.RawData)
 def read_data_product(
     request: Request,
-    data_product_id: UUID,
+    raw_data_id: UUID,
     flight_id: UUID,
     flight: models.Flight = Depends(deps.can_read_write_flight),
     db: Session = Depends(deps.get_db),
@@ -80,14 +82,14 @@ def read_data_product(
         upload_dir = settings.TEST_UPLOAD_DIR
     else:
         upload_dir = settings.UPLOAD_DIR
-    data_product = crud.data_product.get_single_by_id(
-        db, data_product_id=data_product_id, upload_dir=upload_dir
+    raw_data = crud.raw_data.get_single_by_id(
+        db, raw_data_id=raw_data_id, upload_dir=upload_dir
     )
-    return data_product
+    return raw_data
 
 
-@router.get("", response_model=Sequence[schemas.DataProduct])
-def read_all_data_product(
+@router.get("", response_model=Sequence[schemas.RawData])
+def read_all_raw_data(
     request: Request,
     flight_id: UUID,
     flight: models.Flight = Depends(deps.can_read_write_flight),
@@ -102,7 +104,7 @@ def read_all_data_product(
         upload_dir = settings.TEST_UPLOAD_DIR
     else:
         upload_dir = settings.UPLOAD_DIR
-    all_data_product = crud.data_product.get_multi_by_flight(
+    all_raw_data = crud.raw_data.get_multi_by_flight(
         db, flight_id=flight.id, upload_dir=upload_dir
     )
-    return all_data_product
+    return all_raw_data

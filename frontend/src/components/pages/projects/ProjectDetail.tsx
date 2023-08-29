@@ -77,7 +77,7 @@ export default function ProjectDetail() {
                   {
                     key: `action-data-${i}`,
                     label: 'Raw Data',
-                    url: `/projects/${projectId}/flights/${flight.id}/data`,
+                    url: `/projects/${projectId}/flights/${flight.id}/raw`,
                   },
                   {
                     key: `action-products-${i}`,
