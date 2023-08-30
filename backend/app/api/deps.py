@@ -61,7 +61,10 @@ def get_current_user(
     db: Session = Depends(get_db), token: str = Depends(reusable_oauth2)
 ) -> models.User:
     token_data = decode_jwt(token)
-    user = crud.user.get(db, id=token_data.sub)
+    if token_data.sub:
+        user = crud.user.get(db, id=token_data.sub)
+    else:
+        user = None
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
@@ -106,7 +109,7 @@ def can_read_write_project(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_approved_user),
 ) -> models.Project | None:
-    """Return project only if current user is a member of the project."""
+    """Return project if current user is project member or team member."""
     project = crud.project.get_user_project(
         db, user_id=current_user.id, project_id=project_id
     )

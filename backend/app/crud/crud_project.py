@@ -2,12 +2,14 @@ from typing import Sequence
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
 from app.models.project import Project
 from app.models.project_member import ProjectMember
+from app.models.team import Team
+from app.models.team_member import TeamMember
 from app.schemas.project import ProjectCreate, ProjectUpdate
 
 
@@ -42,12 +44,32 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         self, db: Session, *, user_id: UUID, project_id: UUID
     ) -> Project | None:
         """Retrieve project by id."""
+
+        # Selects project by id if A or B are true
+        # A - User is owner of the project or a project member
+        # B - Project associated with a team and user is a team member
         statement = (
             select(Project)
-            .join(ProjectMember.project)
-            .where(ProjectMember.member_id == user_id)
-            .where(ProjectMember.project_id == project_id)
+            .join(Project.members)
+            .join(Project.team, isouter=True)
+            .join(Team.members, isouter=True)
+            .where(
+                and_(
+                    or_(
+                        or_(
+                            Project.owner_id == user_id,
+                            ProjectMember.member_id == user_id,
+                        ),
+                        and_(
+                            TeamMember.member_id == user_id,
+                            Project.team_id == TeamMember.team_id,
+                        ),
+                    ),
+                    Project.id == project_id,
+                ),
+            )
         )
+
         with db as session:
             db_obj = session.scalars(statement).one_or_none()
             if db_obj:

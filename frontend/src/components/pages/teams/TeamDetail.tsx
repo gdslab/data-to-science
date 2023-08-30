@@ -10,6 +10,7 @@ import TeamMemberList from './TeamMemberList';
 
 interface Team {
   id: string;
+  is_owner: boolean;
   title: string;
   description: string;
 }
@@ -20,7 +21,7 @@ export interface TeamMember {
   email: string;
 }
 
-interface TeamData {
+export interface TeamData {
   team: Team;
   members: TeamMember[];
 }
@@ -89,10 +90,10 @@ export default function TeamDetail() {
           {({ isSubmitting, status }) => (
             <div>
               <Form className="flex flex-col gap-4">
-                <div className="flex-none w-1/3">
+                <div>
                   <TextField type="email" label="Email" name="email" />
                 </div>
-                <div className="flex-none w-1/3">
+                <div>
                   <Button type="submit" disabled={isSubmitting}>
                     Add new member
                   </Button>

@@ -148,7 +148,7 @@ def test_update_team_current_user_is_member_of_but_doesnt_own(
     )
     team = create_random_team(db)
     # add current user to team
-    team_member_in = TeamMemberCreate(email=current_user.email, team_id=team.id)
+    team_member_in = TeamMemberCreate(email=current_user.email)
     crud.team_member.create_with_team(db, obj_in=team_member_in, team_id=team.id)
     team_in = jsonable_encoder(
         TeamUpdate(
@@ -245,3 +245,30 @@ def test_add_new_team_member_with_unused_email(
         f"{settings.API_V1_STR}/teams/{team.id}/members", json=jsonable_encoder(data)
     )
     assert 404 == r.status_code
+
+
+def test_remove_team_member(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Verify team owner can remove a team member."""
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    team = create_random_team(db, owner_id=current_user.id)
+    team_member = create_random_team_member(db, team_id=team.id)
+    r = client.delete(f"{settings.API_V1_STR}/teams/{team.id}/members/{team_member.id}")
+    assert r.status_code == 200
+    removed_team_member = r.json()
+    assert str(team_member.id) == removed_team_member["id"]
+    assert str(team_member.member_id) == removed_team_member["member_id"]
+
+
+def test_remove_team_member_by_unauthorized_user(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Verify attempt to remove team member by non-owner fails."""
+    owner = create_random_user(db)
+    team = create_random_team(db, owner_id=owner.id)
+    team_member = create_random_team_member(db, team_id=team.id)
+    r = client.delete(f"{settings.API_V1_STR}/teams/{team.id}/members/{team_member.id}")
+    assert r.status_code == 403

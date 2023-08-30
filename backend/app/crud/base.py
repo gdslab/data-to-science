@@ -1,4 +1,5 @@
 from typing import Sequence, Any, Generic, Type, TypeVar
+from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
@@ -24,7 +25,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         """
         self.model = model
 
-    def get(self, db: Session, id: Any) -> ModelType | None:
+    def get(self, db: Session, id: UUID) -> ModelType | None:
         with db as session:
             db_obj = session.get(self.model, id)
         return db_obj
@@ -66,3 +67,10 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
                 session.commit()
                 session.refresh(db_obj)
         return db_obj
+
+    def remove(self, db: Session, *, id: UUID) -> ModelType | None:
+        with db as session:
+            db_obj = session.get(self.model, id)
+            session.delete(db_obj)
+            session.commit()
+            return db_obj

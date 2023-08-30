@@ -37,7 +37,6 @@ def test_create_flight(
     }
     data = jsonable_encoder(data)
     r = client.post(f"{settings.API_V1_STR}/projects/{project.id}/flights/", json=data)
-    print(r.json())
     assert 201 == r.status_code
     response_data = r.json()
     assert "id" in response_data

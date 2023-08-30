@@ -39,7 +39,6 @@ type Props = {
 } & Omit<GeoRasterLayerOptions, 'georaster' | 'georasters'>;
 
 function GeoRasterLayer({ paths, ...options }: Props): React.ReactElement | null {
-  console.log('GeoRasterLayer');
   const georasters = useGeoraster(paths);
 
   return georasters ? (

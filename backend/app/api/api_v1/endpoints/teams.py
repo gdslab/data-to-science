@@ -117,3 +117,29 @@ def create_team_member(
             detail="Unable to find user with provided email address",
         )
     return team_member
+
+
+@router.delete(
+    "/{team_id}/members/{member_id}",
+    response_model=schemas.TeamMember,
+    status_code=status.HTTP_200_OK,
+)
+def remove_team_member(
+    team_id: UUID,
+    member_id: UUID,
+    team: models.Team = Depends(deps.can_read_write_team),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Remove team member from team."""
+    if not team:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+        )
+    if team.owner_id == member_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot remove self (owner) from team",
+        )
+    team_member = crud.team_member.remove(db, id=member_id)
+    return team_member

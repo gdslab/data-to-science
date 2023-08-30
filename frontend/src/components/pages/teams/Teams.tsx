@@ -2,8 +2,9 @@ import axios from 'axios';
 import { Link, Outlet, useLoaderData, useParams } from 'react-router-dom';
 import { BellIcon, PlusSmallIcon } from '@heroicons/react/24/outline';
 
-interface Team {
+export interface Team {
   id: string;
+  is_owner: boolean;
   title: string;
   description: string;
 }

@@ -1,6 +1,30 @@
-import { TeamMember } from './TeamDetail';
+import axios from 'axios';
+import { useContext } from 'react';
+import { useLoaderData, useParams, useRevalidator } from 'react-router-dom';
+import { UserMinusIcon } from '@heroicons/react/24/outline';
+
+import AuthContext from '../../../AuthContext';
+import { TeamData, TeamMember } from './TeamDetail';
 
 export default function TeamMemberList({ teamMembers }: { teamMembers: TeamMember[] }) {
+  const { team } = useLoaderData() as TeamData;
+  const { teamId } = useParams();
+  const revalidator = useRevalidator();
+  const { user } = useContext(AuthContext);
+
+  async function removeTeamMember(memberId: string) {
+    try {
+      const response = await axios.delete(
+        `/api/v1/teams/${teamId}/members/${memberId}`
+      );
+      if (response) {
+        revalidator.revalidate();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   if (teamMembers.length < 1) {
     return <div>No team members</div>;
   } else {
@@ -18,6 +42,11 @@ export default function TeamMemberList({ teamMembers }: { teamMembers: TeamMembe
               <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
                 Role
               </th>
+              {team.is_owner ? (
+                <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
+                  Actions
+                </th>
+              ) : null}
             </tr>
           </thead>
 
@@ -31,27 +60,20 @@ export default function TeamMemberList({ teamMembers }: { teamMembers: TeamMembe
                   {teamMember.email}
                 </td>
                 <td className="whitespace-nowrap px-4 py-2 text-gray-700">Member</td>
+                {team.is_owner ? (
+                  <td className="text-center">
+                    {user && teamMember.email !== user.email ? (
+                      <button
+                        type="button"
+                        onClick={() => removeTeamMember(teamMember.id)}
+                      >
+                        <UserMinusIcon className="h-6 w-6" aria-hidden="true" />
+                      </button>
+                    ) : null}
+                  </td>
+                ) : null}
               </tr>
             ))}
-            <tr className="odd:bg-gray-50">
-              <td className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
-                John Doe
-              </td>
-              <td className="whitespace-nowrap px-4 py-2 text-gray-700">
-                johndoe@example.com
-              </td>
-              <td className="whitespace-nowrap px-4 py-2 text-gray-700">Member</td>
-            </tr>
-
-            <tr className="odd:bg-gray-50">
-              <td className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
-                Jane Doe
-              </td>
-              <td className="whitespace-nowrap px-4 py-2 text-gray-700">
-                janedoe@example.com
-              </td>
-              <td className="whitespace-nowrap px-4 py-2 text-gray-700">Member</td>
-            </tr>
           </tbody>
         </table>
       </div>
