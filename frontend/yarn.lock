@@ -3024,6 +3024,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"leaflet.markercluster@npm:^1.5.3":
+  version: 1.5.3
+  resolution: "leaflet.markercluster@npm:1.5.3"
+  peerDependencies:
+    leaflet: ^1.3.1
+  checksum: abf0d0befbc78b7f178a330791554f0e4fd7170dbe2e6d59f387b627d914f4633b0541a9028fe5d11cf842c09c8dbb56ae6bd9d1d08c5ce35e32541c8f1eacd1
+  languageName: node
+  linkType: hard
+
 "leaflet@npm:^1.9.4":
   version: 1.9.4
   resolution: "leaflet@npm:1.9.4"
@@ -3967,6 +3976,7 @@ __metadata:
     georaster: ^1.6.0
     georaster-layer-for-leaflet: ^3.10.0
     leaflet: ^1.9.4
+    leaflet.markercluster: ^1.5.3
     localforage: ^1.10.0
     match-sorter: ^6.3.1
     postcss: ^8.4.27

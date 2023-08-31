@@ -105,7 +105,8 @@ export default function MapModal({ featureCollection, open, setOpen }: Props) {
                       if (location) {
                         try {
                           const data = {
-                            center: `${location.center.lat},${location.center.lng}`,
+                            center_x: location.center.lng,
+                            center_y: location.center.lat,
                             geom: `SRID=4326;POLYGON((${coordArrayToWKT(
                               location.geojson.geometry.coordinates
                             )}))`,

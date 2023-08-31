@@ -11,17 +11,19 @@ class PolygonGeometry(BaseModel):
 class PolygonGeoJSONFeature(BaseModel):
     type: str
     geometry: PolygonGeometry
-    properties: dict[str, str]
+    properties: dict[str, str | float]
 
 
 # shared properties
 class LocationBase(BaseModel):
-    geom: str | None = None
+    center_x: float
+    center_y: float
+    geom: str
 
 
 # properties to receive via API on creation
 class LocationCreate(LocationBase):
-    geom: str
+    pass
 
 
 # properties to receive via API on update
@@ -32,7 +34,6 @@ class LocationUpdate(LocationBase):
 # properties shared by models stored in DB
 class LocationInDBBase(LocationBase, from_attributes=True):
     id: UUID
-    geom: str
 
 
 # additional properties to return via API

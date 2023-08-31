@@ -50,6 +50,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         # B - Project associated with a team and user is a team member
         statement = (
             select(Project)
+            .join(Project)
             .join(Project.members)
             .join(Project.team, isouter=True)
             .join(Team.members, isouter=True)

@@ -24,7 +24,7 @@ class CRUDLocation(CRUDBase[Location, LocationCreate, LocationUpdate]):
             session.refresh(location)
         return location
 
-    def get_geojson_location(self, db: Session, location_id: UUID) -> Location:
+    def get_geojson_location(self, db: Session, location_id: UUID) -> Location | None:
         statement = select(func.ST_AsGeoJSON(self.model)).where(
             self.model.id == location_id
         )

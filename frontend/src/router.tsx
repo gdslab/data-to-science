@@ -14,7 +14,7 @@ import FlightForm, {
 import Landing from './components/Landing';
 import LoginForm from './components/pages/auth/LoginForm';
 import Logout from './components/pages/auth/Logout';
-import Map from './components/maps';
+import Map, { loader as mapLoader } from './components/maps/Map';
 import Profile from './components/pages/auth/Profile';
 import ProjectDetail, {
   loader as projectDetailLoader,
@@ -74,6 +74,7 @@ export const router = createBrowserRouter([
       {
         path: '/home',
         element: <Map />,
+        loader: mapLoader,
       },
       {
         path: '/auth/profile',

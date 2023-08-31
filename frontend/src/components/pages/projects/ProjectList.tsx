@@ -3,7 +3,7 @@ import { useLoaderData, Link } from 'react-router-dom';
 
 import { Button } from '../../Buttons';
 
-interface Project {
+export interface Project {
   id: string;
   title: string;
   description: string;
