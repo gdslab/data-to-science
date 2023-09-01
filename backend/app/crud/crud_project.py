@@ -44,53 +44,81 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         self, db: Session, *, user_id: UUID, project_id: UUID
     ) -> Project | None:
         """Retrieve project by id."""
-
-        # Selects project by id if A or B are true
-        # A - User is owner of the project or a project member
-        # B - Project associated with a team and user is a team member
-        statement = (
+        # Selects project by id if one of the below items is true
+        # - User is owner of the project or a project member
+        # - Project associated with a team and user is a team member
+        query_project_owner_and_members = (
             select(Project)
             .join(Project.members)
-            .join(Project.team, isouter=True)
-            .join(Team.members, isouter=True)
             .where(
                 and_(
                     or_(
-                        or_(
-                            Project.owner_id == user_id,
-                            ProjectMember.member_id == user_id,
-                        ),
-                        and_(
-                            TeamMember.member_id == user_id,
-                            Project.team_id == TeamMember.team_id,
-                        ),
+                        Project.owner_id == user_id, ProjectMember.member_id == user_id
                     ),
                     Project.id == project_id,
-                ),
+                )
             )
         )
-
+        query_project_team_members = (
+            select(Project)
+            .join(Project.team)
+            .join(Team.members)
+            .where(
+                and_(
+                    Project.team_id == TeamMember.team_id,
+                    TeamMember.member_id == user_id,
+                    Project.id == project_id,
+                )
+            )
+        )
         with db as session:
-            db_obj = session.scalars(statement).one_or_none()
-            if db_obj:
-                setattr(db_obj, "is_owner", user_id == db_obj.owner_id)
-        return db_obj
+            project1 = session.scalars(query_project_owner_and_members).one_or_none()
+            project2 = session.scalars(query_project_team_members).one_or_none()
+            projects = []
+            if project1:
+                setattr(project1, "is_owner", user_id == project1.owner_id)
+                projects.append(project1)
+            if project2:
+                setattr(project2, "is_owner", user_id == project2.owner_id)
+                projects.append(project2)
+            if len(set(projects)) > 1 or len(projects) < 1:
+                project = None
+            else:
+                project = list(set(projects))[0]
+        return project
 
     def get_user_project_list(
         self, db: Session, *, user_id: UUID, skip: int = 0, limit: int = 100
     ) -> Sequence[Project]:
         """List of projects the user belongs to."""
-        statement = (
+        # project member
+        query_project_owner_and_members = (
             select(Project)
-            .join(ProjectMember.project)
-            .where(ProjectMember.member_id == user_id)
+            .join(Project.members)
+            .where(
+                or_(Project.owner_id == user_id, ProjectMember.member_id == user_id),
+            )
         )
+        query_project_team_members = (
+            select(Project)
+            .join(Project.team)
+            .join(Team.members)
+            .where(
+                and_(
+                    Project.team_id == TeamMember.team_id,
+                    TeamMember.member_id == user_id,
+                ),
+            )
+        )
+        # team member
         with db as session:
-            db_obj = session.scalars(statement).all()
+            projects1 = session.scalars(query_project_owner_and_members).all()
+            projects2 = session.scalars(query_project_team_members).all()
+            projects = list(set(list(projects1) + list(projects2)))
             # indicate if project member is also project owner
-            for project in db_obj:
+            for project in projects:
                 setattr(project, "is_owner", user_id == project.owner_id)
-        return db_obj
+        return projects
 
 
 project = CRUDProject(Project)
