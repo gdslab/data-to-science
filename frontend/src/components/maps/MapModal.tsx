@@ -8,7 +8,7 @@ import Alert, { Status } from '../Alert';
 
 type Coordinates = number[][];
 
-interface GeoJSONFeature {
+export interface GeoJSONFeature {
   type: string;
   geometry: {
     type: string;
@@ -21,7 +21,7 @@ interface GeoJSONFeature {
 
 export interface FeatureCollection {
   type: 'FeatureCollection';
-  features: GeoJSONFeature[];
+  features: GeoJSON.Feature[];
 }
 
 interface Location {

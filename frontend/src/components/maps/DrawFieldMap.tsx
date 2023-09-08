@@ -23,9 +23,9 @@ interface Props {
 export default function DrawFieldMap({ featureCollection, setLocation }: Props) {
   return (
     <MapContainer
-      center={[42.71473, -87.51332]}
+      center={[40.428655143949925, -86.9138040788386]}
       preferCanvas={true}
-      zoom={6}
+      zoom={8}
       minZoom={5}
       maxZoom={16}
       scrollWheelZoom={true}

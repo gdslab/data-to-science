@@ -1,12 +1,12 @@
 from typing import Any, Sequence
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
-
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -45,6 +45,7 @@ def read_flight(
 
 @router.get("", response_model=Sequence[schemas.Flight])
 def read_flights(
+    request: Request,
     project_id: UUID,
     project: models.Project = Depends(deps.can_read_write_project),
     db: Session = Depends(deps.get_db),
@@ -54,7 +55,14 @@ def read_flights(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
         )
-    flights = crud.flight.get_multi_by_project(db, project_id=project.id)
+
+    if request.client and request.client.host == "testclient":
+        upload_dir = settings.TEST_UPLOAD_DIR
+    else:
+        upload_dir = settings.UPLOAD_DIR
+    flights = crud.flight.get_multi_by_project(
+        db, project_id=project.id, upload_dir=upload_dir
+    )
     return flights
 
 

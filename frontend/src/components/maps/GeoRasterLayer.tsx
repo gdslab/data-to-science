@@ -9,7 +9,7 @@ const GeoRasterComponent = createPathComponent(
   (options: GeoRasterLayerOptions, context: LeafletContextInterface) => {
     // zoom map to layer
     const layer = new GeoRasterLayerForLeaflet(options);
-    // context.map.fitBounds(layer.getBounds());
+    context.map.fitBounds(layer.getBounds());
     return {
       instance: layer,
       context,
@@ -40,7 +40,6 @@ type Props = {
 
 function GeoRasterLayer({ paths, ...options }: Props): React.ReactElement | null {
   const georasters = useGeoraster(paths);
-
   return georasters ? (
     <GeoRasterComponent {...options} georasters={georasters} />
   ) : null;

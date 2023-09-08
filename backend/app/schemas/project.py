@@ -2,6 +2,7 @@ from datetime import date
 from uuid import UUID
 
 from pydantic import BaseModel
+from app.schemas.location import PolygonGeoJSONFeature
 
 
 # shared properties
@@ -45,6 +46,7 @@ class ProjectInDBBase(ProjectBase, from_attributes=True):
 # additional properties to return via API
 class Project(ProjectInDBBase):
     is_owner: bool = False
+    field: PolygonGeoJSONFeature | None = None
 
 
 # additional properties stored in DB

@@ -25,25 +25,25 @@ export async function loader({ params }: { params: Params<string> }) {
       return [];
     }
   } catch (err) {
-    console.error('Unable to retrieve flight data');
+    console.error('Unable to retrieve data products');
     return [];
   }
 }
 
-interface Data {
+interface DataProduct {
   original_filename: string;
   url: string;
   status: string;
 }
 
 export default function DataProducts() {
-  const data = useLoaderData() as Data[];
+  const dataProducts = useLoaderData() as DataProduct[];
   const { flightId, projectId } = useParams();
   const [open, setOpen] = useState(false);
   const revalidator = useRevalidator();
 
-  if (data && data.length > 0) {
-    const processing = data.filter(({ status }) => status === 'INPROGRESS');
+  if (dataProducts && dataProducts.length > 0) {
+    const processing = dataProducts.filter(({ status }) => status === 'INPROGRESS');
     useInterval(
       () => {
         revalidator.revalidate();
@@ -51,7 +51,7 @@ export default function DataProducts() {
       processing.length > 0 ? 5000 : null
     );
   }
-
+  console.log(dataProducts);
   return (
     <div className="mt-4">
       <h2>Data Products</h2>
@@ -61,7 +61,7 @@ export default function DataProducts() {
             columns={['Filename', 'Cloud Optimized GeoTIFF', 'Preview', 'Status']}
           />
           <TableBody
-            rows={data.map((dataset) => [
+            rows={dataProducts.map((dataset) => [
               dataset.original_filename,
               <Button
                 size="sm"

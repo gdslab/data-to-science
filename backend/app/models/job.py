@@ -33,7 +33,7 @@ class Job(Base):
     end_time: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 
     data_product_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("data_product.id"), nullable=True
+        ForeignKey("data_products.id"), nullable=True
     )
     raw_data_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("raw_data.id"), nullable=True

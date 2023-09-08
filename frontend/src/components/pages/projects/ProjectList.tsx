@@ -3,10 +3,21 @@ import { useLoaderData, Link } from 'react-router-dom';
 
 import { Button } from '../../Buttons';
 
+interface FieldProperties {
+  id: string;
+  center_x: number;
+  center_y: number;
+}
+
+type FieldGeoJSONFeature = Omit<GeoJSON.Feature, 'properties'> & {
+  properties: FieldProperties;
+};
+
 export interface Project {
   id: string;
   title: string;
   description: string;
+  field: FieldGeoJSONFeature;
 }
 
 export async function loader() {

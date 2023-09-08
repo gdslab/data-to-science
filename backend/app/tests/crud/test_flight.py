@@ -3,6 +3,7 @@ from datetime import date
 from sqlalchemy.orm import Session
 
 from app import crud
+from app.core.config import settings
 from app.models.flight import PLATFORMS, SENSORS
 from app.schemas.flight import FlightUpdate
 from app.tests.utils.flight import create_flight
@@ -65,7 +66,10 @@ def test_get_flights(db: Session) -> None:
     create_flight(db, project_id=project.id)
     create_flight(db, project_id=project.id)
     create_flight(db, project_id=other_project.id)
-    flights = crud.flight.get_multi_by_project(db, project_id=project.id)
+    upload_dir = settings.TEST_UPLOAD_DIR
+    flights = crud.flight.get_multi_by_project(
+        db, project_id=project.id, upload_dir=upload_dir
+    )
     assert type(flights) is list
     assert len(flights) == 3
     for flight in flights:

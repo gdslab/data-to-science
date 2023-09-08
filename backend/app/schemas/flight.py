@@ -3,6 +3,8 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from app.schemas.data_product import DataProduct
+
 
 # shared properties
 class FlightBase(BaseModel):
@@ -46,7 +48,7 @@ class FlightInDBBase(FlightBase, from_attributes=True):
 
 # additional properties to return via API
 class Flight(FlightInDBBase):
-    pass
+    data_products: list[DataProduct]
 
 
 # additional properties stored in DB

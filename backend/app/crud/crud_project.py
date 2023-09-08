@@ -1,11 +1,13 @@
+import json
 from typing import Sequence
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
+from app.models.location import Location
 from app.models.project import Project
 from app.models.project_member import ProjectMember
 from app.models.team import Team
@@ -44,54 +46,90 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         self, db: Session, *, user_id: UUID, project_id: UUID
     ) -> Project | None:
         """Retrieve project by id."""
-
-        # Selects project by id if A or B are true
-        # A - User is owner of the project or a project member
-        # B - Project associated with a team and user is a team member
-        statement = (
-            select(Project)
-            .join(Project)
+        # Selects project by id if one of the below items is true
+        # - User is owner of the project or a project member
+        # - Project associated with a team and user is a team member
+        query_project_owner_and_members = (
+            select(Project, func.ST_AsGeoJSON(Location))
+            .join(Project.location)
             .join(Project.members)
-            .join(Project.team, isouter=True)
-            .join(Team.members, isouter=True)
             .where(
                 and_(
                     or_(
-                        or_(
-                            Project.owner_id == user_id,
-                            ProjectMember.member_id == user_id,
-                        ),
-                        and_(
-                            TeamMember.member_id == user_id,
-                            Project.team_id == TeamMember.team_id,
-                        ),
+                        Project.owner_id == user_id, ProjectMember.member_id == user_id
                     ),
                     Project.id == project_id,
-                ),
+                )
             )
         )
-
+        query_project_team_members = (
+            select(Project, func.ST_AsGeoJSON(Location))
+            .join(Project.location)
+            .join(Project.team)
+            .join(Team.members)
+            .where(
+                and_(
+                    Project.team_id == TeamMember.team_id,
+                    TeamMember.member_id == user_id,
+                    Project.id == project_id,
+                )
+            )
+        )
         with db as session:
-            db_obj = session.scalars(statement).one_or_none()
-            if db_obj:
-                setattr(db_obj, "is_owner", user_id == db_obj.owner_id)
-        return db_obj
+            project1 = session.execute(query_project_owner_and_members).one_or_none()
+            project2 = session.execute(query_project_team_members).one_or_none()
+            projects = []
+            if project1:
+                setattr(project1[0], "is_owner", user_id == project1[0].owner_id)
+                setattr(project1[0], "field", json.loads(project1[1]))
+                projects.append(project1[0])
+            if project2:
+                setattr(project2[0], "is_owner", user_id == project2[0].owner_id)
+                setattr(project2[0], "field", json.loads(project2[1]))
+                projects.append(project2[0])
+            if len(set(projects)) > 1 or len(projects) < 1:
+                project = None
+            else:
+                project = list(set(projects))[0]
+        return project
 
     def get_user_project_list(
         self, db: Session, *, user_id: UUID, skip: int = 0, limit: int = 100
     ) -> Sequence[Project]:
         """List of projects the user belongs to."""
-        statement = (
-            select(Project)
-            .join(ProjectMember.project)
-            .where(ProjectMember.member_id == user_id)
+        # project member
+        query_project_owner_and_members = (
+            select(Project, func.ST_AsGeoJSON(Location))
+            .join(Project.location)
+            .join(Project.members)
+            .where(
+                or_(Project.owner_id == user_id, ProjectMember.member_id == user_id),
+            )
         )
+        query_project_team_members = (
+            select(Project, func.ST_AsGeoJSON(Location))
+            .join(Project.location)
+            .join(Project.team)
+            .join(Team.members)
+            .where(
+                and_(
+                    Project.team_id == TeamMember.team_id,
+                    TeamMember.member_id == user_id,
+                ),
+            )
+        )
+        # team member
         with db as session:
-            db_obj = session.scalars(statement).all()
+            projects1 = session.execute(query_project_owner_and_members).all()
+            projects2 = session.execute(query_project_team_members).all()
+            projects = list(set(projects1 + projects2))
+            final_projects = []
             # indicate if project member is also project owner
-            for project in db_obj:
-                setattr(project, "is_owner", user_id == project.owner_id)
-        return db_obj
+            for project in projects:
+                setattr(project[0], "is_owner", user_id == project[0].owner_id)
+                setattr(project[0], "field", json.loads(project[1]))
+                final_projects.append(project[0])
+        return final_projects
 
 
 project = CRUDProject(Project)

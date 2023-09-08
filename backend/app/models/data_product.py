@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class DataProduct(Base):
-    __tablename__ = "data_product"
+    __tablename__ = "data_products"
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4

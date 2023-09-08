@@ -45,10 +45,10 @@ class Flight(Base):
     pilot: Mapped["User"] = relationship(back_populates="flights")
 
     data_products: Mapped[list["DataProduct"]] = relationship(
-        back_populates="flight", cascade="all, delete"
+        back_populates="flight", cascade="all, delete", lazy="joined"
     )
     raw_data: Mapped[list["RawData"]] = relationship(
-        back_populates="flight", cascade="all, delete"
+        back_populates="flight", cascade="all, delete", lazy="joined"
     )
 
     def __repr__(self) -> str:

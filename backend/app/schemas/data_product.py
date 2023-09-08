@@ -30,7 +30,7 @@ class DataProductInDBBase(DataProductBase, from_attributes=True):
 # additional properties to return via API
 class DataProduct(DataProductInDBBase):
     status: str | None = None
-    url: AnyHttpUrl
+    url: AnyHttpUrl | None = None
 
 
 # additional properties stored in DB

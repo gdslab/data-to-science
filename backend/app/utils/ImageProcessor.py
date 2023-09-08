@@ -158,9 +158,9 @@ def convert_to_cog(
         )
     # compressed COG for visualization
     if get_band_count(info) < 3:
-        compression = "JPEG"
+        compression = "DEFLATE"
     else:
-        compression = "WEBP"
+        compression = "DEFLATE"
     result = subprocess.run(
         [
             "gdalwarp",

@@ -14,6 +14,14 @@ interface Project {
   team_id: string;
 }
 
+export interface DataProduct {
+  id: string;
+  original_filename: string;
+  filepath: string;
+  url: string;
+  flight_id: string;
+}
+
 export interface Flight {
   id: string;
   acquisition_date: Date;
@@ -24,6 +32,7 @@ export interface Flight {
   platform: string;
   project_id: string;
   pilot_id: string;
+  data_products: DataProduct[];
 }
 
 interface ProjectData {
