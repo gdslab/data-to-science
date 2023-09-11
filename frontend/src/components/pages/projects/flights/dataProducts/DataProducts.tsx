@@ -9,6 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 import { Button } from '../../../../Buttons';
+import { DataProduct } from '../../ProjectDetail';
 import Table, { TableBody, TableHead } from '../../../../Table';
 import UploadModal from '../../../../UploadModal';
 
@@ -30,15 +31,12 @@ export async function loader({ params }: { params: Params<string> }) {
   }
 }
 
-interface DataProduct {
-  data_type: string;
-  original_filename: string;
-  url: string;
+interface DataProductStatus extends DataProduct {
   status: string;
 }
 
 export default function DataProducts() {
-  const dataProducts = useLoaderData() as DataProduct[];
+  const dataProducts = useLoaderData() as DataProductStatus[];
   const { flightId, projectId } = useParams();
   const [open, setOpen] = useState(false);
   const revalidator = useRevalidator();
@@ -52,7 +50,6 @@ export default function DataProducts() {
       processing.length > 0 ? 5000 : null
     );
   }
-  console.log(dataProducts);
   return (
     <div className="mt-4">
       <h2>Data Products</h2>

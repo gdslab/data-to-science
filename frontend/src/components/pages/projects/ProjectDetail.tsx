@@ -16,6 +16,7 @@ interface Project {
 
 export interface DataProduct {
   id: string;
+  data_type: string;
   original_filename: string;
   filepath: string;
   url: string;

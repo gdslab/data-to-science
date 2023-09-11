@@ -26,7 +26,6 @@ export default function FlightControl({
               flights.map((flight) => (
                 <div key={flight.id} className="mb-4">
                   <h4>
-                    Flight{' '}
                     {new Date(flight.acquisition_date).toISOString().split('T')[0]}
                   </h4>
                   <fieldset className="space-y-4">
@@ -68,7 +67,7 @@ export default function FlightControl({
                               </svg>
 
                               <p className="text-gray-700 text-ellipsis">
-                                {data_product.original_filename}
+                                {data_product.data_type.toUpperCase()}
                               </p>
                             </div>
                           </label>
