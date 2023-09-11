@@ -31,6 +31,7 @@ export async function loader({ params }: { params: Params<string> }) {
 }
 
 interface DataProduct {
+  data_type: string;
   original_filename: string;
   url: string;
   status: string;
@@ -58,11 +59,18 @@ export default function DataProducts() {
       <div className="mt-4">
         <Table>
           <TableHead
-            columns={['Filename', 'Cloud Optimized GeoTIFF', 'Preview', 'Status']}
+            columns={[
+              'Filename',
+              'Data Type',
+              'Cloud Optimized GeoTIFF',
+              'Preview',
+              'Status',
+            ]}
           />
           <TableBody
             rows={dataProducts.map((dataset) => [
               dataset.original_filename,
+              dataset.data_type.toUpperCase(),
               <Button
                 size="sm"
                 onClick={() => navigator.clipboard.writeText(dataset.url)}

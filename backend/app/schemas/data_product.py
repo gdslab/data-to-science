@@ -5,11 +5,14 @@ from pydantic import AnyHttpUrl, BaseModel
 
 # shared properties
 class DataProductBase(BaseModel):
-    pass
+    data_type: str | None = None
+    filepath: str | None = None
+    original_filename: str | None = None
 
 
 # properties to receive via API on creation
 class DataProductCreate(DataProductBase):
+    data_type: str
     filepath: str
     original_filename: str
 
@@ -22,6 +25,7 @@ class DataProductUpdate(DataProductBase):
 # properties shared by models stored in DB
 class DataProductInDBBase(DataProductBase, from_attributes=True):
     id: UUID
+    data_type: str
     filepath: str
     flight_id: UUID
     original_filename: str

@@ -10,6 +10,7 @@ from fastapi import (
     HTTPException,
     Request,
     status,
+    Query,
     UploadFile,
 )
 from sqlalchemy.orm import Session
@@ -26,6 +27,7 @@ router = APIRouter()
 def upload_data_product(
     request: Request,
     files: UploadFile,
+    dtype: str = Query(),
     project: models.Project = Depends(deps.can_read_write_project),
     flight: models.Flight = Depends(deps.can_read_write_flight),
     db: Session = Depends(deps.get_db),
@@ -55,7 +57,7 @@ def upload_data_product(
     )
     job = crud.job.create_job(db, job_in)
     process_geotiff.apply_async(
-        args=[files.filename, out_path, project.id, flight.id, job.id],
+        args=[files.filename, out_path, project.id, flight.id, job.id, dtype],
         kwargs={},
         queue="main-queue",
     )

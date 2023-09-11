@@ -26,9 +26,9 @@ interface Restrictions {
 }
 
 interface FileUpload {
-  restrictions: Restrictions;
   endpoint: string;
   setUploadResponse?: React.Dispatch<React.SetStateAction<FeatureCollection | null>>;
+  restrictions: Restrictions;
   uploadType: string;
 }
 
@@ -39,7 +39,8 @@ export default function FileUpload({
   uploadType,
 }: FileUpload) {
   const [uppy] = useState(() => createUppy(endpoint));
-
+  console.log(endpoint);
+  console.log(uppy);
   useEffect(() => {
     if (endpoint) {
       uppy.setOptions({ restrictions });
@@ -57,6 +58,18 @@ export default function FileUpload({
       'error',
       5000
     );
+  });
+
+  uppy.on('upload', (data) => {
+    if (data && data.fileIDs && data.fileIDs.length > 0) {
+      const file = uppy.getFile(data.fileIDs[0]);
+      uppy.setFileState(data.fileIDs[0], {
+        xhrUpload: {
+          ...file.xhrUpload,
+          endpoint: endpoint,
+        },
+      });
+    }
   });
 
   uppy.on('upload-success', (_file, response) => {

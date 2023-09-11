@@ -22,7 +22,11 @@ def test_create_data_product(
     with open(geotiff, "rb") as data:
         files = {"files": data}
         project_url = f"{settings.API_V1_STR}/projects/{flight.project_id}"
-        r = client.post(f"{project_url}/flights/{flight.id}/data_products", files=files)
+        r = client.post(
+            f"{project_url}/flights/{flight.id}/data_products",
+            params={"dtype": "dsm"},
+            files=files,
+        )
         assert r.status_code == 202
     shutil.rmtree(os.path.join(os.sep, "tmp", "testing"))
 
@@ -40,6 +44,9 @@ def test_get_data_product(
     assert 200 == r.status_code
     response = r.json()
     assert str(data_product.id) == response["id"]
+    assert "data_type" in response
+    # assert "filepath" not in response
+    assert "flight_id" in response
     assert "original_filename" in response
     assert "url" in response
     assert "status" in response
@@ -59,11 +66,13 @@ def test_get_all_data_product(
     flight_url = f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}"
     r = client.get(f"{flight_url}/data_products")
     assert 200 == r.status_code
-    all_data_product = r.json()
-    assert type(all_data_product) is list
-    assert len(all_data_product) == 3
-    for data_product in all_data_product:
-        assert "flight_id" in data_product
+    response = r.json()
+    assert type(response) is list
+    assert len(response) == 3
+    for data_product in response:
         assert data_product["flight_id"] == str(flight.id)
+        assert "data_type" in data_product
+        # assert "filepath" not in data_product
+        assert "flight_id" in data_product
         assert "original_filename" in data_product
         assert "url" in data_product

@@ -27,6 +27,7 @@ def process_geotiff(
     project_id: UUID,
     flight_id: UUID,
     job_id: UUID,
+    dtype: str,
 ) -> None:
     db = next(get_db())
 
@@ -37,15 +38,26 @@ def process_geotiff(
     crud.job.update(
         db, db_obj=job, obj_in=JobUpdate(state="STARTED", status="INPROGRESS")
     )
-
+    print("DTYPE", dtype)
     data_product = crud.data_product.create_with_flight(
         db,
         schemas.DataProductCreate(
+            data_type=dtype,
             filepath=out_path.replace("__temp", ""),
             original_filename=os.path.basename(filename),
         ),
         flight_id=flight_id,
     )
+    print(data_product.__repr__())
+    if not data_product:
+        crud.job.update(
+            db,
+            db_obj=job,
+            obj_in=JobUpdate(
+                state="COMPLETED", status="FAILED", end_time=datetime.now()
+            ),
+        )
+        return None
 
     crud.job.update(db, db_obj=job, obj_in=JobUpdate(data_product_id=data_product.id))
 

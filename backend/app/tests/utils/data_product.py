@@ -11,7 +11,9 @@ from app.tests.utils.flight import create_flight
 from app.tests.utils.job import create_job
 
 
-def create_data_product(db: Session, flight: Flight | None = None):
+def create_data_product(
+    db: Session, data_type: str = "dsm", flight: Flight | None = None
+):
     if not flight:
         flight = create_flight(db)
     project_url = f"{settings.TEST_UPLOAD_DIR}/projects/{flight.project_id}"
@@ -21,7 +23,9 @@ def create_data_product(db: Session, flight: Flight | None = None):
         os.makedirs(os.path.dirname(dest_filepath))
     shutil.copyfile(src_filepath, dest_filepath)
     data_product_in = DataProductCreate(
-        filepath=dest_filepath, original_filename=os.path.basename(src_filepath)
+        data_type=data_type,
+        filepath=dest_filepath,
+        original_filename=os.path.basename(src_filepath),
     )
     data_product = crud.data_product.create_with_flight(
         db, obj_in=data_product_in, flight_id=flight.id
