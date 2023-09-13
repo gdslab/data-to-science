@@ -14,8 +14,23 @@ interface Project {
   team_id: string;
 }
 
+export interface Band {
+  data_type: string;
+  nodata: string | null;
+  stats: {
+    mean: number;
+    stddev: number;
+    maximum: number;
+    minimum: number;
+  };
+  unit: string;
+}
+
 export interface DataProduct {
   id: string;
+  band_info: {
+    bands: Band[];
+  };
   data_type: string;
   original_filename: string;
   filepath: string;

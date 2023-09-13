@@ -30,7 +30,6 @@ export default function ProjectMarkers({
   }, [fgRef.current]);
 
   useEffect(() => {
-    console.log(geojsonRef.current);
     if (geojsonRef.current) {
       context.map.fitBounds(geojsonRef.current.getBounds());
     }

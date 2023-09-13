@@ -11,6 +11,23 @@ from app.tests.utils.flight import create_flight
 from app.tests.utils.job import create_job
 
 
+test_band_info = {
+    "band_info": [
+        {
+            "data_type": "float32",
+            "stats": {
+                "minimum": 187.264,
+                "maximum": 188.761,
+                "mean": 187.502,
+                "stddev": 0.257,
+            },
+            "nodata": None,
+            "unit": "metre",
+        }
+    ],
+}
+
+
 def create_data_product(
     db: Session, data_type: str = "dsm", flight: Flight | None = None
 ):
@@ -23,6 +40,7 @@ def create_data_product(
         os.makedirs(os.path.dirname(dest_filepath))
     shutil.copyfile(src_filepath, dest_filepath)
     data_product_in = DataProductCreate(
+        band_info=test_band_info,
         data_type=data_type,
         filepath=dest_filepath,
         original_filename=os.path.basename(src_filepath),

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.core.config import settings
 from app.tests.utils.flight import create_flight
-from app.tests.utils.data_product import create_data_product
+from app.tests.utils.data_product import create_data_product, test_band_info
 
 
 def test_create_data_product(db: Session) -> None:
@@ -14,6 +14,7 @@ def test_create_data_product(db: Session) -> None:
     data_product = create_data_product(db, data_type="ortho", flight=flight)
     assert data_product
     assert data_product.flight_id == flight.id
+    assert data_product.band_info == test_band_info
     assert data_product.data_type == "ortho"
     assert data_product.original_filename == "test.tif"
     assert os.path.exists(data_product.filepath)
@@ -29,6 +30,7 @@ def test_get_data_product(db: Session) -> None:
     assert stored_data_product
     assert stored_data_product.id == data_product.id
     assert stored_data_product.flight_id == flight.id
+    assert stored_data_product.band_info == test_band_info
     assert stored_data_product.data_type == data_product.data_type
     assert stored_data_product.filepath == data_product.filepath
     assert stored_data_product.original_filename == data_product.original_filename

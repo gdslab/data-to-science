@@ -3,14 +3,18 @@ import { Project } from '../pages/projects/ProjectList';
 
 export default function FlightControl({
   activeDataProduct,
+  colorRamp,
   flights,
   project,
   setActiveDataProduct,
+  setColorRamp,
 }: {
   activeDataProduct: DataProduct | null;
+  colorRamp: string;
   flights: Flight[];
   project: Project;
   setActiveDataProduct: React.Dispatch<React.SetStateAction<DataProduct | null>>;
+  setColorRamp: React.Dispatch<React.SetStateAction<string>>;
 }) {
   return (
     <div className="leaflet-control-container">
@@ -77,6 +81,29 @@ export default function FlightControl({
                       <span>No data products for flight</span>
                     )}
                   </fieldset>
+                  {activeDataProduct &&
+                  activeDataProduct.band_info.bands.length === 1 ? (
+                    <div>
+                      <label
+                        htmlFor="colorRamp"
+                        className="block text-sm font-medium text-gray-900"
+                      >
+                        Color Ramp
+                      </label>
+
+                      <select
+                        name="colorRamp"
+                        id="colorRamp"
+                        className="mt-1.5 w-full rounded-lg border-gray-300 text-gray-700 sm:text-sm"
+                        value={colorRamp}
+                        onChange={(e) => setColorRamp(e.target.value)}
+                      >
+                        <option value="spectral">Spectral</option>
+                        <option value="rdylbu">Red/Yellow/Blue</option>
+                        <option value="ylgn">Yellow/Green</option>
+                      </select>
+                    </div>
+                  ) : null}
                 </div>
               ))
             ) : (

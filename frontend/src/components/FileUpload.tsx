@@ -39,8 +39,7 @@ export default function FileUpload({
   uploadType,
 }: FileUpload) {
   const [uppy] = useState(() => createUppy(endpoint));
-  console.log(endpoint);
-  console.log(uppy);
+
   useEffect(() => {
     if (endpoint) {
       uppy.setOptions({ restrictions });

@@ -15,8 +15,6 @@ import MapLayersControl from './MapLayersControl';
 import { Project } from '../pages/projects/ProjectList';
 import ProjectMarkers from './ProjectMarkers';
 
-import { setPixelColors } from './utils';
-
 import iconRetina from './icons/marker-icon-2x.png';
 import icon from './icons/marker-icon.png';
 import shadow from './icons/marker-shadow.png';
@@ -33,6 +31,7 @@ export async function loader() {
 export default function Map() {
   const projects = useLoaderData() as Project[];
 
+  const [colorRamp, setColorRamp] = useState('Spectral');
   const [activeProject, setActiveProject] = useState<Project | null>(null);
   const [activeDataProduct, setActiveDataProduct] = useState<DataProduct | null>(null);
   const [flights, setFlights] = useState<Flight[] | null>(null);
@@ -89,17 +88,24 @@ export default function Map() {
         ) : null}
         {activeProject && flights ? (
           <FlightControl
-            {...{ activeDataProduct, flights, setActiveDataProduct }}
+            {...{
+              activeDataProduct,
+              colorRamp,
+              flights,
+              setActiveDataProduct,
+              setColorRamp,
+            }}
             project={activeProject}
           />
         ) : null}
         {activeProject && flights && activeDataProduct ? (
           <GeoRasterLayer
-            key={activeDataProduct.id}
+            key={`${activeDataProduct.id}-${colorRamp}`}
             zIndex={10}
             paths={[activeDataProduct.url]}
             resolution={256}
-            pixelValuesToColorFn={setPixelColors}
+            bandInfo={activeDataProduct.band_info.bands}
+            colorRamp={colorRamp}
           />
         ) : null}
         <MapLayersControl />

@@ -27,6 +27,8 @@ class ImageProcessor:
             output_dir, output_name.replace("tif", "webp")
         )
 
+        self.band_info = {"bands": []}
+
     def run(self):
         info = get_info(self.img_path)
         if is_cog(info):
@@ -38,6 +40,8 @@ class ImageProcessor:
         os.remove(self.img_path)
 
         create_preview_webp(self.out_path, self.preview_out_path, info)
+
+        self.band_info = get_band_info(info)
 
         return self.out_path
 
@@ -55,7 +59,7 @@ def get_info(img_path: str) -> dict:
         dict: _description_
     """
     result = subprocess.run(
-        ["gdalinfo", "-json", img_path], stdout=subprocess.PIPE, check=True
+        ["gdalinfo", "-stats", "-json", img_path], stdout=subprocess.PIPE, check=True
     )
     result.check_returncode()
     try:
@@ -83,6 +87,23 @@ def is_cog(info: dict) -> bool:
                 layout = image_struct.get("LAYOUT")
                 return layout == "COG"
     return False
+
+
+def get_band_info(info: dict) -> dict:
+    """Return stac raster:bands info from gdalinfo -stats -json.
+
+    Args:
+        info (dict): gdalinfo -stats -json output
+
+    Returns:
+        dict: Raster band dtype, stats, and unit
+    """
+    if info and info.get("stac"):
+        stac = info.get("stac")
+        if type(stac) is dict and stac.get("raster:bands"):
+            raster_bands = stac.get("raster:bands")
+            return {"bands": raster_bands}
+    return {"bands": []}
 
 
 def get_band_count(info: dict) -> int:

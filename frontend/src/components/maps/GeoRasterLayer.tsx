@@ -5,10 +5,16 @@ import type { GeoRasterLayerOptions, GeoRaster } from 'georaster-layer-for-leafl
 import { createPathComponent } from '@react-leaflet/core';
 import type { LeafletContextInterface } from '@react-leaflet/core';
 
+import { setPixelColors } from './utils';
+
 const GeoRasterComponent = createPathComponent(
   (options: GeoRasterLayerOptions, context: LeafletContextInterface) => {
     // zoom map to layer
-    const layer = new GeoRasterLayerForLeaflet(options);
+    const { bandInfo = [], colorRamp = 'Spectral', ...layerOptions } = { ...options };
+    const layer = new GeoRasterLayerForLeaflet({
+      ...layerOptions,
+      pixelValuesToColorFn: (values) => setPixelColors(values, bandInfo, colorRamp),
+    });
     context.map.fitBounds(layer.getBounds());
     return {
       instance: layer,

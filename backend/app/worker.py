@@ -7,6 +7,7 @@ from celery.utils.log import get_task_logger
 from app import crud, schemas
 from app.api.deps import get_db
 from app.core.celery_app import celery_app
+from app.schemas.data_product import DataProductUpdate
 from app.schemas.job import JobUpdate
 
 from app.utils.ImageProcessor import ImageProcessor
@@ -38,7 +39,7 @@ def process_geotiff(
     crud.job.update(
         db, db_obj=job, obj_in=JobUpdate(state="STARTED", status="INPROGRESS")
     )
-    print("DTYPE", dtype)
+
     data_product = crud.data_product.create_with_flight(
         db,
         schemas.DataProductCreate(
@@ -48,7 +49,7 @@ def process_geotiff(
         ),
         flight_id=flight_id,
     )
-    print(data_product.__repr__())
+
     if not data_product:
         crud.job.update(
             db,
@@ -74,6 +75,10 @@ def process_geotiff(
             ),
         )
         return None
+
+    crud.data_product.update(
+        db, db_obj=data_product, obj_in=DataProductUpdate(band_info=ip.band_info)
+    )
 
     crud.job.update(
         db,

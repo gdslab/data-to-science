@@ -1,6 +1,21 @@
 import chroma, { Color, Scale } from 'chroma-js';
 
-export function setPixelColors(values: number[]) {
+import { Band } from '../pages/projects/ProjectDetail';
+
+function getColorScale(colorRamp: string): string | Color {
+  switch (colorRamp) {
+    case 'spectral':
+      return 'Spectral';
+    case 'rdylbu':
+      return 'RdYlBu';
+    case 'ylgn':
+      return 'YlGn';
+    default:
+      return 'Spectral';
+  }
+}
+
+export function setPixelColors(values: number[], bandInfo: Band[], colorRamp: string) {
   // Check if the pixel should be colored, if not make it transparent
   if (!hasDataForAllBands(values)) {
     return '#00000000';
@@ -8,9 +23,15 @@ export function setPixelColors(values: number[]) {
 
   // destructure the bands
   let color: Color | Scale<Color> | null = null;
-  if (values.length === 1) {
-    if (values[0] >= 0) {
-      const scale = chroma.scale(['yellow', '008ae5']).domain([180, 190]);
+
+  if (bandInfo.length === 1) {
+    const scale = chroma
+      .scale(getColorScale(colorRamp))
+      .domain([bandInfo[0].stats.minimum, bandInfo[0].stats.maximum]);
+    if (
+      values[0] >= bandInfo[0].stats.minimum &&
+      values[0] <= bandInfo[0].stats.maximum
+    ) {
       color = scale(values[0]);
     } else {
       color = chroma('black').alpha(0.0);

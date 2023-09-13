@@ -44,6 +44,7 @@ def test_get_data_product(
     assert 200 == r.status_code
     response = r.json()
     assert str(data_product.id) == response["id"]
+    assert "band_info" in response
     assert "data_type" in response
     # assert "filepath" not in response
     assert "flight_id" in response
@@ -71,6 +72,7 @@ def test_get_all_data_product(
     assert len(response) == 3
     for data_product in response:
         assert data_product["flight_id"] == str(flight.id)
+        assert "band_info" in data_product
         assert "data_type" in data_product
         # assert "filepath" not in data_product
         assert "flight_id" in data_product

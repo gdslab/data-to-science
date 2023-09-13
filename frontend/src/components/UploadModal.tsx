@@ -110,7 +110,7 @@ function DtypeRadioInput({
 export default function UploadModal({ apiRoute, open, setOpen, uploadType }: Props) {
   const cancelButtonRef = useRef(null);
   const [dtype, setDtype] = useState('dsm');
-  console.log('dtype', dtype);
+
   return (
     <Transition.Root show={open} as={Fragment}>
       <Dialog
