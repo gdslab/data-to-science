@@ -26,6 +26,7 @@ geopandas = "^0.13.2"
 email-validator = "^2.0.0.post2"
 geojson-pydantic = "^1.0.0"
 pydantic-settings = "^2.0.3"
+aiofiles = "^23.2.1"
 
 [tool.poetry.group.dev.dependencies]
 httpx = "^0.24.1"
@@ -38,6 +39,7 @@ black = "^23.3.0"
 flake8 = "^6.0.0"
 isort = "^5.12.0"
 types-psycopg2 = "^2.9.21.10"
+types-aiofiles = "^23.2.0.0"
 
 [tool.black]
 target-version = ["py311"]

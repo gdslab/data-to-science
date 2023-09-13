@@ -66,51 +66,49 @@ export default function Map() {
   }, [activeProject]);
 
   return (
-    <div className="flex-1">
-      <MapContainer
-        center={[40.428655143949925, -86.9138040788386]}
-        preferCanvas={true}
-        zoom={8}
-        minZoom={5}
-        scrollWheelZoom={true}
-        zoomControl={false}
-      >
-        <ProjectMarkers
-          {...{ activeProject, projects, setActiveDataProduct, setActiveProject }}
-          geojsonRef={activeProjectRef}
+    <MapContainer
+      center={[40.428655143949925, -86.9138040788386]}
+      preferCanvas={true}
+      zoom={8}
+      maxZoom={20}
+      scrollWheelZoom={true}
+      zoomControl={false}
+    >
+      <ProjectMarkers
+        {...{ activeProject, projects, setActiveDataProduct, setActiveProject }}
+        geojsonRef={activeProjectRef}
+      />
+      {activeProject ? (
+        <GeoJSON
+          key={activeProject.id}
+          ref={activeProjectRef}
+          data={activeProject.field}
         />
-        {activeProject ? (
-          <GeoJSON
-            key={activeProject.id}
-            ref={activeProjectRef}
-            data={activeProject.field}
-          />
-        ) : null}
-        {activeProject && flights ? (
-          <FlightControl
-            {...{
-              activeDataProduct,
-              colorRamp,
-              flights,
-              setActiveDataProduct,
-              setColorRamp,
-            }}
-            project={activeProject}
-          />
-        ) : null}
-        {activeProject && flights && activeDataProduct ? (
-          <GeoRasterLayer
-            key={`${activeDataProduct.id}-${colorRamp}`}
-            zIndex={10}
-            paths={[activeDataProduct.url]}
-            resolution={256}
-            bandInfo={activeDataProduct.band_info.bands}
-            colorRamp={colorRamp}
-          />
-        ) : null}
-        <MapLayersControl />
-        <ZoomControl position="topleft" />
-      </MapContainer>
-    </div>
+      ) : null}
+      {activeProject && flights ? (
+        <FlightControl
+          {...{
+            activeDataProduct,
+            colorRamp,
+            flights,
+            setActiveDataProduct,
+            setColorRamp,
+          }}
+          project={activeProject}
+        />
+      ) : null}
+      {activeProject && flights && activeDataProduct ? (
+        <GeoRasterLayer
+          key={`${activeDataProduct.id}-${colorRamp}`}
+          zIndex={10}
+          paths={[activeDataProduct.url]}
+          resolution={256}
+          bandInfo={activeDataProduct.band_info.bands}
+          colorRamp={colorRamp}
+        />
+      ) : null}
+      {/* <MapLayersControl /> */}
+      <ZoomControl position="topleft" />
+    </MapContainer>
   );
 }
