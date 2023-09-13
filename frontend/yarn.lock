@@ -1687,6 +1687,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"chroma-js@npm:^2.4.2":
+  version: 2.4.2
+  resolution: "chroma-js@npm:2.4.2"
+  checksum: cf9884c02d406286e4370599bcd1afbf089384407df46b3a69edfedcba7bb99e8f959a5cfdbfec750b305c441c06ca40cd1f70ba3a6c2ce739ac09a92520ddae
+  languageName: node
+  linkType: hard
+
 "classnames@npm:^2.2.6":
   version: 2.3.2
   resolution: "classnames@npm:2.3.2"
@@ -3859,13 +3866,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"proj4-fully-loaded@npm:^0.2.0":
-  version: 0.2.0
-  resolution: "proj4-fully-loaded@npm:0.2.0"
+"proj4-fully-loaded@npm:^0.0.4":
+  version: 0.0.4
+  resolution: "proj4-fully-loaded@npm:0.0.4"
+  dependencies:
+    proj4: ^2.7.2
+    proj4js-definitions: ^0.1.0
+  checksum: 7629cd8b9e7b09f82245e46a968ff12563a2d50453cb0ef1dc9544feba0675ed74d3a294c477e9985d6c992cf54b12aa57214674d8a1a901410f5a27b2d788bf
+  languageName: node
+  linkType: hard
+
+"proj4-fully-loaded@npm:^0.1.0":
+  version: 0.1.0
+  resolution: "proj4-fully-loaded@npm:0.1.0"
   dependencies:
     proj4: ^2.8.0
     proj4js-definitions: ^0.1.0
-  checksum: 401209a05dfeb937e4a7cdea2858be5b03af1f9666a91c60be8e554c14b8405a7e6327255fe92b6ab5649dd6d5e2d22ec4fe08efa0847ecb5b0c1e1e7d806ef9
+  checksum: babab065a09eac4ade968a8d5fe77d72ca8cc114cbaa41ad371455e6b17d982a59172e841a1ee13f40a7c3f3a2dcfeead77e6610a356ea80e5f8f2a0bd194b1a
   languageName: node
   linkType: hard
 
@@ -3876,7 +3893,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"proj4@npm:^2.8.0":
+"proj4@npm:^2.7.2, proj4@npm:^2.8.0":
   version: 2.9.0
   resolution: "proj4@npm:2.9.0"
   dependencies:
@@ -3951,6 +3968,7 @@ __metadata:
     "@vitejs/plugin-react": ^4.0.3
     autoprefixer: ^10.4.14
     axios: ^1.4.0
+    chroma-js: ^2.4.2
     eslint: ^8.45.0
     eslint-plugin-react-hooks: ^4.6.0
     eslint-plugin-react-refresh: ^0.4.3
