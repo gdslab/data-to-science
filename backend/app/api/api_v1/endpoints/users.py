@@ -1,6 +1,7 @@
-from typing import Any
+from typing import Annotated, Any
+from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, status, Query
 from pydantic.networks import EmailStr
 from sqlalchemy.orm import Session
 
@@ -35,9 +36,22 @@ def create_user(
     return user
 
 
+@router.get("", response_model=list[schemas.User])
+def read_users(
+    q: str = Query(Annotated[str | None, Query(max_length=50)]),
+    skip: int = 0,
+    limit: int = 100,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Retrieve list of all users or a list of users filtered by a search query."""
+    users = crud.user.get_multi_by_query(db, q=q, skip=skip, limit=limit)
+    return users
+
+
 @router.put("/{user_id}", response_model=schemas.User)
 def update_current_user(
-    user_id: str,
+    user_id: UUID,
     password: str = Body(None),
     first_name: str = Body(None),
     last_name: str = Body(None),

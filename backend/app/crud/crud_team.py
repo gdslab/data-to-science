@@ -5,9 +5,11 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app import crud
 from app.crud.base import CRUDBase
 from app.models.team import Team
 from app.models.team_member import TeamMember
+from app.schemas.project import ProjectUpdate
 from app.schemas.team import TeamCreate, TeamUpdate
 
 
@@ -16,19 +18,37 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
         self, db: Session, *, obj_in: TeamCreate, owner_id: UUID
     ) -> Team:
         """Create new team and add user as team member."""
-        # add team object
+        # separate out team object, team member ids, and project id
         obj_in_data = jsonable_encoder(obj_in)
-        team_db_obj = self.model(**obj_in_data, owner_id=owner_id)
+        team_in_data = {
+            "title": obj_in_data.get("title"),
+            "description": obj_in_data.get("description"),
+        }
+        team_member_ids = obj_in_data.get("new_members")
+        project_id = obj_in_data.get("project")
+        # add team object
+        team_db_obj = self.model(**team_in_data, owner_id=owner_id)
         with db as session:
             session.add(team_db_obj)
             session.commit()
             session.refresh(team_db_obj)
-        # add as manager of newly created team
-        member_db_obj = TeamMember(member_id=owner_id, team_id=team_db_obj.id)
+        # add team member objects
+        new_team_members = []
+        if team_member_ids and len(team_member_ids) > 0:
+            for user_id in team_member_ids:
+                new_team_members.append(
+                    TeamMember(member_id=user_id, team_id=team_db_obj.id)
+                )
         with db as session:
-            session.add(member_db_obj)
+            session.add_all(new_team_members)
             session.commit()
-            session.refresh(member_db_obj)
+        # add project object (if any)
+        if project_id:
+            project_obj = crud.project.get(db, id=project_id)
+            if project_obj:
+                crud.project.update(
+                    db, db_obj=project_obj, obj_in=ProjectUpdate(team_id=team_db_obj.id)
+                )
         return team_db_obj
 
     def get_user_team(

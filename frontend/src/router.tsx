@@ -30,6 +30,7 @@ import RawData, {
 } from './components/pages/projects/flights/rawData/RawData';
 import RegistrationForm from './components/pages/auth/RegistrationForm';
 import Teams, { loader as teamsLoader } from './components/pages/teams/Teams';
+import TeamCreate from './components/pages/teams/TeamCreate';
 import TeamDetail, {
   loader as teamDetailLoader,
 } from './components/pages/teams/TeamDetail';
@@ -92,7 +93,8 @@ export const router = createBrowserRouter([
           },
           {
             path: '/teams/create',
-            element: <TeamForm />,
+            element: <TeamCreate />,
+            loader: projectListLoader,
           },
         ],
       },

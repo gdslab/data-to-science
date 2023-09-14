@@ -7,6 +7,8 @@ from pydantic import BaseModel
 class TeamBase(BaseModel):
     title: str | None = None
     description: str | None = None
+    new_members: list[UUID] | None = None
+    project: UUID | str | None = None
 
 
 # properties to receive via API on creation

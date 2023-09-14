@@ -12,6 +12,7 @@ const styles = {
 };
 
 interface InputField {
+  altLabel?: boolean;
   children?: React.ReactNode;
   disabled?: boolean;
   label: string;
@@ -24,11 +25,14 @@ interface TextField extends InputField {
   type?: string;
 }
 
-const InputField = ({ children, label, name, required }: InputField) => (
+const defaultLabelClass = 'block text-sm text-gray-400 font-bold pt-2 pb-1';
+const altLabelClass = 'block font-bold pt-2 pb-1';
+
+const InputField = ({ children, altLabel, label, name, required }: InputField) => (
   <div className="relative">
-    <label className="block text-sm text-gray-400 font-bold pt-2 pb-1" htmlFor={name}>
+    <label className={altLabel ? altLabelClass : defaultLabelClass} htmlFor={name}>
       {label}
-      {required ? '*' : ''}
+      {required && !altLabel ? '*' : ''}
     </label>
     {children}
     <ErrorMessage className="text-red-500 text-sm" name={name} component="span" />
@@ -36,6 +40,7 @@ const InputField = ({ children, label, name, required }: InputField) => (
 );
 
 export function TextField({
+  altLabel = false,
   disabled = false,
   icon,
   label,
@@ -44,7 +49,7 @@ export function TextField({
   type,
 }: TextField) {
   return (
-    <InputField label={label} name={name} required={required}>
+    <InputField altLabel={altLabel} label={label} name={name} required={required}>
       <Field
         className={disabled ? styles.disabled : styles.textField}
         id={name}
@@ -67,6 +72,7 @@ interface SelectField extends InputField {
 }
 
 export function SelectField({
+  altLabel = false,
   disabled = false,
   label,
   name,
@@ -74,7 +80,7 @@ export function SelectField({
   options,
 }: SelectField) {
   return (
-    <InputField label={label} name={name} required={required}>
+    <InputField altLabel={altLabel} label={label} name={name} required={required}>
       <Field
         className={disabled ? styles.disabled : styles.selectField}
         component="select"

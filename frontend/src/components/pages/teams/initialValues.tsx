@@ -1,6 +1,8 @@
 const initialValues = {
-  title: "",
-  description: "",
+  title: '',
+  description: '',
+  members: [],
+  project: '',
 };
 
 export default initialValues;

@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Sequence
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -26,6 +26,21 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             session.commit()
             session.refresh(db_obj)
         return db_obj
+
+    def get_multi_by_query(
+        self,
+        db: Session,
+        q: str | None = "",
+        skip: int = 0,
+        limit: int = 100,
+    ) -> Sequence[User]:
+        """List of users filtered by query (q)."""
+        statement = (
+            select(User).where(User.is_approved).where(User.full_name.contains(q))
+        )
+        with db as session:
+            users = session.scalars(statement).all()
+        return users
 
     def update(
         self, db: Session, *, db_obj: User, obj_in: UserUpdate | dict[str, Any]
