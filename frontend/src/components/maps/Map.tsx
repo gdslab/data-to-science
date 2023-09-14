@@ -107,7 +107,7 @@ export default function Map() {
           colorRamp={colorRamp}
         />
       ) : null}
-      {/* <MapLayersControl /> */}
+      <MapLayersControl />
       <ZoomControl position="topleft" />
     </MapContainer>
   );

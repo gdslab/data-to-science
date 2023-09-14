@@ -34,7 +34,6 @@ import TeamCreate from './components/pages/teams/TeamCreate';
 import TeamDetail, {
   loader as teamDetailLoader,
 } from './components/pages/teams/TeamDetail';
-import TeamForm from './components/pages/teams/TeamForm';
 
 import { RootPublic, RootProtected } from './components/layout/Root';
 import { RequireAuth } from './AuthContext';

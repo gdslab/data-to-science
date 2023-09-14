@@ -3,7 +3,7 @@ export default function Card({
   title,
 }: {
   children: React.ReactNode;
-  title: string;
+  title?: string;
 }) {
   return (
     <div className="m-4 p-8 rounded-md drop-shadow-md bg-white">
