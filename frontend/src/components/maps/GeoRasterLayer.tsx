@@ -15,7 +15,7 @@ const GeoRasterComponent = createPathComponent(
       ...layerOptions,
       pixelValuesToColorFn: (values) => setPixelColors(values, bandInfo, colorRamp),
     });
-    context.map.fitBounds(layer.getBounds());
+    context.map.fitBounds(layer.getBounds(), { maxZoom: 16 });
     return {
       instance: layer,
       context,

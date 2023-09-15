@@ -70,7 +70,7 @@ export default function Map() {
       center={[40.428655143949925, -86.9138040788386]}
       preferCanvas={true}
       zoom={8}
-      maxZoom={20}
+      maxZoom={18}
       scrollWheelZoom={true}
       zoomControl={false}
     >

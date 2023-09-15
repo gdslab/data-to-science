@@ -4,10 +4,11 @@ export default function MapLayersControl() {
   return (
     <LayersControl position="topright">
       {/* Basemaps */}
-      <LayersControl.BaseLayer name="OpenStreetMap" checked>
+      <LayersControl.BaseLayer name="OpenStreetMap">
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maxNativeZoom={18}
         />
       </LayersControl.BaseLayer>
       <LayersControl.BaseLayer name="USGS Topo">
@@ -16,15 +17,17 @@ export default function MapLayersControl() {
           format="image/png"
           layers="0"
           transparent={true}
+          maxNativeZoom={16}
           url="https://basemap.nationalmap.gov/arcgis/services/USGSTopo/MapServer/WMSServer"
         />
       </LayersControl.BaseLayer>
-      <LayersControl.BaseLayer name="USGS ImageryTopo">
+      <LayersControl.BaseLayer name="USGS ImageryTopo" checked>
         <WMSTileLayer
           attribution="USGS The National Map: Orthoimagery and US Topo. Data refreshed January, 2022."
           format="image/png"
           layers="0"
           transparent={true}
+          maxNativeZoom={16}
           url="https://basemap.nationalmap.gov/arcgis/services/USGSImageryTopo/MapServer/WMSServer"
         />
       </LayersControl.BaseLayer>
