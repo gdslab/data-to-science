@@ -27,12 +27,21 @@ export default function ErrorPage() {
             : "We can't find that page."}
         </p>
 
-        <Link
-          to="/home"
-          className="inline-block px-5 py-3 mt-6 text-sm font-medium text-white bg-primary rounded hover:bg-primary focus:outline-none focus:ring"
-        >
-          Go Back Home
-        </Link>
+        <div className="flex items-center justify-between gap-4">
+          <Link
+            to="/home"
+            className="inline-block w-36 px-5 py-3 mt-6 text-sm font-medium text-white bg-accent1 rounded hover:bg-accent1 focus:outline-none focus:ring"
+          >
+            Go Back Home
+          </Link>
+
+          <Link
+            to="/auth/logout"
+            className="inline-block w-36 px-5 py-3 mt-6 text-sm font-medium text-white bg-accent1 rounded hover:bg-accent1 focus:outline-none focus:ring"
+          >
+            Logout
+          </Link>
+        </div>
       </div>
     </div>
   );
