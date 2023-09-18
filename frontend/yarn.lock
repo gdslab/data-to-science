@@ -3033,6 +3033,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"leaflet.smooth_marker_bouncing@npm:^3.0.3":
+  version: 3.0.3
+  resolution: "leaflet.smooth_marker_bouncing@npm:3.0.3"
+  checksum: a56a357e2512ee63002c3e090981979953b2d1c306d3f78670bb37e9d1c6b98c21ba9f42217e22e5bcfd5badb5724638925d3c1aaefa9ae32a0b19af9f47c0c7
+  languageName: node
+  linkType: hard
+
 "leaflet@npm:^1.9.4":
   version: 1.9.4
   resolution: "leaflet@npm:1.9.4"
@@ -3866,23 +3873,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"proj4-fully-loaded@npm:^0.0.4":
-  version: 0.0.4
-  resolution: "proj4-fully-loaded@npm:0.0.4"
-  dependencies:
-    proj4: ^2.7.2
-    proj4js-definitions: ^0.1.0
-  checksum: 7629cd8b9e7b09f82245e46a968ff12563a2d50453cb0ef1dc9544feba0675ed74d3a294c477e9985d6c992cf54b12aa57214674d8a1a901410f5a27b2d788bf
-  languageName: node
-  linkType: hard
-
-"proj4-fully-loaded@npm:^0.1.0":
-  version: 0.1.0
-  resolution: "proj4-fully-loaded@npm:0.1.0"
+"proj4-fully-loaded@npm:^0.2.0":
+  version: 0.2.0
+  resolution: "proj4-fully-loaded@npm:0.2.0"
   dependencies:
     proj4: ^2.8.0
     proj4js-definitions: ^0.1.0
-  checksum: babab065a09eac4ade968a8d5fe77d72ca8cc114cbaa41ad371455e6b17d982a59172e841a1ee13f40a7c3f3a2dcfeead77e6610a356ea80e5f8f2a0bd194b1a
+  checksum: 401209a05dfeb937e4a7cdea2858be5b03af1f9666a91c60be8e554c14b8405a7e6327255fe92b6ab5649dd6d5e2d22ec4fe08efa0847ecb5b0c1e1e7d806ef9
   languageName: node
   linkType: hard
 
@@ -3893,7 +3890,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"proj4@npm:^2.7.2, proj4@npm:^2.8.0":
+"proj4@npm:^2.8.0":
   version: 2.9.0
   resolution: "proj4@npm:2.9.0"
   dependencies:
@@ -3977,6 +3974,7 @@ __metadata:
     georaster-layer-for-leaflet: ^3.10.0
     leaflet: ^1.9.4
     leaflet.markercluster: ^1.5.3
+    leaflet.smooth_marker_bouncing: ^3.0.3
     localforage: ^1.10.0
     match-sorter: ^6.3.1
     postcss: ^8.4.27

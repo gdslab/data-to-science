@@ -1,29 +1,45 @@
+import L from 'leaflet';
 import { useEffect, useRef } from 'react';
 import { FeatureGroup } from 'react-leaflet';
 import { Marker } from 'react-leaflet/Marker';
 import { useLeafletContext } from '@react-leaflet/core';
+import 'leaflet.smooth_marker_bouncing';
 
-import { DataProduct } from '../pages/projects/ProjectDetail';
 import { Project } from '../pages/projects/ProjectList';
 import { FeatureGroup as FG } from 'leaflet';
+import { useMapContext } from './MapContext';
 
 interface ProjectMarkersProps {
-  activeProject: Project | null;
   geojsonRef: React.RefObject<L.GeoJSON>;
   projects: Project[];
-  setActiveDataProduct: React.Dispatch<React.SetStateAction<DataProduct | null>>;
-  setActiveProject: React.Dispatch<React.SetStateAction<Project | null>>;
 }
 
-export default function ProjectMarkers({
-  activeProject,
-  geojsonRef,
-  projects,
-  setActiveDataProduct,
-  setActiveProject,
-}: ProjectMarkersProps) {
+export default function ProjectMarkers({ geojsonRef, projects }: ProjectMarkersProps) {
+  const {
+    activeDataProductDispatch,
+    activeProject,
+    activeProjectDispatch,
+    projectHoverState,
+  } = useMapContext();
   const context = useLeafletContext();
   const fgRef = useRef<FG>(null);
+
+  useEffect(() => {
+    // @ts-ignore
+    L.Marker.stopAllBouncingMarkers();
+    if (fgRef.current) {
+      let bounceMarkerIdx = -1;
+      if (projectHoverState) {
+        bounceMarkerIdx = projects
+          .map((project) => project.id)
+          .indexOf(projectHoverState);
+      }
+      if (bounceMarkerIdx > -1) {
+        // @ts-ignore
+        fgRef.current.getLayers()[bounceMarkerIdx].bounce();
+      }
+    }
+  }, [projectHoverState]);
 
   useEffect(() => {
     if (fgRef.current) {
@@ -49,8 +65,8 @@ export default function ProjectMarkers({
             ]}
             eventHandlers={{
               click: () => {
-                setActiveDataProduct(null);
-                setActiveProject(project);
+                activeDataProductDispatch({ type: 'clear', payload: null });
+                activeProjectDispatch({ type: 'set', payload: project });
               },
             }}
           />
