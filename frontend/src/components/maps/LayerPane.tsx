@@ -110,10 +110,10 @@ export default function LayerPane({
           />
         </div>
         {activeProject ? (
-          <article className="h-full border p-4 overflow-visible">
+          <article className="h-full border p-4">
             <h1>{activeProject.title}</h1>
             <HintText>{activeProject.description}</HintText>
-            <ul className="mt-4 space-y-2">
+            <ul className="mt-4 space-y-2 h-[calc(100vh_-_244px)] overflow-y-auto">
               {flights
                 .sort((a, b) =>
                   new Date(a.acquisition_date) < new Date(b.acquisition_date) ? 1 : -1
@@ -203,7 +203,7 @@ export default function LayerPane({
         ) : (
           <article className="h-full border p-4 overflow-visible">
             <h1>Projects</h1>
-            <ul className="mt-4 space-y-2">
+            <ul className="mt-4 space-y-2 h-[calc(100vh_-_244px)] overflow-y-auto">
               {projects.map((project) => (
                 <li key={project.id}>
                   <LayerCard hover={true} project={project}>
