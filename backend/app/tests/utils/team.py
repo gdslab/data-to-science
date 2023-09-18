@@ -21,5 +21,5 @@ def create_random_team(
         title = random_team_name()
     if not description:
         description = random_team_description()
-    team_in = TeamCreate(title=title, description=description)
+    team_in = TeamCreate(title=title, description=description, new_members=[owner_id])
     return crud.team.create_with_owner(db, obj_in=team_in, owner_id=owner_id)
