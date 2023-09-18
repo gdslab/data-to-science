@@ -29,7 +29,7 @@ export default function MapLayout() {
       {/* sidebar */}
       <div
         className={classNames(
-          hidePane ? 'w-[48px]' : 'w-[500px]',
+          hidePane ? 'w-[48px] ease-out duration-200' : 'w-[500px]',
           'z-10 fixed left-0 h-full bg-slate-100 text-slate-200'
         )}
       >
