@@ -1,9 +1,10 @@
 import axios from 'axios';
-import { Fragment, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { Params, useLoaderData, useParams, useRevalidator } from 'react-router-dom';
 import {
   CheckCircleIcon,
   CogIcon,
+  PhotoIcon,
   XCircleIcon,
   QuestionMarkCircleIcon,
 } from '@heroicons/react/24/outline';
@@ -41,6 +42,10 @@ export default function DataProducts() {
   const [open, setOpen] = useState(false);
   const revalidator = useRevalidator();
 
+  useEffect(() => {
+    if (!open) revalidator.revalidate();
+  }, [open]);
+
   if (dataProducts && dataProducts.length > 0) {
     const processing = dataProducts.filter(({ status }) => status === 'INPROGRESS');
     useInterval(
@@ -50,6 +55,7 @@ export default function DataProducts() {
       processing.length > 0 ? 5000 : null
     );
   }
+
   return (
     <div className="mt-4">
       <h2>Data Products</h2>
@@ -75,10 +81,17 @@ export default function DataProducts() {
                 Copy URL
               </Button>,
               <div className="flex items-center justify-center h-32 w-32">
-                <img
-                  className="w-full max-h-28"
-                  src={dataset.url.replace('tif', 'webp')}
-                />
+                {dataset.status === 'SUCCESS' ? (
+                  <img
+                    className="w-full max-h-28"
+                    src={dataset.url.replace('tif', 'webp')}
+                  />
+                ) : (
+                  <Fragment>
+                    <span className="sr-only">Preview photo not ready</span>
+                    <PhotoIcon className="h-24 w-24" />
+                  </Fragment>
+                )}
               </div>,
               <div className="flex items-center justify-center">
                 {dataset.status === 'INPROGRESS' ? (

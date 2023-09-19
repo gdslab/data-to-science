@@ -27,7 +27,7 @@ class DataProductUpdate(DataProductBase):
 # properties shared by models stored in DB
 class DataProductInDBBase(DataProductBase, from_attributes=True):
     id: UUID
-    band_info: dict
+    band_info: dict | None = None
     data_type: str
     filepath: str
     flight_id: UUID
