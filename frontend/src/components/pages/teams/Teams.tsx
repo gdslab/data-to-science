@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Link, Outlet, useLoaderData, useParams } from 'react-router-dom';
+import { Link, Outlet, useLoaderData, useLocation, useParams } from 'react-router-dom';
 import { BellIcon, PlusCircleIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 
 export interface Team {
@@ -26,6 +26,7 @@ export default function SidebarPage() {
   const teams = useLoaderData() as Team[];
   const notifications = [{}, {}, {}, {}]; // fetch from data loader
   const { teamId } = useParams();
+  const { pathname } = useLocation();
 
   return (
     <div className="flex">
@@ -92,6 +93,13 @@ export default function SidebarPage() {
       </div>
       {/* page content */}
       <div className="m-4 w-full">
+        {pathname === '/teams' && teams.length < 1 ? (
+          <span>
+            You do not currently belong to any teams. Use the{' '}
+            <strong className="font-bold">Add a New Team</strong> button in the side
+            menu to create your first team.
+          </span>
+        ) : null}
         <Outlet />
       </div>
     </div>

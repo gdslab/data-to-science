@@ -12,6 +12,8 @@ import { DataProduct } from '../pages/projects/ProjectDetail';
 import { Project } from '../pages/projects/ProjectList';
 import { useMapContext } from './MapContext';
 import HintText from '../HintText';
+import { Button } from '../Buttons';
+import { Link } from 'react-router-dom';
 
 function classNames(...classes: [string, string]) {
   return classes.filter(Boolean).join(' ');
@@ -203,31 +205,43 @@ export default function LayerPane({
         ) : (
           <article className="h-full border p-4 overflow-visible">
             <h1>Projects</h1>
-            <ul className="mt-4 space-y-2 h-[calc(100vh_-_244px)] overflow-y-auto">
-              {projects.map((project) => (
-                <li key={project.id}>
-                  <LayerCard hover={true} project={project}>
-                    <div>
-                      <div className="flex items-center gap-4">
-                        <MapPinIcon className="h-8 w-8" />
-                        <div className="flex flex-col gap-2">
-                          <strong className="font-bold text-slate-700">
-                            {project.title}
-                          </strong>
-                          <div className="text-slate-600 text-sm">
-                            <div>{project.description}</div>
+            {projects.length > 0 ? (
+              <ul className="mt-4 space-y-2 h-[calc(100vh_-_244px)] overflow-y-auto">
+                {projects.map((project) => (
+                  <li key={project.id}>
+                    <LayerCard hover={true} project={project}>
+                      <div>
+                        <div className="flex items-center gap-4">
+                          <MapPinIcon className="h-8 w-8" />
+                          <div className="flex flex-col gap-2">
+                            <strong className="font-bold text-slate-700">
+                              {project.title}
+                            </strong>
+                            <div className="text-slate-600 text-sm">
+                              <div>{project.description}</div>
+                            </div>
                           </div>
+                          <span className="inline-flex items-center justify-center rounded-full text-sky-700 bg-sky-100 px-2.5 py-0.5">
+                            <PaperAirplaneIcon className="h-4 w-4 -ms-1 me-1.5" />
+                            <p className="whitespace-nowrap text-sm">5 Flights</p>
+                          </span>
                         </div>
-                        <span className="inline-flex items-center justify-center rounded-full text-sky-700 bg-sky-100 px-2.5 py-0.5">
-                          <PaperAirplaneIcon className="h-4 w-4 -ms-1 me-1.5" />
-                          <p className="whitespace-nowrap text-sm">5 Flights</p>
-                        </span>
                       </div>
-                    </div>
-                  </LayerCard>
-                </li>
-              ))}
-            </ul>
+                    </LayerCard>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div>
+                <p className="mb-4">
+                  You do not currently have access to any projects. Use the below button
+                  to create a new project.
+                </p>
+                <Link to="/projects/create">
+                  <Button>Add first project</Button>
+                </Link>
+              </div>
+            )}
           </article>
         )}
       </div>
