@@ -30,7 +30,7 @@ export default function DrawFieldMap({ featureCollection, setLocation }: Props) 
       maxZoom={16}
       scrollWheelZoom={true}
       zoomControl={false}
-      style={{ height: 400 }}
+      style={{ height: 400, width: '100%' }}
     >
       <InvalidateSize />
       {featureCollection ? (

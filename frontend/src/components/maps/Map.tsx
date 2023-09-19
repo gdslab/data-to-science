@@ -41,11 +41,14 @@ export default function Map({ projects }: { projects: Project[] }) {
       scrollWheelZoom={true}
       zoomControl={false}
     >
-      <ProjectMarkers projects={projects} geojsonRef={activeProjectRef} />
+      {!activeProject ? (
+        <ProjectMarkers projects={projects} geojsonRef={activeProjectRef} />
+      ) : null}
       {activeProject ? (
         <GeoJSON
           key={activeProject.id}
           ref={activeProjectRef}
+          style={{ fillOpacity: 0, color: '#23ccff' }}
           data={activeProject.field}
         />
       ) : null}
