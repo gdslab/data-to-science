@@ -34,6 +34,7 @@ function LayerCard({
   project?: Project;
 }) {
   const {
+    activeDataProduct,
     activeProjectDispatch,
     activeDataProductDispatch,
     geoRasterIdDispatch,
@@ -51,7 +52,10 @@ function LayerCard({
           activeDataProductDispatch({ type: 'clear', payload: null });
           activeProjectDispatch({ type: 'set', payload: project });
         }
-        if (dataProduct) {
+        if (
+          (dataProduct && !activeDataProduct) ||
+          (dataProduct && activeDataProduct && dataProduct.id !== activeDataProduct.id)
+        ) {
           activeDataProductDispatch({ type: 'set', payload: dataProduct });
           geoRasterIdDispatch({ type: 'create' });
         }
