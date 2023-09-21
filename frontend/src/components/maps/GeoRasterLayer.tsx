@@ -9,11 +9,37 @@ import { setPixelColors } from './utils';
 
 const GeoRasterComponent = createPathComponent(
   (options: GeoRasterLayerOptions, context: LeafletContextInterface) => {
+    const {
+      activeDataProduct = {},
+      symbologySettings = {},
+      ...layerOptions
+    } = { ...options };
+
+    // try {
+    //   const options = {
+    //     left: layerOptions.georasters[0].xmin,
+    //     top: layerOptions.georasters[0].ymax,
+    //     right: layerOptions.georasters[0].xmax,
+    //     bottom: layerOptions.georasters[0].ymin,
+    //     width: layerOptions.georasters[0].width,
+    //     height: layerOptions.georasters[0].height,
+    //   };
+    //   layerOptions.georasters[0].getValues(options).then((values) => {
+    //     // do something
+    //   });
+    // } catch (err) {
+    //   console.error(err);
+    // }
+
     // zoom map to layer
-    const { bandInfo = [], colorRamp = 'Spectral', ...layerOptions } = { ...options };
     const layer = new GeoRasterLayerForLeaflet({
       ...layerOptions,
-      pixelValuesToColorFn: (values) => setPixelColors(values, bandInfo, colorRamp),
+      pixelValuesToColorFn: (values) =>
+        setPixelColors(
+          values,
+          activeDataProduct ? activeDataProduct.band_info.bands : [],
+          symbologySettings
+        ),
     });
     context.map.fitBounds(layer.getBounds(), { maxZoom: 16 });
     return {

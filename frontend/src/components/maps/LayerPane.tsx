@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import {
   ArrowUturnLeftIcon,
   Bars3Icon,
@@ -8,23 +9,25 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 
-import { DataProduct } from '../pages/projects/ProjectDetail';
-import { Project } from '../pages/projects/ProjectList';
-import { useMapContext } from './MapContext';
-import HintText from '../HintText';
 import { Button } from '../Buttons';
-import { Link } from 'react-router-dom';
+import { DataProduct } from '../pages/projects/ProjectDetail';
+import HintText from '../HintText';
+import { Project } from '../pages/projects/ProjectList';
+import SymbologyControl from './SymbologyControl';
+import { useMapContext } from './MapContext';
 
-function classNames(...classes: [string, string]) {
+function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
 }
 
 function LayerCard({
+  active = false,
   children,
   dataProduct = undefined,
   hover = false,
   project = undefined,
 }: {
+  active?: boolean;
   children: React.ReactNode;
   dataProduct?: DataProduct;
   hover?: boolean;
@@ -33,18 +36,25 @@ function LayerCard({
   const {
     activeProjectDispatch,
     activeDataProductDispatch,
+    geoRasterIdDispatch,
     projectHoverStateDispatch,
   } = useMapContext();
   return (
     <div
       className={classNames(
+        active ? 'border-accent1' : 'border-slate-200',
         hover ? 'cursor-pointer hover:border-2 hover:border-accent1' : '',
-        'p-2 rounded-sm drop-shadow-sm bg-white border-solid border-2 border-slate-200'
+        'p-2 rounded-sm shadow-sm bg-white border-solid border-2'
       )}
       onClick={() => {
-        if (project) activeProjectDispatch({ type: 'set', payload: project });
-        if (dataProduct)
+        if (project) {
+          activeDataProductDispatch({ type: 'clear', payload: null });
+          activeProjectDispatch({ type: 'set', payload: project });
+        }
+        if (dataProduct) {
           activeDataProductDispatch({ type: 'set', payload: dataProduct });
+          geoRasterIdDispatch({ type: 'create' });
+        }
       }}
       onMouseOver={() => {
         if (project) projectHoverStateDispatch({ type: 'set', payload: project.id });
@@ -77,7 +87,8 @@ export default function LayerPane({
   projects: Project[];
   toggleHidePane: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
-  const { activeProject, activeProjectDispatch, flights } = useMapContext();
+  const { activeDataProduct, activeProject, activeProjectDispatch, flights } =
+    useMapContext();
 
   if (hidePane) {
     return (
@@ -155,6 +166,12 @@ export default function LayerPane({
                                 key={data_product.id}
                                 hover={true}
                                 dataProduct={data_product}
+                                active={
+                                  activeDataProduct &&
+                                  data_product.id === activeDataProduct.id
+                                    ? true
+                                    : false
+                                }
                               >
                                 <div className="text-slate-600 text-sm">
                                   <strong className="text-bold">
@@ -165,7 +182,7 @@ export default function LayerPane({
                                     <div>
                                       Bands:{' '}
                                       {data_product.band_info.bands.length > 1
-                                        ? `Multi (${data_product.band_info.bands.length})`
+                                        ? `Multi (1: Blue, 2: Green, 3: Red, 4: Alpha)`
                                         : 'Single'}
                                     </div>
                                     {data_product.band_info.bands.length === 1 ? (
@@ -191,6 +208,13 @@ export default function LayerPane({
                                       </>
                                     ) : null}
                                   </div>
+                                  {activeDataProduct &&
+                                  activeDataProduct.id === data_product.id &&
+                                  data_product.data_type === 'dsm' ? (
+                                    <div className="mt-2">
+                                      <SymbologyControl />
+                                    </div>
+                                  ) : null}
                                 </div>
                               </LayerCard>
                             ))}

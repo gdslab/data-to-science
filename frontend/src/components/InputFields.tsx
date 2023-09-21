@@ -20,6 +20,12 @@ interface InputField {
   required?: boolean;
 }
 
+interface NumberField extends InputField {
+  max: number;
+  min: number;
+  step?: number;
+}
+
 interface TextField extends InputField {
   icon?: string;
   type?: string;
@@ -38,6 +44,32 @@ const InputField = ({ children, altLabel, label, name, required }: InputField) =
     <ErrorMessage className="text-red-500 text-sm" name={name} component="span" />
   </div>
 );
+
+export function NumberField({
+  altLabel = false,
+  disabled = false,
+  label,
+  max,
+  min,
+  name,
+  required = true,
+  step = 1,
+}: NumberField) {
+  return (
+    <InputField altLabel={altLabel} label={label} name={name} required={required}>
+      <Field
+        className={disabled ? styles.disabled : styles.textField}
+        id={name}
+        name={name}
+        type="number"
+        disabled={disabled}
+        min={min}
+        max={max}
+        step={step}
+      />
+    </InputField>
+  );
+}
 
 export function TextField({
   altLabel = false,
@@ -82,8 +114,8 @@ export function SelectField({
   return (
     <InputField altLabel={altLabel} label={label} name={name} required={required}>
       <Field
+        as="select"
         className={disabled ? styles.disabled : styles.selectField}
-        component="select"
         id={name}
         name={name}
         disabled={disabled}

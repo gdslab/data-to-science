@@ -35,6 +35,8 @@ import TeamDetail, {
   loader as teamDetailLoader,
 } from './components/pages/teams/TeamDetail';
 
+import SymbologyControl from './components/maps/SymbologyControl';
+
 import { RootPublic, RootProtected } from './components/layout/Root';
 import { RequireAuth } from './AuthContext';
 
@@ -59,6 +61,10 @@ export const router = createBrowserRouter([
       {
         path: '/auth/logout',
         element: <Logout />,
+      },
+      {
+        path: '/test',
+        element: <SymbologyControl />,
       },
     ],
   },

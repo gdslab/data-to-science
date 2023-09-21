@@ -35,6 +35,7 @@
     "react-leaflet": "^4.2.1",
     "react-router-dom": "^6.14.2",
     "sort-by": "^1.2.0",
+    "uuid": "^9.0.1",
     "yup": "^1.2.0"
   },
   "devDependencies": {

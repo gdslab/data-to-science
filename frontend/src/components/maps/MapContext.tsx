@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { createContext, useContext, useEffect, useReducer } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 
 import { DataProduct, Flight } from '../pages/projects/ProjectDetail';
 import { Project } from '../pages/projects/ProjectList';
@@ -7,7 +8,21 @@ import { Project } from '../pages/projects/ProjectList';
 type ActiveDataProductAction = { type: string; payload: DataProduct | null };
 type ActiveProjectAction = { type: string; payload: Project | null };
 type FlightsAction = { type: string; payload: Flight[] };
+type GeoRasterIdAction = { type: string };
 type ProjectHoverStateAction = { type: string; payload: string | null };
+type SymbologySettingsAction = { type: string; payload: SymbologySettings };
+
+export interface SymbologySettings {
+  colorRamp: string;
+  max: number;
+  maxCut: number;
+  meanStdDev: number;
+  min: number;
+  minCut: number;
+  minMax: string;
+  userMax: number;
+  userMin: number;
+}
 
 function activeDataProductReducer(
   state: DataProduct | null,
@@ -54,6 +69,19 @@ function flightsReducer(state: Flight[], action: FlightsAction) {
   }
 }
 
+function geoRasterIdReducer(state: string, action: GeoRasterIdAction) {
+  switch (action.type) {
+    case 'create': {
+      return uuidv4();
+    }
+    case 'remove': {
+      return '';
+    }
+    default:
+      return state;
+  }
+}
+
 function projectHoverStateReducer(
   state: string | null,
   action: ProjectHoverStateAction
@@ -70,22 +98,58 @@ function projectHoverStateReducer(
   }
 }
 
+function symbologySettingsReducer(
+  state: SymbologySettings,
+  action: SymbologySettingsAction
+) {
+  switch (action.type) {
+    case 'update': {
+      return action.payload;
+    }
+    case 'reset': {
+      return defaultSymbologySettings;
+    }
+    default:
+      return state;
+  }
+}
+
+const defaultSymbologySettings = {
+  colorRamp: 'spectral',
+  max: 0,
+  maxCut: 98,
+  meanStdDev: 2,
+  min: 0,
+  minCut: 2,
+  minMax: 'minMax',
+  userMin: 0,
+  userMax: 0,
+};
+
 const context: {
   activeDataProduct: DataProduct | null;
   activeDataProductDispatch: React.Dispatch<ActiveDataProductAction>;
   activeProject: Project | null;
   activeProjectDispatch: React.Dispatch<ActiveProjectAction>;
   flights: Flight[];
+  geoRasterId: string;
+  geoRasterIdDispatch: React.Dispatch<GeoRasterIdAction>;
   projectHoverState: string | null;
   projectHoverStateDispatch: React.Dispatch<ProjectHoverStateAction>;
+  symbologySettings: SymbologySettings;
+  symbologySettingsDispatch: React.Dispatch<SymbologySettingsAction>;
 } = {
   activeDataProduct: null,
   activeDataProductDispatch: () => {},
   activeProject: null,
   activeProjectDispatch: () => {},
   flights: [],
+  geoRasterId: '',
+  geoRasterIdDispatch: () => {},
   projectHoverState: null,
   projectHoverStateDispatch: () => {},
+  symbologySettings: defaultSymbologySettings,
+  symbologySettingsDispatch: () => {},
 };
 
 const MapContext = createContext(context);
@@ -97,9 +161,14 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
   );
   const [activeProject, activeProjectDispatch] = useReducer(activeProjectReducer, null);
   const [flights, flightsDispatch] = useReducer(flightsReducer, []);
+  const [geoRasterId, geoRasterIdDispatch] = useReducer(geoRasterIdReducer, '');
   const [projectHoverState, projectHoverStateDispatch] = useReducer(
     projectHoverStateReducer,
     null
+  );
+  const [symbologySettings, symbologySettingsDispatch] = useReducer(
+    symbologySettingsReducer,
+    defaultSymbologySettings
   );
 
   // fetches flights for active project
@@ -127,8 +196,12 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
         activeProject,
         activeProjectDispatch,
         flights,
+        geoRasterId,
+        geoRasterIdDispatch,
         projectHoverState,
         projectHoverStateDispatch,
+        symbologySettings,
+        symbologySettingsDispatch,
       }}
     >
       {children}

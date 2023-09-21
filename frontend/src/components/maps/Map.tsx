@@ -1,7 +1,7 @@
+import 'leaflet/dist/leaflet.css';
 import { useEffect, useRef } from 'react';
 import { GeoJSON } from 'react-leaflet/GeoJSON';
 import { MapContainer } from 'react-leaflet/MapContainer';
-import 'leaflet/dist/leaflet.css';
 import { ZoomControl } from 'react-leaflet/ZoomControl';
 import L from 'leaflet';
 
@@ -16,8 +16,8 @@ import icon from './icons/marker-icon.png';
 import shadow from './icons/marker-shadow.png';
 
 export default function Map({ projects }: { projects: Project[] }) {
-  const { activeDataProduct, activeProject, flights } = useMapContext();
-  // const [colorRamp, setColorRamp] = useState('Spectral');
+  const { activeDataProduct, activeProject, flights, geoRasterId, symbologySettings } =
+    useMapContext();
 
   const activeProjectRef = useRef<L.GeoJSON>(null);
 
@@ -54,12 +54,12 @@ export default function Map({ projects }: { projects: Project[] }) {
       ) : null}
       {activeProject && flights && activeDataProduct ? (
         <GeoRasterLayer
-          key={`${activeDataProduct.id}-Spectral`}
+          key={geoRasterId}
           zIndex={10}
           paths={[activeDataProduct.url]}
           resolution={256}
-          bandInfo={activeDataProduct.band_info.bands}
-          colorRamp="Spectral"
+          activeDataProduct={activeDataProduct}
+          symbologySettings={symbologySettings}
         />
       ) : null}
       <MapLayersControl />
