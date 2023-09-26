@@ -10,3 +10,4 @@ from app.models.project_member import ProjectMember
 from app.models.raw_data import RawData
 from app.models.team import Team
 from app.models.user import User
+from app.models.user_style import UserStyle

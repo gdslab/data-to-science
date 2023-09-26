@@ -1,0 +1,27 @@
+import uuid
+
+from sqlalchemy import ForeignKey
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.db.base_class import Base
+
+
+class UserStyle(Base):
+    __tablename__ = "user_styles"
+    # columns
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    settings: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    # foreign keys
+    data_product_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("data_products.id"), nullable=False
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
+
+    def __repr__(self) -> str:
+        return (
+            f"UserStyle(id={self.id!r}, settings={self.settings!r}, "
+            f"data_product_id={self.data_product_id!r}, user_id={self.user_id!r})"
+        )

@@ -34,7 +34,7 @@ class DataProduct(Base):
     )
     # relationships
     flight: Mapped["Flight"] = relationship(back_populates="data_products")
-    jobs: Mapped[list["Job"]] = relationship(back_populates="data_product")
+    jobs: Mapped["Job"] = relationship(back_populates="data_product")
 
     def __repr__(self) -> str:
         return (

@@ -8,3 +8,4 @@ from .team import Team, TeamCreate, TeamUpdate
 from .team_member import TeamMember, TeamMemberCreate, TeamMemberUpdate
 from .token import Token, TokenPayload
 from .user import User, UserCreate, UserInDB, UserUpdate
+from .user_style import UserStyle, UserStyleCreate, UserStyleUpdate

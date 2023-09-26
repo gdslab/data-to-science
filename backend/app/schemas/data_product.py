@@ -32,6 +32,7 @@ class DataProductInDBBase(DataProductBase, from_attributes=True):
     filepath: str
     flight_id: UUID
     original_filename: str
+    user_style: dict | None = None
 
 
 # additional properties to return via API

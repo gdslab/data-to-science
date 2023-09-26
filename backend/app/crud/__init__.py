@@ -8,3 +8,4 @@ from .crud_raw_data import raw_data
 from .crud_team import team
 from .crud_team_member import team_member
 from .crud_user import user
+from .crud_user_style import user_style

@@ -28,6 +28,7 @@ def upload_data_product(
     request: Request,
     files: UploadFile,
     dtype: str = Query(),
+    current_user: models.User = Depends(deps.get_current_approved_user),
     project: models.Project = Depends(deps.can_read_write_project),
     flight: models.Flight = Depends(deps.can_read_write_flight),
     db: Session = Depends(deps.get_db),
@@ -70,6 +71,7 @@ def read_data_product(
     request: Request,
     data_product_id: UUID,
     flight_id: UUID,
+    current_user: models.User = Depends(deps.get_current_approved_user),
     flight: models.Flight = Depends(deps.can_read_write_flight),
     db: Session = Depends(deps.get_db),
 ) -> Any:
@@ -83,7 +85,10 @@ def read_data_product(
     else:
         upload_dir = settings.UPLOAD_DIR
     data_product = crud.data_product.get_single_by_id(
-        db, data_product_id=data_product_id, upload_dir=upload_dir
+        db,
+        data_product_id=data_product_id,
+        upload_dir=upload_dir,
+        user_id=current_user.id,
     )
     return data_product
 
@@ -92,6 +97,7 @@ def read_data_product(
 def read_all_data_product(
     request: Request,
     flight_id: UUID,
+    current_user: models.User = Depends(deps.get_current_approved_user),
     flight: models.Flight = Depends(deps.can_read_write_flight),
     db: Session = Depends(deps.get_db),
 ) -> Any:
@@ -105,6 +111,32 @@ def read_all_data_product(
     else:
         upload_dir = settings.UPLOAD_DIR
     all_data_product = crud.data_product.get_multi_by_flight(
-        db, flight_id=flight.id, upload_dir=upload_dir
+        db, flight_id=flight.id, upload_dir=upload_dir, user_id=current_user.id
     )
     return all_data_product
+
+
+@router.put("/{data_product_id}/style", response_model=schemas.UserStyle)
+def update_user_style(
+    data_product_id: UUID,
+    user_style_in: schemas.UserStyleUpdate,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    flight: models.Flight = Depends(deps.can_read_write_flight),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Update user's style settings for a data product."""
+    if not flight:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
+        )
+    current_user_style = crud.user_style.get_by_data_product_and_user(
+        db, data_product_id=data_product_id, user_id=current_user.id
+    )
+    if not current_user_style:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User style not found"
+        )
+    updated_user_style = crud.user_style.update(
+        db, db_obj=current_user_style, obj_in=user_style_in
+    )
+    return updated_user_style
