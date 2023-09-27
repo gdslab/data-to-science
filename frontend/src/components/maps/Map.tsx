@@ -1,9 +1,9 @@
 import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 import { useEffect, useRef } from 'react';
 import { GeoJSON } from 'react-leaflet/GeoJSON';
 import { MapContainer } from 'react-leaflet/MapContainer';
 import { ZoomControl } from 'react-leaflet/ZoomControl';
-import L from 'leaflet';
 
 import GeoRasterLayer from './GeoRasterLayer';
 import MapLayersControl from './MapLayersControl';

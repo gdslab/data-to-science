@@ -15,10 +15,8 @@ type SymbologySettingsAction = { type: string; payload: SymbologySettings };
 export interface SymbologySettings {
   colorRamp: string;
   max: number;
-  maxCut: number;
   meanStdDev: number;
   min: number;
-  minCut: number;
   minMax: string;
   userMax: number;
   userMin: number;
@@ -117,22 +115,18 @@ function symbologySettingsReducer(
 export interface DefaultSymbologySettings {
   colorRamp: string;
   max: number;
-  maxCut: number;
   meanStdDev: number;
   min: number;
-  minCut: number;
   minMax: string;
   userMin: number;
   userMax: number;
 }
 
-const defaultSymbologySettings: DefaultSymbologySettings = {
+export const defaultSymbologySettings: DefaultSymbologySettings = {
   colorRamp: 'spectral',
   max: 0,
-  maxCut: 98,
   meanStdDev: 2,
   min: 0,
-  minCut: 2,
   minMax: 'minMax',
   userMin: 0,
   userMax: 0,

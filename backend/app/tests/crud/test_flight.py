@@ -60,7 +60,8 @@ def test_get_flight(db: Session) -> None:
 
 def test_get_flights(db: Session) -> None:
     """Verify retrieval of flights associated with project."""
-    project = create_random_project(db)
+    user = create_random_user(db)
+    project = create_random_project(db, owner_id=user.id)
     other_project = create_random_project(db)
     create_flight(db, project_id=project.id)
     create_flight(db, project_id=project.id)
@@ -68,7 +69,7 @@ def test_get_flights(db: Session) -> None:
     create_flight(db, project_id=other_project.id)
     upload_dir = settings.TEST_UPLOAD_DIR
     flights = crud.flight.get_multi_by_project(
-        db, project_id=project.id, upload_dir=upload_dir
+        db, project_id=project.id, upload_dir=upload_dir, user_id=user.id
     )
     assert type(flights) is list
     assert len(flights) == 3

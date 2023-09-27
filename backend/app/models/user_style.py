@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -19,6 +19,12 @@ class UserStyle(Base):
         ForeignKey("data_products.id"), nullable=False
     )
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
+    # unique constraint
+    __table_args__ = (
+        UniqueConstraint(
+            "data_product_id", "user_id", name="unique_to_product_and_user"
+        ),
+    )
 
     def __repr__(self) -> str:
         return (

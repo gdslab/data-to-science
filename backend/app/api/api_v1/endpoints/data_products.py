@@ -133,6 +133,13 @@ def create_user_style(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
+    existing_user_style = crud.user_style.get_by_data_product_and_user(
+        db, data_product_id=data_product_id, user_id=current_user.id
+    )
+    if existing_user_style:
+        raise HTTPException(
+            status_code=status.HTTP_400_NOT_FOUND, detail="User style already exists"
+        )
     user_style = crud.user_style.create_with_data_product_and_user(
         db,
         obj_in=user_style_in,

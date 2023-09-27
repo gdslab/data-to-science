@@ -1,4 +1,6 @@
-import { Link } from 'react-router-dom';
+import axios from 'axios';
+import { useEffect } from 'react';
+import { Link, SetURLSearchParams, useSearchParams } from 'react-router-dom';
 import {
   ArrowUturnLeftIcon,
   Bars3Icon,
@@ -26,12 +28,14 @@ function LayerCard({
   dataProduct = undefined,
   hover = false,
   project = undefined,
+  setSearchParams = undefined,
 }: {
   active?: boolean;
   children: React.ReactNode;
   dataProduct?: DataProduct;
   hover?: boolean;
   project?: Project;
+  setSearchParams?: SetURLSearchParams;
 }) {
   const {
     activeDataProduct,
@@ -40,6 +44,7 @@ function LayerCard({
     geoRasterIdDispatch,
     projectHoverStateDispatch,
   } = useMapContext();
+
   return (
     <div
       className={classNames(
@@ -49,6 +54,7 @@ function LayerCard({
       )}
       onClick={() => {
         if (project) {
+          if (setSearchParams) setSearchParams({});
           activeDataProductDispatch({ type: 'clear', payload: null });
           activeProjectDispatch({ type: 'set', payload: project });
         }
@@ -56,6 +62,7 @@ function LayerCard({
           (dataProduct && !activeDataProduct) ||
           (dataProduct && activeDataProduct && dataProduct.id !== activeDataProduct.id)
         ) {
+          if (setSearchParams) setSearchParams({});
           activeDataProductDispatch({ type: 'set', payload: dataProduct });
           geoRasterIdDispatch({ type: 'create' });
         }
@@ -91,8 +98,51 @@ export default function LayerPane({
   projects: Project[];
   toggleHidePane: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
-  const { activeDataProduct, activeProject, activeProjectDispatch, flights } =
-    useMapContext();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const {
+    activeDataProduct,
+    activeProject,
+    activeProjectDispatch,
+    activeDataProductDispatch,
+    flights,
+  } = useMapContext();
+
+  useEffect(() => {
+    async function fetchDataProduct(
+      projectId: string,
+      flightId: string,
+      dataProductId: string
+    ) {
+      try {
+        const response = await axios.get(
+          `/api/v1/projects/${projectId}/flights/${flightId}/data_products/${dataProductId}`
+        );
+        if (response) {
+          const project = projects.filter(({ id }) => id === projectId);
+          if (project) {
+            activeProjectDispatch({ type: 'set', payload: project[0] });
+            activeDataProductDispatch({ type: 'set', payload: response.data });
+          } else {
+            alert(
+              'Requested resource does not exist or you do not have permission to view it'
+            );
+          }
+        }
+      } catch (err) {
+        alert(
+          'Requested resource does not exist or you do not have permission to view it'
+        );
+      }
+    }
+
+    const projectId = searchParams.get('projectId');
+    const flightId = searchParams.get('flightId');
+    const dataProductId = searchParams.get('dataProductId');
+
+    if (projectId && flightId && dataProductId) {
+      fetchDataProduct(projectId, flightId, dataProductId);
+    }
+  }, []);
 
   if (hidePane) {
     return (
@@ -164,7 +214,10 @@ export default function LayerPane({
                           </span>
                         </div>
                         {flight.data_products.length > 0 ? (
-                          <details className="group space-y-2 [&_summary::-webkit-details-marker]:hidden text-slate-600 overflow-visible">
+                          <details
+                            className="group space-y-2 [&_summary::-webkit-details-marker]:hidden text-slate-600 overflow-visible"
+                            open={activeDataProduct ? true : false}
+                          >
                             {flight.data_products.map((data_product) => (
                               <LayerCard
                                 key={data_product.id}
@@ -176,6 +229,7 @@ export default function LayerPane({
                                     ? true
                                     : false
                                 }
+                                setSearchParams={setSearchParams}
                               >
                                 <div className="text-slate-600 text-sm">
                                   <strong className="text-bold">

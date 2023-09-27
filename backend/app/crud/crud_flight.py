@@ -3,13 +3,14 @@ from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload, Session
+from sqlalchemy.orm import joinedload, Session
 
 from app.crud.base import CRUDBase
 from app.models.flight import Flight
+from app.models.user_style import UserStyle
 from app.schemas.flight import FlightCreate, FlightUpdate
 
-from app.crud.crud_data_product import set_url_attr
+from app.crud.crud_data_product import set_url_attr, set_user_style_attr
 
 
 class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
@@ -29,19 +30,30 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
         db: Session,
         project_id: UUID,
         upload_dir: str,
+        user_id: UUID,
         skip: int = 0,
         limit: int = 100,
     ) -> Sequence[Flight]:
         statement = (
             select(Flight)
-            .options(selectinload(Flight.data_products))
+            .options(joinedload(Flight.data_products))
             .where(Flight.project_id == project_id)
         )
         with db as session:
-            flights_with_data = session.scalars(statement).unique().all()
+            flights_with_data = session.execute(statement).scalars().unique().all()
             for flight in flights_with_data:
                 for data_product in flight.data_products:
                     set_url_attr(data_product, upload_dir)
+                    # check for saved user style
+                    user_style_query = (
+                        select(UserStyle)
+                        .where(UserStyle.data_product_id == data_product.id)
+                        .where(UserStyle.user_id == user_id)
+                    )
+                    user_style = session.execute(user_style_query).scalar_one_or_none()
+                    if user_style:
+                        set_user_style_attr(data_product, user_style.settings)
+
         return flights_with_data
 
 

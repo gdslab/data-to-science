@@ -24,6 +24,7 @@ function classNames(...classes: [string, string]) {
 export default function MapLayout() {
   const projects = useLoaderData() as Project[];
   const [hidePane, toggleHidePane] = useState(false);
+
   return (
     <MapContextProvider>
       {/* sidebar */}

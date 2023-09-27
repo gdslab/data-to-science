@@ -1,3 +1,5 @@
+import pytest
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import crud
@@ -39,3 +41,14 @@ def test_update_user_style(db: Session) -> None:
     assert updated_user_style
     assert updated_user_style.settings["max"] == 75
     assert updated_user_style.settings["min"] == 50
+
+
+def test_no_duplicate_user_styles(db: Session) -> None:
+    data_product = SampleDataProduct(db)
+    create_user_style(
+        db, data_product_id=data_product.obj.id, user_id=data_product.user.id
+    )
+    with pytest.raises(IntegrityError):
+        create_user_style(
+            db, data_product_id=data_product.obj.id, user_id=data_product.user.id
+        )

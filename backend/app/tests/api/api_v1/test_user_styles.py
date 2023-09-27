@@ -3,21 +3,20 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.core.config import settings
-from app.schemas.user_style import UserStyleCreate, UserStyleUpdate
+from app.schemas.user_style import UserStyleUpdate
 from app.tests.utils.data_product import SampleDataProduct
+from app.tests.utils.DefaultUserStyle import DefaultUserStyle
 
 
 def test_create_data_product_user_style(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
-    data_product = SampleDataProduct(db, create_style=True, user=current_user)
-    user_style_settings = data_product.user_style.settings
-    user_style_in = UserStyleCreate(settings=user_style_settings)
+    data_product = SampleDataProduct(db, create_style=False, user=current_user)
     response = client.post(
         f"{settings.API_V1_STR}/projects/{data_product.project.id}"
         f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}/style",
-        json=user_style_in.model_dump(),
+        json={"settings": DefaultUserStyle().__dict__},
     )
 
     assert 201 == response.status_code
