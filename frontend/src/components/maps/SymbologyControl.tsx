@@ -1,3 +1,4 @@
+import axios, { AxiosResponse } from 'axios';
 import { Field, Formik, Form } from 'formik';
 import { useEffect, useState } from 'react';
 
@@ -20,6 +21,7 @@ export default function SymbologyControl() {
   const [initialValues, setInitialValues] = useState<SymbologySettings | null>(null);
   const {
     activeDataProduct,
+    activeProject,
     geoRasterIdDispatch,
     symbologySettings,
     symbologySettingsDispatch,
@@ -200,7 +202,34 @@ export default function SymbologyControl() {
               <Button size="sm">Load Default</Button>
             </div>
             <div className="w-28">
-              <Button size="sm">Save</Button>
+              <Button
+                size="sm"
+                onClick={async () => {
+                  if (activeProject && activeDataProduct) {
+                    try {
+                      let response: null | AxiosResponse = null;
+                      if (!activeDataProduct.user_style) {
+                        response = await axios.post(
+                          `/api/v1/projects/${activeProject.id}/flights/${activeDataProduct.flight_id}/data_products/${activeDataProduct.id}/style`,
+                          { settings: symbologySettings }
+                        );
+                      } else {
+                        response = await axios.put(
+                          `/api/v1/projects/${activeProject.id}/flights/${activeDataProduct.flight_id}/data_products/${activeDataProduct.id}/style`,
+                          { settings: symbologySettings }
+                        );
+                      }
+                      if (response) {
+                        // do something
+                      }
+                    } catch (err) {
+                      console.error(err);
+                    }
+                  }
+                }}
+              >
+                Save
+              </Button>
             </div>
           </div>
         </div>

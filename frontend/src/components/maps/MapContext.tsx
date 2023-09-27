@@ -114,7 +114,19 @@ function symbologySettingsReducer(
   }
 }
 
-const defaultSymbologySettings = {
+export interface DefaultSymbologySettings {
+  colorRamp: string;
+  max: number;
+  maxCut: number;
+  meanStdDev: number;
+  min: number;
+  minCut: number;
+  minMax: string;
+  userMin: number;
+  userMax: number;
+}
+
+const defaultSymbologySettings: DefaultSymbologySettings = {
   colorRamp: 'spectral',
   max: 0,
   maxCut: 98,

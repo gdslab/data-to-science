@@ -4,6 +4,8 @@ import { Link, Params, useLoaderData, useParams } from 'react-router-dom';
 import { Button } from '../../Buttons';
 import Table, { TableBody, TableHead } from '../../Table';
 
+import { DefaultSymbologySettings } from '../../maps/MapContext';
+
 interface Project {
   id: string;
   title: string;
@@ -36,6 +38,7 @@ export interface DataProduct {
   filepath: string;
   url: string;
   flight_id: string;
+  user_style: null | DefaultSymbologySettings;
 }
 
 export interface Flight {

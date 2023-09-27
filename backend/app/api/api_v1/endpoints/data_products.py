@@ -116,6 +116,32 @@ def read_all_data_product(
     return all_data_product
 
 
+@router.post(
+    "/{data_product_id}/style",
+    status_code=status.HTTP_201_CREATED,
+    response_model=schemas.UserStyle,
+)
+def create_user_style(
+    data_product_id: UUID,
+    user_style_in: schemas.UserStyleCreate,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    flight: models.Flight = Depends(deps.can_read_write_flight),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Create user style settings for a data product."""
+    if not flight:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
+        )
+    user_style = crud.user_style.create_with_data_product_and_user(
+        db,
+        obj_in=user_style_in,
+        data_product_id=data_product_id,
+        user_id=current_user.id,
+    )
+    return user_style
+
+
 @router.put("/{data_product_id}/style", response_model=schemas.UserStyle)
 def update_user_style(
     data_product_id: UUID,
