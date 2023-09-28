@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 
 from app import crud
 from app.schemas.project import ProjectUpdate
+from app.tests.utils.flight import create_flight
 from app.tests.utils.location import create_random_location
 from app.tests.utils.team import create_random_team
 from app.tests.utils.team_member import create_random_team_member
@@ -136,3 +137,15 @@ def test_update_project(db: Session) -> None:
     assert project.planting_date == project_update.planting_date
     assert project.description == project_update.description
     assert project.owner_id == project_update.owner_id
+
+
+def test_read_project_flight_count(db: Session) -> None:
+    user = create_random_user(db)
+    project = create_random_project(db, owner_id=user.id)
+    for _ in range(0, 5):
+        create_flight(db, project_id=project.id)
+    stored_project = crud.project.get_user_project(
+        db, project_id=project.id, user_id=user.id
+    )
+    assert stored_project
+    assert stored_project.flight_count == 5

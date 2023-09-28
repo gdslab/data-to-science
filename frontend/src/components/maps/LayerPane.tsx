@@ -189,7 +189,7 @@ export default function LayerPane({
                   <li key={flight.id}>
                     <LayerCard>
                       <div>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center justify-between gap-8">
                           <MapIcon className="h-16 w-16" />
                           <div className="flex flex-col gap-2">
                             <strong className="font-bold text-slate-700">
@@ -293,7 +293,7 @@ export default function LayerPane({
                   <li key={project.id}>
                     <LayerCard hover={true} project={project}>
                       <div>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center justify-between gap-8">
                           <MapPinIcon className="h-8 w-8" />
                           <div className="flex flex-col gap-2">
                             <strong className="font-bold text-slate-700">
@@ -305,7 +305,9 @@ export default function LayerPane({
                           </div>
                           <span className="inline-flex items-center justify-center rounded-full text-sky-700 bg-sky-100 px-2.5 py-0.5">
                             <PaperAirplaneIcon className="h-4 w-4 -ms-1 me-1.5" />
-                            <p className="whitespace-nowrap text-sm">5 Flights</p>
+                            <p className="whitespace-nowrap text-sm">
+                              {project.flight_count} Flights
+                            </p>
                           </span>
                         </div>
                       </div>

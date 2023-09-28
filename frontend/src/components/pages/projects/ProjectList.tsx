@@ -18,6 +18,7 @@ export interface Project {
   title: string;
   description: string;
   field: FieldGeoJSONFeature;
+  flight_count: number;
 }
 
 export async function loader() {

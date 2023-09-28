@@ -47,6 +47,7 @@ class ProjectInDBBase(ProjectBase, from_attributes=True):
 class Project(ProjectInDBBase):
     is_owner: bool = False
     field: PolygonGeoJSONFeature | None = None
+    flight_count: int = 0
 
 
 # additional properties stored in DB

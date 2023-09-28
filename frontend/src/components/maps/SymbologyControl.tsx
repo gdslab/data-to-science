@@ -235,7 +235,7 @@ export default function SymbologyControl() {
                   </div>
                   <div className="w-28">
                     <Button
-                      disabled={!dirty}
+                      // disabled={!dirty}
                       size="sm"
                       onClick={async () => {
                         toggleIsSaving(true);

@@ -82,10 +82,12 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             if project1:
                 setattr(project1[0], "is_owner", user_id == project1[0].owner_id)
                 setattr(project1[0], "field", json.loads(project1[1]))
+                setattr(project1[0], "flight_count", len(project1[0].flights))
                 projects.append(project1[0])
             if project2:
                 setattr(project2[0], "is_owner", user_id == project2[0].owner_id)
                 setattr(project2[0], "field", json.loads(project2[1]))
+                setattr(project2[0], "flight_count", len(project2[0].flights))
                 projects.append(project2[0])
             if len(set(projects)) > 1 or len(projects) < 1:
                 project = None
@@ -128,6 +130,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             for project in projects:
                 setattr(project[0], "is_owner", user_id == project[0].owner_id)
                 setattr(project[0], "field", json.loads(project[1]))
+                setattr(project[0], "flight_count", len(project[0].flights))
                 final_projects.append(project[0])
         return final_projects
 
