@@ -145,7 +145,9 @@ export default function UploadModal({ apiRoute, open, setOpen, uploadType }: Pro
               <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
                 <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                   <FileUpload
-                    endpoint={uploadType === 'tif' ? apiRoute + `?dtype=${dtype}` : ''}
+                    endpoint={
+                      uploadType === 'tif' ? apiRoute + `?dtype=${dtype}` : apiRoute
+                    }
                     restrictions={{
                       allowedFileTypes: uploadType === 'zip' ? ['.zip'] : ['.tif'],
                       maxNumberOfFiles: 1,
