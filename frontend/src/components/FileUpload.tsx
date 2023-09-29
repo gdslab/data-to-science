@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Uppy from '@uppy/core';
-import Dashboard from '@uppy/react/lib/Dashboard';
+import DashboardModal from '@uppy/react/lib/DashboardModal';
 import XHRUpload from '@uppy/xhr-upload';
 
 // Don't forget the CSS: core and the UI components + plugins you are using.
@@ -27,15 +27,19 @@ interface Restrictions {
 
 interface FileUpload {
   endpoint: string;
+  open: boolean;
   setUploadResponse?: React.Dispatch<React.SetStateAction<FeatureCollection | null>>;
   restrictions: Restrictions;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   uploadType: string;
 }
 
 export default function FileUpload({
   endpoint,
+  open,
   restrictions,
   setUploadResponse,
+  setOpen,
   uploadType,
 }: FileUpload) {
   const [uppy] = useState(() => createUppy(endpoint));
@@ -77,5 +81,7 @@ export default function FileUpload({
     }
   });
 
-  return <Dashboard uppy={uppy} height="240px" />;
+  return (
+    <DashboardModal uppy={uppy} open={open} onRequestClose={() => setOpen(false)} />
+  );
 }

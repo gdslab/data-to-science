@@ -4,21 +4,16 @@ import { Formik, Form } from 'formik';
 import { useLoaderData, useNavigate } from 'react-router-dom';
 
 import Alert from '../../Alert';
-import { Button } from '../../Buttons';
+import { Button, OutlineButton } from '../../Buttons';
 import Card from '../../Card';
+import DrawFieldMap from '../../maps/DrawFieldMap';
 import FileUpload from '../../FileUpload';
-import MapModal from '../../maps/MapModal';
 import { SelectField, TextField } from '../../InputFields';
+import { Team } from '../teams/Teams';
 
-import { FeatureCollection } from '../../maps/MapModal';
 import initialValues from './initialValues';
 import validationSchema from './validationSchema';
-
-interface Team {
-  id: string;
-  title: string;
-  description: string;
-}
+import HintText from '../../HintText';
 
 export async function loader() {
   const response = await axios.get('/api/v1/teams');
@@ -31,6 +26,42 @@ export async function loader() {
   }
 }
 
+type Coordinates = number[][];
+
+export interface GeoJSONFeature {
+  type: string;
+  geometry: {
+    type: string;
+    coordinates: Coordinates[] | Coordinates[][];
+  };
+  properties: {
+    [key: string]: string;
+  };
+}
+
+export interface FeatureCollection {
+  type: 'FeatureCollection';
+  features: GeoJSON.Feature[];
+}
+
+export interface Location {
+  geojson: GeoJSONFeature;
+  center: {
+    lat: number;
+    lng: number;
+  };
+}
+
+export type SetLocation = React.Dispatch<React.SetStateAction<Location | null>>;
+
+function coordArrayToWKT(coordArray: Coordinates[] | Coordinates[][]) {
+  let wkt: string[][] = [];
+  coordArray[0].forEach((coordPair) => {
+    wkt.push([`${coordPair[0]} ${coordPair[1]}`]);
+  });
+  return wkt.join();
+}
+
 export default function ProjectForm({
   editMode = false,
   projectId = '',
@@ -40,6 +71,7 @@ export default function ProjectForm({
 }) {
   const navigate = useNavigate();
   const teams = useLoaderData() as Team[];
+  const [location, setLocation] = useState<Location | null>(null);
   const [open, setOpen] = useState(false);
   const [uploadResponse, setUploadResponse] = useState<FeatureCollection | null>(null);
 
@@ -48,81 +80,142 @@ export default function ProjectForm({
   }, [uploadResponse]);
 
   return (
-    <div className="h-full flex flex-wrap items-center justify-center bg-accent1">
-      <div className="sm:w-full md:w-1/3 max-w-xl mx-4">
-        <h1 className="ml-4 text-white">
-          {editMode ? 'Project Details' : 'Create project'}
-        </h1>
-        <Card>
-          <Formik
-            initialValues={initialValues}
-            validationSchema={validationSchema}
-            onSubmit={async (values, { setSubmitting }) => {
-              try {
-                const data = {
-                  title: values.title,
-                  description: values.description,
-                  location_id: values.locationId,
-                  planting_date: values.plantingDate,
-                  ...(values.harvestDate && { harvest_date: values.harvestDate }),
-                  ...(values.teamId && { team_id: values.teamId }),
-                };
-                const response = editMode
-                  ? await axios.put(`/api/v1/projects/${projectId}`, data)
-                  : await axios.post('/api/v1/projects', data);
-                if (response) {
-                  editMode ? navigate(`/projects/${projectId}`) : navigate('/projects');
-                } else {
-                  // do something
-                }
-              } catch (err) {
-                if (axios.isAxiosError(err)) {
-                  console.error(err);
-                } else {
-                  // do something
-                }
+    <div className="p-4">
+      <Card>
+        <Formik
+          initialValues={initialValues}
+          validationSchema={validationSchema}
+          onSubmit={async (values, { setSubmitting }) => {
+            try {
+              const data = {
+                title: values.title,
+                description: values.description,
+                location_id: values.locationId,
+                planting_date: values.plantingDate,
+                ...(values.harvestDate && { harvest_date: values.harvestDate }),
+                ...(values.teamId && { team_id: values.teamId }),
+              };
+              const response = editMode
+                ? await axios.put(`/api/v1/projects/${projectId}`, data)
+                : await axios.post('/api/v1/projects', data);
+              if (response) {
+                editMode ? navigate(`/projects/${projectId}`) : navigate('/projects');
+              } else {
+                // do something
               }
-              setSubmitting(false);
-            }}
-          >
-            {({ isSubmitting, status, values }) => (
-              <div>
-                <Form>
+            } catch (err) {
+              if (axios.isAxiosError(err)) {
+                console.error(err);
+              } else {
+                // do something
+              }
+            }
+            setSubmitting(false);
+          }}
+        >
+          {({
+            isSubmitting,
+            setFieldTouched,
+            setFieldValue,
+            setStatus,
+            status,
+            values,
+          }) => (
+            <Form>
+              <div className="grid grid-cols-2 gap-8">
+                <div className="min-h-[600px] grid grid-rows-6 gap-4">
+                  <div className="row-span-4">
+                    <DrawFieldMap
+                      featureCollection={uploadResponse}
+                      location={location}
+                      setLocation={setLocation}
+                    />
+                  </div>
+                  <div className="row-span-1">
+                    <Button
+                      size="sm"
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        setStatus(null);
+                        if (location) {
+                          try {
+                            const data = {
+                              center_x: location.center.lng,
+                              center_y: location.center.lat,
+                              geom: `SRID=4326;POLYGON((${coordArrayToWKT(
+                                location.geojson.geometry.coordinates
+                              )}))`,
+                            };
+                            const response = await axios.post<GeoJSONFeature>(
+                              '/api/v1/locations',
+                              data
+                            );
+                            if (response) {
+                              setFieldTouched('locationId', true);
+                              setFieldValue('locationId', response.data.properties.id);
+                            }
+                            setOpen(false);
+                          } catch (err) {
+                            setStatus({
+                              type: 'error',
+                              msg: 'Unable to save location',
+                            });
+                          }
+                        } else {
+                          setStatus({
+                            type: 'warning',
+                            msg: 'Must draw field boundary before saving',
+                          });
+                        }
+                      }}
+                    >
+                      {values.locationId ? 'Update Field' : 'Save Field'}
+                    </Button>
+                  </div>
+                  <div className="row-span-1">
+                    <HintText>
+                      Use the below button to upload your field in a zipped shapefile.
+                    </HintText>
+                    <OutlineButton
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setOpen(true);
+                      }}
+                    >
+                      Upload Shapefile (.zip)
+                    </OutlineButton>
+                    <FileUpload
+                      endpoint={`/api/v1/locations/upload`}
+                      open={open}
+                      restrictions={{
+                        allowedFileTypes: ['.zip'],
+                        maxNumberOfFiles: 1,
+                        minNumberOfFiles: 1,
+                      }}
+                      setOpen={setOpen}
+                      setUploadResponse={setUploadResponse}
+                      uploadType="shp"
+                    />
+                  </div>
+                </div>
+                <div>
                   <TextField label="Title" name="title" />
-                  <TextField label="Description" name="description" />
-                  <TextField label="Location ID" name="locationId" disabled={true} />
-                  {!values.locationId ? (
-                    <div className="mt-4">
-                      <MapModal
-                        open={open}
-                        setOpen={setOpen}
-                        featureCollection={uploadResponse}
-                      />
-                      <Button type="button" onClick={() => setOpen(true)}>
-                        Draw on map
-                      </Button>
-                      <span className="block text-sm text-gray-400 font-bold pt-2 pb-1">
-                        or upload zipped shapefile (must include .shp, .shx, and .dbf)
-                      </span>
-                      <FileUpload
-                        endpoint={`/api/v1/locations/upload`}
-                        restrictions={{
-                          allowedFileTypes: ['.zip'],
-                          maxNumberOfFiles: 1,
-                          minNumberOfFiles: 1,
-                        }}
-                        setUploadResponse={setUploadResponse}
-                        uploadType="shp"
-                      />
-                    </div>
-                  ) : null}
-                  <TextField type="date" label="Planting date" name="plantingDate" />
                   <TextField
-                    type="date"
-                    label="Harvest date"
-                    name="harvestDate"
-                    required={false}
+                    type="textarea"
+                    label="Description"
+                    name="description"
+                    placeholder="Enter a description of the project..."
                   />
+                  <div className="grid grid-cols-2 gap-4">
+                    <TextField type="date" label="Planting date" name="plantingDate" />
+                    <TextField
+                      type="date"
+                      label="Harvest date"
+                      name="harvestDate"
+                      required={false}
+                    />
+                  </div>
                   {teams.length > 0 ? (
                     <SelectField
                       label="Team"
@@ -133,22 +226,24 @@ export default function ProjectForm({
                       }))}
                     />
                   ) : null}
-                  <div className="mt-4">
-                    <Button type="submit" disabled={isSubmitting}>
-                      {editMode ? 'Update project' : 'Create project'}
-                    </Button>
-                  </div>
-                  {status && status.type && status.msg ? (
-                    <div className="mt-4">
-                      <Alert alertType={status.type}>{status.msg}</Alert>
-                    </div>
-                  ) : null}
-                </Form>
+                </div>
               </div>
-            )}
-          </Formik>
-        </Card>
-      </div>
+              {status && status.type && status.msg ? (
+                <div className="mt-4">
+                  <Alert alertType={status.type}>{status.msg}</Alert>
+                </div>
+              ) : null}
+              <div className="flex justify-center mt-4 w-full">
+                <div className="w-96">
+                  <Button type="submit" disabled={isSubmitting}>
+                    Create
+                  </Button>
+                </div>
+              </div>
+            </Form>
+          )}
+        </Formik>
+      </Card>
     </div>
   );
 }

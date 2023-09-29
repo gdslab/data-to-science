@@ -4,7 +4,7 @@ import { useLeafletContext } from '@react-leaflet/core';
 import '@geoman-io/leaflet-geoman-free';
 import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
 
-import { SetLocation } from './MapModal';
+import { Location, SetLocation } from '../pages/projects/ProjectForm';
 
 interface GeomanOptions extends L.ControlOptions {
   position: L.ControlPosition;
@@ -12,9 +12,11 @@ interface GeomanOptions extends L.ControlOptions {
 
 export default function GeomanControl({
   options,
+  location,
   setLocation,
 }: {
   options: GeomanOptions;
+  location: Location | null;
   setLocation: SetLocation;
 }) {
   const context = useLeafletContext();
@@ -22,7 +24,7 @@ export default function GeomanControl({
   useEffect(() => {
     context.map.pm.addControls({
       ...options,
-      drawPolygon: true,
+      drawPolygon: location ? false : true,
       removalMode: true,
       drawMarker: false,
       drawCircle: false,
@@ -30,7 +32,7 @@ export default function GeomanControl({
       drawPolyline: false,
       drawRectangle: false,
       drawText: false,
-      editMode: false,
+      editMode: location ? true : false,
       dragMode: false,
       rotateMode: false,
       cutPolygon: false,

@@ -7,6 +7,7 @@ import GeomanControl from './GeomanControl';
 import MapLayersControl from './MapLayersControl';
 import { FeatureCollection, SetLocation } from './MapModal';
 import UploadGeoJSON from './UploadGeoJSON';
+import { Location } from '../pages/projects/ProjectForm';
 
 // updates map (loads tiles) after container size changes
 const InvalidateSize = () => {
@@ -17,10 +18,15 @@ const InvalidateSize = () => {
 
 interface Props {
   featureCollection: FeatureCollection | null;
+  location: Location | null;
   setLocation: SetLocation;
 }
 
-export default function DrawFieldMap({ featureCollection, setLocation }: Props) {
+export default function DrawFieldMap({
+  featureCollection,
+  location,
+  setLocation,
+}: Props) {
   return (
     <MapContainer
       center={[40.428655143949925, -86.9138040788386]}
@@ -30,14 +36,18 @@ export default function DrawFieldMap({ featureCollection, setLocation }: Props) 
       maxZoom={16}
       scrollWheelZoom={true}
       zoomControl={false}
-      style={{ height: 400, width: '100%' }}
+      style={{ height: '100%', width: '100%' }}
     >
       <InvalidateSize />
       {featureCollection ? (
         <UploadGeoJSON data={featureCollection} setLocation={setLocation} />
       ) : null}
       <MapLayersControl />
-      <GeomanControl options={{ position: 'topleft' }} setLocation={setLocation} />
+      <GeomanControl
+        options={{ position: 'topleft' }}
+        location={location}
+        setLocation={setLocation}
+      />
       <ZoomControl position="topleft" />
     </MapContainer>
   );

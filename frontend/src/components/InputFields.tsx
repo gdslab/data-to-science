@@ -17,6 +17,7 @@ interface InputField {
   disabled?: boolean;
   label: string;
   name: string;
+  placeholder?: string;
   required?: boolean;
 }
 
@@ -77,17 +78,21 @@ export function TextField({
   icon,
   label,
   name,
+  placeholder = '',
   required = true,
   type,
 }: TextField) {
   return (
     <InputField altLabel={altLabel} label={label} name={name} required={required}>
       <Field
+        as={type === 'textarea' ? 'textarea' : null}
         className={disabled ? styles.disabled : styles.textField}
         id={name}
         type={type ? type : 'text'}
         name={name}
         disabled={disabled}
+        rows={type === 'textarea' ? 4 : 1}
+        placeholder={placeholder}
       />
       {icon ? getIcon(icon) : null}
     </InputField>
