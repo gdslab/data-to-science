@@ -77,7 +77,9 @@ def process_geotiff(
         return None
 
     crud.data_product.update(
-        db, db_obj=data_product, obj_in=DataProductUpdate(band_info=ip.band_info)
+        db,
+        db_obj=data_product,
+        obj_in=DataProductUpdate(stac_properties=ip.stac_properties),
     )
 
     crud.job.update(

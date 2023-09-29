@@ -5,6 +5,9 @@ import os
 import shutil
 import subprocess
 
+from pydantic import ValidationError
+
+from app.utils.STACProperties import STACProperties, STACPropertiesValidator
 
 logger = logging.getLogger("__name__")
 
@@ -27,7 +30,7 @@ class ImageProcessor:
             output_dir, output_name.replace("tif", "webp")
         )
 
-        self.band_info = {"bands": []}
+        self.stac_properties = {"raster": [], "eo": []}
 
     def run(self):
         info = get_info(self.img_path)
@@ -41,7 +44,7 @@ class ImageProcessor:
 
         create_preview_webp(self.out_path, self.preview_out_path, info)
 
-        self.band_info = get_band_info(info)
+        self.stac_properties = get_stac_properties(info)
 
         return self.out_path
 
@@ -59,7 +62,9 @@ def get_info(img_path: str) -> dict:
         dict: _description_
     """
     result = subprocess.run(
-        ["gdalinfo", "-stats", "-json", img_path], stdout=subprocess.PIPE, check=True
+        ["gdalinfo", "-stats", "-hist", "-json", img_path],
+        stdout=subprocess.PIPE,
+        check=True,
     )
     result.check_returncode()
     try:
@@ -89,21 +94,29 @@ def is_cog(info: dict) -> bool:
     return False
 
 
-def get_band_info(info: dict) -> dict:
-    """Return stac raster:bands info from gdalinfo -stats -json.
+def get_stac_properties(info: dict) -> STACProperties:
+    """Return STAC raster:bands and eo:bands properties from gdalinfo.
 
     Args:
-        info (dict): gdalinfo -stats -json output
+        info (dict): gdalinfo -stats -hist -json output
 
     Returns:
-        dict: Raster band dtype, stats, and unit
+        dict: Raster band dtype, stats, histogram, and unit
     """
+    stac_properties: STACProperties = {"raster": [], "eo": []}
     if info and info.get("stac"):
         stac = info.get("stac")
-        if type(stac) is dict and stac.get("raster:bands"):
-            raster_bands = stac.get("raster:bands")
-            return {"bands": raster_bands}
-    return {"bands": []}
+        if type(stac) is dict and stac.get("raster:bands") and stac.get("eo:bands"):
+            try:
+                stac_properties = STACPropertiesValidator.validate_python(
+                    {"raster": stac.get("raster:bands"), "eo": stac.get("eo:bands")}
+                )
+            except ValidationError as e:
+                logger.error(e)
+            except Exception as e:
+                logger.error(e)
+
+    return stac_properties
 
 
 def get_band_count(info: dict) -> int:
@@ -121,25 +134,6 @@ def get_band_count(info: dict) -> int:
         if type(bands) is list:
             return len(bands)
     return 1
-
-
-def get_nodata_value(info: dict) -> int | float | None:
-    """Return no data value for band in raster. If a no data
-    value does not exist, return None.
-
-    Args:
-        info (dict): gdalinfo -json output
-
-    Returns:
-        int | float | None: Numeric no data value or None
-    """
-    if info and info.get("bands"):
-        bands = info.get("bands")
-        if type(bands) is list and len(bands) > 0:
-            band1 = bands[0]
-            if type(band1) is dict and "noDataValue" in band1:
-                return band1.get("noDataValue")
-    return None
 
 
 def convert_to_cog(

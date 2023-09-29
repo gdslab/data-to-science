@@ -189,7 +189,7 @@ export default function LayerPane({
                   <li key={flight.id}>
                     <LayerCard>
                       <div>
-                        <div className="flex items-center justify-between gap-8">
+                        <div className="flex items-center gap-4">
                           <MapIcon className="h-16 w-16" />
                           <div className="flex flex-col gap-2">
                             <strong className="font-bold text-slate-700">
@@ -239,32 +239,27 @@ export default function LayerPane({
                                   <div className="flex gap-4">
                                     <div>
                                       Bands:{' '}
-                                      {data_product.band_info.bands.length > 1
-                                        ? `Multi (1: Blue, 2: Green, 3: Red, 4: Alpha)`
-                                        : 'Single'}
+                                      {data_product.stac_properties.eo.map((b) => {
+                                        return (
+                                          <span key={b.name} className="mr-2">
+                                            {b.name} ({b.description})
+                                          </span>
+                                        );
+                                      })}
                                     </div>
-                                    {data_product.band_info.bands.length === 1 ? (
-                                      <>
-                                        <div>
-                                          Mean:{' '}
-                                          {data_product.band_info.bands[0].stats.mean}
-                                        </div>
-                                        <div>
-                                          Min:{' '}
-                                          {
-                                            data_product.band_info.bands[0].stats
-                                              .minimum
-                                          }
-                                        </div>
-                                        <div>
-                                          Max:{' '}
-                                          {
-                                            data_product.band_info.bands[0].stats
-                                              .maximum
-                                          }
-                                        </div>
-                                      </>
-                                    ) : null}
+                                    {data_product.stac_properties.raster.length === 1
+                                      ? Object.keys(
+                                          data_product.stac_properties.raster[0].stats
+                                        ).map((k) => (
+                                          <span key={k}>
+                                            {k}{' '}
+                                            {
+                                              data_product.stac_properties.raster[0]
+                                                .stats[k]
+                                            }
+                                          </span>
+                                        ))
+                                      : null}
                                   </div>
                                   {activeDataProduct &&
                                   activeDataProduct.id === data_product.id &&

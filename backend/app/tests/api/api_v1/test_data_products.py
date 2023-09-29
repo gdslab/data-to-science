@@ -42,15 +42,15 @@ def test_read_data_product(
     )
 
     assert 200 == response.status_code
-    response_data_project = response.json()
-    assert str(data_product.obj.id) == response_data_project["id"]
-    assert "band_info" in response_data_project
-    assert "data_type" in response_data_project
-    assert "flight_id" in response_data_project
-    assert "original_filename" in response_data_project
-    assert "url" in response_data_project
-    assert "status" in response_data_project
-    assert "user_style" in response_data_project
+    response_data_product = response.json()
+    assert str(data_product.obj.id) == response_data_product["id"]
+    assert "data_type" in response_data_product
+    assert "flight_id" in response_data_product
+    assert "original_filename" in response_data_product
+    assert "stac_properties" in response_data_product
+    assert "url" in response_data_product
+    assert "status" in response_data_product
+    assert "user_style" in response_data_product
 
 
 def test_read_data_products(
@@ -74,14 +74,14 @@ def test_read_data_products(
     )
 
     assert 200 == response.status_code
-    response_data_projects = response.json()
-    assert type(response_data_projects) is list
-    assert len(response_data_projects) == 3
-    for data_product in response_data_projects:
+    response_data_products = response.json()
+    assert type(response_data_products) is list
+    assert len(response_data_products) == 3
+    for data_product in response_data_products:
         assert data_product["flight_id"] == str(flight.id)
-        assert "band_info" in data_product
         assert "data_type" in data_product
         assert "flight_id" in data_product
         assert "original_filename" in data_product
+        assert "stac_properties" in data_product
         assert "url" in data_product
         assert "user_style" in data_product

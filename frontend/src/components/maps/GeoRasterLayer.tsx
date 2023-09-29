@@ -37,7 +37,7 @@ const GeoRasterComponent = createPathComponent(
       pixelValuesToColorFn: (values) =>
         setPixelColors(
           values,
-          activeDataProduct ? activeDataProduct.band_info.bands : [],
+          activeDataProduct ? activeDataProduct.stac_properties.raster : [],
           symbologySettings
         ),
     });

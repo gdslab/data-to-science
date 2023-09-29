@@ -28,16 +28,22 @@ export interface Band {
   unit: string;
 }
 
+export interface EO {
+  name: string;
+  description: string;
+}
+
 export interface DataProduct {
   id: string;
-  band_info: {
-    bands: Band[];
-  };
   data_type: string;
   original_filename: string;
   filepath: string;
   url: string;
   flight_id: string;
+  stac_properties: {
+    raster: Band[];
+    eo: EO[];
+  };
   user_style: null | DefaultSymbologySettings;
 }
 

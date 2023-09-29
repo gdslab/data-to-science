@@ -2,21 +2,23 @@ from uuid import UUID
 
 from pydantic import AnyHttpUrl, BaseModel
 
+from app.utils.ImageProcessor import STACProperties
+
 
 # shared properties
 class DataProductBase(BaseModel):
-    band_info: dict | None = None
     data_type: str | None = None
     filepath: str | None = None
     original_filename: str | None = None
+    stac_properties: STACProperties | None = None
 
 
 # properties to receive via API on creation
 class DataProductCreate(DataProductBase):
-    band_info: dict | None = None
     data_type: str
     filepath: str
     original_filename: str
+    stac_properties: STACProperties | None = None
 
 
 # properties to receive via API on update
@@ -27,11 +29,11 @@ class DataProductUpdate(DataProductBase):
 # properties shared by models stored in DB
 class DataProductInDBBase(DataProductBase, from_attributes=True):
     id: UUID
-    band_info: dict | None = None
     data_type: str
     filepath: str
     flight_id: UUID
     original_filename: str
+    stac_properties: STACProperties | None = None
     user_style: dict | None = None
 
 

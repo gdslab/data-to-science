@@ -30,7 +30,7 @@ export default function SymbologyControl() {
     symbologySettingsDispatch,
   } = useMapContext();
   const [searchParams, _] = useSearchParams();
-  const stats = activeDataProduct?.band_info.bands[0].stats;
+  const stats = activeDataProduct?.stac_properties.raster[0].stats;
 
   const getDefaultSettings = () => ({
     ...defaultSymbologySettings,

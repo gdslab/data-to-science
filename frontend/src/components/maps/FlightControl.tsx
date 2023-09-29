@@ -82,7 +82,7 @@ export default function FlightControl({
                     )}
                   </fieldset>
                   {activeDataProduct &&
-                  activeDataProduct.band_info.bands.length === 1 ? (
+                  activeDataProduct.stac_properties.raster.length === 1 ? (
                     <div>
                       <label
                         htmlFor="colorRamp"

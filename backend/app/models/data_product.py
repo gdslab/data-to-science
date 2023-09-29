@@ -22,12 +22,12 @@ class DataProduct(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    band_info: Mapped[dict] = mapped_column(JSONB, nullable=False)
     data_type: Mapped[enumerate] = mapped_column(
         ENUM(*DATA_TYPES, name="dtype"), nullable=False
     )
     filepath: Mapped[str] = mapped_column(String, nullable=False)
     original_filename: Mapped[str] = mapped_column(String, nullable=False)
+    stac_properties: Mapped[dict] = mapped_column(JSONB, nullable=False)
     # foreign keys
     flight_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("flights.id"), nullable=False
@@ -38,8 +38,7 @@ class DataProduct(Base):
 
     def __repr__(self) -> str:
         return (
-            f"DataProduct(id={self.id!r}, band_info={self.band_info!r}, "
-            f"data_type={self.data_type!r}, filepath={self.filepath!r}, "
-            f"original_filename={self.original_filename}, "
-            f"flight_id={self.flight_id!r})"
+            f"DataProduct(id={self.id!r}, data_type={self.data_type!r}, "
+            f"filepath={self.filepath!r}, original_filename={self.original_filename}, "
+            f"stac_properties={self.stac_properties!r}, flight_id={self.flight_id!r})"
         )

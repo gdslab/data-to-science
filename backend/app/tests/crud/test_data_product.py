@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.core.config import settings
 from app.tests.utils.flight import create_flight
-from app.tests.utils.data_product import SampleDataProduct, test_band_info
+from app.tests.utils.data_product import SampleDataProduct, test_stac_props_dsm
 from app.tests.utils.user import create_random_user
 
 
@@ -13,9 +13,9 @@ def test_create_data_product(db: Session) -> None:
     data_product = SampleDataProduct(db, data_type="ortho")
     assert data_product.obj
     assert data_product.obj.flight_id == data_product.flight.id
-    assert data_product.obj.band_info == test_band_info
     assert data_product.obj.data_type == "ortho"
     assert data_product.obj.original_filename == "test.tif"
+    assert data_product.obj.stac_properties == test_stac_props_dsm
     assert os.path.exists(data_product.obj.filepath)
 
 
@@ -30,7 +30,7 @@ def test_read_data_product(db: Session) -> None:
     assert stored_data_product
     assert stored_data_product.id == data_product.obj.id
     assert stored_data_product.flight_id == data_product.flight.id
-    assert stored_data_product.band_info == test_band_info
+    assert stored_data_product.stac_properties == test_stac_props_dsm
     assert stored_data_product.data_type == data_product.obj.data_type
     assert stored_data_product.filepath == data_product.obj.filepath
     assert stored_data_product.original_filename == data_product.obj.original_filename
