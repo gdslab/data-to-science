@@ -14,22 +14,27 @@ export function TableBody({
   rows: (string | JSX.Element)[][];
 }) {
   return (
-    <tbody className="divide-y divide-gray-200">
+    <tbody className="divide-y divide-gray-200 bg-white">
       {rows.map((row, i) => (
         <tr key={`row-${i}`}>
           {row.map((value, j) => (
-            <td
-              key={`cell-${i},${j}`}
-              className="border border-slate-300 p-4 text-slate-500"
-            >
+            <td key={`cell-${i},${j}`} className="p-4 text-slate-500 text-center">
               {value}
             </td>
           ))}
           {actions ? (
-            <td className="border border-slate-300 p-4 text-slate-500">
-              <div className="flex items-center justify-between gap-8">
+            <td className="p-4 text-slate-500">
+              <div className="flex justify-around">
                 {actions[i].map((action) => (
-                  <Link key={action.key} to={action.url}>
+                  <Link
+                    key={action.key}
+                    className={
+                      action.key.split('-')[1] === 'edit'
+                        ? 'text-sky-600'
+                        : 'text-red-600'
+                    }
+                    to={action.url}
+                  >
                     {action.label}
                   </Link>
                 ))}
@@ -44,12 +49,12 @@ export function TableBody({
 
 export function TableHead({ columns }: { columns: string[] }) {
   return (
-    <thead className="bg-slate-50">
+    <thead className="bg-slate-200">
       <tr>
         {columns.map((col) => (
           <th
             key={col.replace(/\s+/g, '').toLowerCase()}
-            className="w-1/2 border border-slate-300 font-semibold p-4 text-lg text-slate-900 text-left"
+            className="font-semibold p-4 text-md text-slate-600 text-center"
           >
             {col}
           </th>
@@ -61,7 +66,7 @@ export function TableHead({ columns }: { columns: string[] }) {
 
 export default function Table({ children }: { children: React.ReactNode }) {
   return (
-    <table className="table-auto border-separate border-spacing-1 w-full border border-slate-400">
+    <table className="table-auto border-separate border-spacing-1 w-full">
       {children}
     </table>
   );

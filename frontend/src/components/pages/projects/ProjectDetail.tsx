@@ -88,43 +88,39 @@ export default function ProjectDetail() {
         </div>
       </div>
       <div className="mt-4">
-        <h2>Datasets</h2>
-        {flights ? (
-          <div>
-            <h3>Flights</h3>
-            <Table>
-              <TableHead
-                columns={['Platform', 'Sensor', 'Acquisition Date', 'Actions']}
-              />
-              <TableBody
-                rows={flights.map((flight) => [
-                  flight.platform,
-                  flight.sensor,
-                  flight.acquisition_date.toString(),
-                ])}
-                actions={flights.map((flight, i) => [
-                  {
-                    key: `action-edit-${i}`,
-                    label: 'Edit',
-                    url: `/projects/${projectId}/flights/${flight.id}/edit`,
-                  },
-                  {
-                    key: `action-data-${i}`,
-                    label: 'Raw Data',
-                    url: `/projects/${projectId}/flights/${flight.id}/raw`,
-                  },
-                  {
-                    key: `action-products-${i}`,
-                    label: 'Data Product',
-                    url: `/projects/${projectId}/flights/${flight.id}/products`,
-                  },
-                ])}
-              />
-            </Table>
-          </div>
-        ) : (
-          <em>No datasets associated with project</em>
-        )}
+        <h2>Flights</h2>
+        {flights.length > 0 ? (
+          <Table>
+            <TableHead
+              columns={['Platform', 'Sensor', 'Acquisition Date', 'Data', 'Actions']}
+            />
+            <TableBody
+              rows={flights.map((flight) => [
+                flight.platform.replace(/_/g, ' '),
+                flight.sensor,
+                new Date(flight.acquisition_date).toLocaleDateString('en-US'),
+                <Link
+                  className="text-sky-600"
+                  to={`/projects/${projectId}/flights/${flight.id}/data`}
+                >
+                  View Data
+                </Link>,
+              ])}
+              actions={flights.map((flight, i) => [
+                {
+                  key: `action-edit-${i}`,
+                  label: 'Edit',
+                  url: `/projects/${projectId}/flights/${flight.id}/edit`,
+                },
+                {
+                  key: `action-delete-${i}`,
+                  label: 'Delete',
+                  url: '#',
+                },
+              ])}
+            />
+          </Table>
+        ) : null}
       </div>
       <div className="mt-4">
         <Link to={`/projects/${projectId}/flights/create`}>

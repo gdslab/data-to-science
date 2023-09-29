@@ -148,6 +148,7 @@ export default function UploadModal({ apiRoute, open, setOpen, uploadType }: Pro
                     endpoint={
                       uploadType === 'tif' ? apiRoute + `?dtype=${dtype}` : apiRoute
                     }
+                    inline={true}
                     restrictions={{
                       allowedFileTypes: uploadType === 'zip' ? ['.zip'] : ['.tif'],
                       maxNumberOfFiles: 1,

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Uppy from '@uppy/core';
+import Dashboard from '@uppy/react/lib/Dashboard';
 import DashboardModal from '@uppy/react/lib/DashboardModal';
 import XHRUpload from '@uppy/xhr-upload';
 
@@ -27,19 +28,21 @@ interface Restrictions {
 
 interface FileUpload {
   endpoint: string;
-  open: boolean;
+  inline?: boolean;
+  open?: boolean;
   setUploadResponse?: React.Dispatch<React.SetStateAction<FeatureCollection | null>>;
   restrictions: Restrictions;
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setOpen?: React.Dispatch<React.SetStateAction<boolean>>;
   uploadType: string;
 }
 
 export default function FileUpload({
   endpoint,
-  open,
+  inline = false,
+  open = false,
   restrictions,
   setUploadResponse,
-  setOpen,
+  setOpen = () => {},
   uploadType,
 }: FileUpload) {
   const [uppy] = useState(() => createUppy(endpoint));
@@ -81,7 +84,11 @@ export default function FileUpload({
     }
   });
 
-  return (
-    <DashboardModal uppy={uppy} open={open} onRequestClose={() => setOpen(false)} />
-  );
+  if (inline) {
+    return <Dashboard uppy={uppy} height="240px" />;
+  } else {
+    return (
+      <DashboardModal uppy={uppy} open={open} onRequestClose={() => setOpen(false)} />
+    );
+  }
 }

@@ -1,50 +1,49 @@
 import axios from 'axios';
-import { Outlet, Params, useLoaderData } from 'react-router-dom';
+import { Params, useLoaderData } from 'react-router-dom';
 
-import { Flight } from '../ProjectDetail';
-import Table, { TableBody, TableHead } from '../../../Table';
+import { DataProduct } from '../ProjectDetail';
+import DataProducts from './dataProducts/DataProducts';
+import RawData from './rawData/RawData';
 
 export async function loader({ params }: { params: Params<string> }) {
   try {
-    const flight = await axios.get(
-      `/api/v1/projects/${params.projectId}/flights/${params.flightId}`
+    const dataProducts = await axios.get(
+      `/api/v1/projects/${params.projectId}/flights/${params.flightId}/data_products`
     );
-    if (flight) {
-      return flight.data;
+    const rawData = await axios.get(
+      `/api/v1/projects/${params.projectId}/flights/${params.flightId}/raw_data`
+    );
+    if (dataProducts && rawData) {
+      return { dataProducts: dataProducts.data, rawData: rawData.data };
     } else {
-      return null;
+      return { dataProducts: [], rawData: [] };
     }
   } catch (err) {
-    console.error('Unable to retrieve flight data');
-    return null;
+    console.error('Unable to retrieve raw data and data products');
+    return { dataProducts: [], rawData: [] };
   }
 }
 
-export default function FlightData() {
-  const flight = useLoaderData() as Flight;
+export interface DataProductStatus extends DataProduct {
+  status: string;
+}
 
-  if (flight) {
-    return (
-      <div className="mx-4">
-        <div className="mt-4">
-          <div>
-            <h1>Flight</h1>
-          </div>
-        </div>
-        <div className="mt-4">
-          <Table>
-            <TableHead columns={['Platform', 'Sensor', 'Acquisition Date']} />
-            <TableBody
-              rows={[
-                [flight.platform, flight.sensor, flight.acquisition_date.toString()],
-              ]}
-            />
-          </Table>
-        </div>
-        <Outlet />
-      </div>
-    );
-  } else {
-    return null;
-  }
+export interface RawData {
+  original_filename: string;
+  url: string;
+}
+
+interface FlightData {
+  dataProducts: DataProductStatus[];
+  rawData: RawData[];
+}
+
+export default function FlightData() {
+  const { dataProducts, rawData } = useLoaderData() as FlightData;
+  return (
+    <div className="grid grid-flow-row auto-rows-max gap-4">
+      <RawData data={rawData} />
+      <DataProducts data={dataProducts} />
+    </div>
+  );
 }
