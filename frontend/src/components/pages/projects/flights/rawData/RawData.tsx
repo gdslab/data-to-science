@@ -19,7 +19,12 @@ export default function RawData({ data }: { data: RawDataInterface[] }) {
             <TableBody
               rows={data.map((dataset) => [
                 dataset.original_filename,
-                <a href={dataset.url} download="rawdata.zip" target="_blank">
+                <a
+                  className="flex justify-center"
+                  href={dataset.url}
+                  download="rawdata.zip"
+                  target="_blank"
+                >
                   <Button size="sm">Download (.zip)</Button>
                 </a>,
               ])}
@@ -27,7 +32,7 @@ export default function RawData({ data }: { data: RawDataInterface[] }) {
           </Table>
         </div>
       ) : null}
-      <div className="my-4">
+      <div className="my-4 flex justify-center">
         <UploadModal
           apiRoute={`/api/v1/projects/${projectId}/flights/${flightId}/raw_data`}
           open={open}

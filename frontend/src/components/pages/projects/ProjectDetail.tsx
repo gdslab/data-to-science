@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { Link, Params, useLoaderData, useParams } from 'react-router-dom';
-
+import { TrashIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { Button } from '../../Buttons';
 import Table, { TableBody, TableHead } from '../../Table';
 
@@ -109,11 +109,15 @@ export default function ProjectDetail() {
               actions={flights.map((flight, i) => [
                 {
                   key: `action-edit-${i}`,
+                  color: 'sky',
+                  icon: <PencilIcon className="h-4 w-4" />,
                   label: 'Edit',
                   url: `/projects/${projectId}/flights/${flight.id}/edit`,
                 },
                 {
                   key: `action-delete-${i}`,
+                  color: 'red',
+                  icon: <TrashIcon className="h-4 w-4" />,
                   label: 'Delete',
                   url: '#',
                 },
@@ -122,7 +126,7 @@ export default function ProjectDetail() {
           </Table>
         ) : null}
       </div>
-      <div className="mt-4">
+      <div className="mt-4 flex justify-center">
         <Link to={`/projects/${projectId}/flights/create`}>
           <Button>Add New Flight</Button>
         </Link>

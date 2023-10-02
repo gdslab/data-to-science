@@ -31,12 +31,16 @@ export default function FlightDetail() {
             <h1>Flight</h1>
           </div>
         </div>
-        <div className="mt-4">
+        <div className="my-4">
           <Table>
             <TableHead columns={['Platform', 'Sensor', 'Acquisition Date']} />
             <TableBody
               rows={[
-                [flight.platform, flight.sensor, flight.acquisition_date.toString()],
+                [
+                  flight.platform.replace(/_/g, ' '),
+                  flight.sensor,
+                  new Date(flight.acquisition_date).toLocaleDateString('en-US'),
+                ],
               ]}
             />
           </Table>

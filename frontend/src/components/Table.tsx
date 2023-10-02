@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom';
+import { ReactNode } from 'react';
 
 interface Action {
   key: string;
+  color: string;
+  icon: ReactNode;
   label: string;
   url: string;
 }
@@ -28,14 +31,15 @@ export function TableBody({
                 {actions[i].map((action) => (
                   <Link
                     key={action.key}
-                    className={
-                      action.key.split('-')[1] === 'edit'
-                        ? 'text-sky-600'
-                        : 'text-red-600'
-                    }
+                    className={`text-${action.color}-600`}
                     to={action.url}
                   >
-                    {action.label}
+                    <div className="flex items-center">
+                      <div className="relative rounded-full accent3 p-1 focus:outline-none">
+                        {action.icon ? action.icon : null}
+                      </div>
+                      <span>{action.label}</span>
+                    </div>
                   </Link>
                 ))}
               </div>

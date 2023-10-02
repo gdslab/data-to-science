@@ -47,7 +47,7 @@ export function Button({ children, icon, size = 'normal', ...props }: Button) {
             props.disabled
               ? 'text-slate-300 bg-slate-600'
               : 'text-white bg-accent3 hover:bg-accent3-dark ease-in-out duration-300',
-            'rounded-md p-2 w-full'
+            'rounded-md py-2 px-8 w-full'
           )
         )}
         {...props}

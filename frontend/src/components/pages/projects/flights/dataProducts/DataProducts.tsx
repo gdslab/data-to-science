@@ -54,12 +54,14 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
               rows={data.map((dataset) => [
                 dataset.original_filename,
                 dataset.data_type.toUpperCase(),
-                <Button
-                  size="sm"
-                  onClick={() => navigator.clipboard.writeText(dataset.url)}
-                >
-                  Copy URL
-                </Button>,
+                <div className="flex justify-center">
+                  <Button
+                    size="sm"
+                    onClick={() => navigator.clipboard.writeText(dataset.url)}
+                  >
+                    Copy URL
+                  </Button>
+                </div>,
                 <div className="flex items-center justify-center h-32 w-32">
                   {dataset.status === 'SUCCESS' ? (
                     <img
@@ -104,7 +106,7 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
           </Table>
         </div>
       ) : null}
-      <div className="my-4">
+      <div className="my-4 flex justify-center">
         <UploadModal
           apiRoute={`/api/v1/projects/${projectId}/flights/${flightId}/data_products`}
           open={open}
