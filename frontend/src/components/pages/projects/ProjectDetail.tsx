@@ -89,7 +89,7 @@ export async function loader({ params }: { params: Params<string> }) {
 export default function ProjectDetail() {
   const [open, setOpen] = useState(false);
   const { projectId } = useParams();
-  const { pilots, project, flights } = useLoaderData() as ProjectData;
+  const { project, flights } = useLoaderData() as ProjectData;
 
   return (
     <div className="mx-4">

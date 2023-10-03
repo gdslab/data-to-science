@@ -8,9 +8,6 @@ import FlightData, {
 import FlightDetail, {
   loader as flightDetailLoader,
 } from './components/pages/projects/flights/FlightDetail';
-import FlightForm, {
-  loader as flightFormLoader,
-} from './components/pages/projects/flights/FlightForm';
 import Landing from './components/Landing';
 import LoginForm from './components/pages/auth/LoginForm';
 import Logout from './components/pages/auth/Logout';
@@ -19,9 +16,6 @@ import Profile from './components/pages/auth/Profile';
 import ProjectDetail, {
   loader as projectDetailLoader,
 } from './components/pages/projects/ProjectDetail';
-import ProjectForm, {
-  loader as projectFormLoader,
-} from './components/pages/projects/ProjectForm';
 import ProjectList, {
   loader as projectListLoader,
 } from './components/pages/projects/ProjectList';
@@ -101,11 +95,6 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        path: '/projects/:projectId/flights/create',
-        element: <FlightForm />,
-        loader: flightFormLoader,
-      },
-      {
         path: '/projects/:projectId/flights/:flightId',
         element: <FlightDetail />,
         loader: flightDetailLoader,
@@ -121,11 +110,6 @@ export const router = createBrowserRouter([
         path: '/projects/:projectId',
         element: <ProjectDetail />,
         loader: projectDetailLoader,
-      },
-      {
-        path: '/projects/create',
-        element: <ProjectForm />,
-        loader: projectFormLoader,
       },
       {
         path: '/projects',

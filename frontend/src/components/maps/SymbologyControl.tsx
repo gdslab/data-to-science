@@ -91,7 +91,7 @@ export default function SymbologyControl() {
             });
           }}
         >
-          {({ handleReset, dirty, values }) => (
+          {({ handleReset, values }) => (
             <Form>
               <div className="w-full mb-4">
                 <fieldset className="border border-solid border-slate-300 p-3">
