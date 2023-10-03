@@ -1,7 +1,6 @@
 import axios from 'axios';
 import { Formik, Form } from 'formik';
 import { Link } from 'react-router-dom';
-import { ChevronLeftIcon } from '@heroicons/react/24/outline';
 
 import Alert from '../../Alert';
 import { Button, OutlineButton } from '../../Buttons';
@@ -17,12 +16,6 @@ import { registrationValidationSchema as validationSchema } from './validationSc
 export default function RegistrationForm() {
   return (
     <div className="h-full bg-accent1">
-      <div className="p-6 text-white justify-self-start">
-        <Link className="flex" to="/">
-          <ChevronLeftIcon className="h-6 w-6" aria-hidden="true" />
-          <span className="ml-4">Back</span>
-        </Link>
-      </div>
       <div className="flex flex-wrap items-center justify-center">
         <div className="sm:w-full md:w-1/3 max-w-xl mx-4">
           <Welcome>Create your account</Welcome>
@@ -68,13 +61,9 @@ export default function RegistrationForm() {
             >
               {({ isSubmitting, status }) => (
                 <Form className="flex flex-col items-center gap-4">
-                  <div className="flex flex-wrap justify-between gap-4 w-full">
-                    <div className="md:w-48 w-full">
-                      <TextField label="First Name" name="firstName" />
-                    </div>
-                    <div className="md:w-48 w-full">
-                      <TextField label="Last Name" name="lastName" />
-                    </div>
+                  <div className="grid gap-4 grid-cols-1 w-full md:grid-cols-2">
+                    <TextField label="First Name" name="firstName" />
+                    <TextField label="Last Name" name="lastName" />
                   </div>
                   <div className="w-full">
                     <TextField label="Email" name="email" type="email" />

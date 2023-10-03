@@ -88,6 +88,7 @@ export default function MapModal({ featureCollection, open, setOpen }: Props) {
                 <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                   <DrawFieldMap
                     featureCollection={featureCollection}
+                    location={location}
                     setLocation={setLocation}
                   />
                 </div>

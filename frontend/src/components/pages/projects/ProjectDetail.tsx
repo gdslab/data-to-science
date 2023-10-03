@@ -1,7 +1,11 @@
 import axios from 'axios';
+import { useState } from 'react';
 import { Link, Params, useLoaderData, useParams } from 'react-router-dom';
 import { TrashIcon, PencilIcon } from '@heroicons/react/24/outline';
+
 import { Button } from '../../Buttons';
+import FlightForm from './flights/FlightForm';
+import Modal from '../../Modal';
 import Table, { TableBody, TableHead } from '../../Table';
 
 import { DefaultSymbologySettings } from '../../maps/MapContext';
@@ -60,24 +64,32 @@ export interface Flight {
   data_products: DataProduct[];
 }
 
+export interface Pilot {
+  label: string;
+  value: string;
+}
+
 interface ProjectData {
+  pilots: Pilot[];
   project: Project;
   flights: Flight[];
 }
 
 export async function loader({ params }: { params: Params<string> }) {
+  const pilots = await axios.get(`/api/v1/projects/${params.projectId}/members`);
   const project = await axios.get(`/api/v1/projects/${params.projectId}`);
   const flights = await axios.get(`/api/v1/projects/${params.projectId}/flights`);
-  if (project && flights) {
-    return { project: project.data, flights: flights.data };
+  if (pilots && project && flights) {
+    return { pilots: pilots.data, project: project.data, flights: flights.data };
   } else {
     return null;
   }
 }
 
 export default function ProjectDetail() {
+  const [open, setOpen] = useState(false);
   const { projectId } = useParams();
-  const { project, flights } = useLoaderData() as ProjectData;
+  const { pilots, project, flights } = useLoaderData() as ProjectData;
 
   return (
     <div className="mx-4">
@@ -109,14 +121,12 @@ export default function ProjectDetail() {
               actions={flights.map((flight, i) => [
                 {
                   key: `action-edit-${i}`,
-                  color: 'sky',
                   icon: <PencilIcon className="h-4 w-4" />,
                   label: 'Edit',
                   url: `/projects/${projectId}/flights/${flight.id}/edit`,
                 },
                 {
                   key: `action-delete-${i}`,
-                  color: 'red',
                   icon: <TrashIcon className="h-4 w-4" />,
                   label: 'Delete',
                   url: '#',
@@ -126,11 +136,14 @@ export default function ProjectDetail() {
           </Table>
         ) : null}
       </div>
-      <div className="mt-4 flex justify-center">
-        <Link to={`/projects/${projectId}/flights/create`}>
-          <Button>Add New Flight</Button>
-        </Link>
-      </div>
+      {projectId ? (
+        <div className="mt-4 flex justify-center">
+          <Button onClick={() => setOpen(true)}>Add New Flight</Button>
+          <Modal open={open} setOpen={setOpen}>
+            <FlightForm projectId={projectId} setOpen={setOpen} />
+          </Modal>
+        </div>
+      ) : null}
     </div>
   );
 }

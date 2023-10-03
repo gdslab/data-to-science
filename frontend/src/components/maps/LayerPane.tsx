@@ -188,92 +188,92 @@ export default function LayerPane({
                 .map((flight) => (
                   <li key={flight.id}>
                     <LayerCard>
-                      <div>
-                        <div className="flex items-center gap-4">
+                      <div className="grid grid-cols-4">
+                        <div className="flex items-center justify-center">
                           <MapIcon className="h-16 w-16" />
-                          <div className="flex flex-col gap-2">
-                            <strong className="font-bold text-slate-700">
-                              {formatDate(flight.acquisition_date)}
-                            </strong>
-                            <div className="text-slate-600 text-sm">
-                              <div>{flight.sensor} sensor</div>
-                              <div className="flex gap-4">
-                                <div>Altitude: {flight.altitude}m</div>
-                                <div>
-                                  Forward/side overlap: {flight.forward_overlap}%/
-                                  {flight.side_overlap}%
-                                </div>
-                              </div>
+                        </div>
+                        <div className="col-span-2 flex flex-col items-start gap-2">
+                          <strong className="font-bold text-slate-700">
+                            {formatDate(flight.acquisition_date)}
+                          </strong>
+                          <div className="grid grid-rows-3 text-slate-700 text-sm gap-1.5">
+                            <div>{flight.sensor} sensor</div>
+                            <div>Altitude: {flight.altitude}m</div>
+                            <div>
+                              Forward/side overlap: {flight.forward_overlap}%/
+                              {flight.side_overlap}%
                             </div>
                           </div>
+                        </div>
+                        <div className="flex items-center justify-center">
                           <span className="inline-flex items-center justify-center rounded-full text-sky-700 bg-sky-100 px-2.5 py-0.5">
                             <PhotoIcon className="h-4 w-4 -ms-1 me-1.5" />
                             <p className="whitespace-nowrap text-sm">
-                              {flight.data_products.length} Data Products
+                              {flight.data_products.length} Datasets
                             </p>
                           </span>
                         </div>
-                        {flight.data_products.length > 0 ? (
-                          <details
-                            className="group space-y-2 [&_summary::-webkit-details-marker]:hidden text-slate-600 overflow-visible"
-                            open={activeDataProduct ? true : false}
-                          >
-                            {flight.data_products.map((data_product) => (
-                              <LayerCard
-                                key={data_product.id}
-                                hover={true}
-                                dataProduct={data_product}
-                                active={
-                                  activeDataProduct &&
-                                  data_product.id === activeDataProduct.id
-                                    ? true
-                                    : false
-                                }
-                                setSearchParams={setSearchParams}
-                              >
-                                <div className="text-slate-600 text-sm">
-                                  <strong className="text-bold">
-                                    {data_product.data_type}
-                                  </strong>
-                                  <div>Filename: {data_product.original_filename}</div>
-                                  <div className="flex gap-4">
-                                    <div>
-                                      Bands:{' '}
-                                      {data_product.stac_properties.eo.map((b) => {
-                                        return (
-                                          <span key={b.name} className="mr-2">
-                                            {b.name} ({b.description})
-                                          </span>
-                                        );
-                                      })}
-                                    </div>
-                                    {data_product.stac_properties.raster.length === 1
-                                      ? Object.keys(
-                                          data_product.stac_properties.raster[0].stats
-                                        ).map((k) => (
-                                          <span key={k}>
-                                            {k}{' '}
-                                            {
-                                              data_product.stac_properties.raster[0]
-                                                .stats[k]
-                                            }
-                                          </span>
-                                        ))
-                                      : null}
-                                  </div>
-                                  {activeDataProduct &&
-                                  activeDataProduct.id === data_product.id &&
-                                  data_product.data_type === 'dsm' ? (
-                                    <div className="mt-2">
-                                      <SymbologyControl />
-                                    </div>
-                                  ) : null}
-                                </div>
-                              </LayerCard>
-                            ))}
-                          </details>
-                        ) : null}
                       </div>
+                      {flight.data_products.length > 0 ? (
+                        <details
+                          className="group space-y-2 [&_summary::-webkit-details-marker]:hidden text-slate-600 overflow-visible"
+                          open={activeDataProduct ? true : false}
+                        >
+                          {flight.data_products.map((data_product) => (
+                            <LayerCard
+                              key={data_product.id}
+                              hover={true}
+                              dataProduct={data_product}
+                              active={
+                                activeDataProduct &&
+                                data_product.id === activeDataProduct.id
+                                  ? true
+                                  : false
+                              }
+                              setSearchParams={setSearchParams}
+                            >
+                              <div className="grid grid-flow-row auto-rows-max text-slate-600 text-sm">
+                                <strong className="text-bold">
+                                  {data_product.data_type}
+                                </strong>
+                                <div>filename: {data_product.original_filename}</div>
+                                <div className="grid grid-flow-col auto-cols-max gap-1.5">
+                                  bands:{' '}
+                                  {data_product.stac_properties.eo.map((b) => {
+                                    return (
+                                      <span key={b.name} className="mr-2">
+                                        {b.name} ({b.description})
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                                <div className="grid grid-flow-col auto-cols-max gap-1.5">
+                                  {data_product.stac_properties.raster.length === 1
+                                    ? Object.keys(
+                                        data_product.stac_properties.raster[0].stats
+                                      ).map((k) => (
+                                        <span key={k}>
+                                          {k}
+                                          {': '}
+                                          {data_product.stac_properties.raster[0].stats[
+                                            k
+                                          ].toFixed(2)}
+                                        </span>
+                                      ))
+                                    : null}
+                                </div>
+                                {activeDataProduct &&
+                                activeDataProduct.id === data_product.id &&
+                                data_product.data_type === 'dsm' ? (
+                                  <div className="mt-2">
+                                    <SymbologyControl />
+                                  </div>
+                                ) : null}
+                              </div>
+                            </LayerCard>
+                          ))}
+                        </details>
+                      ) : null}
                     </LayerCard>
                   </li>
                 ))}
@@ -287,17 +287,19 @@ export default function LayerPane({
                 {projects.map((project) => (
                   <li key={project.id}>
                     <LayerCard hover={true} project={project}>
-                      <div>
-                        <div className="flex items-center justify-between gap-8">
+                      <div className="grid grid-cols-4">
+                        <div className="flex items-center justify-center">
                           <MapPinIcon className="h-8 w-8" />
-                          <div className="flex flex-col gap-2">
-                            <strong className="font-bold text-slate-700">
-                              {project.title}
-                            </strong>
-                            <div className="text-slate-600 text-sm">
-                              <div>{project.description}</div>
-                            </div>
+                        </div>
+                        <div className="col-span-2 flex flex-col items-start gap-2">
+                          <strong className="font-bold text-slate-700">
+                            {project.title}
+                          </strong>
+                          <div className="text-slate-700 text-sm">
+                            {project.description}
                           </div>
+                        </div>
+                        <div className="flex items-center justify-center">
                           <span className="inline-flex items-center justify-center rounded-full text-sky-700 bg-sky-100 px-2.5 py-0.5">
                             <PaperAirplaneIcon className="h-4 w-4 -ms-1 me-1.5" />
                             <p className="whitespace-nowrap text-sm">

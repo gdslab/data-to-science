@@ -1,7 +1,10 @@
 import axios from 'axios';
+import { useState } from 'react';
 import { useLoaderData, Link } from 'react-router-dom';
 
 import { Button } from '../../Buttons';
+import Modal from '../../Modal';
+import ProjectForm from './ProjectForm';
 
 interface FieldProperties {
   id: string;
@@ -31,14 +34,18 @@ export async function loader() {
 }
 
 export default function ProjectList() {
+  const [open, setOpen] = useState(false);
   const projects = useLoaderData() as Project[];
   return (
     <div className="m-4">
       <h1>Projects</h1>
       <div className="w-48">
-        <Link to="/projects/create">
-          <Button>Add new project</Button>
-        </Link>
+        <Button icon="folderplus" onClick={() => setOpen(true)}>
+          Create
+        </Button>
+        <Modal open={open} setOpen={setOpen}>
+          <ProjectForm setModalOpen={setOpen} />
+        </Modal>
       </div>
       {projects.length > 0 ? (
         <div className="mt-6">

@@ -5,7 +5,7 @@ const validationSchema = Yup.object({
   description: Yup.string()
     .max(300, 'Must be 300 characters or less')
     .required('Required'),
-  locationId: Yup.string().required('Required'),
+  locationId: Yup.string().required('Must save a field boundary'),
   plantingDate: Yup.date().required('Required'),
   harvestDate: Yup.date().min(Yup.ref('plantingDate'), 'Must be after planting date'),
   teamID: Yup.string(),

@@ -1,5 +1,9 @@
 import { EnvelopeIcon, EyeIcon } from '@heroicons/react/24/outline';
 
+export function classNames(...classes: [string, string]) {
+  return classes.filter(Boolean).join(' ');
+}
+
 export function getIcon(iconName: string) {
   switch (iconName) {
     case 'email':

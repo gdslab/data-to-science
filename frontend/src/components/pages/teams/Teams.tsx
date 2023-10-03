@@ -2,15 +2,13 @@ import axios from 'axios';
 import { Link, Outlet, useLoaderData, useLocation, useParams } from 'react-router-dom';
 import { BellIcon, PlusCircleIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 
+import { classNames } from '../../utils';
+
 export interface Team {
   id: string;
   is_owner: boolean;
   title: string;
   description: string;
-}
-
-function classNames(...classes: [string, string]) {
-  return classes.filter(Boolean).join(' ');
 }
 
 export async function loader() {

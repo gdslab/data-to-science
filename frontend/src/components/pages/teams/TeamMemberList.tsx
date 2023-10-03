@@ -24,7 +24,7 @@ export default function TeamMemberList({ teamMembers }: { teamMembers: TeamMembe
       console.error(err);
     }
   }
-
+  console.log(teamMembers);
   if (teamMembers.length < 1) {
     return <div>No team members</div>;
   } else {

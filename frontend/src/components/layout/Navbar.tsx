@@ -13,9 +13,9 @@ import AuthContext from '../../AuthContext';
 import brandLogo from '../../assets/brand.svg';
 
 const navigation = [
-  { name: 'Home', href: '/home' },
-  { name: 'Teams', href: '/teams' },
-  { name: 'Projects', href: '/projects' },
+  { name: 'HOMEPAGE', href: '/home' },
+  { name: 'WORKSPACE', href: '/projects' },
+  { name: 'MY TEAMS', href: '/teams' },
 ];
 
 function classNames(...classes: [string, string]) {
@@ -26,7 +26,7 @@ export default function Navbar() {
   const location = useLocation();
   const { user } = useContext(AuthContext);
   return (
-    <Disclosure as="nav" className="bg-accent1">
+    <Disclosure as="nav" className="bg-primary">
       {({ open }) => (
         <>
           <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
@@ -61,8 +61,8 @@ export default function Navbar() {
                           className={classNames(
                             location.pathname === item.href
                               ? 'font-semibold'
-                              : 'text-slate-700 hover:text-black',
-                            'rounded-md px-3 py-2 text-md'
+                              : 'hover:text-shadow hover:shadow-red-500',
+                            'rounded-md px-3 py-2 text-md text-white'
                           )}
                           aria-current={
                             location.pathname === item.href ? 'page' : undefined
@@ -78,9 +78,9 @@ export default function Navbar() {
               {user ? (
                 <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
                   {/* Profile dropdown */}
-                  <Menu as="div" className="relative ml-3">
+                  <Menu as="div" className="relative ml-3 text-white">
                     <div>
-                      <Menu.Button className="relative flex rounded-full focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
+                      <Menu.Button className="relative flex rounded-full">
                         <span className="absolute -inset-1.5" />
                         <span className="sr-only">Open user menu</span>
                         <div className="flex items-center justify-center">

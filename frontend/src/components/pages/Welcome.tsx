@@ -5,8 +5,8 @@ export default function Welcome({ children }: { children: React.ReactNode }) {
         Logo
       </div>
       <div className="text-center">
-        <h1 className="text-white mb-0">Welcome!</h1>
-        <span className="text-sm text-white">{children}</span>
+        <h1 className="text-black mb-0">Welcome!</h1>
+        <span className="text-sm text-black">{children}</span>
       </div>
     </div>
   );

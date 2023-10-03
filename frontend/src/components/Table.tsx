@@ -1,9 +1,10 @@
-import { Link } from 'react-router-dom';
 import { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+
+import { classNames } from './utils';
 
 interface Action {
   key: string;
-  color: string;
   icon: ReactNode;
   label: string;
   url: string;
@@ -31,7 +32,10 @@ export function TableBody({
                 {actions[i].map((action) => (
                   <Link
                     key={action.key}
-                    className={`text-${action.color}-600`}
+                    className={classNames(
+                      action.label === 'Delete' ? 'text-red-600' : 'text-sky-600',
+                      'text-sm'
+                    )}
                     to={action.url}
                   >
                     <div className="flex items-center">

@@ -24,11 +24,11 @@ export default function Landing() {
       <div className="flex md:basis-2/5 basis-1/1 bg-accent1 justify-center p-4">
         <div className="flex flex-col items-center justify-center gap-4">
           <div className="flex items-center justify-center gap-4">
-            <div className="h-16 w-16 bg-accent2 text-white flex items-center justify-center">
+            <div className="h-16 w-16 bg-accent2 flex items-center justify-center">
               Logo
             </div>
             <div>
-              <h1 className="text-white mb-0">System Name</h1>
+              <h1 className="mb-0">System Name</h1>
             </div>
           </div>
           <div className="m-4">
@@ -36,7 +36,7 @@ export default function Landing() {
               SloganSloganSloganSloganSlogan!
             </em>
           </div>
-          <div className="mt-8 text-white">
+          <div className="mt-8">
             Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
             tempor incididunt ut labore et dolore magna aliqua. Praesent tristique magna
             sit amet purus gravida quis blandit. Vitae semper quis lectus nulla. Arcu
