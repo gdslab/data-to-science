@@ -1,12 +1,16 @@
+import random
+import string
+from datetime import datetime, timedelta
+
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from app.core import security
 from app.core.config import settings
 from app.tests.utils.user import create_random_user
 
 
 def test_login_with_valid_credentials(client: TestClient, db: Session) -> None:
-    """Verify authorization when valid credentials provided."""
     user = create_random_user(db, password="mysecretpassword")
     data = {"username": user.email, "password": "mysecretpassword"}
     r = client.post(
@@ -19,7 +23,6 @@ def test_login_with_valid_credentials(client: TestClient, db: Session) -> None:
 
 
 def test_login_with_invalid_credentials(client: TestClient, db: Session) -> None:
-    """Verify failed authorization when invalid credentials provided."""
     user = create_random_user(db, password="mysecretpassword")
     data = {"username": user.email, "password": "mywrongpassword"}
     r = client.post(
@@ -32,7 +35,6 @@ def test_login_with_invalid_credentials(client: TestClient, db: Session) -> None
 
 
 def test_logout_removes_authorization_cookie(client: TestClient, db: Session) -> None:
-    """Verify logout removes JWT access token cookie."""
     user = create_random_user(db, password="mysecretpassword")
     data = {"username": user.email, "password": "mysecretpassword"}
     # login
@@ -52,4 +54,35 @@ def test_logout_removes_authorization_cookie(client: TestClient, db: Session) ->
 
 
 def test_email_confirmation_with_correct_token(client: TestClient, db: Session) -> None:
-    pass
+    user = create_random_user(db)
+    expire = datetime.utcnow() + timedelta(minutes=1440)
+    confirmation_token = security.create_access_token(user.id, expire=expire)
+    r = client.get(
+        f"{settings.API_V1_STR}/auth/confirm-email",
+        params={"token": confirmation_token},
+    )
+    assert r.request.url == settings.DOMAIN + "/auth/login?email_confirmed=true"
+
+
+def test_email_confirmation_with_expired_token(client: TestClient, db: Session) -> None:
+    user = create_random_user(db)
+    expire = datetime.utcnow() - timedelta(minutes=5)
+    confirmation_token = security.create_access_token(user.id, expire=expire)
+    r = client.get(
+        f"{settings.API_V1_STR}/auth/confirm-email",
+        params={"token": confirmation_token},
+    )
+    assert r.status_code == 403
+
+
+def test_email_confirmation_with_invalid_token(client: TestClient, db: Session) -> None:
+    user = create_random_user(db)
+    expire = datetime.utcnow() + timedelta(minutes=1440)
+    confirmation_token = security.create_access_token(user.id, expire=expire)
+    junk = "".join(random.choices(string.ascii_letters + string.digits, k=5))
+    confirmation_token = confirmation_token[:-5] + junk
+    r = client.get(
+        f"{settings.API_V1_STR}/auth/confirm-email",
+        params={"token": confirmation_token},
+    )
+    assert r.status_code == 403

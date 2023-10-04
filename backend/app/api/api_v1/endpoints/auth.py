@@ -52,7 +52,9 @@ def test_token(current_user: models.User = Depends(deps.get_current_user)) -> An
     return current_user
 
 
-@router.get("/confirm-email", response_class=RedirectResponse, status_code=302)
+@router.get(
+    "/confirm-email", response_class=RedirectResponse, status_code=status.HTTP_302_FOUND
+)
 def confirm_user_email_address(token: str, db: Session = Depends(deps.get_db)):
     """Confirm email address for user account."""
     token_data = deps.decode_jwt(token)
