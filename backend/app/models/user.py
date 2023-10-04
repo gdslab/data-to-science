@@ -60,8 +60,8 @@ class User(Base):
     def __repr__(self) -> str:
         return (
             f"User(id={self.id!r}, email={self.email!r}, "
-            f"first_name={self.firstName!r}, last_name={self.last_name!r}, "
+            f"first_name={self.first_name!r}, last_name={self.last_name!r}, "
             f"is_approved={self.is_approved!r}, "
-            f"is_email_confirmed={self.email_confirmed!r}, "
+            f"is_email_confirmed={self.is_email_confirmed!r}, "
             f"is_superuser={self.is_superuser!r}, created_at={self.created_at!r})"
         )
