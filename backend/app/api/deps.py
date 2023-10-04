@@ -1,19 +1,18 @@
 import logging
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status
-
-# from fastapi.security import OAuth2PasswordBearer
+from fastapi import BackgroundTasks, Depends, HTTPException, status
+from fastapi_mail import MessageSchema, MessageType
 from jose import jwt
 from jose.exceptions import JWTError
-from pydantic import ValidationError
+from pydantic import EmailStr, ValidationError
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.core import security
 from app.core.config import settings
+from app.core.mail import fm
 from app.db.session import SessionLocal
-
 
 logger = logging.getLogger("__name__")
 
@@ -55,6 +54,15 @@ def decode_jwt(token: str) -> schemas.TokenPayload:
     except Exception as e:
         logger.error(str(e))
     return token_data
+
+
+def send_email(
+    subject: str, recipient: EmailStr, body: str, background_tasks: BackgroundTasks
+):
+    message = MessageSchema(
+        subject=subject, recipients=[recipient], body=body, subtype=MessageType.html
+    )
+    background_tasks.add_task(fm.send_message, message)
 
 
 def get_current_user(

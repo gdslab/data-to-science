@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Formik, Form } from 'formik';
 import { useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 
 import Alert from '../../Alert';
 import AuthContext from '../../../AuthContext';
@@ -17,84 +17,83 @@ import { loginValidationSchema as validationSchema } from './validationSchema';
 
 export default function LoginForm() {
   const { login } = useContext(AuthContext);
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   return (
-    <div className="h-full flex flex-wrap items-center justify-center bg-accent1">
-      <div className="sm:w-full md:w-1/3 max-w-xl mx-4">
-        <Welcome>Sign in to your account</Welcome>
-        <Card>
-          <Formik
-            initialValues={initialValues}
-            validationSchema={validationSchema}
-            onSubmit={async (values, { setSubmitting, setStatus }) => {
-              setStatus(null);
-              try {
-                const data = {
-                  username: values.email,
-                  password: values.password,
-                };
-                await login(data).then(() => navigate('/home'));
-              } catch (err) {
-                if (axios.isAxiosError(err)) {
-                  const errMsg = err.response?.data.detail;
-                  if (errMsg === 'Invalid credentials') {
-                    setStatus({ type: 'warning', msg: errMsg });
-                  } else if (errMsg === 'Account needs approval') {
-                    setStatus({ type: 'info', msg: errMsg });
+    <div className="h-full bg-accent1">
+      <div className="flex flex-wrap items-center justify-center">
+        <div className="sm:w-full md:w-1/3 max-w-xl mx-4">
+          <Welcome>Sign in to your account</Welcome>
+          <Card>
+            {searchParams.get('email_confirmed') === 'true' ? (
+              <Alert alertType={'success'}>
+                Your email address has been confirmed.
+              </Alert>
+            ) : null}
+            <Formik
+              initialValues={initialValues}
+              validationSchema={validationSchema}
+              onSubmit={async (values, { setSubmitting, setStatus }) => {
+                setStatus(null);
+                setSearchParams({});
+                try {
+                  const data = {
+                    username: values.email,
+                    password: values.password,
+                  };
+                  await login(data).then(() => navigate('/home'));
+                } catch (err) {
+                  if (axios.isAxiosError(err)) {
+                    const errMsg = err.response?.data.detail;
+                    if (err.response?.status === 401) {
+                      setStatus({ type: 'warning', msg: errMsg });
+                    } else if (err.response?.status === 400) {
+                      setStatus({ type: 'info', msg: errMsg });
+                    } else {
+                      setStatus({ type: 'error', msg: errMsg });
+                    }
                   } else {
-                    setStatus({ type: 'error', msg: errMsg });
+                    setStatus(
+                      typeof err === 'string'
+                        ? { type: 'error', msg: err }
+                        : { type: 'error', msg: 'Unexpected error has occurred' }
+                    );
                   }
-                } else {
-                  setStatus(
-                    typeof err === 'string'
-                      ? { type: 'error', msg: err }
-                      : { type: 'error', msg: 'Unexpected error has occurred' }
-                  );
                 }
-              }
-              setSubmitting(false);
-            }}
-          >
-            {({ isSubmitting, status }) => (
-              <Form className="flex flex-col items-center gap-4">
-                <div className="w-full">
+                setSubmitting(false);
+              }}
+            >
+              {({ isSubmitting, status }) => (
+                <Form className="grid grid-flow-row gap-4">
                   <TextField label="Email" name="email" type="email" icon="email" />
-                </div>
-                <div className="w-full">
                   <TextField
                     label="Password"
                     name="password"
                     type="password"
                     icon="password"
                   />
-                </div>
-                <div className="self-end">
                   <Link to="/auth/recoverpassword">
                     <HintText>Forgot Password?</HintText>
                   </Link>
-                </div>
-                <div className="w-full">
                   <Button type="submit" disabled={isSubmitting}>
                     Login
                   </Button>
-                </div>
-                {status && status.type && status.msg ? (
-                  <div className="w-full">
+                  {status && status.type && status.msg ? (
                     <Alert alertType={status.type}>{status.msg}</Alert>
+                  ) : null}
+                  <div>
+                    <span className="block text-sm text-gray-400 font-bold pt-2 pb-1">
+                      Do not have an account?
+                    </span>
+                    <Link to="/auth/register">
+                      <OutlineButton>Sign Up</OutlineButton>
+                    </Link>
                   </div>
-                ) : null}
-                <div className="w-full">
-                  <span className="block text-sm text-gray-400 font-bold pt-2 pb-1">
-                    Do not have an account?
-                  </span>
-                  <Link to="/auth/register">
-                    <OutlineButton>Sign Up</OutlineButton>
-                  </Link>
-                </div>
-              </Form>
-            )}
-          </Formik>
-        </Card>
+                </Form>
+              )}
+            </Formik>
+          </Card>
+        </div>
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
+from app.core.mail import fm
 from app.schemas.user import UserUpdate
 from app.tests.utils.user import create_random_user
 from app.tests.utils.utils import random_email, random_full_name, random_password
@@ -19,12 +20,19 @@ def test_create_user_new_email(client: TestClient, db: Session) -> None:
         "first_name": full_name["first"],
         "last_name": full_name["last"],
     }
-    r = client.post(f"{settings.API_V1_STR}/users/", json=data)
+    fm.config.SUPPRESS_SEND = 1
+    with fm.record_messages() as outbox:
+        r = client.post(f"{settings.API_V1_STR}/users/", json=data)
     assert 201 == r.status_code
     created_user = r.json()
     user = crud.user.get_by_email(db, email=data["email"])
     assert user
     assert user.email == created_user["email"]
+    assert len(outbox) == 1
+    assert (
+        outbox[0]["from"] == settings.MAIL_FROM_NAME + " <" + settings.MAIL_FROM + ">"
+    )
+    assert outbox[0]["To"] == user.email
 
 
 def test_create_user_existing_email(client: TestClient, db: Session) -> None:

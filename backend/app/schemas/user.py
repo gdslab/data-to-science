@@ -17,6 +17,7 @@ class UserBase(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
 
+    is_email_confirmed: bool = False
     is_approved: bool = False
 
 

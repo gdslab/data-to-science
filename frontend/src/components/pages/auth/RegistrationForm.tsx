@@ -35,7 +35,7 @@ export default function RegistrationForm() {
                   if (response) {
                     setStatus({
                       type: 'success',
-                      msg: 'Registration complete. Your account will be verified within N hours.',
+                      msg: 'Registration complete. Please confirm your email address.',
                     });
                   } else {
                     setStatus({
@@ -60,45 +60,35 @@ export default function RegistrationForm() {
               }}
             >
               {({ isSubmitting, status }) => (
-                <Form className="flex flex-col items-center gap-4">
-                  <div className="grid gap-4 grid-cols-1 w-full md:grid-cols-2">
+                <Form className="grid grid-flow-row gap-4">
+                  <div className="grid md:grid-cols-2 grid-cols-1 gap-4">
                     <TextField label="First Name" name="firstName" />
                     <TextField label="Last Name" name="lastName" />
                   </div>
-                  <div className="w-full">
-                    <TextField label="Email" name="email" type="email" />
-                  </div>
-                  <div className="w-full">
-                    <TextField
-                      label="Password"
-                      name="password"
-                      type="password"
-                      icon="password"
-                    />
-                  </div>
-                  <div className="w-full">
-                    <TextField
-                      label="Retype Password"
-                      name="passwordRetype"
-                      type="password"
-                      icon="password"
-                    />
-                  </div>
-                  <div className="w-full">
-                    <Button type="submit" disabled={isSubmitting}>
-                      Create Account
-                    </Button>
-                    <HintText>
-                      New accounts will require email confirmation and manual approval
-                      before use.
-                    </HintText>
-                  </div>
+                  <TextField label="Email" name="email" type="email" />
+                  <TextField
+                    label="Password"
+                    name="password"
+                    type="password"
+                    icon="password"
+                  />
+                  <TextField
+                    label="Retype Password"
+                    name="passwordRetype"
+                    type="password"
+                    icon="password"
+                  />
+                  <Button type="submit" disabled={isSubmitting}>
+                    Create Account
+                  </Button>
+                  <HintText>
+                    New accounts will require email confirmation and manual approval
+                    before use.
+                  </HintText>
                   {status && status.type && status.msg ? (
-                    <div className="w-full">
-                      <Alert alertType={status.type}>{status.msg}</Alert>
-                    </div>
+                    <Alert alertType={status.type}>{status.msg}</Alert>
                   ) : null}
-                  <div className="w-full">
+                  <div>
                     <span className="block text-sm text-gray-400 font-bold pt-2 pb-1">
                       Already have an account?
                     </span>

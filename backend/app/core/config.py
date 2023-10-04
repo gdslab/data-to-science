@@ -1,6 +1,7 @@
 import secrets
 from typing import Any
 
+from fastapi_mail.config import ConnectionConfig
 from pydantic import (
     EmailStr,
     field_validator,
@@ -20,8 +21,10 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = ""
     UPLOAD_DIR: str = "/user-data"
     TEST_UPLOAD_DIR: str = "/tmp/testing"
-    STATIC_URL: str = "http://localhost/static"
+    DOMAIN: str = ""
+    STATIC_URL: str = ""
 
+    # Database
     POSTGRES_HOST: str = ""
     POSTGRES_USER: str = ""
     POSTGRES_PASSWORD: str = ""
@@ -41,6 +44,38 @@ class Settings(BaseSettings):
             path=values.get("POSTGRES_DB"),
         )
 
+    # Email
+    MAIL_USERNAME: str = ""
+    MAIL_PASSWORD: str = ""
+    MAIL_FROM: EmailStr = ""
+    MAIL_FROM_NAME: str = ""
+    MAIL_PORT: int = 587
+    MAIL_SERVER: str = ""
+    MAIL_STARTTLS: bool = False
+    MAIL_SSL_TLS: bool = True
+    USE_CREDENTIALS: bool = True
+    VALIDATE_CERTS: bool = True
+    MAIL_CONF: ConnectionConfig | None = None
+
+    @field_validator("MAIL_CONF", mode="before")
+    def assemble_mail_conf(cls, v: str | None, info: FieldValidationInfo) -> Any:
+        if isinstance(v, str):
+            return v
+        values = info.data
+        return ConnectionConfig.model_construct(
+            MAIL_USERNAME=values.get("MAIL_USERNAME"),
+            MAIL_PASSWORD=values.get("MAIL_PASSWORD"),
+            MAIL_FROM=values.get("MAIL_FROM"),
+            MAIL_FROM_NAME=values.get("MAIL_FROM_NAME"),
+            MAIL_PORT=values.get("MAIL_PORT"),
+            MAIL_SERVER=values.get("MAIL_SERVER"),
+            MAIL_STARTTLS=values.get("MAIL_STARTTLS"),
+            MAIL_SSL_TLS=values.get("MAIL_SSL_TLS"),
+            USE_CREDENTIALS=values.get("USE_CREDENTIALS"),
+            VALIDATE_CERTS=values.get("VALIDATE_CERTS"),
+        )
+
+    # Testing
     EMAIL_TEST_USER: EmailStr = "test@example.com"  # type: ignore
 
     LOGGER_FILE: str = ""

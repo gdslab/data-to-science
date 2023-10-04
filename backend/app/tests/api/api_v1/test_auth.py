@@ -49,3 +49,7 @@ def test_logout_removes_authorization_cookie(client: TestClient, db: Session) ->
     assert r.status_code == 200
     assert r.cookies.get("access_token") is None
     assert client.cookies.get("access_token") is None
+
+
+def test_email_confirmation_with_correct_token(client: TestClient, db: Session) -> None:
+    pass

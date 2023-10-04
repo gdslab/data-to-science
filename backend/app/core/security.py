@@ -20,9 +20,12 @@ pwd_context = CryptContext(
 ALGORITHM = "HS256"
 
 
-def create_access_token(subject: str | Any) -> str:
+def create_access_token(subject: str | Any, expire: datetime | None = None) -> str:
     """Create JWT access token with expiration defined in settings."""
-    expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    if not expire:
+        expire = datetime.utcnow() + timedelta(
+            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+        )
     to_encode = {"exp": expire, "sub": str(subject)}
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
