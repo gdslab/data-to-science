@@ -1,11 +1,15 @@
 from typing import Any, Sequence
+from uuid import UUID
 
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.security import get_password_hash, verify_password
 from app.crud.base import CRUDBase
+from app.models.confirmation_token import ConfirmationToken
 from app.models.user import User
+from app.schemas.confirmation_token import ConfirmationTokenCreate
 from app.schemas.user import UserCreate, UserUpdate
 
 
@@ -26,6 +30,35 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             session.commit()
             session.refresh(db_obj)
         return db_obj
+
+    def create_confirmation_token(
+        self, db: Session, obj_in: ConfirmationTokenCreate, user_id: UUID
+    ) -> ConfirmationToken:
+        obj_in_data = jsonable_encoder(obj_in)
+        db_obj = ConfirmationToken(**obj_in_data, user_id=user_id)
+        with db as session:
+            session.add(db_obj)
+            session.commit()
+            session.refresh(db_obj)
+        return db_obj
+
+    def get_confirmation_token(
+        self, db: Session, token_hash: str
+    ) -> ConfirmationToken | None:
+        token_query = select(ConfirmationToken).where(
+            ConfirmationToken.token == token_hash
+        )
+        with db as session:
+            token = session.execute(token_query).scalar_one_or_none()
+            return token
+
+    def remove_confirmation_token(
+        self, db: Session, db_obj: ConfirmationToken
+    ) -> ConfirmationToken:
+        with db as session:
+            session.delete(db_obj)
+            session.commit()
+            return db_obj
 
     def get_multi_by_query(
         self,
@@ -65,6 +98,9 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
 
     def is_approved(self, user: User) -> bool:
         return user.is_approved
+
+    def is_email_confirmed(self, user: User) -> bool:
+        return user.is_email_confirmed
 
     def is_superuser(self, user: User) -> bool:
         return user.is_superuser

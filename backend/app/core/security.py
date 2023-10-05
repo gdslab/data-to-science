@@ -8,8 +8,10 @@ from fastapi.security import OAuth2
 from fastapi.security.utils import get_authorization_scheme_param
 from jose import jwt
 from passlib.context import CryptContext
+from passlib.hash import sha256_crypt
 
 from app.core.config import settings
+from app.models.confirmation_token import ConfirmationToken
 
 
 pwd_context = CryptContext(
@@ -39,6 +41,16 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def get_password_hash(password: str) -> str:
     """Use bcrypt to create hashed password."""
     return pwd_context.hash(password)
+
+
+def get_token_hash(token: str, salt: str) -> str:
+    """Create SHA256 hash of token."""
+    return sha256_crypt.using(salt=salt).hash(token)
+
+
+def check_token_expired(token: ConfirmationToken) -> bool:
+    """Check if token is older than one hour."""
+    return datetime.now() > (token.created_at + timedelta(minutes=60))
 
 
 class OAuth2PasswordBearerWithCookie(OAuth2):

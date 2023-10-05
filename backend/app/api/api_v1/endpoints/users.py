@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from secrets import token_urlsafe
 from typing import Annotated, Any
 from uuid import UUID
 
@@ -15,9 +15,8 @@ from pydantic.networks import EmailStr
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
-from app.api import deps
+from app.api import deps, mail
 from app.core import security
-from app.core.config import settings
 
 router = APIRouter()
 
@@ -32,8 +31,8 @@ def create_user(
     last_name: str = Body(),
 ) -> Any:
     """Create new user with unique email."""
-    user = crud.user.get_by_email(db, email=email)
-    if user:
+    existing_user = crud.user.get_by_email(db, email=email)
+    if existing_user:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Email address already in use"
         )
@@ -44,38 +43,22 @@ def create_user(
         last_name=last_name,
     )
     user = crud.user.create(db, obj_in=user_in)
-
-    # send email confirmation link to user (expires in 24 hours)
-    expire = datetime.utcnow() + timedelta(minutes=1440)
-    confirmation_token = security.create_access_token(user.id, expire=expire)
-
-    confirmation_url = settings.DOMAIN + settings.API_V1_STR + "/auth/confirm-email?"
-    confirmation_url += f"token={confirmation_token}"
-
-    confirmation_btn = "<button style='display: inline-block;outline: none;"
-    confirmation_btn += "border-radius: 3px;font-size: 14px;"
-    confirmation_btn += "font-weight: 500;line-height: 16px;padding: 2px 16px;"
-    confirmation_btn += "height: 38px;min-width: 96px;min-height: 38px;border: none;"
-    confirmation_btn += "color: #fff;background-color: rgb(88, 101, 242);'>"
-    confirmation_btn += "Confirm Email</button>"
-
-    content = f"<p>Hi {user.first_name},</p>"
-    content += "<p>Thank you for creating an account at D2S. Please use the below link "
-    content += "to confirm your email address.<br /><br />"
-    content += f"<a href='{confirmation_url}' target='_blank'>{confirmation_btn}</a>"
-    content += "<br /><br />"
-    content += "The link will expire in 24 hours. If you do not respond within 24 "
-    content += "hours, you will need to request a new confirmation link.<br />"
-    content += "If you have any questions, please reach out to support at "
-    content += f"{settings.MAIL_FROM}.</p>"
-    content += "<p>-D2S Support</p>"
-
-    deps.send_email(
-        subject="Confirm your email address",
-        recipient=user.email,
-        body=content,
-        background_tasks=background_tasks,
+    # create email confirmation token
+    token = token_urlsafe()
+    token_in_db = crud.user.create_confirmation_token(
+        db,
+        obj_in=schemas.ConfirmationTokenCreate(
+            token=security.get_token_hash(token, salt="confirm")
+        ),
+        user_id=user.id,
     )
+    if token_in_db:
+        mail.send_email_confirmation(
+            background_tasks=background_tasks,
+            first_name=user.first_name,
+            email=user.email,
+            confirmation_token=token,
+        )
 
     return user
 

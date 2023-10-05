@@ -3,21 +3,24 @@ from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app import crud
+from app.core import security
 from app.core.config import settings
 from app.models.user import User
+from app.schemas.confirmation_token import ConfirmationTokenCreate
 from app.schemas.user import UserCreate, UserUpdate
 from app.tests.utils.utils import random_email, random_full_name, random_password
 
 
-def login_and_get_access_token(
-    *, client: TestClient, email: str, password: str
-) -> dict[str, str]:
+def login_and_get_access_token(*, client: TestClient, email: str, password: str) -> str:
     """Generate authorization header for provided user credentials."""
     data = {"username": email, "password": password}
 
     r = client.post(f"{settings.API_V1_STR}/auth/access-token", data=data)
     auth_token = r.cookies.get("access_token")
-    return auth_token.split(" ")[1].rstrip('"')
+    if auth_token:
+        return auth_token.split(" ")[1].rstrip('"')
+    else:
+        raise Exception("Unable to find access token")
 
 
 def create_random_user_in(
@@ -43,6 +46,8 @@ def create_random_user(
     email: str | None = None,
     password: str | None = None,
     is_approved: bool = True,
+    token: str | None = None,
+    token_expired: bool = False,
 ) -> User:
     """Create random user in database with specific email if provided."""
     user_in = create_random_user_in(email=email, password=password)
@@ -54,13 +59,31 @@ def create_random_user(
         with db as session:
             session.execute(statement)
             session.commit()
-            user = crud.user.get(db, id=user.id)
-    return user
+    if not token:
+        statement = (
+            update(User).where(User.email == user.email).values(is_email_confirmed=True)
+        )
+        with db as session:
+            session.execute(statement)
+            session.commit()
+    else:
+        crud.user.create_confirmation_token(
+            db,
+            obj_in=ConfirmationTokenCreate(
+                token=security.get_token_hash(token, salt="confirm")
+            ),
+            user_id=user.id,
+        )
+    user_in_db = crud.user.get(db, id=user.id)
+    if user_in_db:
+        return user_in_db
+    else:
+        raise Exception("Unable to find user in db")
 
 
 def authentication_token_from_email(
     *, client: TestClient, email: str, db: Session
-) -> dict[str, str]:
+) -> str:
     """
     Return a valid token for the user with given email.
 

@@ -75,7 +75,7 @@ def get_current_user(
         user = None
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Account not found"
         )
     return user
 
@@ -83,9 +83,14 @@ def get_current_user(
 def get_current_approved_user(
     current_user: models.User = Depends(get_current_user),
 ) -> models.User:
+    if not crud.user.is_email_confirmed(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account requires email confirmation",
+        )
     if not crud.user.is_approved(current_user):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="User account needs approval"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Account requires approval"
         )
     return current_user
 

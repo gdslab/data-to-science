@@ -7,7 +7,6 @@ import Alert from '../../Alert';
 import AuthContext from '../../../AuthContext';
 import { Button, OutlineButton } from '../../Buttons';
 import Card from '../../Card';
-import HintText from '../../HintText';
 import { TextField } from '../../InputFields';
 
 import Welcome from '../../pages/Welcome';
@@ -26,9 +25,7 @@ export default function LoginForm() {
           <Welcome>Sign in to your account</Welcome>
           <Card>
             {searchParams.get('email_confirmed') === 'true' ? (
-              <Alert alertType={'success'}>
-                Your email address has been confirmed.
-              </Alert>
+              <Alert alertType="success">Your email address has been confirmed.</Alert>
             ) : null}
             <Formik
               initialValues={initialValues}
@@ -47,8 +44,43 @@ export default function LoginForm() {
                     const errMsg = err.response?.data.detail;
                     if (err.response?.status === 401) {
                       setStatus({ type: 'warning', msg: errMsg });
-                    } else if (err.response?.status === 400) {
-                      setStatus({ type: 'info', msg: errMsg });
+                    } else if (err.response?.status === 403) {
+                      if (errMsg.includes('email')) {
+                        setStatus({
+                          type: 'info',
+                          msg: (
+                            <span className="inline">
+                              {errMsg}.{' '}
+                              <button
+                                className="font-semibold"
+                                onClick={async (e) => {
+                                  e.preventDefault();
+                                  try {
+                                    const response = await axios.get(
+                                      '/api/v1/auth/request-email-confirmation',
+                                      { params: { email: values.email } }
+                                    );
+                                    if (response)
+                                      setStatus({
+                                        type: 'info',
+                                        msg: 'Email confirmation link sent',
+                                      });
+                                  } catch (err) {
+                                    setStatus({
+                                      type: 'error',
+                                      msg: 'Unexpected error has occurred',
+                                    });
+                                  }
+                                }}
+                              >
+                                Click here to request a new email confirmation link.
+                              </button>
+                            </span>
+                          ),
+                        });
+                      } else {
+                        setStatus({ type: 'info', msg: errMsg });
+                      }
                     } else {
                       setStatus({ type: 'error', msg: errMsg });
                     }
@@ -72,9 +104,13 @@ export default function LoginForm() {
                     type="password"
                     icon="password"
                   />
-                  <Link to="/auth/recoverpassword">
-                    <HintText>Forgot Password?</HintText>
-                  </Link>
+                  <div className="flex">
+                    <Link className="shrink" to="/auth/recoverpassword">
+                      <span className="block text-sm text-blue-500 font-bold pt-2 pb-1">
+                        Forgot Password?
+                      </span>
+                    </Link>
+                  </div>
                   <Button type="submit" disabled={isSubmitting}>
                     Login
                   </Button>
@@ -82,7 +118,7 @@ export default function LoginForm() {
                     <Alert alertType={status.type}>{status.msg}</Alert>
                   ) : null}
                   <div>
-                    <span className="block text-sm text-gray-400 font-bold pt-2 pb-1">
+                    <span className="block text-sm text-slate-500 font-bold pt-2 pb-1">
                       Do not have an account?
                     </span>
                     <Link to="/auth/register">

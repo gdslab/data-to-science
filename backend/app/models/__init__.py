@@ -1,3 +1,4 @@
+from .confirmation_token import ConfirmationToken
 from .data_product import DataProduct
 from .flight import Flight
 from .job import Job

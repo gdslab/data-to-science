@@ -1,3 +1,4 @@
+from .confirmation_token import ConfirmationToken, ConfirmationTokenCreate
 from .data_product import DataProduct, DataProductCreate, DataProductUpdate
 from .flight import Flight, FlightCreate, FlightUpdate
 from .location import Location, LocationCreate, LocationUpdate
