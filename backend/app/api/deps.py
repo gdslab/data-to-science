@@ -70,7 +70,7 @@ def get_current_user(
 ) -> models.User:
     token_data = decode_jwt(token)
     if token_data.sub:
-        user = crud.user.get(db, id=token_data.sub)
+        user = crud.user.get_by_id(db, user_id=token_data.sub)
     else:
         user = None
     if not user:

@@ -30,6 +30,7 @@ interface FileUpload {
   endpoint: string;
   inline?: boolean;
   open?: boolean;
+  onSuccess?: () => void;
   setUploadResponse?: React.Dispatch<React.SetStateAction<FeatureCollection | null>>;
   restrictions: Restrictions;
   setOpen?: React.Dispatch<React.SetStateAction<boolean>>;
@@ -40,6 +41,7 @@ export default function FileUpload({
   endpoint,
   inline = false,
   open = false,
+  onSuccess = () => {},
   restrictions,
   setUploadResponse,
   setOpen = () => {},
@@ -82,6 +84,7 @@ export default function FileUpload({
     if (response.status === 200 && uploadType === 'shp' && setUploadResponse) {
       setUploadResponse(response.body);
     }
+    if (onSuccess) onSuccess();
   });
 
   if (inline) {

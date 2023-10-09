@@ -33,18 +33,30 @@ async def verify_static_file_access(request: Request) -> None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="user not found"
         )
-    try:
-        project_id = request.url.path.split("/projects/")[1].split("/")[0]
-        project_id_uuid = UUID(project_id)
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="project not found"
+    if "projects" in request.url.path:
+        try:
+            project_id = request.url.path.split("/projects/")[1].split("/")[0]
+            project_id_uuid = UUID(project_id)
+        except (IndexError, ValueError):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="project not found"
+            )
+        project = crud.project.get_user_project(
+            SessionLocal(), user_id=user.id, project_id=project_id_uuid
         )
-    project = crud.project.get_user_project(
-        SessionLocal(), user_id=user.id, project_id=project_id_uuid
-    )
-    if not project:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+        if not project:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    elif "users" in request.url.path:
+        try:
+            user_id_in_url = request.url.path.split("/users/")[1].split("/")[0]
+        except (IndexError, ValueError):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="user not found"
+            )
+        if user_id_in_url != str(user.id):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    else:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
 
 
 class ProtectedStaticFiles(RangedStaticFiles):

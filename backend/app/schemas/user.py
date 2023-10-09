@@ -1,7 +1,7 @@
 from uuid import UUID
 from typing import TYPE_CHECKING
 
-from pydantic import BaseModel
+from pydantic import AnyHttpUrl, BaseModel
 
 
 if TYPE_CHECKING:
@@ -43,7 +43,7 @@ class UserInDBBase(UserBase, from_attributes=True):
 
 # additional properties to return via API
 class User(UserInDBBase):
-    pass
+    profile_url: AnyHttpUrl | None = None
 
 
 # additional properties stored in DB

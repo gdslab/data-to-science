@@ -14,7 +14,7 @@ export function RootPublic() {
 
 export function RootProtected() {
   return (
-    <div className="h-screen bg-gray-100">
+    <div className="h-screen">
       <div>
         <Navbar />
       </div>

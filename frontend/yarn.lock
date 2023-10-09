@@ -3988,6 +3988,7 @@ __metadata:
     uuid: ^9.0.1
     vite: ^4.4.5
     yup: ^1.2.0
+    yup-password: ^0.2.2
   languageName: unknown
   linkType: soft
 
@@ -5084,6 +5085,13 @@ __metadata:
   version: 0.1.0
   resolution: "yocto-queue@npm:0.1.0"
   checksum: f77b3d8d00310def622123df93d4ee654fc6a0096182af8bd60679ddcdfb3474c56c6c7190817c84a2785648cdee9d721c0154eb45698c62176c322fb46fc700
+  languageName: node
+  linkType: hard
+
+"yup-password@npm:^0.2.2":
+  version: 0.2.2
+  resolution: "yup-password@npm:0.2.2"
+  checksum: 39bbe9f5498b1021f8cf7f4b66df75bfb3b0a53bef057f34066a40f7ae72a6334f542cef5ad29926c36bcf79bcb8d8795136eee50b80fe94a5b3bf431470bebf
   languageName: node
   linkType: hard
 

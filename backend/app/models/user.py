@@ -30,9 +30,9 @@ class User(Base):
     email: Mapped[str] = mapped_column(
         String(255), unique=True, index=True, nullable=False
     )
-    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
-    first_name: Mapped[str] = mapped_column(String(128), nullable=False)
-    last_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    hashed_password: Mapped[str] = mapped_column(String(60), nullable=False)
+    first_name: Mapped[str] = mapped_column(String(64), nullable=False)
+    last_name: Mapped[str] = mapped_column(String(64), nullable=False)
     full_name: Mapped[str] = column_property(first_name + " " + last_name)
     is_approved: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_email_confirmed: Mapped[bool] = mapped_column(

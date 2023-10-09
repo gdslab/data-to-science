@@ -1,7 +1,15 @@
 import secrets
-from typing import Any
+from typing import Any, Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    Form,
+    HTTPException,
+    Response,
+    status,
+)
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import EmailStr
@@ -119,3 +127,24 @@ def request_new_email_confirmation_link(
             email=email,
             confirmation_token=token,
         )
+
+
+@router.post("/change-password")
+def change_password(
+    current_password: Annotated[str, Form()],
+    new_password: Annotated[str, Form()],
+    db: Session = Depends(deps.get_db),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+):
+    """Update user password when provided with current password and new password."""
+    user = crud.user.authenticate(
+        db, email=current_user.email, password=current_password
+    )
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Provided current password is incorrect",
+        )
+    user_in = schemas.UserUpdate(password=new_password)
+    user_updated = crud.user.update(db, db_obj=user, obj_in=user_in)
+    return user_updated

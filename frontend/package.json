@@ -36,7 +36,8 @@
     "react-router-dom": "^6.14.2",
     "sort-by": "^1.2.0",
     "uuid": "^9.0.1",
-    "yup": "^1.2.0"
+    "yup": "^1.2.0",
+    "yup-password": "^0.2.2"
   },
   "devDependencies": {
     "@types/chroma-js": "^2.4.0",

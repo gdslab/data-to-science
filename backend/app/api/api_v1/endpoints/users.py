@@ -1,6 +1,8 @@
+import os
+import shutil
 from secrets import token_urlsafe
 from typing import Annotated, Any
-from uuid import UUID
+from uuid import uuid4, UUID
 
 from fastapi import (
     APIRouter,
@@ -8,7 +10,9 @@ from fastapi import (
     Body,
     Depends,
     HTTPException,
+    Request,
     status,
+    UploadFile,
     Query,
 )
 from pydantic.networks import EmailStr
@@ -16,7 +20,9 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps, mail
+from app.core.config import settings
 from app.core import security
+
 
 router = APIRouter()
 
@@ -113,3 +119,34 @@ def read_current_user(
 ) -> Any:
     """Retrieve current user."""
     return current_user
+
+
+@router.post("/profile", status_code=status.HTTP_200_OK)
+def upload_user_profile(
+    request: Request,
+    files: UploadFile,
+    background_tasks: BackgroundTasks,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    if request.client and request.client.host == "testclient":
+        upload_dir = f"{settings.TEST_UPLOAD_DIR}/users/{current_user.id}"
+    else:
+        upload_dir = f"{settings.UPLOAD_DIR}/users/{current_user.id}"
+    if os.path.exists(upload_dir):
+        shutil.rmtree(upload_dir)
+    os.makedirs(upload_dir)
+
+    if files.content_type == "image/jpeg":
+        out_path = os.path.join(upload_dir, str(uuid4()) + ".jpg")
+    elif files.content_type == "image/png":
+        out_path = os.path.join(upload_dir, str(uuid4()) + ".png")
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Must be png or jpeg format"
+        )
+
+    with open(out_path, "wb") as buffer:
+        shutil.copyfileobj(files.file, buffer)
+
+    return {"upload-status": "success"}

@@ -13,16 +13,19 @@ export interface User {
   first_name: string;
   last_name: string;
   is_approved: boolean;
+  profile_url: string | null;
 }
 
 const context: {
   user: User | null;
   login: (data: Login) => Promise<void>;
   logout: () => Promise<void>;
+  updateProfile: () => Promise<void>;
 } = {
   user: null,
   login: async () => {},
   logout: async () => {},
+  updateProfile: async () => {},
 };
 
 const AuthContext = createContext(context);
@@ -63,8 +66,22 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function updateProfile() {
+    try {
+      const currentUser = await axios.get('/api/v1/users/current', {
+        withCredentials: true,
+      });
+      if (currentUser) {
+        localStorage.setItem('userProfile', JSON.stringify(currentUser.data));
+        setUser(currentUser.data);
+      }
+    } catch (err) {
+      throw err;
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

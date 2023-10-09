@@ -84,7 +84,21 @@ export default function Navbar() {
                         <span className="absolute -inset-1.5" />
                         <span className="sr-only">Open user menu</span>
                         <div className="flex items-center justify-center">
-                          <UserCircleIcon className="inline h-8 w-8 rounded-full" />
+                          {user.profile_url ? (
+                            <img
+                              key={user.profile_url
+                                .split('/')
+                                .slice(-1)[0]
+                                .slice(0, -4)}
+                              className="h-8 w-8 rounded-full"
+                              src={user.profile_url}
+                            />
+                          ) : (
+                            <div className="inline h-8 w-8 rounded-full">
+                              <UserCircleIcon />
+                            </div>
+                          )}
+
                           <div className="hidden md:inline ml-4">
                             {user.first_name} {user.last_name}
                           </div>

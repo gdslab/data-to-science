@@ -13,6 +13,9 @@ import Welcome from '../../pages/Welcome';
 import { registrationInitialValues as initialValues } from './initialValues';
 import { registrationValidationSchema as validationSchema } from './validationSchema';
 
+export const passwordHintText =
+  'Your password must use at least 10 characters. It must contain at least one lowercase, one uppercase, and one numeric character.';
+
 export default function RegistrationForm() {
   return (
     <div className="h-full bg-accent1">
@@ -66,6 +69,7 @@ export default function RegistrationForm() {
                     <TextField label="Last Name" name="lastName" />
                   </div>
                   <TextField label="Email" name="email" type="email" />
+                  <HintText>{passwordHintText}</HintText>
                   <TextField
                     label="Password"
                     name="password"

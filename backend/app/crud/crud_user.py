@@ -1,3 +1,5 @@
+import glob
+import os
 from typing import Any, Sequence
 from uuid import UUID
 
@@ -5,6 +7,7 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.crud.base import CRUDBase
 from app.models.confirmation_token import ConfirmationToken
@@ -14,9 +17,19 @@ from app.schemas.user import UserCreate, UserUpdate
 
 
 class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
+    def get_by_id(self, db: Session, *, user_id: UUID) -> User | None:
+        stmt = select(User).where(User.id == user_id)
+        user = db.execute(stmt).scalar_one_or_none()
+        if user:
+            set_url_attr(user)
+        return user
+
     def get_by_email(self, db: Session, *, email: str) -> User | None:
         stmt = select(User).where(User.email == email)
-        return db.scalars(stmt).first()
+        user = db.execute(stmt).scalar_one_or_none()
+        if user:
+            set_url_attr(user)
+        return user
 
     def create(self, db: Session, *, obj_in: UserCreate) -> User:
         db_obj = User(
@@ -104,6 +117,23 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
 
     def is_superuser(self, user: User) -> bool:
         return user.is_superuser
+
+
+def find_profile_img(user_id: str) -> str | None:
+    user_static_dir = os.path.join(settings.UPLOAD_DIR, "users", user_id)
+    profile_img = glob.glob(os.path.join(user_static_dir, "*.png")) + glob.glob(
+        os.path.join(user_static_dir, "*.jpg")
+    )
+    if len(profile_img) > 0:
+        return os.path.basename(profile_img[0])
+    else:
+        return None
+
+
+def set_url_attr(user_db_obj: User):
+    profile_img = find_profile_img(str(user_db_obj.id))
+    profile_url = f"{settings.STATIC_URL}/users/{str(user_db_obj.id)}/{profile_img}"
+    setattr(user_db_obj, "profile_url", profile_url)
 
 
 user = CRUDUser(User)
