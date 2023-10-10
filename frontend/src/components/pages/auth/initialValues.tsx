@@ -10,3 +10,9 @@ export const registrationInitialValues = {
   password: '',
   passwordRetype: '',
 };
+
+export const recoveryInitialValues = {
+  email: '',
+};
+
+export const resetInitialValues = { password: '', passwordRetype: '' };

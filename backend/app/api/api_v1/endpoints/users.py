@@ -51,9 +51,9 @@ def create_user(
     user = crud.user.create(db, obj_in=user_in)
     # create email confirmation token
     token = token_urlsafe()
-    token_in_db = crud.user.create_confirmation_token(
+    token_in_db = crud.user.create_single_use_token(
         db,
-        obj_in=schemas.ConfirmationTokenCreate(
+        obj_in=schemas.SingleUseTokenCreate(
             token=security.get_token_hash(token, salt="confirm")
         ),
         user_id=user.id,

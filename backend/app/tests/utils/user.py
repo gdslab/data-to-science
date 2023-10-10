@@ -6,7 +6,7 @@ from app import crud
 from app.core import security
 from app.core.config import settings
 from app.models.user import User
-from app.schemas.confirmation_token import ConfirmationTokenCreate
+from app.schemas.single_use_token import SingleUseTokenCreate
 from app.schemas.user import UserCreate, UserUpdate
 from app.tests.utils.utils import random_email, random_full_name, random_password
 
@@ -67,9 +67,9 @@ def create_random_user(
             session.execute(statement)
             session.commit()
     else:
-        crud.user.create_confirmation_token(
+        crud.user.create_single_use_token(
             db,
-            obj_in=ConfirmationTokenCreate(
+            obj_in=SingleUseTokenCreate(
                 token=security.get_token_hash(token, salt="confirm")
             ),
             user_id=user.id,

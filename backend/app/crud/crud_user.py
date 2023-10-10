@@ -10,26 +10,28 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.crud.base import CRUDBase
-from app.models.confirmation_token import ConfirmationToken
+from app.models.single_use_token import SingleUseToken
 from app.models.user import User
-from app.schemas.confirmation_token import ConfirmationTokenCreate
+from app.schemas.single_use_token import SingleUseTokenCreate
 from app.schemas.user import UserCreate, UserUpdate
 
 
 class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
     def get_by_id(self, db: Session, *, user_id: UUID) -> User | None:
         stmt = select(User).where(User.id == user_id)
-        user = db.execute(stmt).scalar_one_or_none()
-        if user:
-            set_url_attr(user)
-        return user
+        with db as session:
+            user = session.execute(stmt).scalar_one_or_none()
+            if user:
+                set_url_attr(user)
+            return user
 
     def get_by_email(self, db: Session, *, email: str) -> User | None:
         stmt = select(User).where(User.email == email)
-        user = db.execute(stmt).scalar_one_or_none()
-        if user:
-            set_url_attr(user)
-        return user
+        with db as session:
+            user = session.execute(stmt).scalar_one_or_none()
+            if user:
+                set_url_attr(user)
+            return user
 
     def create(self, db: Session, *, obj_in: UserCreate) -> User:
         db_obj = User(
@@ -44,30 +46,28 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             session.refresh(db_obj)
         return db_obj
 
-    def create_confirmation_token(
-        self, db: Session, obj_in: ConfirmationTokenCreate, user_id: UUID
-    ) -> ConfirmationToken:
+    def create_single_use_token(
+        self, db: Session, obj_in: SingleUseTokenCreate, user_id: UUID
+    ) -> SingleUseToken:
         obj_in_data = jsonable_encoder(obj_in)
-        db_obj = ConfirmationToken(**obj_in_data, user_id=user_id)
+        db_obj = SingleUseToken(**obj_in_data, user_id=user_id)
         with db as session:
             session.add(db_obj)
             session.commit()
             session.refresh(db_obj)
         return db_obj
 
-    def get_confirmation_token(
+    def get_single_use_token(
         self, db: Session, token_hash: str
-    ) -> ConfirmationToken | None:
-        token_query = select(ConfirmationToken).where(
-            ConfirmationToken.token == token_hash
-        )
+    ) -> SingleUseToken | None:
+        token_query = select(SingleUseToken).where(SingleUseToken.token == token_hash)
         with db as session:
             token = session.execute(token_query).scalar_one_or_none()
             return token
 
-    def remove_confirmation_token(
-        self, db: Session, db_obj: ConfirmationToken
-    ) -> ConfirmationToken:
+    def remove_single_use_token(
+        self, db: Session, db_obj: SingleUseToken
+    ) -> SingleUseToken:
         with db as session:
             session.delete(db_obj)
             session.commit()

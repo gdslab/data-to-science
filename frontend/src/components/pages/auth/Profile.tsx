@@ -51,7 +51,7 @@ function ChangePasswordForm() {
         }
       }}
     >
-      {({ isSubmitting, status }) => (
+      {({ dirty, isSubmitting, status }) => (
         <Form className="grid gap-4">
           <HintText>{passwordHintText}</HintText>
           <TextField label="Current Password" name="passwordCurrent" type="password" />
@@ -61,7 +61,7 @@ function ChangePasswordForm() {
             name="passwordNewRetype"
             type="password"
           />
-          <Button type="submit" size="sm">
+          <Button type="submit" size="sm" disabled={!dirty}>
             {isSubmitting ? 'Processing...' : 'Change Password'}
           </Button>
           {status && status.type && status.msg ? (

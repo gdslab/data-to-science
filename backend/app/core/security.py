@@ -11,7 +11,7 @@ from passlib.context import CryptContext
 from passlib.hash import sha256_crypt
 
 from app.core.config import settings
-from app.models.confirmation_token import ConfirmationToken
+from app.models.single_use_token import SingleUseToken
 
 
 pwd_context = CryptContext(
@@ -48,7 +48,7 @@ def get_token_hash(token: str, salt: str) -> str:
     return sha256_crypt.using(salt=salt).hash(token)
 
 
-def check_token_expired(token: ConfirmationToken) -> bool:
+def check_token_expired(token: SingleUseToken) -> bool:
     """Check if token is older than one hour."""
     return datetime.now() > (token.created_at + timedelta(minutes=60))
 

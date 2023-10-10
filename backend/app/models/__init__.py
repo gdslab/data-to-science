@@ -1,4 +1,3 @@
-from .confirmation_token import ConfirmationToken
 from .data_product import DataProduct
 from .flight import Flight
 from .job import Job
@@ -6,6 +5,7 @@ from .location import Location
 from .project import Project
 from .project_member import ProjectMember
 from .raw_data import RawData
+from .single_use_token import SingleUseToken
 from .team import Team
 from .team_member import TeamMember
 from .user import User

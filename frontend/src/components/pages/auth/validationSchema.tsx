@@ -21,6 +21,11 @@ const passwordRules = Yup.string()
   .minRepeating(2, 'Password cannot have more than two repeating characters in a row')
   .required('Enter your password');
 
+const passwordRetypeRules = (passwordField: string) =>
+  Yup.string()
+    .oneOf([Yup.ref(passwordField), ''], 'Passwords do not match')
+    .required('Retype your password');
+
 export const loginValidationSchema = Yup.object({
   email: Yup.string()
     .max(254, 'Email address cannot be more than 254 characters')
@@ -33,18 +38,23 @@ export const registrationValidationSchema = nameRules.concat(
   Yup.object({
     email: Yup.string().email('Invalid email address').required('Enter your email'),
     password: passwordRules,
-    passwordRetype: Yup.string()
-      .oneOf([Yup.ref('password'), ''], 'Passwords do not match')
-      .required('Retype your password'),
+    passwordRetype: passwordRetypeRules('password'),
   })
 );
 
 export const passwordChangeValidationSchema = Yup.object({
   passwordCurrent: Yup.string().required('Enter your current password'),
   passwordNew: passwordRules,
-  passwordNewRetype: Yup.string()
-    .oneOf([Yup.ref('passwordNew'), ''], 'Passwords do not match')
-    .required('Retype your new password'),
+  passwordNewRetype: passwordRetypeRules('passwordNew'),
 });
 
 export const profileValidationSchema = nameRules;
+
+export const recoveryValidationSchema = Yup.object({
+  email: Yup.string().email('Invalid email address').required('Enter your email'),
+});
+
+export const resetValidationSchema = Yup.object({
+  password: passwordRules,
+  passwordRetype: passwordRetypeRules('password'),
+});

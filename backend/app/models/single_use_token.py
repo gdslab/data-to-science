@@ -8,8 +8,8 @@ from app.db.base_class import Base
 from app.models.utils.user import utcnow
 
 
-class ConfirmationToken(Base):
-    __tablename__ = "confirmation_tokens"
+class SingleUseToken(Base):
+    __tablename__ = "single_use_tokens"
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
@@ -22,6 +22,6 @@ class ConfirmationToken(Base):
 
     def __repr__(self) -> str:
         return (
-            f"ConfirmationToken(id={self.id!r}, created_at={self.created_at!r}, "
+            f"SingleUseToken(id={self.id!r}, created_at={self.created_at!r}, "
             f"token={self.token!r}, user_id={self.user_id!r})"
         )

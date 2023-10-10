@@ -27,6 +27,9 @@ export default function LoginForm() {
             {searchParams.get('email_confirmed') === 'true' ? (
               <Alert alertType="success">Your email address has been confirmed.</Alert>
             ) : null}
+            {searchParams.get('password_reset') === 'true' ? (
+              <Alert alertType="success">Your password has been reset.</Alert>
+            ) : null}
             <Formik
               initialValues={initialValues}
               validationSchema={validationSchema}

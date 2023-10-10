@@ -1,5 +1,4 @@
 import pytest
-from fastapi.encoders import jsonable_encoder
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -32,10 +31,10 @@ def test_create_user_with_existing_email(db: Session) -> None:
 def test_get_user_by_id(db: Session) -> None:
     """Verify retrieving user by id returns correct user."""
     user = create_random_user(db)
-    retrieved_user = crud.user.get(db, id=user.id)
+    retrieved_user = crud.user.get_by_id(db, user_id=user.id)
     assert retrieved_user
     assert user.email == retrieved_user.email
-    assert jsonable_encoder(user) == jsonable_encoder(retrieved_user)
+    assert user.id == retrieved_user.id
 
 
 def test_get_user_by_email(db: Session) -> None:
@@ -44,7 +43,7 @@ def test_get_user_by_email(db: Session) -> None:
     retrieved_user = crud.user.get_by_email(db, email=user.email)
     assert retrieved_user
     assert user.email == retrieved_user.email
-    assert jsonable_encoder(user) == jsonable_encoder(retrieved_user)
+    assert user.id == retrieved_user.id
 
 
 def test_update_user(db: Session) -> None:

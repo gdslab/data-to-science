@@ -12,6 +12,8 @@ import Landing from './components/Landing';
 import LoginForm from './components/pages/auth/LoginForm';
 import Logout from './components/pages/auth/Logout';
 import MapLayout, { loader as mapLayoutLoader } from './components/maps/MapLayout';
+import PasswordRecovery from './components/pages/auth/PasswordRecovery';
+import PasswordResetForm from './components/pages/auth/PasswordResetForm';
 import Profile from './components/pages/auth/Profile';
 import ProjectDetail, {
   loader as projectDetailLoader,
@@ -25,8 +27,6 @@ import TeamCreate from './components/pages/teams/TeamCreate';
 import TeamDetail, {
   loader as teamDetailLoader,
 } from './components/pages/teams/TeamDetail';
-
-import SymbologyControl from './components/maps/SymbologyControl';
 
 import { RootPublic, RootProtected } from './components/layout/Root';
 import { RequireAuth } from './AuthContext';
@@ -54,8 +54,12 @@ export const router = createBrowserRouter([
         element: <Logout />,
       },
       {
-        path: '/test',
-        element: <SymbologyControl />,
+        path: '/auth/recoverpassword',
+        element: <PasswordRecovery />,
+      },
+      {
+        path: '/auth/resetpassword',
+        element: <PasswordResetForm />,
       },
     ],
   },

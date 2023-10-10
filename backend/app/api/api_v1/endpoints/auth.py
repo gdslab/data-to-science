@@ -4,6 +4,7 @@ from typing import Any, Annotated
 from fastapi import (
     APIRouter,
     BackgroundTasks,
+    Body,
     Depends,
     Form,
     HTTPException,
@@ -72,17 +73,19 @@ def test_token(current_user: models.User = Depends(deps.get_current_user)) -> An
 )
 def confirm_user_email_address(token: str, db: Session = Depends(deps.get_db)):
     """Confirm email address for user account."""
-    token_db_obj = crud.user.get_confirmation_token(
+    token_db_obj = crud.user.get_single_use_token(
         db, token_hash=security.get_token_hash(token, salt="confirm")
     )
     # check if token is valid
     if not token_db_obj:
         return settings.DOMAIN + "/auth/login?error=invalid"
     if security.check_token_expired(token_db_obj):
+        crud.user.remove_single_use_token(db, db_obj=token_db_obj)
         return settings.DOMAIN + "/auth/login?error=expired"
     # find user associated with token
     user = crud.user.get(db, id=token_db_obj.user_id)
     if not user:
+        crud.user.remove_single_use_token(db, db_obj=token_db_obj)
         return settings.DOMAIN + "/auth/login?error=notfound"
     # update user's email confirmation status
     user_update_in = schemas.UserUpdate(is_email_confirmed=True)
@@ -92,7 +95,7 @@ def confirm_user_email_address(token: str, db: Session = Depends(deps.get_db)):
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to confirm email"
         )
     # remove token from database
-    crud.user.remove_confirmation_token(db, db_obj=token_db_obj)
+    crud.user.remove_single_use_token(db, db_obj=token_db_obj)
     # redirect to login page
     return settings.DOMAIN + "/auth/login?email_confirmed=true"
 
@@ -113,9 +116,9 @@ def request_new_email_confirmation_link(
     first_name, email = user.first_name, user.email
     # create new token
     token = secrets.token_urlsafe()
-    token_in_db = crud.user.create_confirmation_token(
+    token_in_db = crud.user.create_single_use_token(
         db,
-        obj_in=schemas.ConfirmationTokenCreate(
+        obj_in=schemas.SingleUseTokenCreate(
             token=security.get_token_hash(token, salt="confirm")
         ),
         user_id=user.id,
@@ -148,3 +151,73 @@ def change_password(
     user_in = schemas.UserUpdate(password=new_password)
     user_updated = crud.user.update(db, db_obj=user, obj_in=user_in)
     return user_updated
+
+
+@router.get("/reset-password")
+def send_reset_password_by_email(
+    email: EmailStr,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(deps.get_db),
+):
+    # check if user with provided email exists
+    user = crud.user.get_by_email(db, email=email)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_200_OK)
+    first_name, email = user.first_name, user.email
+    # create new token
+    token = secrets.token_urlsafe()
+    token_in_db = crud.user.create_single_use_token(
+        db,
+        obj_in=schemas.SingleUseTokenCreate(
+            token=security.get_token_hash(token, salt="reset")
+        ),
+        user_id=user.id,
+    )
+    if token_in_db:
+        mail.send_password_recovery(
+            background_tasks=background_tasks,
+            first_name=first_name,
+            email=email,
+            recovery_token=token,
+        )
+
+
+@router.post("/reset-password")
+def reset_user_password(
+    password: str = Body(), token: str = Body(), db: Session = Depends(deps.get_db)
+):
+    """Change password for user account."""
+    token_db_obj = crud.user.get_single_use_token(
+        db, token_hash=security.get_token_hash(token, salt="reset")
+    )
+    # check if token is valid
+    if not token_db_obj:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Reset token no longer active",
+        )
+    if security.check_token_expired(token_db_obj):
+        # remove token from database
+        crud.user.remove_single_use_token(db, db_obj=token_db_obj)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Reset token has expired"
+        )
+    # find user associated with token
+    user = crud.user.get(db, id=token_db_obj.user_id)
+    if not user:
+        # remove token from database
+        crud.user.remove_single_use_token(db, db_obj=token_db_obj)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Account not found"
+        )
+    # update user's email confirmation status
+    user_update_in = schemas.UserUpdate(password=password)
+    user_updated = crud.user.update(db, db_obj=user, obj_in=user_update_in)
+    if not user_updated:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to confirm email"
+        )
+    # remove token from database
+    crud.user.remove_single_use_token(db, db_obj=token_db_obj)
+    # redirect to login page
+    return {"status": "success"}
