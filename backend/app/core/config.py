@@ -45,6 +45,7 @@ class Settings(BaseSettings):
         )
 
     # Email
+    MAIL_ADMINS: str = ""
     MAIL_USERNAME: str = ""
     MAIL_PASSWORD: str = ""
     MAIL_FROM: EmailStr = ""

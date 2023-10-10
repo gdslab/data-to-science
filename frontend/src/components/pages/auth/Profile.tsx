@@ -137,7 +137,7 @@ export default function Profile() {
   const [open, setOpen] = useState(false);
 
   const onSuccess = () => updateProfile();
-
+  console.log(user);
   return (
     <div className="h-full flex justify-center bg-gradient-to-b from-primary from-20% to-slate-200 to-10%">
       <div className="mt-16 sm:w-full md:w-1/2 max-w-xl mx-4">

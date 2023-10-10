@@ -57,10 +57,13 @@ def decode_jwt(token: str) -> schemas.TokenPayload:
 
 
 def send_email(
-    subject: str, recipient: EmailStr, body: str, background_tasks: BackgroundTasks
+    subject: str,
+    recipients: list[EmailStr],
+    body: str,
+    background_tasks: BackgroundTasks,
 ):
     message = MessageSchema(
-        subject=subject, recipients=[recipient], body=body, subtype=MessageType.html
+        subject=subject, recipients=recipients, body=body, subtype=MessageType.html
     )
     background_tasks.add_task(fm.send_message, message)
 

@@ -132,8 +132,9 @@ def find_profile_img(user_id: str) -> str | None:
 
 def set_url_attr(user_db_obj: User):
     profile_img = find_profile_img(str(user_db_obj.id))
-    profile_url = f"{settings.STATIC_URL}/users/{str(user_db_obj.id)}/{profile_img}"
-    setattr(user_db_obj, "profile_url", profile_url)
+    if profile_img:
+        profile_url = f"{settings.STATIC_URL}/users/{str(user_db_obj.id)}/{profile_img}"
+        setattr(user_db_obj, "profile_url", profile_url)
 
 
 user = CRUDUser(User)

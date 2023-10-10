@@ -182,6 +182,42 @@ def send_reset_password_by_email(
         )
 
 
+@router.get("/approve-account")
+def approve_user_account(
+    token: str, background_tasks: BackgroundTasks, db: Session = Depends(deps.get_db)
+):
+    token_db_obj = crud.user.get_single_use_token(
+        db, token_hash=security.get_token_hash(token, salt="approve")
+    )
+    # check if token is valid
+    if not token_db_obj:
+        return {"status": "token invalid"}
+    if security.check_token_expired(token_db_obj, minutes=1440):
+        crud.user.remove_single_use_token(db, db_obj=token_db_obj)
+        return {"status": "token expired"}
+    # find user associated with token
+    user = crud.user.get(db, id=token_db_obj.user_id)
+    if not user:
+        crud.user.remove_single_use_token(db, db_obj=token_db_obj)
+        return {"status": "account not found"}
+    # update user's email confirmation status
+    user_update_in = schemas.UserUpdate(is_approved=True)
+    user_updated = crud.user.update(db, db_obj=user, obj_in=user_update_in)
+    if not user_updated or not user_updated.is_approved:
+        return {"status": "unable to approve"}
+    # remove token from database
+    crud.user.remove_single_use_token(db, db_obj=token_db_obj)
+    # email user
+    mail.send_account_approved(
+        background_tasks=background_tasks,
+        first_name=user.first_name,
+        email=user.email,
+        confirmed=user.is_email_confirmed,
+    )
+    # redirect to login page
+    return {"status": "approved"}
+
+
 @router.post("/reset-password")
 def reset_user_password(
     password: str = Body(), token: str = Body(), db: Session = Depends(deps.get_db)

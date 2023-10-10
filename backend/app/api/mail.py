@@ -36,7 +36,7 @@ def send_email_confirmation(
 
     send_email(
         subject="Confirm your email address",
-        recipient=email,
+        recipients=[email],
         body=content,
         background_tasks=background_tasks,
     )
@@ -75,7 +75,67 @@ def send_password_recovery(
 
     send_email(
         subject="D2S Password Reset",
-        recipient=email,
+        recipients=[email],
+        body=content,
+        background_tasks=background_tasks,
+    )
+
+
+def send_admins_new_registree_notification(
+    background_tasks: BackgroundTasks,
+    email: EmailStr,
+    first_name: str,
+    approve_token: str,
+):
+    admin_emails = settings.MAIL_ADMINS.split(",")
+
+    approve_url = settings.DOMAIN + settings.API_V1_STR + "/auth/approve-account?"
+    approve_url += f"token={approve_token}"
+
+    approve_btn = "<button style='display: inline-block;outline: none;"
+    approve_btn += "border-radius: 3px;font-size: 14px;"
+    approve_btn += "font-weight: 500;line-height: 16px;padding: 2px 16px;"
+    approve_btn += "height: 38px;min-width: 96px;min-height: 38px;border: none;"
+    approve_btn += "color: #fff;background-color: rgb(88, 101, 242);'>"
+    approve_btn += "Approve</button>"
+
+    content = (
+        "<p>D2S Support Admins,</p>"
+        f"<p>A new account is awaiting approval. Please approve {first_name}'s "
+        f"({email}) account within 24 hours of receiving this notification. "
+        "No action is necessary to deny the account.<br /><br />"
+        f"<a href='{approve_url}' target='_blank'>{approve_btn}</a><br /><br />"
+        "<p>-D2S Support</p>"
+    )
+
+    send_email(
+        subject="D2S New Account",
+        recipients=admin_emails,
+        body=content,
+        background_tasks=background_tasks,
+    )
+
+
+def send_account_approved(
+    background_tasks: BackgroundTasks, first_name: str, email: EmailStr, confirmed: bool
+):
+    content = f"<p>Hi {first_name},</p>" "<p>Your D2S account has been approved. "
+    if confirmed:
+        content += "You may now log in and start using D2S. "
+    else:
+        content += (
+            "After confirming your email address, you will be able to log "
+            "in and start using D2S. "
+        )
+    content += (
+        "If you have any questions, please reach out to support at "
+        f"{settings.MAIL_FROM}.</p><br /><br />"
+        "<p>-D2S Support</p>"
+    )
+
+    send_email(
+        subject="D2S Account Approved",
+        recipients=[email],
         body=content,
         background_tasks=background_tasks,
     )
