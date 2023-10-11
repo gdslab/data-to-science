@@ -1,4 +1,5 @@
-import { Field, ErrorMessage } from 'formik';
+import { ErrorMessage, Field } from 'formik';
+import { CheckIcon, PencilIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 import { getIcon } from './utils';
 
@@ -15,7 +16,7 @@ interface InputField {
   altLabel?: boolean;
   children?: React.ReactNode;
   disabled?: boolean;
-  label: string;
+  label?: string;
   name: string;
   placeholder?: string;
   required?: boolean;
@@ -37,10 +38,12 @@ const altLabelClass = 'block font-bold pt-2 pb-1';
 
 const InputField = ({ children, altLabel, label, name, required }: InputField) => (
   <div className="relative">
-    <label className={altLabel ? altLabelClass : defaultLabelClass} htmlFor={name}>
-      {label}
-      {required && !altLabel ? '*' : ''}
-    </label>
+    {label ? (
+      <label className={altLabel ? altLabelClass : defaultLabelClass} htmlFor={name}>
+        {label}
+        {required && !altLabel ? '*' : ''}
+      </label>
+    ) : null}
     {children}
     <ErrorMessage className="text-red-500 text-sm" name={name} component="span" />
   </div>
@@ -96,6 +99,51 @@ export function TextField({
       />
       {icon ? getIcon(icon) : null}
     </InputField>
+  );
+}
+
+export type Editing = { field: string } | null;
+
+interface EditTextField {
+  children: React.ReactNode;
+  fieldName: string;
+  isEditing: { field: string } | null;
+  setIsEditing: React.Dispatch<React.SetStateAction<Editing>>;
+}
+
+export function EditTextField({ children, fieldName, isEditing, setIsEditing }) {
+  return (
+    <div className="flex items-center gap-4">
+      {children}
+      {!isEditing ? (
+        <PencilIcon
+          className="inline h-4 w-4 cursor-pointer"
+          onClick={(e) => {
+            e.preventDefault();
+            setIsEditing({ field: fieldName });
+          }}
+        />
+      ) : null}
+      {isEditing && isEditing.field === fieldName ? (
+        <div className="flex gap-4">
+          <button
+            type="submit"
+            className="inline rounded-full focus:outline-none focus:ring focus:ring-accent2"
+          >
+            <CheckIcon className="h-4 w-4 cursor-pointer" />
+          </button>
+          <button
+            type="button"
+            className="inline rounded-full focus:outline-none focus:ring focus:ring-accent2"
+            onClick={() => {
+              setIsEditing(null);
+            }}
+          >
+            <XMarkIcon className="h-4 w-4 cursor-pointer" />
+          </button>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
