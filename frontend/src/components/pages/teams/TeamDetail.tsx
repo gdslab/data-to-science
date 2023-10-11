@@ -49,6 +49,7 @@ export default function TeamDetail() {
   const revalidator = useRevalidator();
   const teamData = useLoaderData() as TeamData;
   const [isEditing, setIsEditing] = useState<Editing>(null);
+
   return (
     <div>
       <Formik
@@ -74,30 +75,37 @@ export default function TeamDetail() {
       >
         {() => (
           <Form>
-            <div className="grid rows-auto gap-2">
-              <EditTextField
-                fieldName="title"
-                isEditing={isEditing}
-                setIsEditing={setIsEditing}
-              >
-                {!isEditing || isEditing.field !== 'title' ? (
-                  <h2 className="mb-0">{teamData.team.title}</h2>
-                ) : (
-                  <TextField name="title" />
-                )}
-              </EditTextField>
-              <EditTextField
-                fieldName="description"
-                isEditing={isEditing}
-                setIsEditing={setIsEditing}
-              >
-                {!isEditing || isEditing.field !== 'description' ? (
-                  <span className="text-gray-600">{teamData.team.description}</span>
-                ) : (
-                  <TextField name="description" />
-                )}
-              </EditTextField>
-            </div>
+            {teamData.team.is_owner ? (
+              <div className="grid rows-auto gap-2">
+                <EditTextField
+                  fieldName="title"
+                  isEditing={isEditing}
+                  setIsEditing={setIsEditing}
+                >
+                  {!isEditing || isEditing.field !== 'title' ? (
+                    <h2 className="mb-0">{teamData.team.title}</h2>
+                  ) : (
+                    <TextField name="title" />
+                  )}
+                </EditTextField>
+                <EditTextField
+                  fieldName="description"
+                  isEditing={isEditing}
+                  setIsEditing={setIsEditing}
+                >
+                  {!isEditing || isEditing.field !== 'description' ? (
+                    <span className="text-gray-600">{teamData.team.description}</span>
+                  ) : (
+                    <TextField name="description" />
+                  )}
+                </EditTextField>
+              </div>
+            ) : (
+              <div className="grid rows-auto gap-2">
+                <h2 className="mb-0">{teamData.team.title}</h2>
+                <span className="text-gray-600">{teamData.team.description}</span>
+              </div>
+            )}
           </Form>
         )}
       </Formik>
