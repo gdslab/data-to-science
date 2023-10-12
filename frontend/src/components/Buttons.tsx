@@ -3,6 +3,7 @@ import {
   CursorArrowRaysIcon,
   FolderPlusIcon,
   LinkIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 
 interface Button extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -41,6 +42,12 @@ function getIcon(iconName: string) {
           <LinkIcon className="h-4 w-4" aria-hidden="true" />
         </span>
       );
+    case 'trash':
+      return (
+        <span className="pointer-events-none absolute inset-y-0 end-0 grid w-1/4 place-content-center text-white">
+          <TrashIcon className="h-4 w-4" aria-hidden="true" />
+        </span>
+      );
     default:
       return null;
   }
@@ -55,8 +62,13 @@ export function Button({ children, icon, size = 'normal', ...props }: Button) {
           classNames(
             props.disabled
               ? 'text-slate-300 bg-slate-600'
-              : 'text-white bg-accent3 hover:bg-accent3-dark ease-in-out duration-300',
-            'border-2 border-accent3 hover:border-accent3-dark rounded-md py-2 px-8 w-full'
+              : 'text-white ease-in-out duration-300',
+            classNames(
+              icon === 'trash'
+                ? 'bg-red-600 hover:bg-red-700 border-red-700 hover:border-red-800'
+                : 'bg-accent3 hover:bg-accent3-dark border-accent3 hover:border-accent3-dark',
+              'border-2  rounded-md py-2 px-8 w-full'
+            )
           )
         )}
         {...props}

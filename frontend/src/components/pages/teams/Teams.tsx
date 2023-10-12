@@ -1,6 +1,14 @@
 import axios from 'axios';
-import { Link, Outlet, useLoaderData, useLocation, useParams } from 'react-router-dom';
-import { BellIcon, PlusCircleIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import { useEffect } from 'react';
+import {
+  Link,
+  Outlet,
+  useLoaderData,
+  useLocation,
+  useParams,
+  useRevalidator,
+} from 'react-router-dom';
+import { PlusCircleIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 
 import { classNames } from '../../utils';
 
@@ -22,32 +30,21 @@ export async function loader() {
 
 export default function SidebarPage() {
   const teams = useLoaderData() as Team[];
-  const notifications = [{}, {}, {}, {}]; // fetch from data loader
   const { teamId } = useParams();
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const revalidator = useRevalidator();
+
+  useEffect(() => {
+    if (location.state && location.state.reload) {
+      revalidator.revalidate();
+    }
+  }, [location.state]);
 
   return (
     <div className="flex">
       {/* sidebar */}
       <div className="flex h-screen w-80 flex-col justify-between border-e bg-accent3 text-slate-200">
         <div className="px-4 py-6">
-          {/* notifications */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center">
-              <button
-                type="button"
-                className="relative rounded-full accent3 p-1 hover:text-slate-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
-              >
-                <span className="absolute -inset-1.5" />
-                <span className="sr-only">View notifications</span>
-                <BellIcon className="h-6 w-6" aria-hidden="true" />
-              </button>
-              <span className="ml-4">Notifications</span>
-            </div>
-            <div className="flex items-center justify-center h-6 w-6 rounded-full bg-slate-50 border-2 border-gray-200 text-center text-accent1">
-              <span className="text-sm">{notifications.length}</span>
-            </div>
-          </div>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
               <Link
@@ -91,7 +88,7 @@ export default function SidebarPage() {
       </div>
       {/* page content */}
       <div className="m-4 w-full">
-        {pathname === '/teams' && teams.length < 1 ? (
+        {location.pathname === '/teams' && teams.length < 1 ? (
           <span>
             You do not currently belong to any teams. Use the{' '}
             <strong className="font-bold">Add a New Team</strong> button in the side
