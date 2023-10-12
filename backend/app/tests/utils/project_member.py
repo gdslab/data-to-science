@@ -4,21 +4,21 @@ from sqlalchemy.orm import Session
 
 from app import crud, models
 from app.schemas.project_member import ProjectMemberCreate
-from app.tests.utils.project import create_random_project
-from app.tests.utils.user import create_random_user
+from app.tests.utils.project import create_project
+from app.tests.utils.user import create_user
 
 
-def create_random_project_member(
+def create_project_member(
     db: Session,
     email: str | None = None,
     member_id: UUID | None = None,
     project_id: UUID | None = None,
 ) -> models.ProjectMember:
     if member_id is None and email is None:
-        user = create_random_user(db)
+        user = create_user(db)
         member_id = user.id
     if project_id is None:
-        project = create_random_project(db)
+        project = create_project(db)
         project_id = project.id
 
     if member_id:

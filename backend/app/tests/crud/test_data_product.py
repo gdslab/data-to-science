@@ -6,7 +6,7 @@ from app import crud
 from app.core.config import settings
 from app.tests.utils.flight import create_flight
 from app.tests.utils.data_product import SampleDataProduct, test_stac_props_dsm
-from app.tests.utils.user import create_random_user
+from app.tests.utils.user import create_user
 
 
 def test_create_data_product(db: Session) -> None:
@@ -39,7 +39,7 @@ def test_read_data_product(db: Session) -> None:
 
 
 def test_read_data_products(db: Session) -> None:
-    user = create_random_user(db)
+    user = create_user(db)
     flight = create_flight(db)
     SampleDataProduct(db, flight=flight, user=user)
     SampleDataProduct(db, flight=flight, user=user)

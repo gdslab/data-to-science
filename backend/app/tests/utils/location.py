@@ -4,7 +4,7 @@ from app import crud, models
 from app.schemas.location import LocationCreate
 
 
-def create_random_location(db: Session) -> models.Location:
+def create_location(db: Session) -> models.Location:
     """Create random location."""
     coords = [
         "-86.919558 40.420374",

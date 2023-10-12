@@ -7,11 +7,11 @@ from sqlalchemy.orm import Session
 
 from app import crud
 from app.core.config import settings
-from app.tests.utils.user import create_random_user
+from app.tests.utils.user import create_user
 
 
 def test_login_with_valid_credentials(client: TestClient, db: Session) -> None:
-    user = create_random_user(db, password="mysecretpassword")
+    user = create_user(db, password="mysecretpassword")
     data = {"username": user.email, "password": "mysecretpassword"}
     r = client.post(
         f"{settings.API_V1_STR}/auth/access-token",
@@ -23,7 +23,7 @@ def test_login_with_valid_credentials(client: TestClient, db: Session) -> None:
 
 
 def test_login_with_invalid_credentials(client: TestClient, db: Session) -> None:
-    user = create_random_user(db, password="mysecretpassword")
+    user = create_user(db, password="mysecretpassword")
     data = {"username": user.email, "password": "mywrongpassword"}
     r = client.post(
         f"{settings.API_V1_STR}/auth/access-token",
@@ -35,7 +35,7 @@ def test_login_with_invalid_credentials(client: TestClient, db: Session) -> None
 
 
 def test_logout_removes_authorization_cookie(client: TestClient, db: Session) -> None:
-    user = create_random_user(db, password="mysecretpassword")
+    user = create_user(db, password="mysecretpassword")
     data = {"username": user.email, "password": "mysecretpassword"}
     # login
     r = client.post(
@@ -55,7 +55,7 @@ def test_logout_removes_authorization_cookie(client: TestClient, db: Session) ->
 
 def test_email_confirmation_with_valid_token(client: TestClient, db: Session) -> None:
     token = secrets.token_urlsafe()
-    user = create_random_user(db, token=token)
+    user = create_user(db, token=token)
     r = client.get(
         f"{settings.API_V1_STR}/auth/confirm-email",
         params={"token": token},
@@ -71,7 +71,7 @@ def test_email_confirmation_with_valid_token(client: TestClient, db: Session) ->
 #     db: Session
 # ) -> None:
 #     token = secrets.token_urlsafe()
-#     user = create_random_user(db, token=token, token_expired=True)
+#     user = create_user(db, token=token, token_expired=True)
 #     r = client.get(
 #         f"{settings.API_V1_STR}/auth/confirm-email",
 #         params={"token": token},
@@ -83,7 +83,7 @@ def test_email_confirmation_with_valid_token(client: TestClient, db: Session) ->
 
 def test_email_confirmation_with_invalid_token(client: TestClient, db: Session) -> None:
     token = secrets.token_urlsafe()
-    user = create_random_user(db, token=token)
+    user = create_user(db, token=token)
     junk = "".join(random.choices(string.ascii_letters + string.digits, k=5))
     r = client.get(
         f"{settings.API_V1_STR}/auth/confirm-email",

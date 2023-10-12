@@ -8,8 +8,8 @@ from app.core.config import settings
 from app.schemas.data_product import DataProductCreate
 from app.tests.utils.flight import create_flight
 from app.tests.utils.job import create_job
-from app.tests.utils.project import create_random_project
-from app.tests.utils.user import create_random_user
+from app.tests.utils.project import create_project
+from app.tests.utils.user import create_user
 from app.tests.utils.user_style import create_user_style
 
 
@@ -28,12 +28,12 @@ class SampleDataProduct:
         # Set up user, project, and flight
         self.data_type = data_type
         if not user:
-            self.user = create_random_user(db)
+            self.user = create_user(db)
         else:
             self.user = user
 
         if not project:
-            self.project = create_random_project(db, owner_id=self.user.id)
+            self.project = create_project(db, owner_id=self.user.id)
         else:
             self.project = project
 

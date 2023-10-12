@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
 from app.core.config import settings
 from app.tests.utils.data_product import SampleDataProduct
-from app.tests.utils.project import create_random_project
+from app.tests.utils.project import create_project
 from app.tests.utils.flight import create_flight
 
 
@@ -15,7 +15,7 @@ def test_create_data_product(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
-    project = create_random_project(db, owner_id=current_user.id)
+    project = create_project(db, owner_id=current_user.id)
     flight = create_flight(db, project_id=project.id)
     geotiff = os.path.join(os.sep, "app", "app", "tests", "data", "test.tif")
     with open(geotiff, "rb") as data:
@@ -57,7 +57,7 @@ def test_read_data_products(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
-    project = create_random_project(db, owner_id=current_user.id)
+    project = create_project(db, owner_id=current_user.id)
     flight = create_flight(db, project_id=project.id)
     for i in range(0, 3):
         SampleDataProduct(

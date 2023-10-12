@@ -6,15 +6,15 @@ from sqlalchemy.orm import Session
 
 from app import crud, models
 from app.schemas.project import ProjectCreate
-from app.tests.utils.location import create_random_location
-from app.tests.utils.user import create_random_user
+from app.tests.utils.location import create_location
+from app.tests.utils.user import create_user
 from app.tests.utils.utils import random_team_name, random_team_description
 
 
 faker = Faker()
 
 
-def create_random_project(
+def create_project(
     db: Session,
     title: str | None = None,
     description: str | None = None,
@@ -26,7 +26,7 @@ def create_random_project(
 ) -> models.Project:
     """Create random project with no team association."""
     if owner_id is None:
-        user = create_random_user(db)
+        user = create_user(db)
         owner_id = user.id
     if title is None:
         title = random_team_name()
@@ -37,7 +37,7 @@ def create_random_project(
     if harvest_date is None:
         harvest_date = random_harvest_date()
     if location_id is None:
-        location = create_random_location(db)
+        location = create_location(db)
         location_id = location.id
 
     project_in = ProjectCreate(

@@ -7,15 +7,15 @@ from app.core.config import settings
 from app.models.flight import PLATFORMS, SENSORS
 from app.schemas.flight import FlightUpdate
 from app.tests.utils.flight import create_flight
-from app.tests.utils.project import create_random_project
-from app.tests.utils.user import create_random_user
+from app.tests.utils.project import create_project
+from app.tests.utils.user import create_user
 
 
 def test_create_flight(db: Session) -> None:
     """Verify new flight is created in database."""
-    pilot = create_random_user(db)
-    project_owner = create_random_user(db)
-    project = create_random_project(db, owner_id=project_owner.id)
+    pilot = create_user(db)
+    project_owner = create_user(db)
+    project = create_project(db, owner_id=project_owner.id)
     acquisition_date = date.today()
     altitude = 100
     side_overlap = 60
@@ -60,9 +60,9 @@ def test_get_flight(db: Session) -> None:
 
 def test_get_flights(db: Session) -> None:
     """Verify retrieval of flights associated with project."""
-    user = create_random_user(db)
-    project = create_random_project(db, owner_id=user.id)
-    other_project = create_random_project(db)
+    user = create_user(db)
+    project = create_project(db, owner_id=user.id)
+    other_project = create_project(db)
     create_flight(db, project_id=project.id)
     create_flight(db, project_id=project.id)
     create_flight(db, project_id=project.id)

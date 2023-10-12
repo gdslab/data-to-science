@@ -11,16 +11,16 @@ from app.models.flight import SENSORS, PLATFORMS
 from app.schemas.flight import FlightUpdate
 from app.schemas.project_member import ProjectMemberCreate
 from app.tests.utils.flight import create_flight, create_acquisition_date
-from app.tests.utils.project import create_random_project
-from app.tests.utils.user import create_random_user
+from app.tests.utils.project import create_project
+from app.tests.utils.user import create_user
 
 
 def test_create_flight(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify new flight is created in database."""
-    pilot = create_random_user(db)
-    project = create_random_project(db)
+    pilot = create_user(db)
+    project = create_project(db)
     current_user = get_current_user(db, normal_user_access_token)
     project_member_in = ProjectMemberCreate(member_id=current_user.id)
     crud.project_member.create_with_project(
@@ -54,8 +54,8 @@ def test_create_flight_without_project_access(
     normal_user_access_token: str,
 ) -> None:
     """Verify failure to create new flight when current user is not project member."""
-    pilot = create_random_user(db)
-    project = create_random_project(db)
+    pilot = create_user(db)
+    project = create_project(db)
     data = {
         "acquisition_date": create_acquisition_date(),
         "altitude": randint(0, 500),
@@ -77,7 +77,7 @@ def test_get_flight(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify retrieval of flight the current user can access."""
-    project = create_random_project(db)
+    project = create_project(db)
     flight = create_flight(db, project_id=project.id)
     current_user = get_current_user(db, normal_user_access_token)
     project_member_in = ProjectMemberCreate(member_id=current_user.id)
@@ -96,7 +96,7 @@ def test_get_flights(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify retrieval of flights associated with project."""
-    project = create_random_project(db)
+    project = create_project(db)
     create_flight(db, project_id=project.id)
     create_flight(db, project_id=project.id)
     create_flight(db, project_id=project.id)
@@ -119,7 +119,7 @@ def test_get_flight_without_project_access(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify failure to retrieve flight the current user cannot access."""
-    project = create_random_project(db)
+    project = create_project(db)
     flight = create_flight(db, project_id=project.id)
     r = client.get(
         f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}",
@@ -131,7 +131,7 @@ def test_update_flight(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify update of flight in project current user can access."""
-    project = create_random_project(db)
+    project = create_project(db)
     flight = create_flight(db, altitude=50, project_id=project.id)
     current_user = get_current_user(db, normal_user_access_token)
     project_member_in = ProjectMemberCreate(member_id=current_user.id)
@@ -158,7 +158,7 @@ def test_update_flight_without_project_access(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify failure to update flight in project current user cannot access."""
-    project = create_random_project(db)
+    project = create_project(db)
     flight = create_flight(db, altitude=50, project_id=project.id)
     flight_in = FlightUpdate(
         **{k: v for k, v in flight.__dict__.items() if k != "altitude"}, altitude=100

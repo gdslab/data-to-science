@@ -5,13 +5,13 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.core.security import verify_password
 from app.schemas.user import UserUpdate
-from app.tests.utils.user import create_random_user, create_random_user_in
+from app.tests.utils.user import create_user, create_user_in
 from app.tests.utils.utils import random_email, random_full_name, random_password
 
 
 def test_create_user(db: Session) -> None:
     """Verify new user is created in database."""
-    user_in = create_random_user_in()
+    user_in = create_user_in()
     user = crud.user.create(db, obj_in=user_in)
     assert user.email == user_in.email
     assert hasattr(user, "hashed_password")
@@ -22,15 +22,15 @@ def test_create_user(db: Session) -> None:
 
 def test_create_user_with_existing_email(db: Session) -> None:
     """Verify cannot create new user with an existing (non-unique) email."""
-    user_in = create_random_user_in()
+    user_in = create_user_in()
     user = crud.user.create(db, obj_in=user_in)
     with pytest.raises(IntegrityError):
-        create_random_user(db, email=user.email)
+        create_user(db, email=user.email)
 
 
 def test_get_user_by_id(db: Session) -> None:
     """Verify retrieving user by id returns correct user."""
-    user = create_random_user(db)
+    user = create_user(db)
     retrieved_user = crud.user.get_by_id(db, user_id=user.id)
     assert retrieved_user
     assert user.email == retrieved_user.email
@@ -39,7 +39,7 @@ def test_get_user_by_id(db: Session) -> None:
 
 def test_get_user_by_email(db: Session) -> None:
     """Verify retrieving user by email returns correct user."""
-    user = create_random_user(db)
+    user = create_user(db)
     retrieved_user = crud.user.get_by_email(db, email=user.email)
     assert retrieved_user
     assert user.email == retrieved_user.email
@@ -48,7 +48,7 @@ def test_get_user_by_email(db: Session) -> None:
 
 def test_update_user(db: Session) -> None:
     """Verify update changes user attributes in database."""
-    user = create_random_user(db)
+    user = create_user(db)
     new_password = random_password()
     new_first_name = random_full_name()["first"]
     user_in_update = UserUpdate(
@@ -64,7 +64,7 @@ def test_update_user(db: Session) -> None:
 
 def test_authenticate_user(db: Session) -> None:
     """Verify user is authenticated when correct credentials are provided."""
-    user_in = create_random_user_in()
+    user_in = create_user_in()
     user = crud.user.create(db, obj_in=user_in)
     authenticated_user = crud.user.authenticate(
         db, email=user_in.email, password=user_in.password
@@ -83,6 +83,6 @@ def test_not_authenticate_user(db: Session) -> None:
 
 def test_check_if_user_is_normal_user_by_default(db: Session) -> None:
     """Verify new user is not superuser by default at creation."""
-    user = create_random_user(db)
+    user = create_user(db)
     is_superuser = crud.user.is_superuser(user)
     assert is_superuser is False

@@ -7,7 +7,7 @@ from app.api.deps import get_current_user
 from app.core.config import settings
 from app.core.mail import fm
 from app.schemas.user import UserUpdate
-from app.tests.utils.user import create_random_user
+from app.tests.utils.user import create_user
 from app.tests.utils.utils import random_email, random_full_name, random_password
 
 
@@ -28,16 +28,22 @@ def test_create_user_new_email(client: TestClient, db: Session) -> None:
     user = crud.user.get_by_email(db, email=data["email"])
     assert user
     assert user.email == created_user["email"]
-    assert len(outbox) == 1
+    assert len(outbox) == 2
     assert (
         outbox[0]["from"] == settings.MAIL_FROM_NAME + " <" + settings.MAIL_FROM + ">"
     )
     assert outbox[0]["To"] == user.email
+    assert outbox[0]["Subject"] == "Confirm your email address"
+    assert (
+        outbox[1]["from"] == settings.MAIL_FROM_NAME + " <" + settings.MAIL_FROM + ">"
+    )
+    assert outbox[1]["To"] == settings.MAIL_ADMINS.replace(",", ", ")
+    assert outbox[1]["Subject"] == "D2S New Account"
 
 
 def test_create_user_existing_email(client: TestClient, db: Session) -> None:
     """Verify new user is not created in database when existing email provided."""
-    existing_user = create_random_user(db, email=random_email())
+    existing_user = create_user(db, email=random_email())
     data = {
         "email": existing_user.email,
         "password": random_password(),

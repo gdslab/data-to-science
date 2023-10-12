@@ -23,9 +23,7 @@ def login_and_get_access_token(*, client: TestClient, email: str, password: str)
         raise Exception("Unable to find access token")
 
 
-def create_random_user_in(
-    email: str | None = None, password: str | None = None
-) -> UserCreate:
+def create_user_in(email: str | None = None, password: str | None = None) -> UserCreate:
     """Create random user model with specific email if provided."""
     if not email:
         email = random_email()
@@ -41,7 +39,7 @@ def create_random_user_in(
     return user_in
 
 
-def create_random_user(
+def create_user(
     db: Session,
     email: str | None = None,
     password: str | None = None,
@@ -50,7 +48,7 @@ def create_random_user(
     token_expired: bool = False,
 ) -> User:
     """Create random user in database with specific email if provided."""
-    user_in = create_random_user_in(email=email, password=password)
+    user_in = create_user_in(email=email, password=password)
     user = crud.user.create(db, obj_in=user_in)
     if is_approved:
         statement = (
@@ -92,7 +90,7 @@ def authentication_token_from_email(
     password = random_password()
     user = crud.user.get_by_email(db, email=email)
     if not user:
-        user = create_random_user(db, email)
+        user = create_user(db, email)
 
     user_in_update = UserUpdate(password=password, is_approved=True)
     user = crud.user.update(db, db_obj=user, obj_in=user_in_update)

@@ -8,8 +8,8 @@ from sqlalchemy.orm import Session
 from app import crud, models
 from app.models.flight import PLATFORMS, SENSORS
 from app.schemas.flight import FlightCreate
-from app.tests.utils.project import create_random_project
-from app.tests.utils.user import create_random_user
+from app.tests.utils.project import create_project
+from app.tests.utils.user import create_user
 
 
 faker = Faker()
@@ -19,11 +19,11 @@ def create_flight(
     db: Session, project_id: UUID | None = None, pilot_id: UUID | None = None, **kwargs
 ) -> models.Flight:
     if pilot_id is None:
-        pilot = create_random_user(db)
+        pilot = create_user(db)
         pilot_id = pilot.id
     if project_id is None:
-        project_owner = create_random_user(db)
-        project = create_random_project(db, owner_id=project_owner.id)
+        project_owner = create_user(db)
+        project = create_project(db, owner_id=project_owner.id)
         project_id = project.id
     if "acquisition_date" not in kwargs:
         acquisition_date = create_acquisition_date()

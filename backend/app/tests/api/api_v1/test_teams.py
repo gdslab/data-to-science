@@ -8,12 +8,12 @@ from app.core.config import settings
 from app.schemas.team import TeamUpdate
 from app.schemas.team_member import TeamMemberCreate
 from app.tests.utils.team import (
-    create_random_team,
+    create_team,
     random_team_description,
     random_team_name,
 )
-from app.tests.utils.team_member import create_random_team_member
-from app.tests.utils.user import create_random_user
+from app.tests.utils.team_member import create_team_member
+from app.tests.utils.user import create_user
 
 
 def test_create_team(client: TestClient, normal_user_access_token: str) -> None:
@@ -36,14 +36,14 @@ def test_get_teams(
         get_current_user(db, normal_user_access_token),
     )
     # create team with current user as owner
-    team1 = create_random_team(db, owner_id=current_user.id)
+    team1 = create_team(db, owner_id=current_user.id)
     # create team with a different user as owner
-    team2 = create_random_team(db)
+    team2 = create_team(db)
     # add current user as member to team2
     team2_member_in = TeamMemberCreate(email=current_user.email)
     crud.team_member.create_with_team(db, obj_in=team2_member_in, team_id=team2.id)
     # create team that current user does not belong to
-    create_random_team(db)
+    create_team(db)
     # request list of teams the current user belongs to
     r = client.get(f"{settings.API_V1_STR}/teams")
     assert 200 == r.status_code
@@ -68,7 +68,7 @@ def test_get_team_owned_by_current_user(
     current_user = get_current_approved_user(
         get_current_user(db, normal_user_access_token),
     )
-    team = create_random_team(db, owner_id=current_user.id)
+    team = create_team(db, owner_id=current_user.id)
     r = client.get(
         f"{settings.API_V1_STR}/teams/{team.id}",
     )
@@ -88,7 +88,7 @@ def test_get_team_current_user_is_member_of(
     current_user = get_current_approved_user(
         get_current_user(db, normal_user_access_token),
     )
-    team = create_random_team(db)
+    team = create_team(db)
     # add current user to team
     team_member_in = TeamMemberCreate(email=current_user.email)
     crud.team_member.create_with_team(db, obj_in=team_member_in, team_id=team.id)
@@ -106,7 +106,7 @@ def test_get_team_current_user_does_not_belong_to(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify failure to retrieve team the current user is not a member of."""
-    team = create_random_team(db)
+    team = create_team(db)
     r = client.get(
         f"{settings.API_V1_STR}/teams/{team.id}",
     )
@@ -120,7 +120,7 @@ def test_update_team_owned_by_current_user(
     current_user = get_current_approved_user(
         get_current_user(db, normal_user_access_token),
     )
-    team = create_random_team(db, owner_id=current_user.id)
+    team = create_team(db, owner_id=current_user.id)
     team_in = jsonable_encoder(
         TeamUpdate(
             title=random_team_name(),
@@ -146,7 +146,7 @@ def test_update_team_current_user_is_member_of_but_doesnt_own(
     current_user = get_current_approved_user(
         get_current_user(db, normal_user_access_token),
     )
-    team = create_random_team(db)
+    team = create_team(db)
     # add current user to team
     team_member_in = TeamMemberCreate(email=current_user.email)
     crud.team_member.create_with_team(db, obj_in=team_member_in, team_id=team.id)
@@ -167,7 +167,7 @@ def test_update_team_current_user_does_not_belong_to(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify failure to update project the current user is not a member of."""
-    team = create_random_team(db)
+    team = create_team(db)
     team_in = TeamUpdate(
         title=random_team_name(),
         description=random_team_description(),
@@ -186,8 +186,8 @@ def test_add_new_team_member_by_team_owner(
     current_user = get_current_approved_user(
         get_current_user(db, normal_user_access_token),
     )
-    team = create_random_team(db, owner_id=current_user.id)
-    new_member = create_random_user(db)
+    team = create_team(db, owner_id=current_user.id)
+    new_member = create_user(db)
     data = {"email": new_member.email}
     r = client.post(
         f"{settings.API_V1_STR}/teams/{team.id}/members", json=jsonable_encoder(data)
@@ -205,9 +205,9 @@ def test_add_new_team_member_by_regular_team_member(
     current_user = get_current_approved_user(
         get_current_user(db, normal_user_access_token),
     )
-    team = create_random_team(db)
-    create_random_team_member(db, email=current_user.email, team_id=team.id)
-    new_member = create_random_user(db)
+    team = create_team(db)
+    create_team_member(db, email=current_user.email, team_id=team.id)
+    new_member = create_user(db)
     data = {"email": new_member.email}
     r = client.post(
         f"{settings.API_V1_STR}/teams/{team.id}/members", json=jsonable_encoder(data)
@@ -222,9 +222,9 @@ def test_add_existing_team_member_to_team(
     current_user = get_current_approved_user(
         get_current_user(db, normal_user_access_token),
     )
-    team = create_random_team(db, owner_id=current_user.id)
-    team_member = create_random_user(db)
-    create_random_team_member(db, email=team_member.email, team_id=team.id)
+    team = create_team(db, owner_id=current_user.id)
+    team_member = create_user(db)
+    create_team_member(db, email=team_member.email, team_id=team.id)
     data = {"email": team_member.email}
     r = client.post(
         f"{settings.API_V1_STR}/teams/{team.id}/members", json=jsonable_encoder(data)
@@ -239,12 +239,46 @@ def test_add_new_team_member_with_unused_email(
     current_user = get_current_approved_user(
         get_current_user(db, normal_user_access_token),
     )
-    team = create_random_team(db, owner_id=current_user.id)
+    team = create_team(db, owner_id=current_user.id)
     data = {"email": "email@notindb.doh"}
     r = client.post(
         f"{settings.API_V1_STR}/teams/{team.id}/members", json=jsonable_encoder(data)
     )
     assert 404 == r.status_code
+
+
+def test_remove_team_by_owner(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    team = create_team(db, owner_id=current_user.id)
+    response = client.delete(f"{settings.API_V1_STR}/teams/{team.id}")
+    assert response.status_code == 200
+    team_in_db = crud.team.get(db, id=team.id)
+    assert team_in_db is None
+
+
+def test_remove_team_by_nonowner(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    # current user is not owner and not team member
+    other_user = create_user(db)
+    team = create_team(db, owner_id=other_user.id)
+    response = client.delete(f"{settings.API_V1_STR}/teams/{team.id}")
+    team_in_db = crud.team.get(db, id=team.id)
+    assert response.status_code == 404
+    assert team_in_db
+    # current user is not owner but is a team member
+    create_team_member(db, team_id=team.id, email=current_user.email)
+    response = client.delete(f"{settings.API_V1_STR}/teams{team.id}")
+    team_in_db = crud.team.get(db, id=team.id)
+    assert response.status_code == 404
+    assert team_in_db
 
 
 def test_remove_team_member(
@@ -254,8 +288,8 @@ def test_remove_team_member(
     current_user = get_current_approved_user(
         get_current_user(db, normal_user_access_token)
     )
-    team = create_random_team(db, owner_id=current_user.id)
-    team_member = create_random_team_member(db, team_id=team.id)
+    team = create_team(db, owner_id=current_user.id)
+    team_member = create_team_member(db, team_id=team.id)
     r = client.delete(f"{settings.API_V1_STR}/teams/{team.id}/members/{team_member.id}")
     assert r.status_code == 200
     removed_team_member = r.json()
@@ -267,8 +301,8 @@ def test_remove_team_member_by_unauthorized_user(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify attempt to remove team member by non-owner fails."""
-    owner = create_random_user(db)
-    team = create_random_team(db, owner_id=owner.id)
-    team_member = create_random_team_member(db, team_id=team.id)
+    owner = create_user(db)
+    team = create_team(db, owner_id=owner.id)
+    team_member = create_team_member(db, team_id=team.id)
     r = client.delete(f"{settings.API_V1_STR}/teams/{team.id}/members/{team_member.id}")
     assert r.status_code == 403

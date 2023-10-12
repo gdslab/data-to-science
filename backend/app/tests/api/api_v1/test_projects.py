@@ -7,22 +7,22 @@ from app.api.deps import get_current_user, get_current_approved_user
 from app.core.config import settings
 from app.schemas.project import ProjectUpdate
 from app.schemas.project_member import ProjectMemberCreate
-from app.tests.utils.location import create_random_location
+from app.tests.utils.location import create_location
 from app.tests.utils.project import (
-    create_random_project,
+    create_project,
     random_planting_date,
     random_harvest_date,
 )
-from app.tests.utils.project_member import create_random_project_member
+from app.tests.utils.project_member import create_project_member
 from app.tests.utils.team import random_team_name, random_team_description
-from app.tests.utils.user import create_random_user
+from app.tests.utils.user import create_user
 
 
 def test_create_project(
     client: TestClient, normal_user_access_token: str, db: Session
 ) -> None:
     """Verify new project is created in database."""
-    location = create_random_location(db)
+    location = create_location(db)
     data = {
         "title": random_team_name(),
         "description": random_team_description(),
@@ -51,16 +51,16 @@ def test_get_projects(
     # create two projects with current user as a member
     current_user = get_current_user(db, normal_user_access_token)
     # create project with current user as owner
-    project1 = create_random_project(db, owner_id=current_user.id)
+    project1 = create_project(db, owner_id=current_user.id)
     # create project with a different user as owner
-    project2 = create_random_project(db)
+    project2 = create_project(db)
     # add current user as member to project2
     project2_member_in = ProjectMemberCreate(member_id=current_user.id)
     crud.project_member.create_with_project(
         db, obj_in=project2_member_in, project_id=project2.id
     )
     # create project that current user does not belong to
-    create_random_project(db)
+    create_project(db)
     # request list of projects the current user belongs to
     r = client.get(
         f"{settings.API_V1_STR}/projects/",
@@ -88,7 +88,7 @@ def test_get_project_owned_by_current_user(
 ) -> None:
     """Verify retrieval of project the current user owns."""
     current_user = get_current_user(db, normal_user_access_token)
-    project = jsonable_encoder(create_random_project(db, owner_id=current_user.id))
+    project = jsonable_encoder(create_project(db, owner_id=current_user.id))
     r = client.get(
         f"{settings.API_V1_STR}/projects/" + project["id"],
     )
@@ -109,7 +109,7 @@ def test_get_project_current_user_is_member_of(
 ) -> None:
     """Verify retrieval of project the current user is a member of but doesn't own."""
     current_user = get_current_user(db, normal_user_access_token)
-    project = create_random_project(db)
+    project = create_project(db)
     # add current user to project
     project_member_in = ProjectMemberCreate(member_id=current_user.id)
     crud.project_member.create_with_project(
@@ -129,7 +129,7 @@ def test_get_project_current_user_does_not_belong_to(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify failure to retrieve project the current user is not a member of."""
-    project = create_random_project(db)
+    project = create_project(db)
     r = client.get(
         f"{settings.API_V1_STR}/projects/{project.id}",
     )
@@ -141,18 +141,18 @@ def test_get_project_members_for_project(
 ) -> None:
     """Verify retrieval of project members if current user has access to project."""
     current_user = get_current_user(db, normal_user_access_token)
-    project = create_random_project(db)
+    project = create_project(db)
     # add current user to project
     project_member_in = ProjectMemberCreate(member_id=current_user.id)
     crud.project_member.create_with_project(
         db, obj_in=project_member_in, project_id=project.id
     )
-    project_member2 = create_random_user(db)
+    project_member2 = create_user(db)
     project_member2_in = ProjectMemberCreate(member_id=project_member2.id)
     crud.project_member.create_with_project(
         db, obj_in=project_member2_in, project_id=project.id
     )
-    project_member3 = create_random_user(db)
+    project_member3 = create_user(db)
     project_member3_in = ProjectMemberCreate(member_id=project_member3.id)
     crud.project_member.create_with_project(
         db, obj_in=project_member3_in, project_id=project.id
@@ -171,14 +171,14 @@ def test_update_project_owned_by_current_user(
 ) -> None:
     """Verify update by project owner changes team attributes in database."""
     current_user = get_current_user(db, normal_user_access_token)
-    project = create_random_project(db, owner_id=current_user.id)
+    project = create_project(db, owner_id=current_user.id)
     project_in = jsonable_encoder(
         ProjectUpdate(
             title=random_team_name(),
             description=random_team_description(),
             planting_date=random_planting_date(),
             harvest_date=random_harvest_date(),
-            location_id=create_random_location(db).id,
+            location_id=create_location(db).id,
         ).model_dump()
     )
     r = client.put(
@@ -201,7 +201,7 @@ def test_update_project_current_user_is_member_of(
 ) -> None:
     """Verify update of project the current user is a member of but doesn't own."""
     current_user = get_current_user(db, normal_user_access_token)
-    project = create_random_project(db)
+    project = create_project(db)
     # add current user to project
     project_member_in = ProjectMemberCreate(member_id=current_user.id)
     crud.project_member.create_with_project(
@@ -213,7 +213,7 @@ def test_update_project_current_user_is_member_of(
             description=random_team_description(),
             planting_date=random_planting_date(),
             harvest_date=random_harvest_date(),
-            location_id=create_random_location(db).id,
+            location_id=create_location(db).id,
         ).model_dump()
     )
     r = client.put(
@@ -235,13 +235,13 @@ def test_update_project_current_user_does_not_belong_to(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify failure to update project the current user is not a member of."""
-    project = create_random_project(db)
+    project = create_project(db)
     project_in = ProjectUpdate(
         title=random_team_name(),
         description=random_team_description(),
         planting_date=random_planting_date(),
         harvest_date=random_harvest_date(),
-        location_id=create_random_location(db).id,
+        location_id=create_location(db).id,
     )
     r = client.put(
         f"{settings.API_V1_STR}/projects/{project.id}",
@@ -257,8 +257,8 @@ def test_add_new_project_member_by_email_and_project_owner(
     current_user = get_current_approved_user(
         get_current_user(db, normal_user_access_token),
     )
-    project = create_random_project(db, owner_id=current_user.id)
-    new_member = create_random_user(db)
+    project = create_project(db, owner_id=current_user.id)
+    new_member = create_user(db)
     data = {"email": new_member.email, "member_id": None}
     r = client.post(
         f"{settings.API_V1_STR}/projects/{project.id}/members",
@@ -277,8 +277,8 @@ def test_add_new_project_member_by_id_and_project_owner(
     current_user = get_current_approved_user(
         get_current_user(db, normal_user_access_token),
     )
-    project = create_random_project(db, owner_id=current_user.id)
-    new_member = create_random_user(db)
+    project = create_project(db, owner_id=current_user.id)
+    new_member = create_user(db)
     data = {"member_id": new_member.id}
     r = client.post(
         f"{settings.API_V1_STR}/projects/{project.id}/members",
@@ -297,9 +297,9 @@ def test_add_new_project_member_by_email_and_regular_project_member(
     current_user = get_current_approved_user(
         get_current_user(db, normal_user_access_token),
     )
-    project = create_random_project(db)
-    create_random_project_member(db, email=current_user.email, project_id=project.id)
-    new_member = create_random_user(db)
+    project = create_project(db)
+    create_project_member(db, email=current_user.email, project_id=project.id)
+    new_member = create_user(db)
     data = {"email": new_member.email}
     r = client.post(
         f"{settings.API_V1_STR}/project/{project.id}/members",
@@ -315,7 +315,7 @@ def test_add_new_project_member_with_unused_email(
     current_user = get_current_approved_user(
         get_current_user(db, normal_user_access_token),
     )
-    project = create_random_project(db, owner_id=current_user.id)
+    project = create_project(db, owner_id=current_user.id)
     data = {"email": "email@notindb.doh"}
     r = client.post(
         f"{settings.API_V1_STR}/project/{project.id}/members",

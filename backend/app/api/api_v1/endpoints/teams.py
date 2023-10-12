@@ -84,6 +84,25 @@ def update_team(
     return team
 
 
+@router.delete("/{team_id}", response_model=schemas.Team)
+def delete_team(
+    team_id: UUID,
+    team: models.Team = Depends(deps.can_read_write_team),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    if not team:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Team not found"
+        )
+    if team.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+        )
+    team = crud.team.remove(db=db, id=team.id)
+    return team
+
+
 @router.post(
     "/{team_id}/members",
     response_model=schemas.TeamMember,
