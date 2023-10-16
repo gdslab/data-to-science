@@ -6,7 +6,7 @@ import * as Yup from 'yup';
 
 import Alert from '../../Alert';
 import { Button } from '../../Buttons';
-import { Editing, EditTextField, TextField } from '../../InputFields';
+import { Editing, EditField, TextField } from '../../InputFields';
 import Modal from '../../Modal';
 import TeamMemberList from './TeamMemberList';
 
@@ -54,32 +54,32 @@ export default function TeamDetail() {
 
   return (
     <div>
-      <Formik
-        initialValues={{
-          title: teamData.team.title,
-          description: teamData.team.description,
-        }}
-        validationSchema={validationSchema}
-        onSubmit={async (values) => {
-          try {
-            const response = await axios.put(
-              `/api/v1/teams/${teamData.team.id}`,
-              values
-            );
-            if (response) {
-              revalidator.revalidate();
+      {teamData.team.is_owner ? (
+        <Formik
+          initialValues={{
+            title: teamData.team.title,
+            description: teamData.team.description,
+          }}
+          validationSchema={validationSchema}
+          onSubmit={async (values) => {
+            try {
+              const response = await axios.put(
+                `/api/v1/teams/${teamData.team.id}`,
+                values
+              );
+              if (response) {
+                revalidator.revalidate();
+              }
+              setIsEditing(null);
+            } catch (err) {
+              setIsEditing(null);
             }
-            setIsEditing(null);
-          } catch (err) {
-            setIsEditing(null);
-          }
-        }}
-      >
-        {() => (
-          <Form>
-            {teamData.team.is_owner ? (
+          }}
+        >
+          {() => (
+            <Form>
               <div className="grid rows-auto gap-2">
-                <EditTextField
+                <EditField
                   fieldName="title"
                   isEditing={isEditing}
                   setIsEditing={setIsEditing}
@@ -89,8 +89,8 @@ export default function TeamDetail() {
                   ) : (
                     <TextField name="title" />
                   )}
-                </EditTextField>
-                <EditTextField
+                </EditField>
+                <EditField
                   fieldName="description"
                   isEditing={isEditing}
                   setIsEditing={setIsEditing}
@@ -100,17 +100,17 @@ export default function TeamDetail() {
                   ) : (
                     <TextField name="description" />
                   )}
-                </EditTextField>
+                </EditField>
               </div>
-            ) : (
-              <div className="grid rows-auto gap-2">
-                <h2 className="mb-0">{teamData.team.title}</h2>
-                <span className="text-gray-600">{teamData.team.description}</span>
-              </div>
-            )}
-          </Form>
-        )}
-      </Formik>
+            </Form>
+          )}
+        </Formik>
+      ) : (
+        <div className="grid rows-auto gap-2">
+          <h2 className="mb-0">{teamData.team.title}</h2>
+          <span className="text-gray-600">{teamData.team.description}</span>
+        </div>
+      )}
       <hr className="mt-4 border-gray-700" />
       <div className="mt-9">
         <h2>{teamData.team.title} Members</h2>

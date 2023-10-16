@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 
 from app import crud
 from app.schemas.team import TeamUpdate
+from app.tests.utils.project import create_project
 from app.tests.utils.team import create_team
 from app.tests.utils.team_member import create_team_member
 from app.tests.utils.user import create_user
@@ -56,11 +57,24 @@ def test_update_team(db: Session) -> None:
 def test_delete_team(db: Session) -> None:
     user = create_user(db)
     team = create_team(db, owner_id=user.id)
-    team2 = crud.team.remove(db=db, id=team.id)
-    team3 = crud.team.get(db=db, id=team.id)
+    team2 = crud.team.remove(db, id=team.id)
+    team3 = crud.team.get(db, id=team.id)
     assert team3 is None
     assert team2
     assert team2.id == team.id
     assert team2.title == team.title
     assert team2.description == team.description
     assert team2.owner_id == user.id
+
+
+def test_delete_team_with_project_association(db: Session) -> None:
+    user = create_user(db)
+    team = create_team(db, owner_id=user.id)
+    project = create_project(db, owner_id=user.id, team_id=team.id)
+    crud.team.remove(db, id=team.id)
+    team2 = crud.team.get(db, id=team.id)
+    project2 = crud.project.get(db, id=project.id)
+    assert team2 is None
+    assert project.team_id == team.id
+    assert project2
+    assert project2.team_id is None

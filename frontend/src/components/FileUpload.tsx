@@ -8,7 +8,7 @@ import XHRUpload from '@uppy/xhr-upload';
 import '@uppy/core/dist/style.min.css';
 import '@uppy/dashboard/dist/style.min.css';
 
-import { FeatureCollection } from './maps/MapModal';
+import { FeatureCollection } from './pages/projects/ProjectForm';
 
 // Don’t forget to keep the Uppy instance outside of your component.
 function createUppy(upload_endpoint: string) {

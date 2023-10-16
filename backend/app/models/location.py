@@ -23,3 +23,9 @@ class Location(Base):
     geom: Mapped[str] = mapped_column(Geometry("POLYGON"), nullable=False)
 
     projects: Mapped[list["Project"]] = relationship(back_populates="location")
+
+    def __repr__(self) -> str:
+        return (
+            f"Location(id={self.id!r}, center_x={self.center_x!r}, "
+            f"center_y={self.center_y!r}, geom={self.geom!r})"
+        )

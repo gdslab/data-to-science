@@ -16,9 +16,9 @@ class PolygonGeoJSONFeature(BaseModel):
 
 # shared properties
 class LocationBase(BaseModel):
-    center_x: float
-    center_y: float
-    geom: str
+    center_x: float | None = None
+    center_y: float | None = None
+    geom: str | None = None
 
 
 # properties to receive via API on creation

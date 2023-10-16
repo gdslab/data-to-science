@@ -22,8 +22,8 @@ export function TableBody({
       {rows.map((row, i) => (
         <tr key={`row-${i}`}>
           {row.map((value, j) => (
-            <td key={`cell-${i},${j}`} className="p-4 text-slate-500 text-center">
-              {value}
+            <td key={`cell-${i},${j}`} className="p-4">
+              <div className="flex grow-0 items-center justify-center">{value}</div>
             </td>
           ))}
           {actions ? (

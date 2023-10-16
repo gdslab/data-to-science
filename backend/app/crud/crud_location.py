@@ -1,7 +1,8 @@
+from typing import Any
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
@@ -31,6 +32,22 @@ class CRUDLocation(CRUDBase[Location, LocationCreate, LocationUpdate]):
         with db as session:
             location = session.scalars(statement).one_or_none()
         return location
+
+    def update_location(
+        self, db: Session, obj_in: LocationUpdate | dict[str, Any], location_id: UUID
+    ) -> Location | None:
+        if isinstance(obj_in, dict):
+            update_data = obj_in
+        else:
+            update_data = obj_in.model_dump(exclude_unset=True)
+        statement = (
+            update(self.model).where(self.model.id == location_id).values(update_data)
+        )
+        with db as session:
+            session.execute(statement)
+            session.commit()
+
+        return self.get_geojson_location(db, location_id=location_id)
 
 
 location = CRUDLocation(Location)

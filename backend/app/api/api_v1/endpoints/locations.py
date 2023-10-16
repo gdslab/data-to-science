@@ -1,4 +1,5 @@
 import json
+from uuid import UUID
 from typing import Any
 
 import geopandas as gpd
@@ -26,7 +27,35 @@ def create_location(
     """Create new location."""
     location = crud.location.create_with_owner(db, obj_in=location_in)
     geojson_location = crud.location.get_geojson_location(db, location_id=location.id)
+    if not geojson_location:
+        raise HTTPException(
+            status_code=status.HTTP_404_BAD_REQUEST, detail="Location not created"
+        )
     return json.loads(geojson_location)
+
+
+@router.put(
+    "/{project_id}/{location_id}", response_model=schemas.location.PolygonGeoJSONFeature
+)
+def update_location(
+    location_id: UUID,
+    location_in: schemas.LocationUpdate,
+    project_id: UUID,
+    project: models.Project = Depends(deps.can_read_write_project),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+        )
+    location = crud.location.update_location(
+        db=db, obj_in=location_in, location_id=location_id
+    )
+    if not location:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Location not found"
+        )
+    return json.loads(location)
 
 
 @router.post(

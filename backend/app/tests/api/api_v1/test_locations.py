@@ -1,8 +1,57 @@
 import os
+
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from app.api.deps import get_current_user
 from app.core.config import settings
+from app.tests.utils.location import create_location, TEST_CENTROID, TEST_COORDS
+from app.tests.utils.project import create_project
+
+
+def test_create_location(client: TestClient, normal_user_access_token: str) -> None:
+    data = {
+        "center_x": TEST_CENTROID[0]["lon"],
+        "center_y": TEST_CENTROID[0]["lat"],
+        "geom": f"SRID=4326;POLYGON(({','.join(TEST_COORDS[0])}))",
+    }
+    r = client.post(f"{settings.API_V1_STR}/locations", json=data)
+    assert r.status_code == 201
+    location_in_db = r.json()
+    assert location_in_db["properties"]["center_x"] == data["center_x"]
+    assert location_in_db["properties"]["center_y"] == data["center_y"]
+    assert location_in_db["geometry"]["coordinates"] == [
+        [
+            [float(coord.split(" ")[0]), float(coord.split(" ")[1])]
+            for coord in TEST_COORDS[0]
+        ]
+    ]
+
+
+def test_update_location(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    location = create_location(db)
+    project = create_project(db, location_id=location.id, owner_id=current_user.id)
+    update_data = {
+        "center_x": TEST_CENTROID[1]["lon"],
+        "center_y": TEST_CENTROID[1]["lat"],
+        "geom": f"SRID=4326;POLYGON(({','.join(TEST_COORDS[1])}))",
+    }
+    r = client.put(
+        f"{settings.API_V1_STR}/locations/{project.id}/{location.id}", json=update_data
+    )
+    assert r.status_code == 200
+    location_updated = r.json()
+    assert location_updated["properties"]["center_x"] == update_data["center_x"]
+    assert location_updated["properties"]["center_y"] == update_data["center_y"]
+    assert location_updated["geometry"]["coordinates"] == [
+        [
+            [float(coord.split(" ")[0]), float(coord.split(" ")[1])]
+            for coord in TEST_COORDS[1]
+        ]
+    ]
 
 
 def test_upload_shapefile_zip(

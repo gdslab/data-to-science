@@ -104,20 +104,20 @@ export function TextField({
 
 export type Editing = { field: string } | null;
 
-interface EditTextField {
+interface EditField {
   children: React.ReactNode;
   fieldName: string;
   isEditing: { field: string } | null;
   setIsEditing: React.Dispatch<React.SetStateAction<Editing>>;
 }
 
-export function EditTextField({ children, fieldName, isEditing, setIsEditing }) {
+export function EditField({ children, fieldName, isEditing, setIsEditing }: EditField) {
   return (
     <div className="flex items-center gap-4">
       {children}
       {!isEditing ? (
         <PencilIcon
-          className="inline h-4 w-4 cursor-pointer"
+          className="inline h-4 w-4 text-slate-400 cursor-pointer"
           onClick={(e) => {
             e.preventDefault();
             setIsEditing({ field: fieldName });
@@ -130,7 +130,7 @@ export function EditTextField({ children, fieldName, isEditing, setIsEditing }) 
             type="submit"
             className="inline rounded-full focus:outline-none focus:ring focus:ring-accent2"
           >
-            <CheckIcon className="h-4 w-4 cursor-pointer" />
+            <CheckIcon className="h-4 w-4 text-slate-400 cursor-pointer" />
           </button>
           <button
             type="button"
@@ -139,7 +139,7 @@ export function EditTextField({ children, fieldName, isEditing, setIsEditing }) 
               setIsEditing(null);
             }}
           >
-            <XMarkIcon className="h-4 w-4 cursor-pointer" />
+            <XMarkIcon className="h-4 w-4 text-slate-400 cursor-pointer" />
           </button>
         </div>
       ) : null}

@@ -2,17 +2,21 @@ import { useEffect, useRef } from 'react';
 import { GeoJSON } from 'react-leaflet/GeoJSON';
 import { useLeafletContext } from '@react-leaflet/core';
 
-import { FeatureCollection } from './MapModal';
-import { SetLocation } from './MapModal';
+import { FeatureCollection, SetLocation } from '../pages/projects/ProjectForm';
 
 interface Props {
   data: FeatureCollection;
   setLocation: SetLocation;
+  setUploadResponse: React.Dispatch<React.SetStateAction<FeatureCollection | null>>;
 }
 
-export default function UploadGeoJSON({ data, setLocation }: Props) {
+export default function UploadGeoJSON({ data, setLocation, setUploadResponse }: Props) {
   const context = useLeafletContext();
   const fcRef = useRef<L.GeoJSON | null>(null);
+
+  useEffect(() => {
+    setLocation(null);
+  }, []);
 
   useEffect(() => {
     if (fcRef.current) {
@@ -26,14 +30,12 @@ export default function UploadGeoJSON({ data, setLocation }: Props) {
       data={data}
       onEachFeature={(_feature, layer: L.Polygon) => {
         layer.on('click', () => {
-          if (fcRef.current) {
-            fcRef.current.resetStyle();
-            layer.setStyle({ color: 'yellow' });
-            setLocation({
-              geojson: layer.toGeoJSON(),
-              center: layer.getCenter(),
-            });
-          }
+          setLocation({
+            geojson: layer.toGeoJSON(),
+            center: layer.getCenter(),
+            type: 'uploaded',
+          });
+          setUploadResponse(null);
         });
       }}
     />
