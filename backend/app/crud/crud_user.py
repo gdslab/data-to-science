@@ -60,8 +60,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
     ) -> SingleUseToken | None:
         stmt = select(SingleUseToken).where(SingleUseToken.token == token_hash)
         with db as session:
-            token = session.scalar(stmt)
-            return token
+            return session.scalar(stmt)
 
     def remove_single_use_token(
         self, db: Session, db_obj: SingleUseToken
@@ -78,12 +77,9 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         skip: int = 0,
         limit: int = 100,
     ) -> Sequence[User]:
-        statement = (
-            select(User).where(User.is_approved).where(User.full_name.contains(q))
-        )
+        stmt = select(User).where(User.is_approved).where(User.full_name.contains(q))
         with db as session:
-            users = session.scalars(statement).all()
-        return users
+            return session.scalars(stmt).all()
 
     def update(
         self, db: Session, *, db_obj: User, obj_in: UserUpdate | dict[str, Any]
@@ -127,7 +123,7 @@ def find_profile_img(user_id: str) -> str | None:
         return None
 
 
-def set_url_attr(user: User):
+def set_url_attr(user: User) -> None:
     profile_img = find_profile_img(str(user.id))
     if profile_img:
         profile_url = f"{settings.STATIC_URL}/users/{str(user.id)}/{profile_img}"

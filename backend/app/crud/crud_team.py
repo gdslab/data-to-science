@@ -56,16 +56,16 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
     ) -> Team | None:
         """Retrieve team by id if user belongs to team."""
         if only_owner:
-            statement = select(Team).filter_by(owner_id=user_id, id=team_id)
+            stmt = select(Team).filter_by(owner_id=user_id, id=team_id)
         else:
-            statement = (
+            stmt = (
                 select(Team)
                 .join(TeamMember.team)
                 .where(TeamMember.member_id == user_id)
                 .where(TeamMember.team_id == team_id)
             )
         with db as session:
-            db_obj = session.scalars(statement).one_or_none()
+            db_obj = session.scalar(stmt)
             if db_obj:
                 setattr(db_obj, "is_owner", user_id == db_obj.owner_id)
 
@@ -75,7 +75,7 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
         self, db: Session, *, user_id: UUID, skip: int = 0, limit: int = 100
     ) -> Sequence[Team]:
         """List of teams the user belongs to."""
-        statement = (
+        stmt = (
             select(Team)
             .join(TeamMember.team)
             .where(TeamMember.member_id == user_id)
@@ -83,7 +83,7 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
             .limit(limit)
         )
         with db as session:
-            db_obj = session.scalars(statement).all()
+            db_obj = session.scalars(stmt).all()
             # indicate if team member is also team owner
             for team in db_obj:
                 setattr(team, "is_owner", user_id == team.owner_id)

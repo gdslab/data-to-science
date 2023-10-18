@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
 from sqlalchemy.orm import Bundle, Session
+from sqlalchemy.sql.selectable import Select
 
 from app.crud.base import CRUDBase
 from app.models.team_member import TeamMember
@@ -21,9 +22,9 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
     ) -> TeamMember | None:
         obj_in_data = jsonable_encoder(obj_in)
         email = obj_in_data["email"]
-        statement = select(User).filter_by(email=email, is_approved=True)
+        stmt = select(User).filter_by(email=email, is_approved=True)
         with db as session:
-            user_obj = session.scalars(statement).one_or_none()
+            user_obj = session.scalar(stmt)
             if user_obj:
                 db_obj = self.model(member_id=user_obj.id, team_id=team_id)
                 session.add(db_obj)
@@ -38,7 +39,7 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
         self, db: Session, *, email: str, team_id: UUID
     ) -> TeamMember | None:
         """Find team member record by email."""
-        statement = (
+        stmt: Select = (
             select(
                 TeamMember, Bundle("user", User.first_name, User.last_name, User.email)
             )
@@ -47,7 +48,7 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
             .where(TeamMember.team_id == team_id)
         )
         with db as session:
-            team_member = session.execute(statement).one_or_none()
+            team_member = session.execute(stmt).one_or_none()
             if team_member:
                 set_name_and_email_attr(team_member[0], team_member[1])
                 return team_member[0]
@@ -57,7 +58,7 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
         self, db: Session, *, user_id: UUID, team_id: UUID
     ) -> TeamMember | None:
         """Find team member record by team id."""
-        statement = (
+        stmt: Select = (
             select(
                 TeamMember, Bundle("user", User.first_name, User.last_name, User.email)
             )
@@ -66,7 +67,7 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
             .where(TeamMember.team_id == team_id)
         )
         with db as session:
-            team_member = session.execute(statement).one_or_none()
+            team_member = session.execute(stmt).one_or_none()
             if team_member:
                 set_name_and_email_attr(team_member[0], team_member[1])
                 return team_member[0]
@@ -75,7 +76,7 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
     def get_list_of_team_members(
         self, db: Session, *, team_id: UUID, skip: int = 0, limit: int = 100
     ) -> Sequence[TeamMember]:
-        statement = (
+        stmt: Select = (
             select(
                 TeamMember, Bundle("user", User.first_name, User.last_name, User.email)
             )
@@ -86,7 +87,7 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
         )
         team_members: list[TeamMember] = []
         with db as session:
-            for team_member in session.execute(statement).all():
+            for team_member in session.execute(stmt).all():
                 set_name_and_email_attr(team_member[0], team_member[1])
                 team_members.append(team_member[0])
 

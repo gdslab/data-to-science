@@ -27,13 +27,12 @@ class CRUDRawData(CRUDBase[RawData, RawDataCreate, RawDataUpdate]):
     def get_single_by_id(
         self, db: Session, raw_data_id: UUID, upload_dir: str
     ) -> RawData | None:
-        statement = select(RawData).where(RawData.id == raw_data_id)
+        stmt = select(RawData).where(RawData.id == raw_data_id)
         with db as session:
-            raw_data = session.execute(statement).one_or_none()
+            raw_data = session.scalar(stmt)
             if raw_data:
-                set_url_attr(raw_data[0], upload_dir)
-                return raw_data[0]
-            return None
+                set_url_attr(raw_data, upload_dir)
+            return raw_data
 
     def get_multi_by_flight(
         self,
@@ -43,9 +42,9 @@ class CRUDRawData(CRUDBase[RawData, RawDataCreate, RawDataUpdate]):
         skip: int = 0,
         limit: int = 100,
     ) -> Sequence[RawData]:
-        statement = select(RawData).where(RawData.flight_id == flight_id)
+        stmt = select(RawData).where(RawData.flight_id == flight_id)
         with db as session:
-            all_raw_data = session.execute(statement).all()
+            all_raw_data = session.execute(stmt).all()
             all_raw_data_with_status = []
             for raw_data in all_raw_data:
                 set_url_attr(raw_data[0], upload_dir)

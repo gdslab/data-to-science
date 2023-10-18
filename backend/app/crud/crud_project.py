@@ -27,10 +27,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         """Create new project and add user as project member."""
         # add project to db
         obj_in_data = jsonable_encoder(obj_in)
-        project_db_obj = self.model(
-            **obj_in_data,
-            owner_id=owner_id,
-        )
+        project_db_obj = self.model(**obj_in_data, owner_id=owner_id)
         with db as session:
             session.add(project_db_obj)
             session.commit()

@@ -44,15 +44,14 @@ class CRUDProjectMember(
     def get_list_of_project_members(
         self, db: Session, *, project_id: UUID, skip: int = 0, limit: int = 100
     ) -> Sequence[ProjectMember]:
-        statement = (
+        stmt = (
             select(ProjectMember)
             .join(Project)
             .where(ProjectMember.project_id == project_id)
             .where(Project.is_active)
         )
         with db as session:
-            db_obj = session.scalars(statement).all()
-        return db_obj
+            return session.scalars(stmt).all()
 
 
 project_member = CRUDProjectMember(ProjectMember)

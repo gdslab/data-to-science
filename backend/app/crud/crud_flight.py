@@ -29,7 +29,7 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
     def get_flight_by_id(
         self, db: Session, project_id: UUID, flight_id: UUID
     ) -> Flight | None:
-        statement = (
+        stmt = (
             select(Flight)
             .join(Project)
             .where(Flight.project_id == project_id)
@@ -37,8 +37,7 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
             .where(Project.is_active)
         )
         with db as session:
-            flight = session.execute(statement).unique().scalar_one_or_none()
-            return flight
+            return session.scalar(stmt)
 
     def get_multi_by_project(
         self,
@@ -70,8 +69,7 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                     user_style = session.execute(user_style_query).scalar_one_or_none()
                     if user_style:
                         set_user_style_attr(data_product, user_style.settings)
-
-        return flights_with_data
+            return flights_with_data
 
 
 flight = CRUDFlight(Flight)

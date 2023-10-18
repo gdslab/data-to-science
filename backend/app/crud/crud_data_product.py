@@ -44,8 +44,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                 set_status_attr(data_product, data_product.jobs.status)
                 if user_style:
                     set_user_style_attr(data_product, user_style.settings)
-                return data_product
-        return None
+            return data_product
 
     def get_multi_by_flight(
         self,
@@ -75,7 +74,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                     set_user_style_attr(data_product, user_style.settings)
 
                 updated_data_products.append(data_product)
-        return updated_data_products
+            return updated_data_products
 
 
 def set_status_attr(data_product_obj: DataProduct, status: str | Any):

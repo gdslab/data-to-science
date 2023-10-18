@@ -36,7 +36,7 @@ class CRUDUserStyle(CRUDBase[UserStyle, UserStyleCreate, UserStyleUpdate]):
             .where(UserStyle.user_id == user_id)
         )
         with db as session:
-            user_style = session.execute(user_style_query).scalar_one_or_none()
+            user_style = session.scalar(user_style_query)
             return user_style
 
 
