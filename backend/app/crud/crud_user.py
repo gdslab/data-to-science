@@ -3,7 +3,6 @@ import os
 from typing import Any, Sequence
 from uuid import UUID
 
-from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -20,7 +19,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
     def get_by_id(self, db: Session, *, user_id: UUID) -> User | None:
         stmt = select(User).where(User.id == user_id)
         with db as session:
-            user = session.execute(stmt).scalar_one_or_none()
+            user = session.scalar(stmt)
             if user:
                 set_url_attr(user)
             return user
@@ -28,29 +27,28 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
     def get_by_email(self, db: Session, *, email: str) -> User | None:
         stmt = select(User).where(User.email == email)
         with db as session:
-            user = session.execute(stmt).scalar_one_or_none()
+            user = session.scalar(stmt)
             if user:
                 set_url_attr(user)
             return user
 
     def create(self, db: Session, *, obj_in: UserCreate) -> User:
-        db_obj = User(
+        user = User(
             email=obj_in.email,
             hashed_password=get_password_hash(obj_in.password),
             first_name=obj_in.first_name,
             last_name=obj_in.last_name,
         )
         with db as session:
-            session.add(db_obj)
+            session.add(user)
             session.commit()
-            session.refresh(db_obj)
-        return db_obj
+            session.refresh(user)
+        return user
 
     def create_single_use_token(
         self, db: Session, obj_in: SingleUseTokenCreate, user_id: UUID
     ) -> SingleUseToken:
-        obj_in_data = jsonable_encoder(obj_in)
-        db_obj = SingleUseToken(**obj_in_data, user_id=user_id)
+        db_obj = SingleUseToken(**obj_in.model_dump(), user_id=user_id)
         with db as session:
             session.add(db_obj)
             session.commit()
@@ -60,9 +58,9 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
     def get_single_use_token(
         self, db: Session, token_hash: str
     ) -> SingleUseToken | None:
-        token_query = select(SingleUseToken).where(SingleUseToken.token == token_hash)
+        stmt = select(SingleUseToken).where(SingleUseToken.token == token_hash)
         with db as session:
-            token = session.execute(token_query).scalar_one_or_none()
+            token = session.scalar(stmt)
             return token
 
     def remove_single_use_token(
@@ -80,7 +78,6 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         skip: int = 0,
         limit: int = 100,
     ) -> Sequence[User]:
-        """List of users filtered by query (q)."""
         statement = (
             select(User).where(User.is_approved).where(User.full_name.contains(q))
         )
@@ -130,11 +127,11 @@ def find_profile_img(user_id: str) -> str | None:
         return None
 
 
-def set_url_attr(user_db_obj: User):
-    profile_img = find_profile_img(str(user_db_obj.id))
+def set_url_attr(user: User):
+    profile_img = find_profile_img(str(user.id))
     if profile_img:
-        profile_url = f"{settings.STATIC_URL}/users/{str(user_db_obj.id)}/{profile_img}"
-        setattr(user_db_obj, "profile_url", profile_url)
+        profile_url = f"{settings.STATIC_URL}/users/{str(user.id)}/{profile_img}"
+        setattr(user, "profile_url", profile_url)
 
 
 user = CRUDUser(User)

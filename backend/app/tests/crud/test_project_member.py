@@ -18,7 +18,6 @@ def test_create_project_member(db: Session) -> None:
 
 
 def test_get_list_of_project_members(db: Session) -> None:
-    """Verify a project id can return a list of project members."""
     project = create_project(db)
     member1 = create_project_member(db, project_id=project.id)
     member2 = create_project_member(db, project_id=project.id)
@@ -33,3 +32,15 @@ def test_get_list_of_project_members(db: Session) -> None:
             or member1.member_id == project_member.member_id
             or member2.member_id == project_member.member_id
         )
+
+
+def test_get_list_of_project_members_from_deactivated_project(db: Session) -> None:
+    project = create_project(db)
+    create_project_member(db, project_id=project.id)
+    create_project_member(db, project_id=project.id)
+    crud.project.deactivate(db, project_id=project.id)
+    project_members = crud.project_member.get_list_of_project_members(
+        db, project_id=project.id
+    )
+    assert type(project_members) is list
+    assert len(project_members) == 0

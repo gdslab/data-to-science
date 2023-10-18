@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
+from app.models.project import Project
 from app.models.project_member import ProjectMember
 from app.models.user import User
 from app.schemas.project_member import ProjectMemberCreate, ProjectMemberUpdate
@@ -16,7 +17,7 @@ class CRUDProjectMember(
 ):
     def create_with_project(
         self, db: Session, *, obj_in: ProjectMemberCreate, project_id: UUID
-    ) -> ProjectMember:
+    ) -> ProjectMember | None:
         obj_in_data = jsonable_encoder(obj_in)
         if "email" in obj_in_data and obj_in_data["email"]:
             email = obj_in_data["email"]
@@ -43,7 +44,12 @@ class CRUDProjectMember(
     def get_list_of_project_members(
         self, db: Session, *, project_id: UUID, skip: int = 0, limit: int = 100
     ) -> Sequence[ProjectMember]:
-        statement = select(ProjectMember).where(ProjectMember.project_id == project_id)
+        statement = (
+            select(ProjectMember)
+            .join(Project)
+            .where(ProjectMember.project_id == project_id)
+            .where(Project.is_active)
+        )
         with db as session:
             db_obj = session.scalars(statement).all()
         return db_obj

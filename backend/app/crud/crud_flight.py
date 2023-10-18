@@ -7,6 +7,7 @@ from sqlalchemy.orm import joinedload, Session
 
 from app.crud.base import CRUDBase
 from app.models.flight import Flight
+from app.models.project import Project
 from app.models.user_style import UserStyle
 from app.schemas.flight import FlightCreate, FlightUpdate
 
@@ -25,6 +26,20 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
             session.refresh(db_obj)
         return db_obj
 
+    def get_flight_by_id(
+        self, db: Session, project_id: UUID, flight_id: UUID
+    ) -> Flight | None:
+        statement = (
+            select(Flight)
+            .join(Project)
+            .where(Flight.project_id == project_id)
+            .where(Flight.id == flight_id)
+            .where(Project.is_active)
+        )
+        with db as session:
+            flight = session.execute(statement).unique().scalar_one_or_none()
+            return flight
+
     def get_multi_by_project(
         self,
         db: Session,
@@ -36,8 +51,10 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
     ) -> Sequence[Flight]:
         statement = (
             select(Flight)
+            .join(Project)
             .options(joinedload(Flight.data_products))
             .where(Flight.project_id == project_id)
+            .where(Project.is_active)
         )
         with db as session:
             flights_with_data = session.execute(statement).scalars().unique().all()

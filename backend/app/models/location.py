@@ -22,7 +22,7 @@ class Location(Base):
     center_y: Mapped[float] = mapped_column(Float, nullable=False)
     geom: Mapped[str] = mapped_column(Geometry("POLYGON"), nullable=False)
 
-    projects: Mapped[list["Project"]] = relationship(back_populates="location")
+    project: Mapped[list["Project"]] = relationship(back_populates="location")
 
     def __repr__(self) -> str:
         return (

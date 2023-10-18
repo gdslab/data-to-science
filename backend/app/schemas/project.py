@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -11,6 +11,7 @@ class ProjectBase(BaseModel):
     description: str | None = None
     planting_date: date | None = None
     harvest_date: date | None = None
+    is_active: bool = True
     location_id: UUID | None = None
     team_id: UUID | None = None
 
@@ -19,7 +20,7 @@ class ProjectBase(BaseModel):
 class ProjectCreate(ProjectBase):
     title: str
     description: str
-    planting_date: date
+    planting_date: date | None = None
     harvest_date: date | None = None
     location_id: UUID
     team_id: UUID | None = None
@@ -35,8 +36,10 @@ class ProjectInDBBase(ProjectBase, from_attributes=True):
     id: UUID
     title: str
     description: str
-    planting_date: date
+    planting_date: date | None = None
     harvest_date: date | None = None
+    is_active: bool
+    deactivated_at: datetime | None = None
 
     location_id: UUID
     team_id: UUID | None = None

@@ -3,15 +3,17 @@ from typing import Sequence
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
+from app import crud
 from app.crud.base import CRUDBase
 from app.models.location import Location
 from app.models.project import Project
 from app.models.project_member import ProjectMember
 from app.models.team import Team
 from app.models.team_member import TeamMember
+from app.models.utils.user import utcnow
 from app.schemas.project import ProjectCreate, ProjectUpdate
 
 
@@ -19,7 +21,6 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
     def create_with_owner(
         self,
         db: Session,
-        *,
         obj_in: ProjectCreate,
         owner_id: UUID,
     ) -> Project:
@@ -43,41 +44,33 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         return project_db_obj
 
     def get_user_project(
-        self, db: Session, *, user_id: UUID, project_id: UUID
+        self, db: Session, user_id: UUID, project_id: UUID
     ) -> Project | None:
         """Retrieve project by id."""
         # Selects project by id if one of the below items is true
-        # - User is owner of the project or a project member
-        # - Project associated with a team and user is a team member
-        query_project_owner_and_members = (
+        # - User is project member
+        # - User is team member in team associated with project
+        query_by_project_member = (
             select(Project, func.ST_AsGeoJSON(Location))
             .join(Project.location)
             .join(Project.members)
-            .where(
-                and_(
-                    or_(
-                        Project.owner_id == user_id, ProjectMember.member_id == user_id
-                    ),
-                    Project.id == project_id,
-                )
-            )
+            .where(Project.id == project_id)
+            .where(Project.is_active)
+            .where(ProjectMember.member_id == user_id)
         )
-        query_project_team_members = (
+        query_by_team_member = (
             select(Project, func.ST_AsGeoJSON(Location))
             .join(Project.location)
             .join(Project.team)
             .join(Team.members)
-            .where(
-                and_(
-                    Project.team_id == TeamMember.team_id,
-                    TeamMember.member_id == user_id,
-                    Project.id == project_id,
-                )
-            )
+            .where(Project.id == project_id)
+            .where(Project.is_active)
+            .where(Project.team_id == TeamMember.team_id)
+            .where(TeamMember.member_id == user_id)
         )
         with db as session:
-            project1 = session.execute(query_project_owner_and_members).one_or_none()
-            project2 = session.execute(query_project_team_members).one_or_none()
+            project1 = session.execute(query_by_project_member).one_or_none()
+            project2 = session.execute(query_by_team_member).one_or_none()
             projects = []
             if project1:
                 setattr(project1[0], "is_owner", user_id == project1[0].owner_id)
@@ -96,34 +89,30 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         return project
 
     def get_user_project_list(
-        self, db: Session, *, user_id: UUID, skip: int = 0, limit: int = 100
+        self, db: Session, user_id: UUID, skip: int = 0, limit: int = 100
     ) -> Sequence[Project]:
         """List of projects the user belongs to."""
         # project member
-        query_project_owner_and_members = (
+        query_by_project_member = (
             select(Project, func.ST_AsGeoJSON(Location))
             .join(Project.location)
             .join(Project.members)
-            .where(
-                or_(Project.owner_id == user_id, ProjectMember.member_id == user_id),
-            )
+            .where(Project.is_active)
+            .where(ProjectMember.member_id == user_id)
         )
-        query_project_team_members = (
+        query_by_team_member = (
             select(Project, func.ST_AsGeoJSON(Location))
             .join(Project.location)
             .join(Project.team)
             .join(Team.members)
-            .where(
-                and_(
-                    Project.team_id == TeamMember.team_id,
-                    TeamMember.member_id == user_id,
-                ),
-            )
+            .where(Project.is_active)
+            .where(Project.team_id == TeamMember.team_id)
+            .where(TeamMember.member_id == user_id)
         )
         # team member
         with db as session:
-            projects1 = session.execute(query_project_owner_and_members).all()
-            projects2 = session.execute(query_project_team_members).all()
+            projects1 = session.execute(query_by_project_member).all()
+            projects2 = session.execute(query_by_team_member).all()
             projects = list(set(projects1 + projects2))
             final_projects = []
             # indicate if project member is also project owner
@@ -133,6 +122,17 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 setattr(project[0], "flight_count", len(project[0].flights))
                 final_projects.append(project[0])
         return final_projects
+
+    def deactivate(self, db: Session, project_id: UUID) -> Project | None:
+        deactivate_project = (
+            update(Project)
+            .where(Project.id == project_id)
+            .values(is_active=False, deactivated_at=utcnow())
+        )
+        with db as session:
+            session.execute(deactivate_project)
+            session.commit()
+        return crud.project.get(db, id=project_id)
 
 
 project = CRUDProject(Project)

@@ -45,7 +45,9 @@ def test_create_flight(db: Session) -> None:
 def test_get_flight(db: Session) -> None:
     """Verify retrieving flight by id returns correct flight."""
     flight = create_flight(db)
-    stored_flight = crud.flight.get(db, id=flight.id)
+    stored_flight = crud.flight.get_flight_by_id(
+        db, project_id=flight.project_id, flight_id=flight.id
+    )
     assert stored_flight
     assert flight.id == stored_flight.id
     assert flight.acquisition_date == stored_flight.acquisition_date
@@ -92,3 +94,29 @@ def test_update_flight(db: Session) -> None:
     assert flight.id == flight_update.id
     assert flight_in_update.altitude == flight_update.altitude
     assert flight_in_update.sensor == flight_update.sensor
+
+
+def test_get_flight_for_deactivated_project_returns_none(db: Session) -> None:
+    user = create_user(db)
+    project = create_project(db, owner_id=user.id)
+    flight = create_flight(db, project_id=project.id)
+    crud.project.deactivate(db, project_id=project.id)
+    flight2 = crud.flight.get_flight_by_id(
+        db, project_id=project.id, flight_id=flight.id
+    )
+    assert flight2 is None
+
+
+def test_get_flights_ignores_deactivated_project(db: Session) -> None:
+    user = create_user(db)
+    project = create_project(db, owner_id=user.id)
+    create_flight(db, project_id=project.id)
+    create_flight(db, project_id=project.id)
+    create_flight(db, project_id=project.id)
+    crud.project.deactivate(db, project_id=project.id)
+    upload_dir = settings.TEST_UPLOAD_DIR
+    flights = crud.flight.get_multi_by_project(
+        db, project_id=project.id, upload_dir=upload_dir, user_id=user.id
+    )
+    assert type(flights) is list
+    assert len(flights) == 0

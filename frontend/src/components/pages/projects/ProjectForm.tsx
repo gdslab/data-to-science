@@ -86,7 +86,7 @@ export default function ProjectForm({
               title: values.title,
               description: values.description,
               location_id: values.locationId,
-              planting_date: values.plantingDate,
+              ...(values.plantingDate && { planting_date: values.plantingDate }),
               ...(values.harvestDate && { harvest_date: values.harvestDate }),
               ...(values.teamId && { team_id: values.teamId }),
             };
@@ -126,7 +126,12 @@ export default function ProjectForm({
                   placeholder="Enter a description of the project..."
                 />
                 <div className="grid grid-cols-2 gap-4">
-                  <TextField type="date" label="Planting date" name="plantingDate" />
+                  <TextField
+                    type="date"
+                    label="Planting date"
+                    name="plantingDate"
+                    required={false}
+                  />
                   <TextField
                     type="date"
                     label="Harvest date"

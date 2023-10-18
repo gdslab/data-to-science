@@ -6,6 +6,7 @@ import * as Yup from 'yup';
 
 import Alert from '../../Alert';
 import { Button } from '../../Buttons';
+import { ConfirmationPopup } from '../../ConfirmationPopup';
 import { Editing, EditField, TextField } from '../../InputFields';
 import Modal from '../../Modal';
 import TeamMemberList from './TeamMemberList';
@@ -170,9 +171,35 @@ export default function TeamDetail() {
                       </Button>
                       <Modal open={open} setOpen={setOpen}>
                         <ConfirmationPopup
+                          title="Are you sure you want to delete this team?"
+                          content="Deleting this team will cause all team members to immediately lose access to any
+  projects, flights, and data associated with the team."
+                          confirmText="Yes, remove team"
+                          rejectText="No, keep team"
                           setOpen={setOpen}
-                          setStatus={setStatus}
-                          teamId={teamData.team.id}
+                          action={async () => {
+                            try {
+                              const response = await axios.delete(
+                                `/api/v1/teams/${teamData.team.id}`
+                              );
+                              if (response) {
+                                setOpen(false);
+                                navigate('/teams', { state: { reload: true } });
+                              } else {
+                                setOpen(false);
+                                setStatus({
+                                  type: 'error',
+                                  msg: 'Unable to delete team',
+                                });
+                              }
+                            } catch (err) {
+                              setOpen(false);
+                              setStatus({
+                                type: 'error',
+                                msg: 'Unable to delete team',
+                              });
+                            }
+                          }}
                         />
                       </Modal>
                     </div>
@@ -192,50 +219,50 @@ export default function TeamDetail() {
   );
 }
 
-function ConfirmationPopup({
-  teamId,
-  setOpen,
-  setStatus,
-}: {
-  teamId: string;
-  setOpen;
-  setStatus;
-}) {
-  const navigate = useNavigate();
-  return (
-    <div className="rounded-lg bg-white p-8 shadow-2xl">
-      <h2>Are you sure you want to delete this team?</h2>
-      <p className="mt-2 text-sm text-gray-500">
-        Deleting this team will cause all team members to immediately lose access to any
-        projects, flights, and data associated with the team.
-      </p>
-      <div className="mt-8 flex justify-between">
-        <Button type="button" size="sm" onClick={() => setOpen(false)}>
-          No, keep team
-        </Button>
-        <Button
-          type="submit"
-          size="sm"
-          icon="trash"
-          onClick={async () => {
-            try {
-              const response = await axios.delete(`/api/v1/teams/${teamId}`);
-              if (response) {
-                setOpen(false);
-                navigate('/teams', { state: { reload: true } });
-              } else {
-                setOpen(false);
-                setStatus({ type: 'error', msg: 'Unable to delete team' });
-              }
-            } catch (err) {
-              setOpen(false);
-              setStatus({ type: 'error', msg: 'Unable to delete team' });
-            }
-          }}
-        >
-          Yes, delete team
-        </Button>
-      </div>
-    </div>
-  );
-}
+// function ConfirmationPopup({
+//   teamId,
+//   setOpen,
+//   setStatus,
+// }: {
+//   teamId: string;
+//   setOpen;
+//   setStatus;
+// }) {
+//   const navigate = useNavigate();
+//   return (
+//     <div className="rounded-lg bg-white p-8 shadow-2xl">
+//       <h2>Are you sure you want to delete this team?</h2>
+//       <p className="mt-2 text-sm text-gray-500">
+//         Deleting this team will cause all team members to immediately lose access to any
+//         projects, flights, and data associated with the team.
+//       </p>
+//       <div className="mt-8 flex justify-between">
+//         <Button type="button" size="sm" onClick={() => setOpen(false)}>
+//           No, keep team
+//         </Button>
+//         <Button
+//           type="submit"
+//           size="sm"
+//           icon="trash"
+//           onClick={async () => {
+//             try {
+//               const response = await axios.delete(`/api/v1/teams/${teamId}`);
+//               if (response) {
+//                 setOpen(false);
+//                 navigate('/teams', { state: { reload: true } });
+//               } else {
+//                 setOpen(false);
+//                 setStatus({ type: 'error', msg: 'Unable to delete team' });
+//               }
+//             } catch (err) {
+//               setOpen(false);
+//               setStatus({ type: 'error', msg: 'Unable to delete team' });
+//             }
+//           }}
+//         >
+//           Yes, delete team
+//         </Button>
+//       </div>
+//     </div>
+//   );
+// }

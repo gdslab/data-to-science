@@ -12,18 +12,15 @@ else:
 
 # shared properties
 class UserBase(BaseModel):
-    # do not want to require properties during update
     email: EmailStr | None = None
     first_name: str | None = None
     last_name: str | None = None
-
     is_email_confirmed: bool = False
     is_approved: bool = False
 
 
 # properties to receive via API on creation
 class UserCreate(UserBase):
-    # all required during creation
     email: EmailStr
     password: str
     first_name: str
@@ -32,7 +29,6 @@ class UserCreate(UserBase):
 
 # properties to receive via API on update
 class UserUpdate(UserBase):
-    # provide option to update password during update
     password: str | None = None
 
 

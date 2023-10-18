@@ -129,6 +129,10 @@ def can_read_write_project(
     project = crud.project.get_user_project(
         db, user_id=current_user.id, project_id=project_id
     )
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+        )
     return project
 
 
@@ -143,5 +147,11 @@ def can_read_write_flight(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
         )
-    flight = crud.flight.get(db, id=flight_id)
+    if not project.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Project not active"
+        )
+    flight = crud.flight.get_flight_by_id(
+        db, project_id=project.id, flight_id=flight_id
+    )
     return flight

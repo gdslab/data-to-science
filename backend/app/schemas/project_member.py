@@ -12,7 +12,7 @@ else:
 # shared properties
 class ProjectMemberBase(BaseModel):
     email: EmailStr | None = None
-    member_id: UUID | None
+    member_id: UUID | None = None
 
 
 # properties to receive via API on creation

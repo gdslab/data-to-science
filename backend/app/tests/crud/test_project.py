@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy.orm import Session
 
 from app import crud
@@ -11,12 +13,12 @@ from app.tests.utils.project import (
     random_harvest_date,
     random_planting_date,
 )
+from app.tests.utils.project_member import create_project_member
 from app.tests.utils.user import create_user
 from app.tests.utils.utils import random_team_description, random_team_name
 
 
 def test_create_project_without_team(db: Session) -> None:
-    """Create new project with no team association."""
     title = random_team_name()
     description = random_team_description()
     planting_date = random_planting_date()
@@ -41,7 +43,6 @@ def test_create_project_without_team(db: Session) -> None:
 
 
 def test_create_project_with_team(db: Session) -> None:
-    """Create new project with a team association."""
     user = create_user(db)
     team = create_team(db, owner_id=user.id)
     project = create_project(
@@ -54,7 +55,6 @@ def test_create_project_with_team(db: Session) -> None:
 
 
 def test_get_project_by_id(db: Session) -> None:
-    """Find project by project id."""
     project = create_project(db)
     stored_project = crud.project.get(db, id=project.id)
     assert stored_project
@@ -68,7 +68,6 @@ def test_get_project_by_id(db: Session) -> None:
 
 
 def test_get_project_by_user_and_project_id(db: Session) -> None:
-    """Find project by user id and project id."""
     user = create_user(db)
     project = create_project(db, owner_id=user.id)
     stored_project = crud.project.get_user_project(
@@ -85,7 +84,6 @@ def test_get_project_by_user_and_project_id(db: Session) -> None:
 
 
 def test_get_project_with_team_by_user_and_project_id(db: Session) -> None:
-    """Find project with team members by project owner user id and project id."""
     user = create_user(db)
     team = create_team(db, owner_id=user.id)
     user2 = create_user(db)
@@ -105,7 +103,6 @@ def test_get_project_with_team_by_user_and_project_id(db: Session) -> None:
 
 
 def test_get_project_with_team_by_team_member_and_project_id(db: Session) -> None:
-    """Find project with team members by team member id and project id."""
     user = create_user(db)
     team = create_team(db, owner_id=user.id)
     user2 = create_user(db)
@@ -124,8 +121,51 @@ def test_get_project_with_team_by_team_member_and_project_id(db: Session) -> Non
     assert project.owner_id == stored_project.owner_id
 
 
+def test_get_projects_by_owner(db: Session) -> None:
+    user = create_user(db)
+    create_project(db, owner_id=user.id)
+    create_project(db, owner_id=user.id)
+    create_project(db, owner_id=user.id)
+    projects = crud.project.get_user_project_list(db, user_id=user.id)
+    assert projects
+    assert isinstance(projects, list)
+    assert len(projects) == 3
+    for project in projects:
+        assert project.owner_id == user.id
+
+
+def test_get_projects_by_project_member(db: Session) -> None:
+    user = create_user(db)
+    project = create_project(db)
+    project2 = create_project(db)
+    project3 = create_project(db)
+    create_project_member(db, member_id=user.id, project_id=project.id)
+    create_project_member(db, member_id=user.id, project_id=project2.id)
+    create_project_member(db, member_id=user.id, project_id=project3.id)
+    projects = crud.project.get_user_project_list(db, user_id=user.id)
+    assert projects
+    assert isinstance(projects, list)
+    assert len(projects) == 3
+    for project in projects:
+        assert project.id in [project.id, project2.id, project3.id]
+
+
+def test_get_projects_by_team_member(db: Session) -> None:
+    user = create_user(db)
+    team = create_team(db)
+    create_team_member(db, email=user.email, team_id=team.id)
+    create_project(db, team_id=team.id)
+    create_project(db, team_id=team.id)
+    create_project(db, team_id=team.id)
+    projects = crud.project.get_user_project_list(db, user_id=user.id)
+    assert projects
+    assert isinstance(projects, list)
+    assert len(projects) == 3
+    for project in projects:
+        assert project.team_id == team.id
+
+
 def test_update_project(db: Session) -> None:
-    """Update existing project in database."""
     project = create_project(db)
     new_title = random_team_name()
     new_planting_date = random_planting_date()
@@ -139,7 +179,7 @@ def test_update_project(db: Session) -> None:
     assert project.owner_id == project_update.owner_id
 
 
-def test_read_project_flight_count(db: Session) -> None:
+def test_get_project_flight_count(db: Session) -> None:
     user = create_user(db)
     project = create_project(db, owner_id=user.id)
     for _ in range(0, 5):
@@ -149,3 +189,36 @@ def test_read_project_flight_count(db: Session) -> None:
     )
     assert stored_project
     assert stored_project.flight_count == 5
+
+
+def test_deactivate_project(db: Session) -> None:
+    project = create_project(db)
+    project2 = crud.project.deactivate(db, project_id=project.id)
+    project3 = crud.project.get(db, id=project.id)
+    assert project2 and project3
+    assert project3.id == project.id
+    assert project3.is_active is False
+    assert isinstance(project3.deactivated_at, datetime)
+    assert project3.deactivated_at < datetime.utcnow()
+
+
+def test_get_deactivated_project_returns_none(db: Session) -> None:
+    user = create_user(db)
+    project = create_project(db, owner_id=user.id)
+    crud.project.deactivate(db, project_id=project.id)
+    project2 = crud.project.get_user_project(db, project_id=project.id, user_id=user.id)
+    assert project2 is None
+
+
+def test_get_projects_ignores_deactivated_projects(db: Session) -> None:
+    user = create_user(db)
+    project = create_project(db, owner_id=user.id)
+    project2 = create_project(db, owner_id=user.id)
+    project3 = create_project(db, owner_id=user.id)
+    crud.project.deactivate(db, project_id=project3.id)
+    projects = crud.project.get_user_project_list(db, user_id=user.id)
+    assert projects
+    assert isinstance(projects, list)
+    assert len(projects) == 2
+    for project in projects:
+        assert project.id in [project.id, project2.id]
