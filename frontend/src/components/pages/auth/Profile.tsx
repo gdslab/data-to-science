@@ -119,7 +119,6 @@ function ProfileForm({ updateProfile, user }: ProfileProps) {
             <TextField label="First Name" name="firstName" required={false} />
             <TextField label="Last Name" name="lastName" required={false} />
           </div>
-          <TextField label="Email" name="email" required={false} disabled={true} />
           <Button type="submit" size="sm" disabled={!dirty}>
             {isSubmitting ? 'Processing...' : 'Update'}
           </Button>
