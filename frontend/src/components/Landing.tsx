@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 
 import AuthContext from '../AuthContext';
 import { Button } from './Buttons';
+import landingVideo from '../assets/landing.mp4';
 
 export default function Landing() {
   const { user } = useContext(AuthContext);
@@ -17,7 +18,11 @@ export default function Landing() {
       {/* video pane */}
       <div className="flex min-h-min w-full md:basis-3/5 basis-1/1 bg-primary items-center justify-center">
         <div className="h-96 flex items-center justify-center">
-          <span className="text-xl font-extrabold">Video</span>
+          <div className="mx-4 border-4 border-slate-200">
+            <video controls>
+              <source src={landingVideo} type="video/mp4" />
+            </video>
+          </div>
         </div>
       </div>
       {/* sign up pane */}
@@ -28,7 +33,7 @@ export default function Landing() {
               Logo
             </div>
             <div>
-              <h1 className="mb-0">System Name</h1>
+              <h1 className="mb-0">{import.meta.env.VITE_BRAND_FULL}</h1>
             </div>
           </div>
           <div className="m-4">
