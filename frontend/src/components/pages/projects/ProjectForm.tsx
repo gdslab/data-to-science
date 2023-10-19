@@ -86,9 +86,9 @@ export default function ProjectForm({
               title: values.title,
               description: values.description,
               location_id: values.locationId,
+              team_id: values.teamId ? values.teamId : null,
               ...(values.plantingDate && { planting_date: values.plantingDate }),
               ...(values.harvestDate && { harvest_date: values.harvestDate }),
-              ...(values.teamId && { team_id: values.teamId }),
             };
             const response = await axios.post('/api/v1/projects', data);
             if (response) {

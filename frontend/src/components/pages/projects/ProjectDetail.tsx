@@ -94,15 +94,14 @@ interface ProjectData {
 }
 
 export async function loader({ params }: { params: Params<string> }) {
-  const pilots = await axios.get(`/api/v1/projects/${params.projectId}/members`);
   const project = await axios.get(`/api/v1/projects/${params.projectId}`);
   const flights = await axios.get(`/api/v1/projects/${params.projectId}/flights`);
   const teams = await axios.get(`/api/v1/teams`);
-  if (pilots && project && flights && teams) {
+
+  if (project && flights && teams) {
     const teamsf = teams.data;
     teamsf.unshift({ title: 'No team', id: '' });
     return {
-      pilots: pilots.data,
       project: project.data,
       flights: flights.data,
       teams: teamsf,
@@ -119,10 +118,13 @@ export default function ProjectDetail() {
   const revalidator = useRevalidator();
 
   const [location, setLocation] = useState<Location | null>(null);
+
   const [openUpload, setOpenUpload] = useState(false);
   const [openConfirmationPopup, setOpenConfirmationPopup] = useState(false);
   const [open, setOpen] = useState(false);
+  const [openFlightEdit, setOpenFlightEdit] = useState(false);
   const [openMap, setOpenMap] = useState(false);
+
   const [isEditing, setIsEditing] = useState<Editing>(null);
 
   const currentTeam = teams ? teams.filter(({ id }) => project.team_id === id) : null;
@@ -152,21 +154,22 @@ export default function ProjectDetail() {
             initialValues={{
               title: project.title,
               description: project.description,
-              plantingDate: project.planting_date,
+              plantingDate: project.planting_date ? project.planting_date : '',
               harvestDate: project.harvest_date ? project.harvest_date : '',
               locationId: project.location_id,
               teamId: project.team_id ? project.team_id : '',
             }}
             validationSchema={validationSchema}
             onSubmit={async (values) => {
+              console.log(values);
               try {
                 const data = {
                   title: values.title,
                   description: values.description,
                   location_id: values.locationId,
-                  planting_date: values.plantingDate,
+                  team_id: values.teamId ? values.teamId : null,
+                  ...(values.plantingDate && { planting_date: values.plantingDate }),
                   ...(values.harvestDate && { harvest_date: values.harvestDate }),
-                  ...(values.teamId && { team_id: values.teamId }),
                 };
                 const response = await axios.put(
                   `/api/v1/projects/${project.id}`,
@@ -220,8 +223,12 @@ export default function ProjectDetail() {
                           setIsEditing={setIsEditing}
                         >
                           {!isEditing || isEditing.field !== 'plantingDate' ? (
-                            <span className="text-gray-600">
-                              {project.planting_date}
+                            <span>
+                              {project.planting_date
+                                ? new Date(project.planting_date).toLocaleDateString(
+                                    'en-US'
+                                  )
+                                : 'N/A'}
                             </span>
                           ) : (
                             <TextField type="date" name="plantingDate" />
@@ -233,8 +240,12 @@ export default function ProjectDetail() {
                           setIsEditing={setIsEditing}
                         >
                           {!isEditing || isEditing.field !== 'harvestDate' ? (
-                            <span className="text-gray-600">
-                              {project.harvest_date}
+                            <span>
+                              {project.harvest_date
+                                ? new Date(project.harvest_date).toLocaleDateString(
+                                    'en-US'
+                                  )
+                                : 'N/A'}
                             </span>
                           ) : (
                             <TextField type="date" name="harvestDate" />
@@ -246,10 +257,10 @@ export default function ProjectDetail() {
                           setIsEditing={setIsEditing}
                         >
                           {!isEditing || isEditing.field !== 'teamId' ? (
-                            <span className="text-gray-600">
+                            <span>
                               {currentTeam && currentTeam.length > 0
                                 ? currentTeam[0].title
-                                : ''}
+                                : 'N/A'}
                             </span>
                           ) : (
                             <SelectField
@@ -369,9 +380,22 @@ export default function ProjectDetail() {
               ])}
               actions={flights.map((flight, i) => [
                 {
+                  type: 'button',
                   key: `action-edit-${i}`,
                   icon: <PencilIcon className="h-4 w-4" />,
                   label: 'Edit',
+                  onClick: () => setOpenFlightEdit(true),
+                  component: (
+                    <Modal open={openFlightEdit} setOpen={setOpenFlightEdit}>
+                      <FlightForm
+                        projectId={projectId ? projectId : ''}
+                        setOpen={setOpenFlightEdit}
+                        editMode={true}
+                        flight={flight}
+                        teamId={project.team_id}
+                      />
+                    </Modal>
+                  ),
                   url: `/projects/${projectId}/flights/${flight.id}/edit`,
                 },
                 {
@@ -389,7 +413,11 @@ export default function ProjectDetail() {
         <div className="mt-4 flex justify-center">
           <Button onClick={() => setOpen(true)}>Add New Flight</Button>
           <Modal open={open} setOpen={setOpen}>
-            <FlightForm projectId={projectId} setOpen={setOpen} />
+            <FlightForm
+              projectId={projectId}
+              setOpen={setOpen}
+              teamId={project.team_id}
+            />
           </Modal>
         </div>
       ) : null}

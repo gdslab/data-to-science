@@ -1,106 +1,161 @@
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 import { Formik, Form } from 'formik';
+import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import Alert from '../../../Alert';
 import { Button, OutlineButton } from '../../../Buttons';
 import { SelectField, TextField } from '../../../InputFields';
-import { User } from '../../../../AuthContext';
+import AuthContext, { User } from '../../../../AuthContext';
 
-import initialValues, { PLATFORM_OPTIONS, SENSOR_OPTIONS } from './initialValues';
+import { getInitialValues, PLATFORM_OPTIONS, SENSOR_OPTIONS } from './initialValues';
 import validationSchema from './validationSchema';
+import { Flight, Pilot } from '../ProjectDetail';
 
-export async function loader() {
-  const userProfileLS = localStorage.getItem('userProfile');
-  if (userProfileLS) {
-    const userProfile: User = JSON.parse(userProfileLS);
-    return [
-      {
-        value: userProfile.id,
-        label: `${userProfile.first_name} ${userProfile.last_name}`,
-      },
-    ];
+function fetchPilotFromUserProfile(user: User | null) {
+  if (user) {
+    return [{ label: `${user.first_name} ${user.last_name}`, value: user.id }];
   } else {
     return [];
   }
 }
 
+async function fetchPilots(teamId: string | undefined, user: User | null) {
+  if (teamId) {
+    try {
+      const response = await axios.get(`/api/v1/teams/${teamId}/members`);
+      if (response) {
+        const pilots = response.data.map(({ full_name, member_id }) => ({
+          label: full_name,
+          value: member_id,
+        }));
+        if (pilots.length === 0) {
+          return fetchPilotFromUserProfile(user);
+        } else {
+          return pilots;
+        }
+      } else {
+        return [];
+      }
+    } catch (err) {
+      return [];
+    }
+  } else {
+    return fetchPilotFromUserProfile(user);
+  }
+}
+
 export default function FlightForm({
-  // pilots,
+  editMode = false,
+  flight = null,
   projectId,
+  teamId,
   setOpen,
 }: {
-  // pilots: Pilot[];
+  editMode?: boolean;
+  flight?: Flight | null;
   projectId: string;
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  teamId?: string | undefined;
+  setOpen?: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const navigate = useNavigate();
-  const pilots = [
-    { value: 'f921e938-c85a-4bbf-ab3a-ca832f36a4ca', label: 'Ben Hancock' },
-  ];
+  const [pilots, setPilots] = useState<Pilot[]>([]);
+  const { user } = useContext(AuthContext);
+
+  useEffect(() => {
+    fetchPilots(teamId, user)
+      .then((data) => setPilots(data))
+      .catch((err) => console.error(err));
+  }, []);
+
   return (
     <div className="my-8 mx-4">
-      <h1>New Flight</h1>
-      <Formik
-        initialValues={{ ...initialValues, pilotId: pilots[0].value }}
-        validationSchema={validationSchema}
-        onSubmit={async (values, { setSubmitting, setStatus }) => {
-          try {
-            const data = {
-              acquisition_date: values.acquisitionDate,
-              altitude: values.altitude,
-              side_overlap: values.sideOverlap,
-              forward_overlap: values.forwardOverlap,
-              sensor: values.sensor,
-              pilot_id: values.pilotId,
-              platform: values.platform,
-            };
-            const response = await axios.post(
-              `/api/v1/projects/${projectId}/flights`,
-              data
-            );
-            if (response) {
-              setStatus({ type: 'success', msg: 'Created' });
-              setOpen(false);
-              navigate(`/projects/${projectId}`);
-            } else {
-              // do something
+      {!editMode ? <h1>New Flight</h1> : null}
+      {pilots.length > 0 ? (
+        <Formik
+          initialValues={{ ...getInitialValues(flight), pilotId: pilots[0].value }}
+          validationSchema={validationSchema}
+          onSubmit={async (values, { setSubmitting, setStatus }) => {
+            try {
+              const data = {
+                acquisition_date: values.acquisitionDate,
+                altitude: values.altitude,
+                side_overlap: values.sideOverlap,
+                forward_overlap: values.forwardOverlap,
+                sensor: values.sensor,
+                pilot_id: values.pilotId,
+                platform: values.platform,
+              };
+              let response: AxiosResponse | null = null;
+              if (editMode && flight) {
+                response = await axios.put(
+                  `/api/v1/projects/${projectId}/flights/${flight.id}`,
+                  data
+                );
+              } else {
+                response = await axios.post(
+                  `/api/v1/projects/${projectId}/flights`,
+                  data
+                );
+              }
+              if (response) {
+                setStatus({ type: 'success', msg: 'Created' });
+                if (setOpen) setOpen(false);
+                navigate(`/projects/${projectId}`);
+              } else {
+                // do something
+              }
+            } catch (err) {
+              if (axios.isAxiosError(err)) {
+                // console.error(err);
+              } else {
+                // do something
+              }
+              setStatus({ type: 'error', msg: 'Error' });
             }
-          } catch (err) {
-            if (axios.isAxiosError(err)) {
-              // console.error(err);
-            } else {
-              // do something
-            }
-            setStatus({ type: 'error', msg: 'Error' });
-          }
-          setSubmitting(false);
-        }}
-      >
-        {({ isSubmitting, status }) => (
-          <Form>
-            <TextField type="date" label="Acquisition date" name="acquisitionDate" />
-            <TextField label="Altitude (m)" name="altitude" />
-            <TextField label="Side overlap (%)" name="sideOverlap" />
-            <TextField label="Forward overlap (%)" name="forwardOverlap" />
-            <SelectField label="Sensor" name="sensor" options={SENSOR_OPTIONS} />
-            <SelectField label="Platform" name="platform" options={PLATFORM_OPTIONS} />
-            <SelectField label="Pilot" name="pilotId" options={pilots} />
-
-            <div className="grid grid-rows-2 gap-4 mt-4">
-              <Button type="submit" disabled={isSubmitting}>
-                Create
-              </Button>
-              <OutlineButton onClick={() => setOpen(false)}>Cancel</OutlineButton>
-            </div>
-            {status && status.type && status.msg ? (
-              <div className="mt-4">
-                <Alert alertType={status.type}>{status.msg}</Alert>
+            setSubmitting(false);
+          }}
+        >
+          {({ isSubmitting, status }) => (
+            <Form>
+              <TextField type="date" label="Acquisition date" name="acquisitionDate" />
+              <TextField label="Altitude (m)" name="altitude" />
+              <TextField label="Side overlap (%)" name="sideOverlap" />
+              <TextField label="Forward overlap (%)" name="forwardOverlap" />
+              <SelectField label="Sensor" name="sensor" options={SENSOR_OPTIONS} />
+              <SelectField
+                label="Platform"
+                name="platform"
+                options={PLATFORM_OPTIONS}
+              />
+              <SelectField label="Pilot" name="pilotId" options={pilots} />
+              <div className="grid grid-rows-2 gap-4 mt-4">
+                <Button type="submit" disabled={isSubmitting}>
+                  {editMode ? 'Update' : 'Create'}
+                </Button>
+                <OutlineButton
+                  onClick={() => {
+                    if (setOpen) {
+                      setOpen(false);
+                    } else {
+                      navigate(`/projects/${projectId}`);
+                    }
+                  }}
+                >
+                  Cancel
+                </OutlineButton>
               </div>
-            ) : null}
-          </Form>
-        )}
-      </Formik>
+              {status && status.type && status.msg ? (
+                <div className="mt-4">
+                  <Alert alertType={status.type}>{status.msg}</Alert>
+                </div>
+              ) : null}
+            </Form>
+          )}
+        </Formik>
+      ) : (
+        <span>Searching for pilots...</span>
+      )}
     </div>
   );
 }

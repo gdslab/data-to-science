@@ -1,3 +1,5 @@
+import { Flight } from '../ProjectDetail';
+
 export const PLATFORM_OPTIONS = [
   { label: 'Phantom 4', value: 'Phantom_4' },
   { label: 'M300', value: 'M300' },
@@ -22,5 +24,21 @@ const initialValues = {
   //   pilot: "" // List of team members with access to the project?
   // If no team associated with the project, pilot = logged in user?
 };
+
+export function getInitialValues(flight: Flight | null) {
+  if (flight) {
+    return {
+      acquisitionDate: flight.acquisition_date,
+      altitude: flight.altitude,
+      sideOverlap: flight.side_overlap,
+      forwardOverlap: flight.forward_overlap,
+      sensor: flight.sensor,
+      platform: flight.platform,
+      pilotId: '',
+    };
+  } else {
+    return initialValues;
+  }
+}
 
 export default initialValues;

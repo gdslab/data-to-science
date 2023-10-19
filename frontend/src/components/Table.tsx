@@ -4,9 +4,12 @@ import { Link } from 'react-router-dom';
 import { classNames } from './utils';
 
 interface Action {
+  component?: React.ReactNode | null;
   key: string;
   icon: ReactNode;
   label: string;
+  onClick?: () => void;
+  type?: string;
   url: string;
 }
 
@@ -29,23 +32,46 @@ export function TableBody({
           {actions ? (
             <td className="p-4 text-slate-500">
               <div className="flex justify-around">
-                {actions[i].map((action) => (
-                  <Link
-                    key={action.key}
-                    className={classNames(
-                      action.label === 'Delete' ? 'text-red-600' : 'text-sky-600',
-                      'text-sm'
-                    )}
-                    to={action.url}
-                  >
-                    <div className="flex items-center">
-                      <div className="relative rounded-full accent3 p-1 focus:outline-none">
-                        {action.icon ? action.icon : null}
-                      </div>
-                      <span>{action.label}</span>
+                {actions[i].map((action) =>
+                  action.type === 'button' ? (
+                    <div key={action.key}>
+                      <button
+                        className={classNames(
+                          action.label === 'Delete' ? 'text-red-600' : 'text-sky-600',
+                          'flex items-center cursor-pointer text-sm'
+                        )}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (action.onClick) {
+                            action.onClick();
+                          }
+                        }}
+                      >
+                        <div className="relative rounded-full accent3 p-1 focus:outline-none">
+                          {action.icon ? action.icon : null}
+                        </div>
+                        <span>{action.label}</span>
+                      </button>
+                      {action.component ? action.component : null}
                     </div>
-                  </Link>
-                ))}
+                  ) : (
+                    <Link
+                      key={action.key}
+                      className={classNames(
+                        action.label === 'Delete' ? 'text-red-600' : 'text-sky-600',
+                        'text-sm'
+                      )}
+                      to={action.url}
+                    >
+                      <div className="flex items-center">
+                        <div className="relative rounded-full accent3 p-1 focus:outline-none">
+                          {action.icon ? action.icon : null}
+                        </div>
+                        <span>{action.label}</span>
+                      </div>
+                    </Link>
+                  )
+                )}
               </div>
             </td>
           ) : null}

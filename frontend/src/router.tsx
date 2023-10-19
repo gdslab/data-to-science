@@ -5,9 +5,6 @@ import ErrorPage from './components/ErrorPage';
 import FlightData, {
   loader as flightDataLoader,
 } from './components/pages/projects/flights/FlightData';
-import FlightDetail, {
-  loader as flightDetailLoader,
-} from './components/pages/projects/flights/FlightDetail';
 import Landing from './components/Landing';
 import LoginForm from './components/pages/auth/LoginForm';
 import Logout from './components/pages/auth/Logout';
@@ -99,16 +96,9 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        path: '/projects/:projectId/flights/:flightId',
-        element: <FlightDetail />,
-        loader: flightDetailLoader,
-        children: [
-          {
-            path: '/projects/:projectId/flights/:flightId/data',
-            element: <FlightData />,
-            loader: flightDataLoader,
-          },
-        ],
+        path: '/projects/:projectId/flights/:flightId/data',
+        element: <FlightData />,
+        loader: flightDataLoader,
       },
       {
         path: '/projects/:projectId',
