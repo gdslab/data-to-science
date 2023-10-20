@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { useState } from 'react';
 import { useLoaderData, Link } from 'react-router-dom';
+import { PhotoIcon } from '@heroicons/react/24/outline';
 
 import { Button } from '../../Buttons';
 import Modal from '../../Modal';
@@ -53,23 +54,15 @@ export default function ProjectList() {
             .sort((a, b) => (a.title > b.title ? 1 : b.title > a.title ? -1 : 0))
             .map((project) => (
               <Link key={project.id} to={`/projects/${project.id}`} className="block">
-                <article className="flex mb-4 shadow bg-white transition hover:shadow-xl">
-                  <div className="rotate-180 p-2 [writing-mode:_vertical-lr]">
-                    <time
-                      dateTime="2022-10-10"
-                      className="flex items-center justify-between gap-4 text-xs font-bold uppercase text-gray-900"
-                    >
-                      <span>2022</span>
-                      <span className="w-px flex-1 bg-gray-900/10"></span>
-                      <span>Oct 10</span>
-                    </time>
-                  </div>
+                <article className="flex items-center mb-4 shadow bg-white transition hover:shadow-xl">
+                  <div className="p-2"></div>
 
                   <div className="hidden sm:block sm:basis-56">
+                    {/* <PhotoIcon className="h-24 w-24" /> */}
                     <img
-                      alt="Guitar"
-                      src="https://images.unsplash.com/photo-1609557927087-f9cf8e88de18?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1740&q=80"
-                      className="aspect-square h-full w-full object-cover"
+                      src={`/static/projects/${project.id}/preview_map.png`}
+                      height={128}
+                      width={128}
                     />
                   </div>
 

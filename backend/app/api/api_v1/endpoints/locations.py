@@ -1,4 +1,5 @@
 import json
+import os
 from uuid import UUID
 from typing import Any
 
@@ -10,6 +11,8 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
+from app.core.config import settings
+from app.utils.MapMaker import MapMaker
 
 router = APIRouter()
 
@@ -38,6 +41,7 @@ def create_location(
     "/{project_id}/{location_id}", response_model=schemas.location.PolygonGeoJSONFeature
 )
 def update_location(
+    request: Request,
     location_id: UUID,
     location_in: schemas.LocationUpdate,
     project_id: UUID,
@@ -55,6 +59,19 @@ def update_location(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Location not found"
         )
+    # Update project map preview
+    if request.client and request.client.host == "testclient":
+        project_map_path = f"{settings.TEST_UPLOAD_DIR}/projects/{project.id}"
+    else:
+        project_map_path = f"{settings.UPLOAD_DIR}/projects/{project.id}"
+    if not os.path.exists(project_map_path):
+        os.makedirs(project_map_path)
+    if os.path.exists(os.path.join(project_map_path, "preview_map.png")):
+        os.remove(os.path.join(project_map_path, "preview_map.png"))
+    coordinates = json.loads(location)["geometry"]["coordinates"]
+    project_map = MapMaker(coordinates[0], project_map_path)
+    project_map.save()
+
     return json.loads(location)
 
 
@@ -79,7 +96,7 @@ def upload_field_shapefile(
                 fc = FeatureCollection(**geojson)
                 assert fc.type == "FeatureCollection"
                 assert len(fc.features) > 0
-                assert type(fc.features[0].geometry) == Polygon
+                assert isinstance(fc.features[0].geometry, Polygon)
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to unzip shapefile"

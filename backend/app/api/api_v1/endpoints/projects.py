@@ -1,11 +1,12 @@
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
+from app.api.utils import create_project_field_preview
 
 
 router = APIRouter()
@@ -13,6 +14,7 @@ router = APIRouter()
 
 @router.post("", response_model=schemas.Project, status_code=status.HTTP_201_CREATED)
 def create_project(
+    request: Request,
     project_in: schemas.ProjectCreate,
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
@@ -21,6 +23,13 @@ def create_project(
     project = crud.project.create_with_owner(
         db, obj_in=project_in, owner_id=current_user.id
     )
+    # Create preview image for project field boundary
+    project_in_db = crud.project.get_user_project(
+        db, user_id=current_user.id, project_id=project.id
+    )
+    if project_in_db:
+        coordinates = project_in_db.field["geometry"]["coordinates"]
+        create_project_field_preview(request, project.id, coordinates)
     return project
 
 
