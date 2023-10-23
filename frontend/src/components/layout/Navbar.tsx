@@ -10,7 +10,7 @@ import {
 
 import AuthContext from '../../AuthContext';
 
-import brandLogo from '../../assets/brand.svg';
+import brandLogo from '../../assets/d2s-logo-white.png';
 
 const navigation = [
   { name: 'HOMEPAGE', href: '/home' },

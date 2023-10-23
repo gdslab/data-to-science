@@ -134,7 +134,8 @@ export default function FlightForm({
                   {editMode ? 'Update' : 'Create'}
                 </Button>
                 <OutlineButton
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
                     if (setOpen) {
                       setOpen(false);
                     } else {

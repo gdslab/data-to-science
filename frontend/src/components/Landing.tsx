@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 
 import AuthContext from '../AuthContext';
 import { Button } from './Buttons';
+
+import brandLogo from '../assets/d2s-logo-black.png';
 import landingVideo from '../assets/landing.mp4';
 
 export default function Landing() {
@@ -28,13 +30,8 @@ export default function Landing() {
       {/* sign up pane */}
       <div className="flex md:basis-2/5 basis-1/1 bg-accent1 justify-center p-4">
         <div className="flex flex-col items-center justify-center gap-4">
-          <div className="flex items-center justify-center gap-4">
-            <div className="h-16 w-16 bg-accent2 flex items-center justify-center">
-              Logo
-            </div>
-            <div>
-              <h1 className="mb-0">{import.meta.env.VITE_BRAND_FULL}</h1>
-            </div>
+          <div className="flex items-center justify-center">
+            <img className="h-32 w-32" src={brandLogo} alt="D2S Logo" />
           </div>
           <div className="m-4">
             <em className="text-secondary font-bold">
