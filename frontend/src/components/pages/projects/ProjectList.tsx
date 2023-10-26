@@ -1,7 +1,6 @@
 import axios from 'axios';
 import { useState } from 'react';
 import { useLoaderData, Link } from 'react-router-dom';
-import { PhotoIcon } from '@heroicons/react/24/outline';
 
 import { Button } from '../../Buttons';
 import Modal from '../../Modal';
