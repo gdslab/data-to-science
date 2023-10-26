@@ -10,7 +10,7 @@ import {
 
 import AuthContext from '../../AuthContext';
 
-import brandLogo from '../../assets/d2s-logo-white.png';
+import brandLogo from '../../assets/d2s-logo-white-horizontal.png';
 
 const navigation = [
   { name: 'HOMEPAGE', href: '/home' },
@@ -29,7 +29,7 @@ export default function Navbar() {
     <Disclosure as="nav" className="bg-primary">
       {({ open }) => (
         <>
-          <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
+          <div className="mx-auto px-2 sm:px-6 lg:px-8">
             <div className="relative flex h-16 items-center justify-between">
               {user ? (
                 <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
@@ -48,7 +48,7 @@ export default function Navbar() {
               <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
                 <div className="flex flex-shrink-0 items-center">
                   <Link to="/">
-                    <img className="h-8 w-auto" src={brandLogo} alt="PS2" />
+                    <img className="h-8 w-auto" src={brandLogo} alt="Brand logo" />
                   </Link>
                 </div>
                 {user ? (
