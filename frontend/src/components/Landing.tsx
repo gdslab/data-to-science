@@ -18,13 +18,13 @@ export default function Landing() {
   return !user ? (
     <div className="grid grid-flow-row auto-rows-max">
       {/* video pane */}
-      <div>
-        <div className="z-10 absolute top-1/2 w-full text-center">
-          <span className="text-7xl text-accent1 font-bold [text-shadow:_2px_2px_2px_rgb(0_0_0_/_70%)]">
+      <div className="h-screen">
+        <div className="z-10 absolute w-full text-center top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+          <span className="text-7xl text-accent3 font-bold [text-shadow:_2px_2px_2px_rgb(0_0_0_/_70%)]">
             Welcome to {import.meta.env.VITE_BRAND_FULL}
           </span>
         </div>
-        <video className="h-full h-screen object-none opacity-70" autoPlay loop>
+        <video className="h-full object-none opacity-70" autoPlay loop>
           <source src={landingVideo} type="video/mp4" />
           <div className="sr-only">Overhead video of field captured by a UAS</div>
         </video>
