@@ -21,22 +21,23 @@ export default function Landing() {
       <div>
         <div className="z-10 absolute top-1/2 w-full text-center">
           <span className="text-7xl text-accent1 font-bold [text-shadow:_2px_2px_2px_rgb(0_0_0_/_70%)]">
-            Welcome to Data To Science
+            Welcome to {import.meta.env.VITE_BRAND_FULL}
           </span>
         </div>
         <video className="h-full h-screen object-none opacity-70" autoPlay loop>
           <source src={landingVideo} type="video/mp4" />
+          <div className="sr-only">Overhead video of field captured by a UAS</div>
         </video>
       </div>
       {/* sign up pane */}
       <div className="bg-accent1 p-8">
         <div className="grid grid-rows-3 gap-4">
           <div className="flex items-center justify-center">
-            <img className="h-24 w-24" src={brandLogo} alt="D2S Logo" />
+            <img className="h-24 w-24" src={brandLogo} alt="Brand Logo" />
           </div>
           <div className="flex items-center justify-center">
             <em className="text-accent3 text-2xl font-bold">
-              A Data-driven Open Science Community for Sustained Innovation
+              {import.meta.env.VITE_BRAND_SLOGAN}
             </em>
           </div>
           <div className="flex items-center justify-center">

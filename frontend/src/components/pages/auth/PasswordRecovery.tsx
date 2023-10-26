@@ -54,9 +54,10 @@ export default function PasswordRecovery() {
               {({ isSubmitting, status }) => (
                 <Form className="grid grid-flow-row gap-4">
                   <HintText>
-                    Enter the email you used to sign up on D2S. A one-time password
-                    reset link will be sent to the address. The link will expire in 1
-                    hour. Return here to request a new link if needed.
+                    Enter the email you used to sign up on{' '}
+                    {import.meta.env.VITE_BRAND_FULL}. A one-time password reset link
+                    will be sent to the address. The link will expire in 1 hour. Return
+                    here to request a new link if needed.
                   </HintText>
                   <TextField label="Email" name="email" type="email" icon="email" />
                   <Button type="submit" disabled={isSubmitting}>
