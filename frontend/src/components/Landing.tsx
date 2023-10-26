@@ -16,38 +16,35 @@ export default function Landing() {
     }
   }, []);
   return !user ? (
-    <div className="h-full flex flex-wrap">
+    <div className="grid grid-flow-row auto-rows-max">
       {/* video pane */}
-      <div className="flex min-h-min w-full md:basis-3/5 basis-1/1 bg-primary items-center justify-center">
-        <div className="h-96 flex items-center justify-center">
-          <div className="mx-4 border-4 border-slate-200">
-            <video controls>
-              <source src={landingVideo} type="video/mp4" />
-            </video>
-          </div>
+      <div>
+        <div className="z-10 absolute top-1/2 w-full text-center">
+          <span className="text-7xl text-accent1 font-bold [text-shadow:_2px_2px_2px_rgb(0_0_0_/_70%)]">
+            Welcome to Data To Science
+          </span>
         </div>
+        <video className="h-full h-screen object-none opacity-70" autoPlay loop>
+          <source src={landingVideo} type="video/mp4" />
+        </video>
       </div>
       {/* sign up pane */}
-      <div className="flex md:basis-2/5 basis-1/1 bg-accent1 justify-center p-4">
-        <div className="flex flex-col items-center justify-center gap-4">
+      <div className="bg-accent1 p-8">
+        <div className="grid grid-rows-3 gap-4">
           <div className="flex items-center justify-center">
-            <img className="h-32 w-32" src={brandLogo} alt="D2S Logo" />
+            <img className="h-24 w-24" src={brandLogo} alt="D2S Logo" />
           </div>
-          <div className="m-4">
-            <em className="text-secondary font-bold">
-              SloganSloganSloganSloganSlogan!
+          <div className="flex items-center justify-center">
+            <em className="text-accent3 text-2xl font-bold">
+              A Data-driven Open Science Community for Sustained Innovation
             </em>
           </div>
-          <div className="mt-8">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
-            tempor incididunt ut labore et dolore magna aliqua. Praesent tristique magna
-            sit amet purus gravida quis blandit. Vitae semper quis lectus nulla. Arcu
-            non sodales neque sodales ut etiam sit.
-          </div>
-          <div className="w-full mt-16">
-            <Link to="/auth/register">
-              <Button icon="arrow">Sign up to join!</Button>
-            </Link>
+          <div className="flex items-center justify-center">
+            <div className="w-1/2">
+              <Link to="/auth/register">
+                <Button icon="arrow">Sign up to join!</Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
