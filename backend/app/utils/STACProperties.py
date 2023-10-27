@@ -22,7 +22,7 @@ class STACRasterProperties(TypedDict):
     stats: dict[str, float]
     histogram: Histogram
     nodata: NotRequired[int | float | None]
-    unit: str
+    unit: NotRequired[str | None]
 
 
 class STACEOProperties(TypedDict):
