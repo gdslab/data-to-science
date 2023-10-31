@@ -1,7 +1,7 @@
 import axios, { AxiosResponse } from 'axios';
 import { Formik, Form } from 'formik';
 import { useContext, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Params, useLoaderData, useNavigate, useParams } from 'react-router-dom';
 
 import Alert from '../../../Alert';
 import { Button, OutlineButton } from '../../../Buttons';
@@ -11,6 +11,18 @@ import AuthContext, { User } from '../../../../AuthContext';
 import { getInitialValues, PLATFORM_OPTIONS, SENSOR_OPTIONS } from './initialValues';
 import validationSchema from './validationSchema';
 import { Flight, Pilot } from '../ProjectDetail';
+
+export async function loader({ params }: { params: Params<string> }) {
+  const flight = await axios.get(
+    `/api/v1/projects/${params.projectId}/flights/${params.flightId}`
+  );
+
+  if (flight) {
+    return flight.data;
+  } else {
+    return null;
+  }
+}
 
 function fetchPilotFromUserProfile(user: User | null) {
   if (user) {
@@ -47,17 +59,15 @@ async function fetchPilots(teamId: string | undefined, user: User | null) {
 
 export default function FlightForm({
   editMode = false,
-  flight = null,
-  projectId,
   teamId,
   setOpen,
 }: {
   editMode?: boolean;
-  flight?: Flight | null;
-  projectId: string;
   teamId?: string | undefined;
   setOpen?: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
+  const flight = useLoaderData() as Flight;
+  const params = useParams();
   const navigate = useNavigate();
   const [pilots, setPilots] = useState<Pilot[]>([]);
   const { user } = useContext(AuthContext);
@@ -70,7 +80,7 @@ export default function FlightForm({
 
   return (
     <div className="my-8 mx-4">
-      {!editMode ? <h1>New Flight</h1> : null}
+      {!editMode ? <h1>Create Flight</h1> : <h1>Edit Flight</h1>}
       {pilots.length > 0 ? (
         <Formik
           initialValues={{ ...getInitialValues(flight), pilotId: pilots[0].value }}
@@ -89,19 +99,19 @@ export default function FlightForm({
               let response: AxiosResponse | null = null;
               if (editMode && flight) {
                 response = await axios.put(
-                  `/api/v1/projects/${projectId}/flights/${flight.id}`,
+                  `/api/v1/projects/${params.projectId}/flights/${flight.id}`,
                   data
                 );
               } else {
                 response = await axios.post(
-                  `/api/v1/projects/${projectId}/flights`,
+                  `/api/v1/projects/${params.projectId}/flights`,
                   data
                 );
               }
               if (response) {
                 setStatus({ type: 'success', msg: 'Created' });
                 if (setOpen) setOpen(false);
-                navigate(`/projects/${projectId}`);
+                navigate(`/projects/${params.projectId}`);
               } else {
                 // do something
               }
@@ -139,7 +149,7 @@ export default function FlightForm({
                     if (setOpen) {
                       setOpen(false);
                     } else {
-                      navigate(`/projects/${projectId}`);
+                      navigate(`/projects/${params.projectId}`);
                     }
                   }}
                 >

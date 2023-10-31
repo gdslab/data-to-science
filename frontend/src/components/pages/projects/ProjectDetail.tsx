@@ -161,7 +161,6 @@ export default function ProjectDetail() {
             }}
             validationSchema={validationSchema}
             onSubmit={async (values) => {
-              console.log(values);
               try {
                 const data = {
                   title: values.title,
@@ -380,22 +379,9 @@ export default function ProjectDetail() {
               ])}
               actions={flights.map((flight, i) => [
                 {
-                  type: 'button',
                   key: `action-edit-${i}`,
                   icon: <PencilIcon className="h-4 w-4" />,
                   label: 'Edit',
-                  onClick: () => setOpenFlightEdit(true),
-                  component: (
-                    <Modal open={openFlightEdit} setOpen={setOpenFlightEdit}>
-                      <FlightForm
-                        projectId={projectId ? projectId : ''}
-                        setOpen={setOpenFlightEdit}
-                        editMode={true}
-                        flight={flight}
-                        teamId={project.team_id}
-                      />
-                    </Modal>
-                  ),
                   url: `/projects/${projectId}/flights/${flight.id}/edit`,
                 },
                 {

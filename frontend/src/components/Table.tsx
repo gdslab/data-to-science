@@ -52,7 +52,6 @@ export function TableBody({
                         </div>
                         <span>{action.label}</span>
                       </button>
-                      {action.component ? action.component : null}
                     </div>
                   ) : (
                     <Link
