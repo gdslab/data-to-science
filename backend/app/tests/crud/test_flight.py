@@ -12,7 +12,6 @@ from app.tests.utils.user import create_user
 
 
 def test_create_flight(db: Session) -> None:
-    """Verify new flight is created in database."""
     pilot = create_user(db)
     project_owner = create_user(db)
     project = create_project(db, owner_id=project_owner.id)
@@ -43,7 +42,6 @@ def test_create_flight(db: Session) -> None:
 
 
 def test_get_flight(db: Session) -> None:
-    """Verify retrieving flight by id returns correct flight."""
     flight = create_flight(db)
     stored_flight = crud.flight.get_flight_by_id(
         db, project_id=flight.project_id, flight_id=flight.id
@@ -61,7 +59,6 @@ def test_get_flight(db: Session) -> None:
 
 
 def test_get_flights(db: Session) -> None:
-    """Verify retrieval of flights associated with project."""
     user = create_user(db)
     project = create_project(db, owner_id=user.id)
     other_project = create_project(db)
@@ -80,16 +77,8 @@ def test_get_flights(db: Session) -> None:
 
 
 def test_update_flight(db: Session) -> None:
-    """Verify update changes flight attributes in database."""
-    flight = create_flight(
-        db,
-        altitude=60,
-        sensor=SENSORS[0],
-    )
-    flight_in_update = FlightUpdate(
-        altitude=100,
-        sensor=SENSORS[1],
-    )
+    flight = create_flight(db, altitude=60, sensor=SENSORS[0])
+    flight_in_update = FlightUpdate(altitude=100, sensor=SENSORS[1])
     flight_update = crud.flight.update(db, db_obj=flight, obj_in=flight_in_update)
     assert flight.id == flight_update.id
     assert flight_in_update.altitude == flight_update.altitude
