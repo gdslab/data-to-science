@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useParams, useRevalidator } from 'react-router-dom';
 
 import { Button } from '../../../../Buttons';
 import { RawData as RawDataInterface } from '../FlightData';
@@ -9,6 +9,12 @@ import UploadModal from '../../../../UploadModal';
 export default function RawData({ data }: { data: RawDataInterface[] }) {
   const { projectId, flightId } = useParams();
   const [open, setOpen] = useState(false);
+  const revalidator = useRevalidator();
+
+  useEffect(() => {
+    if (!open) revalidator.revalidate();
+  }, [open]);
+
   return (
     <div>
       <h2>Raw Data</h2>

@@ -11,7 +11,6 @@ interface Props {
 
 export default function Modal({ actions = false, children, open, setOpen }: Props) {
   const cancelButtonRef = useRef(null);
-  console.log('open', open);
   return (
     <Transition.Root show={open} as={Fragment}>
       <Dialog

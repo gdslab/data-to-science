@@ -39,7 +39,7 @@ export default function ProjectList() {
   return (
     <div className="m-4">
       <h1>Projects</h1>
-      <div className="w-48">
+      <div className="w-96">
         <Button icon="folderplus" onClick={() => setOpen(true)}>
           Create
         </Button>
@@ -79,9 +79,7 @@ export default function ProjectList() {
               </Link>
             ))}
         </div>
-      ) : (
-        <em>No active projects</em>
-      )}
+      ) : null}
     </div>
   );
 }

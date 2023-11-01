@@ -25,15 +25,16 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
     if (!open) revalidator.revalidate();
   }, [open]);
 
-  if (data && data.length > 0) {
-    const processing = data.filter(({ status }) => status === 'INPROGRESS');
-    useInterval(
-      () => {
-        revalidator.revalidate();
-      },
-      processing.length > 0 ? 5000 : null
-    );
-  }
+  useInterval(
+    () => {
+      revalidator.revalidate();
+    },
+    data &&
+      data.length > 0 &&
+      data.filter(({ status }) => status === 'INPROGRESS').length > 0
+      ? 5000
+      : null
+  );
 
   return (
     <div>
@@ -69,10 +70,10 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
                       src={dataset.url.replace('tif', 'webp')}
                     />
                   ) : (
-                    <Fragment>
+                    <div>
                       <span className="sr-only">Preview photo not ready</span>
                       <PhotoIcon className="h-24 w-24" />
-                    </Fragment>
+                    </div>
                   )}
                 </div>,
                 <div className="flex items-center justify-center">
@@ -105,7 +106,9 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
             />
           </Table>
         </div>
-      ) : null}
+      ) : (
+        <Fragment></Fragment>
+      )}
       <div className="my-4 flex justify-center">
         <UploadModal
           apiRoute={`/api/v1/projects/${projectId}/flights/${flightId}/data_products`}

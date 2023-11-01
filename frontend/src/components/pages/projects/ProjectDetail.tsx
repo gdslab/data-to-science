@@ -70,7 +70,7 @@ export interface DataProduct {
 
 export interface Flight {
   id: string;
-  acquisition_date: Date;
+  acquisition_date: string;
   altitude: number;
   side_overlap: number;
   forward_overlap: number;
@@ -111,6 +111,14 @@ export async function loader({ params }: { params: Params<string> }) {
   }
 }
 
+function sorter(a: Date, b: Date, order: string = 'asc') {
+  if (order === 'desc') {
+    return a < b ? 1 : b < a ? -1 : 0;
+  } else {
+    return a > b ? 1 : b > a ? -1 : 0;
+  }
+}
+
 export default function ProjectDetail() {
   const navigate = useNavigate();
   const { project, flights, teams } = useLoaderData() as ProjectData;
@@ -122,13 +130,11 @@ export default function ProjectDetail() {
   const [openUpload, setOpenUpload] = useState(false);
   const [openConfirmationPopup, setOpenConfirmationPopup] = useState(false);
   const [open, setOpen] = useState(false);
-  const [openFlightEdit, setOpenFlightEdit] = useState(false);
   const [openMap, setOpenMap] = useState(false);
 
   const [isEditing, setIsEditing] = useState<Editing>(null);
 
   const currentTeam = teams ? teams.filter(({ id }) => project.team_id === id) : null;
-
   useEffect(() => {
     if (project.field) {
       setLocation({
@@ -223,11 +229,7 @@ export default function ProjectDetail() {
                         >
                           {!isEditing || isEditing.field !== 'plantingDate' ? (
                             <span>
-                              {project.planting_date
-                                ? new Date(project.planting_date).toLocaleDateString(
-                                    'en-US'
-                                  )
-                                : 'N/A'}
+                              {project.planting_date ? project.planting_date : 'N/A'}
                             </span>
                           ) : (
                             <TextField type="date" name="plantingDate" />
@@ -240,11 +242,7 @@ export default function ProjectDetail() {
                         >
                           {!isEditing || isEditing.field !== 'harvestDate' ? (
                             <span>
-                              {project.harvest_date
-                                ? new Date(project.harvest_date).toLocaleDateString(
-                                    'en-US'
-                                  )
-                                : 'N/A'}
+                              {project.harvest_date ? project.harvest_date : 'N/A'}
                             </span>
                           ) : (
                             <TextField type="date" name="harvestDate" />
@@ -366,17 +364,25 @@ export default function ProjectDetail() {
               columns={['Platform', 'Sensor', 'Acquisition Date', 'Data', 'Actions']}
             />
             <TableBody
-              rows={flights.map((flight) => [
-                flight.platform.replace(/_/g, ' '),
-                flight.sensor,
-                new Date(flight.acquisition_date).toLocaleDateString('en-US'),
-                <Link
-                  className="text-sky-600"
-                  to={`/projects/${projectId}/flights/${flight.id}/data`}
-                >
-                  View Data
-                </Link>,
-              ])}
+              rows={flights
+                .sort((a, b) =>
+                  sorter(
+                    new Date(a.acquisition_date),
+                    new Date(b.acquisition_date),
+                    'desc'
+                  )
+                )
+                .map((flight) => [
+                  flight.platform.replace(/_/g, ' '),
+                  flight.sensor,
+                  flight.acquisition_date,
+                  <Link
+                    className="text-sky-600"
+                    to={`/projects/${projectId}/flights/${flight.id}/data`}
+                  >
+                    View Data
+                  </Link>,
+                ])}
               actions={flights.map((flight, i) => [
                 {
                   key: `action-edit-${i}`,
@@ -399,11 +405,7 @@ export default function ProjectDetail() {
         <div className="mt-4 flex justify-center">
           <Button onClick={() => setOpen(true)}>Add New Flight</Button>
           <Modal open={open} setOpen={setOpen}>
-            <FlightForm
-              projectId={projectId}
-              setOpen={setOpen}
-              teamId={project.team_id}
-            />
+            <FlightForm setOpen={setOpen} teamId={project.team_id} />
           </Modal>
         </div>
       ) : null}

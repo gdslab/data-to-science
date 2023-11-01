@@ -5,9 +5,11 @@ import { Params, useLoaderData, useNavigate, useParams } from 'react-router-dom'
 
 import Alert from '../../../Alert';
 import { Button, OutlineButton } from '../../../Buttons';
+import Card from '../../../Card';
 import { SelectField, TextField } from '../../../InputFields';
 import AuthContext, { User } from '../../../../AuthContext';
 
+import { classNames } from '../../../utils';
 import { getInitialValues, PLATFORM_OPTIONS, SENSOR_OPTIONS } from './initialValues';
 import validationSchema from './validationSchema';
 import { Flight, Pilot } from '../ProjectDetail';
@@ -79,94 +81,98 @@ export default function FlightForm({
   }, []);
 
   return (
-    <div className="my-8 mx-4">
-      {!editMode ? <h1>Create Flight</h1> : <h1>Edit Flight</h1>}
-      {pilots.length > 0 ? (
-        <Formik
-          initialValues={{ ...getInitialValues(flight), pilotId: pilots[0].value }}
-          validationSchema={validationSchema}
-          onSubmit={async (values, { setSubmitting, setStatus }) => {
-            try {
-              const data = {
-                acquisition_date: values.acquisitionDate,
-                altitude: values.altitude,
-                side_overlap: values.sideOverlap,
-                forward_overlap: values.forwardOverlap,
-                sensor: values.sensor,
-                pilot_id: values.pilotId,
-                platform: values.platform,
-              };
-              let response: AxiosResponse | null = null;
-              if (editMode && flight) {
-                response = await axios.put(
-                  `/api/v1/projects/${params.projectId}/flights/${flight.id}`,
-                  data
-                );
-              } else {
-                response = await axios.post(
-                  `/api/v1/projects/${params.projectId}/flights`,
-                  data
-                );
+    <div className={classNames(editMode ? 'w-1/2 m-8' : '', '')}>
+      <Card>
+        {!editMode ? <h1>Create Flight</h1> : <h1>Edit Flight</h1>}
+        {pilots.length > 0 ? (
+          <Formik
+            initialValues={{
+              ...getInitialValues(editMode ? flight : null),
+              pilotId: pilots[0].value,
+            }}
+            validationSchema={validationSchema}
+            onSubmit={async (values, { setSubmitting, setStatus }) => {
+              try {
+                const data = {
+                  acquisition_date: values.acquisitionDate,
+                  altitude: values.altitude,
+                  side_overlap: values.sideOverlap,
+                  forward_overlap: values.forwardOverlap,
+                  sensor: values.sensor,
+                  pilot_id: values.pilotId,
+                  platform: values.platform,
+                };
+                let response: AxiosResponse | null = null;
+                if (editMode && flight) {
+                  response = await axios.put(
+                    `/api/v1/projects/${params.projectId}/flights/${flight.id}`,
+                    data
+                  );
+                } else {
+                  response = await axios.post(
+                    `/api/v1/projects/${params.projectId}/flights`,
+                    data
+                  );
+                }
+                if (response) {
+                  setStatus({ type: 'success', msg: 'Created' });
+                  if (setOpen) setOpen(false);
+                  navigate(`/projects/${params.projectId}`);
+                } else {
+                  // do something
+                }
+              } catch (err) {
+                setStatus({ type: 'error', msg: 'Error' });
               }
-              if (response) {
-                setStatus({ type: 'success', msg: 'Created' });
-                if (setOpen) setOpen(false);
-                navigate(`/projects/${params.projectId}`);
-              } else {
-                // do something
-              }
-            } catch (err) {
-              if (axios.isAxiosError(err)) {
-                // console.error(err);
-              } else {
-                // do something
-              }
-              setStatus({ type: 'error', msg: 'Error' });
-            }
-            setSubmitting(false);
-          }}
-        >
-          {({ isSubmitting, status }) => (
-            <Form>
-              <TextField type="date" label="Acquisition date" name="acquisitionDate" />
-              <TextField label="Altitude (m)" name="altitude" />
-              <TextField label="Side overlap (%)" name="sideOverlap" />
-              <TextField label="Forward overlap (%)" name="forwardOverlap" />
-              <SelectField label="Sensor" name="sensor" options={SENSOR_OPTIONS} />
-              <SelectField
-                label="Platform"
-                name="platform"
-                options={PLATFORM_OPTIONS}
-              />
-              <SelectField label="Pilot" name="pilotId" options={pilots} />
-              <div className="grid grid-rows-2 gap-4 mt-4">
-                <Button type="submit" disabled={isSubmitting}>
-                  {editMode ? 'Update' : 'Create'}
-                </Button>
-                <OutlineButton
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (setOpen) {
-                      setOpen(false);
-                    } else {
-                      navigate(`/projects/${params.projectId}`);
-                    }
-                  }}
-                >
-                  Cancel
-                </OutlineButton>
-              </div>
-              {status && status.type && status.msg ? (
-                <div className="mt-4">
-                  <Alert alertType={status.type}>{status.msg}</Alert>
+              setSubmitting(false);
+            }}
+          >
+            {({ isSubmitting, status }) => (
+              <Form>
+                <TextField
+                  type="date"
+                  label="Acquisition date"
+                  name="acquisitionDate"
+                />
+                <TextField label="Altitude (m)" name="altitude" />
+                <TextField label="Side overlap (%)" name="sideOverlap" />
+                <TextField label="Forward overlap (%)" name="forwardOverlap" />
+                <SelectField label="Sensor" name="sensor" options={SENSOR_OPTIONS} />
+                <SelectField
+                  label="Platform"
+                  name="platform"
+                  options={PLATFORM_OPTIONS}
+                />
+                <SelectField label="Pilot" name="pilotId" options={pilots} />
+                <div className="grid grid-rows-2 gap-4 mt-4">
+                  <Button type="submit" disabled={isSubmitting}>
+                    {editMode ? 'Update' : 'Create'}
+                  </Button>
+                  <OutlineButton
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (setOpen) {
+                        setOpen(false);
+                      } else {
+                        navigate(`/projects/${params.projectId}`);
+                      }
+                    }}
+                  >
+                    Cancel
+                  </OutlineButton>
                 </div>
-              ) : null}
-            </Form>
-          )}
-        </Formik>
-      ) : (
-        <span>Searching for pilots...</span>
-      )}
+                {status && status.type && status.msg ? (
+                  <div className="mt-4">
+                    <Alert alertType={status.type}>{status.msg}</Alert>
+                  </div>
+                ) : null}
+              </Form>
+            )}
+          </Formik>
+        ) : (
+          <span>Searching for pilots...</span>
+        )}
+      </Card>
     </div>
   );
 }

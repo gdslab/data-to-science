@@ -315,11 +315,11 @@ export default function LayerPane({
             ) : (
               <div>
                 <p className="mb-4">
-                  You do not currently have access to any projects. Use the below button
-                  to create a new project.
+                  You do not have any projects to display on the map. Use the below
+                  button to navigate to the Projects page and create your first project.
                 </p>
-                <Link to="/projects/create">
-                  <Button>Add first project</Button>
+                <Link to="/projects">
+                  <Button>My Projects</Button>
                 </Link>
               </div>
             )}
