@@ -27,6 +27,10 @@ services:
         condition: service_healthy
     env_file: .env
 
+  titiler:
+    image: ghcr.io/developmentseed/titiler:latest
+    restart: always
+
   db:
     image: postgis/postgis:15-3.3
     volumes:

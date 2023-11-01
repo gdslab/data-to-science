@@ -34,6 +34,10 @@ services:
       timeout: 5s
       retries: 5
 
+  titiler:
+    image: ghcr.io/developmentseed/titiler:latest
+    restart: always
+
   redis:
     image: redis:alpine
     restart: always

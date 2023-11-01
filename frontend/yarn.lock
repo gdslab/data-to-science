@@ -1829,6 +1829,56 @@ __metadata:
   languageName: node
   linkType: hard
 
+"d2s-react@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "d2s-react@workspace:."
+  dependencies:
+    "@geoman-io/leaflet-geoman-free": ^2.14.2
+    "@headlessui/react": latest
+    "@heroicons/react": ^2.0.18
+    "@types/chroma-js": ^2.4.0
+    "@types/leaflet": ^1.9.3
+    "@types/react": ^18.2.15
+    "@types/react-dom": ^18.2.7
+    "@typescript-eslint/eslint-plugin": ^6.0.0
+    "@typescript-eslint/parser": ^6.0.0
+    "@uppy/core": ^3.3.1
+    "@uppy/dashboard": ^3.5.0
+    "@uppy/drag-drop": ^3.0.2
+    "@uppy/progress-bar": ^3.0.2
+    "@uppy/react": ^3.1.3
+    "@uppy/status-bar": ^3.2.3
+    "@uppy/xhr-upload": ^3.3.1
+    "@vitejs/plugin-react": ^4.0.3
+    autoprefixer: ^10.4.14
+    axios: ^1.4.0
+    chroma-js: ^2.4.2
+    eslint: ^8.45.0
+    eslint-plugin-react-hooks: ^4.6.0
+    eslint-plugin-react-refresh: ^0.4.3
+    formik: ^2.4.2
+    georaster: ^1.6.0
+    georaster-layer-for-leaflet: ^3.10.0
+    leaflet: ^1.9.4
+    leaflet.markercluster: ^1.5.3
+    leaflet.smooth_marker_bouncing: ^3.0.3
+    localforage: ^1.10.0
+    match-sorter: ^6.3.1
+    postcss: ^8.4.27
+    react: ^18.2.0
+    react-dom: ^18.2.0
+    react-leaflet: ^4.2.1
+    react-router-dom: ^6.14.2
+    sort-by: ^1.2.0
+    tailwindcss: ^3.3.3
+    typescript: ^5.0.2
+    uuid: ^9.0.1
+    vite: ^4.4.5
+    yup: ^1.2.0
+    yup-password: ^0.2.2
+  languageName: unknown
+  linkType: soft
+
 "debug@npm:4, debug@npm:^4.1.0, debug@npm:^4.1.1, debug@npm:^4.2.0, debug@npm:^4.3.2, debug@npm:^4.3.3, debug@npm:^4.3.4":
   version: 4.3.4
   resolution: "debug@npm:4.3.4"
@@ -3941,56 +3991,6 @@ __metadata:
   checksum: ed7fcc2ba0a33404958e34d95d18638249a68c430e30fcb6c478497d72739ba64ce9810a24f53a7d921d0c065e5b78e3822759800698167256b04659366ca4d4
   languageName: node
   linkType: hard
-
-"ps2-app@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "ps2-app@workspace:."
-  dependencies:
-    "@geoman-io/leaflet-geoman-free": ^2.14.2
-    "@headlessui/react": latest
-    "@heroicons/react": ^2.0.18
-    "@types/chroma-js": ^2.4.0
-    "@types/leaflet": ^1.9.3
-    "@types/react": ^18.2.15
-    "@types/react-dom": ^18.2.7
-    "@typescript-eslint/eslint-plugin": ^6.0.0
-    "@typescript-eslint/parser": ^6.0.0
-    "@uppy/core": ^3.3.1
-    "@uppy/dashboard": ^3.5.0
-    "@uppy/drag-drop": ^3.0.2
-    "@uppy/progress-bar": ^3.0.2
-    "@uppy/react": ^3.1.3
-    "@uppy/status-bar": ^3.2.3
-    "@uppy/xhr-upload": ^3.3.1
-    "@vitejs/plugin-react": ^4.0.3
-    autoprefixer: ^10.4.14
-    axios: ^1.4.0
-    chroma-js: ^2.4.2
-    eslint: ^8.45.0
-    eslint-plugin-react-hooks: ^4.6.0
-    eslint-plugin-react-refresh: ^0.4.3
-    formik: ^2.4.2
-    georaster: ^1.6.0
-    georaster-layer-for-leaflet: ^3.10.0
-    leaflet: ^1.9.4
-    leaflet.markercluster: ^1.5.3
-    leaflet.smooth_marker_bouncing: ^3.0.3
-    localforage: ^1.10.0
-    match-sorter: ^6.3.1
-    postcss: ^8.4.27
-    react: ^18.2.0
-    react-dom: ^18.2.0
-    react-leaflet: ^4.2.1
-    react-router-dom: ^6.14.2
-    sort-by: ^1.2.0
-    tailwindcss: ^3.3.3
-    typescript: ^5.0.2
-    uuid: ^9.0.1
-    vite: ^4.4.5
-    yup: ^1.2.0
-    yup-password: ^0.2.2
-  languageName: unknown
-  linkType: soft
 
 "punycode@npm:^2.1.0":
   version: 2.3.0
