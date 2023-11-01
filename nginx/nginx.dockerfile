@@ -3,7 +3,7 @@ FROM nginxinc/nginx-unprivileged:latest
 WORKDIR /etc/nginx
 
 COPY ./common.conf ./common_location.conf ./
-COPY ./ps2-proxy.conf ./conf.d/default.conf
+COPY ./d2s-proxy.conf ./conf.d/default.conf
 
 EXPOSE 80
 

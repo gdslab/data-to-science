@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "ps2"
+name = "d2s"
 version = "0.1.0"
 description = "FastAPI with PostgreSQL support environment"
 authors = ["Ben Hancock <hancocb@purdue.edu>"]
