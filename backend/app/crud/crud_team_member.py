@@ -4,6 +4,7 @@ from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Bundle, Session
 from sqlalchemy.sql.selectable import Select
 
@@ -34,6 +35,19 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
             else:
                 db_obj = None
             return db_obj
+
+    def create_multi_with_team(
+        self, db: Session, team_members: list[UUID], team_id: UUID
+    ) -> Sequence[TeamMember]:
+        with db as session:
+            team_member_objs = []
+            for user_id in team_members:
+                team_member_objs.append({"member_id": user_id, "team_id": team_id})
+            session.execute(
+                insert(TeamMember).values(team_member_objs).on_conflict_do_nothing()
+            )
+            session.commit()
+        return self.get_list_of_team_members(db, team_id=team_id)
 
     def get_team_member_by_email(
         self, db: Session, *, email: str, team_id: UUID

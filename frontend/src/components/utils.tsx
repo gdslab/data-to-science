@@ -22,3 +22,11 @@ export function getIcon(iconName: string) {
       return null;
   }
 }
+
+export function sorter(a: Date | string, b: Date | string, order: string = 'asc') {
+  if (order === 'desc') {
+    return a < b ? 1 : b < a ? -1 : 0;
+  } else {
+    return a > b ? 1 : b > a ? -1 : 0;
+  }
+}

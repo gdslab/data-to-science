@@ -29,6 +29,34 @@ def test_create_duplicate_team_member(db: Session) -> None:
         create_team_member(db, email=user.email, team_id=team.id)
 
 
+def test_create_multi_team_members(db: Session) -> None:
+    team_owner = create_user(db)
+    team = create_team(db, owner_id=team_owner.id)
+    user1 = create_user(db)
+    user2 = create_user(db)
+    user3 = create_user(db)
+    new_team_members = crud.team_member.create_multi_with_team(
+        db, team_members=[user1.id, user2.id, user3.id], team_id=team.id
+    )
+    assert new_team_members
+    assert len(new_team_members) == 4
+
+
+def test_create_mutli_team_members_with_existing_member(db: Session) -> None:
+    team_owner = create_user(db)
+    team = create_team(db, owner_id=team_owner.id)
+    user1 = create_user(db)
+    user2 = create_user(db)
+    user3 = create_user(db)
+    new_team_members = crud.team_member.create_multi_with_team(
+        db,
+        team_members=[user1.id, user2.id, user3.id, team_owner.id, user3.id],
+        team_id=team.id,
+    )
+    assert new_team_members
+    assert len(new_team_members) == 4
+
+
 def test_get_team_member_by_email(db: Session) -> None:
     """Verify a team member can be retrieved by email."""
     team = create_team(db)

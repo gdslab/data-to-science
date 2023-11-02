@@ -1,7 +1,7 @@
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
@@ -44,6 +44,29 @@ def create_team_member(
             detail="Unable to find user with provided email address",
         )
     return team_member
+
+
+@router.post(
+    "/multi",
+    response_model=list[schemas.TeamMember],
+    status_code=status.HTTP_201_CREATED,
+)
+def create_team_members(
+    team_id: UUID,
+    team_members: list[UUID],
+    team: models.Team = Depends(deps.can_read_write_team),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Add multiple team members to a team if current user is team owner."""
+    if not team:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Team not found"
+        )
+    team_members = crud.team_member.create_multi_with_team(
+        db, team_members=team_members, team_id=team.id
+    )
+    return team_members
 
 
 @router.get("", response_model=list[schemas.TeamMember])

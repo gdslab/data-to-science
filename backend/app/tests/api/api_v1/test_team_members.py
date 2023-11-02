@@ -77,6 +77,26 @@ def test_add_new_team_member_with_unused_email(
     assert 404 == r.status_code
 
 
+def test_add_team_members(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
+    team = create_team(db, owner_id=current_user.id)
+    new_member1 = create_user(db)
+    new_member2 = create_user(db)
+    new_member3 = create_user(db)
+    data = [new_member1.id, new_member2.id, new_member3.id]
+    r = client.post(
+        f"{settings.API_V1_STR}/teams/{team.id}/members/multi",
+        json=jsonable_encoder(data),
+    )
+    assert 201 == r.status_code
+    response_data = r.json()
+    len(response_data) == 3
+
+
 def test_remove_team_member(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:

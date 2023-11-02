@@ -24,6 +24,7 @@ import Table, { TableBody, TableHead } from '../../Table';
 import { DefaultSymbologySettings } from '../../maps/MapContext';
 import { Team } from '../teams/Teams';
 import validationSchema from './validationSchema';
+import { sorter } from '../../utils';
 
 interface Project {
   id: string;
@@ -108,14 +109,6 @@ export async function loader({ params }: { params: Params<string> }) {
     };
   } else {
     return null;
-  }
-}
-
-function sorter(a: Date, b: Date, order: string = 'asc') {
-  if (order === 'desc') {
-    return a < b ? 1 : b < a ? -1 : 0;
-  } else {
-    return a > b ? 1 : b > a ? -1 : 0;
   }
 }
 

@@ -37,7 +37,7 @@ export default function Map({ projects }: { projects: Project[] }) {
       center={[40.428655143949925, -86.9138040788386]}
       preferCanvas={true}
       zoom={8}
-      maxZoom={18}
+      maxZoom={22}
       scrollWheelZoom={true}
       zoomControl={false}
     >
