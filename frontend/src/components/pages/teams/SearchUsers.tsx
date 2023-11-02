@@ -2,6 +2,7 @@ import axios from 'axios';
 import { useState } from 'react';
 
 import { User } from '../../../AuthContext';
+import { sorter } from '../../utils';
 
 export interface UserSearch extends User {
   checked: boolean;
@@ -115,35 +116,37 @@ function SearchUsersResults({ searchResults, setSearchResults }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {searchResults.map((user) => (
-              <tr key={user.id} className="odd:bg-gray-50">
-                <td className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
-                  {user.first_name} {user.last_name}
-                </td>
-                <td className="text-center">
-                  <label
-                    htmlFor="AcceptConditions"
-                    className="relative h-8 w-14 cursor-pointer"
-                  >
-                    <input
-                      id={`${user.id}-search-checkbox`}
-                      type="checkbox"
-                      value={user.id}
-                      checked={user.checked}
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                      onChange={(e) => {
-                        const updatedSearchResults = searchResults.map((user) => {
-                          if (user.id === e.target.value)
-                            return { ...user, checked: !user.checked };
-                          return user;
-                        });
-                        setSearchResults(updatedSearchResults);
-                      }}
-                    />
-                  </label>
-                </td>
-              </tr>
-            ))}
+            {searchResults
+              .sort((a, b) => sorter(a.first_name, b.first_name))
+              .map((user) => (
+                <tr key={user.id} className="odd:bg-gray-50">
+                  <td className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
+                    {user.first_name} {user.last_name}
+                  </td>
+                  <td className="text-center">
+                    <label
+                      htmlFor="AcceptConditions"
+                      className="relative h-8 w-14 cursor-pointer"
+                    >
+                      <input
+                        id={`${user.id}-search-checkbox`}
+                        type="checkbox"
+                        value={user.id}
+                        checked={user.checked}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                        onChange={(e) => {
+                          const updatedSearchResults = searchResults.map((user) => {
+                            if (user.id === e.target.value)
+                              return { ...user, checked: !user.checked };
+                            return user;
+                          });
+                          setSearchResults(updatedSearchResults);
+                        }}
+                      />
+                    </label>
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>

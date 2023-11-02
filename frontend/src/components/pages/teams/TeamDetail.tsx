@@ -1,10 +1,8 @@
 import axios from 'axios';
 import { Formik, Form } from 'formik';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useState } from 'react';
 import { Params, useLoaderData, useNavigate, useRevalidator } from 'react-router-dom';
-import * as Yup from 'yup';
 
-import Alert from '../../Alert';
 import AuthContext from '../../../AuthContext';
 import { Button } from '../../Buttons';
 import { ConfirmationPopup } from '../../ConfirmationPopup';
@@ -141,7 +139,7 @@ export default function TeamDetail() {
                       `/api/v1/teams/${teamData.team.id}/members/multi`,
                       selectedMembers.map(({ id }) => id)
                     )
-                    .then((response) => {
+                    .then(() => {
                       setSearchResults([]);
                       revalidator.revalidate();
                     })
