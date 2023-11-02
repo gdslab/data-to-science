@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from pydantic import AnyHttpUrl, BaseModel
@@ -11,6 +12,7 @@ class DataProductBase(BaseModel):
     filepath: str | None = None
     original_filename: str | None = None
     stac_properties: STACProperties | None = None
+    is_active: bool = True
 
 
 # properties to receive via API on creation
@@ -35,6 +37,8 @@ class DataProductInDBBase(DataProductBase, from_attributes=True):
     original_filename: str
     stac_properties: STACProperties | None = None
     user_style: dict | None = None
+    is_active: bool
+    deactivated_at: datetime | None = None
 
 
 # additional properties to return via API

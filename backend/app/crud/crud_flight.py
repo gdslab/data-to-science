@@ -2,16 +2,17 @@ from typing import Sequence
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import joinedload, Session
 
+from app import crud
 from app.crud.base import CRUDBase
+from app.crud.crud_data_product import set_url_attr, set_user_style_attr
 from app.models.flight import Flight
 from app.models.project import Project
 from app.models.user_style import UserStyle
+from app.models.utils.user import utcnow
 from app.schemas.flight import FlightCreate, FlightUpdate
-
-from app.crud.crud_data_product import set_url_attr, set_user_style_attr
 
 
 class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
@@ -34,6 +35,7 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
             .join(Project)
             .where(Flight.project_id == project_id)
             .where(Flight.id == flight_id)
+            .where(Flight.is_active)
             .where(Project.is_active)
         )
         with db as session:
@@ -53,6 +55,7 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
             .join(Project)
             .options(joinedload(Flight.data_products))
             .where(Flight.project_id == project_id)
+            .where(Flight.is_active)
             .where(Project.is_active)
         )
         with db as session:
@@ -70,6 +73,17 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                     if user_style:
                         set_user_style_attr(data_product, user_style.settings)
             return flights_with_data
+
+    def deactivate(self, db: Session, flight_id: UUID) -> Flight | None:
+        deactivate_flight = (
+            update(Flight)
+            .where(Flight.id == flight_id)
+            .values(is_active=False, deactivated_at=utcnow())
+        )
+        with db as session:
+            session.execute(deactivate_flight)
+            session.commit()
+        return crud.flight.get(db, id=flight_id)
 
 
 flight = CRUDFlight(Flight)

@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -14,6 +14,7 @@ class FlightBase(BaseModel):
     forward_overlap: float | None = None
     sensor: str | None = None
     platform: str | None = None
+    is_active: bool = True
 
 
 # properties to receive via API on creation
@@ -41,6 +42,8 @@ class FlightInDBBase(FlightBase, from_attributes=True):
     forward_overlap: float
     sensor: str
     platform: str
+    is_active: bool
+    deactivated_at: datetime | None = None
 
     project_id: UUID
     pilot_id: UUID | None = None

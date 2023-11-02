@@ -3,14 +3,16 @@ from typing import Any, Sequence
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
+from app import crud
 from app.core.config import settings
 from app.crud.base import CRUDBase
 from app.models.data_product import DataProduct
 from app.schemas.data_product import DataProductCreate, DataProductUpdate
 from app.models.user_style import UserStyle
+from app.models.utils.user import utcnow
 
 
 class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate]):
@@ -18,7 +20,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
         self, db: Session, obj_in: DataProductCreate, flight_id: UUID
     ) -> DataProduct:
         obj_in_data = jsonable_encoder(obj_in)
-        data_product = self.model(**obj_in_data, flight_id=flight_id)
+        data_product = DataProduct(**obj_in_data, flight_id=flight_id)
         with db as session:
             session.add(data_product)
             session.commit()
@@ -28,8 +30,10 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
     def get_single_by_id(
         self, db: Session, data_product_id: UUID, user_id: UUID, upload_dir: str
     ) -> DataProduct | None:
-        data_product_query = select(DataProduct).where(
-            DataProduct.id == data_product_id
+        data_product_query = (
+            select(DataProduct)
+            .where(DataProduct.id == data_product_id)
+            .where(DataProduct.is_active)
         )
         user_style_query = (
             select(UserStyle)
@@ -55,8 +59,10 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
         skip: int = 0,
         limit: int = 100,
     ) -> Sequence[DataProduct]:
-        data_products_query = select(DataProduct).where(
-            DataProduct.flight_id == flight_id
+        data_products_query = (
+            select(DataProduct)
+            .where(DataProduct.flight_id == flight_id)
+            .where(DataProduct.is_active)
         )
         with db as session:
             data_products = session.execute(data_products_query).scalars().all()
@@ -75,6 +81,17 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
 
                 updated_data_products.append(data_product)
             return updated_data_products
+
+    def deactivate(self, db: Session, data_product_id: UUID) -> DataProduct | None:
+        deactivate_data_product = (
+            update(DataProduct)
+            .where(DataProduct.id == data_product_id)
+            .values(is_active=False, deactivated_at=utcnow())
+        )
+        with db as session:
+            session.execute(deactivate_data_product)
+            session.commit()
+        return crud.data_product.get(db, id=data_product_id)
 
 
 def set_status_attr(data_product_obj: DataProduct, status: str | Any):

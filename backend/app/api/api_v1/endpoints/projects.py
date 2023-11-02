@@ -95,6 +95,6 @@ def deactivate_project(
     deactivated_project = crud.project.deactivate(db, project_id=project.id)
     if not deactivated_project:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUESET, detail="Unable to deactivate"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to deactivate"
         )
     return deactivated_project

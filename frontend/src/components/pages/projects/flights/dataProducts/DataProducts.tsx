@@ -4,6 +4,7 @@ import {
   CheckCircleIcon,
   CogIcon,
   PhotoIcon,
+  TrashIcon,
   XCircleIcon,
   QuestionMarkCircleIcon,
 } from '@heroicons/react/24/outline';
@@ -43,26 +44,11 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
         <div className="mt-4">
           <Table>
             <TableHead
-              columns={[
-                'Filename',
-                'Data Type',
-                'Cloud Optimized GeoTIFF',
-                'Preview',
-                'Status',
-              ]}
+              columns={['Data Type', 'Preview', 'Cloud Optimized GeoTIFF', 'Action']}
             />
             <TableBody
               rows={data.map((dataset) => [
-                dataset.original_filename,
                 dataset.data_type.toUpperCase(),
-                <div className="flex justify-center">
-                  <Button
-                    size="sm"
-                    onClick={() => navigator.clipboard.writeText(dataset.url)}
-                  >
-                    Copy URL
-                  </Button>
-                </div>,
                 <div className="flex items-center justify-center h-32 w-32">
                   {dataset.status === 'SUCCESS' ? (
                     <img
@@ -76,32 +62,51 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
                     </div>
                   )}
                 </div>,
-                <div className="flex items-center justify-center">
-                  {dataset.status === 'INPROGRESS' ? (
-                    <Fragment>
-                      <CogIcon
-                        className="h-8 w-8 mr-4 animate-spin"
-                        aria-hidden="true"
-                      />
-                      Processing...
-                    </Fragment>
-                  ) : dataset.status === 'FAILED' ? (
-                    <Fragment>
-                      <XCircleIcon className="h-8 h-8 mr-4 text-red-500" />
-                      Failed
-                    </Fragment>
-                  ) : dataset.status === 'SUCCESS' ? (
-                    <Fragment>
-                      <CheckCircleIcon className="h-8 w-8 mr-4 text-green-500" />{' '}
-                      Success
-                    </Fragment>
-                  ) : (
-                    <Fragment>
-                      <QuestionMarkCircleIcon className="h-8 w-8 mr-4" />
-                      Unknown
-                    </Fragment>
-                  )}
-                </div>,
+                dataset.status === 'SUCCESS' ? (
+                  <div className="flex justify-center">
+                    <Button
+                      size="sm"
+                      onClick={() => navigator.clipboard.writeText(dataset.url)}
+                    >
+                      Copy URL
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center">
+                    {dataset.status === 'INPROGRESS' ? (
+                      <Fragment>
+                        <CogIcon
+                          className="h-8 w-8 mr-4 animate-spin"
+                          aria-hidden="true"
+                        />
+                        Generating COG...
+                      </Fragment>
+                    ) : dataset.status === 'FAILED' ? (
+                      <Fragment>
+                        <XCircleIcon className="h-8 h-8 mr-4 text-red-500" />
+                        Failed
+                      </Fragment>
+                    ) : dataset.status === 'SUCCESS' ? (
+                      <Fragment>
+                        <CheckCircleIcon className="h-8 w-8 mr-4 text-green-500" />{' '}
+                        Success
+                      </Fragment>
+                    ) : (
+                      <Fragment>
+                        <QuestionMarkCircleIcon className="h-8 w-8 mr-4" />
+                        Unknown
+                      </Fragment>
+                    )}
+                  </div>
+                ),
+              ])}
+              actions={data.map(({ id }) => [
+                {
+                  key: `action-delete-${id}`,
+                  icon: <TrashIcon className="h-4 w-4" />,
+                  label: 'Delete',
+                  url: '#',
+                },
               ])}
             />
           </Table>

@@ -173,3 +173,32 @@ def update_user_style(
         db, db_obj=current_user_style, obj_in=user_style_in
     )
     return updated_user_style
+
+
+@router.delete("/{data_product_id}", response_model=schemas.DataProduct)
+def deactivate_data_product(
+    data_product_id: UUID,
+    project: models.Project = Depends(deps.can_read_write_project),
+    flight: models.Flight = Depends(deps.can_read_write_flight),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+        )
+    if not project.is_owner:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access forbidden"
+        )
+    if not flight:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
+        )
+    deactivated_data_product = crud.data_product.deactivate(
+        db, data_product_id=data_product_id
+    )
+    if not deactivated_data_product:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to deactivate"
+        )
+    return deactivated_data_product

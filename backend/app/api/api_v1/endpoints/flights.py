@@ -81,3 +81,28 @@ def update_flight(
         )
     flight = crud.flight.update(db, db_obj=flight, obj_in=flight_in)
     return flight
+
+
+@router.delete("/{flight_id}", response_model=schemas.Flight)
+def deactivate_flight(
+    flight_id: UUID,
+    flight: models.Flight = Depends(deps.can_read_write_flight),
+    project: models.Project = Depends(deps.can_read_write_project),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+        )
+    if not project.is_owner:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access forbidden"
+        )
+    if not flight:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
+        )
+    deactivated_flight = crud.flight.deactivate(db, flight_id=flight.id)
+    if not deactivated_flight:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+    return deactivated_flight

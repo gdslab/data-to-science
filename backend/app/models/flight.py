@@ -1,9 +1,9 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from datetime import date
+from datetime import date, datetime
 
-from sqlalchemy import Date, Float, ForeignKey
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey
 from sqlalchemy.dialects.postgresql import ENUM, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -36,6 +36,8 @@ class Flight(Base):
     platform: Mapped[enumerate] = mapped_column(
         ENUM(*PLATFORMS, name="platform_type"), nullable=False
     )
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    deactivated_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     project_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("projects.id"), nullable=False
     )
@@ -57,5 +59,6 @@ class Flight(Base):
             f"altitude={self.altitude!r}, side_overlap={self.side_overlap!r}, "
             f"forward_overlap={self.forward_overlap!r}, "
             f"sensor={self.sensor!r}, platform={self.platform!r}, "
+            f"is_active={self.is_active!r}, deactivated_at={self.deactivated_at!r}, "
             f"project_id={self.project_id!r}, pilot_id={self.pilot_id!r})"
         )
