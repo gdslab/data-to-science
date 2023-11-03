@@ -81,9 +81,15 @@ export default function FileUpload({
   });
 
   uppy.on('upload-success', (_file, response) => {
-    if (response.status === 200 && uploadType === 'shp' && setUploadResponse) {
+    if (
+      response &&
+      response.status === 200 &&
+      uploadType === 'shp' &&
+      setUploadResponse
+    ) {
       setUploadResponse(response.body);
     }
+    uppy.removeFile(_file.id);
     if (onSuccess) onSuccess();
   });
 
@@ -91,7 +97,14 @@ export default function FileUpload({
     return <Dashboard uppy={uppy} height="240px" />;
   } else {
     return (
-      <DashboardModal uppy={uppy} open={open} onRequestClose={() => setOpen(false)} />
+      <DashboardModal
+        uppy={uppy}
+        open={open}
+        onRequestClose={() => setOpen(false)}
+        closeAfterFinish={true}
+        proudlyDisplayPoweredByUppy={false}
+        disableThumbnailGenerator={uploadType !== 'img'}
+      />
     );
   }
 }

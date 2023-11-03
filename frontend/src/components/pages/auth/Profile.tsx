@@ -1,7 +1,11 @@
 import axios from 'axios';
 import { Formik, Form } from 'formik';
 import { useContext, useState } from 'react';
-import { UserCircleIcon } from '@heroicons/react/24/outline';
+import {
+  ChevronDownIcon,
+  TrashIcon,
+  UserCircleIcon,
+} from '@heroicons/react/24/outline';
 
 import Alert from '../../Alert';
 import AuthContext, { User } from '../../../AuthContext';
@@ -10,8 +14,9 @@ import Card from '../../Card';
 import HintText from '../../HintText';
 import FileUpload from '../../FileUpload';
 import { TextField } from '../../InputFields';
-
 import { passwordHintText } from './RegistrationForm';
+
+import { classNames } from '../../utils';
 import {
   passwordChangeValidationSchema,
   profileValidationSchema,
@@ -131,10 +136,94 @@ function ProfileForm({ updateProfile, user }: ProfileProps) {
   );
 }
 
+function EditProfilePicture({ updateProfile }: { updateProfile: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [menuVisibility, toggleMenuVisibility] = useState(false);
+  const onSuccess = () => {
+    updateProfile();
+    setOpen(false);
+    toggleMenuVisibility(false);
+  };
+
+  return (
+    <>
+      <div className="relative">
+        <div className="inline-flex items-center overflow-hidden rounded-md border bg-white">
+          <a
+            href="#"
+            className="border-e px-4 py-2 text-sm/none text-gray-600 hover:bg-gray-50 hover:text-gray-700"
+            onClick={() => toggleMenuVisibility(!menuVisibility)}
+          >
+            Edit
+          </a>
+
+          <button
+            className="h-full p-2 text-gray-600 hover:bg-gray-50 hover:text-gray-700"
+            onClick={() => toggleMenuVisibility(!menuVisibility)}
+          >
+            <span className="sr-only">Menu</span>
+            <ChevronDownIcon className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div
+          className={classNames(
+            menuVisibility ? 'display' : 'hidden',
+            'absolute end-0 z-10 mt-2 w-56 rounded-md border border-gray-100 bg-white shadow-lg'
+          )}
+          role="menu"
+        >
+          <div className="p-2">
+            <a
+              href="#"
+              className="block rounded-lg px-4 py-2 text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+              role="menuitem"
+              onClick={() => setOpen(true)}
+            >
+              Change profile picture
+            </a>
+            <button
+              type="submit"
+              className="flex w-full items-center gap-2 rounded-lg px-4 py-2 text-sm text-red-700 hover:bg-red-50"
+              role="menuitem"
+              onClick={async () => {
+                try {
+                  const response = await axios.delete(
+                    `${import.meta.env.VITE_API_V1_STR}/users/profile`
+                  );
+                  if (response) {
+                    toggleMenuVisibility(false);
+                    updateProfile();
+                  }
+                } catch (err) {
+                  console.log('unable to remove profile');
+                }
+              }}
+            >
+              <TrashIcon className="h-4 w-4" />
+              Remove profile picture
+            </button>
+          </div>
+        </div>
+      </div>
+      <FileUpload
+        endpoint={`${import.meta.env.VITE_API_V1_STR}/users/profile`}
+        open={open}
+        onSuccess={onSuccess}
+        restrictions={{
+          allowedFileTypes: ['.jpg', '.png'],
+          maxNumberOfFiles: 1,
+          minNumberOfFiles: 1,
+        }}
+        setOpen={setOpen}
+        uploadType="img"
+      />
+    </>
+  );
+}
+
 export default function Profile() {
   const { updateProfile, user } = useContext(AuthContext);
-  const [open, setOpen] = useState(false);
-  const onSuccess = () => updateProfile();
 
   return (
     <div className="h-full flex justify-center bg-gradient-to-b from-primary from-20% to-slate-200 to-10%">
@@ -158,27 +247,11 @@ export default function Profile() {
                     src={user.profile_url}
                   />
                 ) : (
-                  <div className="h-24 w-24 mt-4 bg-accent2 rounded-full">
+                  <div className="h-24 w-24 bg-accent2 rounded-full">
                     <UserCircleIcon />
                   </div>
                 )}
-                <div className="mt-4">
-                  <Button size="sm" onClick={() => setOpen(true)}>
-                    Change Photo
-                  </Button>
-                  <FileUpload
-                    endpoint={`${import.meta.env.VITE_API_V1_STR}/users/profile`}
-                    open={open}
-                    onSuccess={onSuccess}
-                    restrictions={{
-                      allowedFileTypes: ['.jpg', '.png'],
-                      maxNumberOfFiles: 1,
-                      minNumberOfFiles: 1,
-                    }}
-                    setOpen={setOpen}
-                    uploadType="img"
-                  />
-                </div>
+                <EditProfilePicture updateProfile={updateProfile} />
               </div>
               {/* form column */}
               <div className="grid gap-8">

@@ -139,7 +139,6 @@ def read_current_user(
 def upload_user_profile(
     request: Request,
     files: UploadFile,
-    background_tasks: BackgroundTasks,
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
@@ -164,3 +163,17 @@ def upload_user_profile(
         shutil.copyfileobj(files.file, buffer)
 
     return {"upload-status": "success"}
+
+
+@router.delete("/profile", status_code=status.HTTP_202_ACCEPTED)
+def delete_user_profile(
+    request: Request,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    if request.client and request.client.host == "testclient":
+        upload_dir = f"{settings.TEST_UPLOAD_DIR}/users/{current_user.id}"
+    else:
+        upload_dir = f"{settings.UPLOAD_DIR}/users/{current_user.id}"
+    if os.path.exists(upload_dir):
+        shutil.rmtree(upload_dir)
