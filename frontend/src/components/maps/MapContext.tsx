@@ -13,13 +13,16 @@ type ProjectHoverStateAction = { type: string; payload: string | null };
 type SymbologySettingsAction = { type: string; payload: SymbologySettings };
 
 export interface SymbologySettings {
-  colorRamp: string;
-  max: number;
-  meanStdDev: number;
-  min: number;
-  minMax: string;
-  userMax: number;
-  userMin: number;
+  colorRamp?: string;
+  max?: number;
+  meanStdDev?: number;
+  min?: number;
+  minMax?: string;
+  userMax?: number;
+  userMin?: number;
+  redBand?: number;
+  greenBand?: number;
+  blueBand?: number;
 }
 
 function activeDataProductReducer(
@@ -112,7 +115,7 @@ function symbologySettingsReducer(
   }
 }
 
-export interface DefaultSymbologySettings {
+export interface DSMSymbologySettings {
   colorRamp: string;
   max: number;
   meanStdDev: number;
@@ -122,15 +125,47 @@ export interface DefaultSymbologySettings {
   userMax: number;
 }
 
+export interface OrthoSymbologySettings {
+  redBand: number;
+  greenBand: number;
+  blueBand: number;
+}
+
+export type DefaultSymbologySettings = DSMSymbologySettings | OrthoSymbologySettings;
+
 export const defaultSymbologySettings: DefaultSymbologySettings = {
-  colorRamp: 'spectral',
+  colorRamp: 'rainbow',
   max: 0,
   meanStdDev: 2,
   min: 0,
   minMax: 'minMax',
   userMin: 0,
   userMax: 0,
+  redBand: 3,
+  greenBand: 2,
+  blueBand: 1,
 };
+
+const round = (n: number, digits: number): number => parseFloat(n.toFixed(digits));
+
+export function getDefaultSymbologySettings(dataProduct: DataProduct) {
+  if (dataProduct.data_type === 'dsm') {
+    const stats = dataProduct.stac_properties.raster[0].stats;
+    return {
+      ...defaultSymbologySettings,
+      min: round(stats.minimum, 1),
+      max: round(stats.maximum, 1),
+      userMin: round(stats.minimum, 1),
+      userMax: round(stats.maximum, 1),
+    };
+  } else if (dataProduct.data_type === 'ortho') {
+    return {
+      ...defaultSymbologySettings,
+    };
+  } else {
+    return defaultSymbologySettings;
+  }
+}
 
 const context: {
   activeDataProduct: DataProduct | null;

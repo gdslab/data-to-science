@@ -30,6 +30,9 @@ services:
   titiler:
     image: ghcr.io/developmentseed/titiler:latest
     restart: always
+    depends_on:
+      - frontend
+      - backend
 
   db:
     image: postgis/postgis:15-3.3

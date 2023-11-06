@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { useEffect } from 'react';
-import { Link, SetURLSearchParams, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   ArrowUturnLeftIcon,
   Bars3Icon,
@@ -15,8 +15,9 @@ import { Button } from '../Buttons';
 import { DataProduct } from '../pages/projects/ProjectDetail';
 import HintText from '../HintText';
 import { Project } from '../pages/projects/ProjectList';
-import SymbologyControl from './SymbologyControl';
 import { useMapContext } from './MapContext';
+import SymbologyControls from './SymbologyControls';
+import { getDefaultSymbologySettings } from './MapContext';
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
@@ -25,54 +26,19 @@ function classNames(...classes: string[]) {
 function LayerCard({
   active = false,
   children,
-  dataProduct = undefined,
   hover = false,
-  project = undefined,
-  setSearchParams = undefined,
 }: {
   active?: boolean;
   children: React.ReactNode;
-  dataProduct?: DataProduct;
   hover?: boolean;
-  project?: Project;
-  setSearchParams?: SetURLSearchParams;
 }) {
-  const {
-    activeDataProduct,
-    activeProjectDispatch,
-    activeDataProductDispatch,
-    geoRasterIdDispatch,
-    projectHoverStateDispatch,
-  } = useMapContext();
-
   return (
     <div
       className={classNames(
         active ? 'border-accent1' : 'border-slate-200',
-        hover ? 'cursor-pointer hover:border-2 hover:border-accent1' : '',
+        hover && !active ? 'cursor-pointer hover:border-2 hover:border-accent1' : '',
         'p-2 rounded-sm shadow-sm bg-white border-solid border-2'
       )}
-      onClick={() => {
-        if (project) {
-          if (setSearchParams) setSearchParams({});
-          activeDataProductDispatch({ type: 'clear', payload: null });
-          activeProjectDispatch({ type: 'set', payload: project });
-        }
-        if (
-          (dataProduct && !activeDataProduct) ||
-          (dataProduct && activeDataProduct && dataProduct.id !== activeDataProduct.id)
-        ) {
-          if (setSearchParams) setSearchParams({});
-          activeDataProductDispatch({ type: 'set', payload: dataProduct });
-          geoRasterIdDispatch({ type: 'create' });
-        }
-      }}
-      onMouseOver={() => {
-        if (project) projectHoverStateDispatch({ type: 'set', payload: project.id });
-      }}
-      onMouseLeave={() => {
-        projectHoverStateDispatch({ type: 'clear', payload: null });
-      }}
     >
       {children}
     </div>
@@ -98,51 +64,15 @@ export default function LayerPane({
   projects: Project[];
   toggleHidePane: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
-  const [searchParams, setSearchParams] = useSearchParams();
   const {
     activeDataProduct,
+    activeDataProductDispatch,
     activeProject,
     activeProjectDispatch,
-    activeDataProductDispatch,
     flights,
+    projectHoverStateDispatch,
+    symbologySettingsDispatch,
   } = useMapContext();
-
-  useEffect(() => {
-    async function fetchDataProduct(
-      projectId: string,
-      flightId: string,
-      dataProductId: string
-    ) {
-      try {
-        const response = await axios.get(
-          `/api/v1/projects/${projectId}/flights/${flightId}/data_products/${dataProductId}`
-        );
-        if (response) {
-          const project = projects.filter(({ id }) => id === projectId);
-          if (project) {
-            activeProjectDispatch({ type: 'set', payload: project[0] });
-            activeDataProductDispatch({ type: 'set', payload: response.data });
-          } else {
-            alert(
-              'Requested resource does not exist or you do not have permission to view it'
-            );
-          }
-        }
-      } catch (err) {
-        alert(
-          'Requested resource does not exist or you do not have permission to view it'
-        );
-      }
-    }
-
-    const projectId = searchParams.get('projectId');
-    const flightId = searchParams.get('flightId');
-    const dataProductId = searchParams.get('dataProductId');
-
-    if (projectId && flightId && dataProductId) {
-      fetchDataProduct(projectId, flightId, dataProductId);
-    }
-  }, []);
 
   if (hidePane) {
     return (
@@ -219,54 +149,83 @@ export default function LayerPane({
                           className="group space-y-2 [&_summary::-webkit-details-marker]:hidden text-slate-600 overflow-visible"
                           open={activeDataProduct ? true : false}
                         >
-                          {flight.data_products.map((data_product) => (
+                          <summary className="text-sm">{`${flight.data_products.length} Data Products`}</summary>
+                          {flight.data_products.map((dataProduct) => (
                             <LayerCard
-                              key={data_product.id}
+                              key={dataProduct.id}
                               hover={true}
-                              dataProduct={data_product}
                               active={
                                 activeDataProduct &&
-                                data_product.id === activeDataProduct.id
+                                dataProduct.id === activeDataProduct.id
                                   ? true
                                   : false
                               }
-                              setSearchParams={setSearchParams}
                             >
-                              <div className="grid grid-flow-row auto-rows-max text-slate-600 text-sm">
-                                <strong className="text-bold">
-                                  {data_product.data_type}
-                                </strong>
-                                <div>filename: {data_product.original_filename}</div>
-                                <div className="grid grid-flow-col auto-cols-max gap-1.5">
-                                  bands:{' '}
-                                  {data_product.stac_properties.eo.map((b) => {
-                                    return (
-                                      <span key={b.name} className="mr-2">
-                                        {b.name} ({b.description})
-                                      </span>
-                                    );
-                                  })}
-                                </div>
-                                <div className="grid grid-flow-col auto-cols-max gap-1.5">
-                                  {data_product.stac_properties.raster.length === 1
-                                    ? Object.keys(
-                                        data_product.stac_properties.raster[0].stats
-                                      ).map((k) => (
-                                        <span key={k}>
-                                          {k}
-                                          {': '}
-                                          {data_product.stac_properties.raster[0].stats[
-                                            k
-                                          ].toFixed(2)}
+                              <div className="text-slate-600 text-sm">
+                                <div
+                                  className="grid grid-flow-row auto-rows-max"
+                                  onClick={() => {
+                                    if (
+                                      (dataProduct && !activeDataProduct) ||
+                                      (dataProduct &&
+                                        activeDataProduct &&
+                                        dataProduct.id !== activeDataProduct.id)
+                                    ) {
+                                      activeDataProductDispatch({
+                                        type: 'set',
+                                        payload: dataProduct,
+                                      });
+                                      if (dataProduct.user_style) {
+                                        symbologySettingsDispatch({
+                                          type: 'update',
+                                          payload: dataProduct.user_style,
+                                        });
+                                      } else {
+                                        symbologySettingsDispatch({
+                                          type: 'update',
+                                          payload:
+                                            getDefaultSymbologySettings(dataProduct),
+                                        });
+                                      }
+                                    }
+                                  }}
+                                >
+                                  <strong className="text-bold">
+                                    {dataProduct.data_type}
+                                  </strong>
+                                  <div>filename: {dataProduct.original_filename}</div>
+                                  <div className="grid grid-flow-col auto-cols-max gap-1.5">
+                                    bands:{' '}
+                                    {dataProduct.stac_properties.eo.map((b) => {
+                                      return (
+                                        <span key={b.name} className="mr-2">
+                                          {b.name} ({b.description})
                                         </span>
-                                      ))
-                                    : null}
+                                      );
+                                    })}
+                                  </div>
+                                  <div className="grid grid-flow-col auto-cols-max gap-1.5">
+                                    {dataProduct.stac_properties.raster.length === 1
+                                      ? Object.keys(
+                                          dataProduct.stac_properties.raster[0].stats
+                                        ).map((k) => (
+                                          <span key={k}>
+                                            {k}
+                                            {': '}
+                                            {dataProduct.stac_properties.raster[0].stats[
+                                              k
+                                            ].toFixed(2)}
+                                          </span>
+                                        ))
+                                      : null}
+                                  </div>
                                 </div>
                                 {activeDataProduct &&
-                                activeDataProduct.id === data_product.id &&
-                                data_product.data_type === 'dsm' ? (
+                                activeDataProduct.id === dataProduct.id ? (
                                   <div className="mt-2">
-                                    <SymbologyControl />
+                                    <SymbologyControls
+                                      dataProductType={dataProduct.data_type}
+                                    />{' '}
                                   </div>
                                 ) : null}
                               </div>
@@ -286,26 +245,42 @@ export default function LayerPane({
               <ul className="mt-4 space-y-2 h-[calc(100vh_-_244px)] overflow-y-auto">
                 {projects.map((project) => (
                   <li key={project.id}>
-                    <LayerCard hover={true} project={project}>
-                      <div className="grid grid-cols-4">
-                        <div className="flex items-center justify-center">
-                          <MapPinIcon className="h-8 w-8" />
-                        </div>
-                        <div className="col-span-2 flex flex-col items-start gap-2">
-                          <strong className="font-bold text-slate-700">
-                            {project.title}
-                          </strong>
-                          <div className="text-slate-700 text-sm">
-                            {project.description}
+                    <LayerCard hover={true}>
+                      <div
+                        onClick={() => {
+                          activeDataProductDispatch({ type: 'clear', payload: null });
+                          activeProjectDispatch({ type: 'set', payload: project });
+                        }}
+                        onMouseOver={() => {
+                          projectHoverStateDispatch({
+                            type: 'set',
+                            payload: project.id,
+                          });
+                        }}
+                        onMouseLeave={() => {
+                          projectHoverStateDispatch({ type: 'clear', payload: null });
+                        }}
+                      >
+                        <div className="grid grid-cols-4">
+                          <div className="flex items-center justify-center">
+                            <MapPinIcon className="h-8 w-8" />
                           </div>
-                        </div>
-                        <div className="flex items-center justify-center">
-                          <span className="inline-flex items-center justify-center rounded-full text-sky-700 bg-sky-100 px-2.5 py-0.5">
-                            <PaperAirplaneIcon className="h-4 w-4 -ms-1 me-1.5" />
-                            <p className="whitespace-nowrap text-sm">
-                              {project.flight_count} Flights
-                            </p>
-                          </span>
+                          <div className="col-span-2 flex flex-col items-start gap-2">
+                            <strong className="font-bold text-slate-700">
+                              {project.title}
+                            </strong>
+                            <div className="text-slate-700 text-sm">
+                              {project.description}
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-center">
+                            <span className="inline-flex items-center justify-center rounded-full text-sky-700 bg-sky-100 px-2.5 py-0.5">
+                              <PaperAirplaneIcon className="h-4 w-4 -ms-1 me-1.5" />
+                              <p className="whitespace-nowrap text-sm">
+                                {project.flight_count} Flights
+                              </p>
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </LayerCard>

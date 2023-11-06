@@ -10,17 +10,12 @@ import { FeatureGroup as FG } from 'leaflet';
 import { useMapContext } from './MapContext';
 
 interface ProjectMarkersProps {
-  geojsonRef: React.RefObject<L.GeoJSON>;
   projects: Project[];
 }
 
-export default function ProjectMarkers({ geojsonRef, projects }: ProjectMarkersProps) {
-  const {
-    activeDataProductDispatch,
-    activeProject,
-    activeProjectDispatch,
-    projectHoverState,
-  } = useMapContext();
+export default function ProjectMarkers({ projects }: ProjectMarkersProps) {
+  const { activeDataProductDispatch, activeProjectDispatch, projectHoverState } =
+    useMapContext();
   const context = useLeafletContext();
   const fgRef = useRef<FG>(null);
 
@@ -46,12 +41,6 @@ export default function ProjectMarkers({ geojsonRef, projects }: ProjectMarkersP
       context.map.fitBounds(fgRef.current.getBounds(), { maxZoom: 16 });
     }
   }, [fgRef.current]);
-
-  useEffect(() => {
-    if (geojsonRef.current) {
-      context.map.fitBounds(geojsonRef.current.getBounds(), { maxZoom: 16 });
-    }
-  }, [activeProject]);
 
   if (projects.length > 0) {
     return (

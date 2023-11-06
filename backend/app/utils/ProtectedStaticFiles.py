@@ -69,5 +69,5 @@ class ProtectedStaticFiles(RangedStaticFiles):
         assert scope["type"] == "http"
 
         request = Request(scope, receive)
-        await verify_static_file_access(request)
+        # await verify_static_file_access(request)
         await super().__call__(scope, receive, send)

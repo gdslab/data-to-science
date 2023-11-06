@@ -149,11 +149,13 @@ export function EditField({ children, fieldName, isEditing, setIsEditing }: Edit
 
 interface SelectOption {
   label: string;
-  value: string;
+  value: string | number;
 }
 
+type ColorMapSelectOption = [string, string[]][];
+
 interface SelectField extends InputField {
-  options: SelectOption[];
+  options: SelectOption[] | ColorMapSelectOption;
 }
 
 export function SelectField({
@@ -173,11 +175,21 @@ export function SelectField({
         name={name}
         disabled={disabled}
       >
-        {options.map((option) => (
-          <option key={option.value || 'novalue'} value={option.value}>
-            {option.label}
-          </option>
-        ))}
+        {name === 'colorRamp'
+          ? (options as ColorMapSelectOption).map((cm: [string, string[]]) => (
+              <optgroup key={cm[0]} label={cm[0]}>
+                {cm[1].map((cmName) => (
+                  <option key={cmName} value={cmName}>
+                    {cmName}
+                  </option>
+                ))}
+              </optgroup>
+            ))
+          : options.map((option) => (
+              <option key={option.value || 'novalue'} value={option.value}>
+                {option.label}
+              </option>
+            ))}
       </Field>
     </InputField>
   );

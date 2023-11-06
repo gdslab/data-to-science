@@ -1,13 +1,13 @@
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { useEffect, useRef } from 'react';
-import { GeoJSON } from 'react-leaflet/GeoJSON';
+import { useEffect } from 'react';
 import { MapContainer } from 'react-leaflet/MapContainer';
 import { ZoomControl } from 'react-leaflet/ZoomControl';
 
-import GeoRasterLayer from './GeoRasterLayer';
+import DataProductTileLayer from './DataProductTileLayer';
 import MapLayersControl from './MapLayersControl';
 import { Project } from '../pages/projects/ProjectList';
+import ProjectBoundary from './ProjectBoundary';
 import ProjectMarkers from './ProjectMarkers';
 import { useMapContext } from './MapContext';
 
@@ -16,10 +16,7 @@ import icon from './icons/marker-icon.png';
 import shadow from './icons/marker-shadow.png';
 
 export default function Map({ projects }: { projects: Project[] }) {
-  const { activeDataProduct, activeProject, flights, geoRasterId, symbologySettings } =
-    useMapContext();
-
-  const activeProjectRef = useRef<L.GeoJSON>(null);
+  const { activeDataProduct, activeProject, flights } = useMapContext();
 
   useEffect(() => {
     // @ts-ignore
@@ -37,31 +34,13 @@ export default function Map({ projects }: { projects: Project[] }) {
       center={[40.428655143949925, -86.9138040788386]}
       preferCanvas={true}
       zoom={8}
-      maxZoom={22}
+      maxZoom={24}
       scrollWheelZoom={true}
       zoomControl={false}
     >
-      {!activeProject ? (
-        <ProjectMarkers projects={projects} geojsonRef={activeProjectRef} />
-      ) : null}
-      {activeProject ? (
-        <GeoJSON
-          key={activeProject.id}
-          ref={activeProjectRef}
-          style={{ fillOpacity: 0, color: '#23ccff' }}
-          data={activeProject.field}
-        />
-      ) : null}
-      {activeProject && flights && activeDataProduct ? (
-        <GeoRasterLayer
-          key={geoRasterId}
-          zIndex={10}
-          paths={[activeDataProduct.url]}
-          resolution={256}
-          activeDataProduct={activeDataProduct}
-          symbologySettings={symbologySettings}
-        />
-      ) : null}
+      {!activeProject ? <ProjectMarkers projects={projects} /> : null}
+      {activeProject ? <ProjectBoundary project={activeProject} /> : null}
+      {activeProject && flights && activeDataProduct ? <DataProductTileLayer /> : null}
       <MapLayersControl />
       <ZoomControl position="bottomright" />
     </MapContainer>
