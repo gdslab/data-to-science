@@ -55,10 +55,10 @@ ENV PATH="$VENV_PATH/bin:$PATH"
 COPY . /app
 
 # create directory for user uploads
-RUN mkdir /user-data
+RUN mkdir /static
 
 # update permissions for d2s user/group
-RUN chown -R d2s:d2s /app && chown -R d2s:d2s /user-data
+RUN chown -R d2s:d2s /app && chown -R d2s:d2s /static
 
 USER d2s
 

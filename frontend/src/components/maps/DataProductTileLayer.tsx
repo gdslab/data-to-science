@@ -1,8 +1,8 @@
 import { TileLayer } from 'react-leaflet/TileLayer';
 
-import { DSMSymbologySettings, SymbologySettings, useMapContext } from './MapContext';
+import { SymbologySettings, useMapContext } from './MapContext';
 
-const dynamicTileService = 'http://localhost/cog/tiles/WebMercatorQuad/{z}/{x}/{y}@1x';
+const dynamicTileService = '/cog/tiles/WebMercatorQuad/{z}/{x}/{y}@1x';
 
 function getTileURL(
   url: string,
@@ -59,7 +59,7 @@ export default function DataProductTileLayer() {
       return (
         <TileLayer
           url={getTileURL(
-            activeDataProduct.url.replace('localhost', 'backend:5000'),
+            activeDataProduct.url.replace('http://localhost', ''),
             cmap,
             scale
           )}
@@ -72,7 +72,7 @@ export default function DataProductTileLayer() {
       return (
         <TileLayer
           url={getTileURL(
-            activeDataProduct.url.replace('localhost', 'backend:5000'),
+            activeDataProduct.url.replace('http://localhost', ''),
             undefined,
             undefined,
             getBandIdsFromUserStyle(symbologySettings)

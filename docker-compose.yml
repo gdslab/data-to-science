@@ -15,7 +15,7 @@ services:
       args:
         INSTALL_DEV: true
     volumes:
-      - user-data:/user-data
+      - user-data:/static
     restart: always
     depends_on:
       db:
@@ -53,7 +53,7 @@ services:
     command: /app/worker-start.sh
     volumes:
       - ./backend:/app
-      - user-data:/user-data
+      - user-data:/static
     restart: always
     depends_on:
       redis:

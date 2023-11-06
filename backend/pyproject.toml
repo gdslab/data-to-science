@@ -29,6 +29,7 @@ pydantic-settings = "^2.0.3"
 aiofiles = "^23.2.1"
 fastapi-mail = {extras = ["aioredis"], version = "^1.4.1"}
 staticmap = "^0.5.7"
+titiler-core = "^0.15.4"
 
 [tool.poetry.group.dev.dependencies]
 httpx = "^0.24.1"

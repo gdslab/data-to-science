@@ -1,5 +1,3 @@
-import axios from 'axios';
-import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowUturnLeftIcon,
@@ -12,7 +10,6 @@ import {
 } from '@heroicons/react/24/outline';
 
 import { Button } from '../Buttons';
-import { DataProduct } from '../pages/projects/ProjectDetail';
 import HintText from '../HintText';
 import { Project } from '../pages/projects/ProjectList';
 import { useMapContext } from './MapContext';

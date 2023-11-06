@@ -20,19 +20,12 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
     volumes:
       - ./backend:/app
-      - user-data:/user-data
+      - user-data:/static
     restart: always
     depends_on:
       db:
         condition: service_healthy
     env_file: .env
-
-  titiler:
-    image: ghcr.io/developmentseed/titiler:latest
-    restart: always
-    depends_on:
-      - frontend
-      - backend
 
   db:
     image: postgis/postgis:15-3.3
@@ -70,7 +63,7 @@ services:
     command: /app/worker-start.sh
     volumes:
       - ./backend:/app
-      - user-data:/user-data
+      - user-data:/static
     restart: always
     depends_on:
       redis:
