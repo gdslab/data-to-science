@@ -38,11 +38,19 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app \
     PYTHONUNBUFFERED=1
 
-# install libpg-dev dependency and remove apt package info to reduce image size
-RUN apt-get update && apt-get install -y libpq-dev gdal-bin && rm -rf /var/lib/apt/lists/*
+# install libpg-dev, pdal, and entwine dependencies and remove apt package info to reduce image size
+RUN apt-get update && apt-get install -y bzip2 build-essential cmake ninja-build libpq-dev gdal-bin libgdal-dev && rm -rf /var/lib/apt/lists/*
+COPY tools /app/tools
+
+# install PDAL
+RUN cd /app/tools && tar -xf PDAL-2.6.0-src.tar.bz2 && cd PDAL-2.6.0-src \
+  && mkdir build && cd build && cmake -G Ninja .. && ninja && ninja install
+
+# # install entwine
+RUN cd /app/tools && tar -xf entwine-3.0.0.tar.gz && cd entwine-3.0.0 \
+  && mkdir build && cd build && cmake -G Ninja .. && ninja && ninja install
 
 # create unprivileged d2s user
-# RUN adduser --system --no-create-home --group d2s
 RUN useradd -u 1000 d2s
 
 # copy over virtual environment from builder stage
@@ -50,12 +58,14 @@ COPY --from=builder $VENV_PATH $VENV_PATH
 
 # update path to include venv bin
 ENV PATH="$VENV_PATH/bin:$PATH"
+# entwine lib
+ENV LD_LIBRARY_PATH=/usr/local/lib
 
 # copy over application code
 COPY . /app
 
 # create directory for user uploads
-RUN mkdir /static
+RUN cd /app && mkdir /static
 
 # update permissions for d2s user/group
 RUN chown -R d2s:d2s /app && chown -R d2s:d2s /static
