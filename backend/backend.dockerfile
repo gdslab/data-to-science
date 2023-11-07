@@ -39,15 +39,17 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 # install libpg-dev, pdal, and entwine dependencies and remove apt package info to reduce image size
-RUN apt-get update && apt-get install -y bzip2 build-essential cmake ninja-build libpq-dev gdal-bin libgdal-dev && rm -rf /var/lib/apt/lists/*
-COPY tools /app/tools
+RUN apt-get update && apt-get install -y bzip2 build-essential cmake ninja-build libpq-dev gdal-bin libgdal-dev wget && rm -rf /var/lib/apt/lists/*
 
-# install PDAL
+# install entwine and its dependencies
+RUN mkdir /app/tools && cd /app/tools \
+  && wget https://github.com/PDAL/PDAL/releases/download/2.6.0/PDAL-2.6.0-src.tar.bz2 \
+  && wget https://github.com/connormanning/entwine/archive/refs/tags/3.0.0.tar.gz
+
 RUN cd /app/tools && tar -xf PDAL-2.6.0-src.tar.bz2 && cd PDAL-2.6.0-src \
   && mkdir build && cd build && cmake -G Ninja .. && ninja && ninja install
 
-# # install entwine
-RUN cd /app/tools && tar -xf entwine-3.0.0.tar.gz && cd entwine-3.0.0 \
+RUN cd /app/tools && tar -xf 3.0.0.tar.gz && cd entwine-3.0.0 \
   && mkdir build && cd build && cmake -G Ninja .. && ninja && ninja install
 
 # create unprivileged d2s user
