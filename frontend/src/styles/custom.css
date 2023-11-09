@@ -1,5 +1,9 @@
 .leaflet-container {
     height: calc(100vh - 64px);
-    width: 100vw;
+    width: 100%;
     z-index: 1;
+}
+
+#potree_quick_buttons {
+    width: 50px !important;
 }

@@ -28,7 +28,7 @@ class DataProduct(Base):
     )
     filepath: Mapped[str] = mapped_column(String, nullable=False)
     original_filename: Mapped[str] = mapped_column(String, nullable=False)
-    stac_properties: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    stac_properties: Mapped[dict] = mapped_column(JSONB, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     deactivated_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     # foreign keys

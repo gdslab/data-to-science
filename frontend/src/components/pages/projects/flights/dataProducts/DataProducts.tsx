@@ -16,6 +16,7 @@ import UploadModal from '../../../../UploadModal';
 import { useInterval } from '../../../../hooks';
 
 import { DataProductStatus } from '../FlightData';
+import HintText from '../../../../HintText';
 
 export default function DataProducts({ data }: { data: DataProductStatus[] }) {
   const { flightId, projectId } = useParams();
@@ -37,39 +38,72 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
       : null
   );
 
+  function isGeoTIFF(dataType: string): boolean {
+    return dataType === 'ortho' || dataType === 'dsm';
+  }
+
+  function getDataProductName(dataType: string): string {
+    switch (dataType) {
+      case 'dsm':
+        return 'DSM';
+      case 'ortho':
+        return 'Orthomosaic';
+      case 'point_cloud':
+        return 'Point Cloud';
+      default:
+        return 'Unknown';
+    }
+  }
+
   return (
     <div>
       <h2>Data Products</h2>
       {data.length > 0 ? (
         <div className="mt-4">
+          <div className="grid grid-rows-3 gap-1.5">
+            <HintText>Keywords:</HintText>
+            <HintText>COG - Cloud Optimized GeoTIFF</HintText>
+            <HintText>EPT - Entwine Point Tile</HintText>
+          </div>
           <Table>
-            <TableHead
-              columns={['Data Type', 'Preview', 'Cloud Optimized GeoTIFF', 'Action']}
-            />
+            <TableHead columns={['Data Type', 'Preview', 'File', 'Action']} />
             <TableBody
               rows={data.map((dataset) => [
-                dataset.data_type.toUpperCase(),
+                getDataProductName(dataset.data_type),
                 <div className="flex items-center justify-center h-32 w-32">
-                  {dataset.status === 'SUCCESS' ? (
+                  {dataset.status === 'SUCCESS' && isGeoTIFF(dataset.data_type) ? (
                     <img
                       className="w-full max-h-28"
                       src={dataset.url.replace('tif', 'webp')}
                     />
-                  ) : (
+                  ) : isGeoTIFF(dataset.data_type) ? (
                     <div>
                       <span className="sr-only">Preview photo not ready</span>
                       <PhotoIcon className="h-24 w-24" />
                     </div>
+                  ) : (
+                    <div>No preview</div>
                   )}
                 </div>,
                 dataset.status === 'SUCCESS' ? (
                   <div className="flex justify-center">
-                    <Button
-                      size="sm"
-                      onClick={() => navigator.clipboard.writeText(dataset.url)}
-                    >
-                      Copy URL
-                    </Button>
+                    {isGeoTIFF(dataset.data_type) ? (
+                      <Button
+                        size="sm"
+                        onClick={() => navigator.clipboard.writeText(dataset.url)}
+                      >
+                        Copy COG URL
+                      </Button>
+                    ) : (
+                      <a
+                        href={dataset.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download
+                      >
+                        <Button size="sm">Download</Button>
+                      </a>
+                    )}
                   </div>
                 ) : (
                   <div className="flex items-center justify-center">
@@ -79,7 +113,9 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
                           className="h-8 w-8 mr-4 animate-spin"
                           aria-hidden="true"
                         />
-                        Generating COG...
+                        {isGeoTIFF(dataset.data_type)
+                          ? 'Generating COG...'
+                          : 'Generating EPT...'}
                       </Fragment>
                     ) : dataset.status === 'FAILED' ? (
                       <Fragment>
@@ -119,10 +155,10 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
           apiRoute={`/api/v1/projects/${projectId}/flights/${flightId}/data_products`}
           open={open}
           setOpen={setOpen}
-          uploadType="tif"
+          uploadType="dataProduct"
         />
         <Button size="sm" onClick={() => setOpen(true)}>
-          Upload Data Product (.tif)
+          Upload Data Product
         </Button>
       </div>
     </div>

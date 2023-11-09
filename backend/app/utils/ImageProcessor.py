@@ -41,6 +41,8 @@ class ImageProcessor:
             convert_to_cog(self.img_path, self.out_path, info)
 
         os.remove(self.img_path)
+        if os.path.exists(self.img_path + ".aux.xml"):
+            os.remove(self.img_path + ".aux.xml")
 
         create_preview_webp(self.out_path, self.preview_out_path, info)
 

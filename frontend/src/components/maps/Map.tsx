@@ -14,6 +14,7 @@ import { useMapContext } from './MapContext';
 import iconRetina from './icons/marker-icon-2x.png';
 import icon from './icons/marker-icon.png';
 import shadow from './icons/marker-shadow.png';
+import PointCloudViewer from './PointCloudViewer';
 
 export default function Map({ projects }: { projects: Project[] }) {
   const { activeDataProduct, activeProject, flights } = useMapContext();
@@ -29,20 +30,32 @@ export default function Map({ projects }: { projects: Project[] }) {
     });
   }, []);
 
-  return (
-    <MapContainer
-      center={[40.428655143949925, -86.9138040788386]}
-      preferCanvas={true}
-      zoom={8}
-      maxZoom={24}
-      scrollWheelZoom={true}
-      zoomControl={false}
-    >
-      {!activeProject ? <ProjectMarkers projects={projects} /> : null}
-      {activeProject ? <ProjectBoundary project={activeProject} /> : null}
-      {activeProject && flights && activeDataProduct ? <DataProductTileLayer /> : null}
-      <MapLayersControl />
-      <ZoomControl position="bottomright" />
-    </MapContainer>
-  );
+  if (
+    !activeDataProduct ||
+    (activeDataProduct && activeDataProduct.data_type !== 'point_cloud')
+  ) {
+    return (
+      <MapContainer
+        center={[40.428655143949925, -86.9138040788386]}
+        preferCanvas={true}
+        zoom={8}
+        maxZoom={24}
+        scrollWheelZoom={true}
+        zoomControl={false}
+      >
+        {!activeProject ? <ProjectMarkers projects={projects} /> : null}
+        {activeProject ? <ProjectBoundary project={activeProject} /> : null}
+        {activeProject &&
+        flights &&
+        activeDataProduct &&
+        activeDataProduct.data_type !== 'point_cloud' ? (
+          <DataProductTileLayer />
+        ) : null}
+        <MapLayersControl />
+        <ZoomControl position="bottomright" />
+      </MapContainer>
+    );
+  } else {
+    return <PointCloudViewer eptPath={activeDataProduct.url} />;
+  }
 }

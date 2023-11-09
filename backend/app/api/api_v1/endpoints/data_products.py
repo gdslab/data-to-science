@@ -1,4 +1,5 @@
 import os
+import pathlib
 import shutil
 from datetime import datetime
 from typing import Any, Sequence
@@ -17,7 +18,7 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
-from app.worker import process_geotiff
+from app.worker import process_geotiff, process_point_cloud
 from app.core.config import settings
 
 router = APIRouter()
@@ -37,31 +38,66 @@ def upload_data_product(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
-    if request.client and request.client.host == "testclient":
-        upload_dir = (
-            f"{settings.TEST_UPLOAD_DIR}/projects/{project.id}/flights/{flight.id}"
+
+    if dtype not in ["dsm", "ortho", "point_cloud"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown data type"
         )
+
+    if request.client and request.client.host == "testclient":
+        upload_dir = f"{settings.TEST_UPLOAD_DIR}/projects/{project.id}/flights/{flight.id}/{dtype}"
     else:
-        upload_dir = f"{settings.UPLOAD_DIR}/projects/{project.id}/flights/{flight.id}"
+        upload_dir = (
+            f"{settings.UPLOAD_DIR}/projects/{project.id}/flights/{flight.id}/{dtype}"
+        )
+
     if not os.path.exists(upload_dir):
         os.makedirs(upload_dir)
-    out_path = os.path.join(upload_dir, f"{str(uuid4())}__temp.tif")
+
+    file_ext = pathlib.Path(files.filename).suffix
+    if dtype == "point_cloud":
+        out_path = os.path.join(upload_dir, f"{str(uuid4())}{file_ext}")
+    else:
+        out_path = os.path.join(upload_dir, f"{str(uuid4())}__temp{file_ext}")
+
+    if file_ext not in [".tif", ".las", ".laz"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported file extension"
+        )
 
     with open(out_path, "wb") as buffer:
         shutil.copyfileobj(files.file, buffer)
+        job_in = schemas.job.JobCreate(
+            name="upload-data-products",
+            state="PENDING",
+            status="WAITING",
+            start_time=datetime.now(),
+        )
+        job = crud.job.create_job(db, job_in)
 
-    job_in = schemas.job.JobCreate(
-        name="upload-data-products",
-        state="PENDING",
-        status="WAITING",
-        start_time=datetime.now(),
-    )
-    job = crud.job.create_job(db, job_in)
-    process_geotiff.apply_async(
-        args=[files.filename, out_path, project.id, flight.id, job.id, dtype],
-        kwargs={},
-        queue="main-queue",
-    )
+    if dtype == "dsm" or dtype == "ortho":
+        process_geotiff.apply_async(
+            args=[files.filename, out_path, project.id, flight.id, job.id, dtype],
+            kwargs={},
+            queue="main-queue",
+        )
+    elif dtype == "point_cloud":
+        process_point_cloud.apply_async(
+            args=[files.filename, out_path, project.id, flight.id, job.id, dtype],
+            kwargs={},
+            queue="main-queue",
+        )
+    else:
+        crud.job.update(
+            db,
+            db_obj=job,
+            obj_in=schemas.JobUpdate(
+                state="COMPLETED", status="FAILED", end_time=datetime.now()
+            ),
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown data type"
+        )
 
     return {"status": "processing"}
 

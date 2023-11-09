@@ -146,11 +146,14 @@ export default function UploadModal({ apiRoute, open, setOpen, uploadType }: Pro
                 <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                   <FileUpload
                     endpoint={
-                      uploadType === 'tif' ? apiRoute + `?dtype=${dtype}` : apiRoute
+                      uploadType === 'dataProduct'
+                        ? apiRoute + `?dtype=${dtype}`
+                        : apiRoute
                     }
                     inline={true}
                     restrictions={{
-                      allowedFileTypes: uploadType === 'zip' ? ['.zip'] : ['.tif'],
+                      allowedFileTypes:
+                        uploadType === 'zip' ? ['.zip'] : ['.las', '.laz', '.tif'],
                       maxNumberOfFiles: 1,
                       minNumberOfFiles: 1,
                     }}
@@ -158,7 +161,7 @@ export default function UploadModal({ apiRoute, open, setOpen, uploadType }: Pro
                   />
                 </div>
 
-                {uploadType === 'tif' ? (
+                {uploadType === 'dataProduct' ? (
                   <DtypeRadioInput dtype={dtype} setDtype={setDtype} />
                 ) : null}
 

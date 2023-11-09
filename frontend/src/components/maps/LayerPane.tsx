@@ -15,6 +15,7 @@ import { Project } from '../pages/projects/ProjectList';
 import { useMapContext } from './MapContext';
 import SymbologyControls from './SymbologyControls';
 import { getDefaultSymbologySettings } from './MapContext';
+import { useEffect } from 'react';
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
@@ -191,31 +192,35 @@ export default function LayerPane({
                                     {dataProduct.data_type}
                                   </strong>
                                   <div>filename: {dataProduct.original_filename}</div>
-                                  <div className="grid grid-flow-col auto-cols-max gap-1.5">
-                                    bands:{' '}
-                                    {dataProduct.stac_properties.eo.map((b) => {
-                                      return (
-                                        <span key={b.name} className="mr-2">
-                                          {b.name} ({b.description})
-                                        </span>
-                                      );
-                                    })}
-                                  </div>
-                                  <div className="grid grid-flow-col auto-cols-max gap-1.5">
-                                    {dataProduct.stac_properties.raster.length === 1
-                                      ? Object.keys(
-                                          dataProduct.stac_properties.raster[0].stats
-                                        ).map((k) => (
-                                          <span key={k}>
-                                            {k}
-                                            {': '}
-                                            {dataProduct.stac_properties.raster[0].stats[
-                                              k
-                                            ].toFixed(2)}
+                                  {dataProduct.data_type !== 'point_cloud' ? (
+                                    <div className="grid grid-flow-col auto-cols-max gap-1.5">
+                                      bands:{' '}
+                                      {dataProduct.stac_properties.eo.map((b) => {
+                                        return (
+                                          <span key={b.name} className="mr-2">
+                                            {b.name} ({b.description})
                                           </span>
-                                        ))
-                                      : null}
-                                  </div>
+                                        );
+                                      })}
+                                    </div>
+                                  ) : null}
+                                  {dataProduct.data_type !== 'point_cloud' ? (
+                                    <div className="grid grid-flow-col auto-cols-max gap-1.5">
+                                      {dataProduct.stac_properties.raster.length === 1
+                                        ? Object.keys(
+                                            dataProduct.stac_properties.raster[0].stats
+                                          ).map((k) => (
+                                            <span key={k}>
+                                              {k}
+                                              {': '}
+                                              {dataProduct.stac_properties.raster[0].stats[
+                                                k
+                                              ].toFixed(2)}
+                                            </span>
+                                          ))
+                                        : null}
+                                    </div>
+                                  ) : null}
                                 </div>
                                 {activeDataProduct &&
                                 activeDataProduct.id === dataProduct.id ? (
