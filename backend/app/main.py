@@ -23,5 +23,6 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 app.include_router(cog.router, prefix="/cog", tags=["Cloud Optimized GeoTIFF"])
 
 app.mount("/static", ProtectedStaticFiles(directory=settings.UPLOAD_DIR), name="static")
+app.mount("/potree", StaticFiles(directory=settings.POTREE_DIR), name="potree")
 
 add_exception_handlers(app, DEFAULT_STATUS_CODES)

@@ -18,6 +18,19 @@ import { useInterval } from '../../../../hooks';
 import { DataProductStatus } from '../FlightData';
 import HintText from '../../../../HintText';
 
+export function getDataProductName(dataType: string): string {
+  switch (dataType) {
+    case 'dsm':
+      return 'DSM';
+    case 'ortho':
+      return 'Orthomosaic';
+    case 'point_cloud':
+      return 'Point Cloud';
+    default:
+      return 'Unknown';
+  }
+}
+
 export default function DataProducts({ data }: { data: DataProductStatus[] }) {
   const { flightId, projectId } = useParams();
   const [open, setOpen] = useState(false);
@@ -40,19 +53,6 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
 
   function isGeoTIFF(dataType: string): boolean {
     return dataType === 'ortho' || dataType === 'dsm';
-  }
-
-  function getDataProductName(dataType: string): string {
-    switch (dataType) {
-      case 'dsm':
-        return 'DSM';
-      case 'ortho':
-        return 'Orthomosaic';
-      case 'point_cloud':
-        return 'Point Cloud';
-      default:
-        return 'Unknown';
-    }
   }
 
   return (
@@ -96,12 +96,12 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
                       </Button>
                     ) : (
                       <a
-                        href={dataset.url}
+                        href={`${dataset.url.replace('/ept.json', '.zip')}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         download
                       >
-                        <Button size="sm">Download</Button>
+                        <Button size="sm">Download EPT</Button>
                       </a>
                     )}
                   </div>

@@ -48,7 +48,7 @@ export default function SidebarPage() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
               <Link
-                className="relative rounded-full accent3 p-1 hover:text-slate-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
+                className="relative rounded-full p-1 text-accent1 visited:text-accent1 hover:text-slate-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
                 to="/teams/create"
               >
                 <span className="absolute -inset-1.5" />

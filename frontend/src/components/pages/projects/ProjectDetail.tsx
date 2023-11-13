@@ -370,7 +370,7 @@ export default function ProjectDetail() {
                   flight.sensor,
                   flight.acquisition_date,
                   <Link
-                    className="text-sky-600"
+                    className="!text-sky-600 visited:text-sky-600"
                     to={`/projects/${projectId}/flights/${flight.id}/data`}
                   >
                     View Data

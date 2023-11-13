@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     TEST_UPLOAD_DIR: str = "/tmp/testing"
     DOMAIN: str = ""
     STATIC_URL: str = ""
+    POTREE_DIR: str = "/app/potree"
 
     # Database
     POSTGRES_HOST: str = ""

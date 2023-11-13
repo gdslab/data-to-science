@@ -31,14 +31,10 @@ services:
       - .env
     healthcheck:
       test:
-        ["CMD-SHELL", "pg_isready --username=${POSTGRES_USER} --dbname=${POSTGRES_DB}"]
+        ['CMD-SHELL', 'pg_isready --username=${POSTGRES_USER} --dbname=${POSTGRES_DB}']
       interval: 10s
       timeout: 5s
       retries: 5
-
-  titiler:
-    image: ghcr.io/developmentseed/titiler:latest
-    restart: always
 
   redis:
     image: redis:alpine
@@ -67,7 +63,7 @@ services:
       context: ./nginx
       dockerfile: nginx.dockerfile
     ports:
-      - "127.0.0.1:8000:80"
+      - '127.0.0.1:8000:80'
     restart: always
     depends_on:
       - frontend

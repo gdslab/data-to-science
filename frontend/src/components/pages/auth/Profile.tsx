@@ -151,7 +151,7 @@ function EditProfilePicture({ updateProfile }: { updateProfile: () => void }) {
         <div className="inline-flex items-center overflow-hidden rounded-md border bg-white">
           <a
             href="#"
-            className="border-e px-4 py-2 text-sm/none text-gray-600 hover:bg-gray-50 hover:text-gray-700"
+            className="border-e px-4 py-2 text-sm/none text-gray-600 hover:bg-gray-50 hover:text-gray-700 visited:text-gray-600"
             onClick={() => toggleMenuVisibility(!menuVisibility)}
           >
             Edit
@@ -176,7 +176,7 @@ function EditProfilePicture({ updateProfile }: { updateProfile: () => void }) {
           <div className="p-2">
             <a
               href="#"
-              className="block rounded-lg px-4 py-2 text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+              className="block rounded-lg px-4 py-2 text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-700 visited:text-gray-500"
               role="menuitem"
               onClick={() => setOpen(true)}
             >

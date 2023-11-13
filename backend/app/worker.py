@@ -155,7 +155,11 @@ def process_point_cloud(
             check=True,
         )
         result.check_returncode()
-        shutil.make_archive(out_ept_dir, "zip", os.path.join(out_root_dir, out_ept_dir))
+        shutil.make_archive(
+            os.path.join(out_root_dir, out_ept_dir),
+            "zip",
+            os.path.join(out_root_dir, out_ept_dir),
+        )
     except Exception as e:
         logger.error(str(e))
         os.remove(out_path)

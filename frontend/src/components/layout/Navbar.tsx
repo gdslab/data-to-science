@@ -62,7 +62,7 @@ export default function Navbar() {
                             location.pathname === item.href
                               ? 'font-semibold'
                               : 'hover:text-shadow hover:shadow-red-500',
-                            'rounded-md px-3 py-2 text-md text-white'
+                            'rounded-md px-3 py-2 text-md text-white visited:text-white'
                           )}
                           aria-current={
                             location.pathname === item.href ? 'page' : undefined
@@ -125,7 +125,7 @@ export default function Navbar() {
                               to="/auth/profile"
                               className={classNames(
                                 active ? 'bg-gray-100' : '',
-                                'block px-4 py-2 text-sm text-gray-700'
+                                'block px-4 py-2 text-sm text-gray-700 visited:text-gray-700'
                               )}
                             >
                               Your Profile
@@ -138,7 +138,7 @@ export default function Navbar() {
                               to="/auth/logout"
                               className={classNames(
                                 active ? 'bg-gray-100' : '',
-                                'block px-4 py-2 text-sm text-gray-700'
+                                'block px-4 py-2 text-sm text-gray-700 visited:text-gray-700'
                               )}
                             >
                               Sign out

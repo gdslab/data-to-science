@@ -37,7 +37,9 @@ export function TableBody({
                     <div key={action.key}>
                       <button
                         className={classNames(
-                          action.label === 'Delete' ? 'text-red-600' : 'text-sky-600',
+                          action.label === 'Delete'
+                            ? '!text-red-600 visited:text-red-600'
+                            : '!text-sky-600 visited:text-sky-600',
                           'flex items-center cursor-pointer text-sm'
                         )}
                         onClick={(e) => {
@@ -57,7 +59,9 @@ export function TableBody({
                     <Link
                       key={action.key}
                       className={classNames(
-                        action.label === 'Delete' ? 'text-red-600' : 'text-sky-600',
+                        action.label === 'Delete'
+                          ? '!text-red-600 visited:text-red-600'
+                          : '!text-sky-600 visited:!text-sky-600',
                         'text-sm'
                       )}
                       to={action.url}

@@ -2,20 +2,22 @@ import { Link } from 'react-router-dom';
 import {
   ArrowUturnLeftIcon,
   Bars3Icon,
-  MapIcon,
   MapPinIcon,
   PaperAirplaneIcon,
-  PhotoIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 
 import { Button } from '../Buttons';
+import { getDataProductName } from '../pages/projects/flights/dataProducts/DataProducts';
 import HintText from '../HintText';
 import { Project } from '../pages/projects/ProjectList';
 import { useMapContext } from './MapContext';
 import SymbologyControls from './SymbologyControls';
 import { getDefaultSymbologySettings } from './MapContext';
 import { useEffect } from 'react';
+
+import UASIcon from '../../assets/uas-icon.svg';
+import { Band } from '../pages/projects/ProjectDetail';
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
@@ -53,6 +55,17 @@ function formatDate(datestring) {
   });
 }
 
+function RasterStats({ stats }: { stats: Band['stats'] }) {
+  return (
+    <div className="grid grid-cols-4 gap-1.5">
+      <span>Mean: {stats.mean.toFixed(2)}</span>
+      <span>Min: {stats.minimum.toFixed(2)}</span>
+      <span>Max: {stats.maximum.toFixed(2)}</span>
+      <span>Std. Dev: {stats.stddev.toFixed(2)}</span>
+    </div>
+  );
+}
+
 export default function LayerPane({
   hidePane,
   projects,
@@ -71,6 +84,11 @@ export default function LayerPane({
     projectHoverStateDispatch,
     symbologySettingsDispatch,
   } = useMapContext();
+
+  useEffect(() => {
+    if (activeDataProduct && activeDataProduct.data_type === 'point_cloud')
+      toggleHidePane(true);
+  }, [activeDataProduct]);
 
   if (hidePane) {
     return (
@@ -116,30 +134,38 @@ export default function LayerPane({
                 .map((flight) => (
                   <li key={flight.id}>
                     <LayerCard>
-                      <div className="grid grid-cols-4">
-                        <div className="flex items-center justify-center">
-                          <MapIcon className="h-16 w-16" />
+                      <div className="grid grid-cols-6">
+                        <div className="col-span-1 flex items-center justify-center">
+                          <img src={UASIcon} width={'50%'} />
                         </div>
-                        <div className="col-span-2 flex flex-col items-start gap-2">
+                        <div className="col-span-5 flex flex-col items-start gap-2">
                           <strong className="font-bold text-slate-700">
                             {formatDate(flight.acquisition_date)}
                           </strong>
-                          <div className="grid grid-rows-3 text-slate-700 text-sm gap-1.5">
-                            <div>{flight.sensor} sensor</div>
-                            <div>Altitude: {flight.altitude}m</div>
-                            <div>
-                              Forward/side overlap: {flight.forward_overlap}%/
-                              {flight.side_overlap}%
+                          <div className="grid grid-rows-2 text-slate-700 text-sm gap-1.5">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <span className="text-sm text-slate-400 font-semibold">
+                                  Platform:{' '}
+                                </span>
+                                {flight.platform.replace('_', ' ')}
+                              </div>
+                              <div>
+                                <span className="text-sm text-slate-400 font-semibold">
+                                  Sensor:
+                                </span>{' '}
+                                {flight.sensor}
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <span className="text-sm text-slate-400 font-semibold">
+                                  Altitude (m):
+                                </span>{' '}
+                                {flight.altitude}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <div className="flex items-center justify-center">
-                          <span className="inline-flex items-center justify-center rounded-full text-sky-700 bg-sky-100 px-2.5 py-0.5">
-                            <PhotoIcon className="h-4 w-4 -ms-1 me-1.5" />
-                            <p className="whitespace-nowrap text-sm">
-                              {flight.data_products.length} Datasets
-                            </p>
-                          </span>
                         </div>
                       </div>
                       {flight.data_products.length > 0 ? (
@@ -189,12 +215,11 @@ export default function LayerPane({
                                   }}
                                 >
                                   <strong className="text-bold">
-                                    {dataProduct.data_type}
+                                    {getDataProductName(dataProduct.data_type)}
                                   </strong>
-                                  <div>filename: {dataProduct.original_filename}</div>
                                   {dataProduct.data_type !== 'point_cloud' ? (
                                     <div className="grid grid-flow-col auto-cols-max gap-1.5">
-                                      bands:{' '}
+                                      Bands:{' '}
                                       {dataProduct.stac_properties.eo.map((b) => {
                                         return (
                                           <span key={b.name} className="mr-2">
@@ -206,19 +231,14 @@ export default function LayerPane({
                                   ) : null}
                                   {dataProduct.data_type !== 'point_cloud' ? (
                                     <div className="grid grid-flow-col auto-cols-max gap-1.5">
-                                      {dataProduct.stac_properties.raster.length === 1
-                                        ? Object.keys(
+                                      {dataProduct.stac_properties.raster.length ===
+                                      1 ? (
+                                        <RasterStats
+                                          stats={
                                             dataProduct.stac_properties.raster[0].stats
-                                          ).map((k) => (
-                                            <span key={k}>
-                                              {k}
-                                              {': '}
-                                              {dataProduct.stac_properties.raster[0].stats[
-                                                k
-                                              ].toFixed(2)}
-                                            </span>
-                                          ))
-                                        : null}
+                                          }
+                                        />
+                                      ) : null}
                                     </div>
                                   ) : null}
                                 </div>

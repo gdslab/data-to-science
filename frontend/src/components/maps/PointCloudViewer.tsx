@@ -1,8 +1,8 @@
-import './potree/build/potree/potree.css';
-import './potree/libs/jquery-ui/jquery-ui.min.css';
-import './potree/libs/openlayers3/ol.css';
-import './potree/libs/spectrum/spectrum.css';
-import './potree/libs/jstree/themes/mixed/style.min.css';
+import '../../styles/potree/potree.css';
+import '../../styles/potree/jquery-ui.min.css';
+import '../../styles/potree/ol.css';
+import '../../styles/potree/spectrum.css';
+import '../../styles/potree/style.min.css';
 
 import { useEffect, useRef } from 'react';
 
@@ -57,15 +57,14 @@ export default function PointCloudViewer({ eptPath }: { eptPath: string }) {
         position: 'absolute',
         width: '100%',
         height: '100%',
-        left: '0px',
-        top: '64px',
+        left: '48px',
       }}
     >
       <div
         ref={potreeRenderAreaRef}
         id="potree_render_area"
         style={{
-          backgroundImage: `url('/potree_resources/images/background.jpg')`,
+          backgroundImage: `url('/potree/resources/images/background.jpg')`,
           left: '300px',
         }}
       ></div>
