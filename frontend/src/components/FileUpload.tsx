@@ -73,6 +73,7 @@ export default function FileUpload({
       const file = uppy.getFile(data.fileIDs[0]);
       uppy.setFileState(data.fileIDs[0], {
         xhrUpload: {
+          // @ts-ignore
           ...file.xhrUpload,
           endpoint: endpoint,
         },
@@ -89,7 +90,7 @@ export default function FileUpload({
     ) {
       setUploadResponse(response.body);
     }
-    uppy.removeFile(_file.id);
+    if (_file) uppy.removeFile(_file.id);
     if (onSuccess) onSuccess();
   });
 
