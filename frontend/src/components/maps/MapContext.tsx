@@ -5,25 +5,52 @@ import { v4 as uuidv4 } from 'uuid';
 import { DataProduct, Flight } from '../pages/projects/ProjectDetail';
 import { Project } from '../pages/projects/ProjectList';
 
+export interface DSMSymbologySettings {
+  colorRamp: string;
+  max: number;
+  meanStdDev: number;
+  min: number;
+  mode: string;
+  userMin: number;
+  userMax: number;
+}
+
+export interface OrthoSymbologySettings {
+  red: {
+    idx: number;
+    min: number;
+    max: number;
+  };
+  green: {
+    idx: number;
+    min: number;
+    max: number;
+  };
+  blue: {
+    idx: number;
+    min: number;
+    max: number;
+  };
+}
+
+export type SymbologySettings = DSMSymbologySettings | OrthoSymbologySettings;
+
+const defaultSymbologySettings = {
+  colorRamp: 'rainbow',
+  max: 255,
+  meanStdDev: 2,
+  min: 0,
+  mode: 'minMax',
+  userMin: 0,
+  userMax: 255,
+};
+
 type ActiveDataProductAction = { type: string; payload: DataProduct | null };
 type ActiveProjectAction = { type: string; payload: Project | null };
 type FlightsAction = { type: string; payload: Flight[] };
 type GeoRasterIdAction = { type: string };
 type ProjectHoverStateAction = { type: string; payload: string | null };
 type SymbologySettingsAction = { type: string; payload: SymbologySettings };
-
-export interface SymbologySettings {
-  colorRamp?: string;
-  max?: number;
-  meanStdDev?: number;
-  min?: number;
-  minMax?: string;
-  userMax?: number;
-  userMin?: number;
-  redBand?: number;
-  greenBand?: number;
-  blueBand?: number;
-}
 
 function activeDataProductReducer(
   state: DataProduct | null,
@@ -107,63 +134,8 @@ function symbologySettingsReducer(
     case 'update': {
       return action.payload;
     }
-    case 'reset': {
-      return defaultSymbologySettings;
-    }
     default:
       return state;
-  }
-}
-
-export interface DSMSymbologySettings {
-  colorRamp: string;
-  max: number;
-  meanStdDev: number;
-  min: number;
-  minMax: string;
-  userMin: number;
-  userMax: number;
-}
-
-export interface OrthoSymbologySettings {
-  redBand: number;
-  greenBand: number;
-  blueBand: number;
-}
-
-export type DefaultSymbologySettings = DSMSymbologySettings | OrthoSymbologySettings;
-
-export const defaultSymbologySettings: DefaultSymbologySettings = {
-  colorRamp: 'rainbow',
-  max: 0,
-  meanStdDev: 2,
-  min: 0,
-  minMax: 'minMax',
-  userMin: 0,
-  userMax: 0,
-  redBand: 3,
-  greenBand: 2,
-  blueBand: 1,
-};
-
-const round = (n: number, digits: number): number => parseFloat(n.toFixed(digits));
-
-export function getDefaultSymbologySettings(dataProduct: DataProduct) {
-  if (dataProduct.data_type === 'dsm') {
-    const stats = dataProduct.stac_properties.raster[0].stats;
-    return {
-      ...defaultSymbologySettings,
-      min: round(stats.minimum, 1),
-      max: round(stats.maximum, 1),
-      userMin: round(stats.minimum, 1),
-      userMax: round(stats.maximum, 1),
-    };
-  } else if (dataProduct.data_type === 'ortho') {
-    return {
-      ...defaultSymbologySettings,
-    };
-  } else {
-    return defaultSymbologySettings;
   }
 }
 

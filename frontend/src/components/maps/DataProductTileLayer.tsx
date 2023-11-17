@@ -1,89 +1,99 @@
 import { TileLayer } from 'react-leaflet/TileLayer';
 
-import { SymbologySettings, useMapContext } from './MapContext';
+import {
+  DSMSymbologySettings,
+  OrthoSymbologySettings,
+  useMapContext,
+} from './MapContext';
 
-const dynamicTileService = '/cog/tiles/WebMercatorQuad/{z}/{x}/{y}@1x';
-
+/**
+ * Constructs URL for requesting tiles from TiTiler service.
+ * @param {string} url URL for Cloud Optimized GeoTIFF.
+ * @param {string} cmap Color map name.
+ * @param {number[]} scale Array of min/max rescale values for one or more bands.
+ * @param {number[]} bidxs Array of band IDs.
+ * @returns {string} URL for requesting dynamic tiles from TiTiler service.
+ */
 function getTileURL(
   url: string,
   cmap: string | undefined = undefined,
   scale: number[] | undefined = undefined,
   bidxs: number[] | undefined = undefined
 ): string {
-  let tileURL = `${dynamicTileService}?url=${url}`;
-  if (cmap) tileURL += `&colormap_name=${cmap}`;
-  if (scale) tileURL += `&rescale=${scale.toString()}`;
-  if (bidxs) tileURL += `&bidx=${bidxs[0]}&bidx=${bidxs[1]}&bidx=${bidxs[2]}`;
-  return tileURL;
-}
+  // URL for TiTIler service
+  let titilerURL = `/cog/tiles/WebMercatorQuad/{z}/{x}/{y}@1x?url=${url}`;
+  // Add band ids, color map, and rescale parameters to URL (if necessary)
+  if (bidxs) titilerURL += `&bidx=${bidxs[0]}&bidx=${bidxs[1]}&bidx=${bidxs[2]}`;
+  if (cmap) titilerURL += `&colormap_name=${cmap}`;
+  if (scale)
+    scale
+      .reduce(
+        (result: number[][], _, index, array) =>
+          index % 2 === 0 ? [...result, array.slice(index, index + 2)] : result,
+        []
+      )
+      .map((x) => `&rescale=${x}`)
+      .forEach((rescale) => (titilerURL += rescale));
 
-function getBandIdsFromUserStyle(user_style: SymbologySettings | null) {
-  if (user_style) {
-    return [
-      user_style.blueBand ? user_style.blueBand : 1,
-      user_style.greenBand ? user_style.greenBand : 2,
-      user_style.redBand ? user_style.redBand : 3,
-    ];
-  } else {
-    return [1, 2, 3];
-  }
+  return titilerURL;
 }
 
 export default function DataProductTileLayer() {
   const { activeDataProduct, symbologySettings } = useMapContext();
-  if (activeDataProduct) {
-    let scale: number[] | undefined = undefined;
-    let cmap: string = 'rainbow';
-    if (activeDataProduct.data_type === 'dsm') {
-      const stats = activeDataProduct.stac_properties.raster[0].stats;
-      cmap = symbologySettings.colorRamp ? symbologySettings.colorRamp : 'rainbow';
-      if (symbologySettings.minMax === 'userDefined') {
-        scale = [
-          symbologySettings.userMin ? symbologySettings.userMin : stats.minimum,
-          symbologySettings.userMax ? symbologySettings.userMax : stats.maximum,
-        ];
-      } else if (symbologySettings.minMax === 'meanStdDev') {
-        const multiplier = symbologySettings.meanStdDev
-          ? symbologySettings.meanStdDev
-          : 2;
-        scale = [
-          stats.mean - stats.stddev * multiplier,
-          stats.mean + stats.stddev * multiplier,
-        ];
-      } else {
-        scale = [
-          symbologySettings.min ? symbologySettings.min : stats.minimum,
-          symbologySettings.max ? symbologySettings.max : stats.maximum,
-        ];
-      }
-      return (
-        <TileLayer
-          url={getTileURL(
-            activeDataProduct.url.replace('http://localhost', ''),
-            cmap,
-            scale
-          )}
-          zIndex={500}
-          maxNativeZoom={21}
-          maxZoom={24}
-        />
-      );
-    } else {
-      return (
-        <TileLayer
-          url={getTileURL(
-            activeDataProduct.url.replace('http://localhost', ''),
-            undefined,
-            undefined,
-            getBandIdsFromUserStyle(symbologySettings)
-          )}
-          zIndex={500}
-          maxNativeZoom={21}
-          maxZoom={24}
-        />
-      );
+
+  if (!activeDataProduct) throw Error('No active data product');
+
+  if (activeDataProduct.data_type === 'dsm') {
+    const stats = activeDataProduct.stac_properties.raster[0].stats;
+    const symbology = symbologySettings as DSMSymbologySettings;
+    let scale = [symbology.min, symbology.max];
+
+    if (symbology.mode === 'userDefined') {
+      scale = [symbology.userMin, symbology.userMax];
     }
+    if (symbology.mode === 'meanStdDev') {
+      scale = [
+        stats.mean - stats.stddev * symbology.meanStdDev,
+        stats.mean + stats.stddev * symbology.meanStdDev,
+      ];
+    }
+
+    return (
+      <TileLayer
+        url={getTileURL(
+          activeDataProduct.url.replace('http://localhost', ''),
+          symbology.colorRamp,
+          scale
+        )}
+        zIndex={500}
+        maxNativeZoom={21}
+        maxZoom={24}
+      />
+    );
   } else {
-    return null;
+    const symbology = symbologySettings as OrthoSymbologySettings;
+    const bidxs = [symbology.red.idx, symbology.green.idx, symbology.blue.idx];
+    const scale = [
+      symbology.red.min,
+      symbology.red.max,
+      symbology.green.min,
+      symbology.green.max,
+      symbology.blue.min,
+      symbology.blue.max,
+    ];
+
+    return (
+      <TileLayer
+        url={getTileURL(
+          activeDataProduct.url.replace('http://localhost', ''),
+          undefined,
+          scale,
+          bidxs
+        )}
+        zIndex={500}
+        maxNativeZoom={21}
+        maxZoom={24}
+      />
+    );
   }
 }

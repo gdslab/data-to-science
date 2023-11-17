@@ -27,6 +27,7 @@ def test_celery(word: str) -> str:
 def process_geotiff(
     filename: str,
     out_path: str,
+    user_id: UUID,
     project_id: UUID,
     flight_id: UUID,
     job_id: UUID,
@@ -68,6 +69,7 @@ def process_geotiff(
     try:
         ip = ImageProcessor(out_path)
         ip.run()
+        default_symbology = ip.get_default_symbology()
     except Exception as e:
         logger.error(str)
         if os.path.exists(out_path):
@@ -85,6 +87,13 @@ def process_geotiff(
         db,
         db_obj=data_product,
         obj_in=DataProductUpdate(stac_properties=ip.stac_properties),
+    )
+
+    crud.user_style.create_with_data_product_and_user(
+        db,
+        obj_in=default_symbology,
+        data_product_id=data_product.id,
+        user_id=user_id,
     )
 
     crud.job.update(

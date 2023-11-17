@@ -77,7 +77,15 @@ def upload_data_product(
 
     if dtype == "dsm" or dtype == "ortho":
         process_geotiff.apply_async(
-            args=[files.filename, out_path, project.id, flight.id, job.id, dtype],
+            args=[
+                files.filename,
+                out_path,
+                current_user.id,
+                project.id,
+                flight.id,
+                job.id,
+                dtype,
+            ],
             kwargs={},
             queue="main-queue",
         )

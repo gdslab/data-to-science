@@ -50,6 +50,45 @@ class ImageProcessor:
 
         return self.out_path
 
+    def get_default_symbology(self) -> dict:
+        """Creates default symbology settings based on raster type and stats."""
+        if (
+            len(self.stac_properties["raster"]) > 0
+            and len(self.stac_properties["eo"]) > 0
+        ):
+            if len(self.stac_properties["raster"]) == 1:
+                stats = self.stac_properties["raster"][0].get("stats")
+
+                return {
+                    "settings": {
+                        "colorRamp": "rainbow",
+                        "mode": "minMax",
+                        "max": stats.get("maximum", 255),
+                        "min": stats.get("minimum", 0),
+                        "userMax": stats.get("maximum", 255),
+                        "userMin": stats.get("minimum", 0),
+                        "meanStdDev": 2,
+                    }
+                }
+            elif len(self.stac_properties["raster"]) > 2:
+                symbology: OrthoSymbology = {"red": {}, "green": {}, "blue": {}}
+
+                for idx, band in enumerate(["red", "green", "blue"]):
+                    stats = self.stac_properties["raster"][idx]
+                    symbology[band] = {
+                        "idx": idx + 1,
+                        "min": stats.get("minimum", 0),
+                        "max": stats.get("maximum", 255),
+                    }
+
+                return {"settings": symbology}
+            else:
+                raise Exception("Need at least three bands for ortho imagery")
+        else:
+            raise Exception(
+                "Cannot get default symbology settings before running processor"
+            )
+
 
 def get_info(img_path: str) -> dict:
     """Returns output from gdalinfo -json <input_dataset>.

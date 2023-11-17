@@ -13,7 +13,6 @@ import HintText from '../HintText';
 import { Project } from '../pages/projects/ProjectList';
 import { useMapContext } from './MapContext';
 import SymbologyControls from './SymbologyControls';
-import { getDefaultSymbologySettings } from './MapContext';
 import { useEffect } from 'react';
 
 import UASIcon from '../../assets/uas-icon.svg';
@@ -84,7 +83,6 @@ export default function LayerPane({
     projectHoverStateDispatch,
     symbologySettingsDispatch,
   } = useMapContext();
-
   useEffect(() => {
     if (activeDataProduct && activeDataProduct.data_type === 'point_cloud')
       toggleHidePane(true);
@@ -173,7 +171,7 @@ export default function LayerPane({
                           className="group space-y-2 [&_summary::-webkit-details-marker]:hidden text-slate-600 overflow-visible"
                           open={activeDataProduct ? true : false}
                         >
-                          <summary className="text-sm">{`${flight.data_products.length} Data Products`}</summary>
+                          <summary className="text-sm cursor-pointer">{`${flight.data_products.length} Data Products`}</summary>
                           {flight.data_products.map((dataProduct) => (
                             <LayerCard
                               key={dataProduct.id}
@@ -199,18 +197,10 @@ export default function LayerPane({
                                         type: 'set',
                                         payload: dataProduct,
                                       });
-                                      if (dataProduct.user_style) {
-                                        symbologySettingsDispatch({
-                                          type: 'update',
-                                          payload: dataProduct.user_style,
-                                        });
-                                      } else {
-                                        symbologySettingsDispatch({
-                                          type: 'update',
-                                          payload:
-                                            getDefaultSymbologySettings(dataProduct),
-                                        });
-                                      }
+                                      symbologySettingsDispatch({
+                                        type: 'update',
+                                        payload: dataProduct.user_style,
+                                      });
                                     }
                                   }}
                                 >
