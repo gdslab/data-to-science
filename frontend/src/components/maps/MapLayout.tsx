@@ -42,7 +42,7 @@ export default function MapLayout() {
           />
         </div>
         {/* page content */}
-        <div className="w-full h-full bg-slate-700">
+        <div className="w-full h-[calc(100vh_-_64px)] bg-slate-700">
           <Map projects={projects} />
         </div>
       </div>

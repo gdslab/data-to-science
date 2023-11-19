@@ -14,7 +14,7 @@ import { useMapContext } from './MapContext';
 import iconRetina from './icons/marker-icon-2x.png';
 import icon from './icons/marker-icon.png';
 import shadow from './icons/marker-shadow.png';
-import PointCloudViewer from './PointCloudViewer';
+import PotreeViewer from './PotreeViewer';
 
 export default function Map({ projects }: { projects: Project[] }) {
   const { activeDataProduct, activeProject, flights } = useMapContext();
@@ -56,6 +56,6 @@ export default function Map({ projects }: { projects: Project[] }) {
       </MapContainer>
     );
   } else {
-    return <PointCloudViewer eptPath={activeDataProduct.url} />;
+    return <PotreeViewer eptPath={activeDataProduct.url} />;
   }
 }
