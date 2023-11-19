@@ -50,7 +50,7 @@ type ActiveProjectAction = { type: string; payload: Project | null };
 type FlightsAction = { type: string; payload: Flight[] };
 type GeoRasterIdAction = { type: string };
 type ProjectHoverStateAction = { type: string; payload: string | null };
-type SymbologySettingsAction = { type: string; payload: SymbologySettings };
+export type SymbologySettingsAction = { type: string; payload: SymbologySettings };
 
 function activeDataProductReducer(
   state: DataProduct | null,
@@ -184,22 +184,30 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
     defaultSymbologySettings
   );
 
+  async function getFlights(projectId) {
+    try {
+      const response = await axios.get(`/api/v1/projects/${projectId}/flights`);
+      if (response) {
+        flightsDispatch({ type: 'set', payload: response.data });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   // fetches flights for active project
   useEffect(() => {
-    async function getFlights(projectId) {
-      try {
-        const response = await axios.get(`/api/v1/projects/${projectId}/flights`);
-        if (response) {
-          flightsDispatch({ type: 'set', payload: response.data });
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    }
     if (activeProject) {
       getFlights(activeProject.id);
     }
   }, [activeProject]);
+
+  // update flights/data products to check for changes to saved styles
+  useEffect(() => {
+    if (activeDataProduct && activeProject) {
+      getFlights(activeProject.id);
+    }
+  }, [activeDataProduct]);
 
   return (
     <MapContext.Provider

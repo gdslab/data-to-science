@@ -2,7 +2,7 @@ import { useContext, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import AuthContext from '../AuthContext';
-import { Button, OutlineButton } from './Buttons';
+import { Button } from './Buttons';
 
 import brandLogo from '../assets/d2s-logo-white.png';
 import landingVideo from '../assets/landing.mp4';

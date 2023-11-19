@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { Field, Formik, Form } from 'formik';
 
 import { cmaps } from './cmaps';
@@ -6,8 +7,11 @@ import { NumberField, SelectField } from '../InputFields';
 import {
   DSMSymbologySettings,
   OrthoSymbologySettings,
+  SymbologySettings,
+  SymbologySettingsAction,
   useMapContext,
 } from './MapContext';
+import { DataProduct } from '../pages/projects/ProjectDetail';
 
 /**
  * Determine number of decimal places for input number field's step attribute.
@@ -15,13 +19,51 @@ import {
  * @returns {string} Numeric string of step value.
  */
 const findStep = (n: number): number =>
-  parseFloat('0.' + ''.padStart(n.toString().split('.')[1].length - 1, '0') + '1');
+  !Number.isInteger(n)
+    ? parseFloat('0.' + ''.padStart(n.toString().split('.')[1].length - 1, '0') + '1')
+    : 1;
+
+const saveSymbology = async (
+  symbologyValues: SymbologySettings,
+  symbologyDispatch: React.Dispatch<SymbologySettingsAction>,
+  projectId: string,
+  dataProduct: DataProduct,
+  dataProductDispatch
+) => {
+  try {
+    const response = await axios.put(
+      `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/flights/${
+        dataProduct.flight_id
+      }/data_products/${dataProduct.id}/style`,
+      { settings: symbologyValues }
+    );
+    if (response) {
+      symbologyDispatch({ type: 'update', payload: symbologyValues });
+      dataProductDispatch({
+        type: 'set',
+        payload: {
+          ...dataProduct,
+          user_style: symbologyValues,
+        },
+      });
+    } else {
+      console.error('Unable to update symbology');
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
 
 function DSMSymbologyControls() {
-  const { activeDataProduct, symbologySettings, symbologySettingsDispatch } =
-    useMapContext();
+  const {
+    activeDataProduct,
+    activeDataProductDispatch,
+    activeProject,
+    symbologySettings,
+    symbologySettingsDispatch,
+  } = useMapContext();
 
-  if (activeDataProduct && symbologySettings) {
+  if (activeProject && activeDataProduct) {
     const symbology = symbologySettings as DSMSymbologySettings;
 
     return (
@@ -34,7 +76,7 @@ function DSMSymbologyControls() {
           });
         }}
       >
-        {({ handleReset, values }) => (
+        {({ values }) => (
           <Form>
             <div className="w-full mb-4">
               <fieldset className="border border-solid border-slate-300 p-3">
@@ -131,8 +173,20 @@ function DSMSymbologyControls() {
             </fieldset>
             <div className="mt-4 flex items-center justify-between">
               <div className="w-48">
-                <OutlineButton type="button" size="sm" onClick={() => handleReset()}>
-                  Reset
+                <OutlineButton
+                  type="button"
+                  size="sm"
+                  onClick={() =>
+                    saveSymbology(
+                      values,
+                      symbologySettingsDispatch,
+                      activeProject.id,
+                      activeDataProduct,
+                      activeDataProductDispatch
+                    )
+                  }
+                >
+                  Save
                 </OutlineButton>
               </div>
               <div className="w-48">
@@ -151,11 +205,16 @@ function DSMSymbologyControls() {
 }
 
 function OrthoSymbologyControls() {
-  const { activeDataProduct, symbologySettings, symbologySettingsDispatch } =
-    useMapContext();
+  const {
+    activeDataProduct,
+    activeDataProductDispatch,
+    activeProject,
+    symbologySettings,
+    symbologySettingsDispatch,
+  } = useMapContext();
 
-  const symbology = symbologySettings as OrthoSymbologySettings;
-  if (activeDataProduct && symbology) {
+  if (activeProject && activeDataProduct) {
+    const symbology = symbologySettings as OrthoSymbologySettings;
     const bandOptions = activeDataProduct.stac_properties.eo.map((band, idx) => ({
       label: band.name,
       value: idx + 1,
@@ -171,7 +230,7 @@ function OrthoSymbologyControls() {
           });
         }}
       >
-        {() => (
+        {({ values }) => (
           <Form>
             <fieldset className="border border-solid border-slate-300 p-3">
               <legend>RGB Properties</legend>
@@ -247,13 +306,32 @@ function OrthoSymbologyControls() {
                     />
                   </div>
                 </div>
-                <div className="w-1/2">
-                  <OutlineButton type="submit" size="sm">
-                    Apply Symbology
-                  </OutlineButton>
-                </div>
               </div>
             </fieldset>
+            <div className="mt-4 flex items-center justify-between">
+              <div className="w-48">
+                <OutlineButton
+                  type="button"
+                  size="sm"
+                  onClick={() =>
+                    saveSymbology(
+                      values,
+                      symbologySettingsDispatch,
+                      activeProject.id,
+                      activeDataProduct,
+                      activeDataProductDispatch
+                    )
+                  }
+                >
+                  Save
+                </OutlineButton>
+              </div>
+              <div className="w-48">
+                <Button type="submit" size="sm">
+                  Apply Symbology
+                </Button>
+              </div>
+            </div>
           </Form>
         )}
       </Formik>

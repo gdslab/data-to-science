@@ -21,7 +21,7 @@ import Modal from '../../Modal';
 import ProjectFormMap from './ProjectFormMap';
 import Table, { TableBody, TableHead } from '../../Table';
 
-import { DefaultSymbologySettings } from '../../maps/MapContext';
+import { SymbologySettings } from '../../maps/MapContext';
 import { Team } from '../teams/Teams';
 import validationSchema from './validationSchema';
 import { sorter } from '../../utils';
@@ -66,7 +66,7 @@ export interface DataProduct {
     raster: Band[];
     eo: EO[];
   };
-  user_style: null | DefaultSymbologySettings;
+  user_style: SymbologySettings;
 }
 
 export interface Flight {

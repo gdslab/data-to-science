@@ -83,9 +83,11 @@ export default function LayerPane({
     projectHoverStateDispatch,
     symbologySettingsDispatch,
   } = useMapContext();
+
   useEffect(() => {
-    if (activeDataProduct && activeDataProduct.data_type === 'point_cloud')
+    if (activeDataProduct && activeDataProduct.data_type === 'point_cloud') {
       toggleHidePane(true);
+    }
   }, [activeDataProduct]);
 
   if (hidePane) {
