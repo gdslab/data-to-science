@@ -41,12 +41,14 @@ export default function PotreeViewer({ eptPath }: { eptPath: string }) {
         viewer.setFOV(60);
         viewer.setPointBudget(2_000_000);
         viewer.loadSettingsFromURL();
+        viewer.useHQ = true;
 
         viewer.setDescription('Loading Entwine-generated EPT format');
 
         viewer.loadGUI(() => {
           viewer.setLanguage('en');
           $('#menu_apperance').next().show();
+          viewer.toggleSidebar();
         });
         
         const path = '${eptPath}';
@@ -57,6 +59,7 @@ export default function PotreeViewer({ eptPath }: { eptPath: string }) {
 
           let material = e.pointcloud.material;
           material.size = 1;
+          material.shape = Potree.PointShape.CIRCLE;
           material.pointSizeType = Potree.PointSizeType.ADAPTIVE;
 
           viewer.fitToScreen(0.5);

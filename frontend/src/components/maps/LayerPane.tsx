@@ -1,9 +1,13 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowUturnLeftIcon,
   Bars3Icon,
+  ClockIcon,
+  MapIcon,
   MapPinIcon,
   PaperAirplaneIcon,
+  ScaleIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 
@@ -13,7 +17,6 @@ import HintText from '../HintText';
 import { Project } from '../pages/projects/ProjectList';
 import { useMapContext } from './MapContext';
 import SymbologyControls from './SymbologyControls';
-import { useEffect } from 'react';
 
 import UASIcon from '../../assets/uas-icon.svg';
 import { Band } from '../pages/projects/ProjectDetail';
@@ -44,7 +47,7 @@ function LayerCard({
   );
 }
 
-function formatDate(datestring) {
+export function formatDate(datestring) {
   return new Date(datestring).toLocaleDateString('en-us', {
     timeZone: 'UTC',
     weekday: 'long',
@@ -77,6 +80,8 @@ export default function LayerPane({
   const {
     activeDataProduct,
     activeDataProductDispatch,
+    activeMapTool,
+    activeMapToolDispatch,
     activeProject,
     activeProjectDispatch,
     flights,
@@ -126,6 +131,45 @@ export default function LayerPane({
           <article className="h-full border p-4">
             <h1>{activeProject.title}</h1>
             <HintText>{activeProject.description}</HintText>
+            <fieldset className="border border-solid border-slate-300 p-1.5">
+              <legend>Map Tools</legend>
+              <div className="flex items-center justify-start gap-1.5">
+                <div
+                  className={classNames(
+                    activeMapTool === 'map' ? 'bg-accent2' : '',
+                    'h-8 w-8 cursor-pointer shadow-sm hover:shadow-xl rounded border-2 border-solid border-slate-500 p-1.5'
+                  )}
+                  onClick={() => activeMapToolDispatch({ type: 'set', payload: 'map' })}
+                >
+                  <MapIcon className="h-4 w-4" />
+                  <span className="sr-only">Map Tool</span>
+                </div>
+                <div
+                  className={classNames(
+                    activeMapTool === 'compare' ? 'bg-accent2' : '',
+                    'h-8 w-8 cursor-pointer shadow-sm hover:shadow-xl rounded border-2 border-solid border-slate-500 p-1.5'
+                  )}
+                  onClick={() =>
+                    activeMapToolDispatch({ type: 'set', payload: 'compare' })
+                  }
+                >
+                  <ScaleIcon className="h-4 w-4" />
+                  <span className="sr-only">Compare Tool</span>
+                </div>
+                <div
+                  className={classNames(
+                    activeMapTool === 'timeline' ? 'bg-accent2' : '',
+                    'h-8 w-8 cursor-not-allowed shadow-sm hover:shadow-xl rounded border-2 border-solid border-slate-500 p-1.5'
+                  )}
+                  // onClick={() =>
+                  //   activeMapToolDispatch({ type: 'set', payload: 'timeline' })
+                  // }
+                >
+                  <ClockIcon className="h-4 w-4" />
+                  <span className="sr-only">Timeline Tool</span>
+                </div>
+              </div>
+            </fieldset>
             <ul className="mt-4 space-y-2 h-[calc(100vh_-_244px)] overflow-y-auto">
               {flights
                 .sort((a, b) =>

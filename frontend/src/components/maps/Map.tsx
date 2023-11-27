@@ -16,8 +16,10 @@ import icon from './icons/marker-icon.png';
 import shadow from './icons/marker-shadow.png';
 import PotreeViewer from './PotreeViewer';
 
+import CompareTool from './CompareTool';
+
 export default function Map({ projects }: { projects: Project[] }) {
-  const { activeDataProduct, activeProject, flights } = useMapContext();
+  const { activeDataProduct, activeMapTool, activeProject, flights } = useMapContext();
 
   useEffect(() => {
     // @ts-ignore
@@ -48,8 +50,12 @@ export default function Map({ projects }: { projects: Project[] }) {
         {activeProject &&
         flights &&
         activeDataProduct &&
-        activeDataProduct.data_type !== 'point_cloud' ? (
-          <DataProductTileLayer />
+        activeDataProduct.data_type !== 'point_cloud' &&
+        activeMapTool === 'map' ? (
+          <DataProductTileLayer activeDataProduct={activeDataProduct} />
+        ) : null}
+        {flights && flights.length > 0 && activeMapTool === 'compare' ? (
+          <CompareTool key="compare" flights={flights} />
         ) : null}
         <MapLayersControl />
         <ZoomControl position="bottomright" />

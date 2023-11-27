@@ -33,6 +33,8 @@ export interface OrthoSymbologySettings {
   };
 }
 
+export type MapTool = 'map' | 'compare' | 'timeline';
+
 export type SymbologySettings = DSMSymbologySettings | OrthoSymbologySettings;
 
 const defaultSymbologySettings = {
@@ -46,6 +48,7 @@ const defaultSymbologySettings = {
 };
 
 type ActiveDataProductAction = { type: string; payload: DataProduct | null };
+type ActiveMapToolAction = { type: string; payload: MapTool };
 type ActiveProjectAction = { type: string; payload: Project | null };
 type FlightsAction = { type: string; payload: Flight[] };
 type GeoRasterIdAction = { type: string };
@@ -62,6 +65,20 @@ function activeDataProductReducer(
     }
     case 'clear': {
       return null;
+    }
+    default: {
+      return state;
+    }
+  }
+}
+
+function activeMapToolReducer(state: MapTool, action: ActiveMapToolAction) {
+  switch (action.type) {
+    case 'set': {
+      return action.payload;
+    }
+    case 'reset': {
+      return 'map';
     }
     default: {
       return state;
@@ -142,6 +159,8 @@ function symbologySettingsReducer(
 const context: {
   activeDataProduct: DataProduct | null;
   activeDataProductDispatch: React.Dispatch<ActiveDataProductAction>;
+  activeMapTool: MapTool;
+  activeMapToolDispatch: React.Dispatch<ActiveMapToolAction>;
   activeProject: Project | null;
   activeProjectDispatch: React.Dispatch<ActiveProjectAction>;
   flights: Flight[];
@@ -154,6 +173,8 @@ const context: {
 } = {
   activeDataProduct: null,
   activeDataProductDispatch: () => {},
+  activeMapTool: 'map',
+  activeMapToolDispatch: () => {},
   activeProject: null,
   activeProjectDispatch: () => {},
   flights: [],
@@ -171,6 +192,10 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
   const [activeDataProduct, activeDataProductDispatch] = useReducer(
     activeDataProductReducer,
     null
+  );
+  const [activeMapTool, activeMapToolDispatch] = useReducer(
+    activeMapToolReducer,
+    'map'
   );
   const [activeProject, activeProjectDispatch] = useReducer(activeProjectReducer, null);
   const [flights, flightsDispatch] = useReducer(flightsReducer, []);
@@ -209,11 +234,18 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
     }
   }, [activeDataProduct]);
 
+  // clears activeDataProduct when map tool changes
+  useEffect(() => {
+    activeDataProductDispatch({ type: 'clear', payload: null });
+  }, [activeMapTool]);
+
   return (
     <MapContext.Provider
       value={{
         activeDataProduct,
         activeDataProductDispatch,
+        activeMapTool,
+        activeMapToolDispatch,
         activeProject,
         activeProjectDispatch,
         flights,

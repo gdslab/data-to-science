@@ -3,8 +3,10 @@ import { TileLayer } from 'react-leaflet/TileLayer';
 import {
   DSMSymbologySettings,
   OrthoSymbologySettings,
+  SymbologySettings,
   useMapContext,
 } from './MapContext';
+import { DataProduct } from '../pages/projects/ProjectDetail';
 
 /**
  * Constructs URL for requesting tiles from TiTiler service.
@@ -38,31 +40,52 @@ function getTileURL(
   return titilerURL;
 }
 
-export default function DataProductTileLayer() {
-  const { activeDataProduct, symbologySettings } = useMapContext();
+/**
+ * Looks up color ramp, calculates scale, and returns TileLayer for a data product.
+ * @param {DataProduct} dataProduct Data product object.
+ * @param {SymbologySettings} symbologySettings Symbology settings for a data product.
+ * @returns {TileLayer} TileLayer for a data product.
+ */
+export function getDataProductTileLayer(
+  dataProduct: DataProduct,
+  symbologySettings?: SymbologySettings | undefined
+) {
+  if (dataProduct.data_type === 'dsm') {
+    const stats = dataProduct.stac_properties.raster[0].stats;
+    const symbology = symbologySettings as DSMSymbologySettings | undefined;
+    const savedStyle = dataProduct.user_style as DSMSymbologySettings;
+    const colorRamp = symbology ? symbology.colorRamp : savedStyle.colorRamp;
+    let scale = [
+      symbology ? symbology.min : savedStyle.min,
+      symbology ? symbology.max : savedStyle.max,
+    ];
 
-  if (!activeDataProduct) throw Error('No active data product');
-
-  if (activeDataProduct.data_type === 'dsm') {
-    const stats = activeDataProduct.stac_properties.raster[0].stats;
-    const symbology = symbologySettings as DSMSymbologySettings;
-    let scale = [symbology.min, symbology.max];
-
-    if (symbology.mode === 'userDefined') {
-      scale = [symbology.userMin, symbology.userMax];
-    }
-    if (symbology.mode === 'meanStdDev') {
+    if (
+      (symbology && symbology.mode === 'userDefined') ||
+      (!symbology && savedStyle.mode === 'userDefined')
+    ) {
       scale = [
-        stats.mean - stats.stddev * symbology.meanStdDev,
-        stats.mean + stats.stddev * symbology.meanStdDev,
+        symbology ? symbology.userMin : savedStyle.userMin,
+        symbology ? symbology.userMax : savedStyle.userMax,
+      ];
+    }
+    if (
+      (symbology && symbology.mode === 'meanStdDev') ||
+      (!symbology && savedStyle.mode === 'meanStdDev')
+    ) {
+      scale = [
+        stats.mean -
+          stats.stddev * (symbology ? symbology.meanStdDev : savedStyle.meanStdDev),
+        stats.mean +
+          stats.stddev * (symbology ? symbology.meanStdDev : savedStyle.meanStdDev),
       ];
     }
 
     return (
       <TileLayer
         url={getTileURL(
-          activeDataProduct.url.replace('http://localhost', ''),
-          symbology.colorRamp,
+          dataProduct.url.replace('http://localhost', ''),
+          colorRamp,
           scale
         )}
         zIndex={500}
@@ -71,21 +94,20 @@ export default function DataProductTileLayer() {
       />
     );
   } else {
-    const symbology = symbologySettings as OrthoSymbologySettings;
-    const bidxs = [symbology.red.idx, symbology.green.idx, symbology.blue.idx];
-    const scale = [
-      symbology.red.min,
-      symbology.red.max,
-      symbology.green.min,
-      symbology.green.max,
-      symbology.blue.min,
-      symbology.blue.max,
-    ];
+    const symbology = symbologySettings as OrthoSymbologySettings | undefined;
+    const savedStyle = dataProduct.user_style as OrthoSymbologySettings;
+
+    const red = symbology ? symbology.red : savedStyle.red;
+    const green = symbology ? symbology.green : savedStyle.green;
+    const blue = symbology ? symbology.blue : savedStyle.blue;
+
+    const bidxs = [red.idx, green.idx, blue.idx];
+    const scale = [red.min, red.max, green.min, green.max, blue.min, blue.max];
 
     return (
       <TileLayer
         url={getTileURL(
-          activeDataProduct.url.replace('http://localhost', ''),
+          dataProduct.url.replace('http://localhost', ''),
           undefined,
           scale,
           bidxs
@@ -96,4 +118,16 @@ export default function DataProductTileLayer() {
       />
     );
   }
+}
+
+export default function DataProductTileLayer({
+  activeDataProduct,
+}: {
+  activeDataProduct: DataProduct;
+}) {
+  const { symbologySettings } = useMapContext();
+
+  if (!activeDataProduct) throw Error('No active data product');
+
+  return getDataProductTileLayer(activeDataProduct, symbologySettings);
 }
