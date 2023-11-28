@@ -53,7 +53,14 @@ export default function CompareTool({ flights }: { flights: Flight[] }) {
   const getDataProductByFlight = (flightID: string): string => {
     const dataProducts = flights.filter(({ id }) => id === flightID)[0].data_products;
     if (dataProducts.length > 0) {
-      return dataProducts[0].id;
+      const dataProductsGTIFF = dataProducts.filter(
+        ({ data_type }) => data_type !== 'point_cloud'
+      );
+      if (dataProductsGTIFF.length > 0) {
+        return dataProductsGTIFF[0].id;
+      } else {
+        return '';
+      }
     } else {
       return '';
     }

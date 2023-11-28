@@ -84,7 +84,7 @@ export function getDataProductTileLayer(
     return (
       <TileLayer
         url={getTileURL(
-          dataProduct.url.replace('http://localhost', ''),
+          dataProduct.url.replace(import.meta.env.VITE_DOMAIN, ''),
           colorRamp,
           scale
         )}
@@ -149,7 +149,7 @@ export function getDataProductTileLayer(
     return (
       <TileLayer
         url={getTileURL(
-          dataProduct.url.replace('http://localhost', ''),
+          dataProduct.url.replace(import.meta.env.VITE_DOMAIN, ''),
           undefined,
           scale,
           bidxs
