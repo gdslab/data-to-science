@@ -34,7 +34,7 @@ export default function PotreeViewer({ eptPath }: { eptPath: string }) {
       </div>
 
       <script type="module">
-        import * as THREE from "http://localhost/potree/libs/three.js/build/three.module.js";
+        import * as THREE from "/potree/libs/three.js/build/three.module.js";
         window.viewer = new Potree.Viewer(document.getElementById("potree_render_area"));
 
         viewer.setEDLEnabled(true);
