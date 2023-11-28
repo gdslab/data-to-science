@@ -14,6 +14,19 @@ interface SideBySideControl extends L.Control {
   _rightLayers: L.TileLayer[];
 }
 
+export const getFlightsWithGTIFF = (flights: Flight[]): Flight[] => {
+  return flights.filter((flight) => {
+    if (flight.data_products.length > 0) {
+      const dataProducts = flight.data_products.filter(
+        ({ data_type }) => data_type !== 'point_cloud'
+      );
+      if (dataProducts.length > 0) {
+        return flight;
+      }
+    }
+  });
+};
+
 const getLayerFromProps = (
   flights: Flight[],
   flightID: string,
@@ -70,7 +83,7 @@ export default function CompareTool({ flights }: { flights: Flight[] }) {
   const [flight2, setFlight2] = useState(flights[0].id);
   const [dataProduct1, setDataProduct1] = useState(getDataProductByFlight(flight1));
   const [dataProduct2, setDataProduct2] = useState(getDataProductByFlight(flight2));
-
+  console.log(flights);
   useEffect(() => {
     // adds side by side comparison control to map
     if (sideBySideControl) {

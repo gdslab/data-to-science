@@ -16,7 +16,7 @@ import icon from './icons/marker-icon.png';
 import shadow from './icons/marker-shadow.png';
 import PotreeViewer from './PotreeViewer';
 
-import CompareTool from './CompareTool';
+import CompareTool, { getFlightsWithGTIFF } from './CompareTool';
 
 export default function Map({ projects }: { projects: Project[] }) {
   const { activeDataProduct, activeMapTool, activeProject, flights } = useMapContext();
@@ -55,7 +55,7 @@ export default function Map({ projects }: { projects: Project[] }) {
           <DataProductTileLayer activeDataProduct={activeDataProduct} />
         ) : null}
         {flights && flights.length > 0 && activeMapTool === 'compare' ? (
-          <CompareTool key="compare" flights={flights} />
+          <CompareTool key="compare" flights={getFlightsWithGTIFF(flights)} />
         ) : null}
         <MapLayersControl />
         <ZoomControl position="bottomright" />
