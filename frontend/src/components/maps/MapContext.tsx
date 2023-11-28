@@ -16,20 +16,28 @@ export interface DSMSymbologySettings {
 }
 
 export interface OrthoSymbologySettings {
+  mode: string;
+  meanStdDev: number;
   red: {
     idx: number;
     min: number;
     max: number;
+    userMin: number;
+    userMax: number;
   };
   green: {
     idx: number;
     min: number;
     max: number;
+    userMin: number;
+    userMax: number;
   };
   blue: {
     idx: number;
     min: number;
     max: number;
+    userMin: number;
+    userMax: number;
   };
 }
 

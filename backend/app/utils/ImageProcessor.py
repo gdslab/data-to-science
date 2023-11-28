@@ -71,7 +71,13 @@ class ImageProcessor:
                     }
                 }
             elif len(self.stac_properties["raster"]) > 2:
-                symbology: OrthoSymbology = {"red": {}, "green": {}, "blue": {}}
+                symbology: OrthoSymbology = {
+                    "mode": "minMax",
+                    "meanStdDev": 2,
+                    "red": {},
+                    "green": {},
+                    "blue": {},
+                }
 
                 for idx, band in enumerate(["red", "green", "blue"]):
                     stats = self.stac_properties["raster"][idx]
@@ -79,6 +85,8 @@ class ImageProcessor:
                         "idx": idx + 1,
                         "min": stats.get("minimum", 0),
                         "max": stats.get("maximum", 255),
+                        "userMin": stats.get("minimum", 0),
+                        "userMax": stats.get("maximum", 255),
                     }
 
                 return {"settings": symbology}

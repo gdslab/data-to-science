@@ -233,21 +233,65 @@ function OrthoSymbologyControls() {
         {({ values }) => (
           <Form>
             <fieldset className="border border-solid border-slate-300 p-3">
-              <legend>RGB Properties</legend>
-              <div className="flex flex-col gap-4">
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="grid grid-rows-3 gap-1.5 border border-red-500 rounded p-1.5">
-                    <SelectField name="red.idx" label="Red" options={bandOptions} />
+              <legend className="block text-sm text-gray-400 font-bold pt-2 pb-1">
+                Min / Max Value Settings
+              </legend>
+              <div
+                className="w-full flex flex-wrap justify-between gap-4"
+                role="group"
+                aria-labelledby="modeGroup"
+              >
+                <label className="block text-sm text-gray-600 font-bold pt-2 pb-1">
+                  <Field type="radio" name="mode" value="minMax" />
+                  <span className="ml-2">Min/Max</span>
+                </label>
+                <label className="block text-sm text-gray-600 font-bold pt-2 pb-1">
+                  <Field type="radio" name="mode" value="userDefined" />
+                  <span className="ml-2">User defined</span>
+                </label>
+                <label className="block text-sm text-gray-600 font-bold pt-2 pb-1">
+                  <Field type="radio" name="mode" value="meanStdDev" />
+                  <span className="ml-2">Mean +/- Std. Dev.</span>
+                </label>
+              </div>
+              {values.mode === 'meanStdDev' ? (
+                <div className="w-full">
+                  <div className="w-1/2">
                     <NumberField
-                      name="red.min"
-                      label="Min"
+                      name="meanStdDev"
+                      label="Mean +/- Std. Dev. &times; "
                       min={0}
-                      max={255}
+                      max={100}
                       step={0.1}
                       required={false}
                     />
+                  </div>
+                </div>
+              ) : null}
+            </fieldset>
+            <fieldset className="border border-solid border-slate-300 p-3">
+              <legend className="block text-sm text-gray-400 font-bold pt-2 pb-1">
+                RGB Properties
+              </legend>
+              <div className="flex flex-col gap-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-rows-3 gap-1.5 border-2 border-dotted border-red-500 rounded-md p-1.5">
+                    <SelectField name="red.idx" label="Red" options={bandOptions} />
                     <NumberField
-                      name="red.max"
+                      name={values.mode === 'userDefined' ? 'red.userMin' : 'red.min'}
+                      label="Min"
+                      min={0}
+                      max={255}
+                      step={
+                        activeDataProduct.stac_properties.raster[0].data_type == 'unit8'
+                          ? 1
+                          : 0.1
+                      }
+                      disabled={values.mode !== 'userDefined'}
+                      required={false}
+                    />
+                    <NumberField
+                      name={values.mode === 'userDefined' ? 'red.userMax' : 'red.max'}
                       label="Max"
                       min={symbology.red.min}
                       max={symbology.red.max}
@@ -256,13 +300,16 @@ function OrthoSymbologyControls() {
                           ? 1
                           : 0.1
                       }
+                      disabled={values.mode !== 'userDefined'}
                       required={false}
                     />
                   </div>
-                  <div className="grid grid-rows-3 gap-1.5 border border-green-500 rounded p-1.5">
+                  <div className="grid grid-rows-3 gap-1.5 border-2 border-dotted border-green-500 rounded-md p-1.5">
                     <SelectField name="green.idx" label="Green" options={bandOptions} />
                     <NumberField
-                      name="green.min"
+                      name={
+                        values.mode === 'userDefined' ? 'green.userMin' : 'green.min'
+                      }
                       label="Min"
                       min={symbology.green.min}
                       max={symbology.green.max}
@@ -271,10 +318,13 @@ function OrthoSymbologyControls() {
                           ? 1
                           : 0.1
                       }
+                      disabled={values.mode !== 'userDefined'}
                       required={false}
                     />
                     <NumberField
-                      name="green.max"
+                      name={
+                        values.mode === 'userDefined' ? 'green.userMax' : 'green.max'
+                      }
                       label="Max"
                       min={symbology.green.min}
                       max={symbology.green.max}
@@ -283,25 +333,28 @@ function OrthoSymbologyControls() {
                           ? 1
                           : 0.1
                       }
+                      disabled={values.mode !== 'userDefined'}
                       required={false}
                     />
                   </div>
-                  <div className="grid grid-rows-3 gap-1.5 border border-blue-500 rounded p-1.5">
+                  <div className="grid grid-rows-3 gap-1.5 border-2 border-dotted border-blue-500 rounded-md p-1.5">
                     <SelectField name="blue.idx" label="Blue" options={bandOptions} />
                     <NumberField
-                      name="blue.min"
+                      name={values.mode === 'userDefined' ? 'blue.userMin' : 'blue.min'}
                       label="Min"
                       min={symbology.blue.min}
                       max={symbology.blue.max}
                       step={0.1}
+                      disabled={values.mode !== 'userDefined'}
                       required={false}
                     />
                     <NumberField
-                      name="blue.max"
+                      name={values.mode === 'userDefined' ? 'blue.userMax' : 'blue.max'}
                       label="Max"
                       min={symbology.blue.min}
                       max={symbology.blue.max}
                       step={0.1}
+                      disabled={values.mode !== 'userDefined'}
                       required={false}
                     />
                   </div>

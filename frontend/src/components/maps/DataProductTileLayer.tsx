@@ -102,7 +102,49 @@ export function getDataProductTileLayer(
     const blue = symbology ? symbology.blue : savedStyle.blue;
 
     const bidxs = [red.idx, green.idx, blue.idx];
-    const scale = [red.min, red.max, green.min, green.max, blue.min, blue.max];
+    const raster_props = dataProduct.stac_properties.raster;
+
+    let scale = [red.min, red.max, green.min, green.max, blue.min, blue.max];
+
+    if (
+      (symbology && symbology.mode === 'userDefined') ||
+      (!symbology && savedStyle.mode === 'userDefined')
+    ) {
+      scale = [
+        red.userMin,
+        red.userMax,
+        green.userMin,
+        green.userMax,
+        blue.userMin,
+        blue.userMax,
+      ];
+    }
+
+    if (
+      (symbology && symbology.mode === 'meanStdDev') ||
+      (!symbology && savedStyle.mode === 'meanStdDev')
+    ) {
+      scale = [
+        raster_props[red.idx - 1].stats.mean -
+          raster_props[red.idx - 1].stats.stddev *
+            (symbology ? symbology.meanStdDev : savedStyle.meanStdDev),
+        raster_props[red.idx - 1].stats.mean +
+          raster_props[red.idx - 1].stats.stddev *
+            (symbology ? symbology.meanStdDev : savedStyle.meanStdDev),
+        raster_props[green.idx - 1].stats.mean -
+          raster_props[green.idx - 1].stats.stddev *
+            (symbology ? symbology.meanStdDev : savedStyle.meanStdDev),
+        raster_props[green.idx - 1].stats.mean +
+          raster_props[green.idx - 1].stats.stddev *
+            (symbology ? symbology.meanStdDev : savedStyle.meanStdDev),
+        raster_props[blue.idx - 1].stats.mean -
+          raster_props[blue.idx - 1].stats.stddev *
+            (symbology ? symbology.meanStdDev : savedStyle.meanStdDev),
+        raster_props[blue.idx - 1].stats.mean +
+          raster_props[blue.idx - 1].stats.stddev *
+            (symbology ? symbology.meanStdDev : savedStyle.meanStdDev),
+      ];
+    }
 
     return (
       <TileLayer
