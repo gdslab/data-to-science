@@ -83,7 +83,7 @@ export default function CompareTool({ flights }: { flights: Flight[] }) {
   const [flight2, setFlight2] = useState(flights[0].id);
   const [dataProduct1, setDataProduct1] = useState(getDataProductByFlight(flight1));
   const [dataProduct2, setDataProduct2] = useState(getDataProductByFlight(flight2));
-  console.log(flights);
+
   useEffect(() => {
     // adds side by side comparison control to map
     if (sideBySideControl) {
@@ -171,5 +171,18 @@ export default function CompareTool({ flights }: { flights: Flight[] }) {
         setDataProduct={setDataProduct2}
       />
     </>
+  );
+}
+
+export function CompareToolAlert() {
+  return (
+    <div className="leaflet-top leaflet-left">
+      <div className="leaflet-control leaflet-bar mb-4">
+        <div className="p-4 bg-slate-200 shadow-md">
+          <h1>No data products to compare</h1>
+          <p>Upload DSM or ortho datasets to flights to use this tool.</p>
+        </div>
+      </div>
+    </div>
   );
 }
