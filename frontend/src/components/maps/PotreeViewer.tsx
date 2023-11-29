@@ -43,7 +43,7 @@ export default function PotreeViewer({ eptPath }: { eptPath: string }) {
         viewer.loadSettingsFromURL();
         viewer.useHQ = true;
 
-        viewer.setDescription('Loading Entwine-generated EPT format');
+        // viewer.setDescription('Loading Entwine-generated EPT format');
 
         viewer.loadGUI(() => {
           viewer.setLanguage('en');
