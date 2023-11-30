@@ -36,8 +36,14 @@ export default function CompareToolSelector({
     return dp;
   };
 
+  const findDataProductType = (dataProductID: string, flightID: string): string => {
+    const f = flights.filter(({ id }) => id === flightID)[0];
+    const dp = f.data_products.filter(({ id }) => id === dataProductID);
+    if (dp.length > 0) return dp[0].data_type;
+  };
+
   const [dataTypeSelection, setDataTypeSelection] = useState(
-    filterDataProductsByFlight('ortho', flight).length > 0 ? 'ortho' : 'dsm'
+    findDataProductType(dataProduct, flight)
   );
 
   return (
