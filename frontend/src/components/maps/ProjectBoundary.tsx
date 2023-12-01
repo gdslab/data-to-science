@@ -14,7 +14,7 @@ export default function ProjectBoundary({ project }: { project: Project }) {
   return (
     <GeoJSON
       ref={boundaryRef}
-      style={{ fillOpacity: 0, color: '#23CCFF' }}
+      style={{ fillOpacity: 0, color: '#ffffff', weight: 2 }}
       data={project.field}
     />
   );

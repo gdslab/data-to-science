@@ -31,7 +31,7 @@ export default function MapLayout() {
       <div className="flex flex-row">
         <div
           className={classNames(
-            hidePane ? 'w-[48px] ease-out duration-200' : 'w-[500px]',
+            hidePane ? 'w-[48px] ease-out duration-200' : 'w-[450px]',
             'z-10 flex-none h-full bg-slate-100 text-slate-200'
           )}
         >

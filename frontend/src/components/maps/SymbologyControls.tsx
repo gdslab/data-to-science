@@ -172,7 +172,7 @@ function DSMSymbologyControls() {
               ) : null}
             </fieldset>
             <div className="mt-4 flex items-center justify-between">
-              <div className="w-48">
+              <div className="w-28">
                 <OutlineButton
                   type="button"
                   size="sm"
@@ -189,9 +189,9 @@ function DSMSymbologyControls() {
                   Save
                 </OutlineButton>
               </div>
-              <div className="w-48">
+              <div className="w-28">
                 <Button type="submit" size="sm">
-                  Apply Symbology
+                  Apply
                 </Button>
               </div>
             </div>
@@ -362,7 +362,7 @@ function OrthoSymbologyControls() {
               </div>
             </fieldset>
             <div className="mt-4 flex items-center justify-between">
-              <div className="w-48">
+              <div className="w-28">
                 <OutlineButton
                   type="button"
                   size="sm"
@@ -379,9 +379,9 @@ function OrthoSymbologyControls() {
                   Save
                 </OutlineButton>
               </div>
-              <div className="w-48">
+              <div className="w-28">
                 <Button type="submit" size="sm">
-                  Apply Symbology
+                  Apply
                 </Button>
               </div>
             </div>

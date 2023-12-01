@@ -37,8 +37,8 @@ function LayerCard({
   return (
     <div
       className={classNames(
-        active ? 'border-accent1' : 'border-slate-200',
-        hover && !active ? 'cursor-pointer hover:border-2 hover:border-accent1' : '',
+        active ? 'border-slate-400' : 'border-slate-200',
+        hover && !active ? 'cursor-pointer hover:border-2 hover:shadow-md' : '',
         'p-2 rounded-sm shadow-sm bg-white border-solid border-2'
       )}
     >
@@ -101,7 +101,7 @@ export default function LayerPane({
         <div className="flex p-2.5 items-center justify-between text-black">
           <button type="button">
             <Bars3Icon
-              className="h-6 w-6 cursor-pointer"
+              className="h-6 w-6 cursor-pointers"
               onClick={() => toggleHidePane(!hidePane)}
             />
           </button>
