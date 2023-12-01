@@ -42,7 +42,7 @@ export default function CompareToolSelector({
     if (dp.length > 0) {
       return dp[0].data_type;
     } else {
-      throw new Error('Unable to find data product');
+      return '';
     }
   };
 
@@ -54,32 +54,7 @@ export default function CompareToolSelector({
     <div className={POSITION_CLASSES[position]}>
       <div className="leaflet-control leaflet-bar mb-4 w-64">
         <div className="grid grid-rows-3 gap-2 p-4 bg-zinc-200 shadow-md">
-          <select
-            className="h-10 p-1.5 font-semibold text-zinc-600 text-center border-2 border-zinc-300 rounded-md bg-white"
-            aria-label="Select flight date"
-            name={`flightCompare-${side}`}
-            value={flight}
-            onChange={(e) => {
-              setFlight(e.target.value);
-              const filteredDataProducts = filterDataProductsByFlight(
-                dataTypeSelection,
-                e.target.value
-              );
-              if (filteredDataProducts.length > 0) {
-                setDataProduct(filteredDataProducts[0].id);
-              } else {
-                setDataProduct('');
-              }
-            }}
-          >
-            {flights.map((fOpt) => (
-              <option key={`${fOpt.id}-side`} value={fOpt.id}>
-                {formatDate(fOpt.acquisition_date)}
-              </option>
-            ))}
-          </select>
-
-          <div className="flex items-center justify-between font-semibold text-zinc-600">
+          <div className="flex items-center justify-around font-semibold text-zinc-600">
             <label className="mr-4">Data Type</label>
             <div>
               <input
@@ -148,6 +123,31 @@ export default function CompareToolSelector({
             ) : (
               <option value="">Not available</option>
             )}
+          </select>
+
+          <select
+            className="h-10 p-1.5 font-semibold text-zinc-600 text-center border-2 border-zinc-300 rounded-md bg-white"
+            aria-label="Select flight date"
+            name={`flightCompare-${side}`}
+            value={flight}
+            onChange={(e) => {
+              setFlight(e.target.value);
+              const filteredDataProducts = filterDataProductsByFlight(
+                dataTypeSelection,
+                e.target.value
+              );
+              if (filteredDataProducts.length > 0) {
+                setDataProduct(filteredDataProducts[0].id);
+              } else {
+                setDataProduct('');
+              }
+            }}
+          >
+            {flights.map((fOpt) => (
+              <option key={`${fOpt.id}-side`} value={fOpt.id}>
+                {formatDate(fOpt.acquisition_date)}
+              </option>
+            ))}
           </select>
         </div>
       </div>
