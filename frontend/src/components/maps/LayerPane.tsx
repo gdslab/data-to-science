@@ -20,9 +20,55 @@ import SymbologyControls from './SymbologyControls';
 
 import UASIcon from '../../assets/uas-icon.svg';
 import { Band } from '../pages/projects/ProjectDetail';
+import { sorter } from '../utils';
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
+}
+
+function MapToolbar() {
+  const { activeMapTool, activeMapToolDispatch } = useMapContext();
+  return (
+    <fieldset className="border border-solid border-slate-300 p-1.5">
+      <legend>Map Tools</legend>
+      <div className="flex items-center justify-start gap-1.5">
+        <div
+          className={classNames(
+            activeMapTool === 'map' ? 'bg-accent2' : '',
+            'h-8 w-8 cursor-pointer shadow-sm hover:shadow-xl rounded border-2 border-solid border-slate-500 p-1.5'
+          )}
+          onClick={() => activeMapToolDispatch({ type: 'set', payload: 'map' })}
+        >
+          <MapIcon className="h-4 w-4" />
+          <span className="sr-only">Map Tool</span>
+        </div>
+        <div
+          className={classNames(
+            activeMapTool === 'compare' ? 'bg-accent2' : '',
+            'h-8 w-8 cursor-pointer shadow-sm hover:shadow-xl rounded border-2 border-solid border-slate-500 p-1.5'
+          )}
+          onClick={() => {
+            activeMapToolDispatch({ type: 'set', payload: 'compare' });
+          }}
+        >
+          <ScaleIcon className="h-4 w-4" />
+          <span className="sr-only">Compare Tool</span>
+        </div>
+        <div
+          className={classNames(
+            activeMapTool === 'timeline' ? 'bg-accent2' : '',
+            'h-8 w-8 cursor-not-allowed shadow-sm hover:shadow-xl rounded border-2 border-solid border-slate-500 p-1.5'
+          )}
+          // onClick={() =>
+          //   activeMapToolDispatch({ type: 'set', payload: 'timeline' })
+          // }
+        >
+          <ClockIcon className="h-4 w-4" />
+          <span className="sr-only">Timeline Tool</span>
+        </div>
+      </div>
+    </fieldset>
+  );
 }
 
 function LayerCard({
@@ -80,7 +126,6 @@ export default function LayerPane({
   const {
     activeDataProduct,
     activeDataProductDispatch,
-    activeMapTool,
     activeMapToolDispatch,
     activeProject,
     activeProjectDispatch,
@@ -115,7 +160,10 @@ export default function LayerPane({
           {activeProject ? (
             <button
               type="button"
-              onClick={() => activeProjectDispatch({ type: 'clear', payload: null })}
+              onClick={() => {
+                activeMapToolDispatch({ type: 'set', payload: 'map' });
+                activeProjectDispatch({ type: 'clear', payload: null });
+              }}
             >
               <ArrowUturnLeftIcon className="h-6 w-6 cursor-pointer" />
             </button>
@@ -131,45 +179,7 @@ export default function LayerPane({
           <article className="h-full border p-4">
             <h1>{activeProject.title}</h1>
             <HintText>{activeProject.description}</HintText>
-            <fieldset className="border border-solid border-slate-300 p-1.5">
-              <legend>Map Tools</legend>
-              <div className="flex items-center justify-start gap-1.5">
-                <div
-                  className={classNames(
-                    activeMapTool === 'map' ? 'bg-accent2' : '',
-                    'h-8 w-8 cursor-pointer shadow-sm hover:shadow-xl rounded border-2 border-solid border-slate-500 p-1.5'
-                  )}
-                  onClick={() => activeMapToolDispatch({ type: 'set', payload: 'map' })}
-                >
-                  <MapIcon className="h-4 w-4" />
-                  <span className="sr-only">Map Tool</span>
-                </div>
-                <div
-                  className={classNames(
-                    activeMapTool === 'compare' ? 'bg-accent2' : '',
-                    'h-8 w-8 cursor-pointer shadow-sm hover:shadow-xl rounded border-2 border-solid border-slate-500 p-1.5'
-                  )}
-                  onClick={() =>
-                    activeMapToolDispatch({ type: 'set', payload: 'compare' })
-                  }
-                >
-                  <ScaleIcon className="h-4 w-4" />
-                  <span className="sr-only">Compare Tool</span>
-                </div>
-                <div
-                  className={classNames(
-                    activeMapTool === 'timeline' ? 'bg-accent2' : '',
-                    'h-8 w-8 cursor-not-allowed shadow-sm hover:shadow-xl rounded border-2 border-solid border-slate-500 p-1.5'
-                  )}
-                  // onClick={() =>
-                  //   activeMapToolDispatch({ type: 'set', payload: 'timeline' })
-                  // }
-                >
-                  <ClockIcon className="h-4 w-4" />
-                  <span className="sr-only">Timeline Tool</span>
-                </div>
-              </div>
-            </fieldset>
+            <MapToolbar />
             <ul className="mt-4 space-y-2 h-[calc(100vh_-_244px)] overflow-y-auto">
               {flights
                 .sort((a, b) =>
@@ -301,49 +311,51 @@ export default function LayerPane({
             <h1>Projects</h1>
             {projects.length > 0 ? (
               <ul className="mt-4 space-y-2 h-[calc(100vh_-_244px)] overflow-y-auto">
-                {projects.map((project) => (
-                  <li key={project.id}>
-                    <LayerCard hover={true}>
-                      <div
-                        onClick={() => {
-                          activeDataProductDispatch({ type: 'clear', payload: null });
-                          activeProjectDispatch({ type: 'set', payload: project });
-                        }}
-                        onMouseOver={() => {
-                          projectHoverStateDispatch({
-                            type: 'set',
-                            payload: project.id,
-                          });
-                        }}
-                        onMouseLeave={() => {
-                          projectHoverStateDispatch({ type: 'clear', payload: null });
-                        }}
-                      >
-                        <div className="grid grid-cols-4">
-                          <div className="flex items-center justify-center">
-                            <MapPinIcon className="h-8 w-8" />
-                          </div>
-                          <div className="col-span-2 flex flex-col items-start gap-2">
-                            <strong className="font-bold text-slate-700">
-                              {project.title}
-                            </strong>
-                            <div className="text-slate-700 text-sm">
-                              {project.description}
+                {projects
+                  .sort((a, b) => sorter(a.title, b.title))
+                  .map((project) => (
+                    <li key={project.id}>
+                      <LayerCard hover={true}>
+                        <div
+                          onClick={() => {
+                            activeDataProductDispatch({ type: 'clear', payload: null });
+                            activeProjectDispatch({ type: 'set', payload: project });
+                          }}
+                          onMouseOver={() => {
+                            projectHoverStateDispatch({
+                              type: 'set',
+                              payload: project.id,
+                            });
+                          }}
+                          onMouseLeave={() => {
+                            projectHoverStateDispatch({ type: 'clear', payload: null });
+                          }}
+                        >
+                          <div className="grid grid-cols-4">
+                            <div className="flex items-center justify-center">
+                              <MapPinIcon className="h-8 w-8" />
+                            </div>
+                            <div className="col-span-2 flex flex-col items-start gap-2">
+                              <strong className="font-bold text-slate-700">
+                                {project.title}
+                              </strong>
+                              <div className="text-slate-700 text-sm">
+                                {project.description}
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-center">
+                              <span className="inline-flex items-center justify-center rounded-full text-sky-700 bg-sky-100 px-2.5 py-0.5">
+                                <PaperAirplaneIcon className="h-4 w-4 -ms-1 me-1.5" />
+                                <p className="whitespace-nowrap text-sm">
+                                  {project.flight_count} Flights
+                                </p>
+                              </span>
                             </div>
                           </div>
-                          <div className="flex items-center justify-center">
-                            <span className="inline-flex items-center justify-center rounded-full text-sky-700 bg-sky-100 px-2.5 py-0.5">
-                              <PaperAirplaneIcon className="h-4 w-4 -ms-1 me-1.5" />
-                              <p className="whitespace-nowrap text-sm">
-                                {project.flight_count} Flights
-                              </p>
-                            </span>
-                          </div>
                         </div>
-                      </div>
-                    </LayerCard>
-                  </li>
-                ))}
+                      </LayerCard>
+                    </li>
+                  ))}
               </ul>
             ) : (
               <div>

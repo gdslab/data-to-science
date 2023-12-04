@@ -12,6 +12,7 @@ interface SideBySideControl extends L.Control {
   _leftLayers: L.TileLayer[];
   _rightLayer: L.TileLayer;
   _rightLayers: L.TileLayer[];
+  _updateClip: () => void;
 }
 
 export const getFlightsWithGTIFF = (flights: Flight[]): Flight[] => {
@@ -63,38 +64,43 @@ const getCOGTileLayers = (map: L.Map): L.TileLayer[] => {
   return layers;
 };
 
-export default function CompareTool({ flights }: { flights: Flight[] }) {
-  const map = useMap();
-  const [sideBySideControl, setSideBySideControl] = useState<SideBySideControl | null>(
-    null
-  );
-
-  // find ID of a dsm or ortho data product from a specific flight
-  const getDataProductByFlight = (flightID: string): string => {
-    const dataProducts = flights.filter(({ id }) => id === flightID)[0].data_products;
-    if (dataProducts.length > 0) {
-      // filter out any point cloud data products
-      const dataProductsGTIFF = dataProducts.filter(
-        ({ data_type }) => data_type !== 'point_cloud'
-      );
-      if (dataProductsGTIFF.length > 0) {
-        // give preference to ortho over dsm
-        const ortho = dataProductsGTIFF.filter(
-          ({ data_type }) => data_type === 'ortho'
-        );
-        return ortho.length > 0 ? ortho[0].id : dataProductsGTIFF[0].id;
-      } else {
-        return '';
-      }
+// find ID of a dsm or ortho data product from a specific flight
+const getDataProductByFlight = (flightID: string, flights: Flight[]): string => {
+  const dataProducts = flights.filter(({ id }) => id === flightID)[0].data_products;
+  if (dataProducts.length > 0) {
+    // filter out any point cloud data products
+    const dataProductsGTIFF = dataProducts.filter(
+      ({ data_type }) => data_type !== 'point_cloud'
+    );
+    if (dataProductsGTIFF.length > 0) {
+      // give preference to ortho over dsm
+      const ortho = dataProductsGTIFF.filter(({ data_type }) => data_type === 'ortho');
+      return ortho.length > 0 ? ortho[0].id : dataProductsGTIFF[0].id;
     } else {
       return '';
     }
-  };
+  } else {
+    return '';
+  }
+};
 
+export default function CompareTool({ flights }: { flights: Flight[] }) {
+  const map = useMap();
+  const [dividerPosition, setDividerPosition] = useState<{
+    divider: number;
+    range: number;
+  } | null>(null);
+  const [sideBySideControl, setSideBySideControl] = useState<SideBySideControl | null>(
+    null
+  );
   const [flight1, setFlight1] = useState(flights[0].id);
   const [flight2, setFlight2] = useState(flights[0].id);
-  const [dataProduct1, setDataProduct1] = useState(getDataProductByFlight(flight1));
-  const [dataProduct2, setDataProduct2] = useState(getDataProductByFlight(flight2));
+  const [dataProduct1, setDataProduct1] = useState(
+    getDataProductByFlight(flight1, flights)
+  );
+  const [dataProduct2, setDataProduct2] = useState(
+    getDataProductByFlight(flight2, flights)
+  );
 
   // adds side by side comparison control to map
   useEffect(() => {
@@ -119,9 +125,29 @@ export default function CompareTool({ flights }: { flights: Flight[] }) {
     if (!map.hasLayer(layer2)) layer2.addTo(map);
 
     // @ts-ignore -- add side by side control to map
-    const control: SideBySideControl = L.control.sideBySide(layer1, layer2);
-    setSideBySideControl(control);
-    control.addTo(map);
+    const sbsControl: SideBySideControl = L.control.sideBySide(layer1, layer2);
+    setSideBySideControl(sbsControl);
+    sbsControl.addTo(map);
+
+    if (dividerPosition) {
+      const sbsDividerEl = document.querySelector<HTMLElement>('.leaflet-sbs-divider');
+      const sbsRangeEl = document.querySelector<HTMLInputElement>('.leaflet-sbs-range');
+      if (sbsDividerEl && sbsRangeEl) {
+        sbsDividerEl.style.left = `${dividerPosition.divider.toString()}px`;
+        sbsRangeEl.value = dividerPosition.range.toString();
+        // clips raster to new divider position
+        sbsControl._updateClip();
+      }
+    }
+
+    // @ts-ignore
+    L.DomEvent.on(sbsControl, 'dividermove', ({ x }: { x: number }) => {
+      const sbsDividerEl = document.querySelector<HTMLElement>('.leaflet-sbs-divider');
+      const sbsRangeEl = document.querySelector<HTMLInputElement>('.leaflet-sbs-range');
+      if (sbsDividerEl && sbsRangeEl) {
+        setDividerPosition({ divider: x, range: parseFloat(sbsRangeEl.value) });
+      }
+    });
   }, [dataProduct1, dataProduct2]);
 
   // prevent duplicate layers and sbs bars
@@ -146,11 +172,6 @@ export default function CompareTool({ flights }: { flights: Flight[] }) {
           }
         });
       }
-    }
-
-    // remove extra leaflet-sbs control
-    if (document.getElementsByClassName('leaflet-sbs').length > 1) {
-      document.getElementsByClassName('leaflet-sbs')[0].remove();
     }
   });
 

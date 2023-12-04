@@ -85,9 +85,6 @@ function activeMapToolReducer(state: MapTool, action: ActiveMapToolAction) {
     case 'set': {
       return action.payload;
     }
-    case 'reset': {
-      return 'map';
-    }
     default: {
       return state;
     }
