@@ -20,6 +20,7 @@ import SymbologyControls from './SymbologyControls';
 
 import UASIcon from '../../assets/uas-icon.svg';
 import { Band } from '../pages/projects/ProjectDetail';
+import { getDefaultStyle } from './utils';
 import { sorter } from '../utils';
 
 function classNames(...classes: string[]) {
@@ -253,10 +254,20 @@ export default function LayerPane({
                                         type: 'set',
                                         payload: dataProduct,
                                       });
-                                      symbologySettingsDispatch({
-                                        type: 'update',
-                                        payload: dataProduct.user_style,
-                                      });
+                                      if (dataProduct.user_style) {
+                                        symbologySettingsDispatch({
+                                          type: 'update',
+                                          payload: dataProduct.user_style,
+                                        });
+                                      } else if (
+                                        dataProduct.data_type === 'dsm' ||
+                                        dataProduct.data_type === 'ortho'
+                                      ) {
+                                        symbologySettingsDispatch({
+                                          type: 'update',
+                                          payload: getDefaultStyle(dataProduct),
+                                        });
+                                      }
                                     }
                                   }}
                                 >
