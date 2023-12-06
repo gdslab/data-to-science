@@ -31,7 +31,8 @@ const saveSymbology = async (
   dataProductDispatch
 ) => {
   try {
-    const response = await axios.put(
+    const axiosRequest = dataProduct.user_style ? axios.put : axios.post;
+    const response = await axiosRequest(
       `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/flights/${
         dataProduct.flight_id
       }/data_products/${dataProduct.id}/style`,
