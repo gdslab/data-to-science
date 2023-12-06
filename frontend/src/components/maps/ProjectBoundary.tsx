@@ -8,7 +8,7 @@ export default function ProjectBoundary({ project }: { project: Project }) {
   const boundaryRef = useRef<L.GeoJSON>(null);
 
   useEffect(() => {
-    if (boundaryRef.current) map.flyToBounds(boundaryRef.current.getBounds());
+    if (boundaryRef.current) map.fitBounds(boundaryRef.current.getBounds());
   }, [boundaryRef.current]);
 
   return (
