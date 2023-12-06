@@ -9,6 +9,7 @@ from app import crud
 from app.crud.base import CRUDBase
 from app.crud.crud_data_product import set_url_attr, set_user_style_attr
 from app.models.flight import Flight
+from app.models.job import Job
 from app.models.project import Project
 from app.models.user_style import UserStyle
 from app.models.utils.user import utcnow
@@ -47,6 +48,7 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
         project_id: UUID,
         upload_dir: str,
         user_id: UUID,
+        include_all: bool = False,
         skip: int = 0,
         limit: int = 100,
     ) -> Sequence[Flight]:
@@ -61,6 +63,18 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
         with db as session:
             flights_with_data = session.execute(statement).scalars().unique().all()
             for flight in flights_with_data:
+                # remove data product if its job status is FAILED or its state is not COMPLETED
+                if not include_all:
+                    keep_data_products = []
+                    for data_product in flight.data_products:
+                        job_query = select(Job).where(
+                            Job.data_product_id == data_product.id
+                        )
+                        job = session.execute(job_query).scalar_one_or_none()
+                        if job and job.state == "COMPLETED" and job.status == "SUCCESS":
+                            keep_data_products.append(data_product)
+                    flight.data_products = keep_data_products
+
                 for data_product in flight.data_products:
                     set_url_attr(data_product, upload_dir)
                     # check for saved user style

@@ -6,7 +6,9 @@ from app import crud
 from app.core.config import settings
 from app.models.flight import PLATFORMS, SENSORS
 from app.schemas.flight import FlightUpdate
+from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.flight import create_flight
+from app.tests.utils.job import create_job
 from app.tests.utils.project import create_project
 from app.tests.utils.user import create_user
 
@@ -74,6 +76,55 @@ def test_get_flights(db: Session) -> None:
     assert len(flights) == 3
     for flight in flights:
         assert flight.project_id == project.id
+
+
+def test_get_flights_excluding_processing_or_failed_data_products(db: Session) -> None:
+    user = create_user(db)
+    project = create_project(db, owner_id=user.id)
+    flight = create_flight(db, project_id=project.id)
+    data_product1 = SampleDataProduct(
+        db, data_type="ortho", project=project, flight=flight, user=user, skip_job=True
+    )
+    create_job(
+        db,
+        "test-job-1",
+        state="COMPLETED",
+        status="FAILED",
+        data_product_id=data_product1.obj.id,
+    )
+    data_product2 = SampleDataProduct(
+        db, data_type="dsm", project=project, flight=flight, user=user, skip_job=True
+    )
+    create_job(
+        db,
+        "test-job-2",
+        state="COMPLETED",
+        status="SUCCESS",
+        data_product_id=data_product2.obj.id,
+    )
+    data_product3 = SampleDataProduct(
+        db, data_type="ortho", project=project, flight=flight, user=user, skip_job=True
+    )
+    create_job(
+        db,
+        "test-job-3",
+        state="PENDING",
+        status="SUCCESS",
+        data_product_id=data_product3.obj.id,
+    )
+    upload_dir = settings.TEST_UPLOAD_DIR
+    flights = crud.flight.get_multi_by_project(
+        db,
+        project_id=project.id,
+        upload_dir=upload_dir,
+        user_id=user.id,
+        include_all=False,
+    )
+    assert type(flights) is list
+    assert len(flights) == 1
+    assert len(flights[0].data_products) == 1
+    print(flights[0].data_products[0].data_type)
+    assert flights[0].data_products[0].data_type == "dsm"
 
 
 def test_update_flight(db: Session) -> None:

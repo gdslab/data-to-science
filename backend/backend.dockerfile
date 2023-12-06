@@ -2,8 +2,8 @@
 FROM python:3.11-slim as python-base
 
 ENV POETRY_PATH=/opt/poetry \
-    VENV_PATH=/opt/.venv \
-    PATH="$POETRY_PATH/bin:$VENV_PATH/bin:$PATH"
+  VENV_PATH=/opt/.venv \
+  PATH="$POETRY_PATH/bin:$VENV_PATH/bin:$PATH"
 
 # builder stage
 FROM python-base as builder
@@ -13,9 +13,9 @@ RUN apt-get update && apt-get install -y curl libpq-dev gcc
 
 # install poetry
 RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=$POETRY_PATH python && \
-    cd /usr/local/bin && \
-    ln -s $POETRY_PATH/bin/poetry && \
-    poetry config virtualenvs.create false
+  cd /usr/local/bin && \
+  ln -s $POETRY_PATH/bin/poetry && \
+  poetry config virtualenvs.create false
 
 # install poetry environment into fresh python venv
 RUN python -m venv $VENV_PATH
@@ -35,8 +35,8 @@ WORKDIR /app/
 
 # do not buffer log messages and do not write byte code .pyc
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONPATH=/app \
-    PYTHONUNBUFFERED=1
+  PYTHONPATH=/app \
+  PYTHONUNBUFFERED=1
 
 # install libpg-dev, pdal, and entwine dependencies and remove apt package info to reduce image size
 RUN apt-get update && apt-get install -y bzip2 build-essential cmake ninja-build libpq-dev gdal-bin libgdal-dev wget && rm -rf /var/lib/apt/lists/*
@@ -53,7 +53,7 @@ RUN cd /app/tools && tar -xf 3.0.0.tar.gz && cd entwine-3.0.0 \
   && mkdir build && cd build && cmake -G Ninja .. && ninja && ninja install
 
 # create unprivileged d2s user
-RUN useradd -u 1000 d2s
+RUN useradd d2s
 
 # copy over virtual environment from builder stage
 COPY --from=builder $VENV_PATH $VENV_PATH

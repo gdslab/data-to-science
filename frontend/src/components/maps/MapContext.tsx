@@ -216,7 +216,9 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
 
   async function getFlights(projectId) {
     try {
-      const response = await axios.get(`/api/v1/projects/${projectId}/flights`);
+      const response = await axios.get(
+        `/api/v1/projects/${projectId}/flights?include_all=false`
+      );
       if (response) {
         flightsDispatch({ type: 'set', payload: response.data });
       }

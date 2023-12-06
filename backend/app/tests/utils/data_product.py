@@ -24,6 +24,7 @@ class SampleDataProduct:
         create_style: bool = False,
         project: models.Project | None = None,
         user: models.User | None = None,
+        skip_job: bool = False,
     ):
         # Set up user, project, and flight
         self.data_type = data_type
@@ -57,7 +58,8 @@ class SampleDataProduct:
             )
 
         # Create job for the data product
-        self.job = create_job(db, data_product_id=self.obj.id)
+        if not skip_job:
+            self.job = create_job(db, data_product_id=self.obj.id)
 
     def copy_test_data_product_to_test_directory(self) -> tuple[str, str]:
         src_filepath = os.path.join(os.sep, "app", "app", "tests", "data", "test.tif")

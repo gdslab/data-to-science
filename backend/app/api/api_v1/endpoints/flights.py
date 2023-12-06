@@ -47,6 +47,7 @@ def read_flight(
 def read_flights(
     request: Request,
     project_id: UUID,
+    include_all: bool = True,
     current_user: models.User = Depends(deps.get_current_approved_user),
     project: models.Project = Depends(deps.can_read_write_project),
     db: Session = Depends(deps.get_db),
@@ -62,7 +63,11 @@ def read_flights(
     else:
         upload_dir = settings.UPLOAD_DIR
     flights = crud.flight.get_multi_by_project(
-        db, project_id=project.id, upload_dir=upload_dir, user_id=current_user.id
+        db,
+        project_id=project.id,
+        upload_dir=upload_dir,
+        user_id=current_user.id,
+        include_all=include_all,
     )
     return flights
 
