@@ -64,7 +64,7 @@ class SampleDataProduct:
     def copy_test_data_product_to_test_directory(self) -> tuple[str, str]:
         src_filepath = os.path.join(os.sep, "app", "app", "tests", "data", "test.tif")
         dest_filepath = os.path.join(
-            f"{settings.TEST_UPLOAD_DIR}/projects/{self.project.id}"
+            f"{settings.TEST_STATIC_DIR}/projects/{self.project.id}"
             f"/flights/{self.flight.id}/myfile.tif"
         )
         if not os.path.exists(os.path.dirname(dest_filepath)):

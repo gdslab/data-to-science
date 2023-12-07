@@ -143,9 +143,9 @@ def upload_user_profile(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     if request.client and request.client.host == "testclient":
-        upload_dir = f"{settings.TEST_UPLOAD_DIR}/users/{current_user.id}"
+        upload_dir = f"{settings.TEST_STATIC_DIR}/users/{current_user.id}"
     else:
-        upload_dir = f"{settings.UPLOAD_DIR}/users/{current_user.id}"
+        upload_dir = f"{settings.STATIC_DIR}/users/{current_user.id}"
     if os.path.exists(upload_dir):
         shutil.rmtree(upload_dir)
     os.makedirs(upload_dir)
@@ -172,8 +172,8 @@ def delete_user_profile(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     if request.client and request.client.host == "testclient":
-        upload_dir = f"{settings.TEST_UPLOAD_DIR}/users/{current_user.id}"
+        upload_dir = f"{settings.TEST_STATIC_DIR}/users/{current_user.id}"
     else:
-        upload_dir = f"{settings.UPLOAD_DIR}/users/{current_user.id}"
+        upload_dir = f"{settings.STATIC_DIR}/users/{current_user.id}"
     if os.path.exists(upload_dir):
         shutil.rmtree(upload_dir)

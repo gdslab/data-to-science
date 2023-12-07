@@ -113,7 +113,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
 
 
 def find_profile_img(user_id: str) -> str | None:
-    user_static_dir = os.path.join(settings.UPLOAD_DIR, "users", user_id)
+    user_static_dir = os.path.join(settings.STATIC_DIR, "users", user_id)
     profile_img = glob.glob(os.path.join(user_static_dir, "*.png")) + glob.glob(
         os.path.join(user_static_dir, "*.jpg")
     )
@@ -125,8 +125,9 @@ def find_profile_img(user_id: str) -> str | None:
 
 def set_url_attr(user: User) -> None:
     profile_img = find_profile_img(str(user.id))
+    static_url = settings.DOMAIN + settings.STATIC_DIR
     if profile_img:
-        profile_url = f"{settings.STATIC_URL}/users/{str(user.id)}/{profile_img}"
+        profile_url = f"{static_url}/users/{str(user.id)}/{profile_img}"
         setattr(user, "profile_url", profile_url)
 
 

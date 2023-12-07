@@ -24,7 +24,7 @@ def test_read_data_product(db: Session) -> None:
     stored_data_product = crud.data_product.get_single_by_id(
         db,
         data_product_id=data_product.obj.id,
-        upload_dir=settings.TEST_UPLOAD_DIR,
+        upload_dir=settings.TEST_STATIC_DIR,
         user_id=data_product.user.id,
     )
     assert stored_data_product
@@ -46,7 +46,7 @@ def test_read_data_products(db: Session) -> None:
     SampleDataProduct(db, flight=flight, user=user)
     SampleDataProduct(db)
     data_products = crud.data_product.get_multi_by_flight(
-        db, flight_id=flight.id, upload_dir=settings.TEST_UPLOAD_DIR, user_id=user.id
+        db, flight_id=flight.id, upload_dir=settings.TEST_STATIC_DIR, user_id=user.id
     )
     assert type(data_products) is list
     assert len(data_products) == 3

@@ -7,9 +7,9 @@ from app.utils.MapMaker import MapMaker
 def create_project_field_preview(request, project_id, coordinates):
     # Set output path for preview map
     if request.client and request.client.host == "testclient":
-        project_map_path = f"{settings.TEST_UPLOAD_DIR}/projects/{project_id}"
+        project_map_path = f"{settings.TEST_STATIC_DIR}/projects/{project_id}"
     else:
-        project_map_path = f"{settings.UPLOAD_DIR}/projects/{project_id}"
+        project_map_path = f"{settings.STATIC_DIR}/projects/{project_id}"
     # Create project directory if needed, remove any existing preview maps
     if not os.path.exists(project_map_path):
         os.makedirs(project_map_path)

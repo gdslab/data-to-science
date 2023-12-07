@@ -45,10 +45,10 @@ def upload_data_product(
         )
 
     if request.client and request.client.host == "testclient":
-        upload_dir = f"{settings.TEST_UPLOAD_DIR}/projects/{project.id}/flights/{flight.id}/{dtype}"
+        upload_dir = f"{settings.TEST_STATIC_DIR}/projects/{project.id}/flights/{flight.id}/{dtype}"
     else:
         upload_dir = (
-            f"{settings.UPLOAD_DIR}/projects/{project.id}/flights/{flight.id}/{dtype}"
+            f"{settings.STATIC_DIR}/projects/{project.id}/flights/{flight.id}/{dtype}"
         )
 
     if not os.path.exists(upload_dir):
@@ -125,9 +125,9 @@ def read_data_product(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
     if request.client and request.client.host == "testclient":
-        upload_dir = settings.TEST_UPLOAD_DIR
+        upload_dir = settings.TEST_STATIC_DIR
     else:
-        upload_dir = settings.UPLOAD_DIR
+        upload_dir = settings.STATIC_DIR
     data_product = crud.data_product.get_single_by_id(
         db,
         data_product_id=data_product_id,
@@ -151,9 +151,9 @@ def read_all_data_product(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
     if request.client and request.client.host == "testclient":
-        upload_dir = settings.TEST_UPLOAD_DIR
+        upload_dir = settings.TEST_STATIC_DIR
     else:
-        upload_dir = settings.UPLOAD_DIR
+        upload_dir = settings.STATIC_DIR
     all_data_product = crud.data_product.get_multi_by_flight(
         db, flight_id=flight.id, upload_dir=upload_dir, user_id=current_user.id
     )

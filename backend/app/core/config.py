@@ -19,10 +19,12 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
 
     PROJECT_NAME: str = ""
-    UPLOAD_DIR: str = "/static"
-    TEST_UPLOAD_DIR: str = "/tmp/testing"
+    # UPLOAD_DIR: str = "/static"
+    # TEST_UPLOAD_DIR: str = "/tmp/testing"
+    TEST_STATIC_DIR: str = "/tmp/static"
     DOMAIN: str = ""
-    STATIC_URL: str = ""
+    # STATIC_URL: str = ""
+    STATIC_DIR: str = "/static"
     POTREE_DIR: str = "/app/potree"
 
     # Database

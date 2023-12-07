@@ -68,7 +68,7 @@ def test_get_flights(db: Session) -> None:
     create_flight(db, project_id=project.id)
     create_flight(db, project_id=project.id)
     create_flight(db, project_id=other_project.id)
-    upload_dir = settings.TEST_UPLOAD_DIR
+    upload_dir = settings.TEST_STATIC_DIR
     flights = crud.flight.get_multi_by_project(
         db, project_id=project.id, upload_dir=upload_dir, user_id=user.id
     )
@@ -112,7 +112,7 @@ def test_get_flights_excluding_processing_or_failed_data_products(db: Session) -
         status="SUCCESS",
         data_product_id=data_product3.obj.id,
     )
-    upload_dir = settings.TEST_UPLOAD_DIR
+    upload_dir = settings.TEST_STATIC_DIR
     flights = crud.flight.get_multi_by_project(
         db,
         project_id=project.id,
@@ -154,7 +154,7 @@ def test_get_flights_ignores_deactivated_project(db: Session) -> None:
     create_flight(db, project_id=project.id)
     create_flight(db, project_id=project.id)
     crud.project.deactivate(db, project_id=project.id)
-    upload_dir = settings.TEST_UPLOAD_DIR
+    upload_dir = settings.TEST_STATIC_DIR
     flights = crud.flight.get_multi_by_project(
         db, project_id=project.id, upload_dir=upload_dir, user_id=user.id
     )

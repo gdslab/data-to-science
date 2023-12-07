@@ -59,9 +59,9 @@ def read_flights(
         )
 
     if request.client and request.client.host == "testclient":
-        upload_dir = settings.TEST_UPLOAD_DIR
+        upload_dir = settings.TEST_STATIC_DIR
     else:
-        upload_dir = settings.UPLOAD_DIR
+        upload_dir = settings.STATIC_DIR
     flights = crud.flight.get_multi_by_project(
         db,
         project_id=project.id,

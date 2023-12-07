@@ -53,8 +53,9 @@ class CRUDRawData(CRUDBase[RawData, RawDataCreate, RawDataUpdate]):
 
 
 def set_url_attr(raw_data_obj: RawData, upload_dir: str):
+    static_url = settings.DOMAIN + settings.STATIC_DIR
     relative_path = Path(raw_data_obj.filepath).relative_to(upload_dir)
-    setattr(raw_data_obj, "url", f"{settings.STATIC_URL}/{str(relative_path)}")
+    setattr(raw_data_obj, "url", f"{static_url}/{str(relative_path)}")
 
 
 raw_data = CRUDRawData(RawData)

@@ -28,7 +28,7 @@ def test_create_data_product(
 
         assert response.status_code == 202
 
-    shutil.rmtree(os.path.join(os.sep, "tmp", "testing"))
+    shutil.rmtree(settings.TEST_STATIC_DIR)
 
 
 def test_read_data_product(

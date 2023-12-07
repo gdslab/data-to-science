@@ -101,14 +101,15 @@ def set_status_attr(data_product_obj: DataProduct, status: str | Any):
 
 def set_url_attr(data_product_obj: DataProduct, upload_dir: str):
     # update for point cloud ept.json
+    static_url = settings.DOMAIN + settings.STATIC_DIR
     if data_product_obj.data_type == "point_cloud":
         relative_path = Path(
             os.path.join(data_product_obj.filepath[:-4], "ept.json")
         ).relative_to(upload_dir)
-        setattr(data_product_obj, "url", f"{settings.STATIC_URL}/{str(relative_path)}")
+        setattr(data_product_obj, "url", f"{static_url}/{str(relative_path)}")
     else:
         relative_path = Path(data_product_obj.filepath).relative_to(upload_dir)
-        setattr(data_product_obj, "url", f"{settings.STATIC_URL}/{str(relative_path)}")
+        setattr(data_product_obj, "url", f"{static_url}/{str(relative_path)}")
 
 
 def set_user_style_attr(data_product_obj: DataProduct, user_style: dict):
