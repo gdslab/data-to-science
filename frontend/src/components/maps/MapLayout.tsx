@@ -28,11 +28,11 @@ export default function MapLayout() {
   return (
     <MapContextProvider>
       {/* sidebar */}
-      <div className="flex flex-row">
+      <div className="flex flex-row h-full">
         <div
           className={classNames(
             hidePane ? 'w-[48px] ease-out duration-200' : 'w-[450px]',
-            'z-10 flex-none h-full bg-slate-100 text-slate-200'
+            'shrink-0 bg-slate-100'
           )}
         >
           <LayerPane
@@ -42,7 +42,7 @@ export default function MapLayout() {
           />
         </div>
         {/* page content */}
-        <div className="w-full h-[calc(100vh_-_64px)] bg-slate-700">
+        <div className="w-full">
           <Map projects={projects} />
         </div>
       </div>

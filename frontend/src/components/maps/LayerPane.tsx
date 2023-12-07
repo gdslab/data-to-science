@@ -143,21 +143,19 @@ export default function LayerPane({
 
   if (hidePane) {
     return (
-      <div className="z-1000 flex flex-col text-slate-700">
-        <div className="flex p-2.5 items-center justify-between text-black">
-          <button type="button">
-            <Bars3Icon
-              className="h-6 w-6 cursor-pointers"
-              onClick={() => toggleHidePane(!hidePane)}
-            />
-          </button>
-        </div>
+      <div className="flex p-2.5 items-center justify-between text-slate-700">
+        <button type="button">
+          <Bars3Icon
+            className="h-6 w-6 cursor-pointers"
+            onClick={() => toggleHidePane(!hidePane)}
+          />
+        </button>
       </div>
     );
   } else {
     return (
-      <div className="z-1000 flex flex-col text-slate-700">
-        <div className="flex p-2.5 items-center justify-between text-black">
+      <div className="flex flex-col h-full text-slate-700 overflow-y-hidden">
+        <div className="flex p-2.5 items-center justify-between">
           {activeProject ? (
             <button
               type="button"
@@ -177,11 +175,11 @@ export default function LayerPane({
           />
         </div>
         {activeProject ? (
-          <article className="h-full border p-4">
+          <article className="p-4 overflow-y-auto">
             <h1>{activeProject.title}</h1>
             <HintText>{activeProject.description}</HintText>
             <MapToolbar />
-            <ul className="mt-4 space-y-2 h-[calc(100vh_-_244px)] overflow-y-auto">
+            <ul className="mt-4 space-y-2">
               {flights
                 .sort((a, b) =>
                   new Date(a.acquisition_date) < new Date(b.acquisition_date) ? 1 : -1
@@ -318,10 +316,10 @@ export default function LayerPane({
             </ul>
           </article>
         ) : (
-          <article className="h-full border p-4 overflow-visible">
+          <article className="p-4 p-4 overflow-y-auto">
             <h1>Projects</h1>
             {projects.length > 0 ? (
-              <ul className="mt-4 space-y-2 h-[calc(100vh_-_244px)] overflow-y-auto">
+              <ul className="mt-4 space-y-2">
                 {projects
                   .sort((a, b) => sorter(a.title, b.title))
                   .map((project) => (
