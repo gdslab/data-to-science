@@ -69,25 +69,6 @@ function DtypeRadioInput({
           <input
             type="radio"
             name="dtypeOption"
-            value="other"
-            id="dtypeOther"
-            className="peer hidden"
-            checked={dtype === 'other'}
-            onChange={changeDtype}
-          />
-
-          <label
-            htmlFor="dtypeOther"
-            className="flex cursor-pointer items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white"
-          >
-            <p className="text-sm font-medium">Other</p>
-          </label>
-        </div>
-
-        <div>
-          <input
-            type="radio"
-            name="dtypeOption"
             value="ortho"
             id="dtypeOrtho"
             className="peer hidden"
