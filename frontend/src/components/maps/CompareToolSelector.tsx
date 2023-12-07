@@ -30,101 +30,15 @@ export default function CompareToolSelector({
   setFlight,
   setDataProduct,
 }: Props) {
-  const filterDataProductsByFlight = (dType: string, flightID: string) => {
+  const findDataProductsByFlight = (flightID: string) => {
     const f = flights.filter(({ id }) => id === flightID)[0];
-    const dp = f.data_products.filter(({ data_type }) => data_type === dType);
-    return dp;
+    return f.data_products;
   };
-
-  const findDataProductType = (dataProductID: string, flightID: string): string => {
-    const f = flights.filter(({ id }) => id === flightID)[0];
-    const dp = f.data_products.filter(({ id }) => id === dataProductID);
-    if (dp.length > 0) {
-      return dp[0].data_type;
-    } else {
-      return '';
-    }
-  };
-
-  const [dataTypeSelection, setDataTypeSelection] = useState(
-    findDataProductType(dataProduct, flight)
-  );
 
   return (
     <div className={POSITION_CLASSES[position]}>
       <div className="leaflet-control leaflet-bar mb-4 w-64">
-        <div className="grid grid-rows-3 gap-2 p-4 bg-zinc-200 shadow-md">
-          <div className="flex items-center justify-around font-semibold text-zinc-600">
-            <label className="mr-4">Data Type</label>
-            <div>
-              <input
-                type="radio"
-                value="ortho"
-                checked={dataTypeSelection === 'ortho'}
-                disabled={filterDataProductsByFlight('ortho', flight).length < 1}
-                onChange={(e) => {
-                  setDataTypeSelection(e.target.value);
-                  const filteredDataProducts = filterDataProductsByFlight(
-                    'ortho',
-                    flight
-                  );
-                  if (filteredDataProducts.length > 0) {
-                    setDataProduct(filteredDataProducts[0].id);
-                  } else {
-                    setDataProduct('');
-                  }
-                }}
-              />
-              <label className="ml-1.5" htmlFor="ortho">
-                Ortho
-              </label>
-            </div>
-            <div>
-              <input
-                type="radio"
-                name={`datatype-${side}`}
-                value="dsm"
-                checked={dataTypeSelection === 'dsm'}
-                disabled={filterDataProductsByFlight('dsm', flight).length < 1}
-                onChange={(e) => {
-                  setDataTypeSelection(e.target.value);
-                  const filteredDataProducts = filterDataProductsByFlight(
-                    'dsm',
-                    flight
-                  );
-                  if (filteredDataProducts.length > 0) {
-                    setDataProduct(filteredDataProducts[0].id);
-                  } else {
-                    setDataProduct('');
-                  }
-                }}
-              />
-              <label className="ml-1.5" htmlFor="dsm">
-                DSM
-              </label>
-            </div>
-          </div>
-
-          <select
-            className="h-10 p-1.5 font-semibold text-zinc-600 text-center border-2 border-zinc-300 rounded-md bg-white"
-            aria-label="Select data product"
-            name={`dataProduct-${side}`}
-            value={dataProduct}
-            onChange={(e) => {
-              setDataProduct(e.target.value);
-            }}
-          >
-            {filterDataProductsByFlight(dataTypeSelection, flight).length > 0 ? (
-              filterDataProductsByFlight(dataTypeSelection, flight).map((dOpt, idx) => (
-                <option key={`${dOpt.id}-side`} value={dOpt.id}>
-                  {dOpt.data_type.toUpperCase() + ' #' + (idx + 1).toString()}
-                </option>
-              ))
-            ) : (
-              <option value="">Not available</option>
-            )}
-          </select>
-
+        <div className="grid grid-rows-2 gap-2 p-4 bg-zinc-200 shadow-md">
           <select
             className="h-10 p-1.5 font-semibold text-zinc-600 text-center border-2 border-zinc-300 rounded-md bg-white"
             aria-label="Select flight date"
@@ -132,12 +46,9 @@ export default function CompareToolSelector({
             value={flight}
             onChange={(e) => {
               setFlight(e.target.value);
-              const filteredDataProducts = filterDataProductsByFlight(
-                dataTypeSelection,
-                e.target.value
-              );
-              if (filteredDataProducts.length > 0) {
-                setDataProduct(filteredDataProducts[0].id);
+              const dataProducts = findDataProductsByFlight(e.target.value);
+              if (dataProducts.length > 0) {
+                setDataProduct(dataProducts[0].id);
               } else {
                 setDataProduct('');
               }
@@ -148,6 +59,26 @@ export default function CompareToolSelector({
                 {formatDate(fOpt.acquisition_date)}
               </option>
             ))}
+          </select>
+
+          <select
+            className="h-10 p-1.5 font-semibold text-zinc-600 text-center border-2 border-zinc-300 rounded-md bg-white"
+            aria-label="Select data product"
+            name={`dataProduct-${side}`}
+            value={dataProduct}
+            onChange={(e) => {
+              setDataProduct(e.target.value);
+            }}
+          >
+            {findDataProductsByFlight(flight).length > 0 ? (
+              findDataProductsByFlight(flight).map((dOpt, idx) => (
+                <option key={`${dOpt.id}-side`} value={dOpt.id}>
+                  {dOpt.data_type.toUpperCase()}
+                </option>
+              ))
+            ) : (
+              <option value="">Not available</option>
+            )}
           </select>
         </div>
       </div>
