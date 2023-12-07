@@ -1,5 +1,3 @@
-import { useState } from 'react';
-
 import { Flight } from '../pages/projects/ProjectDetail';
 
 const POSITION_CLASSES = {
@@ -71,7 +69,7 @@ export default function CompareToolSelector({
             }}
           >
             {findDataProductsByFlight(flight).length > 0 ? (
-              findDataProductsByFlight(flight).map((dOpt, idx) => (
+              findDataProductsByFlight(flight).map((dOpt) => (
                 <option key={`${dOpt.id}-side`} value={dOpt.id}>
                   {dOpt.data_type.toUpperCase()}
                 </option>
