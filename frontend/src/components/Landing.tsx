@@ -54,7 +54,7 @@ export default function Landing() {
             </div>
           </div>
         </div>
-        <video className="w-full h-full object-cover opacity-80" autoPlay loop>
+        <video className="w-full h-full object-cover opacity-80" autoPlay loop muted>
           <source src={landingVideo} type="video/mp4" />
           <div className="sr-only">Overhead video of field captured by a UAS</div>
         </video>
