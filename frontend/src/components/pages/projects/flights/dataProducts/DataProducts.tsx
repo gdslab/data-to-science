@@ -60,9 +60,10 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
       <h2>Data Products</h2>
       {data.length > 0 ? (
         <div className="mt-4">
-          <div className="grid grid-rows-3 gap-1.5">
+          <div className="grid grid-rows-3 gap-1">
             <HintText>Keywords:</HintText>
             <HintText>COG - Cloud Optimized GeoTIFF</HintText>
+            <HintText>COPC - Cloud Optimized Point Cloud</HintText>
             <HintText>EPT - Entwine Point Tile</HintText>
           </div>
           <Table>
@@ -74,7 +75,7 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
                   {dataset.status === 'SUCCESS' && isGeoTIFF(dataset.data_type) ? (
                     <img
                       className="w-full max-h-28"
-                      src={dataset.url.replace('tif', 'webp')}
+                      src={dataset.url.replace('tif', 'jpg')}
                     />
                   ) : isGeoTIFF(dataset.data_type) ? (
                     <div>
@@ -96,12 +97,12 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
                       </Button>
                     ) : (
                       <a
-                        href={`${dataset.url.replace('/ept.json', '.zip')}`}
+                        href={dataset.url}
                         target="_blank"
                         rel="noopener noreferrer"
                         download
                       >
-                        <Button size="sm">Download EPT</Button>
+                        <Button size="sm">Copy COPC URL</Button>
                       </a>
                     )}
                   </div>
@@ -114,8 +115,8 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
                           aria-hidden="true"
                         />
                         {isGeoTIFF(dataset.data_type)
-                          ? 'Generating COG...'
-                          : 'Generating EPT...'}
+                          ? 'Generating COG'
+                          : 'Generating EPT & COPC'}
                       </Fragment>
                     ) : dataset.status === 'FAILED' ? (
                       <Fragment>

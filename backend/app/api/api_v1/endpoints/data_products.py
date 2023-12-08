@@ -54,18 +54,24 @@ def upload_data_product(
     if not os.path.exists(upload_dir):
         os.makedirs(upload_dir)
 
-    file_ext = pathlib.Path(files.filename).suffix
-    if dtype == "point_cloud":
-        out_path = os.path.join(upload_dir, f"{str(uuid4())}{file_ext}")
-    else:
-        out_path = os.path.join(upload_dir, f"{str(uuid4())}__temp{file_ext}")
+    original_filename = pathlib.Path(files.filename)
+    unique_filename = str(uuid4())
 
-    if file_ext not in [".tif", ".las", ".laz"]:
+    if dtype == "point_cloud":
+        destination_filepath = os.path.join(
+            upload_dir, unique_filename + original_filename.suffix
+        )
+    else:
+        destination_filepath = os.path.join(
+            upload_dir, f"{unique_filename}__temp{original_filename.suffix}"
+        )
+
+    if original_filename.suffix not in [".tif", ".las", ".laz"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported file extension"
         )
 
-    with open(out_path, "wb") as buffer:
+    with open(destination_filepath, "wb") as buffer:
         shutil.copyfileobj(files.file, buffer)
         job_in = schemas.job.JobCreate(
             name="upload-data-products",
@@ -78,8 +84,8 @@ def upload_data_product(
     if dtype == "dsm" or dtype == "ortho":
         process_geotiff.apply_async(
             args=[
-                files.filename,
-                out_path,
+                original_filename.name,
+                destination_filepath,
                 current_user.id,
                 project.id,
                 flight.id,
@@ -91,7 +97,14 @@ def upload_data_product(
         )
     elif dtype == "point_cloud":
         process_point_cloud.apply_async(
-            args=[files.filename, out_path, project.id, flight.id, job.id, dtype],
+            args=[
+                original_filename.name,
+                destination_filepath,
+                project.id,
+                flight.id,
+                job.id,
+                dtype,
+            ],
             kwargs={},
             queue="main-queue",
         )

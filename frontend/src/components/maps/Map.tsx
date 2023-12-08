@@ -31,6 +31,7 @@ export default function Map({ projects }: { projects: Project[] }) {
       shadowUrl: shadow,
     });
   }, []);
+  console.log(activeDataProduct);
 
   if (
     !activeDataProduct ||
@@ -67,6 +68,8 @@ export default function Map({ projects }: { projects: Project[] }) {
       </MapContainer>
     );
   } else {
-    return <PotreeViewer eptPath={activeDataProduct.url} />;
+    return (
+      <PotreeViewer eptPath={activeDataProduct.url.replace('.copc.laz', '/ept.json')} />
+    );
   }
 }

@@ -27,7 +27,7 @@ class ImageProcessor:
 
         self.out_path = os.path.join(output_dir, output_name)
         self.preview_out_path = os.path.join(
-            output_dir, output_name.replace("tif", "webp")
+            output_dir, output_name.replace("tif", "jpg")
         )
 
         self.stac_properties = {"raster": [], "eo": []}
@@ -36,7 +36,6 @@ class ImageProcessor:
         info = get_info(self.img_path)
         if is_cog(info):
             shutil.move(self.img_path, self.out_path)
-            convert_to_cog(self.img_path, self.out_path, info, vis_only=True)
         else:
             convert_to_cog(self.img_path, self.out_path, info)
 
@@ -44,7 +43,7 @@ class ImageProcessor:
         if os.path.exists(self.img_path + ".aux.xml"):
             os.remove(self.img_path + ".aux.xml")
 
-        create_preview_webp(self.out_path, self.preview_out_path, info)
+        create_preview_image(self.out_path, self.preview_out_path, info)
 
         self.stac_properties = get_stac_properties(info)
 
@@ -186,11 +185,7 @@ def get_band_count(info: dict) -> int:
 
 
 def convert_to_cog(
-    img_path: str,
-    out_path: str,
-    info: dict,
-    num_threads: int | None = None,
-    vis_only: bool = False,
+    img_path: str, out_path: str, info: dict, num_threads: int | None = None
 ) -> None:
     """Runs gdalwarp to generate new raster in COG layout.
 
@@ -199,43 +194,19 @@ def convert_to_cog(
         out_path (str): Path for output raster dataset
         info (dict): gdalinfo -json output
         num_threads (int | None, optional): No. of CPUs to use. Defaults to None.
-        vis_only (bool, optional): Skips generating COG if True. Defaults to False.
     """
     if not num_threads:
         num_threads = int(multiprocessing.cpu_count() / 2)
-    # uncompressed COG for processing
-    if not vis_only:
-        result = subprocess.run(
-            [
-                "gdalwarp",
-                img_path,
-                out_path,
-                "-of",
-                "COG",
-                "-co",
-                f"NUM_THREADS={num_threads}",
-                "-co",
-                "BIGTIFF=YES",
-                "-wm",
-                "500",
-            ]
-        )
-    # compressed COG for visualization
-    if get_band_count(info) < 3:
-        compression = "DEFLATE"
-    else:
-        compression = "DEFLATE"
+
     result = subprocess.run(
         [
             "gdalwarp",
             img_path,
-            out_path[:-4] + "_web.tif",
+            out_path,
             "-of",
             "COG",
             "-co",
-            f"COMPRESS={compression}",
-            "-co",
-            "QUALITY=75",
+            "COMPRESS=DEFLATE",
             "-co",
             f"NUM_THREADS={num_threads}",
             "-co",
@@ -244,12 +215,12 @@ def convert_to_cog(
             "500",
         ]
     )
+
     result.check_returncode()
 
 
-def create_preview_webp(img_path: str, out_path: str, info: dict) -> None:
-    """Generates preview image in WEBP format for multiband datasets and JPEG
-    for single band datasets.
+def create_preview_image(img_path: str, out_path: str, info: dict) -> None:
+    """Generates preview image for GeoTIFF data products.
 
     Args:
         img_path (str): Path to input dataset
@@ -262,7 +233,7 @@ def create_preview_webp(img_path: str, out_path: str, info: dict) -> None:
             [
                 "gdal_translate",
                 "-of",
-                "WEBP",
+                "JPEG",
                 "-co",
                 "QUALITY=75",
                 "-b",

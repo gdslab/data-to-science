@@ -29,6 +29,7 @@ def get_db():
         yield db
     except Exception as exception:
         logger.exception("Session raised exception - issuing rollback")
+        logger.error(str(exception))
         db.rollback()
         exception_name = exception.__class__.__name__
         if exception_name == "JWTError" or exception_name == "JWSSignatureError":
@@ -36,6 +37,8 @@ def get_db():
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Must sign in to access",
             )
+        else:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
     finally:
         db.close()
 
