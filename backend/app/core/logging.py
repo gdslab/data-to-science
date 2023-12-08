@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from app.core.config import settings
 
 
-LOGGER_FILE = Path(settings.LOGGER_FILE)
+LOGFILE = Path(settings.LOGFILE)
 DATE_FORMAT = "[%d/%b/%Y:%H:%M:%S]"
 LOGGER_FORMAT = "%(asctime)s | %(message)s"
 
@@ -23,7 +23,7 @@ class LoggerConfig(BaseModel):
 
 @lru_cache
 def get_logger_config():
-    output_file_handler = logging.FileHandler(LOGGER_FILE)
+    output_file_handler = logging.FileHandler(LOGFILE)
     handler_format = logging.Formatter(LOGGER_FORMAT, datefmt=DATE_FORMAT)
     output_file_handler.setFormatter(handler_format)
 
@@ -35,7 +35,7 @@ def get_logger_config():
         handlers=[output_file_handler, stdout_handler],
         format="%(levelname)s: %(asctime)s \t%(message)s",
         date_format="%d-%b-%Y %H:%M:%S",
-        logger_file=LOGGER_FILE,
+        logger_file=LOGFILE,
     )
 
 

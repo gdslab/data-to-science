@@ -31,7 +31,6 @@ export default function Map({ projects }: { projects: Project[] }) {
       shadowUrl: shadow,
     });
   }, []);
-  console.log(activeDataProduct);
 
   if (
     !activeDataProduct ||

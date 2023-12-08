@@ -15,17 +15,17 @@ class Settings(BaseSettings):
     ENV: str = "dev"
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = secrets.token_urlsafe(32)
+
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
 
     PROJECT_NAME: str = ""
-    # UPLOAD_DIR: str = "/static"
-    # TEST_UPLOAD_DIR: str = "/tmp/testing"
-    TEST_STATIC_DIR: str = "/tmp/static"
     DOMAIN: str = ""
-    # STATIC_URL: str = ""
+    TEST_STATIC_DIR: str = "/tmp/static"
     STATIC_DIR: str = "/static"
     POTREE_DIR: str = "/app/potree"
+
+    LOGFILE: str = ""
 
     # Database
     POSTGRES_HOST: str = ""
@@ -81,8 +81,6 @@ class Settings(BaseSettings):
 
     # Testing
     EMAIL_TEST_USER: EmailStr = "test@example.com"  # type: ignore
-
-    LOGGER_FILE: str = ""
 
 
 settings = Settings()

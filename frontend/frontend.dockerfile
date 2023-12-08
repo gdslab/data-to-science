@@ -2,11 +2,11 @@ FROM node:18-bullseye-slim as build-stage
 
 WORKDIR /app/
 
-COPY ./frontend/package.json ./frontend/yarn.lock ./
+COPY ./package.json ./yarn.lock ./
 
 RUN yarn install
 
-COPY ./frontend .
+COPY . .
 
 RUN yarn build
 
@@ -16,8 +16,7 @@ WORKDIR /etc/nginx
 
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 
-COPY ./nginx/common.conf ../nginx/common_location.conf ./
-COPY ./nginx/d2s-frontend.conf ./conf.d/default.conf
+COPY ./frontend.nginx.conf ./conf.d/default.conf
 
 ENTRYPOINT ["nginx"]
 

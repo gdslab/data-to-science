@@ -1,8 +1,8 @@
 services:
   frontend:
     build:
-      context: ./
-      dockerfile: frontend/frontend.dockerfile
+      context: ./frontend
+      dockerfile: frontend.dockerfile
     restart: always
     depends_on:
       - backend
@@ -60,8 +60,10 @@ services:
     build:
       context: ./nginx
       dockerfile: nginx.dockerfile
+      args:
+        DEFAULT_CONF: d2s-proxy.prod.conf
     ports:
-      - '127.0.0.1:8000:80'
+      - '0.0.0.0:8000:80'
     restart: always
     depends_on:
       - frontend

@@ -22,7 +22,7 @@ RUN python -m venv $VENV_PATH
 
 WORKDIR /opt
 
-COPY pyproject.toml poetry.lock .
+COPY pyproject.toml poetry.lock ./
 
 # allow installing dev dependencies to run tests
 ARG INSTALL_DEV=false
