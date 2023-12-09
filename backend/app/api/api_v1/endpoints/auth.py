@@ -78,15 +78,15 @@ def confirm_user_email_address(token: str, db: Session = Depends(deps.get_db)):
     )
     # check if token is valid
     if not token_db_obj:
-        return settings.DOMAIN + "/auth/login?error=invalid"
+        return settings.API_DOMAIN + "/auth/login?error=invalid"
     if security.check_token_expired(token_db_obj):
         crud.user.remove_single_use_token(db, db_obj=token_db_obj)
-        return settings.DOMAIN + "/auth/login?error=expired"
+        return settings.API_DOMAIN + "/auth/login?error=expired"
     # find user associated with token
     user = crud.user.get(db, id=token_db_obj.user_id)
     if not user:
         crud.user.remove_single_use_token(db, db_obj=token_db_obj)
-        return settings.DOMAIN + "/auth/login?error=notfound"
+        return settings.API_DOMAIN + "/auth/login?error=notfound"
     # update user's email confirmation status
     user_update_in = schemas.UserUpdate(is_email_confirmed=True)
     user_updated = crud.user.update(db, db_obj=user, obj_in=user_update_in)
@@ -97,7 +97,7 @@ def confirm_user_email_address(token: str, db: Session = Depends(deps.get_db)):
     # remove token from database
     crud.user.remove_single_use_token(db, db_obj=token_db_obj)
     # redirect to login page
-    return settings.DOMAIN + "/auth/login?email_confirmed=true"
+    return settings.API_DOMAIN + "/auth/login?email_confirmed=true"
 
 
 @router.get("/request-email-confirmation", status_code=status.HTTP_200_OK)

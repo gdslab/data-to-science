@@ -19,13 +19,13 @@ class Settings(BaseSettings):
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
 
-    PROJECT_NAME: str = ""
-    DOMAIN: str = ""
+    API_PROJECT_NAME: str = ""
+    API_DOMAIN: str = ""
     TEST_STATIC_DIR: str = "/tmp/static"
     STATIC_DIR: str = "/static"
     POTREE_DIR: str = "/app/potree"
 
-    LOGFILE: str = ""
+    API_LOGFILE: str = ""
 
     # Database
     POSTGRES_HOST: str = ""
@@ -55,8 +55,8 @@ class Settings(BaseSettings):
     MAIL_FROM_NAME: str = ""
     MAIL_PORT: int = 587
     MAIL_SERVER: str = ""
-    MAIL_STARTTLS: bool = False
-    MAIL_SSL_TLS: bool = True
+    MAIL_STARTTLS: bool = True
+    MAIL_SSL_TLS: bool = False
     USE_CREDENTIALS: bool = True
     VALIDATE_CERTS: bool = True
     MAIL_CONF: ConnectionConfig | None = None

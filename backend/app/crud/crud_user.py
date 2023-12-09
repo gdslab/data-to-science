@@ -125,7 +125,7 @@ def find_profile_img(user_id: str) -> str | None:
 
 def set_url_attr(user: User) -> None:
     profile_img = find_profile_img(str(user.id))
-    static_url = settings.DOMAIN + settings.STATIC_DIR
+    static_url = settings.API_DOMAIN + settings.STATIC_DIR
     if profile_img:
         profile_url = f"{static_url}/users/{str(user.id)}/{profile_img}"
         setattr(user, "profile_url", profile_url)

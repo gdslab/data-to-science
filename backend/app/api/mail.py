@@ -11,7 +11,9 @@ def send_email_confirmation(
     email: EmailStr,
     confirmation_token: str,
 ):
-    confirmation_url = settings.DOMAIN + settings.API_V1_STR + "/auth/confirm-email?"
+    confirmation_url = (
+        settings.API_DOMAIN + settings.API_V1_STR + "/auth/confirm-email?"
+    )
     confirmation_url += f"token={confirmation_token}"
 
     confirmation_btn = "<button style='display: inline-block;outline: none;"
@@ -48,7 +50,7 @@ def send_password_recovery(
     email: EmailStr,
     recovery_token: str,
 ):
-    recover_url = settings.DOMAIN + "/auth/resetpassword?"
+    recover_url = settings.API_DOMAIN + "/auth/resetpassword?"
     recover_url += f"token={recovery_token}"
 
     recover_btn = "<button style='display: inline-block;outline: none;"
@@ -89,7 +91,7 @@ def send_admins_new_registree_notification(
 ):
     admin_emails = settings.MAIL_ADMINS.split(",")
 
-    approve_url = settings.DOMAIN + settings.API_V1_STR + "/auth/approve-account?"
+    approve_url = settings.API_DOMAIN + settings.API_V1_STR + "/auth/approve-account?"
     approve_url += f"token={approve_token}"
 
     approve_btn = "<button style='display: inline-block;outline: none;"

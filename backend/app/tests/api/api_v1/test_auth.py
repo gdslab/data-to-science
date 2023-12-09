@@ -61,7 +61,7 @@ def test_email_confirmation_with_valid_token(client: TestClient, db: Session) ->
         params={"token": token},
     )
     user_in_db = crud.user.get(db, id=user.id)
-    assert r.request.url == settings.DOMAIN + "/auth/login?email_confirmed=true"
+    assert r.request.url == settings.API_DOMAIN + "/auth/login?email_confirmed=true"
     assert user.is_email_confirmed is False
     assert user_in_db and user_in_db.is_email_confirmed is True
 
@@ -91,4 +91,4 @@ def test_email_confirmation_with_invalid_token(client: TestClient, db: Session) 
     )
     user_in_db = crud.user.get(db, id=user.id)
     assert user_in_db and user_in_db.is_email_confirmed is False
-    assert r.request.url == settings.DOMAIN + "/auth/login?error=invalid"
+    assert r.request.url == settings.API_DOMAIN + "/auth/login?error=invalid"

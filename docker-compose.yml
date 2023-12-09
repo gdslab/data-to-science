@@ -20,7 +20,8 @@ services:
       db:
         condition: service_healthy
     env_file:
-      - .env
+      - backend.env
+      - db.env
 
   db:
     image: postgis/postgis:15-3.3
@@ -29,10 +30,16 @@ services:
     restart: always
     healthcheck:
       test:
-        ['CMD-SHELL', 'pg_isready --username=${POSTGRES_USER} --dbname=${POSTGRES_DB}']
-      interval: 10s
+        ['CMD-SHELL', 'pg_isready --username=$$POSTGRES_USER --dbname=$$POSTGRES_DB']
+      interval: 2s
       timeout: 5s
       retries: 5
+    environment:
+      - POSTGRES_USER=d2s
+      - POSTGRES_DB=d2s
+    env_file:
+      - db.env
+
 
   redis:
     image: redis:alpine
@@ -54,7 +61,8 @@ services:
       db:
         condition: service_healthy
     env_file:
-      - .env
+      - backend.env
+      - db.env
 
   proxy:
     build:

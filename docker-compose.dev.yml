@@ -9,7 +9,6 @@ services:
     restart: always
     depends_on:
       - backend
-    env_file: .env
 
   backend:
     build:
@@ -25,21 +24,26 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    env_file: .env
+    env_file:
+      - backend.env
+      - db.env
 
   db:
     image: postgis/postgis:15-3.3
     volumes:
       - db-data:/var/lib/postgresql/data
     restart: always
-    env_file:
-      - .env
     healthcheck:
       test:
-        ["CMD-SHELL", "pg_isready --username=${POSTGRES_USER} --dbname=${POSTGRES_DB}"]
+        ['CMD-SHELL', 'pg_isready --username=$$POSTGRES_USER --dbname=$$POSTGRES_DB']
       interval: 10s
       timeout: 5s
       retries: 5
+    environment:
+      - POSTGRES_USER=d2s
+      - POSTGRES_DB=d2s
+    env_file:
+      - db.env
 
   pgadmin:
     image: dpage/pgadmin4
@@ -47,8 +51,9 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    env_file:
-      - .env
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=youremail@example.com
+      - PGADMIN_DEFAULT_PASSWORD=password
 
   redis:
     image: redis:alpine
@@ -62,7 +67,6 @@ services:
         INSTALL_DEV: true
     command: /app/worker-start.sh
     volumes:
-      - ./backend:/app
       - user-data:/static
     restart: always
     depends_on:
@@ -70,7 +74,9 @@ services:
         condition: service_started
       db:
         condition: service_healthy
-    env_file: .env
+    env_file:
+      - backend.env
+      - db.env
 
   flower:
     build:
@@ -80,7 +86,6 @@ services:
         INSTALL_DEV: true
     command: /app/flower-start.sh
     volumes:
-      - ./backend:/app
       - user-data:/user-data
     ports:
       - 5555:5555
@@ -90,7 +95,9 @@ services:
         condition: service_started
       db:
         condition: service_healthy
-    env_file: .env
+    env_file:
+      - backend.env
+      - db.env
 
   proxy:
     build:
@@ -99,7 +106,7 @@ services:
       args:
         DEFAULT_CONF: d2s-proxy.dev.conf
     ports:
-      - "127.0.0.1:80:80"
+      - "0.0.0.0:80:80"
     restart: always
     depends_on:
       - frontend

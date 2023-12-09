@@ -12,7 +12,7 @@ from app.utils.ProtectedStaticFiles import ProtectedStaticFiles
 
 
 app = FastAPI(
-    title=settings.PROJECT_NAME, openapi_url=f"{settings.API_V1_STR}/openapi.json"
+    title=settings.API_PROJECT_NAME, openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 cog = TilerFactory()
 

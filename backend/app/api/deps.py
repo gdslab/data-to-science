@@ -37,8 +37,6 @@ def get_db():
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Must sign in to access",
             )
-        else:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
     finally:
         db.close()
 
