@@ -14,7 +14,14 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     ENV: str = "dev"
     API_V1_STR: str = "/api/v1"
-    SECRET_KEY: str = secrets.token_urlsafe(32)
+
+    SECRET_KEY: str = ""
+
+    @field_validator("SECRET_KEY", mode="before")
+    def generate_secret_key(cls, v: str | None) -> str:
+        if not v:
+            return secrets.token_urlsafe(32)
+        return v
 
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
