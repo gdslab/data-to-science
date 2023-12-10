@@ -95,6 +95,10 @@ After creating the new migration, use the following command to update to the tab
 docker compose exec backend alembic upgrade head
 ```
 
+### Accessing the web application
+
+The Data To Science web application can be accessed from `http://localhost:8000`. Replace `localhost` with the `DOMAIN` environment variable if it was changed to a different value. If port `8000` is already use, or you want to use a different port, change the port in `docker-compose.yml` under the `proxy` service's `ports` setting.
+
 # Additional information
 
 The above sections should provide all the necessary steps to get Data To Science up and running. These next sections provide additional information about using `docker-compose-dev.yml` for development, accessing the FastAPI documentation, and running the backend tests.
@@ -105,6 +109,8 @@ Add the following parameter to the above `docker compose` commands to run the de
 `-f docker-compose.dev.yml`
 
 For example, `docker compose -f docker-compose.dev.yml up --build -d` will build and start the service containers using the `docker-compose.dev.yml` config file. This config file contains several additional service containers that can be helpful during development and it maps the backend and frontend code directories to the containers. This allows the backend and frontend service containers to immediately reflect the changes without re-building the Docker images.
+
+The development site can be accessed from `http://localhost`.
 
 ## Accessing the API
 
