@@ -30,7 +30,7 @@ export default function CompareToolSelector({
 }: Props) {
   const findDataProductsByFlight = (flightID: string) => {
     const f = flights.filter(({ id }) => id === flightID)[0];
-    return f.data_products;
+    return f.data_products.filter(({ data_type }) => data_type !== 'point_cloud');
   };
 
   return (

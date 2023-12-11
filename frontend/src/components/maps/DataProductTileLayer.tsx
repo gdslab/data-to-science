@@ -7,6 +7,7 @@ import {
   useMapContext,
 } from './MapContext';
 import { DataProduct } from '../pages/projects/ProjectDetail';
+import { getDefaultStyle } from './utils';
 
 /**
  * Constructs URL for requesting tiles from TiTiler service.
@@ -53,7 +54,9 @@ export function getDataProductTileLayer(
   if (dataProduct.data_type === 'dsm') {
     const stats = dataProduct.stac_properties.raster[0].stats;
     const symbology = symbologySettings as DSMSymbologySettings | undefined;
-    const savedStyle = dataProduct.user_style as DSMSymbologySettings;
+    const savedStyle = dataProduct.user_style
+      ? (dataProduct.user_style as DSMSymbologySettings)
+      : (getDefaultStyle(dataProduct) as DSMSymbologySettings);
     const colorRamp = symbology ? symbology.colorRamp : savedStyle.colorRamp;
     let scale = [
       symbology ? symbology.min : savedStyle.min,
@@ -95,7 +98,9 @@ export function getDataProductTileLayer(
     );
   } else {
     const symbology = symbologySettings as OrthoSymbologySettings | undefined;
-    const savedStyle = dataProduct.user_style as OrthoSymbologySettings;
+    const savedStyle = dataProduct.user_style
+      ? (dataProduct.user_style as OrthoSymbologySettings)
+      : (getDefaultStyle(dataProduct) as OrthoSymbologySettings);
 
     const red = symbology ? symbology.red : savedStyle.red;
     const green = symbology ? symbology.green : savedStyle.green;
