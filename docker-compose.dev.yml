@@ -100,11 +100,9 @@ services:
       - db.env
 
   proxy:
-    build:
-      context: ./nginx
-      dockerfile: nginx.dockerfile
-      args:
-        DEFAULT_CONF: d2s-proxy.dev.conf
+    image: nginxinc/nginx-unprivileged:latest
+    volumes:
+      - ./nginx/d2s-proxy.dev.conf:/etc/nginx/conf.d/default.conf
     ports:
       - "0.0.0.0:80:80"
     restart: always
