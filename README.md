@@ -63,10 +63,6 @@
    ```
    docker compose up -d
    ```
-   If changes have been made to any of the Dockerfiles, either run the build command again or use the following command to both build and start the containers in the background:
-   ```
-   docker compose up --build -d
-   ```
 
 ### Stop the containers
 

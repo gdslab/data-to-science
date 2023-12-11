@@ -3,6 +3,7 @@ services:
     build:
       context: ./frontend
       dockerfile: frontend.dev.dockerfile
+    image: d2s-app:dev
     command: yarn run dev --host 0.0.0.0 --port 8080
     volumes:
       - ./frontend/:/app
@@ -16,6 +17,7 @@ services:
       dockerfile: backend.dockerfile
       args:
         INSTALL_DEV: true
+    image: d2s-api:dev
     command: uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
     volumes:
       - ./backend:/app
@@ -60,30 +62,19 @@ services:
     restart: always
 
   celery_worker:
-    build:
-      context: ./backend
-      dockerfile: backend.dockerfile
-      args:
-        INSTALL_DEV: true
+    image: d2s-api:dev
     command: /app/worker-start.sh
     volumes:
       - user-data:/static
     restart: always
     depends_on:
-      redis:
-        condition: service_started
-      db:
-        condition: service_healthy
+      - backend
     env_file:
       - backend.env
       - db.env
 
   flower:
-    build:
-      context: ./backend
-      dockerfile: backend.dockerfile
-      args:
-        INSTALL_DEV: true
+    image: d2s-api:dev
     command: /app/flower-start.sh
     volumes:
       - user-data:/user-data

@@ -3,6 +3,7 @@ services:
     build:
       context: ./frontend
       dockerfile: frontend.dockerfile
+    image: d2s-app:latest
     restart: always
     depends_on:
       - backend
@@ -13,6 +14,7 @@ services:
       dockerfile: backend.dockerfile
       args:
         INSTALL_DEV: true
+    image: d2s-api:latest
     volumes:
       - user-data:/static
     restart: always
@@ -40,26 +42,18 @@ services:
     env_file:
       - db.env
 
-
   redis:
     image: redis:alpine
     restart: always
 
   celery_worker:
-    build:
-      context: ./backend
-      dockerfile: backend.dockerfile
-      args:
-        INSTALL_DEV: true
+    image: d2s-api:latest
     command: /app/worker-start.sh
     volumes:
       - user-data:/static
     restart: always
     depends_on:
-      redis:
-        condition: service_started
-      db:
-        condition: service_healthy
+      - backend
     env_file:
       - backend.env
       - db.env
