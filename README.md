@@ -73,7 +73,7 @@
 
 ### Database migrations with Alembic
 
-The first time you build and run the containres you must run the following command to set up the database tables:
+The first time you build and run the containers you must run the following command to set up the database tables:
 
 ```
 docker compose exec backend alembic upgrade head
