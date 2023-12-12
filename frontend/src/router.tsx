@@ -15,6 +15,9 @@ import MapLayout, { loader as mapLayoutLoader } from './components/maps/MapLayou
 import PasswordRecovery from './components/pages/auth/PasswordRecovery';
 import PasswordResetForm from './components/pages/auth/PasswordResetForm';
 import Profile from './components/pages/auth/Profile';
+import ProjectAccess, {
+  loader as projectAccessLoader,
+} from './components/pages/projects/ProjectAccess';
 import ProjectDetail, {
   loader as projectDetailLoader,
 } from './components/pages/projects/ProjectDetail';
@@ -112,6 +115,11 @@ export const router = createBrowserRouter([
         path: '/projects/:projectId',
         element: <ProjectDetail />,
         loader: projectDetailLoader,
+      },
+      {
+        path: '/projects/:projectId/access',
+        element: <ProjectAccess />,
+        loader: projectAccessLoader,
       },
       {
         path: '/projects',

@@ -180,29 +180,36 @@ export default function ProjectDetail() {
         >
           {({ setStatus, status }) => (
             <Form>
-              <div className="grid rows-auto gap-2">
-                <EditField
-                  fieldName="title"
-                  isEditing={isEditing}
-                  setIsEditing={setIsEditing}
-                >
-                  {!isEditing || isEditing.field !== 'title' ? (
-                    <h2 className="mb-0">{project.title}</h2>
-                  ) : (
-                    <TextField name="title" />
-                  )}
-                </EditField>
-                <EditField
-                  fieldName="description"
-                  isEditing={isEditing}
-                  setIsEditing={setIsEditing}
-                >
-                  {!isEditing || isEditing.field !== 'description' ? (
-                    <span className="text-gray-600">{project.description}</span>
-                  ) : (
-                    <TextField name="description" />
-                  )}
-                </EditField>
+              <div className="flex justify-between">
+                <div className="grid rows-auto gap-2">
+                  <EditField
+                    fieldName="title"
+                    isEditing={isEditing}
+                    setIsEditing={setIsEditing}
+                  >
+                    {!isEditing || isEditing.field !== 'title' ? (
+                      <h2 className="mb-0">{project.title}</h2>
+                    ) : (
+                      <TextField name="title" />
+                    )}
+                  </EditField>
+                  <EditField
+                    fieldName="description"
+                    isEditing={isEditing}
+                    setIsEditing={setIsEditing}
+                  >
+                    {!isEditing || isEditing.field !== 'description' ? (
+                      <span className="text-gray-600">{project.description}</span>
+                    ) : (
+                      <TextField name="description" />
+                    )}
+                  </EditField>
+                </div>
+                <div className="text-sky-600 cursor-pointer">
+                  <h2>
+                    <Link to={`/projects/${projectId}/access`}>Manage Access</Link>
+                  </h2>
+                </div>
               </div>
               <Table>
                 <TableHead
