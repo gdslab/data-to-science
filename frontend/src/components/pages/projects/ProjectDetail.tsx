@@ -146,75 +146,72 @@ export default function ProjectDetail() {
   }, []);
 
   return (
-    <div className="mx-4 mt-4">
+    <div className="grid grid-flow-row auto-rows-max gap-4 p-4">
       {project.is_owner ? (
-        <div>
-          <Formik
-            initialValues={{
-              title: project.title,
-              description: project.description,
-              plantingDate: project.planting_date ? project.planting_date : '',
-              harvestDate: project.harvest_date ? project.harvest_date : '',
-              locationId: project.location_id,
-              teamId: project.team_id ? project.team_id : '',
-            }}
-            validationSchema={validationSchema}
-            onSubmit={async (values) => {
-              try {
-                const data = {
-                  title: values.title,
-                  description: values.description,
-                  location_id: values.locationId,
-                  team_id: values.teamId ? values.teamId : null,
-                  ...(values.plantingDate && { planting_date: values.plantingDate }),
-                  ...(values.harvestDate && { harvest_date: values.harvestDate }),
-                };
-                const response = await axios.put(
-                  `/api/v1/projects/${project.id}`,
-                  data
-                );
-                if (response) {
-                  revalidator.revalidate();
-                }
-                setIsEditing(null);
-              } catch (err) {
-                setIsEditing(null);
+        <Formik
+          initialValues={{
+            title: project.title,
+            description: project.description,
+            plantingDate: project.planting_date ? project.planting_date : '',
+            harvestDate: project.harvest_date ? project.harvest_date : '',
+            locationId: project.location_id,
+            teamId: project.team_id ? project.team_id : '',
+          }}
+          validationSchema={validationSchema}
+          onSubmit={async (values) => {
+            try {
+              const data = {
+                title: values.title,
+                description: values.description,
+                location_id: values.locationId,
+                team_id: values.teamId ? values.teamId : null,
+                ...(values.plantingDate && { planting_date: values.plantingDate }),
+                ...(values.harvestDate && { harvest_date: values.harvestDate }),
+              };
+              const response = await axios.put(`/api/v1/projects/${project.id}`, data);
+              if (response) {
+                revalidator.revalidate();
               }
-            }}
-          >
-            {({ setStatus, status }) => (
-              <Form>
-                <div className="grid rows-auto gap-2">
-                  <EditField
-                    fieldName="title"
-                    isEditing={isEditing}
-                    setIsEditing={setIsEditing}
-                  >
-                    {!isEditing || isEditing.field !== 'title' ? (
-                      <h2 className="mb-0">{project.title}</h2>
-                    ) : (
-                      <TextField name="title" />
-                    )}
-                  </EditField>
-                  <EditField
-                    fieldName="description"
-                    isEditing={isEditing}
-                    setIsEditing={setIsEditing}
-                  >
-                    {!isEditing || isEditing.field !== 'description' ? (
-                      <span className="text-gray-600">{project.description}</span>
-                    ) : (
-                      <TextField name="description" />
-                    )}
-                  </EditField>
-                </div>
-                <Table>
-                  <TableHead
-                    columns={['Planting Date', 'Harvest Date', 'Team', 'Location']}
-                  />
-                  <TableBody
-                    rows={[
-                      [
+              setIsEditing(null);
+            } catch (err) {
+              setIsEditing(null);
+            }
+          }}
+        >
+          {({ setStatus, status }) => (
+            <Form>
+              <div className="grid rows-auto gap-2">
+                <EditField
+                  fieldName="title"
+                  isEditing={isEditing}
+                  setIsEditing={setIsEditing}
+                >
+                  {!isEditing || isEditing.field !== 'title' ? (
+                    <h2 className="mb-0">{project.title}</h2>
+                  ) : (
+                    <TextField name="title" />
+                  )}
+                </EditField>
+                <EditField
+                  fieldName="description"
+                  isEditing={isEditing}
+                  setIsEditing={setIsEditing}
+                >
+                  {!isEditing || isEditing.field !== 'description' ? (
+                    <span className="text-gray-600">{project.description}</span>
+                  ) : (
+                    <TextField name="description" />
+                  )}
+                </EditField>
+              </div>
+              <Table>
+                <TableHead
+                  columns={['Planting Date', 'Harvest Date', 'Team', 'Location']}
+                />
+                <TableBody
+                  rows={[
+                    [
+                      <div className="flex justify-center">
                         <EditField
                           fieldName="plantingDate"
                           isEditing={isEditing}
@@ -227,7 +224,9 @@ export default function ProjectDetail() {
                           ) : (
                             <TextField type="date" name="plantingDate" />
                           )}
-                        </EditField>,
+                        </EditField>
+                      </div>,
+                      <div className="flex justify-center">
                         <EditField
                           fieldName="harvestDate"
                           isEditing={isEditing}
@@ -240,7 +239,9 @@ export default function ProjectDetail() {
                           ) : (
                             <TextField type="date" name="harvestDate" />
                           )}
-                        </EditField>,
+                        </EditField>
+                      </div>,
+                      <div className="flex justify-center">
                         <EditField
                           fieldName="teamId"
                           isEditing={isEditing}
@@ -261,98 +262,95 @@ export default function ProjectDetail() {
                               }))}
                             />
                           )}
-                        </EditField>,
-                        <div>
-                          <MapIcon
-                            className="h-6 w-6 cursor-pointer"
-                            onClick={() => {
-                              setStatus(null);
-                              setOpenMap(true);
-                            }}
-                          />
-                          <span className="sr-only">View or Edit Location</span>
-                          <Modal open={openMap} setOpen={setOpenMap}>
+                        </EditField>
+                      </div>,
+                      <div className="flex justify-center">
+                        <MapIcon
+                          className="h-6 w-6 cursor-pointer"
+                          onClick={() => {
+                            setStatus(null);
+                            setOpenMap(true);
+                          }}
+                        />
+                        <span className="sr-only">View or Edit Location</span>
+                        <Modal open={openMap} setOpen={setOpenMap}>
+                          <div className="m-4">
+                            <ProjectFormMap
+                              isUpdate={true}
+                              location={location}
+                              locationId={project.location_id}
+                              open={openUpload}
+                              projectId={project.id}
+                              setLocation={setLocation}
+                              setOpen={setOpenUpload}
+                            />
+                          </div>
+                          {status && status.type && status.msg ? (
                             <div className="m-4">
-                              <ProjectFormMap
-                                isUpdate={true}
-                                location={location}
-                                locationId={project.location_id}
-                                open={openUpload}
-                                projectId={project.id}
-                                setLocation={setLocation}
-                                setOpen={setOpenUpload}
-                              />
+                              <Alert alertType={status.type}>{status.msg}</Alert>
                             </div>
-                            {status && status.type && status.msg ? (
-                              <div className="m-4">
-                                <Alert alertType={status.type}>{status.msg}</Alert>
-                              </div>
-                            ) : null}
-                          </Modal>
-                        </div>,
-                      ],
-                    ]}
-                  />
-                </Table>
-                <div className="flex flex-row justify-end w-full mt-4">
-                  <Button
-                    type="button"
-                    size="sm"
-                    icon="trash"
-                    onClick={() => setOpenConfirmationPopup(true)}
-                  >
-                    Deactivate project
-                  </Button>
-                  <Modal
-                    open={openConfirmationPopup}
+                          ) : null}
+                        </Modal>
+                      </div>,
+                    ],
+                  ]}
+                />
+              </Table>
+              <div className="flex flex-row justify-end w-full mt-4">
+                <Button
+                  type="button"
+                  size="sm"
+                  icon="trash"
+                  onClick={() => setOpenConfirmationPopup(true)}
+                >
+                  Deactivate project
+                </Button>
+                <Modal open={openConfirmationPopup} setOpen={setOpenConfirmationPopup}>
+                  <ConfirmationPopup
+                    title="Are you sure you want to deactivate this project?"
+                    content="Deactivating this project will cause all team and project members to immediately lose access to any flights, and data associated with the project."
+                    confirmText="Yes, deactivate"
+                    rejectText="No, keep project"
                     setOpen={setOpenConfirmationPopup}
-                  >
-                    <ConfirmationPopup
-                      title="Are you sure you want to deactivate this project?"
-                      content="Deactivating this project will cause all team and project members to immediately lose access to any flights, and data associated with the project."
-                      confirmText="Yes, deactivate"
-                      rejectText="No, keep project"
-                      setOpen={setOpenConfirmationPopup}
-                      action={async () => {
-                        try {
-                          const response = await axios.delete(
-                            `/api/v1/projects/${project.id}`
-                          );
-                          if (response) {
-                            setOpenConfirmationPopup(false);
-                            navigate('/projects', { state: { reload: true } });
-                          } else {
-                            setOpenConfirmationPopup(false);
-                            setStatus({
-                              type: 'error',
-                              msg: 'Unable to deactivate project',
-                            });
-                          }
-                        } catch (err) {
+                    action={async () => {
+                      try {
+                        const response = await axios.delete(
+                          `/api/v1/projects/${project.id}`
+                        );
+                        if (response) {
+                          setOpenConfirmationPopup(false);
+                          navigate('/projects', { state: { reload: true } });
+                        } else {
                           setOpenConfirmationPopup(false);
                           setStatus({
                             type: 'error',
                             msg: 'Unable to deactivate project',
                           });
                         }
-                      }}
-                    />
-                  </Modal>
+                      } catch (err) {
+                        setOpenConfirmationPopup(false);
+                        setStatus({
+                          type: 'error',
+                          msg: 'Unable to deactivate project',
+                        });
+                      }
+                    }}
+                  />
+                </Modal>
+              </div>
+              {status && status.type && status.msg ? (
+                <div className="mt-4">
+                  <Alert alertType={status.type}>{status.msg}</Alert>
                 </div>
-                {status && status.type && status.msg ? (
-                  <div className="mt-4">
-                    <Alert alertType={status.type}>{status.msg}</Alert>
-                  </div>
-                ) : null}
-              </Form>
-            )}
-          </Formik>
-        </div>
+              ) : null}
+            </Form>
+          )}
+        </Formik>
       ) : null}
-      <div className="mt-4">
+      <div>
         <h2>Flights</h2>
         {flights.length > 0 ? (
-          <Table>
+          <Table height={96}>
             <TableHead
               columns={['Platform', 'Sensor', 'Acquisition Date', 'Data', 'Actions']}
             />

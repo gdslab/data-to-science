@@ -66,17 +66,21 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
             <HintText>COPC - Cloud Optimized Point Cloud</HintText>
             <HintText>EPT - Entwine Point Tile</HintText>
           </div>
-          <Table>
+          <Table height={96}>
             <TableHead columns={['Data Type', 'Preview', 'File', 'Action']} />
             <TableBody
               rows={data.map((dataset) => [
-                getDataProductName(dataset.data_type),
-                <div className="flex items-center justify-center h-32 w-32">
+                <div className="h-full flex items-center justify-center">
+                  {getDataProductName(dataset.data_type)}
+                </div>,
+                <div className="h-full flex items-center justify-center">
                   {dataset.status === 'SUCCESS' && isGeoTIFF(dataset.data_type) ? (
-                    <img
-                      className="w-full max-h-28"
-                      src={dataset.url.replace('tif', 'jpg')}
-                    />
+                    <div className="h-full">
+                      <img
+                        className="w-full max-h-28"
+                        src={dataset.url.replace('tif', 'jpg')}
+                      />
+                    </div>
                   ) : isGeoTIFF(dataset.data_type) ? (
                     <div>
                       <span className="sr-only">Preview photo not ready</span>
@@ -87,7 +91,7 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
                   )}
                 </div>,
                 dataset.status === 'SUCCESS' ? (
-                  <div className="flex justify-center">
+                  <div className="h-full flex items-center justify-center">
                     {isGeoTIFF(dataset.data_type) ? (
                       <Button
                         size="sm"
@@ -107,7 +111,7 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
                     )}
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center">
+                  <div className="h-full flex items-center justify-center">
                     {dataset.status === 'INPROGRESS' ? (
                       <Fragment>
                         <CogIcon
@@ -148,9 +152,7 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
             />
           </Table>
         </div>
-      ) : (
-        <Fragment></Fragment>
-      )}
+      ) : null}
       <div className="my-4 flex justify-center">
         <UploadModal
           apiRoute={`/api/v1/projects/${projectId}/flights/${flightId}/data_products`}

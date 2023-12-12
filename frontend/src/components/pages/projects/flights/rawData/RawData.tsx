@@ -20,7 +20,7 @@ export default function RawData({ data }: { data: RawDataInterface[] }) {
       <h2>Raw Data</h2>
       {data.length > 0 ? (
         <div className="mt-4">
-          <Table>
+          <Table height={48}>
             <TableHead columns={['Filename', 'Download']} />
             <TableBody
               rows={data.map((dataset) => [

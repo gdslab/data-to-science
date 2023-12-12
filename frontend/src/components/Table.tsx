@@ -13,6 +13,14 @@ interface Action {
   url: string;
 }
 
+function TableRow({ children }: { children: ReactNode }) {
+  return <div className="flex flex-wrap gap-1.5 mb-1.5">{children}</div>;
+}
+
+function TableCell({ children }: { children: ReactNode }) {
+  return <div className="flex-1 p-4 text-center bg-white">{children}</div>;
+}
+
 export function TableBody({
   actions,
   rows,
@@ -21,17 +29,15 @@ export function TableBody({
   rows: (string | JSX.Element)[][];
 }) {
   return (
-    <tbody className="divide-y divide-gray-200 bg-white">
+    <div className="overflow-y-scroll">
       {rows.map((row, i) => (
-        <tr key={`row-${i}`}>
+        <TableRow key={`row-${i}`}>
           {row.map((value, j) => (
-            <td key={`cell-${i},${j}`} className="p-4">
-              <div className="flex grow-0 items-center justify-center">{value}</div>
-            </td>
+            <TableCell key={`cell-${i},${j}`}>{value}</TableCell>
           ))}
           {actions ? (
-            <td className="p-4 text-slate-500">
-              <div className="flex justify-around">
+            <TableCell>
+              <div className="h-full flex items-center justify-around">
                 {actions[i].map((action) =>
                   action.type === 'button' ? (
                     <div key={action.key}>
@@ -76,35 +82,44 @@ export function TableBody({
                   )
                 )}
               </div>
-            </td>
+            </TableCell>
           ) : null}
-        </tr>
+        </TableRow>
       ))}
-    </tbody>
+    </div>
   );
 }
 
 export function TableHead({ columns }: { columns: string[] }) {
   return (
-    <thead className="bg-slate-200">
-      <tr>
-        {columns.map((col) => (
-          <th
-            key={col.replace(/\s+/g, '').toLowerCase()}
-            className="font-semibold p-4 text-md text-slate-600 text-center"
-          >
-            {col}
-          </th>
-        ))}
-      </tr>
-    </thead>
+    <TableRow>
+      {columns.map((col) => (
+        <div
+          key={col.replace(/\s+/g, '').toLowerCase()}
+          className="flex-1 p-4 text-center font-semibold text-md text-slate-600"
+        >
+          {col}
+        </div>
+      ))}
+    </TableRow>
   );
 }
 
-export default function Table({ children }: { children: React.ReactNode }) {
+export default function Table({
+  children,
+  height,
+}: {
+  children: React.ReactNode;
+  height?: number;
+}) {
   return (
-    <table className="table-auto border-separate border-spacing-1 w-full">
+    <div
+      className={classNames(
+        height ? `h-${height}` : '',
+        'flex flex-col w-full overflow-y-auto border-separate border-spacing-1'
+      )}
+    >
       {children}
-    </table>
+    </div>
   );
 }
