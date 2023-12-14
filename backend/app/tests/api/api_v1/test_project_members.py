@@ -154,7 +154,7 @@ def test_update_project_member_with_project_manager_role(
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_update_project_member_with_project_owner_role(
+def test_update_project_member_with_viewer_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_approved_user(
