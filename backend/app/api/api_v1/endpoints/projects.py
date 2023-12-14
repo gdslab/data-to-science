@@ -27,8 +27,8 @@ def create_project(
     project_in_db = crud.project.get_user_project(
         db, user_id=current_user.id, project_id=project.id
     )
-    if project_in_db:
-        coordinates = project_in_db.field["geometry"]["coordinates"]
+    if project_in_db["response_code"] == status.HTTP_200_OK:
+        coordinates = project_in_db["result"].field["geometry"]["coordinates"]
         create_project_field_preview(request, project.id, coordinates)
     return project
 
@@ -38,13 +38,9 @@ def read_project(
     project_id: UUID,
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
-    project: models.Project = Depends(deps.can_read_write_project),
+    project: models.Project = Depends(deps.can_read_project),
 ) -> Any:
     """Retrieve project by id."""
-    if not project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found."
-        )
     return project
 
 
@@ -70,10 +66,6 @@ def update_project(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Update project if current user is project owner or member."""
-    if not project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
-        )
     project = crud.project.update(db, db_obj=project, obj_in=project_in)
     return project
 
@@ -81,17 +73,9 @@ def update_project(
 @router.delete("/{project_id}", response_model=schemas.Project)
 def deactivate_project(
     project_id: UUID,
-    project: models.Project = Depends(deps.can_read_write_project),
+    project: models.Project = Depends(deps.can_read_write_delete_project),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    if not project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
-        )
-    if not project.is_owner:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Access forbidden"
-        )
     deactivated_project = crud.project.deactivate(db, project_id=project.id)
     if not deactivated_project:
         raise HTTPException(

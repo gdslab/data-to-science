@@ -19,10 +19,6 @@ def create_flight(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Create new flight for a project."""
-    if not project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
-        )
     flight = crud.flight.create_with_project(
         db, obj_in=flight_in, project_id=project_id
     )
@@ -32,14 +28,10 @@ def create_flight(
 @router.get("/{flight_id}", response_model=schemas.Flight)
 def read_flight(
     flight_id: UUID,
-    flight: models.Flight = Depends(deps.can_read_write_flight),
+    flight: models.Flight = Depends(deps.can_read_flight),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Retrieve flight if current user has access to it."""
-    if not flight:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
-        )
     return flight
 
 
@@ -49,15 +41,10 @@ def read_flights(
     project_id: UUID,
     include_all: bool = True,
     current_user: models.User = Depends(deps.get_current_approved_user),
-    project: models.Project = Depends(deps.can_read_write_project),
+    project: models.Project = Depends(deps.can_read_project),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Retrieve flights associated with project user can access."""
-    if not project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
-        )
-
     if request.client and request.client.host == "testclient":
         upload_dir = settings.TEST_STATIC_DIR
     else:
@@ -80,10 +67,6 @@ def update_flight(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Update flight if current user has access to it."""
-    if not flight:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
-        )
     flight = crud.flight.update(db, db_obj=flight, obj_in=flight_in)
     return flight
 
@@ -92,21 +75,9 @@ def update_flight(
 def deactivate_flight(
     flight_id: UUID,
     flight: models.Flight = Depends(deps.can_read_write_flight),
-    project: models.Project = Depends(deps.can_read_write_project),
+    project: models.Project = Depends(deps.can_read_write_delete_project),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    if not project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
-        )
-    if not project.is_owner:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Access forbidden"
-        )
-    if not flight:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
-        )
     deactivated_flight = crud.flight.deactivate(db, flight_id=flight.id)
     if not deactivated_flight:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)

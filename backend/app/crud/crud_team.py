@@ -51,12 +51,18 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
                 )
         return team_db_obj
 
-    def get_user_team(
-        self, db: Session, *, user_id: UUID, team_id: UUID, only_owner: bool = False
+    def get_team(
+        self, db: Session, *, user_id: UUID, team_id: UUID, permission="read"
     ) -> Team | None:
-        """Retrieve team by id if user belongs to team."""
-        if only_owner:
-            stmt = select(Team).filter_by(owner_id=user_id, id=team_id)
+        """Retrieve team by id. User must be member of team."""
+        if permission == "readwrite":
+            stmt = (
+                select(Team)
+                .join(TeamMember.team)
+                .where(TeamMember.member_id == user_id)
+                .where(TeamMember.team_id == team_id)
+                .where(Team.owner_id == user_id)
+            )
         else:
             stmt = (
                 select(Team)

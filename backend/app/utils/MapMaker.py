@@ -12,7 +12,7 @@ class MapMaker:
 
         size = (128, 128)
         padding = (16, 16)
-        basemap = "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
+        basemap = "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}"
 
         self.map = StaticMap(size[0], size[1], padding[0], padding[1], basemap)
         self.map.add_polygon(create_polygon(self.coordinates))

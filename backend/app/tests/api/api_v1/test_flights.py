@@ -1,5 +1,6 @@
 from random import randint
 
+from fastapi import status
 from fastapi.encoders import jsonable_encoder
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -15,16 +16,17 @@ from app.tests.utils.project import create_project
 from app.tests.utils.user import create_user
 
 
-def test_create_flight(
+def test_create_flight_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
-    """Verify new flight is created in database."""
     pilot = create_user(db)
     project = create_project(db)
     current_user = get_current_user(db, normal_user_access_token)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id)
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="owner")
     crud.project_member.create_with_project(
-        db, obj_in=project_member_in, project_id=project.id
+        db,
+        obj_in=project_member_in,
+        project_id=project.id,
     )
     data = {
         "acquisition_date": create_acquisition_date(),
@@ -36,9 +38,11 @@ def test_create_flight(
         "pilot_id": pilot.id,
     }
     data = jsonable_encoder(data)
-    r = client.post(f"{settings.API_V1_STR}/projects/{project.id}/flights/", json=data)
-    assert 201 == r.status_code
-    response_data = r.json()
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/flights", json=data
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    response_data = response.json()
     assert "id" in response_data
     assert data["acquisition_date"] == response_data["acquisition_date"]
     assert data["altitude"] == response_data["altitude"]
@@ -48,12 +52,67 @@ def test_create_flight(
     assert data["platform"] == response_data["platform"]
 
 
-def test_create_flight_without_project_access(
+def test_create_flight_with_project_manager_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    pilot = create_user(db)
+    project = create_project(db)
+    current_user = get_current_user(db, normal_user_access_token)
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="manager")
+    crud.project_member.create_with_project(
+        db,
+        obj_in=project_member_in,
+        project_id=project.id,
+    )
+    data = {
+        "acquisition_date": create_acquisition_date(),
+        "altitude": randint(0, 500),
+        "side_overlap": randint(40, 80),
+        "forward_overlap": randint(40, 80),
+        "sensor": SENSORS[0],
+        "platform": PLATFORMS[0],
+        "pilot_id": pilot.id,
+    }
+    data = jsonable_encoder(data)
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/flights", json=data
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+
+
+def test_create_flight_with_project_viewer_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    pilot = create_user(db)
+    project = create_project(db)
+    current_user = get_current_user(db, normal_user_access_token)
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="viewer")
+    crud.project_member.create_with_project(
+        db,
+        obj_in=project_member_in,
+        project_id=project.id,
+    )
+    data = {
+        "acquisition_date": create_acquisition_date(),
+        "altitude": randint(0, 500),
+        "side_overlap": randint(40, 80),
+        "forward_overlap": randint(40, 80),
+        "sensor": SENSORS[0],
+        "platform": PLATFORMS[0],
+        "pilot_id": pilot.id,
+    }
+    data = jsonable_encoder(data)
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/flights", json=data
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_create_flight_with_non_project_member(
     client: TestClient,
     db: Session,
     normal_user_access_token: str,
 ) -> None:
-    """Verify failure to create new flight when current user is not project member."""
     pilot = create_user(db)
     project = create_project(db)
     data = {
@@ -66,48 +125,89 @@ def test_create_flight_without_project_access(
         "pilot_id": pilot.id,
     }
     data = jsonable_encoder(data)
-    r = client.post(
+    response = client.post(
         f"{settings.API_V1_STR}/projects/{project.id}/flights/",
         json=data,
     )
-    assert 404 == r.status_code
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_get_flight(
+def test_get_flight_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
-    """Verify retrieval of flight the current user can access."""
     project = create_project(db)
     flight = create_flight(db, project_id=project.id)
     current_user = get_current_user(db, normal_user_access_token)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id)
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="owner")
     crud.project_member.create_with_project(
         db, obj_in=project_member_in, project_id=project.id
     )
-    r = client.get(
+    response = client.get(
         f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}",
     )
-    assert 200 == r.status_code
-    response_data = r.json()
-    assert str(flight.id) == response_data["id"]
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["id"] == str(flight.id)
 
 
-def test_get_flights(
+def test_get_flight_with_project_manager_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
-    """Verify retrieval of flights associated with project."""
+    project = create_project(db)
+    flight = create_flight(db, project_id=project.id)
+    current_user = get_current_user(db, normal_user_access_token)
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="manager")
+    crud.project_member.create_with_project(
+        db, obj_in=project_member_in, project_id=project.id
+    )
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}",
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+
+def test_get_flight_with_project_viewer_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    project = create_project(db)
+    flight = create_flight(db, project_id=project.id)
+    current_user = get_current_user(db, normal_user_access_token)
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="viewer")
+    crud.project_member.create_with_project(
+        db, obj_in=project_member_in, project_id=project.id
+    )
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}",
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+
+def test_get_flight_with_non_project_member(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    project = create_project(db)
+    flight = create_flight(db, project_id=project.id)
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}",
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_get_flights_with_project_owner_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
     project = create_project(db)
     create_flight(db, project_id=project.id)
     create_flight(db, project_id=project.id)
     create_flight(db, project_id=project.id)
     current_user = get_current_user(db, normal_user_access_token)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id)
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="owner")
     crud.project_member.create_with_project(
         db, obj_in=project_member_in, project_id=project.id
     )
-    r = client.get(f"{settings.API_V1_STR}/projects/{project.id}/flights")
-    assert 200 == r.status_code
-    flights = r.json()
+    response = client.get(f"{settings.API_V1_STR}/projects/{project.id}/flights")
+    assert response.status_code == status.HTTP_200_OK
+    flights = response.json()
     assert type(flights) is list
     assert len(flights) == 3
     for flight in flights:
@@ -115,26 +215,56 @@ def test_get_flights(
         assert flight["project_id"] == str(project.id)
 
 
-def test_get_flight_without_project_access(
+def test_get_flights_with_project_manager_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
-    """Verify failure to retrieve flight the current user cannot access."""
+    project = create_project(db)
+    create_flight(db, project_id=project.id)
+    create_flight(db, project_id=project.id)
+    create_flight(db, project_id=project.id)
+    current_user = get_current_user(db, normal_user_access_token)
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="manager")
+    crud.project_member.create_with_project(
+        db, obj_in=project_member_in, project_id=project.id
+    )
+    response = client.get(f"{settings.API_V1_STR}/projects/{project.id}/flights")
+    assert response.status_code == status.HTTP_200_OK
+
+
+def test_get_flights_with_project_viewer_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    project = create_project(db)
+    create_flight(db, project_id=project.id)
+    create_flight(db, project_id=project.id)
+    create_flight(db, project_id=project.id)
+    current_user = get_current_user(db, normal_user_access_token)
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="viewer")
+    crud.project_member.create_with_project(
+        db, obj_in=project_member_in, project_id=project.id
+    )
+    response = client.get(f"{settings.API_V1_STR}/projects/{project.id}/flights")
+    assert response.status_code == status.HTTP_200_OK
+
+
+def test_get_flight_with_non_project_member(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
     project = create_project(db)
     flight = create_flight(db, project_id=project.id)
-    r = client.get(
+    response = client.get(
         f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}",
     )
-    assert 404 == r.status_code
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_update_flight(
+def test_update_flight_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
-    """Verify update of flight in project current user can access."""
     project = create_project(db)
     flight = create_flight(db, altitude=50, project_id=project.id)
     current_user = get_current_user(db, normal_user_access_token)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id)
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="owner")
     crud.project_member.create_with_project(
         db,
         obj_in=project_member_in,
@@ -143,28 +273,71 @@ def test_update_flight(
     flight_in = FlightUpdate(
         **{k: v for k, v in flight.__dict__.items() if k != "altitude"}, altitude=100
     )
-    r = client.put(
+    response = client.put(
         f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}",
         json=jsonable_encoder(flight_in),
     )
-    assert 200 == r.status_code
-    response_data = r.json()
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
     assert str(flight.id) == response_data["id"]
     assert str(flight.project_id) == response_data["project_id"]
     assert flight_in.altitude == response_data["altitude"]
 
 
-def test_update_flight_without_project_access(
+def test_update_flight_with_project_manager_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
-    """Verify failure to update flight in project current user cannot access."""
+    project = create_project(db)
+    flight = create_flight(db, altitude=50, project_id=project.id)
+    current_user = get_current_user(db, normal_user_access_token)
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="manager")
+    crud.project_member.create_with_project(
+        db,
+        obj_in=project_member_in,
+        project_id=project.id,
+    )
+    flight_in = FlightUpdate(
+        **{k: v for k, v in flight.__dict__.items() if k != "altitude"}, altitude=100
+    )
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}",
+        json=jsonable_encoder(flight_in),
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+
+def test_update_flight_with_project_viewer_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    project = create_project(db)
+    flight = create_flight(db, altitude=50, project_id=project.id)
+    current_user = get_current_user(db, normal_user_access_token)
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="viewer")
+    crud.project_member.create_with_project(
+        db,
+        obj_in=project_member_in,
+        project_id=project.id,
+    )
+    flight_in = FlightUpdate(
+        **{k: v for k, v in flight.__dict__.items() if k != "altitude"}, altitude=100
+    )
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}",
+        json=jsonable_encoder(flight_in),
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_update_flight_with_non_project_member(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
     project = create_project(db)
     flight = create_flight(db, altitude=50, project_id=project.id)
     flight_in = FlightUpdate(
         **{k: v for k, v in flight.__dict__.items() if k != "altitude"}, altitude=100
     )
-    r = client.put(
+    response = client.put(
         f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}",
         json=jsonable_encoder(flight_in),
     )
-    assert 404 == r.status_code
+    assert response.status_code == status.HTTP_404_NOT_FOUND

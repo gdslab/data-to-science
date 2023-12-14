@@ -13,11 +13,12 @@ else:
 class ProjectMemberBase(BaseModel):
     email: EmailStr | None = None
     member_id: UUID | None = None
+    role: str | None = None
 
 
 # properties to receive via API on creation
 class ProjectMemberCreate(ProjectMemberBase):
-    pass
+    role: str = "viewer"
 
 
 # properties to receive via API on update
@@ -28,6 +29,7 @@ class ProjectMemberUpdate(ProjectMemberBase):
 # properties shared by models stored in DB
 class ProjectMemberInDBBase(ProjectMemberBase, from_attributes=True):
     id: UUID
+    role: str
     member_id: UUID
 
     project_id: UUID

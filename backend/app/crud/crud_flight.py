@@ -1,6 +1,7 @@
-from typing import Sequence
+from typing import Sequence, TypedDict
 from uuid import UUID
 
+from fastapi import status
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select, update
 from sqlalchemy.orm import joinedload, Session
@@ -14,6 +15,12 @@ from app.models.project import Project
 from app.models.user_style import UserStyle
 from app.models.utils.user import utcnow
 from app.schemas.flight import FlightCreate, FlightUpdate
+
+
+class ReadFlight(TypedDict):
+    response_code: str
+    message: str
+    result: Flight | None
 
 
 class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
@@ -30,7 +37,7 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
 
     def get_flight_by_id(
         self, db: Session, project_id: UUID, flight_id: UUID
-    ) -> Flight | None:
+    ) -> ReadFlight:
         stmt = (
             select(Flight)
             .join(Project)
@@ -40,7 +47,18 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
             .where(Project.is_active)
         )
         with db as session:
-            return session.scalar(stmt)
+            flight = session.scalar(stmt)
+            if not flight:
+                return {
+                    "response_code": status.HTTP_404_NOT_FOUND,
+                    "message": "Flight not found",
+                    "result": None,
+                }
+            return {
+                "response_code": status.HTTP_200_OK,
+                "message": "Flight fetched successfully",
+                "result": flight,
+            }
 
     def get_multi_by_project(
         self,

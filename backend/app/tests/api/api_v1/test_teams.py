@@ -1,3 +1,4 @@
+from fastapi import status
 from fastapi.encoders import jsonable_encoder
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -110,7 +111,7 @@ def test_get_team_current_user_does_not_belong_to(
     r = client.get(
         f"{settings.API_V1_STR}/teams/{team.id}",
     )
-    assert 404 == r.status_code
+    assert r.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_update_team_owned_by_current_user(
@@ -156,11 +157,11 @@ def test_update_team_current_user_is_member_of_but_doesnt_own(
             description=random_team_description(),
         ).model_dump()
     )
-    r = client.put(
+    response = client.put(
         f"{settings.API_V1_STR}/teams/{team.id}",
         json=team_in,
     )
-    assert 404 == r.status_code
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_update_team_current_user_does_not_belong_to(
@@ -172,11 +173,11 @@ def test_update_team_current_user_does_not_belong_to(
         title=random_team_name(),
         description=random_team_description(),
     )
-    r = client.put(
+    response = client.put(
         f"{settings.API_V1_STR}/teams/{team.id}",
         json=team_in.model_dump(),
     )
-    assert 404 == r.status_code
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_remove_team_by_owner(
@@ -203,11 +204,11 @@ def test_remove_team_by_nonowner(
     team = create_team(db, owner_id=other_user.id)
     response = client.delete(f"{settings.API_V1_STR}/teams/{team.id}")
     team_in_db = crud.team.get(db, id=team.id)
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_403_FORBIDDEN
     assert team_in_db
     # current user is not owner but is a team member
     create_team_member(db, team_id=team.id, email=current_user.email)
-    response = client.delete(f"{settings.API_V1_STR}/teams{team.id}")
+    response = client.delete(f"{settings.API_V1_STR}/teams/{team.id}")
     team_in_db = crud.team.get(db, id=team.id)
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_403_FORBIDDEN
     assert team_in_db

@@ -48,16 +48,16 @@ def test_get_flight(db: Session) -> None:
     stored_flight = crud.flight.get_flight_by_id(
         db, project_id=flight.project_id, flight_id=flight.id
     )
-    assert stored_flight
-    assert flight.id == stored_flight.id
-    assert flight.acquisition_date == stored_flight.acquisition_date
-    assert flight.altitude == stored_flight.altitude
-    assert flight.side_overlap == stored_flight.side_overlap
-    assert flight.forward_overlap == stored_flight.forward_overlap
-    assert flight.sensor == stored_flight.sensor
-    assert flight.platform == stored_flight.platform
-    assert flight.project_id == stored_flight.project_id
-    assert flight.pilot_id == stored_flight.pilot_id
+    assert stored_flight and stored_flight["result"]
+    assert flight.id == stored_flight["result"].id
+    assert flight.acquisition_date == stored_flight["result"].acquisition_date
+    assert flight.altitude == stored_flight["result"].altitude
+    assert flight.side_overlap == stored_flight["result"].side_overlap
+    assert flight.forward_overlap == stored_flight["result"].forward_overlap
+    assert flight.sensor == stored_flight["result"].sensor
+    assert flight.platform == stored_flight["result"].platform
+    assert flight.project_id == stored_flight["result"].project_id
+    assert flight.pilot_id == stored_flight["result"].pilot_id
 
 
 def test_get_flights(db: Session) -> None:
@@ -123,7 +123,6 @@ def test_get_flights_excluding_processing_or_failed_data_products(db: Session) -
     assert type(flights) is list
     assert len(flights) == 1
     assert len(flights[0].data_products) == 1
-    print(flights[0].data_products[0].data_type)
     assert flights[0].data_products[0].data_type == "dsm"
 
 
@@ -144,7 +143,7 @@ def test_get_flight_for_deactivated_project_returns_none(db: Session) -> None:
     flight2 = crud.flight.get_flight_by_id(
         db, project_id=project.id, flight_id=flight.id
     )
-    assert flight2 is None
+    assert flight2 and flight2["result"] is None
 
 
 def test_get_flights_ignores_deactivated_project(db: Session) -> None:

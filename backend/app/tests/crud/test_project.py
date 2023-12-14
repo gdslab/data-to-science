@@ -73,14 +73,14 @@ def test_get_project_by_user_and_project_id(db: Session) -> None:
     stored_project = crud.project.get_user_project(
         db, project_id=project.id, user_id=user.id
     )
-    assert stored_project
-    assert project.id == stored_project.id
-    assert project.title == stored_project.title
-    assert project.description == stored_project.description
-    assert project.planting_date == stored_project.planting_date
-    assert project.harvest_date == stored_project.harvest_date
-    assert project.location_id == stored_project.location_id
-    assert project.owner_id == stored_project.owner_id
+    assert stored_project and stored_project["result"]
+    assert project.id == stored_project["result"].id
+    assert project.title == stored_project["result"].title
+    assert project.description == stored_project["result"].description
+    assert project.planting_date == stored_project["result"].planting_date
+    assert project.harvest_date == stored_project["result"].harvest_date
+    assert project.location_id == stored_project["result"].location_id
+    assert project.owner_id == stored_project["result"].owner_id
 
 
 def test_get_project_with_team_by_user_and_project_id(db: Session) -> None:
@@ -92,33 +92,14 @@ def test_get_project_with_team_by_user_and_project_id(db: Session) -> None:
     stored_project = crud.project.get_user_project(
         db, project_id=project.id, user_id=user.id
     )
-    assert stored_project
-    assert project.id == stored_project.id
-    assert project.title == stored_project.title
-    assert project.description == stored_project.description
-    assert project.planting_date == stored_project.planting_date
-    assert project.harvest_date == stored_project.harvest_date
-    assert project.location_id == stored_project.location_id
-    assert project.owner_id == stored_project.owner_id
-
-
-def test_get_project_with_team_by_team_member_and_project_id(db: Session) -> None:
-    user = create_user(db)
-    team = create_team(db, owner_id=user.id)
-    user2 = create_user(db)
-    create_team_member(db, email=user2.email, team_id=team.id)
-    project = create_project(db, owner_id=user.id, team_id=team.id)
-    stored_project = crud.project.get_user_project(
-        db, project_id=project.id, user_id=user2.id
-    )
-    assert stored_project
-    assert project.id == stored_project.id
-    assert project.title == stored_project.title
-    assert project.description == stored_project.description
-    assert project.planting_date == stored_project.planting_date
-    assert project.harvest_date == stored_project.harvest_date
-    assert project.location_id == stored_project.location_id
-    assert project.owner_id == stored_project.owner_id
+    assert stored_project and stored_project["result"]
+    assert project.id == stored_project["result"].id
+    assert project.title == stored_project["result"].title
+    assert project.description == stored_project["result"].description
+    assert project.planting_date == stored_project["result"].planting_date
+    assert project.harvest_date == stored_project["result"].harvest_date
+    assert project.location_id == stored_project["result"].location_id
+    assert project.owner_id == stored_project["result"].owner_id
 
 
 def test_get_projects_by_owner(db: Session) -> None:
@@ -150,21 +131,6 @@ def test_get_projects_by_project_member(db: Session) -> None:
         assert project.id in [project.id, project2.id, project3.id]
 
 
-def test_get_projects_by_team_member(db: Session) -> None:
-    user = create_user(db)
-    team = create_team(db)
-    create_team_member(db, email=user.email, team_id=team.id)
-    create_project(db, team_id=team.id)
-    create_project(db, team_id=team.id)
-    create_project(db, team_id=team.id)
-    projects = crud.project.get_user_project_list(db, user_id=user.id)
-    assert projects
-    assert isinstance(projects, list)
-    assert len(projects) == 3
-    for project in projects:
-        assert project.team_id == team.id
-
-
 def test_update_project(db: Session) -> None:
     project = create_project(db)
     new_title = random_team_name()
@@ -187,8 +153,8 @@ def test_get_project_flight_count(db: Session) -> None:
     stored_project = crud.project.get_user_project(
         db, project_id=project.id, user_id=user.id
     )
-    assert stored_project
-    assert stored_project.flight_count == 5
+    assert stored_project and stored_project["result"]
+    assert stored_project["result"].flight_count == 5
 
 
 def test_deactivate_project(db: Session) -> None:
@@ -207,7 +173,7 @@ def test_get_deactivated_project_returns_none(db: Session) -> None:
     project = create_project(db, owner_id=user.id)
     crud.project.deactivate(db, project_id=project.id)
     project2 = crud.project.get_user_project(db, project_id=project.id, user_id=user.id)
-    assert project2 is None
+    assert project2 and project2["result"] is None
 
 
 def test_get_projects_ignores_deactivated_projects(db: Session) -> None:

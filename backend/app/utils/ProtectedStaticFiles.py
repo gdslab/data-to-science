@@ -44,8 +44,10 @@ async def verify_static_file_access(request: Request) -> None:
         project = crud.project.get_user_project(
             SessionLocal(), user_id=user.id, project_id=project_id_uuid
         )
-        if not project:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+        if project["response_code"] != status.HTTP_200_OK:
+            raise HTTPException(
+                status_code=project["response_code"], detail=project["message"]
+            )
     elif "users" in request.url.path:
         try:
             user_id_in_url = request.url.path.split("/users/")[1].split("/")[0]

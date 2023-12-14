@@ -19,13 +19,16 @@ class CRUDProjectMember(
         self, db: Session, *, obj_in: ProjectMemberCreate, project_id: UUID
     ) -> ProjectMember | None:
         obj_in_data = jsonable_encoder(obj_in)
-        if "email" in obj_in_data and obj_in_data["email"]:
-            email = obj_in_data["email"]
-            statement = select(User).filter_by(email=email)
+        if "email" in obj_in_data and obj_in_data.get("email"):
+            statement = select(User).filter_by(email=obj_in_data.get("email"))
             with db as session:
                 user_obj = session.scalars(statement).one_or_none()
                 if user_obj:
-                    db_obj = self.model(member_id=user_obj.id, project_id=project_id)
+                    db_obj = self.model(
+                        role=obj_in_data.get("role", "viewer"),
+                        member_id=user_obj.id,
+                        project_id=project_id,
+                    )
                     session.add(db_obj)
                     session.commit()
                     session.refresh(db_obj)
@@ -34,24 +37,37 @@ class CRUDProjectMember(
         elif "member_id" in obj_in_data:
             with db as session:
                 db_obj = self.model(
-                    member_id=obj_in_data["member_id"], project_id=project_id
+                    member_id=obj_in_data.get("member_id"),
+                    role=obj_in_data.get("role", "viewer"),
+                    project_id=project_id,
                 )
                 session.add(db_obj)
                 session.commit()
                 session.refresh(db_obj)
         return db_obj
 
+    def get_by_project_and_member_id(
+        self, db: Session, project_id: UUID, member_id: UUID
+    ) -> ProjectMember | None:
+        statement = (
+            select(ProjectMember)
+            .where(ProjectMember.project_id == project_id)
+            .where(ProjectMember.member_id == member_id)
+        )
+        with db as session:
+            return session.scalar(statement)
+
     def get_list_of_project_members(
         self, db: Session, *, project_id: UUID, skip: int = 0, limit: int = 100
     ) -> Sequence[ProjectMember]:
-        stmt = (
+        statement = (
             select(ProjectMember)
             .join(Project)
             .where(ProjectMember.project_id == project_id)
             .where(Project.is_active)
         )
         with db as session:
-            return session.scalars(stmt).all()
+            return session.scalars(statement).all()
 
 
 project_member = CRUDProjectMember(ProjectMember)

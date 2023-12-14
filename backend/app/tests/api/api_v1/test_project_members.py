@@ -1,8 +1,13 @@
+import pytest
+from fastapi import status
 from fastapi.testclient import TestClient
+from sqlalchemy.exc import DataError
 from sqlalchemy.orm import Session
 
+from app import crud
 from app.api.deps import get_current_user, get_current_approved_user
 from app.core.config import settings
+from app.schemas.project_member import ProjectMemberUpdate
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
 from app.tests.utils.user import create_user
@@ -11,10 +16,79 @@ from app.tests.utils.user import create_user
 API_URL = f"{settings.API_V1_STR}/projects"
 
 
-def test_get_project_members_by_owner(
+def test_create_project_member_by_email_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
-    current_user = get_current_user(db, normal_user_access_token)
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
+    project = create_project(db, owner_id=current_user.id)
+    new_member = create_user(db)
+    data = {"email": new_member.email, "member_id": None}
+    response = client.post(f"{API_URL}/{project.id}/members", json=data)
+    response.status_code == 201
+    response_data = response.json()
+    new_member.id == response_data["member_id"]
+    project.id == response_data["project_id"]
+
+
+def teset_create_project_member_by_user_id_with_project_owner_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
+    project = create_project(db, owner_id=current_user.id)
+    new_member = create_user(db)
+    data = {"member_id": str(new_member.id)}
+    response = client.post(f"{API_URL}/{project.id}/members", json=data)
+    assert response.status_code == 201
+    response_data = response.json()
+    new_member.id == response_data["member_id"]
+    project.id == response_data["project_id"]
+
+
+def test_create_project_member_with_non_project_member(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    project = create_project(db)
+    new_member = create_user(db)
+    data = {"email": new_member.email}
+    response = client.post(f"{API_URL}/{project.id}/members", json=data)
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_create_project_member_with_invalid_email(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
+    project = create_project(db, owner_id=current_user.id)
+    data = {"email": "email@notindb.doh"}
+    response = client.post(f"{API_URL}/{project.id}/members", json=data)
+    assert 404 == response.status_code
+
+
+def test_create_project_member_with_invalid_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db)
+    with pytest.raises(DataError):
+        create_project_member(
+            db, email=current_user.email, project_id=project.id, role="invalid-role"
+        )
+
+
+def test_get_project_members(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
     project = create_project(db, owner_id=current_user.id)
     user2 = create_user(db)
     user3 = create_user(db)
@@ -33,59 +107,133 @@ def test_get_project_members_by_owner(
         ]
 
 
-def test_add_new_project_member_by_email_and_project_owner(
+def test_get_project_members_without_permission(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    project_owner = create_user(db)
+    project = create_project(db, owner_id=project_owner.id)
+    for i in range(0, 3):
+        create_project_member(db, project_id=project.id)
+    response = client.get(f"{API_URL}/{project.id}/members")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_update_project_member_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_approved_user(
         get_current_user(db, normal_user_access_token),
     )
     project = create_project(db, owner_id=current_user.id)
-    new_member = create_user(db)
-    data = {"email": new_member.email, "member_id": None}
-    response = client.post(f"{API_URL}/{project.id}/members", json=data)
-    response.status_code == 201
-    response_data = response.json()
-    new_member.id == response_data["member_id"]
-    project.id == response_data["project_id"]
-
-
-def test_add_new_project_member_by_id_and_project_owner(
-    client: TestClient, db: Session, normal_user_access_token: str
-) -> None:
-    current_user = get_current_approved_user(
-        get_current_user(db, normal_user_access_token),
+    project_member = create_project_member(db, role="viewer")
+    project_member_in = {"role": "manager"}
+    response = client.put(
+        f"{API_URL}/{project.id}/members/{project_member.id}", json=project_member_in
     )
-    project = create_project(db, owner_id=current_user.id)
-    new_member = create_user(db)
-    data = {"member_id": str(new_member.id)}
-    response = client.post(f"{API_URL}/{project.id}/members", json=data)
-    assert response.status_code == 201
-    response_data = response.json()
-    new_member.id == response_data["member_id"]
-    project.id == response_data["project_id"]
+    assert response.status_code == 200
+    updated_project_member = response.json()
+    assert updated_project_member["id"] == str(project_member.id)
+    assert updated_project_member["role"] == "manager"
 
 
-def test_add_new_project_member_by_email_and_regular_project_member(
+def test_update_project_member_with_project_manager_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_approved_user(
         get_current_user(db, normal_user_access_token),
     )
     project = create_project(db)
-    create_project_member(db, email=current_user.email, project_id=project.id)
-    new_member = create_user(db)
-    data = {"email": new_member.email}
-    response = client.post(f"{API_URL}/{project.id}/members", json=data)
-    assert response.status_code == 403
+    create_project_member(
+        db, email=current_user.email, project_id=project.id, role="manager"
+    )
+    project_member = create_project_member(db, role="viewer")
+    project_member_in = {"role": "manager"}
+    response = client.put(
+        f"{API_URL}/{project.id}/members/{project_member.id}", json=project_member_in
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_add_new_project_member_with_unused_email(
+def test_update_project_member_with_project_owner_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
+    project = create_project(db)
+    create_project_member(
+        db, email=current_user.email, project_id=project.id, role="viewer"
+    )
+    project_member = create_project_member(db, role="viewer")
+    project_member_in = {"role": "manager"}
+    response = client.put(
+        f"{API_URL}/{project.id}/members/{project_member.id}", json=project_member_in
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_update_project_member_with_non_project_member(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    project_owner = create_user(db)
+    project = create_project(db, owner_id=project_owner.id)
+    project_member = create_project_member(db, member_id=project_owner.id)
+    project_member_in = {"role": "owner"}
+    response = client.put(
+        f"{API_URL}/{project.id}/members/{project_member.id}", json=project_member_in
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_remove_project_member_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_approved_user(
         get_current_user(db, normal_user_access_token),
     )
     project = create_project(db, owner_id=current_user.id)
-    data = {"email": "email@notindb.doh"}
-    response = client.post(f"{API_URL}/{project.id}/members", json=data)
-    assert 404 == response.status_code
+    project_member = create_project_member(db, project_id=project.id, role="owner")
+    response = client.delete(f"{API_URL}/{project.id}/members/{project_member.id}")
+    assert response.status_code == status.HTTP_200_OK
+    project_member_in_db = crud.project_member.get(db, id=project_member.id)
+    assert project_member_in_db is None
+
+
+def test_remove_project_member_with_project_manager_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
+    project = create_project(db)
+    create_project_member(
+        db, email=current_user.email, project_id=project.id, role="manager"
+    )
+    project_member = create_project_member(db, project_id=project.id, role="owner")
+    response = client.delete(f"{API_URL}/{project.id}/members/{project_member.id}")
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_remove_project_member_with_project_viewer_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
+    project = create_project(db)
+    create_project_member(
+        db, email=current_user.email, project_id=project.id, role="viewer"
+    )
+    project_member = create_project_member(db, project_id=project.id, role="owner")
+    response = client.delete(f"{API_URL}/{project.id}/members/{project_member.id}")
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_remove_project_member_with_non_project_member(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    project_owner = create_user(db)
+    project = create_project(db, owner_id=project_owner.id)
+    project_member = create_project_member(db, project_id=project.id)
+    response = client.delete(f"{API_URL}/{project.id}/members/{project_member.id}")
+    assert response.status_code == status.HTTP_404_NOT_FOUND

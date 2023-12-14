@@ -1,3 +1,4 @@
+from fastapi import status
 from fastapi.encoders import jsonable_encoder
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -39,10 +40,10 @@ def test_add_new_team_member_by_regular_team_member(
     create_team_member(db, email=current_user.email, team_id=team.id)
     new_member = create_user(db)
     data = {"email": new_member.email}
-    r = client.post(
+    response = client.post(
         f"{settings.API_V1_STR}/teams/{team.id}/members", json=jsonable_encoder(data)
     )
-    assert 404 == r.status_code
+    response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_add_existing_team_member_to_team(

@@ -1,9 +1,10 @@
 import json
-from typing import Sequence
+from typing import Sequence, TypedDict
 from uuid import UUID
 
+from fastapi import status
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select, update, or_
 from sqlalchemy.orm import Session
 
 from app import crud
@@ -11,10 +12,14 @@ from app.crud.base import CRUDBase
 from app.models.location import Location
 from app.models.project import Project
 from app.models.project_member import ProjectMember
-from app.models.team import Team
-from app.models.team_member import TeamMember
 from app.models.utils.user import utcnow
 from app.schemas.project import ProjectCreate, ProjectUpdate
+
+
+class ReadProject(TypedDict):
+    response_code: str
+    message: str
+    result: Project | None
 
 
 class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
@@ -33,7 +38,9 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             session.commit()
             session.refresh(project_db_obj)
         # add project memeber to db
-        member_db_obj = ProjectMember(member_id=owner_id, project_id=project_db_obj.id)
+        member_db_obj = ProjectMember(
+            member_id=owner_id, project_id=project_db_obj.id, role="owner"
+        )
         with db as session:
             session.add(member_db_obj)
             session.commit()
@@ -41,49 +48,45 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         return project_db_obj
 
     def get_user_project(
-        self, db: Session, user_id: UUID, project_id: UUID
-    ) -> Project | None:
+        self, db: Session, user_id: UUID, project_id: UUID, permission: str = "r"
+    ) -> ReadProject:
         """Retrieve project by id."""
-        # Selects project by id if one of the below items is true
-        # - User is project member
-        # - User is team member in team associated with project
+        # Selects project by id if user is project member
         query_by_project_member = (
-            select(Project, func.ST_AsGeoJSON(Location))
+            select(Project, func.ST_AsGeoJSON(Location), ProjectMember)
             .join(Project.location)
             .join(Project.members)
             .where(Project.id == project_id)
             .where(Project.is_active)
             .where(ProjectMember.member_id == user_id)
         )
-        query_by_team_member = (
-            select(Project, func.ST_AsGeoJSON(Location))
-            .join(Project.location)
-            .join(Project.team)
-            .join(Team.members)
-            .where(Project.id == project_id)
-            .where(Project.is_active)
-            .where(Project.team_id == TeamMember.team_id)
-            .where(TeamMember.member_id == user_id)
-        )
         with db as session:
-            project1 = session.execute(query_by_project_member).one_or_none()
-            project2 = session.execute(query_by_team_member).one_or_none()
-            projects = []
-            if project1:
-                setattr(project1[0], "is_owner", user_id == project1[0].owner_id)
-                setattr(project1[0], "field", json.loads(project1[1]))
-                setattr(project1[0], "flight_count", len(project1[0].flights))
-                projects.append(project1[0])
-            if project2:
-                setattr(project2[0], "is_owner", user_id == project2[0].owner_id)
-                setattr(project2[0], "field", json.loads(project2[1]))
-                setattr(project2[0], "flight_count", len(project2[0].flights))
-                projects.append(project2[0])
-            if len(set(projects)) > 1 or len(projects) < 1:
-                project = None
+            project = session.execute(query_by_project_member).one_or_none()
+            if project and len(project) == 3:
+                member_role = project[2].role
+                if (permission == "rwd" and member_role != "owner") or (
+                    permission == "rw"
+                    and (member_role != "owner" and member_role != "manager")
+                ):
+                    return {
+                        "response_code": status.HTTP_403_FORBIDDEN,
+                        "message": "Permission denied",
+                        "result": None,
+                    }
+                setattr(project[0], "is_owner", user_id == project[0].owner_id)
+                setattr(project[0], "field", json.loads(project[1]))
+                setattr(project[0], "flight_count", len(project[0].flights))
+                return {
+                    "response_code": status.HTTP_200_OK,
+                    "message": "Project fetched successfully",
+                    "result": project[0],
+                }
             else:
-                project = list(set(projects))[0]
-        return project
+                return {
+                    "response_code": status.HTTP_404_NOT_FOUND,
+                    "message": "Project not found",
+                    "result": None,
+                }
 
     def get_user_project_list(
         self, db: Session, user_id: UUID, skip: int = 0, limit: int = 100
@@ -97,20 +100,8 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             .where(Project.is_active)
             .where(ProjectMember.member_id == user_id)
         )
-        query_by_team_member = (
-            select(Project, func.ST_AsGeoJSON(Location))
-            .join(Project.location)
-            .join(Project.team)
-            .join(Team.members)
-            .where(Project.is_active)
-            .where(Project.team_id == TeamMember.team_id)
-            .where(TeamMember.member_id == user_id)
-        )
-        # team member
         with db as session:
-            projects1 = session.execute(query_by_project_member).all()
-            projects2 = session.execute(query_by_team_member).all()
-            projects = list(set(projects1 + projects2))
+            projects = session.execute(query_by_project_member).all()
             final_projects = []
             # indicate if project member is also project owner
             for project in projects:

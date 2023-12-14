@@ -105,20 +105,46 @@ def can_read_team(
     current_user: models.User = Depends(get_current_approved_user),
 ) -> models.Team | None:
     """Return team only if current user is a member of the team."""
-    team = crud.team.get_user_team(db, user_id=current_user.id, team_id=team_id)
+    team = crud.team.get_team(
+        db, user_id=current_user.id, team_id=team_id, permission="read"
+    )
+    if not team:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+        )
     return team
 
 
-def can_read_write_team(
+def can_read_write_delete_team(
     team_id: UUID,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_approved_user),
 ) -> models.Team | None:
     """Return team only if current user is owner of the team."""
-    team = crud.team.get_user_team(
-        db, user_id=current_user.id, team_id=team_id, only_owner=True
+    team = crud.team.get_team(
+        db, user_id=current_user.id, team_id=team_id, permission="readwrite"
     )
+    if not team:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+        )
     return team
+
+
+def can_read_project(
+    project_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_approved_user),
+) -> models.Project | None:
+    """Return project is current user is project owner, manager, or member."""
+    project = crud.project.get_user_project(
+        db, user_id=current_user.id, project_id=project_id, permission="r"
+    )
+    if project["response_code"] != status.HTTP_200_OK:
+        raise HTTPException(
+            status_code=project["response_code"], detail=project["message"]
+        )
+    return project["result"]
 
 
 def can_read_write_project(
@@ -126,15 +152,48 @@ def can_read_write_project(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_approved_user),
 ) -> models.Project | None:
-    """Return project if current user is project member or team member."""
+    """Return project if current user is project owner or manager."""
     project = crud.project.get_user_project(
-        db, user_id=current_user.id, project_id=project_id
+        db, user_id=current_user.id, project_id=project_id, permission="rw"
     )
-    if not project:
+    if project["response_code"] != status.HTTP_200_OK:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+            status_code=project["response_code"], detail=project["message"]
         )
-    return project
+    return project["result"]
+
+
+def can_read_write_delete_project(
+    project_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_approved_user),
+) -> models.Project | None:
+    """Return project if current user is project owner."""
+    project = crud.project.get_user_project(
+        db, user_id=current_user.id, project_id=project_id, permission="rwd"
+    )
+    if project["response_code"] != status.HTTP_200_OK:
+        raise HTTPException(
+            status_code=project["response_code"], detail=project["message"]
+        )
+    return project["result"]
+
+
+def can_read_flight(
+    flight_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_approved_user),
+    project: models.Project = Depends(can_read_project),
+) -> models.Flight | None:
+    """Return flight if current user is project owner, manager, or member."""
+    flight = crud.flight.get_flight_by_id(
+        db, project_id=project.id, flight_id=flight_id
+    )
+    if flight["response_code"] != status.HTTP_200_OK:
+        raise HTTPException(
+            status_code=flight["response_code"], detail=flight["message"]
+        )
+    return flight["result"]
 
 
 def can_read_write_flight(
@@ -143,20 +202,29 @@ def can_read_write_flight(
     current_user: models.User = Depends(get_current_approved_user),
     project: models.Project = Depends(can_read_write_project),
 ) -> models.Flight | None:
-    """Return flight only if current user is a member of the project."""
-    if not project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
-        )
-    if not project.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Project not active"
-        )
+    """Return flight if current user is project owner or manager."""
     flight = crud.flight.get_flight_by_id(
         db, project_id=project.id, flight_id=flight_id
     )
-    if flight and not flight.is_active:
+    if flight["response_code"] != status.HTTP_200_OK:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Flight not active"
+            status_code=flight["response_code"], detail=flight["message"]
         )
-    return flight
+    return flight["result"]
+
+
+def can_read_write_delete_flight(
+    flight_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_approved_user),
+    project: models.Project = Depends(can_read_write_project),
+) -> models.Flight | None:
+    """Return flight if current user is project owner."""
+    flight = crud.flight.get_flight_by_id(
+        db, project_id=project.id, flight_id=flight_id
+    )
+    if flight["response_code"] != status.HTTP_200_OK:
+        raise HTTPException(
+            status_code=flight["response_code"], detail=flight["message"]
+        )
+    return flight["result"]

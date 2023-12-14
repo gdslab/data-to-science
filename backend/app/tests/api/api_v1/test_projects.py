@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from fastapi import status
 from fastapi.encoders import jsonable_encoder
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -28,16 +29,17 @@ def test_create_project(
     client: TestClient, normal_user_access_token: str, db: Session
 ) -> None:
     location = create_location(db)
-    data = {
-        "title": random_team_name(),
-        "description": random_team_description(),
-        "planting_date": random_planting_date(),
-        "harvest_date": random_harvest_date(),
-        "location_id": location.id,
-    }
-    data = jsonable_encoder(data)
-    response = client.post(f"{API_URL}", json=data)
-    response.status_code == 201
+    data = jsonable_encoder(
+        {
+            "title": random_team_name(),
+            "description": random_team_description(),
+            "planting_date": random_planting_date(),
+            "harvest_date": random_harvest_date(),
+            "location_id": location.id,
+        }
+    )
+    response = client.post(API_URL, json=data)
+    response.status_code == status.HTTP_201_CREATED
     response_data = response.json()
     assert "id" in response_data
     assert data["title"] == response_data["title"]
@@ -46,13 +48,13 @@ def test_create_project(
     assert data["harvest_date"] == response_data["harvest_date"]
 
 
-def test_get_project_by_owner(
+def test_get_project_with_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db, owner_id=current_user.id)
     response = client.get(f"{API_URL}/{project.id}")
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     assert str(project.id) == response_data["id"]
     assert project.title == response_data["title"]
@@ -63,40 +65,39 @@ def test_get_project_by_owner(
     assert response_data["is_owner"] is True
 
 
-def test_get_project_by_project_member(
+def test_get_project_with_manager_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
-    create_project_member(db, email=current_user.email, project_id=project.id)
+    create_project_member(
+        db, email=current_user.email, project_id=project.id, role="manager"
+    )
     response = client.get(f"{API_URL}/{project.id}")
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
+
+
+def test_get_project_with_viewer_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db)
+    create_project_member(
+        db, email=current_user.email, project_id=project.id, role="viewer"
+    )
+    response = client.get(f"{API_URL}/{project.id}")
+    assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     assert str(project.id) == response_data["id"]
     assert response_data["is_owner"] is False
 
 
-def test_get_project_by_team_member(
-    client: TestClient, db: Session, normal_user_access_token: str
-) -> None:
-    current_user = get_current_user(db, normal_user_access_token)
-    user = create_user(db)
-    team = create_team(db, owner_id=user.id)
-    create_team_member(db, email=current_user.email, team_id=team.id)
-    project = create_project(db, owner_id=user.id, team_id=team.id)
-    response = client.get(f"{API_URL}/{project.id}")
-    assert response.status_code == 200
-    response_data = response.json()
-    assert str(project.id) == response_data["id"]
-    assert response_data["is_owner"] is False
-
-
-def test_get_project_by_unauthorized_user(
+def test_get_project_by_non_project_member(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     project = create_project(db)
     response = client.get(f"{API_URL}/{project.id}")
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 def test_get_projects(
@@ -111,7 +112,7 @@ def test_get_projects(
     )
     create_project(db)
     response = client.get(API_URL)
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     assert type(response_data) is list
     assert len(response_data) == 2
@@ -129,7 +130,7 @@ def test_get_projects(
             assert project["is_owner"] is False
 
 
-def test_update_project_owned_by_current_user(
+def test_update_project_with_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
@@ -144,7 +145,7 @@ def test_update_project_owned_by_current_user(
         ).model_dump()
     )
     response = client.put(f"{API_URL}/{project.id}", json=project_in)
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     assert str(project.id) == response_data["id"]
     assert response_data["is_owner"] is True
@@ -155,7 +156,38 @@ def test_update_project_owned_by_current_user(
     assert project_in["location_id"] == response_data["location_id"]
 
 
-def test_update_project_current_user_is_member_of(
+def test_update_project_with_manager_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db)
+    # add current user to project
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="manager")
+    proj_mem = crud.project_member.create_with_project(
+        db, obj_in=project_member_in, project_id=project.id
+    )
+    update_data = jsonable_encoder(
+        {
+            "title": random_team_name(),
+            "description": random_team_description(),
+            "planting_date": random_planting_date(),
+            "harvest_date": random_harvest_date(),
+            "location_id": create_location(db).id,
+        }
+    )
+    response = client.put(f"{API_URL}/{project.id}", json=update_data)
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert str(project.id) == response_data["id"]
+    assert response_data["is_owner"] is False
+    assert update_data["title"] == response_data["title"]
+    assert update_data["description"] == response_data["description"]
+    assert update_data["planting_date"] == response_data["planting_date"]
+    assert update_data["harvest_date"] == response_data["harvest_date"]
+    assert update_data["location_id"] == response_data["location_id"]
+
+
+def test_update_project_with_viewer_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
@@ -175,18 +207,10 @@ def test_update_project_current_user_is_member_of(
         }
     )
     response = client.put(f"{API_URL}/{project.id}", json=update_data)
-    assert response.status_code == 200
-    response_data = response.json()
-    assert str(project.id) == response_data["id"]
-    assert response_data["is_owner"] is False
-    assert update_data["title"] == response_data["title"]
-    assert update_data["description"] == response_data["description"]
-    assert update_data["planting_date"] == response_data["planting_date"]
-    assert update_data["harvest_date"] == response_data["harvest_date"]
-    assert update_data["location_id"] == response_data["location_id"]
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_update_project_current_user_does_not_belong_to(
+def test_update_project_with_non_project_member(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     project = create_project(db)
@@ -200,16 +224,18 @@ def test_update_project_current_user_does_not_belong_to(
         }
     )
     response = client.put(f"{API_URL}/{project.id}", json=update_data)
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_deactivate_project_by_owner(
+def test_deactivate_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
-    owner = get_current_approved_user(get_current_user(db, normal_user_access_token))
-    project = create_project(db, owner_id=owner.id)
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
     response = client.delete(f"{API_URL}/{project.id}")
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     assert response_data.get("is_active", True) is False
     try:
@@ -222,21 +248,7 @@ def test_deactivate_project_by_owner(
     assert deactivated_at < datetime.utcnow()
 
 
-def test_deactivate_project_by_team_member(
-    client: TestClient, db: Session, normal_user_access_token: str
-) -> None:
-    owner = create_user(db)
-    team = create_team(db, owner_id=owner.id)
-    current_user = get_current_approved_user(
-        get_current_user(db, normal_user_access_token)
-    )
-    create_team_member(db, email=current_user.email, team_id=team.id)
-    project = create_project(db, owner_id=owner.id, team_id=team.id)
-    response = client.delete(f"{API_URL}/{project.id}")
-    assert response.status_code == 403
-
-
-def test_deactivate_project_by_project_member(
+def test_deactivate_project_with_manager_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     owner = create_user(db)
@@ -244,18 +256,20 @@ def test_deactivate_project_by_project_member(
         get_current_user(db, normal_user_access_token)
     )
     project = create_project(db, owner_id=owner.id)
-    create_project_member(db, email=current_user.email, project_id=project.id)
+    create_project_member(
+        db, email=current_user.email, project_id=project.id, role="readwrite"
+    )
     response = client.delete(f"{API_URL}/{project.id}")
-    assert response.status_code == 403
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_deactivate_project_by_unauthorized_user(
+def test_deactivate_project_by_non_project_member(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     user = create_user(db)
     project = create_project(db, owner_id=user.id)
     response = client.delete(f"{API_URL}/{project.id}")
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 def test_get_deactivated_project_by_owner(
@@ -267,7 +281,7 @@ def test_get_deactivated_project_by_owner(
     project = create_project(db, owner_id=current_user.id)
     crud.project.deactivate(db, project_id=project.id)
     response = client.get(f"{API_URL}/{project.id}")
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 def test_get_deactivated_project_by_team_member(
@@ -282,7 +296,7 @@ def test_get_deactivated_project_by_team_member(
     project = create_project(db, owner_id=owner.id, team_id=team.id)
     crud.project.deactivate(db, project_id=project.id)
     response = client.get(f"{API_URL}/{project.id}")
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 def test_get_deactivated_project_by_project_member(
@@ -296,4 +310,4 @@ def test_get_deactivated_project_by_project_member(
     create_project_member(db, email=current_user.email, project_id=project.id)
     crud.project.deactivate(db, project_id=project.id)
     response = client.get(f"{API_URL}/{project.id}")
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
