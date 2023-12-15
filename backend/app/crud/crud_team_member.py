@@ -8,9 +8,13 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Bundle, Session
 from sqlalchemy.sql.selectable import Select
 
+from app import crud
 from app.crud.base import CRUDBase
+from app.models.project import Project
+from app.models.project_member import ProjectMember
 from app.models.team_member import TeamMember
 from app.models.user import User
+from app.schemas.project_member import ProjectMemberCreate
 from app.schemas.team_member import TeamMemberCreate, TeamMemberUpdate
 
 
@@ -21,20 +25,37 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
     def create_with_team(
         self, db: Session, *, obj_in: TeamMemberCreate, team_id: UUID
     ) -> TeamMember | None:
+        # create team member
         obj_in_data = jsonable_encoder(obj_in)
         email = obj_in_data["email"]
-        stmt = select(User).filter_by(email=email, is_approved=True)
+        statement = select(User).filter_by(email=email, is_approved=True)
+        team_member = None
         with db as session:
-            user_obj = session.scalar(stmt)
+            user_obj = session.scalar(statement)
             if user_obj:
-                db_obj = self.model(member_id=user_obj.id, team_id=team_id)
-                session.add(db_obj)
+                team_member = self.model(member_id=user_obj.id, team_id=team_id)
+                session.add(team_member)
                 session.commit()
-                session.refresh(db_obj)
-                set_name_and_email_attr(db_obj, user_obj)
-            else:
-                db_obj = None
-            return db_obj
+                session.refresh(team_member)
+                set_name_and_email_attr(team_member, user_obj)
+        # add as project member if team is associated with project
+        statement = select(Project).where(Project.team_id == team_id)
+        with db as session:
+            project = session.scalar(statement)
+            if project:
+                project_member = crud.project_member.get_by_project_and_member_id(
+                    db, project_id=project.id, member_id=user_obj.id
+                )
+                if not project_member:
+                    crud.project_member.create_with_project(
+                        db,
+                        obj_in=ProjectMemberCreate(
+                            member_id=user_obj.id, role="viewer"
+                        ),
+                        project_id=project.id,
+                    )
+
+        return team_member
 
     def create_multi_with_team(
         self, db: Session, team_members: list[UUID], team_id: UUID
@@ -47,6 +68,15 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
                 insert(TeamMember).values(team_member_objs).on_conflict_do_nothing()
             )
             session.commit()
+        # add as project members if team is associated with project
+        project_query = select(Project).where(Project.team_id == team_id)
+        with db as session:
+            project = session.scalar(project_query)
+            if project:
+                crud.project_member.create_multi_with_project(
+                    db, member_ids=team_members, project_id=project.id
+                )
+
         return self.get_list_of_team_members(db, team_id=team_id)
 
     def get_team_member_by_email(
@@ -106,6 +136,33 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
                 team_members.append(team_member[0])
 
         return team_members
+
+    def remove_team_member(
+        self, db: Session, member_id: UUID, team_id: UUID
+    ) -> TeamMember:
+        # remove team member
+        statement = (
+            select(TeamMember)
+            .where(TeamMember.member_id == member_id)
+            .where(TeamMember.team_id == team_id)
+        )
+        with db as session:
+            team_member = session.scalar(statement)
+            if team_member:
+                session.delete(team_member)
+                session.commit()
+        # remove team member from any projects associated with team
+        statement = (
+            select(ProjectMember)
+            .join(Project)
+            .where(ProjectMember.member_id == member_id)
+        )
+        with db as session:
+            project_member = session.scalar(statement)
+            if project_member and project_member.role != "owner":
+                crud.project_member.remove(db, id=project_member.id)
+
+        return team_member
 
 
 def set_name_and_email_attr(team_member_obj: TeamMember, user_obj: User):
