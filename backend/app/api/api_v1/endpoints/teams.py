@@ -66,5 +66,5 @@ def delete_team(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Remove existing team."""
-    removed_team = crud.team.remove(db=db, id=team.id)
+    removed_team = crud.team.delete_team(db=db, team_id=team_id)
     return removed_team

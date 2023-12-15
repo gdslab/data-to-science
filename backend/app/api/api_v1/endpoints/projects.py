@@ -23,14 +23,18 @@ def create_project(
     project = crud.project.create_with_owner(
         db, obj_in=project_in, owner_id=current_user.id
     )
+    if project["response_code"] != status.HTTP_201_CREATED:
+        raise HTTPException(
+            status_code=project["response_code"], detail=project["message"]
+        )
     # Create preview image for project field boundary
     project_in_db = crud.project.get_user_project(
-        db, user_id=current_user.id, project_id=project.id
+        db, user_id=current_user.id, project_id=project["result"].id
     )
-    if project_in_db["response_code"] == status.HTTP_200_OK:
+    if project_in_db["result"]:
         coordinates = project_in_db["result"].field["geometry"]["coordinates"]
-        create_project_field_preview(request, project.id, coordinates)
-    return project
+        create_project_field_preview(request, project["result"].id, coordinates)
+    return project["result"]
 
 
 @router.get("/{project_id}", response_model=schemas.Project)
@@ -63,11 +67,22 @@ def update_project(
     project_id: UUID,
     project_in: schemas.ProjectUpdate,
     project: models.Project = Depends(deps.can_read_write_project),
+    current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Update project if current user is project owner or member."""
-    project = crud.project.update(db, db_obj=project, obj_in=project_in)
-    return project
+    project = crud.project.update_project(
+        db,
+        project_id=project_id,
+        project_obj=project,
+        project_in=project_in,
+        user_id=current_user.id,
+    )
+    if project["response_code"] != status.HTTP_200_OK:
+        raise HTTPException(
+            status_code=project["response_code"], detail=project["message"]
+        )
+    return project["result"]
 
 
 @router.delete("/{project_id}", response_model=schemas.Project)

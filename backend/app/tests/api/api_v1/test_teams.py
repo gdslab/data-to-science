@@ -8,6 +8,7 @@ from app.api.deps import get_current_user, get_current_approved_user
 from app.core.config import settings
 from app.schemas.team import TeamUpdate
 from app.schemas.team_member import TeamMemberCreate
+from app.tests.utils.project import create_project
 from app.tests.utils.team import (
     create_team,
     random_team_description,
@@ -20,12 +21,45 @@ from app.tests.utils.user import create_user
 def test_create_team(client: TestClient, normal_user_access_token: str) -> None:
     """Verify new team is created in database."""
     data = {"title": random_team_name(), "description": random_team_description()}
-    r = client.post(f"{settings.API_V1_STR}/teams", json=data)
-    assert 201 == r.status_code
-    content = r.json()
+    response = client.post(f"{settings.API_V1_STR}/teams", json=data)
+    response.status_code == status.HTTP_200_OK
+    content = response.json()
     assert "id" in content
     assert data["title"] == content["title"]
     assert data["description"] == content["description"]
+
+
+def test_create_team_with_project(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    project = create_project(db)
+    data = {
+        "title": random_team_name(),
+        "description": random_team_description(),
+        "project": str(project.id),
+    }
+    response = client.post(f"{settings.API_V1_STR}/teams", json=data)
+    project_in_db = crud.project.get(db, id=project.id)
+    assert response.status_code == status.HTTP_201_CREATED
+    team = response.json()
+    assert str(project_in_db.team_id) == team["id"]
+
+
+def test_create_team_with_project_already_assigned_team(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    project = create_project(db)
+    existing_team = create_team(db, project=str(project.id))
+    data = {
+        "title": random_team_name(),
+        "description": random_team_description(),
+        "project": str(project.id),
+    }
+    response = client.post(f"{settings.API_V1_STR}/teams", json=data)
+    project_in_db = crud.project.get(db, id=project.id)
+    assert response.status_code == status.HTTP_201_CREATED
+    team = response.json()
+    assert project_in_db.team_id == existing_team.id
 
 
 def test_get_teams(
@@ -212,3 +246,34 @@ def test_remove_team_by_nonowner(
     team_in_db = crud.team.get(db, id=team.id)
     assert response.status_code == status.HTTP_403_FORBIDDEN
     assert team_in_db
+
+
+def test_remove_team_with_project(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # create team owned by current test user
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    team = create_team(db, owner_id=current_user.id)
+    # add five team members
+    for i in range(0, 5):
+        create_team_member(db, team_id=team.id)
+    # create project associated with team - team members added to project members table
+    project = create_project(db, team_id=team.id, owner_id=current_user.id)
+    # get list of project members (should include owner plus five team members, 6)
+    project_members_before_delete = crud.project_member.get_list_of_project_members(
+        db, project_id=project.id
+    )
+    # delete the team
+    response = client.delete(f"{settings.API_V1_STR}/teams/{team.id}")
+    assert response.status_code == 200
+    # confirm team has been removed
+    team_in_db = crud.team.get(db, id=team.id)
+    assert team_in_db is None
+    # get list of project members (should only include owner, 1)
+    project_members_after_delete = crud.project_member.get_list_of_project_members(
+        db, project_id=project.id
+    )
+    assert len(project_members_before_delete) == 6
+    assert len(project_members_after_delete) == 1

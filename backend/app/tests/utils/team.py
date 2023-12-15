@@ -13,6 +13,7 @@ def create_team(
     title: str | None = None,
     description: str | None = None,
     owner_id: UUID | None = None,
+    project: UUID | None = None,
 ) -> models.Team:
     if owner_id is None:
         user = create_user(db)
@@ -21,5 +22,7 @@ def create_team(
         title = random_team_name()
     if not description:
         description = random_team_description()
-    team_in = TeamCreate(title=title, description=description, new_members=[owner_id])
+    team_in = TeamCreate(
+        title=title, description=description, new_members=[owner_id], project=project
+    )
     return crud.team.create_with_owner(db, obj_in=team_in, owner_id=owner_id)

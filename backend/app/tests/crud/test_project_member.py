@@ -6,6 +6,8 @@ from app import crud
 from app.schemas.project_member import ProjectMemberUpdate
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
+from app.tests.utils.team import create_team
+from app.tests.utils.team_member import create_team_member
 from app.tests.utils.user import create_user
 
 
@@ -40,6 +42,21 @@ def test_create_project_members_with_different_roles(db: Session) -> None:
     assert owner_in_db.role == "owner"
     assert manager_in_db.role == "manager"
     assert viewer_in_db.role == "viewer"
+
+
+def test_create_project_members(db: Session) -> None:
+    project_owner = create_user(db)
+    team = create_team(db, owner_id=project_owner.id)
+    team_member_ids = []
+    for i in range(0, 5):
+        team_member = create_team_member(db, team_id=team.id)
+        team_member_ids.append(team_member.member_id)
+    project = create_project(db, owner_id=project_owner.id, team_id=team.id)
+    project_members = crud.project_member.create_multi_with_project(
+        db, member_ids=team_member_ids, project_id=project.id
+    )
+    assert isinstance(project_members, list)
+    assert len(project_members) == 6  # owner + five added project members
 
 
 def test_get_list_of_project_members(db: Session) -> None:
@@ -78,7 +95,7 @@ def test_get_list_of_project_members_from_deactivated_project(db: Session) -> No
     assert len(project_members) == 0
 
 
-def update_project_member(db: Session) -> None:
+def test_update_project_member(db: Session) -> None:
     project_member = create_project_member(db, role="viewer")
     project_member_in_update = ProjectMemberUpdate(role="manager")
     project_member_update = crud.project_member.update(
@@ -97,6 +114,23 @@ def test_delete_project_member(db: Session) -> None:
     assert project_member2.id == project_member.id
     assert project_member2.role == project_member.role
     assert project_member2.member_id == project_member.member_id
+
+
+def test_delete_project_members(db: Session) -> None:
+    project_owner = create_user(db)
+    team = create_team(db, owner_id=project_owner.id)
+    project = create_project(db, team_id=team.id, owner_id=project_owner.id)
+    other_project = create_project(db, team_id=team.id, owner_id=project_owner.id)
+    for i in range(0, 5):
+        create_project_member(db, project_id=project.id)
+        create_project_member(db, project_id=other_project.id)
+    removed_project_members = crud.project_member.delete_multi(
+        db, project_id=project.id, team_id=team.id
+    )
+    assert isinstance(removed_project_members, list)
+    assert len(removed_project_members) == 5
+    for project_member in removed_project_members:
+        assert crud.project_member.get(db, id=project_member.id) is None
 
 
 def test_assign_project_member_invalid_role(db: Session) -> None:

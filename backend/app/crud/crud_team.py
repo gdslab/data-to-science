@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 
 from app import crud
 from app.crud.base import CRUDBase
+from app.models.project import Project
+from app.models.project_member import ProjectMember
 from app.models.team import Team
 from app.models.team_member import TeamMember
 from app.schemas.project import ProjectUpdate
@@ -45,7 +47,7 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
         # add project object (if any)
         if project_id:
             project_obj = crud.project.get(db, id=project_id)
-            if project_obj:
+            if project_obj and not project_obj.team_id:
                 crud.project.update(
                     db, db_obj=project_obj, obj_in=ProjectUpdate(team_id=team_db_obj.id)
                 )
@@ -94,6 +96,28 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
             for team in db_obj:
                 setattr(team, "is_owner", user_id == team.owner_id)
         return db_obj
+
+    def delete_team(self, db: Session, team_id: UUID) -> Team | None:
+        # delete any project members associated with team first
+        statement = (
+            select(ProjectMember)
+            .join(Project)
+            .where(Project.team_id == team_id)
+            .where(ProjectMember.role != "owner")
+        )
+        with db as session:
+            project_members = session.scalars(statement).all()
+            if len(project_members) > 0:
+                for project_member in project_members:
+                    session.delete(project_member)
+                session.commit()
+        # delete team
+        with db as session:
+            team = session.get(self.model, team_id)
+            session.delete(team)
+            session.commit()
+
+        return team
 
 
 team = CRUDTeam(Team)

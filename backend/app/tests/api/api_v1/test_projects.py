@@ -48,6 +48,47 @@ def test_create_project(
     assert data["harvest_date"] == response_data["harvest_date"]
 
 
+def test_create_project_with_team_with_team_owner_role(
+    client: TestClient, normal_user_access_token: str, db: Session
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    team = create_team(db, owner_id=current_user.id)
+    location = create_location(db)
+    data = jsonable_encoder(
+        {
+            "title": random_team_name(),
+            "description": random_team_description(),
+            "planting_date": random_planting_date(),
+            "harvest_date": random_harvest_date(),
+            "location_id": location.id,
+            "team_id": team.id,
+        }
+    )
+    response = client.post(API_URL, json=data)
+    assert response.status_code == status.HTTP_201_CREATED
+    response_data = response.json()
+    assert response_data["team_id"] == str(team.id)
+
+
+def test_create_project_with_team_without_team_owner_role(
+    client: TestClient, normal_user_access_token: str, db: Session
+) -> None:
+    team = create_team(db)
+    location = create_location(db)
+    data = jsonable_encoder(
+        {
+            "title": random_team_name(),
+            "description": random_team_description(),
+            "planting_date": random_planting_date(),
+            "harvest_date": random_harvest_date(),
+            "location_id": location.id,
+            "team_id": team.id,
+        }
+    )
+    response = client.post(API_URL, json=data)
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
 def test_get_project_with_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -225,6 +266,104 @@ def test_update_project_with_non_project_member(
     )
     response = client.put(f"{API_URL}/{project.id}", json=update_data)
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_update_project_without_team_with_a_team(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # create team owned by user and populate with five team members
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    team = create_team(db, owner_id=current_user.id)
+    team_member_ids = []
+    for i in range(0, 5):
+        team_member = create_team_member(db, team_id=team.id)
+        team_member_ids.append(team_member.member_id)
+    # create new project associated with team
+    project = create_project(db, team_id=team.id, owner_id=current_user.id)
+    # update project with team
+    update_data = jsonable_encoder({"team_id": team.id})
+    response = client.put(f"{API_URL}/{project.id}", json=update_data)
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["team_id"] == str(team.id)
+    project_members = crud.project_member.get_list_of_project_members(
+        db, project_id=project.id
+    )
+    for project_member in project_members:
+        if project_member.role != "owner":
+            assert project_member.member_id in team_member_ids
+
+
+def test_update_project_with_new_team_replacing_old_team(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # create two teams (current and new) and populate with five team members
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    current_team = create_team(db, owner_id=current_user.id)
+    new_team = create_team(db, owner_id=current_user.id)
+    new_team_member_ids = []
+    for i in range(0, 5):
+        create_team_member(db, team_id=current_team.id)
+        new_team_member = create_team_member(db, team_id=new_team.id)
+        new_team_member_ids.append(new_team_member.member_id)
+    # create new project associated with current team
+    project = create_project(db, team_id=current_team.id, owner_id=current_user.id)
+    # update project replacing current team with new team
+    update_data = jsonable_encoder({"team_id": new_team.id})
+    response = client.put(f"{API_URL}/{project.id}", json=update_data)
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["team_id"] == str(new_team.id)
+    project_members = crud.project_member.get_list_of_project_members(
+        db, project_id=project.id
+    )
+    for project_member in project_members:
+        if project_member.role != "owner":
+            assert project_member.member_id in new_team_member_ids
+
+
+def test_dropping_team_from_project(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # create team owned by user and populate with five team members
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    team = create_team(db, owner_id=current_user.id)
+    team_member_ids = []
+    for i in range(0, 5):
+        team_member = create_team_member(db, team_id=team.id)
+        team_member_ids.append(team_member.member_id)
+    # create new project associated with team
+    project = create_project(db, team_id=team.id, owner_id=current_user.id)
+    # drop current team
+    update_data = jsonable_encoder({"team_id": None})
+    response = client.put(f"{API_URL}/{project.id}", json=update_data)
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["team_id"] is None
+    project_members = crud.project_member.get_list_of_project_members(
+        db, project_id=project.id
+    )
+    assert len(project_members) == 1
+    assert project_members[0].member_id == current_user.id
+
+
+def test_update_project_with_new_team_without_team_owner_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    team = create_team(db)
+    project = create_project(db, owner_id=current_user.id)
+    update_data = jsonable_encoder({"team_id": team.id})
+    response = client.put(f"{API_URL}/{project.id}", json=update_data)
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_deactivate_project_owner_role(

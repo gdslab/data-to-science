@@ -17,7 +17,7 @@ from app.schemas.project import ProjectCreate, ProjectUpdate
 
 
 class ReadProject(TypedDict):
-    response_code: str
+    response_code: int
     message: str
     result: Project | None
 
@@ -28,16 +28,26 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         db: Session,
         obj_in: ProjectCreate,
         owner_id: UUID,
-    ) -> Project:
+    ) -> ReadProject:
         """Create new project and add user as project member."""
-        # add project to db
         obj_in_data = jsonable_encoder(obj_in)
+        # check if team was included and if user owns team
+        team = None
+        if obj_in_data.get("team_id"):
+            team = crud.team.get(db, id=obj_in_data["team_id"])
+            if team and not team.owner_id == owner_id:
+                return {
+                    "response_code": status.HTTP_403_FORBIDDEN,
+                    "message": "Only team owner can perform this action",
+                    "result": None,
+                }
+        # add project to db
         project_db_obj = self.model(**obj_in_data, owner_id=owner_id)
         with db as session:
             session.add(project_db_obj)
             session.commit()
             session.refresh(project_db_obj)
-        # add project memeber to db
+        # add project memebers to db
         member_db_obj = ProjectMember(
             member_id=owner_id, project_id=project_db_obj.id, role="owner"
         )
@@ -45,7 +55,31 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             session.add(member_db_obj)
             session.commit()
             session.refresh(member_db_obj)
-        return project_db_obj
+        # add team members as project members
+        if team:
+            team_members = crud.team_member.get_list_of_team_members(
+                db, team_id=team.id
+            )
+            project_members = []
+            for team_member in team_members:
+                if team_member.member_id != owner_id:
+                    project_members.append(
+                        ProjectMember(
+                            member_id=team_member.member_id,
+                            project_id=project_db_obj.id,
+                            role="viewer",
+                        )
+                    )
+            if len(project_members) > 0:
+                with db as session:
+                    session.add_all(project_members)
+                    session.commit()
+
+        return {
+            "response_code": status.HTTP_201_CREATED,
+            "message": "Project created successfully",
+            "result": project_db_obj,
+        }
 
     def get_user_project(
         self, db: Session, user_id: UUID, project_id: UUID, permission: str = "r"
@@ -111,6 +145,66 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 final_projects.append(project[0])
         return final_projects
 
+    def update_project(
+        self,
+        db: Session,
+        project_id: UUID,
+        project_obj: Project,
+        project_in: ProjectUpdate,
+        user_id: UUID,
+    ):
+        project_in_data = jsonable_encoder(project_in)
+        # if team association is being updated, check that user has team permission
+        if (
+            project_in_data.get("team_id") is not None
+            and project_obj.team_id != project_in_data["team_id"]
+        ):
+            team = crud.team.get(db, id=project_in_data["team_id"])
+            if team and not team.owner_id == user_id:
+                return {
+                    "response_code": status.HTTP_403_FORBIDDEN,
+                    "message": "Only team owner can perform this action",
+                    "result": None,
+                }
+        # replacing current team with new team
+        if project_obj.team_id and project_in_data.get("team_id") is not None:
+            # remove current team's project members
+            crud.project_member.delete_multi(
+                db, project_id=project_id, team_id=project_obj.team_id
+            )
+            # add new team's project members
+            team_members = crud.team_member.get_list_of_team_members(
+                db, team_id=project_in_data["team_id"]
+            )
+            team_member_ids = [team_member.member_id for team_member in team_members]
+            crud.project_member.create_multi_with_project(
+                db, member_ids=team_member_ids, project_id=project_id
+            )
+        # adding new team
+        if not project_obj.team_id and project_in_data.get("team_id") is not None:
+            # add new team's project members
+            team_members = crud.team_member.get_list_of_team_members(
+                db, team_id=project_in_data["team_id"]
+            )
+            team_member_ids = [team_member.member_id for team_member in team_members]
+            crud.project_member.create_multi_with_project(
+                db, member_ids=team_member_ids, project_id=project_id
+            )
+        # dropping current team
+        if project_obj.team_id and project_in_data.get("team_id") is None:
+            # remove current team's project members
+            crud.project_member.delete_multi(
+                db, project_id=project_id, team_id=project_obj.team_id
+            )
+
+        # finish updating project
+        updated_project = crud.project.update(db, db_obj=project_obj, obj_in=project_in)
+        return {
+            "response_code": status.HTTP_200_OK,
+            "message": "Project updated successfully",
+            "result": updated_project,
+        }
+
     def deactivate(self, db: Session, project_id: UUID) -> Project | None:
         deactivate_project = (
             update(Project)
@@ -120,7 +214,9 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         with db as session:
             session.execute(deactivate_project)
             session.commit()
-        return crud.project.get(db, id=project_id)
+
+        deactivated_project = crud.project.get(db, id=project_id)
+        return deactivated_project
 
 
 project = CRUDProject(Project)

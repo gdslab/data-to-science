@@ -53,7 +53,7 @@ def create_project(
         db,
         obj_in=project_in,
         owner_id=owner_id,
-    )
+    )["result"]
 
 
 def random_harvest_date() -> date:

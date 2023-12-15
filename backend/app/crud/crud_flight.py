@@ -18,7 +18,7 @@ from app.schemas.flight import FlightCreate, FlightUpdate
 
 
 class ReadFlight(TypedDict):
-    response_code: str
+    response_code: int
     message: str
     result: Flight | None
 
