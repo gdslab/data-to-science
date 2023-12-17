@@ -37,7 +37,8 @@ class ProjectMemberInDBBase(ProjectMemberBase, from_attributes=True):
 
 # additional properties to return via API
 class ProjectMember(ProjectMemberInDBBase):
-    pass
+    full_name: str | None = None
+    email: EmailStr | None = None
 
 
 # additional properties stored in DB

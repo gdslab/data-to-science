@@ -81,6 +81,8 @@ def test_get_list_of_project_members(db: Session) -> None:
             or project_member.member_id != owner.id
             and project_member.role == "viewer"
         )
+        assert project_member.full_name
+        assert project_member.email
 
 
 def test_get_list_of_project_members_from_deactivated_project(db: Session) -> None:

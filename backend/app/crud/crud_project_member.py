@@ -4,7 +4,8 @@ from uuid import UUID
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Bundle, Session
+from sqlalchemy.sql.selectable import Select
 
 from app.crud.base import CRUDBase
 from app.models.project import Project
@@ -77,14 +78,25 @@ class CRUDProjectMember(
     def get_list_of_project_members(
         self, db: Session, *, project_id: UUID, skip: int = 0, limit: int = 100
     ) -> Sequence[ProjectMember]:
-        statement = (
-            select(ProjectMember)
-            .join(Project)
+        statement: Select = (
+            select(
+                ProjectMember,
+                Bundle("user", User.first_name, User.last_name, User.email),
+            )
+            .join(ProjectMember.project)
+            .join(ProjectMember.member)
             .where(ProjectMember.project_id == project_id)
             .where(Project.is_active)
+            .offset(skip)
+            .limit(limit)
         )
+        project_members: list[ProjectMember] = []
         with db as session:
-            return session.scalars(statement).all()
+            results = session.execute(statement).all()
+            for project_member in session.execute(statement).all():
+                set_name_and_email_attr(project_member[0], project_member[1])
+                project_members.append(project_member[0])
+        return project_members
 
     def delete_multi(
         self, db: Session, project_id: UUID, team_id: UUID
@@ -104,6 +116,13 @@ class CRUDProjectMember(
                     session.delete(project_member)
                 session.commit()
         return project_members
+
+
+def set_name_and_email_attr(project_member_obj: ProjectMember, user_obj: User):
+    setattr(
+        project_member_obj, "full_name", f"{user_obj.first_name} {user_obj.last_name}"
+    )
+    setattr(project_member_obj, "email", user_obj.email)
 
 
 project_member = CRUDProjectMember(ProjectMember)
