@@ -19,7 +19,7 @@ export default function Landing() {
     <div className="grid grid-flow-row auto-rows-max">
       {/* video pane */}
       <div className="h-screen">
-        <div className="z-10 absolute w-full text-center top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+        <div className="z-10 absolute w-full px-4 text-center top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
           <div className="grid grid-rows-auto gap-4">
             <div className="flex items-center justify-center">
               <img className="h-28 w-28" src={brandLogo} alt="Brand Logo" />
@@ -35,12 +35,12 @@ export default function Landing() {
             </div>
           </div>
           <div className="mt-16 flex items-center justify-center gap-16">
-            <div className="w-1/4">
+            <div className="w-full md:w-1/4">
               <Link to="/auth/register">
                 <Button>Sign up</Button>
               </Link>
             </div>
-            <div className="w-1/4">
+            <div className="w-full md:w-1/4">
               <Link to="/auth/login">
                 <OutlineButton color="white">Sign in</OutlineButton>
               </Link>
