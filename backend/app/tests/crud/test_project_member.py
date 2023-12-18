@@ -85,6 +85,21 @@ def test_get_list_of_project_members(db: Session) -> None:
         assert project_member.email
 
 
+def test_get_list_of_project_members_with_specific_role(db: Session) -> None:
+    owner = create_user(db)
+    project = create_project(db, owner_id=owner.id)
+    member1 = create_project_member(db, project_id=project.id, role="manager")
+    member2 = create_project_member(db, project_id=project.id, role="manager")
+    member3 = create_project_member(db, project_id=project.id, role="viewer")
+    project_members = crud.project_member.get_list_of_project_members(
+        db, project_id=project.id, role="manager"
+    )
+    assert type(project_members) is list
+    assert len(project_members) == 2
+    for project_member in project_members:
+        assert project_member.role == "manager"
+
+
 def test_get_list_of_project_members_from_deactivated_project(db: Session) -> None:
     project = create_project(db)
     create_project_member(db, project_id=project.id)
@@ -100,11 +115,27 @@ def test_get_list_of_project_members_from_deactivated_project(db: Session) -> No
 def test_update_project_member(db: Session) -> None:
     project_member = create_project_member(db, role="viewer")
     project_member_in_update = ProjectMemberUpdate(role="manager")
-    project_member_update = crud.project_member.update(
-        db, db_obj=project_member, obj_in=project_member_in_update
+    project_member_update = crud.project_member.update_project_member(
+        db,
+        project_member_obj=project_member,
+        project_member_in=project_member_in_update,
     )
+    project_member_update = project_member_update["result"]
     assert project_member_update.id == project_member.id
     assert project_member_update.role == "manager"
+
+
+def test_update_role_for_only_project_owner(db: Session) -> None:
+    owner = create_user(db)
+    project = create_project(db, owner_id=owner.id)
+    project_owner = crud.project_member.get_by_project_and_member_id(
+        db, project_id=project.id, member_id=owner.id
+    )
+    project_owner_in_update = ProjectMemberUpdate(role="manager")
+    project_owner_update = crud.project_member.update_project_member(
+        db, project_member_obj=project_owner, project_member_in=project_owner_in_update
+    )
+    assert project_owner_update["result"] is None
 
 
 def test_delete_project_member(db: Session) -> None:

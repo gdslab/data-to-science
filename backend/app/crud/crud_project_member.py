@@ -1,18 +1,26 @@
-from typing import Sequence
+from typing import Sequence, TypedDict
 from uuid import UUID
 
+from fastapi import status
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Bundle, Session
 from sqlalchemy.sql.selectable import Select
 
+from app import crud
 from app.crud.base import CRUDBase
 from app.models.project import Project
 from app.models.project_member import ProjectMember
 from app.models.team import Team
 from app.models.user import User
 from app.schemas.project_member import ProjectMemberCreate, ProjectMemberUpdate
+
+
+class UpdateProjectMember(TypedDict):
+    response_code: int
+    message: str
+    result: ProjectMember | None
 
 
 class CRUDProjectMember(
@@ -76,7 +84,13 @@ class CRUDProjectMember(
             return session.scalar(statement)
 
     def get_list_of_project_members(
-        self, db: Session, *, project_id: UUID, skip: int = 0, limit: int = 100
+        self,
+        db: Session,
+        *,
+        project_id: UUID,
+        role: str = "",
+        skip: int = 0,
+        limit: int = 100,
     ) -> Sequence[ProjectMember]:
         statement: Select = (
             select(
@@ -90,6 +104,8 @@ class CRUDProjectMember(
             .offset(skip)
             .limit(limit)
         )
+        if role:
+            statement = statement.where(ProjectMember.role == role)
         project_members: list[ProjectMember] = []
         with db as session:
             results = session.execute(statement).all()
@@ -97,6 +113,32 @@ class CRUDProjectMember(
                 set_name_and_email_attr(project_member[0], project_member[1])
                 project_members.append(project_member[0])
         return project_members
+
+    def update_project_member(
+        self,
+        db: Session,
+        project_member_obj: ProjectMember,
+        project_member_in: ProjectMemberUpdate,
+    ) -> UpdateProjectMember:
+        # only update if there will still be at least one owner for the project
+        project_owners = self.get_list_of_project_members(
+            db, project_id=project_member_obj.project_id, role="owner"
+        )
+        # deny update action if there is only one owner and its the member being updated
+        if len(project_owners) == 1 and project_owners[0].id == project_member_obj.id:
+            return {
+                "response_code": status.HTTP_400_BAD_REQUEST,
+                "message": "Must have at least one project owner",
+                "result": None,
+            }
+        updated_project_member = crud.project_member.update(
+            db, db_obj=project_member_obj, obj_in=project_member_in
+        )
+        return {
+            "response_code": status.HTTP_200_OK,
+            "message": "Project member updated",
+            "result": updated_project_member,
+        }
 
     def delete_multi(
         self, db: Session, project_id: UUID, team_id: UUID
