@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import { classNames } from './utils';
 
 interface Action {
-  component?: React.ReactNode | null;
   key: string;
   icon: ReactNode;
   label: string;
@@ -18,7 +17,11 @@ function TableRow({ children }: { children: ReactNode }) {
 }
 
 function TableCell({ children }: { children: ReactNode }) {
-  return <div className="flex-1 p-4 text-center bg-white">{children}</div>;
+  return (
+    <div className="flex-1 flex p-4 items-center justify-center text-center bg-white">
+      {children}
+    </div>
+  );
 }
 
 export function TableBody({

@@ -1,8 +1,12 @@
 import axios from 'axios';
-import { Params, useLoaderData } from 'react-router-dom';
+import { useState } from 'react';
+import { Params, useLoaderData, useParams, useRevalidator } from 'react-router-dom';
 
 import Table, { TableBody, TableHead } from '../../Table';
-import { AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
+import { CheckIcon } from '@heroicons/react/24/outline';
+
+import { classNames } from '../../utils';
+import { sorter } from '../../utils';
 
 interface ProjectMembers {
   id: string;
@@ -22,28 +26,106 @@ export async function loader({ params }: { params: Params<string> }) {
   }
 }
 
+function AccessRoleRadioGroup({
+  currentRole,
+  memberId,
+  uniqueID,
+}: {
+  currentRole: string;
+  memberId: string;
+  uniqueID: string;
+}) {
+  const [role, updateRole] = useState(currentRole);
+  const params = useParams();
+  const revalidator = useRevalidator();
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <fieldset key={uniqueID} className="flex flex-wrap gap-3">
+        <legend className="sr-only">Role Level</legend>
+        <select
+          className="h-10 p-1.5 font-semibold text-zinc-600 text-center border-2 border-zinc-300 rounded-md bg-white disabled:opacity-50"
+          aria-label="Select flight date"
+          name={`roleChange-${uniqueID}`}
+          value={role}
+          onChange={(e) => {
+            updateRole(e.target.value);
+          }}
+        >
+          <option value="owner">Owner</option>
+          <option value="manager">Manager</option>
+          <option value="viewer">Viewer</option>
+        </select>
+      </fieldset>
+      <button
+        className={classNames(
+          currentRole !== role ? '' : 'text-gray-300',
+          'flex items-center gap-1.5'
+        )}
+        onClick={async (e) => {
+          e.preventDefault();
+          if (currentRole !== role) {
+            try {
+              const payload = { role: role };
+              const response = await axios.put(
+                `${import.meta.env.VITE_API_V1_STR}/projects/${
+                  params.projectId
+                }/members/${memberId}`,
+                payload
+              );
+              if (response) {
+                revalidator.revalidate();
+              } else {
+                alert('could not update user role');
+              }
+            } catch (err) {
+              console.error(err);
+            }
+          }
+        }}
+      >
+        <CheckIcon className="h-4 w-4" />
+        <span>Save</span>
+      </button>
+    </div>
+  );
+}
+
 export default function ProjectAccess() {
   const projectMembers = useLoaderData() as ProjectMembers[];
-
   return (
     <div className="p-4">
       <h1>Manage Access</h1>
+      <h2>Access Role Descriptions</h2>
+      <div className="grid grid-rows-3 gap-1.5">
+        <div className="grid grid-cols-6 gap-4">
+          <span className="col-span-1 font-semibold text-slate-700">Owner:</span>
+          <span className="col-span-5">
+            Can create, update, view, and remove project data.
+          </span>
+        </div>
+        <div className="grid grid-cols-6 gap-4">
+          <span className="col-span-1 font-semibold text-slate-700">Manager:</span>
+          <span className="col-span-5">Can create, update, and view project data.</span>
+        </div>
+        <div className="grid grid-cols-6 gap-4">
+          <span className="col-span-1 font-semibold text-slate-700">Viewer:</span>
+          <span className="col-span-5">Can view project data.</span>
+        </div>
+      </div>
       <Table height={96}>
-        <TableHead columns={['Name', 'Email', 'Role', 'Actions']} />
+        <TableHead columns={['Name', 'Email', 'Role']} />
         <TableBody
-          rows={projectMembers.map(({ full_name, email, role }) => [
-            <span>{full_name}</span>,
-            <span>{email}</span>,
-            <span>{role}</span>,
-          ])}
-          actions={projectMembers.map(({ id }) => [
-            {
-              key: `action-change-role-${id}`,
-              icon: <AdjustmentsHorizontalIcon className="h-4 w-4" />,
-              label: 'Change Role',
-              url: '#',
-            },
-          ])}
+          rows={projectMembers
+            .sort((a, b) => sorter(a.full_name, b.full_name))
+            .map(({ id, full_name, email, role }) => [
+              <span>{full_name}</span>,
+              <span>{email}</span>,
+              <AccessRoleRadioGroup
+                currentRole={role}
+                memberId={id}
+                uniqueID={btoa(full_name)}
+              />,
+            ])}
         />
       </Table>
     </div>
