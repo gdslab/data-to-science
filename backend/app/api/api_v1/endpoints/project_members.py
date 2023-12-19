@@ -31,6 +31,22 @@ def create_project_member(
     return project_member
 
 
+@router.get("/{project_member_id}", response_model=schemas.ProjectMember)
+def read_project_member(
+    project_member_id: UUID,
+    db: Session = Depends(deps.get_db),
+    project: models.Project = Depends(deps.can_read_project),
+) -> Any:
+    project_member = crud.project_member.get_by_project_and_member_id(
+        db, project_id=project.id, member_id=project_member_id
+    )
+    if not project_member:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+    return project_member
+
+
 @router.get("", response_model=list[schemas.ProjectMember])
 def read_project_members(
     skip: int = 0,

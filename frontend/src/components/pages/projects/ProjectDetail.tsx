@@ -20,6 +20,7 @@ import { GeoJSONFeature, Location } from './ProjectForm';
 import Modal from '../../Modal';
 import ProjectFormMap from './ProjectFormMap';
 import Table, { TableBody, TableHead } from '../../Table';
+import { User } from '../../../AuthContext';
 
 import { SymbologySettings } from '../../maps/MapContext';
 import { Team } from '../teams/Teams';
@@ -90,20 +91,33 @@ export interface Pilot {
 interface ProjectData {
   pilots: Pilot[];
   project: Project;
+  role: string;
   flights: Flight[];
   teams: Team[];
 }
 
 export async function loader({ params }: { params: Params<string> }) {
-  const project = await axios.get(`/api/v1/projects/${params.projectId}`);
-  const flights = await axios.get(`/api/v1/projects/${params.projectId}/flights`);
-  const teams = await axios.get(`/api/v1/teams`);
+  const profile = localStorage.getItem('userProfile');
+  const user: User | null = profile ? JSON.parse(profile) : null;
+  if (!user) return null;
 
-  if (project && flights && teams) {
+  const project = await axios.get(
+    `${import.meta.env.VITE_API_V1_STR}/projects/${params.projectId}`
+  );
+  const project_member = await axios.get(
+    `${import.meta.env.VITE_API_V1_STR}/projects/${params.projectId}/members/${user.id}`
+  );
+  const flights = await axios.get(
+    `${import.meta.env.VITE_API_V1_STR}/projects/${params.projectId}/flights`
+  );
+  const teams = await axios.get(`${import.meta.env.VITE_API_V1_STR}/teams`);
+
+  if (project && project_member && flights && teams) {
     const teamsf = teams.data;
     teamsf.unshift({ title: 'No team', id: '' });
     return {
       project: project.data,
+      role: project_member.data.role,
       flights: flights.data,
       teams: teamsf,
     };
@@ -114,7 +128,7 @@ export async function loader({ params }: { params: Params<string> }) {
 
 export default function ProjectDetail() {
   const navigate = useNavigate();
-  const { project, flights, teams } = useLoaderData() as ProjectData;
+  const { project, role, flights, teams } = useLoaderData() as ProjectData;
   const { projectId } = useParams();
   const revalidator = useRevalidator();
 
@@ -128,6 +142,7 @@ export default function ProjectDetail() {
   const [isEditing, setIsEditing] = useState<Editing>(null);
 
   const currentTeam = teams ? teams.filter(({ id }) => project.team_id === id) : null;
+
   useEffect(() => {
     if (project.field) {
       setLocation({
@@ -144,6 +159,8 @@ export default function ProjectDetail() {
   useEffect(() => {
     if (location) revalidator.revalidate();
   }, []);
+
+  const flightColumns = ['Platform', 'Sensor', 'Acquisition Date', 'Data', 'Actions'];
 
   return (
     <div className="grid grid-flow-row auto-rows-max gap-4 p-4">
@@ -359,7 +376,11 @@ export default function ProjectDetail() {
         {flights.length > 0 ? (
           <Table height={96}>
             <TableHead
-              columns={['Platform', 'Sensor', 'Acquisition Date', 'Data', 'Actions']}
+              columns={
+                role === 'viewer'
+                  ? flightColumns.slice(0, flightColumns.length - 1)
+                  : flightColumns
+              }
             />
             <TableBody
               rows={flights
@@ -381,25 +402,29 @@ export default function ProjectDetail() {
                     View Data
                   </Link>,
                 ])}
-              actions={flights.map((flight, i) => [
-                {
-                  key: `action-edit-${i}`,
-                  icon: <PencilIcon className="h-4 w-4" />,
-                  label: 'Edit',
-                  url: `/projects/${projectId}/flights/${flight.id}/edit`,
-                },
-                {
-                  key: `action-delete-${i}`,
-                  icon: <TrashIcon className="h-4 w-4" />,
-                  label: 'Delete',
-                  url: '#',
-                },
-              ])}
+              actions={
+                role === 'viewer'
+                  ? undefined
+                  : flights.map((flight, i) => [
+                      {
+                        key: `action-edit-${i}`,
+                        icon: <PencilIcon className="h-4 w-4" />,
+                        label: 'Edit',
+                        url: `/projects/${projectId}/flights/${flight.id}/edit`,
+                      },
+                      {
+                        key: `action-delete-${i}`,
+                        icon: <TrashIcon className="h-4 w-4" />,
+                        label: 'Delete',
+                        url: '#',
+                      },
+                    ])
+              }
             />
           </Table>
         ) : null}
       </div>
-      {projectId ? (
+      {projectId && role !== 'viewer' ? (
         <div className="mt-4 flex justify-center">
           <Button onClick={() => setOpen(true)}>Add New Flight</Button>
           <Modal open={open} setOpen={setOpen}>

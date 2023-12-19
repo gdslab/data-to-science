@@ -59,6 +59,17 @@ def test_create_project_members(db: Session) -> None:
     assert len(project_members) == 6  # owner + five added project members
 
 
+def test_get_project_member(db: Session) -> None:
+    owner = create_user(db)
+    project = create_project(db, owner_id=owner.id)
+    owner_in_db = crud.project_member.get_by_project_and_member_id(
+        db, member_id=owner.id, project_id=project.id
+    )
+    assert owner_in_db
+    assert owner_in_db.member_id == owner.id
+    assert owner_in_db.role == "owner"
+
+
 def test_get_list_of_project_members(db: Session) -> None:
     owner = create_user(db)
     project = create_project(db, owner_id=owner.id)

@@ -6,7 +6,13 @@ import { RawData as RawDataInterface } from '../FlightData';
 import Table, { TableBody, TableHead } from '../../../../Table';
 import UploadModal from '../../../../UploadModal';
 
-export default function RawData({ data }: { data: RawDataInterface[] }) {
+export default function RawData({
+  data,
+  role,
+}: {
+  data: RawDataInterface[];
+  role: string;
+}) {
   const { projectId, flightId } = useParams();
   const [open, setOpen] = useState(false);
   const revalidator = useRevalidator();
@@ -38,17 +44,19 @@ export default function RawData({ data }: { data: RawDataInterface[] }) {
           </Table>
         </div>
       ) : null}
-      <div className="my-4 flex justify-center">
-        <UploadModal
-          apiRoute={`/api/v1/projects/${projectId}/flights/${flightId}/raw_data`}
-          open={open}
-          setOpen={setOpen}
-          uploadType="zip"
-        />
-        <Button size="sm" onClick={() => setOpen(true)}>
-          Upload Raw Data (.zip)
-        </Button>
-      </div>
+      {role !== 'viewer' ? (
+        <div className="my-4 flex justify-center">
+          <UploadModal
+            apiRoute={`/api/v1/projects/${projectId}/flights/${flightId}/raw_data`}
+            open={open}
+            setOpen={setOpen}
+            uploadType="zip"
+          />
+          <Button size="sm" onClick={() => setOpen(true)}>
+            Upload Raw Data (.zip)
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }

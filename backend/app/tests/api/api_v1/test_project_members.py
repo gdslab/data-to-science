@@ -48,7 +48,7 @@ def teset_create_project_member_by_user_id_with_project_owner_role(
     project.id == response_data["project_id"]
 
 
-def test_create_project_member_with_non_project_member(
+def test_create_project_member_without_project_access(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     project = create_project(db)
@@ -83,6 +83,69 @@ def test_create_project_member_with_invalid_role(
         )
 
 
+def test_get_project_member_with_project_owner_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
+    project = create_project(db, owner_id=current_user.id)
+    response = client.get(f"{API_URL}/{project.id}/members/{current_user.id}")
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["member_id"] == str(current_user.id)
+    assert response_data["project_id"] == str(project.id)
+    assert response_data["role"] == "owner"
+
+
+def test_get_project_member_with_project_manager_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
+    project = create_project(db)
+    create_project_member(
+        db, member_id=current_user.id, project_id=project.id, role="manager"
+    )
+    response = client.get(f"{API_URL}/{project.id}/members/{current_user.id}")
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["member_id"] == str(current_user.id)
+    assert response_data["project_id"] == str(project.id)
+    assert response_data["role"] == "manager"
+
+
+def test_get_project_member_with_project_viewer_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
+    project = create_project(db)
+    create_project_member(
+        db, member_id=current_user.id, project_id=project.id, role="viewer"
+    )
+    response = client.get(f"{API_URL}/{project.id}/members/{current_user.id}")
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["member_id"] == str(current_user.id)
+    assert response_data["project_id"] == str(project.id)
+    assert response_data["role"] == "viewer"
+
+
+def test_get_project_member_without_project_access(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
+    other_user = create_user(db)
+    project = create_project(db, owner_id=other_user.id)
+    response = client.get(f"{API_URL}/{project.id}/members/{current_user.id}")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
 def test_get_project_members(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -107,7 +170,7 @@ def test_get_project_members(
         ]
 
 
-def test_get_project_members_without_permission(
+def test_get_project_members_without_project_access(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     project_owner = create_user(db)
@@ -154,7 +217,7 @@ def test_update_project_member_with_project_manager_role(
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_update_project_member_with_viewer_owner_role(
+def test_update_project_member_with_project_viewer_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_approved_user(
@@ -172,7 +235,7 @@ def test_update_project_member_with_viewer_owner_role(
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_update_project_member_with_non_project_member(
+def test_update_project_member_without_process_access(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     project_owner = create_user(db)
@@ -229,7 +292,7 @@ def test_remove_project_member_with_project_viewer_role(
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_remove_project_member_with_non_project_member(
+def test_remove_project_member_without_project_access(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     project_owner = create_user(db)

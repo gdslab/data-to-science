@@ -31,7 +31,13 @@ export function getDataProductName(dataType: string): string {
   }
 }
 
-export default function DataProducts({ data }: { data: DataProductStatus[] }) {
+export default function DataProducts({
+  data,
+  role,
+}: {
+  data: DataProductStatus[];
+  role: string;
+}) {
   const { flightId, projectId } = useParams();
   const [open, setOpen] = useState(false);
   const revalidator = useRevalidator();
@@ -55,6 +61,8 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
     return dataType === 'ortho' || dataType === 'dsm';
   }
 
+  const dataProductColumns = ['Data Type', 'Preview', 'File', 'Action'];
+
   return (
     <div>
       <h2>Data Products</h2>
@@ -67,7 +75,13 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
             <HintText>EPT - Entwine Point Tile</HintText>
           </div>
           <Table height={96}>
-            <TableHead columns={['Data Type', 'Preview', 'File', 'Action']} />
+            <TableHead
+              columns={
+                role === 'viewer'
+                  ? dataProductColumns.slice(0, dataProductColumns.length - 1)
+                  : dataProductColumns
+              }
+            />
             <TableBody
               rows={data.map((dataset) => [
                 <div className="h-full flex items-center justify-center">
@@ -141,29 +155,35 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
                   </div>
                 ),
               ])}
-              actions={data.map(({ id }) => [
-                {
-                  key: `action-delete-${id}`,
-                  icon: <TrashIcon className="h-4 w-4" />,
-                  label: 'Delete',
-                  url: '#',
-                },
-              ])}
+              actions={
+                role === 'viewer'
+                  ? undefined
+                  : data.map(({ id }) => [
+                      {
+                        key: `action-delete-${id}`,
+                        icon: <TrashIcon className="h-4 w-4" />,
+                        label: 'Delete',
+                        url: '#',
+                      },
+                    ])
+              }
             />
           </Table>
         </div>
       ) : null}
-      <div className="my-4 flex justify-center">
-        <UploadModal
-          apiRoute={`/api/v1/projects/${projectId}/flights/${flightId}/data_products`}
-          open={open}
-          setOpen={setOpen}
-          uploadType="dataProduct"
-        />
-        <Button size="sm" onClick={() => setOpen(true)}>
-          Upload Data Product
-        </Button>
-      </div>
+      {role !== 'viewer' ? (
+        <div className="my-4 flex justify-center">
+          <UploadModal
+            apiRoute={`/api/v1/projects/${projectId}/flights/${flightId}/data_products`}
+            open={open}
+            setOpen={setOpen}
+            uploadType="dataProduct"
+          />
+          <Button size="sm" onClick={() => setOpen(true)}>
+            Upload Data Product
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }
