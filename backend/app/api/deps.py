@@ -136,7 +136,7 @@ def can_read_project(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_approved_user),
 ) -> models.Project | None:
-    """Return project is current user is project owner, manager, or member."""
+    """Return project is current user is project owner, manager, or viewer."""
     project = crud.project.get_user_project(
         db, user_id=current_user.id, project_id=project_id, permission="r"
     )
@@ -185,7 +185,7 @@ def can_read_flight(
     current_user: models.User = Depends(get_current_approved_user),
     project: models.Project = Depends(can_read_project),
 ) -> models.Flight | None:
-    """Return flight if current user is project owner, manager, or member."""
+    """Return flight if current user is project owner, manager, or viewer."""
     flight = crud.flight.get_flight_by_id(
         db, project_id=project.id, flight_id=flight_id
     )

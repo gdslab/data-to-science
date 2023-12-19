@@ -40,7 +40,7 @@ export function TableBody({
           ))}
           {actions ? (
             <TableCell>
-              <div className="h-full flex items-center justify-around">
+              <div className="w-full h-full flex items-center justify-around">
                 {actions[i].map((action) =>
                   action.type === 'button' ? (
                     <div key={action.key}>

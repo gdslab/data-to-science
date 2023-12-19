@@ -22,6 +22,7 @@ export interface Project {
   description: string;
   field: FieldGeoJSONFeature;
   flight_count: number;
+  owner_id: string;
 }
 
 export async function loader() {

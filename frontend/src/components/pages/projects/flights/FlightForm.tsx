@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
+import axios, { AxiosResponse, isAxiosError } from 'axios';
 import { Formik, Form } from 'formik';
 import { useContext, useEffect, useState } from 'react';
 import { Params, useLoaderData, useNavigate, useParams } from 'react-router-dom';
@@ -122,7 +122,11 @@ export default function FlightForm({
                   // do something
                 }
               } catch (err) {
-                setStatus({ type: 'error', msg: 'Error' });
+                if (isAxiosError(err)) {
+                  setStatus({ type: 'error', msg: err.response?.data.detail });
+                } else {
+                  setStatus({ type: 'error', msg: 'Unable to complete request' });
+                }
               }
               setSubmitting(false);
             }}

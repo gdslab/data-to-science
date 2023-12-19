@@ -1,18 +1,27 @@
-import axios from 'axios';
-import { useState } from 'react';
-import { Params, useLoaderData, useParams, useRevalidator } from 'react-router-dom';
+import axios, { isAxiosError } from 'axios';
+import { useContext, useEffect, useState } from 'react';
+import {
+  Params,
+  useLoaderData,
+  useParams,
+  useNavigate,
+  useRevalidator,
+} from 'react-router-dom';
 
+import { AlertBar } from '../../Alert';
 import Table, { TableBody, TableHead } from '../../Table';
 import { CheckIcon } from '@heroicons/react/24/outline';
 
 import { classNames } from '../../utils';
 import { sorter } from '../../utils';
+import AuthContext from '../../../AuthContext';
 
 interface ProjectMembers {
   id: string;
   full_name: string;
   email: string;
   role: string;
+  member_id: string;
 }
 
 export async function loader({ params }: { params: Params<string> }) {
@@ -35,6 +44,7 @@ function AccessRoleRadioGroup({
   memberId: string;
   uniqueID: string;
 }) {
+  const [error, setError] = useState('');
   const [role, updateRole] = useState(currentRole);
   const params = useParams();
   const revalidator = useRevalidator();
@@ -63,6 +73,7 @@ function AccessRoleRadioGroup({
         )}
         onClick={async (e) => {
           e.preventDefault();
+          setError('');
           if (currentRole !== role) {
             try {
               const payload = { role: role };
@@ -78,7 +89,11 @@ function AccessRoleRadioGroup({
                 alert('could not update user role');
               }
             } catch (err) {
-              console.error(err);
+              if (isAxiosError(err)) {
+                setError(err.response?.data.detail);
+              } else {
+                setError('Unable to process request');
+              }
             }
           }
         }}
@@ -86,48 +101,74 @@ function AccessRoleRadioGroup({
         <CheckIcon className="h-4 w-4" />
         <span>Save</span>
       </button>
+      {error ? <AlertBar alertType="error">{error}</AlertBar> : null}
     </div>
   );
 }
 
 export default function ProjectAccess() {
+  const [isLoading, setIsLoading] = useState(true);
   const projectMembers = useLoaderData() as ProjectMembers[];
-  return (
-    <div className="p-4">
-      <h1>Manage Access</h1>
-      <h2>Access Role Descriptions</h2>
-      <div className="grid grid-rows-3 gap-1.5">
-        <div className="grid grid-cols-6 gap-4">
-          <span className="col-span-1 font-semibold text-slate-700">Owner:</span>
-          <span className="col-span-5">
-            Can create, update, view, and remove project data.
-          </span>
+  const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      const userProjectMember = projectMembers.filter(
+        ({ member_id }) => member_id === user.id
+      );
+      if (userProjectMember.length > 0 && userProjectMember[0].role === 'owner') {
+        setIsLoading(false);
+      } else {
+        navigate(-1);
+      }
+    } else {
+      navigate(-1);
+    }
+  }, []);
+
+  if (isLoading) {
+    return <div className="p-4">Loading...</div>;
+  } else {
+    return (
+      <div className="p-4">
+        <h1>Manage Access</h1>
+        <h2>Access Role Descriptions</h2>
+        <div className="grid grid-rows-3 gap-1.5">
+          <div className="grid grid-cols-6 gap-4">
+            <span className="col-span-1 font-semibold text-slate-700">Owner:</span>
+            <span className="col-span-5">
+              Can create, update, view, and remove project data.
+            </span>
+          </div>
+          <div className="grid grid-cols-6 gap-4">
+            <span className="col-span-1 font-semibold text-slate-700">Manager:</span>
+            <span className="col-span-5">
+              Can create, update, and view project data.
+            </span>
+          </div>
+          <div className="grid grid-cols-6 gap-4">
+            <span className="col-span-1 font-semibold text-slate-700">Viewer:</span>
+            <span className="col-span-5">Can view project data.</span>
+          </div>
         </div>
-        <div className="grid grid-cols-6 gap-4">
-          <span className="col-span-1 font-semibold text-slate-700">Manager:</span>
-          <span className="col-span-5">Can create, update, and view project data.</span>
-        </div>
-        <div className="grid grid-cols-6 gap-4">
-          <span className="col-span-1 font-semibold text-slate-700">Viewer:</span>
-          <span className="col-span-5">Can view project data.</span>
-        </div>
+        <Table height={96}>
+          <TableHead columns={['Name', 'Email', 'Role']} />
+          <TableBody
+            rows={projectMembers
+              .sort((a, b) => sorter(a.full_name, b.full_name))
+              .map(({ id, full_name, email, role }) => [
+                <span>{full_name}</span>,
+                <span>{email}</span>,
+                <AccessRoleRadioGroup
+                  currentRole={role}
+                  memberId={id}
+                  uniqueID={btoa(full_name)}
+                />,
+              ])}
+          />
+        </Table>
       </div>
-      <Table height={96}>
-        <TableHead columns={['Name', 'Email', 'Role']} />
-        <TableBody
-          rows={projectMembers
-            .sort((a, b) => sorter(a.full_name, b.full_name))
-            .map(({ id, full_name, email, role }) => [
-              <span>{full_name}</span>,
-              <span>{email}</span>,
-              <AccessRoleRadioGroup
-                currentRole={role}
-                memberId={id}
-                uniqueID={btoa(full_name)}
-              />,
-            ])}
-        />
-      </Table>
-    </div>
-  );
+    );
+  }
 }

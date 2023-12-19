@@ -129,7 +129,7 @@ def read_data_product(
     data_product_id: UUID,
     flight_id: UUID,
     current_user: models.User = Depends(deps.get_current_approved_user),
-    flight: models.Flight = Depends(deps.can_read_write_flight),
+    flight: models.Flight = Depends(deps.can_read_flight),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Retrieve raw data for flight if user can access it."""
@@ -155,7 +155,7 @@ def read_all_data_product(
     request: Request,
     flight_id: UUID,
     current_user: models.User = Depends(deps.get_current_approved_user),
-    flight: models.Flight = Depends(deps.can_read_write_flight),
+    flight: models.Flight = Depends(deps.can_read_flight),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Retrieve all raw data for flight if user can access it."""

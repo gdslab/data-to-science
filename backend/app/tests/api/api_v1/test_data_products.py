@@ -1,6 +1,7 @@
 import os
 import shutil
 
+from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -8,7 +9,9 @@ from app.api.deps import get_current_user
 from app.core.config import settings
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.project import create_project
+from app.tests.utils.project_member import create_project_member
 from app.tests.utils.flight import create_flight
+from app.tests.utils.user import create_user
 
 
 def test_create_data_product(
@@ -31,7 +34,7 @@ def test_create_data_product(
     shutil.rmtree(settings.TEST_STATIC_DIR)
 
 
-def test_read_data_product(
+def test_read_data_product_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
@@ -40,8 +43,7 @@ def test_read_data_product(
         f"{settings.API_V1_STR}/projects/{data_product.project.id}"
         f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}"
     )
-
-    assert 200 == response.status_code
+    assert response.status_code == status.HTTP_200_OK
     response_data_product = response.json()
     assert str(data_product.obj.id) == response_data_product["id"]
     assert "data_type" in response_data_product
@@ -53,7 +55,59 @@ def test_read_data_product(
     assert "user_style" in response_data_product
 
 
-def test_read_data_products(
+def test_read_data_product_with_project_manager_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, create_style=True)
+    create_project_member(
+        db,
+        member_id=current_user.id,
+        project_id=data_product.project.id,
+        role="manager",
+    )
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{data_product.project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}"
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_data_product = response.json()
+    assert response_data_product["id"] == str(data_product.obj.id)
+
+
+def test_read_data_product_with_project_viewer_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, create_style=True)
+    create_project_member(
+        db,
+        member_id=current_user.id,
+        project_id=data_product.project.id,
+        role="viewer",
+    )
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{data_product.project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}"
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_data_product = response.json()
+    assert response_data_product["id"] == str(data_product.obj.id)
+
+
+def test_read_data_product_without_project_access(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, create_style=True)
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{data_product.project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}"
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_read_data_products_with_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
@@ -72,8 +126,7 @@ def test_read_data_products(
         f"{settings.API_V1_STR}/projects/{project.id}"
         f"/flights/{flight.id}/data_products"
     )
-
-    assert 200 == response.status_code
+    assert response.status_code == status.HTTP_200_OK
     response_data_products = response.json()
     assert type(response_data_products) is list
     assert len(response_data_products) == 3
@@ -85,3 +138,105 @@ def test_read_data_products(
         assert "stac_properties" in data_product
         assert "url" in data_product
         assert "user_style" in data_product
+
+
+def test_read_data_products_with_manager_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project_owner = create_user(db)
+    project = create_project(db, owner_id=project_owner.id)
+    flight = create_flight(db, project_id=project.id)
+    for i in range(0, 3):
+        SampleDataProduct(
+            db,
+            create_style=True,
+            flight=flight,
+            project=project,
+            user=project_owner,
+        )
+    SampleDataProduct(db)
+    create_project_member(
+        db,
+        member_id=current_user.id,
+        project_id=project.id,
+        role="manager",
+    )
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{project.id}"
+        f"/flights/{flight.id}/data_products"
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_data_products = response.json()
+    assert type(response_data_products) is list
+    assert len(response_data_products) == 3
+    for data_product in response_data_products:
+        assert data_product["flight_id"] == str(flight.id)
+        assert "data_type" in data_product
+        assert "flight_id" in data_product
+        assert "original_filename" in data_product
+        assert "stac_properties" in data_product
+        assert "url" in data_product
+        assert "user_style" in data_product
+
+
+def test_read_data_products_with_viewer_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project_owner = create_user(db)
+    project = create_project(db, owner_id=project_owner.id)
+    flight = create_flight(db, project_id=project.id)
+    for i in range(0, 3):
+        SampleDataProduct(
+            db,
+            create_style=True,
+            flight=flight,
+            project=project,
+            user=project_owner,
+        )
+    SampleDataProduct(db)
+    create_project_member(
+        db,
+        member_id=current_user.id,
+        project_id=project.id,
+        role="viewer",
+    )
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{project.id}"
+        f"/flights/{flight.id}/data_products"
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_data_products = response.json()
+    assert type(response_data_products) is list
+    assert len(response_data_products) == 3
+    for data_product in response_data_products:
+        assert data_product["flight_id"] == str(flight.id)
+        assert "data_type" in data_product
+        assert "flight_id" in data_product
+        assert "original_filename" in data_product
+        assert "stac_properties" in data_product
+        assert "url" in data_product
+        assert "user_style" in data_product
+
+
+def test_read_data_products_without_project_access(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project_owner = create_user(db)
+    project = create_project(db, owner_id=project_owner.id)
+    flight = create_flight(db, project_id=project.id)
+    for i in range(0, 3):
+        SampleDataProduct(
+            db,
+            create_style=True,
+            flight=flight,
+            project=project,
+            user=project_owner,
+        )
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{project.id}"
+        f"/flights/{flight.id}/data_products"
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
