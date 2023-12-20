@@ -30,6 +30,7 @@
    - `API_LOGFILE`: Location where backend FastAPI log will be stored.
    - `CELERY_BROKER_URL`: Address for local redis service.
    - `CELERY_RESULT_BACKEND`: Address for local redis service.
+   - `MAIL_ENABLED`: Enable SMTP email by changing value from 0 to 1.
    - `MAIL_SERVER`: SMTP server address.
    - `MAIL_USERNAME`: Username for SMTP server.
    - `MAIL_PASSWORD`: Password for SMTP server.

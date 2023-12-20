@@ -66,7 +66,8 @@ def send_email(
     message = MessageSchema(
         subject=subject, recipients=recipients, body=body, subtype=MessageType.html
     )
-    background_tasks.add_task(fm.send_message, message)
+    if settings.MAIL_ENABLED:
+        background_tasks.add_task(fm.send_message, message)
 
 
 def get_current_user(

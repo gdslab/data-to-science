@@ -20,25 +20,29 @@ def test_create_user_new_email(client: TestClient, db: Session) -> None:
         "first_name": full_name["first"],
         "last_name": full_name["last"],
     }
-    fm.config.SUPPRESS_SEND = 1
-    with fm.record_messages() as outbox:
-        r = client.post(f"{settings.API_V1_STR}/users/", json=data)
-    assert 201 == r.status_code
-    created_user = r.json()
-    user = crud.user.get_by_email(db, email=data["email"])
-    assert user
-    assert user.email == created_user["email"]
-    assert len(outbox) == 2
-    assert (
-        outbox[0]["from"] == settings.MAIL_FROM_NAME + " <" + settings.MAIL_FROM + ">"
-    )
-    assert outbox[0]["To"] == user.email
-    assert outbox[0]["Subject"] == "Confirm your email address"
-    assert (
-        outbox[1]["from"] == settings.MAIL_FROM_NAME + " <" + settings.MAIL_FROM + ">"
-    )
-    assert outbox[1]["To"] == settings.MAIL_ADMINS.replace(",", ", ")
-    assert outbox[1]["Subject"] == "D2S New Account"
+    # skip test if email is disabled
+    if fm:
+        fm.config.SUPPRESS_SEND = 1
+        with fm.record_messages() as outbox:
+            r = client.post(f"{settings.API_V1_STR}/users/", json=data)
+        assert 201 == r.status_code
+        created_user = r.json()
+        user = crud.user.get_by_email(db, email=data["email"])
+        assert user
+        assert user.email == created_user["email"]
+        assert len(outbox) == 2
+        assert (
+            outbox[0]["from"]
+            == settings.MAIL_FROM_NAME + " <" + settings.MAIL_FROM + ">"
+        )
+        assert outbox[0]["To"] == user.email
+        assert outbox[0]["Subject"] == "Confirm your email address"
+        assert (
+            outbox[1]["from"]
+            == settings.MAIL_FROM_NAME + " <" + settings.MAIL_FROM + ">"
+        )
+        assert outbox[1]["To"] == settings.MAIL_ADMINS.replace(",", ", ")
+        assert outbox[1]["Subject"] == "D2S New Account"
 
 
 def test_create_user_existing_email(client: TestClient, db: Session) -> None:

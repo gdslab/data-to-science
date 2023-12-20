@@ -55,6 +55,7 @@ class Settings(BaseSettings):
         )
 
     # Email
+    MAIL_ENABLED: int = 0
     MAIL_ADMINS: str = ""
     MAIL_USERNAME: str = ""
     MAIL_PASSWORD: str = ""
@@ -73,18 +74,21 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             return v
         values = info.data
-        return ConnectionConfig.model_construct(
-            MAIL_USERNAME=values.get("MAIL_USERNAME"),
-            MAIL_PASSWORD=values.get("MAIL_PASSWORD"),
-            MAIL_FROM=values.get("MAIL_FROM"),
-            MAIL_FROM_NAME=values.get("MAIL_FROM_NAME"),
-            MAIL_PORT=values.get("MAIL_PORT"),
-            MAIL_SERVER=values.get("MAIL_SERVER"),
-            MAIL_STARTTLS=values.get("MAIL_STARTTLS"),
-            MAIL_SSL_TLS=values.get("MAIL_SSL_TLS"),
-            USE_CREDENTIALS=values.get("USE_CREDENTIALS"),
-            VALIDATE_CERTS=values.get("VALIDATE_CERTS"),
-        )
+        if values.get("MAIL_ENABLED"):
+            return ConnectionConfig.model_construct(
+                MAIL_USERNAME=values.get("MAIL_USERNAME"),
+                MAIL_PASSWORD=values.get("MAIL_PASSWORD"),
+                MAIL_FROM=values.get("MAIL_FROM"),
+                MAIL_FROM_NAME=values.get("MAIL_FROM_NAME"),
+                MAIL_PORT=values.get("MAIL_PORT"),
+                MAIL_SERVER=values.get("MAIL_SERVER"),
+                MAIL_STARTTLS=values.get("MAIL_STARTTLS"),
+                MAIL_SSL_TLS=values.get("MAIL_SSL_TLS"),
+                USE_CREDENTIALS=values.get("USE_CREDENTIALS"),
+                VALIDATE_CERTS=values.get("VALIDATE_CERTS"),
+            )
+        else:
+            return None
 
     # Testing
     EMAIL_TEST_USER: EmailStr = "test@example.com"  # type: ignore
