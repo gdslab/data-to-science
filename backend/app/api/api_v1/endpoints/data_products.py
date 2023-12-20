@@ -182,7 +182,7 @@ def create_user_style(
     data_product_id: UUID,
     user_style_in: schemas.UserStyleCreate,
     current_user: models.User = Depends(deps.get_current_approved_user),
-    flight: models.Flight = Depends(deps.can_read_write_flight),
+    flight: models.Flight = Depends(deps.can_read_flight),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Create user style settings for a data product."""
@@ -211,7 +211,7 @@ def update_user_style(
     data_product_id: UUID,
     user_style_in: schemas.UserStyleUpdate,
     current_user: models.User = Depends(deps.get_current_approved_user),
-    flight: models.Flight = Depends(deps.can_read_write_flight),
+    flight: models.Flight = Depends(deps.can_read_flight),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Update user's style settings for a data product."""
