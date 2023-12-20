@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import AuthContext from '../AuthContext';
 import { Button, OutlineButton } from './Buttons';
 
-import brandLogo from '../assets/d2s-logo-white.png';
+import brandLogo from '../assets/d2s-logo-white-without-text.png';
 import landingVideo from '../assets/landing.mp4';
 
 export default function Landing() {
@@ -22,7 +22,7 @@ export default function Landing() {
         <div className="z-10 absolute w-full px-4 text-center top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
           <div className="grid grid-rows-auto gap-4">
             <div className="flex items-center justify-center">
-              <img className="h-28 w-28" src={brandLogo} alt="Brand Logo" />
+              <img className="h-28" src={brandLogo} alt="Brand Logo" />
             </div>
             <div className="inline text-6xl text-white font-bold [text-shadow:_2px_2px_2px_rgb(0_0_0_/_70%)]">
               <span>Welcome to </span>
