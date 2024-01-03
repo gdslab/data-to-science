@@ -1,26 +1,36 @@
 import pytest
 from datetime import datetime
 
-from sqlalchemy.exc import DataError
+from sqlalchemy.exc import DataError, IntegrityError
 from sqlalchemy.orm import Session
 
 from app import crud
 from app.schemas.file_permission import FilePermissionCreate, FilePermissionUpdate
 from app.tests.utils.data_product import SampleDataProduct
-from app.tests.utils.file_permission import create_file_permission
 
 
 def test_create_file_permission(db: Session) -> None:
     data_product = SampleDataProduct(db).obj
-    file_permission = create_file_permission(db, file_id=data_product.id)
+    file_permission = crud.file_permission.get_by_data_product(
+        db, file_id=data_product.id
+    )
     assert file_permission
     assert file_permission.access == "RESTRICTED"  # default
     assert (file_permission.expires_at - file_permission.created_at).days == 7
     assert file_permission.file_id == data_product.id
 
 
+def test_create_duplicate_file_permission(db: Session) -> None:
+    data_product = SampleDataProduct(db).obj  # creates file permission record
+    with pytest.raises(IntegrityError):
+        crud.file_permission.create_with_data_product(db, file_id=data_product.id)
+
+
 def test_read_file_permission(db: Session) -> None:
-    file_permission = create_file_permission(db)
+    data_product = SampleDataProduct(db).obj
+    file_permission = crud.file_permission.get_by_data_product(
+        db, file_id=data_product.id
+    )
     file_permission_in_db = crud.file_permission.get(db, id=file_permission.id)
     assert file_permission_in_db.id == file_permission.id
     assert file_permission_in_db.access == file_permission.access
@@ -30,7 +40,10 @@ def test_read_file_permission(db: Session) -> None:
 
 
 def test_read_file_permission_by_data_product_id(db: Session) -> None:
-    file_permission = create_file_permission(db)
+    data_product = SampleDataProduct(db).obj
+    file_permission = crud.file_permission.get_by_data_product(
+        db, file_id=data_product.id
+    )
     file_permission_in_db = crud.file_permission.get_by_data_product(
         db, file_id=file_permission.file_id
     )
@@ -42,7 +55,10 @@ def test_read_file_permission_by_data_product_id(db: Session) -> None:
 
 
 def test_update_file_permission(db: Session) -> None:
-    file_permission = create_file_permission(db)
+    data_product = SampleDataProduct(db).obj
+    file_permission = crud.file_permission.get_by_data_product(
+        db, file_id=data_product.id
+    )
     file_permission_in_update = FilePermissionUpdate(access="UNRESTRICTED")
     file_permission_update = crud.file_permission.update(
         db, db_obj=file_permission, obj_in=file_permission_in_update
@@ -52,7 +68,10 @@ def test_update_file_permission(db: Session) -> None:
 
 
 def test_update_file_permission_with_invalid_access_type(db: Session) -> None:
-    file_permission = create_file_permission(db)
+    data_product = SampleDataProduct(db).obj
+    file_permission = crud.file_permission.get_by_data_product(
+        db, file_id=data_product.id
+    )
     file_permission_in_update = FilePermissionUpdate(access="INVALID_ACCESS_TYPE")
     with pytest.raises(DataError):
         crud.file_permission.update(
@@ -61,7 +80,10 @@ def test_update_file_permission_with_invalid_access_type(db: Session) -> None:
 
 
 def test_delete_file_permission(db: Session) -> None:
-    file_permission = create_file_permission(db)
+    data_product = SampleDataProduct(db).obj
+    file_permission = crud.file_permission.get_by_data_product(
+        db, file_id=data_product.id
+    )
     file_permission2 = crud.file_permission.remove(db, id=file_permission.id)
     file_permission3 = crud.file_permission.get(db, id=file_permission.id)
     assert file_permission3 is None

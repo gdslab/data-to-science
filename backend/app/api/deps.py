@@ -218,7 +218,7 @@ def can_read_write_delete_flight(
     flight_id: UUID,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_approved_user),
-    project: models.Project = Depends(can_read_write_project),
+    project: models.Project = Depends(can_read_write_delete_project),
 ) -> models.Flight | None:
     """Return flight if current user is project owner."""
     flight = crud.flight.get_flight_by_id(

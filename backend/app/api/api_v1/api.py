@@ -2,12 +2,14 @@ from fastapi import APIRouter
 
 from app.api.api_v1.endpoints import (
     auth,
+    file_permission,
     flights,
     locations,
     projects,
     project_members,
     data_products,
     raw_data,
+    style,
     teams,
     team_members,
     users,
@@ -29,6 +31,16 @@ api_router.include_router(
     data_products.router,
     prefix="/projects/{project_id}/flights/{flight_id}/data_products",
     tags=["data_products"],
+)
+api_router.include_router(
+    file_permission.router,
+    prefix="/projects/{project_id}/flights/{flight_id}/data_products/{data_product_id}/file_permission",
+    tags=["file_permission"],
+)
+api_router.include_router(
+    style.router,
+    prefix="/projects/{project_id}/flights/{flight_id}/data_products/{data_product_id}/style",
+    tags=["style"],
 )
 api_router.include_router(
     raw_data.router,

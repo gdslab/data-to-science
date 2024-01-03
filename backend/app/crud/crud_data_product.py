@@ -26,7 +26,8 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             session.add(data_product)
             session.commit()
             session.refresh(data_product)
-            return data_product
+        crud.file_permission.create_with_data_product(db, file_id=data_product.id)
+        return data_product
 
     def get_single_by_id(
         self, db: Session, data_product_id: UUID, user_id: UUID, upload_dir: str

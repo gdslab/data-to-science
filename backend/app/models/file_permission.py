@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import ENUM, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.schema import UniqueConstraint
 
 from app.db.base_class import Base
 from app.models.utils.user import utcexpire, utcnow
@@ -37,6 +38,8 @@ class FilePermission(Base):
     )
 
     file: Mapped["DataProduct"] = relationship(back_populates="file_permission")
+
+    __table_args__ = (UniqueConstraint("file_id", name="unique_to_file_permissions"),)
 
     def __repr__(self) -> str:
         return (
