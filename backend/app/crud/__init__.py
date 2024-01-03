@@ -1,4 +1,5 @@
 from .crud_data_product import data_product
+from .crud_file_permission import file_permission
 from .crud_flight import flight
 from .crud_job import job
 from .crud_location import location

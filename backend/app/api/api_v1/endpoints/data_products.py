@@ -232,6 +232,60 @@ def update_user_style(
     return updated_user_style
 
 
+@router.post(
+    "/{data_product_id}/file_permission",
+    status_code=status.HTTP_201_CREATED,
+    response_model=schemas.FilePermission,
+)
+def create_file_permission(
+    data_product_id: UUID,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    flight: models.Flight = Depends(deps.can_read_write_delete_flight),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    if not flight:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
+        )
+    existing_file_permission = crud.file_permission.get_by_data_product(
+        db, file_id=data_product_id
+    )
+    if existing_file_permission:
+        raise HTTPException(
+            status_code=status.HTTP_400_NOT_FOUND,
+            detail="File permission already exists",
+        )
+    file_permission = crud.file_permission.create_with_data_product(
+        db, file_id=data_product_id
+    )
+    return file_permission
+
+
+@router.put("/{data_product_id}/file_permission", response_model=schemas.FilePermission)
+def update_file_permission(
+    data_product_id: UUID,
+    file_permission_in: schemas.FilePermissionUpdate,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    flight: models.Flight = Depends(deps.can_read_write_delete_flight),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    if not flight:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
+        )
+    current_file_permission = crud.file_permission.get_by_data_product(
+        db, file_id=data_product_id
+    )
+    if not current_file_permission:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="File permission not found"
+        )
+    updated_file_permission = crud.file_permission.update(
+        db, db_obj=current_file_permission, obj_in=file_permission_in
+    )
+    return updated_file_permission
+
+
 @router.delete("/{data_product_id}", response_model=schemas.DataProduct)
 def deactivate_data_product(
     data_product_id: UUID,

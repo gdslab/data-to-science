@@ -10,6 +10,7 @@ from app.db.base_class import Base
 
 
 if TYPE_CHECKING:
+    from .file_permission import FilePermission
     from .flight import Flight
     from .job import Job
 
@@ -38,6 +39,7 @@ class DataProduct(Base):
     # relationships
     flight: Mapped["Flight"] = relationship(back_populates="data_products")
     jobs: Mapped["Job"] = relationship(back_populates="data_product")
+    file_permission: Mapped["FilePermission"] = relationship(back_populates="file")
 
     def __repr__(self) -> str:
         return (
