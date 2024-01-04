@@ -12,11 +12,14 @@ const styles = {
     'bg-gray-200 border border-gray-400 rounded py-1 px-4 block w-full appearance-none',
 };
 
-interface InputField {
+interface InputFieldLabels {
   altLabel?: boolean;
+  label?: string;
+}
+
+interface InputField extends InputFieldLabels {
   children?: React.ReactNode;
   disabled?: boolean;
-  label?: string;
   name: string;
   placeholder?: string;
   required?: boolean;
@@ -154,7 +157,9 @@ interface SelectOption {
 
 type ColorMapSelectOption = [string, string[]][];
 
-interface SelectField extends InputField {
+interface SelectField
+  extends InputFieldLabels,
+    React.SelectHTMLAttributes<HTMLInputElement> {
   options: SelectOption[] | ColorMapSelectOption;
 }
 
@@ -162,9 +167,10 @@ export function SelectField({
   altLabel = false,
   disabled = false,
   label,
-  name,
+  name = 'select-input',
   required = true,
   options,
+  ...props
 }: SelectField) {
   return (
     <InputField altLabel={altLabel} label={label} name={name} required={required}>
@@ -174,6 +180,7 @@ export function SelectField({
         id={name}
         name={name}
         disabled={disabled}
+        {...props}
       >
         {name === 'colorRamp'
           ? (options as ColorMapSelectOption).map((cm: [string, string[]]) => (

@@ -85,14 +85,23 @@ function DSMSymbologyControls({
           });
         }}
       >
-        {({ values }) => (
+        {({ values, setFieldTouched, setFieldValue, submitForm }) => (
           <Form>
             <div className="w-full mb-4">
               <fieldset className="border border-solid border-slate-300 p-3">
                 <legend className="block text-sm text-gray-400 font-bold pt-2 pb-1">
                   Color Properties
                 </legend>
-                <SelectField name="colorRamp" label="Color Ramp" options={cmaps} />
+                <SelectField
+                  name="colorRamp"
+                  label="Color Ramp"
+                  options={cmaps}
+                  onChange={(e) => {
+                    setFieldValue('colorRamp', e.target.value);
+                    setFieldTouched('colorRamp', true);
+                    submitForm();
+                  }}
+                />
               </fieldset>
             </div>
             <fieldset className="border border-solid border-slate-300 p-3">
