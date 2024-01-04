@@ -54,6 +54,14 @@ def test_read_file_permission_by_data_product_id(db: Session) -> None:
     assert file_permission_in_db.file_id == file_permission.file_id
 
 
+def test_read_file_permission_by_filename(db: Session) -> None:
+    data_product = SampleDataProduct(db).obj
+    filename = data_product.filepath.split("flights")[1].split("/")[-1]
+    file_permission = crud.file_permission.get_by_filename(db, filename=filename)
+    assert file_permission
+    assert file_permission.file_id == data_product.id
+
+
 def test_update_file_permission(db: Session) -> None:
     data_product = SampleDataProduct(db).obj
     file_permission = crud.file_permission.get_by_data_product(

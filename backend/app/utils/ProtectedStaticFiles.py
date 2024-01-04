@@ -12,8 +12,9 @@ from app.db.session import SessionLocal
 
 async def verify_static_file_access(request: Request) -> None:
     """
-    Verify client requesting a static file has access to the project associated
-    with the file.
+    Verify if requested static file has restricted or unrestricted access. If
+    restricted, verify client requesting a static file has access to the project
+    associated with the file.
 
     Args:
         request (Request): Client request for a static file
@@ -23,6 +24,22 @@ async def verify_static_file_access(request: Request) -> None:
         HTTPException: User associated with access token not found
         HTTPException: User does not have access to project
     """
+    # check if access to requested file is restricted or unrestricted
+    if "projects" in request.url.path:
+        try:
+            data_product_id = request.url.path.split("flights")[1].split("/")[-1][:-4]
+            data_product_id_uuid = UUID(data_product_id)
+        except (IndexError, ValueError):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="data product not found"
+            )
+        file_permission = crud.file_permission.get_by_filename(
+            SessionLocal(), filename=data_product_id_uuid
+        )
+        # unrestricted, return file
+        if file_permission and file_permission.access == "UNRESTRICTED":
+            return
+    # restricted access authorization
     access_token = request.cookies.get("access_token")
     if not access_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
