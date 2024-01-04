@@ -7,17 +7,15 @@ import { DataProduct } from '../pages/projects/ProjectDetail';
 import { SymbologySettings } from './MapContext';
 
 export default function ShareControls({
-  currentAccess,
   dataProduct,
   projectID,
   symbologySettings,
 }: {
-  currentAccess: string;
   dataProduct: DataProduct;
   projectID: string;
   symbologySettings: SymbologySettings;
 }) {
-  const [accessOption, setAccessOption] = useState(currentAccess);
+  const [accessOption, setAccessOption] = useState(dataProduct.access);
   const [includeSymbology, setIncludeSymbology] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);

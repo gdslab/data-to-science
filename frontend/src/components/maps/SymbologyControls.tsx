@@ -1,9 +1,10 @@
 import axios from 'axios';
 import { Field, Formik, Form } from 'formik';
+import { ArrowUpOnSquareIcon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
 
 import { cmaps } from './cmaps';
-import { Button, OutlineButton } from '../Buttons';
+import { Button } from '../Buttons';
 import { NumberField, SelectField } from '../InputFields';
 import {
   DSMSymbologySettings,
@@ -58,13 +59,41 @@ const saveSymbology = async (
   }
 };
 
-function DSMSymbologyControls({
-  open,
-  setOpen,
+function ShareDataProduct({
+  dataProduct,
+  projectID,
+  symbologySettings,
 }: {
-  open: boolean;
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  dataProduct: DataProduct;
+  projectID: string;
+  symbologySettings: SymbologySettings;
 }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative pb-4">
+      <button
+        type="button"
+        className="absolute right-0 rounded-full accent3 cursor-pointer hover:text-accent2 focus:outline-none"
+        onClick={() => setOpen(true)}
+      >
+        <span className="absolute -inset-1.5" />
+        <div className="flex items-center gap-2">
+          <ArrowUpOnSquareIcon className="h-4 w-4 inline" aria-hidden="true" />
+          <span className="inline">Share</span>
+        </div>
+      </button>
+      <Modal open={open} setOpen={setOpen}>
+        <ShareControls
+          dataProduct={dataProduct}
+          projectID={projectID}
+          symbologySettings={symbologySettings}
+        />
+      </Modal>
+    </div>
+  );
+}
+
+function DSMSymbologyControls() {
   const {
     activeDataProduct,
     activeDataProductDispatch,
@@ -88,6 +117,11 @@ function DSMSymbologyControls({
         {({ values, setFieldTouched, setFieldValue, submitForm }) => (
           <Form>
             <div className="w-full mb-4">
+              <ShareDataProduct
+                dataProduct={activeDataProduct}
+                projectID={activeProject.id}
+                symbologySettings={symbologySettings}
+              />
               <fieldset className="border border-solid border-slate-300 p-3">
                 <legend className="block text-sm text-gray-400 font-bold pt-2 pb-1">
                   Color Properties
@@ -109,7 +143,7 @@ function DSMSymbologyControls({
                 Min / Max Value Settings
               </legend>
               <div
-                className="w-full flex flex-wrap justify-between gap-4"
+                className="w-full flex flex-wrap justify-between gap-1.5"
                 role="group"
                 aria-labelledby="modeGroup"
               >
@@ -188,10 +222,15 @@ function DSMSymbologyControls({
                   </div>
                 </div>
               ) : null}
+              <div className="w-full flex justify-end mt-4">
+                <Button type="submit" size="xs">
+                  Apply Changes
+                </Button>
+              </div>
             </fieldset>
-            <div className="mt-4 flex items-center justify-between">
-              <div className="w-28">
-                <OutlineButton
+            <div className="mt-4 w-full flex items-center justify-end">
+              <div className="w-36">
+                <Button
                   type="button"
                   size="sm"
                   onClick={() =>
@@ -204,25 +243,7 @@ function DSMSymbologyControls({
                     )
                   }
                 >
-                  Save
-                </OutlineButton>
-              </div>
-              <div className="w-28">
-                <Button size="sm" onClick={() => setOpen(true)}>
-                  Share
-                </Button>
-                <Modal open={open} setOpen={setOpen}>
-                  <ShareControls
-                    currentAccess={activeDataProduct.access}
-                    dataProduct={activeDataProduct}
-                    projectID={activeProject.id}
-                    symbologySettings={symbologySettings}
-                  />
-                </Modal>
-              </div>
-              <div className="w-28">
-                <Button type="submit" size="sm">
-                  Apply
+                  Save Changes
                 </Button>
               </div>
             </div>
@@ -235,13 +256,7 @@ function DSMSymbologyControls({
   }
 }
 
-function OrthoSymbologyControls({
-  open,
-  setOpen,
-}: {
-  open: boolean;
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-}) {
+function OrthoSymbologyControls() {
   const {
     activeDataProduct,
     activeDataProductDispatch,
@@ -268,12 +283,17 @@ function OrthoSymbologyControls({
       >
         {({ values }) => (
           <Form>
+            <ShareDataProduct
+              dataProduct={activeDataProduct}
+              projectID={activeProject.id}
+              symbologySettings={symbologySettings}
+            />
             <fieldset className="border border-solid border-slate-300 p-3">
               <legend className="block text-sm text-gray-400 font-bold pt-2 pb-1">
-                Min / Max Value Settings
+                RGB Properties
               </legend>
               <div
-                className="w-full flex flex-wrap justify-between gap-4"
+                className="w-full flex flex-wrap justify-between gap-1.5"
                 role="group"
                 aria-labelledby="modeGroup"
               >
@@ -304,12 +324,7 @@ function OrthoSymbologyControls({
                   </div>
                 </div>
               ) : null}
-            </fieldset>
-            <fieldset className="border border-solid border-slate-300 p-3">
-              <legend className="block text-sm text-gray-400 font-bold pt-2 pb-1">
-                RGB Properties
-              </legend>
-              <div className="flex flex-col gap-4">
+              <div className="mt-4 flex flex-col gap-4">
                 <div className="grid grid-cols-3 gap-4">
                   <div className="grid grid-rows-3 gap-1.5 border-2 border-dotted border-red-500 rounded-md p-1.5">
                     <SelectField name="red.idx" label="Red" options={bandOptions} />
@@ -396,10 +411,15 @@ function OrthoSymbologyControls({
                   </div>
                 </div>
               </div>
+              <div className="w-full flex justify-end mt-4">
+                <Button type="submit" size="xs">
+                  Apply Changes
+                </Button>
+              </div>
             </fieldset>
-            <div className="mt-4 flex items-center justify-between">
-              <div className="w-28">
-                <OutlineButton
+            <div className="mt-4 w-full flex items-center justify-end">
+              <div className="w-36">
+                <Button
                   type="button"
                   size="sm"
                   onClick={() =>
@@ -412,25 +432,7 @@ function OrthoSymbologyControls({
                     )
                   }
                 >
-                  Save
-                </OutlineButton>
-              </div>
-              <div className="w-28">
-                <Button size="sm" onClick={() => setOpen(true)}>
-                  Share
-                </Button>
-                <Modal open={open} setOpen={setOpen}>
-                  <ShareControls
-                    currentAccess={activeDataProduct.access}
-                    dataProduct={activeDataProduct}
-                    projectID={activeProject.id}
-                    symbologySettings={symbologySettings}
-                  />
-                </Modal>
-              </div>
-              <div className="w-28">
-                <Button type="submit" size="sm">
-                  Apply
+                  Save Changes
                 </Button>
               </div>
             </div>
@@ -448,10 +450,7 @@ interface SymbologyControls {
 }
 
 export default function SymbologyControls({ dataProductType }: SymbologyControls) {
-  const [open, setOpen] = useState(false);
-  if (dataProductType === 'ortho')
-    return <OrthoSymbologyControls open={open} setOpen={setOpen} />;
-  if (dataProductType === 'dsm')
-    return <DSMSymbologyControls open={open} setOpen={setOpen} />;
+  if (dataProductType === 'ortho') return <OrthoSymbologyControls />;
+  if (dataProductType === 'dsm') return <DSMSymbologyControls />;
   return null;
 }

@@ -59,7 +59,11 @@ export function Button({ children, icon, size = 'normal', ...props }: Button) {
       {icon ? getIcon(icon) : null}
       <button
         className={classNames(
-          size === 'sm' ? 'text-sm font-bold' : 'text-xl font-extrabold',
+          size === 'xs'
+            ? 'text-xs font-semibold py-0.5 px-2'
+            : size === 'sm'
+            ? 'text-sm font-bold py-1.5 px-4'
+            : 'text-xl font-extrabold py-2 px-8',
           classNames(
             props.disabled
               ? 'text-slate-300 bg-slate-600'
@@ -68,7 +72,7 @@ export function Button({ children, icon, size = 'normal', ...props }: Button) {
               icon === 'trash'
                 ? 'bg-red-600 hover:bg-red-700 border-red-700 hover:border-red-800'
                 : 'bg-accent3 hover:bg-accent3-dark border-accent3 hover:border-accent3-dark',
-              'border-2 rounded-md py-2 px-8 w-full'
+              'border-2 rounded-md w-full'
             )
           )
         )}
