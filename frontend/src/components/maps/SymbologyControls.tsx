@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { Field, Formik, Form } from 'formik';
+import { useState } from 'react';
 
 import { cmaps } from './cmaps';
 import { Button, OutlineButton } from '../Buttons';
@@ -11,7 +12,9 @@ import {
   SymbologySettingsAction,
   useMapContext,
 } from './MapContext';
+import Modal from '../Modal';
 import { DataProduct } from '../pages/projects/ProjectDetail';
+import ShareControls from './ShareControls';
 
 /**
  * Determine number of decimal places for input number field's step attribute.
@@ -55,7 +58,13 @@ const saveSymbology = async (
   }
 };
 
-function DSMSymbologyControls() {
+function DSMSymbologyControls({
+  open,
+  setOpen,
+}: {
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
   const {
     activeDataProduct,
     activeDataProductDispatch,
@@ -63,7 +72,6 @@ function DSMSymbologyControls() {
     symbologySettings,
     symbologySettingsDispatch,
   } = useMapContext();
-
   if (activeProject && activeDataProduct) {
     const symbology = symbologySettings as DSMSymbologySettings;
 
@@ -191,6 +199,19 @@ function DSMSymbologyControls() {
                 </OutlineButton>
               </div>
               <div className="w-28">
+                <Button size="sm" onClick={() => setOpen(true)}>
+                  Share
+                </Button>
+                <Modal open={open} setOpen={setOpen}>
+                  <ShareControls
+                    currentAccess={activeDataProduct.access}
+                    dataProduct={activeDataProduct}
+                    projectID={activeProject.id}
+                    symbologySettings={symbologySettings}
+                  />
+                </Modal>
+              </div>
+              <div className="w-28">
                 <Button type="submit" size="sm">
                   Apply
                 </Button>
@@ -205,7 +226,13 @@ function DSMSymbologyControls() {
   }
 }
 
-function OrthoSymbologyControls() {
+function OrthoSymbologyControls({
+  open,
+  setOpen,
+}: {
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
   const {
     activeDataProduct,
     activeDataProductDispatch,
@@ -213,7 +240,6 @@ function OrthoSymbologyControls() {
     symbologySettings,
     symbologySettingsDispatch,
   } = useMapContext();
-
   if (activeProject && activeDataProduct) {
     const symbology = symbologySettings as OrthoSymbologySettings;
     const bandOptions = activeDataProduct.stac_properties.eo.map((band, idx) => ({
@@ -381,6 +407,19 @@ function OrthoSymbologyControls() {
                 </OutlineButton>
               </div>
               <div className="w-28">
+                <Button size="sm" onClick={() => setOpen(true)}>
+                  Share
+                </Button>
+                <Modal open={open} setOpen={setOpen}>
+                  <ShareControls
+                    currentAccess={activeDataProduct.access}
+                    dataProduct={activeDataProduct}
+                    projectID={activeProject.id}
+                    symbologySettings={symbologySettings}
+                  />
+                </Modal>
+              </div>
+              <div className="w-28">
                 <Button type="submit" size="sm">
                   Apply
                 </Button>
@@ -400,7 +439,10 @@ interface SymbologyControls {
 }
 
 export default function SymbologyControls({ dataProductType }: SymbologyControls) {
-  if (dataProductType === 'ortho') return <OrthoSymbologyControls />;
-  if (dataProductType === 'dsm') return <DSMSymbologyControls />;
+  const [open, setOpen] = useState(false);
+  if (dataProductType === 'ortho')
+    return <OrthoSymbologyControls open={open} setOpen={setOpen} />;
+  if (dataProductType === 'dsm')
+    return <DSMSymbologyControls open={open} setOpen={setOpen} />;
   return null;
 }

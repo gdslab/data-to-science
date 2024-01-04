@@ -52,3 +52,4 @@ def test_read_data_products(db: Session) -> None:
     assert len(data_products) == 3
     for data_product in data_products:
         assert data_product.flight_id == flight.id
+        assert data_product.access == "RESTRICTED"

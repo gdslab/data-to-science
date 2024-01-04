@@ -16,7 +16,9 @@ import { getDataProductName } from '../pages/projects/flights/dataProducts/DataP
 import HintText from '../HintText';
 import { Project } from '../pages/projects/ProjectList';
 import { useMapContext } from './MapContext';
+import Modal from '../Modal';
 import SymbologyControls from './SymbologyControls';
+import ShareControls from './ShareControls';
 
 import UASIcon from '../../assets/uas-icon.svg';
 import { Band } from '../pages/projects/ProjectDetail';

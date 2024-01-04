@@ -63,6 +63,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
     ) -> Sequence[DataProduct]:
         data_products_query = (
             select(DataProduct)
+            .join(DataProduct.file_permission)
             .where(DataProduct.flight_id == flight_id)
             .where(DataProduct.is_active)
         )
@@ -76,6 +77,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                     .where(UserStyle.user_id == user_id)
                 )
                 user_style = session.execute(user_style_query).scalar_one_or_none()
+                set_access_attr(data_product, data_product.file_permission.access)
                 set_url_attr(data_product, upload_dir)
                 set_status_attr(data_product, data_product.jobs.status)
                 if user_style:
@@ -98,6 +100,10 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
 
 def set_status_attr(data_product_obj: DataProduct, status: str | Any):
     setattr(data_product_obj, "status", status)
+
+
+def set_access_attr(data_product_obj: DataProduct, access: str | Any):
+    setattr(data_product_obj, "access", access)
 
 
 def set_url_attr(data_product_obj: DataProduct, upload_dir: str):

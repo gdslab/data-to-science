@@ -8,7 +8,11 @@ from sqlalchemy.orm import joinedload, Session
 
 from app import crud
 from app.crud.base import CRUDBase
-from app.crud.crud_data_product import set_url_attr, set_user_style_attr
+from app.crud.crud_data_product import (
+    set_access_attr,
+    set_url_attr,
+    set_user_style_attr,
+)
 from app.models.flight import Flight
 from app.models.job import Job
 from app.models.project import Project
@@ -94,6 +98,7 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                     flight.data_products = keep_data_products
 
                 for data_product in flight.data_products:
+                    set_access_attr(data_product, data_product.file_permission.access)
                     set_url_attr(data_product, upload_dir)
                     # check for saved user style
                     user_style_query = (
