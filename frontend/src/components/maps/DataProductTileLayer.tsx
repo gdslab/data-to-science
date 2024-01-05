@@ -171,14 +171,20 @@ export function getDataProductTileLayer(
 
 export default function DataProductTileLayer({
   activeDataProduct,
+  symbology = undefined,
   tileLayerRef = undefined,
 }: {
   activeDataProduct: DataProduct;
+  symbology?: OrthoSymbologySettings | DSMSymbologySettings | undefined;
   tileLayerRef?: undefined | React.MutableRefObject<L.TileLayer | null>;
 }) {
   const { symbologySettings } = useMapContext();
 
   if (!activeDataProduct) throw Error('No active data product');
 
-  return getDataProductTileLayer(activeDataProduct, symbologySettings, tileLayerRef);
+  return getDataProductTileLayer(
+    activeDataProduct,
+    symbology ? symbology : symbologySettings,
+    tileLayerRef
+  );
 }

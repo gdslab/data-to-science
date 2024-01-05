@@ -1,7 +1,6 @@
 import 'leaflet/dist/leaflet.css';
 import axios from 'axios';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { LayerGroup } from 'react-leaflet/LayerGroup';
 import { MapContainer } from 'react-leaflet/MapContainer';
 import { ZoomControl } from 'react-leaflet/ZoomControl';
 import { useLocation } from 'react-router-dom';
@@ -10,6 +9,7 @@ import { AlertBar, Status } from '../Alert';
 import DataProductTileLayer from './DataProductTileLayer';
 import MapLayersControl from './MapLayersControl';
 import { DataProduct } from '../pages/projects/ProjectDetail';
+import { DSMSymbologySettings, OrthoSymbologySettings } from './MapContext';
 
 function useQuery() {
   const { search } = useLocation();
@@ -17,8 +17,10 @@ function useQuery() {
   return useMemo(() => new URLSearchParams(search), [search]);
 }
 
-function parseSymbology(symbologyParam: string | null): JSON | null {
-  let symbology = null;
+function parseSymbology(
+  symbologyParam: string | null
+): DSMSymbologySettings | OrthoSymbologySettings | undefined {
+  let symbology = undefined;
   try {
     if (!symbologyParam) throw new Error();
     symbology = JSON.parse(atob(symbologyParam));
@@ -34,7 +36,8 @@ export default function ShareMap() {
   const [status, setStatus] = useState<Status | null>(null);
   const query = useQuery();
   const fileID = query.get('file_id');
-  const symbology = parseSymbology(query.get('symbology'));
+  const symbology: DSMSymbologySettings | OrthoSymbologySettings | undefined =
+    parseSymbology(query.get('symbology'));
 
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -105,6 +108,7 @@ export default function ShareMap() {
       {dataProduct ? (
         <DataProductTileLayer
           activeDataProduct={dataProduct}
+          symbology={symbology}
           tileLayerRef={tileLayerRef}
         />
       ) : null}
