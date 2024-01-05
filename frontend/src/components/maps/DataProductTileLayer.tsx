@@ -49,7 +49,8 @@ function getTileURL(
  */
 export function getDataProductTileLayer(
   dataProduct: DataProduct,
-  symbologySettings?: SymbologySettings | undefined
+  symbologySettings?: SymbologySettings | undefined,
+  tileLayerRef?: undefined | React.MutableRefObject<L.TileLayer | null>
 ) {
   if (dataProduct.data_type === 'dsm') {
     const stats = dataProduct.stac_properties.raster[0].stats;
@@ -86,6 +87,7 @@ export function getDataProductTileLayer(
 
     return (
       <TileLayer
+        ref={tileLayerRef}
         url={getTileURL(
           dataProduct.url.replace(import.meta.env.VITE_DOMAIN, ''),
           colorRamp,
@@ -169,12 +171,14 @@ export function getDataProductTileLayer(
 
 export default function DataProductTileLayer({
   activeDataProduct,
+  tileLayerRef = undefined,
 }: {
   activeDataProduct: DataProduct;
+  tileLayerRef?: undefined | React.MutableRefObject<L.TileLayer | null>;
 }) {
   const { symbologySettings } = useMapContext();
 
   if (!activeDataProduct) throw Error('No active data product');
 
-  return getDataProductTileLayer(activeDataProduct, symbologySettings);
+  return getDataProductTileLayer(activeDataProduct, symbologySettings, tileLayerRef);
 }

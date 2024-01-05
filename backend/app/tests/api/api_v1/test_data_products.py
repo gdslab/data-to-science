@@ -5,8 +5,10 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
+from app.schemas.file_permission import FilePermissionUpdate
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
@@ -104,6 +106,32 @@ def test_read_data_product_without_project_access(
         f"{settings.API_V1_STR}/projects/{data_product.project.id}"
         f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}"
     )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_read_public_data_product(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    data_product = SampleDataProduct(db).obj
+    file_permission = crud.file_permission.get_by_data_product(
+        db, file_id=data_product.id
+    )
+    assert file_permission
+    file_permission_in_update = FilePermissionUpdate(access="UNRESTRICTED")
+    crud.file_permission.update(
+        db, db_obj=file_permission, obj_in=file_permission_in_update
+    )
+    response = client.get(f"{settings.API_V1_STR}/public?file_id={data_product.id}")
+    assert response.status_code == status.HTTP_200_OK
+    response_data_product = response.json()
+    assert response_data_product["id"] == str(data_product.id)
+
+
+def test_read_restricted_data_product_with_public_url(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    data_product = SampleDataProduct(db).obj
+    response = client.get(f"{settings.API_V1_STR}/public?file_id={data_product.id}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 

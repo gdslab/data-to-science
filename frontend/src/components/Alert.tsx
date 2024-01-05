@@ -195,7 +195,7 @@ export function AlertBar({ alertType, children }: AlertProps) {
     return null;
   } else {
     return (
-      <div role="alert" className={color[0]}>
+      <div role="alert" className={color[0]} style={{ zIndex: 1000 }}>
         <div className={color[1]}>
           <div className="flex flex-cols gap-4">
             {Icon}

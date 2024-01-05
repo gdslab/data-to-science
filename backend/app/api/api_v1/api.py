@@ -5,6 +5,7 @@ from app.api.api_v1.endpoints import (
     file_permission,
     flights,
     locations,
+    public,
     projects,
     project_members,
     data_products,
@@ -21,6 +22,7 @@ api_router.include_router(
     flights.router, prefix="/projects/{project_id}/flights", tags=["flights"]
 )
 api_router.include_router(locations.router, prefix="/locations", tags=["locations"])
+api_router.include_router(public.router, prefix="/public", tags=["public"])
 api_router.include_router(projects.router, prefix="/projects", tags=["projects"])
 api_router.include_router(
     project_members.router,

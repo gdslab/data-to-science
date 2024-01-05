@@ -4,13 +4,14 @@ from typing import Any, Sequence
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import select, update
-from sqlalchemy.orm import Session
+from sqlalchemy import func, select, update
+from sqlalchemy.orm import joinedload, Session
 
 from app import crud
 from app.core.config import settings
 from app.crud.base import CRUDBase
 from app.models.data_product import DataProduct
+from app.models.file_permission import FilePermission
 from app.schemas.data_product import DataProductCreate, DataProductUpdate
 from app.models.user_style import UserStyle
 from app.models.utils.user import utcnow
@@ -50,6 +51,23 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                 set_status_attr(data_product, data_product.jobs.status)
                 if user_style:
                     set_user_style_attr(data_product, user_style.settings)
+            return data_product
+
+    def get_public_data_product_by_id(
+        self, db: Session, file_id: UUID, upload_dir: str
+    ) -> DataProduct | None:
+        data_product_query = (
+            select(DataProduct)
+            .join(FilePermission)
+            .options(joinedload(DataProduct.file_permission))
+            .where(DataProduct.is_active)
+            .where(FilePermission.access == "UNRESTRICTED")
+            .where(DataProduct.id == file_id)
+        )
+        with db as session:
+            data_product = session.scalar(data_product_query)
+            if data_product:
+                set_url_attr(data_product, upload_dir)
             return data_product
 
     def get_multi_by_flight(

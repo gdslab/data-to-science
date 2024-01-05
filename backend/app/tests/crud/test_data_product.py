@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app import crud
 from app.core.config import settings
+from app.schemas.file_permission import FilePermissionUpdate
 from app.tests.utils.flight import create_flight
 from app.tests.utils.data_product import SampleDataProduct, test_stac_props_dsm
 from app.tests.utils.user import create_user
@@ -36,6 +37,40 @@ def test_read_data_product(db: Session) -> None:
     assert stored_data_product.original_filename == data_product.obj.original_filename
     assert stored_data_product.url
     assert stored_data_product.user_style
+
+
+def test_read_public_data_product_by_id(db: Session) -> None:
+    data_product = SampleDataProduct(db).obj
+    file_permission = crud.file_permission.get_by_data_product(
+        db, file_id=data_product.id
+    )
+    assert file_permission
+    file_permission_in_update = FilePermissionUpdate(access="UNRESTRICTED")
+    crud.file_permission.update(
+        db, db_obj=file_permission, obj_in=file_permission_in_update
+    )
+    stored_data_product = crud.data_product.get_public_data_product_by_id(
+        db, file_id=data_product.id, upload_dir=settings.TEST_STATIC_DIR
+    )
+    assert stored_data_product
+    assert stored_data_product.id == data_product.id
+    assert stored_data_product.file_permission.access == "UNRESTRICTED"
+
+
+def test_read_restricted_data_product_with_public_get_by_id(db: Session) -> None:
+    data_product = SampleDataProduct(db).obj
+    file_permission = crud.file_permission.get_by_data_product(
+        db, file_id=data_product.id
+    )
+    assert file_permission
+    file_permission_in_update = FilePermissionUpdate(access="RESTRICTED")
+    file_permission_update = crud.file_permission.update(
+        db, db_obj=file_permission, obj_in=file_permission_in_update
+    )
+    stored_data_product = crud.data_product.get_public_data_product_by_id(
+        db, file_id=data_product.id, upload_dir=settings.TEST_STATIC_DIR
+    )
+    assert stored_data_product is None
 
 
 def test_read_data_products(db: Session) -> None:

@@ -25,6 +25,7 @@ import ProjectList, {
   loader as projectListLoader,
 } from './components/pages/projects/ProjectList';
 import RegistrationForm from './components/pages/auth/RegistrationForm';
+import ShareMap from './components/maps/ShareMap';
 import Teams, { loader as teamsLoader } from './components/pages/teams/Teams';
 import TeamCreate from './components/pages/teams/TeamCreate';
 import TeamDetail, {
@@ -63,6 +64,11 @@ export const router = createBrowserRouter([
       {
         path: '/auth/resetpassword',
         element: <PasswordResetForm />,
+      },
+      {
+        path: '/sharemap',
+        element: <RootProtected />,
+        children: [{ path: '/sharemap', element: <ShareMap /> }],
       },
     ],
   },
