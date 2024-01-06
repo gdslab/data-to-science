@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from fastapi import HTTPException, Request, status
@@ -8,6 +9,7 @@ from app.utils.staticfiles import RangedStaticFiles
 from app import crud
 from app.api.deps import decode_jwt
 from app.db.session import SessionLocal
+from app.schemas.file_permission import FilePermissionUpdate
 
 
 async def verify_static_file_access(request: Request) -> None:
@@ -24,7 +26,7 @@ async def verify_static_file_access(request: Request) -> None:
         HTTPException: User associated with access token not found
         HTTPException: User does not have access to project
     """
-    # check if access to requested file is restricted or unrestricted
+    # check if access to requested file is restricted or public
     if "projects" in request.url.path:
         try:
             data_product_id = request.url.path.split("flights")[1].split("/")[-1][:-4]
@@ -34,10 +36,10 @@ async def verify_static_file_access(request: Request) -> None:
                 status_code=status.HTTP_404_NOT_FOUND, detail="data product not found"
             )
         file_permission = crud.file_permission.get_by_filename(
-            SessionLocal(), filename=data_product_id_uuid
+            SessionLocal(), filename=str(data_product_id_uuid)
         )
-        # unrestricted, return file
-        if file_permission and file_permission.access == "UNRESTRICTED":
+        # public, return file
+        if file_permission and file_permission.is_public:
             return
     # restricted access authorization
     access_token = request.cookies.get("access_token")

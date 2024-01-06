@@ -45,7 +45,7 @@ def test_read_public_data_product_by_id(db: Session) -> None:
         db, file_id=data_product.id
     )
     assert file_permission
-    file_permission_in_update = FilePermissionUpdate(access="UNRESTRICTED")
+    file_permission_in_update = FilePermissionUpdate(is_public=True)
     crud.file_permission.update(
         db, db_obj=file_permission, obj_in=file_permission_in_update
     )
@@ -54,7 +54,7 @@ def test_read_public_data_product_by_id(db: Session) -> None:
     )
     assert stored_data_product
     assert stored_data_product.id == data_product.id
-    assert stored_data_product.file_permission.access == "UNRESTRICTED"
+    assert stored_data_product.file_permission.is_public is True
 
 
 def test_read_restricted_data_product_with_public_get_by_id(db: Session) -> None:
@@ -63,7 +63,7 @@ def test_read_restricted_data_product_with_public_get_by_id(db: Session) -> None
         db, file_id=data_product.id
     )
     assert file_permission
-    file_permission_in_update = FilePermissionUpdate(access="RESTRICTED")
+    file_permission_in_update = FilePermissionUpdate(is_public=False)
     file_permission_update = crud.file_permission.update(
         db, db_obj=file_permission, obj_in=file_permission_in_update
     )
@@ -87,4 +87,4 @@ def test_read_data_products(db: Session) -> None:
     assert len(data_products) == 3
     for data_product in data_products:
         assert data_product.flight_id == flight.id
-        assert data_product.access == "RESTRICTED"
+        assert data_product.public is False

@@ -19,7 +19,7 @@ def test_update_file_permission_with_project_owner_role(
     file_permission = crud.file_permission.get_by_data_product(
         db, file_id=data_product.obj.id
     )
-    updated_data = {"access": "UNRESTRICTED"}
+    updated_data = {"is_public": True}
     response = client.put(
         f"{settings.API_V1_STR}/projects/{data_product.project.id}"
         f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}"
@@ -30,7 +30,7 @@ def test_update_file_permission_with_project_owner_role(
     updated_file_permission = response.json()
     assert updated_file_permission["id"] == str(file_permission.id)
     assert updated_file_permission["file_id"] == str(file_permission.file_id)
-    assert updated_file_permission["access"] == "UNRESTRICTED"
+    assert updated_file_permission["is_public"] == True
 
 
 def test_update_file_permission_with_project_manager_role(
@@ -44,7 +44,7 @@ def test_update_file_permission_with_project_manager_role(
         project_id=data_product.project.id,
         role="manager",
     )
-    updated_data = {"access": "UNRESTRICTED"}
+    updated_data = {"is_public": True}
     response = client.put(
         f"{settings.API_V1_STR}/projects/{data_product.project.id}"
         f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}"
@@ -65,7 +65,7 @@ def test_update_file_permission_with_project_viewer_role(
         project_id=data_product.project.id,
         role="viewer",
     )
-    updated_data = {"access": "UNRESTRICTED"}
+    updated_data = {"is_public": True}
     response = client.put(
         f"{settings.API_V1_STR}/projects/{data_product.project.id}"
         f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}"
@@ -79,7 +79,7 @@ def test_update_file_permission_without_project_access(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     data_product = SampleDataProduct(db)
-    updated_data = {"access": "UNRESTRICTED"}
+    updated_data = {"is_public": True}
     response = client.put(
         f"{settings.API_V1_STR}/projects/{data_product.project.id}"
         f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}"

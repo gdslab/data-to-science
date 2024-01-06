@@ -117,7 +117,7 @@ def test_read_public_data_product(
         db, file_id=data_product.id
     )
     assert file_permission
-    file_permission_in_update = FilePermissionUpdate(access="UNRESTRICTED")
+    file_permission_in_update = FilePermissionUpdate(is_public=True)
     crud.file_permission.update(
         db, db_obj=file_permission, obj_in=file_permission_in_update
     )

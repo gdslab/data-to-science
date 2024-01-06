@@ -1,9 +1,11 @@
+from datetime import datetime
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload, Session
 
+from app import crud
 from app.crud.base import CRUDBase
 from app.models.data_product import DataProduct
 from app.models.file_permission import FilePermission
@@ -14,7 +16,7 @@ class CRUDFilePermission(
     CRUDBase[FilePermission, FilePermissionCreate, FilePermissionUpdate]
 ):
     def create_with_data_product(self, db: Session, file_id: UUID):
-        file_permission_in = {"access": "RESTRICTED"}
+        file_permission_in = {}
         file_permission = self.model(**file_permission_in, file_id=file_id)
         with db as session:
             session.add(file_permission)
@@ -37,6 +39,12 @@ class CRUDFilePermission(
         with db as session:
             file_permission = session.scalar(
                 statement.where(func.lower(DataProduct.filepath).contains(filename))
+            )
+            # update last accessed timestamp
+            crud.file_permission.update(
+                db,
+                db_obj=file_permission,
+                obj_in=FilePermissionUpdate(last_accessed_at=datetime.now()),
             )
             return file_permission
 

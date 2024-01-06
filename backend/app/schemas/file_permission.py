@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 
 class FilePermissionBase(BaseModel):
-    access: str | None = None
+    is_public: bool | None = None
     created_at: datetime | None = None
     expires_at: datetime | None = None
     last_accessed_at: datetime | None = None
@@ -13,7 +13,7 @@ class FilePermissionBase(BaseModel):
 
 
 class FilePermissionCreate(FilePermissionBase):
-    access: str
+    is_public: bool
     file_id: UUID
 
 
@@ -23,7 +23,7 @@ class FilePermissionUpdate(FilePermissionBase):
 
 class FilePermissionInDBBase(FilePermissionBase):
     id: UUID
-    access: str
+    is_public: bool
     created_at: datetime
     expires_at: datetime
     file_id: UUID

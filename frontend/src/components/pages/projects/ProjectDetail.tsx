@@ -63,7 +63,7 @@ export interface DataProduct {
   filepath: string;
   url: string;
   flight_id: string;
-  access: string;
+  public: boolean;
   stac_properties: {
     raster: Band[];
     eo: EO[];

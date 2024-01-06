@@ -61,7 +61,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             .join(FilePermission)
             .options(joinedload(DataProduct.file_permission))
             .where(DataProduct.is_active)
-            .where(FilePermission.access == "UNRESTRICTED")
+            .where(FilePermission.is_public)
             .where(DataProduct.id == file_id)
         )
         with db as session:
@@ -95,7 +95,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                     .where(UserStyle.user_id == user_id)
                 )
                 user_style = session.execute(user_style_query).scalar_one_or_none()
-                set_access_attr(data_product, data_product.file_permission.access)
+                set_public_attr(data_product, data_product.file_permission.is_public)
                 set_url_attr(data_product, upload_dir)
                 set_status_attr(data_product, data_product.jobs.status)
                 if user_style:
@@ -120,8 +120,8 @@ def set_status_attr(data_product_obj: DataProduct, status: str | Any):
     setattr(data_product_obj, "status", status)
 
 
-def set_access_attr(data_product_obj: DataProduct, access: str | Any):
-    setattr(data_product_obj, "access", access)
+def set_public_attr(data_product_obj: DataProduct, is_public: bool):
+    setattr(data_product_obj, "public", is_public)
 
 
 def set_url_attr(data_product_obj: DataProduct, upload_dir: str):

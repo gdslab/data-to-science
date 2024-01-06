@@ -15,7 +15,9 @@ export default function ShareControls({
   projectID: string;
   symbologySettings: SymbologySettings;
 }) {
-  const [accessOption, setAccessOption] = useState(dataProduct.access);
+  const [accessOption, setAccessOption] = useState<boolean | string>(
+    dataProduct.public
+  );
   const [includeSymbology, setIncludeSymbology] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
@@ -26,7 +28,7 @@ export default function ShareControls({
         `${import.meta.env.VITE_API_V1_STR}/projects/${projectID}/flights/${
           dataProduct.flight_id
         }/data_products/${dataProduct.id}/file_permission`,
-        { access: newAccess }
+        { is_public: newAccess }
       );
       if (response) {
         setStatus({ type: 'success', msg: 'Access updated' });
@@ -34,12 +36,12 @@ export default function ShareControls({
       } else {
         setStatus({ type: 'error', msg: 'Unable to change access' });
         setTimeout(() => setStatus(null), 3000);
-        setAccessOption(newAccess === 'RESTRICT' ? 'UNRESTRICTED' : 'RESTRICTED');
+        setAccessOption(!newAccess);
       }
     } catch (err) {
       setStatus({ type: 'error', msg: 'Unable to change access' });
       setTimeout(() => setStatus(null), 3000);
-      setAccessOption(newAccess === 'RESTRICT' ? 'UNRESTRICTED' : 'RESTRICTED');
+      setAccessOption(!newAccess);
     }
   };
 
@@ -62,10 +64,10 @@ export default function ShareControls({
           <input
             type="radio"
             name="accessOption"
-            value="RESTRICTED"
+            value="false"
             id="accessRestricted"
             className="peer hidden [&:checked_+_label_svg]:block"
-            checked={accessOption === 'RESTRICTED'}
+            checked={accessOption === 'false'}
             onChange={onChange}
           />
           <label
@@ -98,10 +100,10 @@ export default function ShareControls({
           <input
             type="radio"
             name="accessOption"
-            value="UNRESTRICTED"
+            value="true"
             id="accessUnrestricted"
             className="peer hidden [&:checked_+_label_svg]:block"
-            checked={accessOption === 'UNRESTRICTED'}
+            checked={accessOption === 'true'}
             onChange={onChange}
           />
           <label
