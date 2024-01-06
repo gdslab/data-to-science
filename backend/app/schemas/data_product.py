@@ -43,7 +43,7 @@ class DataProductInDBBase(DataProductBase, from_attributes=True):
 
 # additional properties to return via API
 class DataProduct(DataProductInDBBase):
-    access: str | None = None
+    public: bool | None = None
     status: str | None = None
     url: AnyHttpUrl | None = None
 

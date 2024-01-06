@@ -15,14 +15,12 @@ export default function ShareControls({
   projectID: string;
   symbologySettings: SymbologySettings;
 }) {
-  const [accessOption, setAccessOption] = useState<boolean | string>(
-    dataProduct.public
-  );
+  const [accessOption, setAccessOption] = useState<boolean>(dataProduct.public);
   const [includeSymbology, setIncludeSymbology] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
 
-  const updateAccess = async (newAccess: string) => {
+  const updateAccess = async (newAccess: boolean) => {
     try {
       const response = await axios.put(
         `${import.meta.env.VITE_API_V1_STR}/projects/${projectID}/flights/${
@@ -46,8 +44,11 @@ export default function ShareControls({
   };
 
   const onChange = (e) => {
-    updateAccess(e.target.value);
-    setAccessOption(e.target.value);
+    const val = e.target.value;
+    if (typeof val === 'string') {
+      updateAccess(val === 'true' ? true : false);
+      setAccessOption(val === 'true' ? true : false);
+    }
   };
 
   return (
@@ -67,7 +68,7 @@ export default function ShareControls({
             value="false"
             id="accessRestricted"
             className="peer hidden [&:checked_+_label_svg]:block"
-            checked={accessOption === 'false'}
+            checked={!accessOption}
             onChange={onChange}
           />
           <label
@@ -103,7 +104,7 @@ export default function ShareControls({
             value="true"
             id="accessUnrestricted"
             className="peer hidden [&:checked_+_label_svg]:block"
-            checked={accessOption === 'true'}
+            checked={accessOption}
             onChange={onChange}
           />
           <label

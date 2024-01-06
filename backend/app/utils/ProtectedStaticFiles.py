@@ -27,7 +27,7 @@ async def verify_static_file_access(request: Request) -> None:
         HTTPException: User does not have access to project
     """
     # check if access to requested file is restricted or public
-    if "projects" in request.url.path:
+    if "flights" in request.url.path:
         try:
             data_product_id = request.url.path.split("flights")[1].split("/")[-1][:-4]
             data_product_id_uuid = UUID(data_product_id)
