@@ -2,12 +2,7 @@ import secrets
 from typing import Any
 
 from fastapi_mail.config import ConnectionConfig
-from pydantic import (
-    EmailStr,
-    field_validator,
-    FieldValidationInfo,
-    PostgresDsn,
-)
+from pydantic import EmailStr, field_validator, FieldValidationInfo, PostgresDsn
 from pydantic_settings import BaseSettings
 
 
@@ -32,7 +27,7 @@ class Settings(BaseSettings):
     STATIC_DIR: str = "/static"
     POTREE_DIR: str = "/app/potree"
 
-    API_LOGFILE: str = ""
+    API_LOGDIR: str = ""
 
     # Database
     POSTGRES_HOST: str = ""
@@ -57,9 +52,9 @@ class Settings(BaseSettings):
     # Email
     MAIL_ENABLED: int = 0
     MAIL_ADMINS: str = ""
-    MAIL_USERNAME: str = ""
+    MAIL_USERNAME: EmailStr | str = ""
     MAIL_PASSWORD: str = ""
-    MAIL_FROM: EmailStr = ""
+    MAIL_FROM: EmailStr | str = ""
     MAIL_FROM_NAME: str = ""
     MAIL_PORT: int = 587
     MAIL_SERVER: str = ""
