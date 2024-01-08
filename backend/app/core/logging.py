@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 from functools import lru_cache
 from pathlib import Path
@@ -8,7 +9,8 @@ from pydantic import BaseModel
 from app.core.config import settings
 
 
-API_LOGFILE = Path(settings.API_LOGFILE)
+API_LOGDIR = Path(settings.API_LOGDIR)
+API_LOGFILE = API_LOGDIR / "app.log"
 DATE_FORMAT = "[%d/%b/%Y:%H:%M:%S]"
 LOGGER_FORMAT = "%(asctime)s | %(message)s"
 
@@ -40,6 +42,9 @@ def get_logger_config():
 
 
 def setup_logger():
+    if not os.path.exists(API_LOGDIR):
+        os.makedirs(API_LOGDIR)
+
     for name in logging.root.manager.loggerDict.keys():
         logging.getLogger(name).handlers = []
         logging.getLogger(name).propagate = True
