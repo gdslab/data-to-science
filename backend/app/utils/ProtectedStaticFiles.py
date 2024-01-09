@@ -74,8 +74,6 @@ async def verify_static_file_access(request: Request) -> None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="user not found"
             )
-        if user_id_in_url != str(user.id):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
     else:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
 
