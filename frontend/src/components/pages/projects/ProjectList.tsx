@@ -38,7 +38,7 @@ export default function ProjectList() {
   const [open, setOpen] = useState(false);
   const projects = useLoaderData() as Project[];
   return (
-    <div className="m-4">
+    <div className="p-4">
       <h1>Projects</h1>
       <div className="w-96">
         <Button icon="folderplus" onClick={() => setOpen(true)}>

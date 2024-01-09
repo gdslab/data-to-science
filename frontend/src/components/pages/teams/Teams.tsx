@@ -41,9 +41,9 @@ export default function SidebarPage() {
   }, [location.state]);
 
   return (
-    <div className="flex">
+    <div className="min-h-full flex">
       {/* sidebar */}
-      <div className="flex h-screen w-80 flex-col justify-between border-e bg-accent3 text-slate-200">
+      <div className="flex-grow w-80 flex-col justify-between border-e bg-accent3 text-slate-200">
         <div className="px-4 py-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
