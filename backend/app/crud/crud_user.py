@@ -3,7 +3,7 @@ import os
 from typing import Any, Sequence
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -77,9 +77,13 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         skip: int = 0,
         limit: int = 100,
     ) -> Sequence[User]:
-        stmt = select(User).where(User.is_approved).where(User.full_name.contains(q))
+        statement = (
+            select(User)
+            .where(User.is_approved)
+            .where(func.lower(User.full_name).contains(func.lower(q)))
+        )
         with db as session:
-            return session.scalars(stmt).all()
+            return session.scalars(statement).all()
 
     def update(
         self, db: Session, *, db_obj: User, obj_in: UserUpdate | dict[str, Any]
