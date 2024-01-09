@@ -12,6 +12,7 @@ import { AlertBar } from '../../Alert';
 import Table, { TableBody, TableHead } from '../../Table';
 import { CheckIcon } from '@heroicons/react/24/outline';
 
+import { generateRandomProfileColor } from '../auth/Profile';
 import { classNames } from '../../utils';
 import { sorter } from '../../utils';
 import AuthContext from '../../../AuthContext';
@@ -21,6 +22,7 @@ interface ProjectMembers {
   full_name: string;
   email: string;
   role: string;
+  profile_url: string | null;
   member_id: string;
 }
 
@@ -153,12 +155,32 @@ export default function ProjectAccess() {
           </div>
         </div>
         <Table height={96}>
-          <TableHead columns={['Name', 'Email', 'Role']} />
+          <TableHead align="left" columns={['Name', 'Email', 'Role']} />
           <TableBody
+            align="left"
             rows={projectMembers
               .sort((a, b) => sorter(a.full_name, b.full_name))
-              .map(({ id, full_name, email, role }) => [
-                <span>{full_name}</span>,
+              .map(({ id, full_name, email, profile_url, role }) => [
+                profile_url ? (
+                  <div className="flex items-center justify-start gap-4 whitespace-nowrap">
+                    <img
+                      key={profile_url.split('/').slice(-1)[0].slice(0, -4)}
+                      className="h-8 w-8 rounded-full"
+                      src={profile_url}
+                    />
+                    <span>{full_name}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-start gap-4 whitespace-nowrap">
+                    <div
+                      className="flex items-center justify-center h-8 w-8 text-white text-sm rounded-full"
+                      style={generateRandomProfileColor(full_name)}
+                    >
+                      {full_name[0]} {full_name.split(' ').slice(-1)[0][0]}
+                    </div>
+                    <span>{full_name}</span>
+                  </div>
+                ),
                 <span>{email}</span>,
                 <AccessRoleRadioGroup
                   currentRole={role}

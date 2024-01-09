@@ -19,18 +19,34 @@ import {
   profileValidationSchema,
 } from './validationSchema';
 
-function rgbToHex(r, g, b) {
-  return '#' + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1);
-}
+const profileColors = [
+  ['#355070', 'white'],
+  ['#644F6D', 'white'],
+  ['#C58794', 'black'],
+  ['#E8787C', 'black'],
+  ['#EAAC8B', 'black'],
+  ['#074F57', 'white'],
+  ['#065E6F', 'white'],
+  ['#74A57F', 'black'],
+  ['#9ECE9A', 'black'],
+  ['#E4C5AF', 'black'],
+];
 
+/**
+ * Randomly selects one of ten default profile background colors based on user's name.
+ * @param {string} username User's first and last name
+ * @returns {object} Style object for user's default profile background
+ */
 export function generateRandomProfileColor(username) {
   const seed = seedrandom(username);
+  const colorIndex = Math.floor(seed.quick() * 10); // generate index between 0-9
 
-  const red = Math.floor(seed.quick() * 256);
-  const green = Math.floor(seed.quick() * 256);
-  const blue = Math.floor(seed.quick() * 256);
-
-  return rgbToHex(red, green, blue);
+  const profileColor = profileColors[colorIndex];
+  return {
+    backgroundColor: profileColor[0],
+    color: profileColor[1],
+    fontWeight: 550,
+  };
 }
 
 function ChangePasswordForm() {
@@ -97,7 +113,6 @@ interface ProfileProps {
 function ProfileForm({ updateProfile, user }: ProfileProps) {
   return (
     <Formik
-      // enableReinitialize={true}
       initialValues={{ firstName: user.first_name, lastName: user.last_name }}
       validationSchema={profileValidationSchema}
       onSubmit={async (values, { setSubmitting, setStatus }) => {
@@ -260,11 +275,9 @@ export default function Profile() {
                 ) : (
                   <div
                     className="flex items-center justify-center h-24 w-24 text-white text-3xl rounded-full"
-                    style={{
-                      backgroundColor: generateRandomProfileColor(
-                        `${user.first_name} ${user.last_name}`
-                      ),
-                    }}
+                    style={generateRandomProfileColor(
+                      `${user.first_name} ${user.last_name}`
+                    )}
                   >
                     {user.first_name[0]} {user.last_name[0]}
                   </div>

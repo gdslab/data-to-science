@@ -16,9 +16,18 @@ function TableRow({ children }: { children: ReactNode }) {
   return <div className="flex flex-wrap gap-1.5 mb-1.5">{children}</div>;
 }
 
-function TableCell({ children }: { children: ReactNode }) {
+function TableCell({ align, children }: { align: string; children: ReactNode }) {
   return (
-    <div className="flex-1 flex p-4 items-center justify-center text-center bg-white">
+    <div
+      className={classNames(
+        align === 'left'
+          ? 'justify-start text-left'
+          : align === 'right'
+          ? 'justify-end text-right'
+          : 'justify-center text-center',
+        'flex-1 flex p-4 items-center bg-white'
+      )}
+    >
       {children}
     </div>
   );
@@ -26,9 +35,11 @@ function TableCell({ children }: { children: ReactNode }) {
 
 export function TableBody({
   actions,
+  align = 'center',
   rows,
 }: {
   actions?: Action[][];
+  align?: string;
   rows: (string | JSX.Element)[][];
 }) {
   return (
@@ -36,10 +47,12 @@ export function TableBody({
       {rows.map((row, i) => (
         <TableRow key={`row-${i}`}>
           {row.map((value, j) => (
-            <TableCell key={`cell-${i},${j}`}>{value}</TableCell>
+            <TableCell align={align} key={`cell-${i},${j}`}>
+              {value}
+            </TableCell>
           ))}
           {actions ? (
-            <TableCell>
+            <TableCell align={align}>
               <div className="w-full h-full flex items-center justify-around">
                 {actions[i].map((action) =>
                   action.type === 'button' ? (
@@ -93,13 +106,26 @@ export function TableBody({
   );
 }
 
-export function TableHead({ columns }: { columns: string[] }) {
+export function TableHead({
+  align = 'center',
+  columns,
+}: {
+  align?: string;
+  columns: string[];
+}) {
   return (
     <TableRow>
       {columns.map((col) => (
         <div
           key={col.replace(/\s+/g, '').toLowerCase()}
-          className="flex-1 p-4 text-center font-semibold text-md text-slate-600"
+          className={classNames(
+            align === 'left'
+              ? 'text-left'
+              : align === 'right'
+              ? 'text-right'
+              : 'text-center',
+            'flex-1 p-4 font-semibold text-md text-slate-600'
+          )}
         >
           {col}
         </div>

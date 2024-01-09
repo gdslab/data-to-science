@@ -88,11 +88,9 @@ export default function Navbar() {
                         ) : (
                           <div
                             className="flex items-center justify-center h-8 w-8 text-sm rounded-full"
-                            style={{
-                              backgroundColor: generateRandomProfileColor(
-                                user.first_name + ' ' + user.last_name
-                              ),
-                            }}
+                            style={generateRandomProfileColor(
+                              user.first_name + ' ' + user.last_name
+                            )}
                           >
                             {`${user.first_name[0]} ${user.last_name[0]}`}
                           </div>

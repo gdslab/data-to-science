@@ -26,8 +26,6 @@ export default function TeamMemberList({ teamMembers }: { teamMembers: TeamMembe
     }
   }
 
-  console.log(teamMembers);
-
   if (teamMembers.length < 1) {
     return <div>No team members</div>;
   } else {
@@ -71,11 +69,7 @@ export default function TeamMemberList({ teamMembers }: { teamMembers: TeamMembe
                     ) : (
                       <div
                         className="flex items-center justify-center h-8 w-8 text-white text-sm rounded-full"
-                        style={{
-                          backgroundColor: generateRandomProfileColor(
-                            teamMember.full_name
-                          ),
-                        }}
+                        style={generateRandomProfileColor(teamMember.full_name)}
                       >
                         {teamMember.full_name[0]}{' '}
                         {teamMember.full_name.split(' ').slice(-1)[0][0]}
