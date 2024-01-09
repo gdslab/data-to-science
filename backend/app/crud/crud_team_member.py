@@ -94,10 +94,14 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
             .where(User.email == email)
             .where(TeamMember.team_id == team_id)
         )
+        team = crud.team.get(db, id=team_id)
+        if not team:
+            return []
         with db as session:
             team_member = session.execute(stmt).one_or_none()
             if team_member:
                 set_name_and_email_attr(team_member[0], team_member[1])
+                set_role_attr(team_member[0], team.owner_id)
                 set_url_attr(team_member[0], team_member[1])
                 return team_member[0]
         return None
@@ -115,12 +119,15 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
             .where(TeamMember.member_id == user_id)
             .where(TeamMember.team_id == team_id)
         )
+        team = crud.team.get(db, id=team_id)
+        if not team:
+            return []
         with db as session:
             team_member = session.execute(stmt).one_or_none()
             if team_member:
                 set_name_and_email_attr(team_member[0], team_member[1])
+                set_role_attr(team_member[0], team.owner_id)
                 set_url_attr(team_member[0], team_member[1])
-                print(team_member[0].profile_url)
                 return team_member[0]
         return None
 
@@ -137,10 +144,14 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
             .offset(skip)
             .limit(limit)
         )
+        team = crud.team.get(db, id=team_id)
+        if not team:
+            return []
         team_members: list[TeamMember] = []
         with db as session:
             for team_member in session.execute(stmt).all():
                 set_name_and_email_attr(team_member[0], team_member[1])
+                set_role_attr(team_member[0], team.owner_id)
                 set_url_attr(team_member[0], team_member[1])
                 team_members.append(team_member[0])
 
@@ -188,6 +199,13 @@ def set_url_attr(team_member_obj: TeamMember, user_obj: User) -> None:
         setattr(team_member_obj, "profile_url", profile_url)
     else:
         setattr(team_member_obj, "profile_url", None)
+
+
+def set_role_attr(team_member_obj: TeamMember, owner_id: UUID):
+    if team_member_obj.member_id == owner_id:
+        setattr(team_member_obj, "role", "owner")
+    else:
+        setattr(team_member_obj, "role", "member")
 
 
 team_member = CRUDTeamMember(TeamMember)

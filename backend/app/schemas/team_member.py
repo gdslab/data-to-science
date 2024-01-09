@@ -37,6 +37,7 @@ class TeamMember(TeamMemberInDBBase):
     full_name: str | None = None
     email: EmailStr | None = None
     profile_url: AnyHttpUrl | None = None
+    role: str | None = None
 
 
 # additional properties stored in DB

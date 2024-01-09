@@ -99,6 +99,8 @@ def test_get_team_member_by_email(db: Session) -> None:
     assert member.team_id == team.id
     assert member.full_name == f"{user.first_name} {user.last_name}"
     assert member.email == user.email
+    assert member.role == "member"
+    assert hasattr(member, "profile_url")  # url to profile image or None
 
 
 def test_get_team_member_by_id(db: Session) -> None:
@@ -114,6 +116,7 @@ def test_get_team_member_by_id(db: Session) -> None:
     assert member.team_id == team.id
     assert member.full_name == f"{user.first_name} {user.last_name}"
     assert member.email == user.email
+    assert member.role == "member"
     assert hasattr(member, "profile_url")  # url to profile image or None
 
 
@@ -131,6 +134,10 @@ def test_get_list_of_team_members(db: Session) -> None:
             or member1.member_id == team_member.member_id
             or member2.member_id == team_member.member_id
         )
+        if team.owner_id == team_member.member_id:
+            assert team_member.role == "owner"
+        else:
+            assert team_member.role == "member"
 
 
 def test_remove_team_member_by_id(db: Session) -> None:

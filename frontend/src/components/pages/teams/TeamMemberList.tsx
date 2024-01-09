@@ -81,9 +81,7 @@ export default function TeamMemberList({ teamMembers }: { teamMembers: TeamMembe
                     {teamMember.email}
                   </td>
                   <td className="whitespace-nowrap px-4 py-2 text-gray-700">
-                    {team.is_owner && user && teamMember.email === user.email
-                      ? 'Owner'
-                      : 'Member'}
+                    {teamMember.role === 'owner' ? 'Owner' : 'Member'}
                   </td>
                   {team.is_owner ? (
                     <td className="px-4 py-2">
