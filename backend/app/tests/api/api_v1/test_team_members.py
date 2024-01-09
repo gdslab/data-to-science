@@ -3,6 +3,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from app import crud
 from app.api.deps import get_current_user, get_current_approved_user
 from app.core.config import settings
 from app.tests.utils.team import create_team
@@ -96,6 +97,29 @@ def test_add_team_members(
     assert 201 == r.status_code
     response_data = r.json()
     len(response_data) == 3
+
+
+def test_get_team_members(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    team = create_team(db, owner_id=current_user.id)
+    current_user_tm = crud.team_member.get_team_member_by_email(
+        db, email=current_user.email, team_id=team.id
+    )
+    team_member_ids = [str(current_user_tm.id)]
+    for i in range(0, 3):
+        team_member = create_team_member(db, team_id=team.id)
+        team_member_ids.append(str(team_member.id))
+    response = client.get(f"{settings.API_V1_STR}/teams/{team.id}/members")
+    assert response.status_code == status.HTTP_200_OK
+    fetched_team_members = response.json()
+    assert type(fetched_team_members) == list
+    assert len(fetched_team_members) == 4  # 3 added members + owner (current user)
+    for tm in fetched_team_members:
+        assert tm["id"] in team_member_ids
 
 
 def test_remove_team_member(

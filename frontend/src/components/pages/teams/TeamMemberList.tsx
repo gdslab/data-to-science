@@ -1,9 +1,9 @@
 import axios from 'axios';
 import { useContext } from 'react';
 import { useLoaderData, useParams, useRevalidator } from 'react-router-dom';
-import { UserMinusIcon } from '@heroicons/react/24/outline';
 
 import AuthContext from '../../../AuthContext';
+import { generateRandomProfileColor } from '../auth/Profile';
 import { TeamData, TeamMember } from './TeamDetail';
 import { sorter } from '../../utils';
 
@@ -25,6 +25,8 @@ export default function TeamMemberList({ teamMembers }: { teamMembers: TeamMembe
       console.error(err);
     }
   }
+
+  console.log(teamMembers);
 
   if (teamMembers.length < 1) {
     return <div>No team members</div>;
@@ -56,8 +58,30 @@ export default function TeamMemberList({ teamMembers }: { teamMembers: TeamMembe
               .sort((a, b) => sorter(a.full_name, b.full_name))
               .map((teamMember) => (
                 <tr key={teamMember.id} className="odd:bg-gray-50">
-                  <td className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
-                    {teamMember.full_name}
+                  <td className="flex items-center justify-start gap-4 whitespace-nowrap px-4 py-2 font-medium text-gray-900">
+                    {teamMember.profile_url ? (
+                      <img
+                        key={teamMember.profile_url
+                          .split('/')
+                          .slice(-1)[0]
+                          .slice(0, -4)}
+                        className="h-8 w-8 rounded-full"
+                        src={teamMember.profile_url}
+                      />
+                    ) : (
+                      <div
+                        className="flex items-center justify-center h-8 w-8 text-white text-sm rounded-full"
+                        style={{
+                          backgroundColor: generateRandomProfileColor(
+                            teamMember.full_name
+                          ),
+                        }}
+                      >
+                        {teamMember.full_name[0]}{' '}
+                        {teamMember.full_name.split(' ').slice(-1)[0][0]}
+                      </div>
+                    )}
+                    <span>{teamMember.full_name}</span>
                   </td>
                   <td className="whitespace-nowrap px-4 py-2 text-gray-700">
                     {teamMember.email}
@@ -68,13 +92,14 @@ export default function TeamMemberList({ teamMembers }: { teamMembers: TeamMembe
                       : 'Member'}
                   </td>
                   {team.is_owner ? (
-                    <td className="text-center">
+                    <td className="px-4 py-2">
                       {user && teamMember.email !== user.email ? (
                         <button
+                          className="text-sky-600"
                           type="button"
                           onClick={() => removeTeamMember(teamMember.id)}
                         >
-                          <UserMinusIcon className="h-6 w-6" aria-hidden="true" />
+                          Remove
                         </button>
                       ) : null}
                     </td>

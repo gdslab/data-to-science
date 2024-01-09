@@ -2,6 +2,7 @@ import axios from 'axios';
 import { useState } from 'react';
 
 import { User } from '../../../AuthContext';
+import { generateRandomProfileColor } from '../auth/Profile';
 import { sorter } from '../../utils';
 
 export interface UserSearch extends User {
@@ -100,7 +101,7 @@ function SearchUsersResults({ searchResults, setSearchResults }) {
               <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
                 Name
               </th>
-              <th>
+              <th className="text-center">
                 <span
                   className="text-accent"
                   onClick={() => {
@@ -120,8 +121,26 @@ function SearchUsersResults({ searchResults, setSearchResults }) {
               .sort((a, b) => sorter(a.first_name, b.first_name))
               .map((user) => (
                 <tr key={user.id} className="odd:bg-gray-50">
-                  <td className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
-                    {user.first_name} {user.last_name}
+                  <td className="flex items-center justify-start gap-4 whitespace-nowrap px-4 py-2 font-medium text-gray-900">
+                    {user.profile_url ? (
+                      <img
+                        key={user.profile_url.split('/').slice(-1)[0].slice(0, -4)}
+                        className="h-8 w-8 rounded-full"
+                        src={user.profile_url}
+                      />
+                    ) : (
+                      <div
+                        className="flex items-center justify-center h-8 w-8 text-white text-sm rounded-full"
+                        style={{
+                          backgroundColor: generateRandomProfileColor(
+                            user.first_name + ' ' + user.last_name
+                          ),
+                        }}
+                      >
+                        {`${user.first_name[0]} ${user.last_name[0]}`}
+                      </div>
+                    )}
+                    <span>{`${user.first_name} ${user.last_name}`}</span>
                   </td>
                   <td className="text-center">
                     <label

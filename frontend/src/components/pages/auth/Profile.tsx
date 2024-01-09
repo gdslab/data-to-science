@@ -1,11 +1,8 @@
 import axios from 'axios';
 import { Formik, Form } from 'formik';
 import { useContext, useState } from 'react';
-import {
-  ChevronDownIcon,
-  TrashIcon,
-  UserCircleIcon,
-} from '@heroicons/react/24/outline';
+import seedrandom from 'seedrandom';
+import { ChevronDownIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 import Alert from '../../Alert';
 import AuthContext, { User } from '../../../AuthContext';
@@ -21,6 +18,20 @@ import {
   passwordChangeValidationSchema,
   profileValidationSchema,
 } from './validationSchema';
+
+function rgbToHex(r, g, b) {
+  return '#' + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1);
+}
+
+export function generateRandomProfileColor(username) {
+  const seed = seedrandom(username);
+
+  const red = Math.floor(seed.quick() * 256);
+  const green = Math.floor(seed.quick() * 256);
+  const blue = Math.floor(seed.quick() * 256);
+
+  return rgbToHex(red, green, blue);
+}
 
 function ChangePasswordForm() {
   return (
@@ -247,8 +258,15 @@ export default function Profile() {
                     src={user.profile_url}
                   />
                 ) : (
-                  <div className="h-24 w-24 bg-accent2 rounded-full">
-                    <UserCircleIcon />
+                  <div
+                    className="flex items-center justify-center h-24 w-24 text-white text-3xl rounded-full"
+                    style={{
+                      backgroundColor: generateRandomProfileColor(
+                        `${user.first_name} ${user.last_name}`
+                      ),
+                    }}
+                  >
+                    {user.first_name[0]} {user.last_name[0]}
                   </div>
                 )}
                 <EditProfilePicture updateProfile={updateProfile} />

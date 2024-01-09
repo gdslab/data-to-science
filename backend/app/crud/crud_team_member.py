@@ -9,7 +9,9 @@ from sqlalchemy.orm import Bundle, Session
 from sqlalchemy.sql.selectable import Select
 
 from app import crud
+from app.core.config import settings
 from app.crud.base import CRUDBase
+from app.crud.crud_user import find_profile_img
 from app.models.project import Project
 from app.models.project_member import ProjectMember
 from app.models.team_member import TeamMember
@@ -85,7 +87,8 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
         """Find team member record by email."""
         stmt: Select = (
             select(
-                TeamMember, Bundle("user", User.first_name, User.last_name, User.email)
+                TeamMember,
+                Bundle("user", User.id, User.first_name, User.last_name, User.email),
             )
             .join(TeamMember.member)
             .where(User.email == email)
@@ -95,6 +98,7 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
             team_member = session.execute(stmt).one_or_none()
             if team_member:
                 set_name_and_email_attr(team_member[0], team_member[1])
+                set_url_attr(team_member[0], team_member[1])
                 return team_member[0]
         return None
 
@@ -104,7 +108,8 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
         """Find team member record by team id."""
         stmt: Select = (
             select(
-                TeamMember, Bundle("user", User.first_name, User.last_name, User.email)
+                TeamMember,
+                Bundle("user", User.id, User.first_name, User.last_name, User.email),
             )
             .join(TeamMember.member)
             .where(TeamMember.member_id == user_id)
@@ -114,6 +119,8 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
             team_member = session.execute(stmt).one_or_none()
             if team_member:
                 set_name_and_email_attr(team_member[0], team_member[1])
+                set_url_attr(team_member[0], team_member[1])
+                print(team_member[0].profile_url)
                 return team_member[0]
         return None
 
@@ -122,7 +129,8 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
     ) -> Sequence[TeamMember]:
         stmt: Select = (
             select(
-                TeamMember, Bundle("user", User.first_name, User.last_name, User.email)
+                TeamMember,
+                Bundle("user", User.id, User.first_name, User.last_name, User.email),
             )
             .join(TeamMember.member)
             .where(TeamMember.team_id == team_id)
@@ -133,6 +141,7 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
         with db as session:
             for team_member in session.execute(stmt).all():
                 set_name_and_email_attr(team_member[0], team_member[1])
+                set_url_attr(team_member[0], team_member[1])
                 team_members.append(team_member[0])
 
         return team_members
@@ -168,6 +177,17 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
 def set_name_and_email_attr(team_member_obj: TeamMember, user_obj: User):
     setattr(team_member_obj, "full_name", f"{user_obj.first_name} {user_obj.last_name}")
     setattr(team_member_obj, "email", user_obj.email)
+
+
+def set_url_attr(team_member_obj: TeamMember, user_obj: User) -> None:
+    profile_img = find_profile_img(str(user_obj.id))
+    static_url = settings.API_DOMAIN + settings.STATIC_DIR
+
+    if profile_img:
+        profile_url = f"{static_url}/users/{str(user_obj.id)}/{profile_img}"
+        setattr(team_member_obj, "profile_url", profile_url)
+    else:
+        setattr(team_member_obj, "profile_url", None)
 
 
 team_member = CRUDTeamMember(TeamMember)

@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import AnyHttpUrl, BaseModel
 
 if TYPE_CHECKING:
     EmailStr = str
@@ -36,6 +36,7 @@ class TeamMemberInDBBase(TeamMemberBase, from_attributes=True):
 class TeamMember(TeamMemberInDBBase):
     full_name: str | None = None
     email: EmailStr | None = None
+    profile_url: AnyHttpUrl | None = None
 
 
 # additional properties stored in DB

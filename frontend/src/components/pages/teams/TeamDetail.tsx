@@ -24,6 +24,7 @@ export interface TeamMember {
   id: string;
   full_name: string;
   email: string;
+  profile_url: string | null;
 }
 
 export interface TeamData {

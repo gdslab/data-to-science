@@ -1,14 +1,10 @@
 import { Fragment, useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Disclosure, Menu, Transition } from '@headlessui/react';
-import {
-  Bars3Icon,
-  ChevronDownIcon,
-  UserCircleIcon,
-  XMarkIcon,
-} from '@heroicons/react/24/outline';
+import { Bars3Icon, ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 import AuthContext from '../../AuthContext';
+import { generateRandomProfileColor } from '../pages/auth/Profile';
 
 import brandLogo from '../../assets/d2s-logo-white-horizontal.png';
 
@@ -90,8 +86,15 @@ export default function Navbar() {
                             src={user.profile_url}
                           />
                         ) : (
-                          <div className="inline h-8 w-8 rounded-full">
-                            <UserCircleIcon />
+                          <div
+                            className="flex items-center justify-center h-8 w-8 text-sm rounded-full"
+                            style={{
+                              backgroundColor: generateRandomProfileColor(
+                                user.first_name + ' ' + user.last_name
+                              ),
+                            }}
+                          >
+                            {`${user.first_name[0]} ${user.last_name[0]}`}
                           </div>
                         )}
 

@@ -114,6 +114,7 @@ def test_get_team_member_by_id(db: Session) -> None:
     assert member.team_id == team.id
     assert member.full_name == f"{user.first_name} {user.last_name}"
     assert member.email == user.email
+    assert hasattr(member, "profile_url")  # url to profile image or None
 
 
 def test_get_list_of_team_members(db: Session) -> None:
