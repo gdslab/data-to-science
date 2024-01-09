@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { User } from '../../../AuthContext';
 import { generateRandomProfileColor } from '../auth/Profile';
 import { sorter } from '../../utils';
+import { TeamMember } from './TeamDetail';
 
 export interface UserSearch extends User {
   checked: boolean;
@@ -90,7 +91,17 @@ function SearchUsersBar({
   );
 }
 
-function SearchUsersResults({ searchResults, setSearchResults }) {
+interface SearchUsersResults {
+  currentMembers: UserSearch[] | TeamMember[];
+  searchResults: UserSearch[];
+  setSearchResults: React.Dispatch<React.SetStateAction<UserSearch[]>>;
+}
+
+function SearchUsersResults({
+  currentMembers,
+  searchResults,
+  setSearchResults,
+}: SearchUsersResults) {
   if (searchResults && searchResults.length > 0) {
     return (
       <div className="grid grid-flow-row gap-4">
@@ -103,7 +114,7 @@ function SearchUsersResults({ searchResults, setSearchResults }) {
               </th>
               <th className="text-center">
                 <span
-                  className="text-accent"
+                  className="text-sky-600 cursor-pointer"
                   onClick={() => {
                     const updatedSearchResults = searchResults.map((user) => {
                       return { ...user, checked: true };
@@ -141,26 +152,31 @@ function SearchUsersResults({ searchResults, setSearchResults }) {
                     <span>{`${user.first_name} ${user.last_name}`}</span>
                   </td>
                   <td className="text-center">
-                    <label
-                      htmlFor="AcceptConditions"
-                      className="relative h-8 w-14 cursor-pointer"
-                    >
-                      <input
-                        id={`${user.id}-search-checkbox`}
-                        type="checkbox"
-                        value={user.id}
-                        checked={user.checked}
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                        onChange={(e) => {
-                          const updatedSearchResults = searchResults.map((user) => {
-                            if (user.id === e.target.value)
-                              return { ...user, checked: !user.checked };
-                            return user;
-                          });
-                          setSearchResults(updatedSearchResults);
-                        }}
-                      />
-                    </label>
+                    {currentMembers.filter(({ email }) => email === user.email).length >
+                    0 ? (
+                      <span className="italic text-slate-700">Already on team</span>
+                    ) : (
+                      <label
+                        htmlFor="AcceptConditions"
+                        className="relative h-8 w-14 cursor-pointer"
+                      >
+                        <input
+                          id={`${user.id}-search-checkbox`}
+                          type="checkbox"
+                          value={user.id}
+                          checked={user.checked}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                          onChange={(e) => {
+                            const updatedSearchResults = searchResults.map((user) => {
+                              if (user.id === e.target.value)
+                                return { ...user, checked: !user.checked };
+                              return user;
+                            });
+                            setSearchResults(updatedSearchResults);
+                          }}
+                        />
+                      </label>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -173,11 +189,21 @@ function SearchUsersResults({ searchResults, setSearchResults }) {
   }
 }
 
-export default function SearchUsers({ searchResults, setSearchResults, user }) {
+interface SearchUsers extends SearchUsersResults {
+  user: User | null;
+}
+
+export default function SearchUsers({
+  currentMembers,
+  searchResults,
+  setSearchResults,
+  user,
+}: SearchUsers) {
   return (
     <div className="grid grid-flow-row gap-4">
       <SearchUsersBar setSearchResults={setSearchResults} user={user} />
       <SearchUsersResults
+        currentMembers={currentMembers}
         searchResults={searchResults}
         setSearchResults={setSearchResults}
       />

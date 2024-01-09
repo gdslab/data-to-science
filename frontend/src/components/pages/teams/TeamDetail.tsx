@@ -126,31 +126,35 @@ export default function TeamDetail() {
           <h3>Find new team members</h3>
           <div className="mb-4 grid grid-flow-row gap-4">
             <SearchUsers
+              currentMembers={teamData.members}
               searchResults={searchResults}
               setSearchResults={setSearchResults}
               user={user}
             />
-            <Button
-              size="sm"
-              onClick={(e) => {
-                e.preventDefault();
-                const selectedMembers = searchResults.filter((u) => u.checked);
-                if (selectedMembers.length > 0) {
-                  axios
-                    .post(
-                      `/api/v1/teams/${teamData.team.id}/members/multi`,
-                      selectedMembers.map(({ id }) => id)
-                    )
-                    .then(() => {
-                      setSearchResults([]);
-                      revalidator.revalidate();
-                    })
-                    .catch((err) => console.error(err));
-                }
-              }}
-            >
-              Add Selected
-            </Button>
+            {searchResults.length > 0 &&
+            searchResults.filter((u) => u.checked).length > 0 ? (
+              <Button
+                size="sm"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const selectedMembers = searchResults.filter((u) => u.checked);
+                  if (selectedMembers.length > 0) {
+                    axios
+                      .post(
+                        `/api/v1/teams/${teamData.team.id}/members/multi`,
+                        selectedMembers.map(({ id }) => id)
+                      )
+                      .then(() => {
+                        setSearchResults([]);
+                        revalidator.revalidate();
+                      })
+                      .catch((err) => console.error(err));
+                  }
+                }}
+              >
+                Add Selected
+              </Button>
+            ) : null}
           </div>
           <div className="w-48">
             <Button type="button" size="sm" icon="trash" onClick={() => setOpen(true)}>

@@ -15,20 +15,12 @@ import SearchUsers, { UserSearch } from './SearchUsers';
 import initialValues from './initialValues';
 import validationSchema from './validationSchema';
 
-interface TeamMember {
-  id: number;
-  first_name: string;
-  last_name: string;
-  full_name: string;
-  email: string;
-}
-
 export default function TeamCreate() {
   const { user } = useContext(AuthContext);
   const projects = useLoaderData() as Project[];
   const navigate = useNavigate();
   const revalidator = useRevalidator();
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [teamMembers, setTeamMembers] = useState<UserSearch[]>([]);
   const [searchResults, setSearchResults] = useState<UserSearch[]>([]);
 
   useEffect(() => {
@@ -71,7 +63,6 @@ export default function TeamCreate() {
                 setStatus({ type: 'error', msg: 'Unable to create team' });
               }
             } catch (err) {
-              console.log(err);
               if (axios.isAxiosError(err)) {
                 setStatus({ type: 'error', msg: err.response?.data.detail });
               } else {
@@ -149,6 +140,7 @@ export default function TeamCreate() {
                 </div>
                 <div className="mb-4 grid grid-flow-row gap-4">
                   <SearchUsers
+                    currentMembers={teamMembers}
                     searchResults={searchResults}
                     setSearchResults={setSearchResults}
                     user={user}
