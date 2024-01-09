@@ -10,6 +10,7 @@ from sqlalchemy.sql.selectable import Select
 
 from app import crud
 from app.crud.base import CRUDBase
+from app.crud.crud_team_member import set_url_attr
 from app.models.project import Project
 from app.models.project_member import ProjectMember
 from app.models.team import Team
@@ -75,13 +76,18 @@ class CRUDProjectMember(
     def get_by_project_and_member_id(
         self, db: Session, project_id: UUID, member_id: UUID
     ) -> ProjectMember | None:
-        statement = (
-            select(ProjectMember)
+        statement: Select = (
+            select(ProjectMember, Bundle("user", User.id))
+            .join(ProjectMember.member)
             .where(ProjectMember.project_id == project_id)
             .where(ProjectMember.member_id == member_id)
         )
         with db as session:
-            return session.scalar(statement)
+            project_member = session.execute(statement).one_or_none()
+            if project_member:
+                set_url_attr(project_member[0], project_member[1])
+                return project_member[0]
+        return None
 
     def get_list_of_project_members(
         self,
@@ -95,7 +101,7 @@ class CRUDProjectMember(
         statement: Select = (
             select(
                 ProjectMember,
-                Bundle("user", User.first_name, User.last_name, User.email),
+                Bundle("user", User.id, User.first_name, User.last_name, User.email),
             )
             .join(ProjectMember.project)
             .join(ProjectMember.member)
@@ -111,6 +117,7 @@ class CRUDProjectMember(
             results = session.execute(statement).all()
             for project_member in session.execute(statement).all():
                 set_name_and_email_attr(project_member[0], project_member[1])
+                set_url_attr(project_member[0], project_member[1])
                 project_members.append(project_member[0])
         return project_members
 
