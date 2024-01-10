@@ -32,20 +32,20 @@ export default function ColorBarControl({
             params: {
               cmin:
                 symbology.mode === 'minMax'
-                  ? symbology.min
+                  ? symbology.min.toFixed(2)
                   : symbology.mode === 'userDefined'
-                  ? symbology.userMin
+                  ? symbology.userMin.toFixed(2)
                   : symbology.mode === 'meanStdDev'
-                  ? stats.mean - stats.stddev * symbology.meanStdDev
-                  : symbology.min,
+                  ? (stats.mean - stats.stddev * symbology.meanStdDev).toFixed(2)
+                  : symbology.min.toFixed(2),
               cmax:
                 symbology.mode === 'minMax'
-                  ? symbology.max
+                  ? symbology.max.toFixed(2)
                   : symbology.mode === 'userDefined'
-                  ? symbology.userMax
+                  ? symbology.userMax.toFixed(2)
                   : symbology.mode === 'meanStdDev'
-                  ? stats.mean + stats.stddev * symbology.meanStdDev
-                  : symbology.max,
+                  ? (stats.mean + stats.stddev * symbology.meanStdDev).toFixed(2)
+                  : symbology.max.toFixed(2),
               cmap: symbology.colorRamp,
             },
           }
