@@ -46,7 +46,11 @@ export default function ColorBarControl({
           }
         );
         if (response) {
-          setURL(response.data.colorbar_url);
+          // only set url if it reseponds with OK status
+          axios
+            .get(response.data.colorbar_url)
+            .then(() => setURL(response.data.colorbar_url))
+            .catch(() => setURL(''));
         }
       } catch (err) {
         throw err;
