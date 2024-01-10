@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Alert, { Status } from '../Alert';
 import { Button } from '../Buttons';
 import { DataProduct } from '../pages/projects/ProjectDetail';
-import { SymbologySettings } from './MapContext';
+import { SymbologySettings, useMapContext } from './MapContext';
 
 export default function ShareControls({
   dataProduct,
@@ -20,6 +20,8 @@ export default function ShareControls({
   const [isCopying, setIsCopying] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
 
+  const { activeDataProductDispatch } = useMapContext();
+
   const updateAccess = async (newAccess: boolean) => {
     try {
       const response = await axios.put(
@@ -30,6 +32,7 @@ export default function ShareControls({
       );
       if (response) {
         setStatus({ type: 'success', msg: 'Access updated' });
+        activeDataProductDispatch({ type: 'update', payload: { public: newAccess } });
         setTimeout(() => setStatus(null), 3000);
       } else {
         setStatus({ type: 'error', msg: 'Unable to change access' });

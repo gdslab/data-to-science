@@ -55,7 +55,10 @@ const defaultSymbologySettings = {
   userMax: 255,
 };
 
-type ActiveDataProductAction = { type: string; payload: DataProduct | null };
+type ActiveDataProductAction = {
+  type: string;
+  payload: DataProduct | Partial<DataProduct> | null;
+};
 type ActiveMapToolAction = { type: string; payload: MapTool };
 type ActiveProjectAction = { type: string; payload: Project | null };
 type FlightsAction = { type: string; payload: Flight[] };
@@ -69,7 +72,14 @@ function activeDataProductReducer(
 ) {
   switch (action.type) {
     case 'set': {
-      return action.payload;
+      return action.payload as DataProduct;
+    }
+    case 'update': {
+      if (state && action.payload) {
+        const updatedDataProduct = { ...state, ...action.payload } as DataProduct;
+        return updatedDataProduct;
+      }
+      return state;
     }
     case 'clear': {
       return null;
