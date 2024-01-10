@@ -30,6 +30,7 @@ aiofiles = "^23.2.1"
 fastapi-mail = {extras = ["aioredis"], version = "^1.4.1"}
 staticmap = "^0.5.7"
 titiler-core = "^0.15.4"
+matplotlib = "^3.8.2"
 
 [tool.poetry.group.dev.dependencies]
 httpx = "^0.24.1"

@@ -13,6 +13,7 @@ from app.api.api_v1.endpoints import (
     style,
     teams,
     team_members,
+    utils,
     users,
 )
 
@@ -43,6 +44,11 @@ api_router.include_router(
     style.router,
     prefix="/projects/{project_id}/flights/{flight_id}/data_products/{data_product_id}/style",
     tags=["style"],
+)
+api_router.include_router(
+    utils.router,
+    prefix="/projects/{project_id}/flights/{flight_id}/data_products/{data_product_id}/utils",
+    tags=["utils"],
 )
 api_router.include_router(
     raw_data.router,

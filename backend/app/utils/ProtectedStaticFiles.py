@@ -1,4 +1,5 @@
 from datetime import datetime
+from pathlib import Path
 from uuid import UUID
 
 from fastapi import HTTPException, Request, status
@@ -27,6 +28,21 @@ async def verify_static_file_access(request: Request) -> None:
         HTTPException: User does not have access to project
     """
     # check if access to requested file is restricted or public
+    if "colorbars" in request.url.path:
+        try:
+            data_product_id = Path(request.url.path.split("colorbars")[-1]).parent.name
+            data_product_id_uuid = UUID(data_product_id)
+        except (IndexError, ValueError):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="data product not found"
+            )
+        file_permission = crud.file_permission.get_by_data_product(
+            SessionLocal(), file_id=data_product_id_uuid
+        )
+        # public, return file
+        if file_permission and file_permission.is_public:
+            return
+
     if "flights" in request.url.path:
         try:
             data_product_id = request.url.path.split("flights")[1].split("/")[-1][:-4]

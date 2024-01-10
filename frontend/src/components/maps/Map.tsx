@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { MapContainer } from 'react-leaflet/MapContainer';
 import { ZoomControl } from 'react-leaflet/ZoomControl';
 
+import ColorBarControl from './ColorBarControl';
 import DataProductTileLayer from './DataProductTileLayer';
 import MapLayersControl from './MapLayersControl';
 import { Project } from '../pages/projects/ProjectList';
@@ -46,7 +47,9 @@ export default function Map({ projects }: { projects: Project[] }) {
         zoomControl={false}
       >
         {!activeProject ? <ProjectMarkers projects={projects} /> : null}
+
         {activeProject ? <ProjectBoundary project={activeProject} /> : null}
+
         {activeProject &&
         flights &&
         activeDataProduct &&
@@ -54,6 +57,18 @@ export default function Map({ projects }: { projects: Project[] }) {
         activeMapTool === 'map' ? (
           <DataProductTileLayer activeDataProduct={activeDataProduct} />
         ) : null}
+
+        {activeProject &&
+        flights &&
+        activeDataProduct &&
+        activeDataProduct.data_type === 'dsm' &&
+        activeMapTool === 'map' ? (
+          <ColorBarControl
+            projectId={activeProject.id}
+            dataProduct={activeDataProduct}
+          />
+        ) : null}
+
         {flights &&
         flights.length > 0 &&
         activeMapTool === 'compare' &&
@@ -62,6 +77,7 @@ export default function Map({ projects }: { projects: Project[] }) {
         ) : activeMapTool === 'compare' && getFlightsWithGTIFF(flights).length === 0 ? (
           <CompareToolAlert />
         ) : null}
+
         <MapLayersControl />
         <ZoomControl position="bottomright" />
       </MapContainer>

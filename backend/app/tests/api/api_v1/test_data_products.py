@@ -14,6 +14,7 @@ from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
 from app.tests.utils.flight import create_flight
 from app.tests.utils.user import create_user
+from app.utils.ColorBar import create_outfilename
 
 
 def test_create_data_product(
@@ -133,6 +134,49 @@ def test_read_restricted_data_product_with_public_url(
     data_product = SampleDataProduct(db).obj
     response = client.get(f"{settings.API_V1_STR}/public?file_id={data_product.id}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_generate_data_product_colorbar_with_viewer_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, data_type="dsm", create_style=True)
+    create_project_member(
+        db,
+        member_id=current_user.id,
+        project_id=data_product.project.id,
+        role="viewer",
+    )
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{data_product.project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}/utils/colorbar?cmin=100&cmax=200&cmap=terrain"
+    )
+    colorbar_filename = create_outfilename(100, 200, "terrain")
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert "colorbar_url" in response_data
+    assert response_data["colorbar_url"] == (
+        f"{settings.TEST_STATIC_DIR}/projects/{data_product.project.id}"
+        f"/flights/{data_product.flight.id}/dsm/colorbars/{data_product.obj.id}/{colorbar_filename}"
+    )
+
+
+def test_generate_data_product_colorbar_with_invalid_parameters(
+    client: TestClient, db: Session, normal_user_access_token: str
+):
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, data_type="dsm", create_style=True)
+    create_project_member(
+        db,
+        member_id=current_user.id,
+        project_id=data_product.project.id,
+        role="viewer",
+    )
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{data_product.project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}/utils/colorbar?cmin=100&cmax=200&cmap=invalid-cmap"
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
 def test_read_data_products_with_owner_role(
