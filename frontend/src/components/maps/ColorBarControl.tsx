@@ -7,9 +7,11 @@ import { DataProduct } from '../pages/projects/ProjectDetail';
 export default function ColorBarControl({
   projectId,
   dataProduct,
+  symbology = undefined,
 }: {
-  projectId: string;
+  projectId?: string;
   dataProduct: DataProduct;
+  symbology?: DSMSymbologySettings | undefined;
 }) {
   const [url, setURL] = useState('');
   const { symbologySettings } = useMapContext();
@@ -19,6 +21,9 @@ export default function ColorBarControl({
       const stats = dataProduct.stac_properties.raster[0].stats;
 
       try {
+        if (!projectId) {
+          projectId = dataProduct.filepath.split('/projects/')[1].split('/flights/')[0];
+        }
         const response = await axios.get(
           `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/flights/${
             dataProduct.flight_id
@@ -56,10 +61,11 @@ export default function ColorBarControl({
         throw err;
       }
     }
-    const symbology = symbologySettings as DSMSymbologySettings | undefined;
-    if (symbology) {
-      fetchColorBar(symbology);
-    }
+    const colorBarSymbology = symbology
+      ? symbology
+      : (symbologySettings as DSMSymbologySettings);
+
+    fetchColorBar(colorBarSymbology);
   }, [symbologySettings]);
 
   if (url) {

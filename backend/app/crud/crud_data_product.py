@@ -54,21 +54,34 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             return data_product
 
     def get_public_data_product_by_id(
-        self, db: Session, file_id: UUID, upload_dir: str
+        self, db: Session, file_id: UUID, upload_dir: str, user_id: UUID | None = None
     ) -> DataProduct | None:
         data_product_query = (
             select(DataProduct)
-            .join(FilePermission)
+            .join(DataProduct.file_permission)
+            .join(DataProduct.flight)
             .options(joinedload(DataProduct.file_permission))
+            .options(joinedload(DataProduct.flight))
             .where(DataProduct.is_active)
-            .where(FilePermission.is_public)
             .where(DataProduct.id == file_id)
         )
         with db as session:
             data_product = session.scalar(data_product_query)
-            if data_product:
+            if data_product and data_product.file_permission.is_public:
                 set_url_attr(data_product, upload_dir)
-            return data_product
+                return data_product
+            elif data_product and user_id:
+                project_id = data_product.flight.project.id
+                project_member = crud.project_member.get_by_project_and_member_id(
+                    db, project_id=project_id, member_id=user_id
+                )
+                if project_member:
+                    set_url_attr(data_product, upload_dir)
+                    return data_product
+                else:
+                    return None
+            else:
+                return None
 
     def get_multi_by_flight(
         self,

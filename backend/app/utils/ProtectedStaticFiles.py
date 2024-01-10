@@ -27,7 +27,7 @@ async def verify_static_file_access(request: Request) -> None:
         HTTPException: User associated with access token not found
         HTTPException: User does not have access to project
     """
-    # check if access to requested file is restricted or public
+    # check if access to color bar's data product is restricted or public
     if "colorbars" in request.url.path:
         try:
             data_product_id = Path(request.url.path.split("colorbars")[-1]).parent.name
@@ -43,7 +43,8 @@ async def verify_static_file_access(request: Request) -> None:
         if file_permission and file_permission.is_public:
             return
 
-    if "flights" in request.url.path:
+    # check if access to requested data product is restricted or public
+    if "flights" in request.url.path and "colorbars" not in request.url.path:
         try:
             data_product_id = request.url.path.split("flights")[1].split("/")[-1][:-4]
             data_product_id_uuid = UUID(data_product_id)
@@ -57,6 +58,7 @@ async def verify_static_file_access(request: Request) -> None:
         # public, return file
         if file_permission and file_permission.is_public:
             return
+
     # restricted access authorization
     access_token = request.cookies.get("access_token")
     if not access_token:

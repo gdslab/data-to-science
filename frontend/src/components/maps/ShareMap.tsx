@@ -6,6 +6,7 @@ import { ZoomControl } from 'react-leaflet/ZoomControl';
 import { useLocation } from 'react-router-dom';
 
 import { AlertBar, Status } from '../Alert';
+import ColorBarControl from './ColorBarControl';
 import DataProductTileLayer from './DataProductTileLayer';
 import MapLayersControl from './MapLayersControl';
 import { DataProduct } from '../pages/projects/ProjectDetail';
@@ -110,6 +111,12 @@ export default function ShareMap() {
           activeDataProduct={dataProduct}
           symbology={symbology}
           tileLayerRef={tileLayerRef}
+        />
+      ) : null}
+      {dataProduct && dataProduct.data_type === 'dsm' ? (
+        <ColorBarControl
+          dataProduct={dataProduct}
+          symbology={symbology as DSMSymbologySettings}
         />
       ) : null}
       <MapLayersControl />
