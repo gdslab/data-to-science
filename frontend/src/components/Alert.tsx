@@ -197,9 +197,9 @@ export function AlertBar({ alertType, children }: AlertProps) {
     return (
       <div role="alert" className={color[0]} style={{ zIndex: 1000 }}>
         <div className={color[1]}>
-          <div className="flex flex-cols gap-4">
+          <div className="flex flex-cols gap-4 items-center">
             {Icon}
-            {children}
+            <span>{children}</span>
           </div>
           <div className="flex">
             <button className="transition" onClick={() => toggleHide(true)}>
