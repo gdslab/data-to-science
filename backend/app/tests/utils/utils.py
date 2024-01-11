@@ -31,7 +31,7 @@ def random_team_description() -> str:
 
 def random_password() -> str:
     """Create random password."""
-    return faker.password()
+    return faker.password(length=12)
 
 
 def build_sqlalchemy_uri(db_path: str) -> PostgresDsn:

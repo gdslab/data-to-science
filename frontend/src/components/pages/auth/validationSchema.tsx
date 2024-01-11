@@ -5,19 +5,18 @@ YupPassword(Yup);
 
 const nameRules = Yup.object({
   firstName: Yup.string()
+    .min(2, 'First name must have at least 2 characters')
     .max(64, 'First name cannot be more than 64 characters')
     .required('Enter your first name'),
   lastName: Yup.string()
+    .min(2, 'Last name must have at least 2 characters')
     .max(64, 'Last name cannot be more than 64 characters')
     .required('Enter your last name'),
 });
 
 const passwordRules = Yup.string()
-  .min(10, 'Use 10 or more characters for your password')
+  .min(12, 'Use 12 or more characters for your password')
   .max(128, 'Password cannot be more than 128 characters')
-  .minLowercase(1, 'Password must contain at least one lowercase character')
-  .minUppercase(1, 'Password must contain at least one uppercase character')
-  .minNumbers(1, 'Password must contain at least one number')
   .minRepeating(2, 'Password cannot have more than two repeating characters in a row')
   .required('Enter your password');
 

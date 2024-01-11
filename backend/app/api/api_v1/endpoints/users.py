@@ -22,7 +22,7 @@ from app import crud, models, schemas
 from app.api import deps, mail
 from app.core.config import settings
 from app.core import security
-
+from app.models.utils.user import validate_password
 
 router = APIRouter()
 
@@ -31,10 +31,10 @@ router = APIRouter()
 def create_user(
     background_tasks: BackgroundTasks,
     db: Session = Depends(deps.get_db),
-    password: str = Body(),  # TODO add minimal password requirements
-    email: EmailStr = Body(),
-    first_name: str = Body(),
-    last_name: str = Body(),
+    password: str = Body(title="Password", min_length=12, max_length=128),
+    email: EmailStr = Body(title="Email", max_length=254),
+    first_name: str = Body(title="First name", min_length=2, max_length=64),
+    last_name: str = Body(title="Last name", min_length=2, max_length=64),
 ) -> Any:
     """Create new user with unique email."""
     existing_user = crud.user.get_by_email(db, email=email)
@@ -42,6 +42,8 @@ def create_user(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Email address already in use"
         )
+    # verify password meets minimum requirements
+    validate_password(password)
     user_in = schemas.UserCreate(
         password=password,
         email=email,

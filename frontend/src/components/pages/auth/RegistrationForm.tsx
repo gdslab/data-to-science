@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { Formik, Form } from 'formik';
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 
 import Alert from '../../Alert';
 import { Button, OutlineButton } from '../../Buttons';
@@ -13,10 +14,10 @@ import Welcome from '../../pages/Welcome';
 import { registrationInitialValues as initialValues } from './initialValues';
 import { registrationValidationSchema as validationSchema } from './validationSchema';
 
-export const passwordHintText =
-  'Your password must use at least 10 characters. It must contain at least one lowercase, one uppercase, and one numeric character.';
+export const passwordHintText = 'Your password must use at least 12 characters.';
 
 export default function RegistrationForm() {
+  const [showPassword, toggleShowPassword] = useState(false);
   return (
     <div className="h-full bg-accent1">
       <div className="flex flex-wrap items-center justify-center">
@@ -69,18 +70,30 @@ export default function RegistrationForm() {
                     <TextField label="Last Name" name="lastName" />
                   </div>
                   <TextField label="Email" name="email" type="email" />
-                  <HintText>{passwordHintText}</HintText>
                   <TextField
                     label="Password"
                     name="password"
-                    type="password"
-                    icon="password"
+                    type={showPassword ? 'text' : 'password'}
                   />
+                  <HintText>{passwordHintText}</HintText>
+                  <div className="flex items-center">
+                    <input
+                      id="default-checkbox"
+                      type="checkbox"
+                      className="w-4 h-4 text-slate-600 accent-slate-600 bg-gray-100 border-gray-300 rounded focus:ring-slate-500 dark:focus:ring-slate-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                      onChange={(e) => toggleShowPassword(e.target.checked)}
+                    />
+                    <label
+                      htmlFor="default-checkbox"
+                      className="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+                    >
+                      Show password
+                    </label>
+                  </div>
                   <TextField
                     label="Retype Password"
                     name="passwordRetype"
-                    type="password"
-                    icon="password"
+                    type={showPassword ? 'text' : 'password'}
                   />
                   <Button type="submit" disabled={isSubmitting}>
                     Create Account

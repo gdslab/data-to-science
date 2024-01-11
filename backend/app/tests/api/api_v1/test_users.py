@@ -1,4 +1,4 @@
-from fastapi import Request
+from fastapi import Request, status
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -71,6 +71,34 @@ def test_create_user_is_not_approved(client: TestClient, db: Session) -> None:
     assert 201 == r.status_code
     created_user = r.json()
     assert created_user["is_approved"] is False
+
+
+def test_create_user_with_password_less_than_minimum_length(
+    client: TestClient, db: Session
+) -> None:
+    full_name = random_full_name()
+    data = {
+        "email": random_email(),
+        "password": "shortpass",
+        "first_name": full_name["first"],
+        "last_name": full_name["last"],
+    }
+    response = client.post(f"{settings.API_V1_STR}/users/", json=data)
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+def test_create_user_with_password_with_more_than_two_repeating_chars_in_a_row(
+    client: TestClient, db: Session
+) -> None:
+    full_name = random_full_name()
+    data = {
+        "email": random_email(),
+        "password": "invalidpasssword",
+        "first_name": full_name["first"],
+        "last_name": full_name["last"],
+    }
+    response = client.post(f"{settings.API_V1_STR}/users/", json=data)
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 def test_get_users_normal_current_user(
