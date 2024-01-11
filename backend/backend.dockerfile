@@ -55,6 +55,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app \
     PYTHONUNBUFFERED=1
 
+# matplotlib tmp dir
+ENV MPLCONFIGDIR=/var/tmp/d2s
+
 # install gdal and remove apt package info to reduce image size
 RUN apt-get update && apt-get install -y gdal-bin && rm -rf /var/lib/apt/lists/*
 
@@ -81,8 +84,11 @@ COPY . /app
 # create directory for user uploads
 RUN cd /app && mkdir /static
 
+# create directory for temp files
+RUN mkdir /var/tmp/d2s
+
 # update permissions for d2s user/group
-RUN chown -R d2s:d2s /app && chown -R d2s:d2s /static
+RUN chown -R d2s:d2s /app && chown -R d2s:d2s /static && chown -R d2s:d2s /var/tmp/d2s
 
 USER d2s
 
