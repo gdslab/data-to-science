@@ -72,7 +72,7 @@ def process_geotiff(
         ip.run()
         default_symbology = ip.get_default_symbology()
     except Exception as e:
-        logger.error(str)
+        logger.exception("Failed to process uploaded GeoTIFF")
         if os.path.exists(geotiff_filepath):
             os.remove(geotiff_filepath)
         crud.job.update(
@@ -170,7 +170,7 @@ def process_point_cloud(
         )
         result.check_returncode()
     except Exception as e:
-        logger.error(str(e))
+        logger.exception("Failed to build EPT from uploaded point cloud")
         os.remove(las_filepath)
         crud.job.update(
             db,
@@ -195,7 +195,7 @@ def process_point_cloud(
         if os.path.exists(f"{copc_laz_filepath}_tmp"):
             shutil.rmtree(f"{copc_laz_filepath}_tmp")
     except Exception as e:
-        logger.error(str(e))
+        logger.exception("Failed to build COPC from uploaded point cloud")
         os.remove(las_filepath)
         if os.path.exists(f"{copc_laz_filepath}_tmp"):
             shutil.rmtree(f"{copc_laz_filepath}_tmp")

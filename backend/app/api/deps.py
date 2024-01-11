@@ -29,7 +29,6 @@ def get_db():
         yield db
     except Exception as exception:
         logger.exception("Session raised exception - issuing rollback")
-        logger.error(str(exception))
         db.rollback()
         exception_name = exception.__class__.__name__
         if exception_name == "JWTError" or exception_name == "JWSSignatureError":
@@ -53,7 +52,7 @@ def decode_jwt(token: str) -> schemas.TokenPayload:
             detail="Access forbidden",
         )
     except Exception as e:
-        logger.error(str(e))
+        logger.exception("Failed to decode jwt")
     return token_data
 
 
