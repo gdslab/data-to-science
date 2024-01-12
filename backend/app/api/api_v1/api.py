@@ -4,6 +4,7 @@ from app.api.api_v1.endpoints import (
     auth,
     file_permission,
     flights,
+    health,
     locations,
     public,
     projects,
@@ -19,6 +20,7 @@ from app.api.api_v1.endpoints import (
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
+api_router.include_router(health.router, prefix="/health", tags=["health"])
 api_router.include_router(
     flights.router, prefix="/projects/{project_id}/flights", tags=["flights"]
 )
