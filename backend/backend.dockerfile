@@ -59,7 +59,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 ENV MPLCONFIGDIR=/var/tmp/d2s
 
 # install gdal and remove apt package info to reduce image size
-RUN apt-get update && apt-get install -y gdal-bin && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y gdal-bin curl && rm -rf /var/lib/apt/lists/*
 
 # create unprivileged d2s user
 RUN useradd d2s
