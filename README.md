@@ -17,9 +17,7 @@
    ```
    cp db.example.env db.env
    ```
-4. Open `backend.env` in a text editor. Below is a list of the environment variables can be set inside `backend.env`.
-
-   You **must** change `API_DOMAIN` if you are not running the application on localhost.
+4. Open `backend.env` in a text editor. Below is a list of the environment variables can be set inside `backend.env`. You may use the default values or change them as needed.
 
    If you do not assign a value to `SECRET_KEY`, a key will automatically be generated for you. Note to developers: A new key will be generated each time a change is made to the backend code. This will invalidate any JWT tokens signed with the previous key. To prevent this behavior, set a secret key in `backend.env`.
 
@@ -27,7 +25,7 @@
 
    - `API_PROJECT_NAME`: Name that will appear in the FastAPI docs.
    - `API_DOMAIN`: Domain used for accessing the application (e.g., http://localhost or https://customdomain)
-   - `API_LOGFILE`: Location where backend FastAPI log will be stored.
+   - `API_LOGDIR`: Location where backend FastAPI log will be stored.
    - `CELERY_BROKER_URL`: Address for local redis service.
    - `CELERY_RESULT_BACKEND`: Address for local redis service.
    - `MAIL_ENABLED`: Enable SMTP email by changing value from 0 to 1.
@@ -44,12 +42,15 @@
 
    If you change `POSTGRES_USER` or `POSTGRES_HOST`, you must also update these environment variables with the new values under the `db` service in `docker-compose.yml`.
 
-6. Navigate from the root directory of the repository to the `frontend` directory where `.env.example` is located.
-7. Copy `.env.example` to a new file named `.env`.
-   ```
-   cp .env.example .env
-   ```
-8. Open `.env` in a text editor. Change the `VITE_DOMAIN` value to the domain used for accessing the application (e.g., http://localhost or https://customdain). The other environment variables are optional.
+6. Open `docker-compose.yml` in a text editor. Find the `environment` directive under the `frontend` service near the top of the file. Five frontend environment variables starting with `VITE_` are declared. You may use the default values or change them as needed.
+
+   Environment variables:
+
+   - `VITE_API_V1_STR`: Path for API endpoints.
+   - `VITE_BRAND_FULL`: Full name of application.
+   - `VITE_BRAND_SHORT`: Abbreviated name of application.
+   - `VITE_BRAND_SLOGAN`: Slogan that appears on landing page.
+   - `VITE_DOMAIN`: Domain used for accessing application (e.g., http://localhost or https://customdomain)
 
 ### Build Docker images for services
 
@@ -100,18 +101,9 @@ The Data To Science web application can be accessed from `http://localhost:8000`
 
 The above sections should provide all the necessary steps to get Data To Science up and running. These next sections provide additional information about using `docker-compose-dev.yml` for development, accessing the FastAPI documentation, and running the backend tests.
 
-## Development mode
-
-Add the following parameter to the above `docker compose` commands to run the development version of the application:
-`-f docker-compose.dev.yml`
-
-For example, `docker compose -f docker-compose.dev.yml up --build -d` will build and start the service containers using the `docker-compose.dev.yml` config file. This config file contains several additional service containers that can be helpful during development and it maps the backend and frontend code directories to the containers. This allows the backend and frontend service containers to immediately reflect the changes without re-building the Docker images.
-
-The development site can be accessed from `http://localhost`.
-
 ## Accessing the API
 
-After running `docker compose -f docker-compose.dev.yml up -d`, you should be able to access the web API from [http://127.0.0.1/docs](http://127.0.1/docs) or [http://127.0.0.1/redoc](http://127.0.0.1/redoc). The first URL will display the Swagger UI documentation for the API and the second URL will display the ReDoc documentation. The API endpoints can be tried out from either URL.
+After running `docker compose up -d`, you should be able to access the web API from [http://localhost:8000/docs](http://localhost:8000/docs) or [http://localhost:8000/redoc](http://localhost:8000/redoc). The first URL will display the Swagger UI documentation for the API and the second URL will display the ReDoc documentation. The API endpoints can be tried out from either URL.
 
 ## Running backend tests
 

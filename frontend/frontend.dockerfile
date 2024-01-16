@@ -1,4 +1,4 @@
-FROM node:18-bullseye-slim as build-stage
+FROM node:18-bullseye-slim
 
 WORKDIR /app/
 
@@ -8,16 +8,4 @@ RUN yarn install
 
 COPY . .
 
-RUN yarn build
-
-FROM nginxinc/nginx-unprivileged:latest
-
-WORKDIR /etc/nginx
-
-COPY --from=build-stage /app/dist /usr/share/nginx/html
-
-COPY ./frontend.nginx.conf ./conf.d/default.conf
-
-ENTRYPOINT ["nginx"]
-
-CMD ["-g", "daemon off;"]
+CMD ["yarn", "run", "dev", "--host", "0.0.0.0", "--port", "8080"]

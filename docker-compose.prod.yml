@@ -2,14 +2,23 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: frontend.dockerfile
+      dockerfile: frontend.prod.dockerfile
+      args:
+        - VITE_API_V1_STR=/api/v1
+        - VITE_BRAND_FULL=Data to Science
+        - VITE_BRAND_SHORT=D2S
+        - VITE_BRAND_SLOGAN=A Data-driven Open Science Community for Sustained Innovation
+        - VITE_DOMAIN=http://localhost:8000
     image: d2s-app:latest
     depends_on:
       - backend
+    read_only: true
+    tmpfs:
+      - /tmp
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080"]
-      interval: 5s
-      timeout: 5s
+      interval: 1m30s
+      timeout: 30s
       retries: 5
       start_period: 30s
     deploy:
@@ -22,10 +31,12 @@ services:
         limits:
           cpus: "0.50"
           memory: 1000M
-          # pids: 1
+          pids: 10
         reservations:
           cpus: "0.25"
           memory: 500M
+    security_opt:
+      - no-new-privileges=true
 
   backend:
     build:
@@ -35,10 +46,20 @@ services:
         INSTALL_DEV: true
     image: d2s-api:latest
     volumes:
+      - ./backend/logs:/app/logs:rw
       - user-data:/static
+    read_only: true
+    tmpfs:
+      - /var/tmp
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/v1/health"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
     deploy:
       restart_policy:
         condition: on-failure
@@ -49,22 +70,28 @@ services:
         limits:
           cpus: "0.50"
           memory: 1000M
-          # pids: 1
+          pids: 100
         reservations:
           cpus: "0.25"
           memory: 500M
+    security_opt:
+      - no-new-privileges=true
     env_file:
       - backend.env
       - db.env
 
   db:
     image: postgis/postgis:15-3.3
+    user: postgres
     volumes:
       - db-data:/var/lib/postgresql/data
+    read_only: true
+    tmpfs:
+      - /var/run/postgresql
     healthcheck:
       test:
-        ["CMD-SHELL", "pg_isready", "--username=$$POSTGRES_USER", "--dbname=$$POSTGRES_DB"]
-      interval: 5s
+        ["CMD-SHELL", "pg_isready --username=$$POSTGRES_USER --dbname=$$POSTGRES_DB"]
+      interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
@@ -81,15 +108,25 @@ services:
         limits:
           cpus: "0.50"
           memory: 500M
-          # pids: 1
+          pids: 10
         reservations:
           cpus: "0.25"
           memory: 250M
+    security_opt:
+      - no-new-privileges=true
     env_file:
       - db.env
 
   redis:
     image: redis:alpine
+    user: redis
+    read_only: true
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
     deploy:
       restart_policy:
         condition: on-failure
@@ -104,14 +141,25 @@ services:
         reservations:
           cpus: "0.25"
           memory: 20M
+    security_opt:
+      - no-new-privileges=true
 
   celery_worker:
     image: d2s-api:latest
     command: /app/worker-start.sh
     volumes:
       - user-data:/static
+    read_only: true
+    tmpfs:
+      - /tmp
     depends_on:
       - backend
+    healthcheck:
+      test: ["CMD", "celery", "-A", "app.worker", "inspect", "ping"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
     deploy:
       restart_policy:
         condition: on-failure
@@ -122,10 +170,12 @@ services:
         limits:
           cpus: "0.50"
           memory: 1000M
-          # pids: 1
+          pids: 100
         reservations:
           cpus: "0.25"
           memory: 500M
+    security_opt:
+      - no-new-privileges=true
     env_file:
       - backend.env
       - db.env
@@ -134,14 +184,17 @@ services:
     image: nginxinc/nginx-unprivileged:latest
     volumes:
       - ./nginx/d2s-proxy.prod.conf:/etc/nginx/conf.d/default.conf
+    read_only: true
+    tmpfs:
+      - /tmp
     ports:
-      - "0.0.0.0:8000:80"
+      - "127.0.0.1:8000:80"
     depends_on:
       - frontend
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost"]
-      interval: 5s
-      timeout: 5s
+      interval: 1m30s
+      timeout: 30s
       retries: 5
       start_period: 30s
     deploy:
@@ -154,10 +207,12 @@ services:
         limits:
           cpus: "0.50"
           memory: 500M
-          # pids: 1
+          pids: 100
         reservations:
           cpus: "0.25"
-          memory: 200M  
+          memory: 200M
+    security_opt:
+      - no-new-privileges=true
 
 volumes:
   db-data:
