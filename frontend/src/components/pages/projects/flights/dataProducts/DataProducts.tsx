@@ -106,23 +106,12 @@ export default function DataProducts({
                 </div>,
                 dataset.status === 'SUCCESS' ? (
                   <div className="h-full flex items-center justify-center">
-                    {isGeoTIFF(dataset.data_type) ? (
-                      <Button
-                        size="sm"
-                        onClick={() => navigator.clipboard.writeText(dataset.url)}
-                      >
-                        Copy COG URL
-                      </Button>
-                    ) : (
-                      <a
-                        href={dataset.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        download
-                      >
-                        <Button size="sm">Copy COPC URL</Button>
-                      </a>
-                    )}
+                    <Button
+                      size="sm"
+                      onClick={() => navigator.clipboard.writeText(dataset.url)}
+                    >
+                      {isGeoTIFF(dataset.data_type) ? 'Copy COG URL' : 'Copy COPC URL'}
+                    </Button>
                   </div>
                 ) : (
                   <div className="h-full flex items-center justify-center">

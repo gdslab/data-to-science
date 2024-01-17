@@ -44,7 +44,11 @@ async def verify_static_file_access(request: Request) -> None:
             return
 
     # check if access to requested data product is restricted or public
-    if "flights" in request.url.path and "colorbars" not in request.url.path:
+    if (
+        "flights" in request.url.path
+        and "colorbars" not in request.url.path
+        and "point_cloud" not in request.url.path
+    ):
         try:
             data_product_id = request.url.path.split("flights")[1].split("/")[-1][:-4]
             data_product_id_uuid = UUID(data_product_id)
