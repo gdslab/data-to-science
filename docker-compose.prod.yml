@@ -27,14 +27,6 @@ services:
         delay: 5s
         max_attempts: 5
         window: 120s
-      resources:
-        limits:
-          cpus: "0.50"
-          memory: 1000M
-          pids: 10
-        reservations:
-          cpus: "0.25"
-          memory: 500M
     security_opt:
       - no-new-privileges=true
 
@@ -46,7 +38,7 @@ services:
         INSTALL_DEV: true
     image: d2s-api:latest
     volumes:
-      - ./backend/logs:/app/logs:rw
+      - log-data:/app/logs
       - user-data:/static
     read_only: true
     tmpfs:
@@ -66,14 +58,6 @@ services:
         delay: 5s
         max_attempts: 5
         window: 120s
-      resources:
-        limits:
-          cpus: "0.50"
-          memory: 1000M
-          pids: 100
-        reservations:
-          cpus: "0.25"
-          memory: 500M
     security_opt:
       - no-new-privileges=true
     env_file:
@@ -104,14 +88,6 @@ services:
         delay: 5s
         max_attempts: 5
         window: 120s
-      resources:
-        limits:
-          cpus: "0.50"
-          memory: 500M
-          pids: 10
-        reservations:
-          cpus: "0.25"
-          memory: 250M
     security_opt:
       - no-new-privileges=true
     env_file:
@@ -133,14 +109,6 @@ services:
         delay: 5s
         max_attempts: 5
         window: 120s
-      resources:
-        limits:
-          cpus: "0.50"
-          memory: 50M
-          pids: 10
-        reservations:
-          cpus: "0.25"
-          memory: 20M
     security_opt:
       - no-new-privileges=true
 
@@ -166,14 +134,6 @@ services:
         delay: 5s
         max_attempts: 5
         window: 120s
-      resources:
-        limits:
-          cpus: "0.50"
-          memory: 1000M
-          pids: 100
-        reservations:
-          cpus: "0.25"
-          memory: 500M
     security_opt:
       - no-new-privileges=true
     env_file:
@@ -203,17 +163,10 @@ services:
         delay: 5s
         max_attempts: 5
         window: 120s
-      resources:
-        limits:
-          cpus: "0.50"
-          memory: 500M
-          pids: 100
-        reservations:
-          cpus: "0.25"
-          memory: 200M
     security_opt:
       - no-new-privileges=true
 
 volumes:
   db-data:
+  log-data:
   user-data:
