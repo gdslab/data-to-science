@@ -5,14 +5,21 @@
 body {
   background-color: #e2e8f0;
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+}
+
+@font-face {
+  font-family: 'Jost';
+  src: url('./styles/fonts/Jost-VariableFont_wght.ttf'), url('./styles/fonts/Jost-Italic-VariableFont_wght.ttf');
 }
 
 @layer base {
+  html {
+    font-family: -apple-system, BlinkMacSystemFont, 'Jost', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
   h1 {
     @apply mb-4 text-2xl font-bold;
   }

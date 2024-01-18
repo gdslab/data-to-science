@@ -24,7 +24,7 @@ export default function Landing() {
             <div className="flex items-center justify-center">
               <img className="h-24" src={brandLogo} alt="Brand Logo" />
             </div>
-            <div className="inline text-6xl text-white font-bold [text-shadow:_2px_2px_2px_rgb(0_0_0_/_70%)]">
+            <div className="inline text-6xl text-white [text-shadow:_2px_2px_2px_rgb(0_0_0_/_70%)]">
               <span>Welcome to </span>
               <span className="text-amber-400">{import.meta.env.VITE_BRAND_FULL}</span>
             </div>
