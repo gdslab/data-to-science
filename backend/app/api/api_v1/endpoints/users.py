@@ -51,35 +51,43 @@ def create_user(
         last_name=last_name,
     )
     user = crud.user.create(db, obj_in=user_in)
-    # create email confirmation token
-    confirmation_token = token_urlsafe()
-    approve_token = token_urlsafe()
-    confirmation_token_in_db = crud.user.create_single_use_token(
-        db,
-        obj_in=schemas.SingleUseTokenCreate(
-            token=security.get_token_hash(confirmation_token, salt="confirm")
-        ),
-        user_id=user.id,
-    )
-    approve_token_in_db = crud.user.create_single_use_token(
-        db,
-        obj_in=schemas.SingleUseTokenCreate(
-            token=security.get_token_hash(approve_token, salt="approve")
-        ),
-        user_id=user.id,
-    )
-    if confirmation_token_in_db and approve_token_in_db:
-        mail.send_email_confirmation(
-            background_tasks=background_tasks,
-            first_name=user.first_name,
-            email=user.email,
-            confirmation_token=confirmation_token,
+    if settings.MAIL_ENABLED:
+        # create email confirmation token
+        confirmation_token = token_urlsafe()
+        approve_token = token_urlsafe()
+        confirmation_token_in_db = crud.user.create_single_use_token(
+            db,
+            obj_in=schemas.SingleUseTokenCreate(
+                token=security.get_token_hash(confirmation_token, salt="confirm")
+            ),
+            user_id=user.id,
         )
-        mail.send_admins_new_registree_notification(
-            background_tasks=background_tasks,
-            first_name=user.first_name,
-            email=user.email,
-            approve_token=approve_token,
+        approve_token_in_db = crud.user.create_single_use_token(
+            db,
+            obj_in=schemas.SingleUseTokenCreate(
+                token=security.get_token_hash(approve_token, salt="approve")
+            ),
+            user_id=user.id,
+        )
+        if confirmation_token_in_db and approve_token_in_db:
+            mail.send_email_confirmation(
+                background_tasks=background_tasks,
+                first_name=user.first_name,
+                email=user.email,
+                confirmation_token=confirmation_token,
+            )
+            mail.send_admins_new_registree_notification(
+                background_tasks=background_tasks,
+                first_name=user.first_name,
+                email=user.email,
+                approve_token=approve_token,
+            )
+    else:
+        # mail disabled - enable account without email / admin confirmation
+        crud.user.update(
+            db,
+            db_obj=user,
+            obj_in=schemas.UserUpdate(is_approved=True, is_email_confirmed=True),
         )
 
     return user

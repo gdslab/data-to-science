@@ -13,6 +13,7 @@ import Welcome from '../../pages/Welcome';
 
 import { registrationInitialValues as initialValues } from './initialValues';
 import { registrationValidationSchema as validationSchema } from './validationSchema';
+import { User } from '../../../AuthContext';
 
 export const passwordHintText = 'Your password must use at least 12 characters.';
 
@@ -35,12 +36,21 @@ export default function RegistrationForm() {
                     email: values.email,
                     password: values.password,
                   };
-                  const response = await axios.post('/api/v1/users', data);
+                  const response = await axios.post<User>('/api/v1/users', data);
                   if (response) {
-                    setStatus({
-                      type: 'success',
-                      msg: 'Registration complete. Please confirm your email address.',
-                    });
+                    if (response.data.is_email_confirmed) {
+                      setStatus({
+                        type: 'success',
+                        msg: `Registration complete. You are ready to log in to ${
+                          import.meta.env.VITE_BRAND_FULL
+                        }.`,
+                      });
+                    } else {
+                      setStatus({
+                        type: 'success',
+                        msg: 'Registration complete. Please confirm your email address.',
+                      });
+                    }
                   } else {
                     setStatus({
                       type: 'warning',
@@ -98,10 +108,6 @@ export default function RegistrationForm() {
                   <Button type="submit" disabled={isSubmitting}>
                     Create Account
                   </Button>
-                  <HintText>
-                    New accounts will require email confirmation and manual approval
-                    before use.
-                  </HintText>
                   {status && status.type && status.msg ? (
                     <Alert alertType={status.type}>{status.msg}</Alert>
                   ) : null}

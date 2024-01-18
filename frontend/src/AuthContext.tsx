@@ -13,6 +13,7 @@ export interface User {
   first_name: string;
   last_name: string;
   is_approved: boolean;
+  is_email_confirmed: boolean;
   profile_url: string | null;
 }
 
