@@ -86,6 +86,11 @@ export default function RegistrationForm() {
                     type={showPassword ? 'text' : 'password'}
                   />
                   <HintText>{passwordHintText}</HintText>
+                  <TextField
+                    label="Retype Password"
+                    name="passwordRetype"
+                    type={showPassword ? 'text' : 'password'}
+                  />
                   <div className="flex items-center">
                     <input
                       id="default-checkbox"
@@ -100,11 +105,6 @@ export default function RegistrationForm() {
                       Show password
                     </label>
                   </div>
-                  <TextField
-                    label="Retype Password"
-                    name="passwordRetype"
-                    type={showPassword ? 'text' : 'password'}
-                  />
                   <Button type="submit" disabled={isSubmitting}>
                     Create Account
                   </Button>

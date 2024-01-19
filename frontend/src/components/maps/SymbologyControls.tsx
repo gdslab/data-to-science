@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { Field, Formik, Form } from 'formik';
-import { ArrowUpOnSquareIcon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
 
 import { cmaps } from './cmaps';
@@ -70,18 +69,10 @@ function ShareDataProduct({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="relative pb-4">
-      <button
-        type="button"
-        className="absolute right-0 rounded-full accent3 cursor-pointer hover:text-accent2 focus:outline-none"
-        onClick={() => setOpen(true)}
-      >
-        <span className="absolute -inset-1.5" />
-        <div className="flex items-center gap-2">
-          <ArrowUpOnSquareIcon className="h-4 w-4 inline" aria-hidden="true" />
-          <span className="inline">Share</span>
-        </div>
-      </button>
+    <div>
+      <Button type="button" size="sm" icon="share2" onClick={() => setOpen(true)}>
+        Share
+      </Button>
       <Modal open={open} setOpen={setOpen}>
         <ShareControls
           dataProduct={dataProduct}
@@ -117,11 +108,6 @@ function DSMSymbologyControls() {
         {({ values, setFieldTouched, setFieldValue, submitForm }) => (
           <Form>
             <div className="w-full mb-4">
-              <ShareDataProduct
-                dataProduct={activeDataProduct}
-                projectID={activeProject.id}
-                symbologySettings={symbologySettings}
-              />
               <fieldset className="border border-solid border-slate-300 p-3">
                 <legend className="block text-sm text-gray-400 font-bold pt-2 pb-1">
                   Color Properties
@@ -228,7 +214,14 @@ function DSMSymbologyControls() {
                 </Button>
               </div>
             </fieldset>
-            <div className="mt-4 w-full flex items-center justify-end">
+            <div className="mt-4 w-full flex items-center justify-between">
+              <div className="w-36">
+                <ShareDataProduct
+                  dataProduct={activeDataProduct}
+                  projectID={activeProject.id}
+                  symbologySettings={symbologySettings}
+                />
+              </div>
               <div className="w-36">
                 <Button
                   type="button"
@@ -283,11 +276,6 @@ function OrthoSymbologyControls() {
       >
         {({ values }) => (
           <Form>
-            <ShareDataProduct
-              dataProduct={activeDataProduct}
-              projectID={activeProject.id}
-              symbologySettings={symbologySettings}
-            />
             <fieldset className="border border-solid border-slate-300 p-3">
               <legend className="block text-sm text-gray-400 font-bold pt-2 pb-1">
                 RGB Properties
@@ -417,7 +405,14 @@ function OrthoSymbologyControls() {
                 </Button>
               </div>
             </fieldset>
-            <div className="mt-4 w-full flex items-center justify-end">
+            <div className="mt-4 w-full flex items-center justify-between">
+              <div className="w-36">
+                <ShareDataProduct
+                  dataProduct={activeDataProduct}
+                  projectID={activeProject.id}
+                  symbologySettings={symbologySettings}
+                />
+              </div>
               <div className="w-36">
                 <Button
                   type="button"

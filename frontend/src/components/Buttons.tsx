@@ -1,5 +1,6 @@
 import {
   ArrowRightIcon,
+  ArrowUpOnSquareIcon,
   CursorArrowRaysIcon,
   FolderPlusIcon,
   LinkIcon,
@@ -40,6 +41,12 @@ function getIcon(iconName: string) {
       return (
         <span className="pointer-events-none absolute inset-y-0 end-0 grid w-1/4 place-content-center text-white">
           <LinkIcon className="h-4 w-4" aria-hidden="true" />
+        </span>
+      );
+    case 'share2':
+      return (
+        <span className="pointer-events-none absolute inset-y-0 grid w-1/4 place-content-center text-white">
+          <ArrowUpOnSquareIcon className="h-4 w-4" aria-hidden="true" />
         </span>
       );
     case 'trash':
