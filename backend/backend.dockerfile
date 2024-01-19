@@ -50,10 +50,16 @@ FROM python-base
 
 WORKDIR /app/
 
+# build args
+ARG NUM_OF_WORKERS=1
+
 # do not buffer log messages and do not write byte code .pyc
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app \
     PYTHONUNBUFFERED=1
+
+# set number of workers for uvicorn process
+ENV UVICORN_WORKERS=$NUM_OF_WORKERS
 
 # matplotlib tmp dir
 ENV MPLCONFIGDIR=/var/tmp/d2s
@@ -92,4 +98,4 @@ RUN chown -R d2s:d2s /app && chown -R d2s:d2s /static && chown -R d2s:d2s /var/t
 
 USER d2s
 
-CMD ["uvicorn", "app.main:app", "--proxy-headers", "--host", "0.0.0.0", "--port", "5000"]
+CMD uvicorn app.main:app --proxy-headers --workers ${UVICORN_WORKERS} --host 0.0.0.0 --port 5000
