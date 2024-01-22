@@ -2,7 +2,7 @@ import { useContext, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import AuthContext from '../AuthContext';
-import { Button, OutlineButton } from './Buttons';
+import { Button, LandingButton } from './Buttons';
 
 import brandLogo from '../assets/d2s-logo-white-without-text.png';
 import landingVideo from '../assets/landing.mp4';
@@ -42,7 +42,7 @@ export default function Landing() {
             </div>
             <div className="w-full md:w-1/4">
               <Link to="/auth/login">
-                <OutlineButton color="white">Sign in</OutlineButton>
+                <LandingButton>Sign in</LandingButton>
               </Link>
             </div>
           </div>

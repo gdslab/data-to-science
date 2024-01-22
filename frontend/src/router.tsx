@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom';
 
 // pages and data loaders
 import ErrorPage from './components/ErrorPage';
+import FlightCard from './components/pages/projects/flights/FlightCard';
 import FlightData, {
   loader as flightDataLoader,
 } from './components/pages/projects/flights/FlightData';
@@ -34,6 +35,7 @@ import TeamDetail, {
 
 import { RootPublic, RootProtected } from './components/layout/Root';
 import { RequireAuth } from './AuthContext';
+import FlightCarousel from './components/pages/projects/flights/FlightCarousel/FlightCarousel';
 
 export const router = createBrowserRouter([
   {
@@ -89,6 +91,14 @@ export const router = createBrowserRouter([
       {
         path: '/auth/profile',
         element: <Profile />,
+      },
+      {
+        path: '/playground',
+        element: (
+          <div className="m-4">
+            <FlightCarousel />
+          </div>
+        ),
       },
       {
         path: '/teams',

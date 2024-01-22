@@ -1,0 +1,48 @@
+.swiper {
+    width: 100%;
+    height: 100%;
+}
+
+.swiper-pagination-bullet-active {
+    background-color: #EE6C4D;
+}
+
+.swiper-button-prev {
+    background-color: white;
+    --tw-border-opacity: 1;
+    border-color: rgb(203 213 225 / var(--tw-border-opacity));
+    border-width: 2px;
+    border-radius: 9999px;
+    justify-content: center;
+    align-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    display: inline-flex;
+
+}
+
+.swiper-button-prev::after {
+    content: url('./previous.svg');
+    width: 24px;
+    height: 24px;
+}
+
+.swiper-button-next {
+    background-color: white;
+    --tw-border-opacity: 1;
+    border-color: rgb(203 213 225 / var(--tw-border-opacity));
+    border-width: 2px;
+    border-radius: 9999px;
+    justify-content: center;
+    align-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    display: inline-flex;
+
+}
+
+.swiper-button-next::after {
+    content: url('./next.svg');
+    width: 24px;
+    height: 24px;
+}

@@ -34,6 +34,7 @@
     "react-leaflet": "^4.2.1",
     "react-router-dom": "^6.14.2",
     "seedrandom": "^3.0.5",
+    "swiper": "10.3.1",
     "uuid": "^9.0.1",
     "yup": "^1.2.0",
     "yup-password": "^0.2.2"

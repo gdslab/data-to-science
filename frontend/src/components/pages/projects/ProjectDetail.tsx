@@ -15,6 +15,7 @@ import Alert from '../../Alert';
 import { Button } from '../../Buttons';
 import { ConfirmationPopup } from '../../ConfirmationPopup';
 import { Editing, EditField, SelectField, TextField } from '../../InputFields';
+import FlightCarousel from './flights/FlightCarousel';
 import FlightForm from './flights/FlightForm';
 import { GeoJSONFeature, Location } from './ProjectForm';
 import Modal from '../../Modal';
@@ -134,7 +135,7 @@ export default function ProjectDetail() {
   const revalidator = useRevalidator();
 
   const [location, setLocation] = useState<Location | null>(null);
-
+  const [tableView, toggleTableView] = useState(false);
   const [openUpload, setOpenUpload] = useState(false);
   const [openConfirmationPopup, setOpenConfirmationPopup] = useState(false);
   const [open, setOpen] = useState(false);
@@ -375,58 +376,62 @@ export default function ProjectDetail() {
       <div>
         <h2>Flights</h2>
         {flights.length > 0 ? (
-          <Table height={96}>
-            <TableHead
-              columns={
-                role === 'viewer'
-                  ? flightColumns.slice(0, flightColumns.length - 1)
-                  : flightColumns
-              }
-            />
-            <TableBody
-              rows={flights
-                .sort((a, b) =>
-                  sorter(
-                    new Date(a.acquisition_date),
-                    new Date(b.acquisition_date),
-                    'desc'
+          tableView ? (
+            <Table height={96}>
+              <TableHead
+                columns={
+                  role === 'viewer'
+                    ? flightColumns.slice(0, flightColumns.length - 1)
+                    : flightColumns
+                }
+              />
+              <TableBody
+                rows={flights
+                  .sort((a, b) =>
+                    sorter(
+                      new Date(a.acquisition_date),
+                      new Date(b.acquisition_date),
+                      'desc'
+                    )
                   )
-                )
-                .map((flight) => [
-                  flight.platform.replace(/_/g, ' '),
-                  flight.sensor,
-                  flight.acquisition_date,
-                  <Link
-                    className="!text-sky-600 visited:text-sky-600"
-                    to={`/projects/${projectId}/flights/${flight.id}/data`}
-                  >
-                    View Data
-                  </Link>,
-                ])}
-              actions={
-                role === 'viewer'
-                  ? undefined
-                  : flights.map((flight, i) => [
-                      {
-                        key: `action-edit-${i}`,
-                        icon: <PencilIcon className="h-4 w-4" />,
-                        label: 'Edit',
-                        url: `/projects/${projectId}/flights/${flight.id}/edit`,
-                      },
-                      {
-                        key: `action-delete-${i}`,
-                        icon: <TrashIcon className="h-4 w-4" />,
-                        label: 'Delete',
-                        url: '#',
-                      },
-                    ])
-              }
-            />
-          </Table>
+                  .map((flight) => [
+                    flight.platform.replace(/_/g, ' '),
+                    flight.sensor,
+                    flight.acquisition_date,
+                    <Link
+                      className="!text-sky-600 visited:text-sky-600"
+                      to={`/projects/${projectId}/flights/${flight.id}/data`}
+                    >
+                      View Data
+                    </Link>,
+                  ])}
+                actions={
+                  role === 'viewer'
+                    ? undefined
+                    : flights.map((flight, i) => [
+                        {
+                          key: `action-edit-${i}`,
+                          icon: <PencilIcon className="h-4 w-4" />,
+                          label: 'Edit',
+                          url: `/projects/${projectId}/flights/${flight.id}/edit`,
+                        },
+                        {
+                          key: `action-delete-${i}`,
+                          icon: <TrashIcon className="h-4 w-4" />,
+                          label: 'Delete',
+                          url: '#',
+                        },
+                      ])
+                }
+              />
+            </Table>
+          ) : (
+            <FlightCarousel flights={flights} />
+          )
         ) : null}
       </div>
       {projectId && role !== 'viewer' ? (
-        <div className="mt-4 flex justify-center">
+        <div className="mt-16 flex justify-center">
           <Button onClick={() => setOpen(true)}>Add New Flight</Button>
           <Modal open={open} setOpen={setOpen}>
             <FlightForm setOpen={setOpen} teamId={project.team_id} />
