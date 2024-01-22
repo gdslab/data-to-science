@@ -1,11 +1,16 @@
 import { Link } from 'react-router-dom';
+import { PhotoIcon } from '@heroicons/react/24/outline';
 
 import { Button, OutlineButton } from '../../../Buttons';
 import Card from '../../../Card';
 import HintText from '../../../HintText';
 import { Flight } from '../ProjectDetail';
 
+import { isGeoTIFF } from './dataProducts/DataProducts';
+
 export default function FlightCard({ flight }: { flight: Flight }) {
+  const dataProduct = flight.data_products.length > 0 ? flight.data_products[0] : null;
+
   return (
     <div className="flex items-center justify-center">
       <div className="w-80">
@@ -13,10 +18,18 @@ export default function FlightCard({ flight }: { flight: Flight }) {
           <div className="grid grid-flow-row auto-rows-max gap-4">
             {/* preview image */}
             <div className="flex items-center relative h-56 bg-black">
-              <img
-                src="http://localhost:8000/static/projects/3af69eb6-88cb-4f78-b1cf-c73d50fd8e85/flights/cfa1fcac-9ffd-4d3d-9395-c96288818296/dsm/51b622d3-a310-4bdb-a653-4ebd66717383.jpg"
-                title="Data product preview"
-              />
+              {dataProduct && isGeoTIFF(dataProduct.data_type) ? (
+                <img
+                  className="w-full"
+                  src={dataProduct.url.replace('tif', 'jpg')}
+                  alt="Preview of data product"
+                />
+              ) : (
+                <div className="bg-white">
+                  <span className="sr-only">Preview not available</span>
+                  <PhotoIcon className="w-full" />
+                </div>
+              )}
               <div className="absolute bottom-0 right-0 p-1.5">
                 <div className="flex items-center justify-center rounded-full bg-accent2 text-white font-semibold h-8 w-8">
                   {flight.data_products.length}
@@ -33,7 +46,7 @@ export default function FlightCard({ flight }: { flight: Flight }) {
               <div className="w-28">
                 <OutlineButton size="sm">
                   <Link to={`/projects/${flight.project_id}/flights/${flight.id}/data`}>
-                    Data
+                    Manage
                   </Link>
                 </OutlineButton>
               </div>
@@ -43,6 +56,8 @@ export default function FlightCard({ flight }: { flight: Flight }) {
             </div>
           </div>
         </Card>
+        {/* positions pagination controls below card */}
+        <div className="h-16"></div>
       </div>
     </div>
   );

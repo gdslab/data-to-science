@@ -6,7 +6,7 @@ export default function Card({
   title,
 }: {
   children: React.ReactNode;
-  rounded: boolean;
+  rounded?: boolean;
   title?: string;
 }) {
   return (

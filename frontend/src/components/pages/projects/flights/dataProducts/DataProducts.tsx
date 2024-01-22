@@ -31,6 +31,10 @@ export function getDataProductName(dataType: string): string {
   }
 }
 
+export function isGeoTIFF(dataType: string): boolean {
+  return dataType === 'ortho' || dataType === 'dsm';
+}
+
 export default function DataProducts({
   data,
   role,
@@ -56,10 +60,6 @@ export default function DataProducts({
       ? 5000
       : null
   );
-
-  function isGeoTIFF(dataType: string): boolean {
-    return dataType === 'ortho' || dataType === 'dsm';
-  }
 
   const dataProductColumns = ['Data Type', 'Preview', 'File', 'Action'];
 
@@ -93,6 +93,7 @@ export default function DataProducts({
                       <img
                         className="w-full max-h-28"
                         src={dataset.url.replace('tif', 'jpg')}
+                        alt="Preview of data product"
                       />
                     </div>
                   ) : isGeoTIFF(dataset.data_type) ? (
