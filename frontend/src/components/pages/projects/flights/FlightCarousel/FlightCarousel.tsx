@@ -12,11 +12,15 @@ import { Pagination, Mousewheel, Navigation } from 'swiper/modules';
 import FlightCard from '../FlightCard';
 import { Flight } from '../../ProjectDetail';
 
+import useWindowDimensions from '../../../../hooks/useWindowDimensions';
+
 export default function FlightCarousel({ flights }: { flights: Flight[] }) {
+  const { width } = useWindowDimensions();
+  console.log(width);
   return (
     <>
       <Swiper
-        slidesPerView={5}
+        slidesPerView={width <= 1281 ? 3 : width <= 1600 ? 4 : 5}
         spaceBetween={30}
         centeredSlides={true}
         mousewheel={true}
