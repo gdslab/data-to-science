@@ -222,10 +222,7 @@ export default function LayerPane({
                         </div>
                       </div>
                       {flight.data_products.length > 0 ? (
-                        <details
-                          className="group space-y-2 [&_summary::-webkit-details-marker]:hidden text-slate-600 overflow-visible"
-                          open={activeDataProduct ? true : false}
-                        >
+                        <details className="group space-y-2 [&_summary::-webkit-details-marker]:hidden text-slate-600 overflow-visible">
                           <summary className="text-sm cursor-pointer">{`${flight.data_products.length} Data Products`}</summary>
                           {flight.data_products.map((dataProduct) => (
                             <LayerCard
