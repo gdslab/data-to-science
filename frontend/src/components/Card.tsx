@@ -13,7 +13,7 @@ export default function Card({
     <div
       className={classNames(
         rounded ? 'rounded-lg' : 'rounded-sm',
-        'p-8 drop-shadow-md bg-white'
+        'p-4 drop-shadow-md bg-white'
       )}
     >
       {title ? <h1 className="mb-8 text-accent3">{title}</h1> : null}

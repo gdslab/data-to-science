@@ -20,12 +20,16 @@ export function ConfirmationPopup({
       <h2>{title}</h2>
       <p className="mt-2 text-sm text-gray-500">{content}</p>
       <div className="mt-8 flex justify-center gap-8">
-        <Button type="button" size="sm" onClick={() => setOpen(false)}>
-          {rejectText}
-        </Button>
-        <Button type="submit" size="sm" icon="trash" onClick={() => action()}>
-          {confirmText}
-        </Button>
+        <div className="w-48">
+          <Button type="button" size="sm" onClick={() => setOpen(false)}>
+            {rejectText}
+          </Button>
+        </div>
+        <div className="w-48">
+          <Button type="submit" size="sm" icon="trash" onClick={() => action()}>
+            {confirmText}
+          </Button>
+        </div>
       </div>
     </div>
   );

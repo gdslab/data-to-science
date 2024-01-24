@@ -11,8 +11,8 @@ import {
 
 import { Button } from '../../../../Buttons';
 import Table, { TableBody, TableHead } from '../../../../Table';
+import TableCardRadioInput from '../../../../TableCardRadioInput';
 import UploadModal from '../../../../UploadModal';
-import { ToggleTableRadioInput } from '../../ProjectDetail';
 
 import { useInterval } from '../../../../hooks';
 
@@ -69,10 +69,7 @@ export default function DataProducts({
     <div className="h-full flex flex-col">
       <div className="h-24">
         <h2>Data Products</h2>
-        <ToggleTableRadioInput
-          tableView={tableView}
-          toggleTableView={toggleTableView}
-        />
+        <TableCardRadioInput tableView={tableView} toggleTableView={toggleTableView} />
       </div>
       {data.length > 0 ? (
         tableView === 'table' ? (

@@ -14,13 +14,27 @@ import { Flight } from '../../ProjectDetail';
 
 import useWindowDimensions from '../../../../hooks/useWindowDimensions';
 
+function getSlidesPerView(width: number): number {
+  if (width > 1600) {
+    return 5;
+  } else if (width > 1280 && width <= 1600) {
+    return 4;
+  } else if (width > 1024 && width <= 1280) {
+    return 3;
+  } else if (width > 640 && width <= 1024) {
+    return 2;
+  } else {
+    return 1;
+  }
+}
+
 export default function FlightCarousel({ flights }: { flights: Flight[] }) {
   const { width } = useWindowDimensions();
 
   return (
     <>
       <Swiper
-        slidesPerView={width <= 1281 ? 3 : width <= 1600 ? 4 : 5}
+        slidesPerView={getSlidesPerView(width)}
         spaceBetween={30}
         centeredSlides={true}
         mousewheel={true}

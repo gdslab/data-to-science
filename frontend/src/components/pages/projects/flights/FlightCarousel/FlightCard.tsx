@@ -15,19 +15,19 @@ export default function FlightCard({ flight }: { flight: Flight }) {
     <div className="flex items-center justify-center">
       <div className="w-80">
         <Card rounded={true}>
-          <div className="grid grid-flow-row auto-rows-max gap-4">
+          <div className="grid grid-flow-row auto-rows-max gap-2">
             {/* preview image */}
-            <div className="flex items-center relative h-56 bg-black">
+            <div className="relative flex items-center justify-center bg-accent3/20">
               {dataProduct && isGeoTIFF(dataProduct.data_type) ? (
                 <img
-                  className="w-full"
+                  className="object-scale-down h-32"
                   src={dataProduct.url.replace('tif', 'jpg')}
                   alt="Preview of data product"
                 />
               ) : (
-                <div className="bg-white">
+                <div className="flex items-center justify-center w-full h-32 bg-white">
                   <span className="sr-only">Preview not available</span>
-                  <PhotoIcon className="w-full" />
+                  <PhotoIcon className="h-full" />
                 </div>
               )}
               <div className="absolute bottom-0 right-0 p-1.5">

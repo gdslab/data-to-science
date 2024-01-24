@@ -26,20 +26,20 @@ export default function DataProductCard({
 
   return (
     <div className="flex items-center justify-center">
-      <div className="relative w-80">
+      <div className="relative w-80 p-1.5">
         <Card rounded={true}>
-          <div className="grid grid-flow-row auto-rows-max gap-4">
+          <div className="grid grid-flow-row auto-rows-max gap-2">
             {/* preview image */}
-            <div className="flex items-center relative h-56 bg-black">
+            <div className="relative flex items-center justify-center bg-accent3/20">
               {dataProduct.status === 'SUCCESS' && isGeoTIFF(dataProduct.data_type) ? (
-                <div>
+                <div className="flex items-center justify-center w-full h-40">
                   <img
-                    className="w-full"
+                    className="object-scale-down h-full"
                     src={dataProduct.url.replace('tif', 'jpg')}
                     alt="Preview of data product"
                   />
                   <div
-                    className="absolute bottom-0 w-full text-center text-white p-1 bg-accent3 cursor-pointer"
+                    className="absolute bottom-0 w-full text-center text-white p-1 bg-accent3/80 cursor-pointer"
                     onClick={() => {
                       navigator.clipboard.writeText(dataProduct.url);
                       setIsCopied(true);
@@ -53,12 +53,12 @@ export default function DataProductCard({
                 </div>
               ) : dataProduct.status === 'SUCCESS' &&
                 dataProduct.data_type === 'point_cloud' ? (
-                <div className="w-full flex">
-                  <div className="m-4 w-full h-48 bg-white flex flex-wrap items-center justify-center">
+                <div className="flex w-full h-40">
+                  <div className="m-4 w-full h-full bg-white flex flex-wrap items-center justify-center">
                     add stock point cloud img
                   </div>
                   <div
-                    className="absolute bottom-0 w-full text-center text-white p-1 bg-accent3 cursor-pointer"
+                    className="absolute bottom-0 w-full text-center text-white p-1 bg-accent3/80 cursor-pointer"
                     onClick={() => {
                       navigator.clipboard.writeText(dataProduct.url);
                       setIsCopied(true);
@@ -71,7 +71,7 @@ export default function DataProductCard({
                   </div>
                 </div>
               ) : (
-                <div className="bg-white">
+                <div className="flex items-center justify-center w-full h-48 bg-white">
                   <span className="sr-only">Preview not available</span>
                   <PhotoIcon className="w-full" />
                 </div>
