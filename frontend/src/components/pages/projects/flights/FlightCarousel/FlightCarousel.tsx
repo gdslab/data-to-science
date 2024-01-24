@@ -16,7 +16,7 @@ import useWindowDimensions from '../../../../hooks/useWindowDimensions';
 
 export default function FlightCarousel({ flights }: { flights: Flight[] }) {
   const { width } = useWindowDimensions();
-  console.log(width);
+
   return (
     <>
       <Swiper

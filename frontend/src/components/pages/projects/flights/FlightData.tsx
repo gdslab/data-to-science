@@ -46,6 +46,7 @@ export interface DataProductStatus extends DataProduct {
 }
 
 export interface RawData {
+  id: string;
   original_filename: string;
   url: string;
 }
@@ -60,7 +61,7 @@ export default function FlightData() {
   const { dataProducts, rawData, role } = useLoaderData() as FlightData;
   return (
     <div className="flex flex-col h-full mx-4 gap-4">
-      <div className="min-h-28">
+      <div className="max-h-32">
         <RawData data={rawData} role={role} />
       </div>
       <div className="grow min-h-0">

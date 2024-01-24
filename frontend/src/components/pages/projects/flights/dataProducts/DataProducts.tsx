@@ -17,7 +17,6 @@ import { ToggleTableRadioInput } from '../../ProjectDetail';
 import { useInterval } from '../../../../hooks';
 
 import { DataProductStatus } from '../FlightData';
-import HintText from '../../../../HintText';
 import DataProductCard from './DataProductCard';
 
 export function getDataProductName(dataType: string): string {
@@ -177,13 +176,12 @@ export default function DataProducts({
       {role !== 'viewer' ? (
         <div className="my-4 flex justify-center">
           <UploadModal
-            apiRoute={`/api/v1/projects/${projectId}/flights/${flightId}/data_products`}
+            apiRoute={`/api/v1/projects/${projectId}/flights/${flightId}`}
             open={open}
             setOpen={setOpen}
-            uploadType="dataProduct"
           />
           <Button size="sm" onClick={() => setOpen(true)}>
-            Upload Data Product
+            Upload Data
           </Button>
         </div>
       ) : null}

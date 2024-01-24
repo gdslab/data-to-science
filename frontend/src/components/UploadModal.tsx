@@ -6,7 +6,7 @@ interface Props {
   apiRoute: string;
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  uploadType: string;
+  uploadType?: string;
 }
 
 function DtypeRadioInput({
@@ -24,7 +24,7 @@ function DtypeRadioInput({
 
   return (
     <div className="px-4 py-3 sm:flex sm:px-6">
-      <fieldset className="w-full flex flex-wrap justify-around gap-3">
+      <fieldset className="w-full flex flex-wrap justify-evenly gap-1.5">
         <legend className="sr-only">Data type</legend>
 
         <div>
@@ -40,7 +40,7 @@ function DtypeRadioInput({
 
           <label
             htmlFor="dtypeDSM"
-            className="flex cursor-pointer items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white"
+            className="flex cursor-pointer items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white"
           >
             <p className="text-sm font-medium">DSM</p>
           </label>
@@ -59,7 +59,7 @@ function DtypeRadioInput({
 
           <label
             htmlFor="dtypePointCloud"
-            className="flex cursor-pointer items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white"
+            className="flex cursor-pointer items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white"
           >
             <p className="text-sm font-medium">Point Cloud</p>
           </label>
@@ -78,9 +78,48 @@ function DtypeRadioInput({
 
           <label
             htmlFor="dtypeOrtho"
-            className="flex cursor-pointer items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white"
+            className="flex cursor-pointer items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white"
           >
             <p className="text-sm font-medium">Ortho</p>
+          </label>
+        </div>
+
+        <div>
+          <input
+            type="radio"
+            name="dtypeOption"
+            value="raw"
+            id="dtypeRaw"
+            className="peer hidden"
+            checked={dtype === 'raw'}
+            onChange={changeDtype}
+          />
+
+          <label
+            htmlFor="dtypeRaw"
+            className="flex cursor-pointer items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white"
+          >
+            <p className="text-sm font-medium">Raw Data</p>
+          </label>
+        </div>
+
+        <div>
+          <input
+            disabled={true}
+            type="radio"
+            name="dtypeOption"
+            value="other"
+            id="dtypeOther"
+            className="peer hidden"
+            checked={dtype === 'other'}
+            onChange={changeDtype}
+          />
+
+          <label
+            htmlFor="dtypeOther"
+            className="flex cursor-not-allowed items-center justify-center rounded-md border border-gray-100 bg-gray-200 px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white"
+          >
+            <p className="text-sm font-medium">Other</p>
           </label>
         </div>
       </fieldset>
@@ -91,6 +130,16 @@ function DtypeRadioInput({
 export default function UploadModal({ apiRoute, open, setOpen, uploadType }: Props) {
   const cancelButtonRef = useRef(null);
   const [dtype, setDtype] = useState('dsm');
+
+  if (!uploadType) {
+    if (['dsm', 'ortho', 'point_cloud', 'other'].indexOf(dtype) > -1) {
+      uploadType = 'dataProduct';
+    } else if (dtype === 'raw') {
+      uploadType = 'zip';
+    } else {
+      throw new Error('unknown data type');
+    }
+  }
 
   return (
     <Transition.Root show={open} as={Fragment}>
@@ -127,8 +176,10 @@ export default function UploadModal({ apiRoute, open, setOpen, uploadType }: Pro
                 <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                   <FileUpload
                     endpoint={
-                      uploadType === 'dataProduct'
-                        ? apiRoute + `?dtype=${dtype}`
+                      ['dsm', 'ortho', 'point_cloud', 'other'].indexOf(dtype) > -1
+                        ? apiRoute + `/data_products?dtype=${dtype}`
+                        : dtype === 'raw'
+                        ? apiRoute + '/raw_data'
                         : apiRoute
                     }
                     inline={true}
@@ -142,7 +193,7 @@ export default function UploadModal({ apiRoute, open, setOpen, uploadType }: Pro
                   />
                 </div>
 
-                {uploadType === 'dataProduct' ? (
+                {uploadType === 'dataProduct' || uploadType === 'zip' ? (
                   <DtypeRadioInput dtype={dtype} setDtype={setDtype} />
                 ) : null}
 

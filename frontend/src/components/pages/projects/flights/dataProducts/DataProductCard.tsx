@@ -51,6 +51,25 @@ export default function DataProductCard({
                     {isCopied ? 'Copied to clipboard' : 'Click to Copy URL'}
                   </div>
                 </div>
+              ) : dataProduct.status === 'SUCCESS' &&
+                dataProduct.data_type === 'point_cloud' ? (
+                <div className="w-full flex">
+                  <div className="m-4 w-full h-48 bg-white flex flex-wrap items-center justify-center">
+                    add stock point cloud img
+                  </div>
+                  <div
+                    className="absolute bottom-0 w-full text-center text-white p-1 bg-accent3 cursor-pointer"
+                    onClick={() => {
+                      navigator.clipboard.writeText(dataProduct.url);
+                      setIsCopied(true);
+                      setTimeout(() => {
+                        setIsCopied(false);
+                      }, 3000);
+                    }}
+                  >
+                    {isCopied ? 'Copied to clipboard' : 'Click to Copy URL'}
+                  </div>
+                </div>
               ) : (
                 <div className="bg-white">
                   <span className="sr-only">Preview not available</span>
@@ -60,7 +79,7 @@ export default function DataProductCard({
             </div>
             {/* data product details */}
             <div className="flex items-center justify-between text-lg">
-              <span>{dataProduct.data_type.toUpperCase()}</span>
+              <span>{dataProduct.data_type.split('_').join(' ').toUpperCase()}</span>
               {userRole !== 'viewer' ? (
                 <div onClick={() => alert('not implemented')}>
                   <span className="sr-only">Delete</span>
