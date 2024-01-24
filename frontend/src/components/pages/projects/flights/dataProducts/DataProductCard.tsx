@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { EyeIcon, CogIcon, PhotoIcon, TrashIcon } from '@heroicons/react/24/outline';
+import {
+  CogIcon,
+  ExclamationCircleIcon,
+  EyeIcon,
+  PhotoIcon,
+  TrashIcon,
+} from '@heroicons/react/24/outline';
 
 import Card from '../../../../Card';
 import { DataProductStatus } from '../FlightData';
@@ -26,7 +32,7 @@ export default function DataProductCard({
 
   return (
     <div className="flex items-center justify-center">
-      <div className="relative w-80 p-1.5">
+      <div className="relative w-80">
         <Card rounded={true}>
           <div className="grid grid-flow-row auto-rows-max gap-2">
             {/* preview image */}
@@ -53,8 +59,8 @@ export default function DataProductCard({
                 </div>
               ) : dataProduct.status === 'SUCCESS' &&
                 dataProduct.data_type === 'point_cloud' ? (
-                <div className="flex w-full h-40">
-                  <div className="m-4 w-full h-full bg-white flex flex-wrap items-center justify-center">
+                <div className="flex items-center justify-center w-full h-40">
+                  <div className="w-full h-full bg-white flex flex-wrap items-center justify-center">
                     add stock point cloud img
                   </div>
                   <div
@@ -70,10 +76,18 @@ export default function DataProductCard({
                     {isCopied ? 'Copied to clipboard' : 'Click to Copy URL'}
                   </div>
                 </div>
+              ) : dataProduct.status === 'FAILED' ? (
+                <div className="flex items-center justify-center w-full h-40">
+                  <span className="sr-only">Process failed</span>
+                  <ExclamationCircleIcon className="h-full text-accent2" />
+                  <span>
+                    An error occurred while processing the uploaded data product
+                  </span>
+                </div>
               ) : (
-                <div className="flex items-center justify-center w-full h-48 bg-white">
+                <div className="flex items-center justify-center w-full h-40 bg-white">
                   <span className="sr-only">Preview not available</span>
-                  <PhotoIcon className="w-full" />
+                  <PhotoIcon className="h-full" />
                 </div>
               )}
             </div>
