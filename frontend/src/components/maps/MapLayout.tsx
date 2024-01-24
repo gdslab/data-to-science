@@ -31,7 +31,7 @@ export default function MapLayout() {
       <div className="flex flex-row h-full">
         <div
           className={classNames(
-            hidePane ? 'w-[48px] ease-out duration-200' : 'w-[450px]',
+            hidePane ? 'w-[48px]' : 'w-[450px]',
             'shrink-0 bg-slate-100'
           )}
         >
@@ -43,7 +43,7 @@ export default function MapLayout() {
         </div>
         {/* page content */}
         <div className="w-full">
-          <Map projects={projects} />
+          <Map layerPaneHidden={hidePane} projects={projects} />
         </div>
       </div>
     </MapContextProvider>

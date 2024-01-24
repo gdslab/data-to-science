@@ -84,7 +84,13 @@ const getDataProductByFlight = (flightID: string, flights: Flight[]): string => 
   }
 };
 
-export default function CompareTool({ flights }: { flights: Flight[] }) {
+export default function CompareTool({
+  flights,
+  layerPaneHidden,
+}: {
+  flights: Flight[];
+  layerPaneHidden: boolean;
+}) {
   const map = useMap();
   const [dividerPosition, setDividerPosition] = useState<{
     divider: number;
@@ -101,6 +107,11 @@ export default function CompareTool({ flights }: { flights: Flight[] }) {
   const [dataProduct2, setDataProduct2] = useState(
     getDataProductByFlight(flight2, flights)
   );
+
+  // prevents sbs elements from moving out of position when layer pane hides/opens
+  useEffect(() => {
+    map.invalidateSize();
+  }, [layerPaneHidden]);
 
   // adds side by side comparison control to map
   useEffect(() => {

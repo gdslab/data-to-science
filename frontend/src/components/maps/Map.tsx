@@ -19,7 +19,13 @@ import PotreeViewer from './PotreeViewer';
 
 import CompareTool, { CompareToolAlert, getFlightsWithGTIFF } from './CompareTool';
 
-export default function Map({ projects }: { projects: Project[] }) {
+export default function Map({
+  layerPaneHidden,
+  projects,
+}: {
+  layerPaneHidden: boolean;
+  projects: Project[];
+}) {
   const { activeDataProduct, activeMapTool, activeProject, flights } = useMapContext();
 
   useEffect(() => {
@@ -73,7 +79,11 @@ export default function Map({ projects }: { projects: Project[] }) {
         flights.length > 0 &&
         activeMapTool === 'compare' &&
         getFlightsWithGTIFF(flights).length > 0 ? (
-          <CompareTool key="compare" flights={getFlightsWithGTIFF(flights)} />
+          <CompareTool
+            key="compare"
+            flights={getFlightsWithGTIFF(flights)}
+            layerPaneHidden={layerPaneHidden}
+          />
         ) : activeMapTool === 'compare' && getFlightsWithGTIFF(flights).length === 0 ? (
           <CompareToolAlert />
         ) : null}
