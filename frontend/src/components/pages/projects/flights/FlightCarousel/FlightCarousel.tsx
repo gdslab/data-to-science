@@ -9,7 +9,7 @@ import './FlightCarousel.css';
 // swiper required modules
 import { Pagination, Mousewheel, Navigation } from 'swiper/modules';
 
-import FlightCard from '../FlightCard';
+import FlightCard from './FlightCard';
 import { Flight } from '../../ProjectDetail';
 
 import useWindowDimensions from '../../../../hooks/useWindowDimensions';

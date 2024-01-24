@@ -12,11 +12,13 @@ import {
 import { Button } from '../../../../Buttons';
 import Table, { TableBody, TableHead } from '../../../../Table';
 import UploadModal from '../../../../UploadModal';
+import { ToggleTableRadioInput } from '../../ProjectDetail';
 
 import { useInterval } from '../../../../hooks';
 
 import { DataProductStatus } from '../FlightData';
 import HintText from '../../../../HintText';
+import DataProductCard from './DataProductCard';
 
 export function getDataProductName(dataType: string): string {
   switch (dataType) {
@@ -44,6 +46,7 @@ export default function DataProducts({
 }) {
   const { flightId, projectId } = useParams();
   const [open, setOpen] = useState(false);
+  const [tableView, toggleTableView] = useState<'table' | 'carousel'>('carousel');
   const revalidator = useRevalidator();
 
   useEffect(() => {
@@ -64,17 +67,17 @@ export default function DataProducts({
   const dataProductColumns = ['Data Type', 'Preview', 'File', 'Action'];
 
   return (
-    <div>
-      <h2>Data Products</h2>
+    <div className="h-full flex flex-col">
+      <div className="h-24">
+        <h2>Data Products</h2>
+        <ToggleTableRadioInput
+          tableView={tableView}
+          toggleTableView={toggleTableView}
+        />
+      </div>
       {data.length > 0 ? (
-        <div className="mt-4">
-          <div className="grid grid-rows-3 gap-1">
-            <HintText>Keywords:</HintText>
-            <HintText>COG - Cloud Optimized GeoTIFF</HintText>
-            <HintText>COPC - Cloud Optimized Point Cloud</HintText>
-            <HintText>EPT - Entwine Point Tile</HintText>
-          </div>
-          <Table height={96}>
+        tableView === 'table' ? (
+          <Table>
             <TableHead
               columns={
                 role === 'viewer'
@@ -159,7 +162,17 @@ export default function DataProducts({
               }
             />
           </Table>
-        </div>
+        ) : (
+          <div className="grow flex flex-cols flex-wrap justify-start gap-4 overflow-auto">
+            {data.map((dataProduct) => (
+              <DataProductCard
+                key={dataProduct.id}
+                dataProduct={dataProduct}
+                userRole={role}
+              />
+            ))}
+          </div>
+        )
       ) : null}
       {role !== 'viewer' ? (
         <div className="my-4 flex justify-center">

@@ -128,7 +128,7 @@ export async function loader({ params }: { params: Params<string> }) {
   }
 }
 
-function ToggleTableRadioInput({
+export function ToggleTableRadioInput({
   tableView,
   toggleTableView,
 }: {
@@ -212,7 +212,7 @@ export default function ProjectDetail() {
   const revalidator = useRevalidator();
 
   const [location, setLocation] = useState<Location | null>(null);
-  const [tableView, toggleTableView] = useState<'table' | 'carousel'>('table');
+  const [tableView, toggleTableView] = useState<'table' | 'carousel'>('carousel');
   const [openUpload, setOpenUpload] = useState(false);
   const [openConfirmationPopup, setOpenConfirmationPopup] = useState(false);
   const [open, setOpen] = useState(false);

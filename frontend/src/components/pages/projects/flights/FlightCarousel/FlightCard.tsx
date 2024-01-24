@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom';
 import { PhotoIcon } from '@heroicons/react/24/outline';
 
-import { Button, OutlineButton } from '../../../Buttons';
-import Card from '../../../Card';
-import HintText from '../../../HintText';
-import { Flight } from '../ProjectDetail';
+import { Button, OutlineButton } from '../../../../Buttons';
+import Card from '../../../../Card';
+import HintText from '../../../../HintText';
+import { Flight } from '../../ProjectDetail';
 
-import { isGeoTIFF } from './dataProducts/DataProducts';
+import { isGeoTIFF } from '../dataProducts/DataProducts';
 
 export default function FlightCard({ flight }: { flight: Flight }) {
   const dataProduct = flight.data_products.length > 0 ? flight.data_products[0] : null;
@@ -38,8 +38,8 @@ export default function FlightCard({ flight }: { flight: Flight }) {
             </div>
             {/* flight details */}
             <div>
-              <span className="block text-lg">{flight.sensor}</span>
-              <HintText>{flight.acquisition_date}</HintText>
+              <span className="block text-lg">Sensor: {flight.sensor}</span>
+              <HintText>On: {flight.acquisition_date}</HintText>
             </div>
             {/* action buttons */}
             <div className="flex items-center justify-between gap-4">

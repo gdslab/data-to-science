@@ -59,9 +59,13 @@ interface FlightData {
 export default function FlightData() {
   const { dataProducts, rawData, role } = useLoaderData() as FlightData;
   return (
-    <div className="p-4 grid grid-flow-row auto-rows-max gap-4">
-      <RawData data={rawData} role={role} />
-      <DataProducts data={dataProducts} role={role} />
+    <div className="flex flex-col h-full mx-4 gap-4">
+      <div className="min-h-28">
+        <RawData data={rawData} role={role} />
+      </div>
+      <div className="grow min-h-0">
+        <DataProducts data={dataProducts} role={role} />
+      </div>
     </div>
   );
 }

@@ -22,7 +22,7 @@ export default function RawData({
   }, [open]);
 
   return (
-    <div>
+    <>
       <h2>Raw Data</h2>
       {data.length > 0 ? (
         <div className="mt-4">
@@ -43,20 +43,24 @@ export default function RawData({
             />
           </Table>
         </div>
-      ) : null}
+      ) : (
+        <span>No raw data has been uploaded</span>
+      )}
       {role !== 'viewer' ? (
-        <div className="my-4 flex justify-center">
+        <div>
           <UploadModal
             apiRoute={`/api/v1/projects/${projectId}/flights/${flightId}/raw_data`}
             open={open}
             setOpen={setOpen}
             uploadType="zip"
           />
-          <Button size="sm" onClick={() => setOpen(true)}>
-            Upload Raw Data (.zip)
-          </Button>
+          <div className="w-48">
+            <Button size="sm" onClick={() => setOpen(true)}>
+              Upload Raw Data (.zip)
+            </Button>
+          </div>
         </div>
       ) : null}
-    </div>
+    </>
   );
 }
