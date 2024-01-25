@@ -1,5 +1,6 @@
 import pytest
 from fastapi import status
+from fastapi.encoders import jsonable_encoder
 from fastapi.testclient import TestClient
 from sqlalchemy.exc import DataError
 from sqlalchemy.orm import Session
@@ -10,6 +11,8 @@ from app.core.config import settings
 from app.schemas.project_member import ProjectMemberUpdate
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
+from app.tests.utils.team import create_team
+from app.tests.utils.team_member import create_team_member
 from app.tests.utils.user import create_user
 
 
@@ -81,6 +84,83 @@ def test_create_project_member_with_invalid_role(
         create_project_member(
             db, email=current_user.email, project_id=project.id, role="invalid-role"
         )
+
+
+def test_create_project_members_with_project_owner_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    new_member1 = create_user(db)
+    new_member2 = create_user(db)
+    new_member3 = create_user(db)
+    data = [new_member1.id, new_member2.id, new_member3.id]
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/members/multi",
+        json=jsonable_encoder(data),
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    response_data = response.json()
+    assert len(response_data) == 4  # three new members plus owner
+
+
+def test_create_project_members_with_project_manager_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db)
+    create_project_member(
+        db, member_id=current_user.id, project_id=project.id, role="manager"
+    )
+    new_member1 = create_user(db)
+    new_member2 = create_user(db)
+    new_member3 = create_user(db)
+    data = [new_member1.id, new_member2.id, new_member3.id]
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/members/multi",
+        json=jsonable_encoder(data),
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_create_project_members_with_project_viewer_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db)
+    create_project_member(
+        db, member_id=current_user.id, project_id=project.id, role="viewer"
+    )
+    new_member1 = create_user(db)
+    new_member2 = create_user(db)
+    new_member3 = create_user(db)
+    data = [new_member1.id, new_member2.id, new_member3.id]
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/members/multi",
+        json=jsonable_encoder(data),
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_create_project_members_without_project_access(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    project = create_project(db)
+    new_member1 = create_user(db)
+    new_member2 = create_user(db)
+    new_member3 = create_user(db)
+    data = [new_member1.id, new_member2.id, new_member3.id]
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/members/multi",
+        json=jsonable_encoder(data),
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 def test_get_project_member_with_project_owner_role(

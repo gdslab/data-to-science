@@ -59,7 +59,7 @@ def test_create_user_existing_email(client: TestClient, db: Session) -> None:
 
 
 def test_create_user_is_not_approved(client: TestClient, db: Session) -> None:
-    """Verify new user is not approved by default."""
+    """Verify new user is not approved by default when email is enabled."""
     full_name = random_full_name()
     data = {
         "email": random_email(),
@@ -70,7 +70,10 @@ def test_create_user_is_not_approved(client: TestClient, db: Session) -> None:
     r = client.post(f"{settings.API_V1_STR}/users/", json=data)
     assert 201 == r.status_code
     created_user = r.json()
-    assert created_user["is_approved"] is False
+    if settings.MAIL_ENABLED:
+        assert created_user["is_approved"] is False
+    else:
+        assert created_user["is_approved"]
 
 
 def test_create_user_with_password_less_than_minimum_length(

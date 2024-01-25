@@ -271,23 +271,27 @@ def test_update_project_with_non_project_member(
 def test_update_project_without_team_with_a_team(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
-    # create team owned by user and populate with five team members
+    """
+    Test adding a team to an existing project with no current team association adds
+    the team members to the project members table.
+    """
     current_user = get_current_approved_user(
-        get_current_user(db, normal_user_access_token)
+        get_current_user(db, normal_user_access_token),
     )
+    # create team and add five members in addition to owner
     team = create_team(db, owner_id=current_user.id)
     team_member_ids = []
     for i in range(0, 5):
-        team_member = create_team_member(db, team_id=team.id)
-        team_member_ids.append(team_member.member_id)
-    # create new project associated with team
-    project = create_project(db, team_id=team.id, owner_id=current_user.id)
-    # update project with team
-    update_data = jsonable_encoder({"team_id": team.id})
+        team_member_ids.append(create_team_member(db, team_id=team.id).member_id)
+    # create project with no initial team association
+    project = create_project(db, owner_id=current_user.id)
+    # update project to be associated with team
+    update_data = {"team_id": str(team.id)}
     response = client.put(f"{API_URL}/{project.id}", json=update_data)
     assert response.status_code == status.HTTP_200_OK
-    response_data = response.json()
-    assert response_data["team_id"] == str(team.id)
+    response_project = response.json()
+    assert response_project["team_id"] == str(team.id)
+    # confirm team members are now in project members table
     project_members = crud.project_member.get_list_of_project_members(
         db, project_id=project.id
     )

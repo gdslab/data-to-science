@@ -31,6 +31,24 @@ def create_project_member(
     return project_member
 
 
+@router.post(
+    "/multi",
+    response_model=list[schemas.ProjectMember],
+    status_code=status.HTTP_201_CREATED,
+)
+def create_project_members(
+    project_id: UUID,
+    project_members: list[UUID],
+    project: models.Project = Depends(deps.can_read_write_delete_project),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    project_members = crud.project_member.create_multi_with_project(
+        db, member_ids=project_members, project_id=project.id
+    )
+    return project_members
+
+
 @router.get("/{project_member_id}", response_model=schemas.ProjectMember)
 def read_project_member(
     project_member_id: UUID,

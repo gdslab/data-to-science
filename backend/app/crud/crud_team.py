@@ -41,15 +41,19 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
                 new_team_members.append(
                     TeamMember(member_id=user_id, team_id=team_db_obj.id)
                 )
-        with db as session:
-            session.add_all(new_team_members)
-            session.commit()
+            with db as session:
+                session.add_all(new_team_members)
+                session.commit()
         # add project object (if any)
         if project_id:
             project_obj = crud.project.get(db, id=project_id)
             if project_obj and not project_obj.team_id:
-                crud.project.update(
-                    db, db_obj=project_obj, obj_in=ProjectUpdate(team_id=team_db_obj.id)
+                crud.project.update_project(
+                    db,
+                    project_obj=project_obj,
+                    project_in=ProjectUpdate(team_id=team_db_obj.id),
+                    project_id=project_id,
+                    user_id=owner_id,
                 )
         return team_db_obj
 

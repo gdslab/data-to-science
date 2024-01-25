@@ -89,5 +89,13 @@ def remove_team_member(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot remove self (owner) from team",
         )
-    removed_team_member = crud.team_member.remove(db, id=member_id)
-    return removed_team_member
+    team_member = crud.team_member.get(db, id=member_id)
+    if team_member:
+        removed_team_member = crud.team_member.remove_team_member(
+            db, member_id=team_member.member_id, team_id=team.id
+        )
+        return removed_team_member
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Team member not found"
+        )

@@ -9,8 +9,10 @@ import {
 } from 'react-router-dom';
 
 import { AlertBar } from '../../Alert';
+import { Button } from '../../Buttons';
 import Table, { TableBody, TableHead } from '../../Table';
 import { CheckIcon } from '@heroicons/react/24/outline';
+import SearchUsers, { UserSearch } from '../teams/SearchUsers';
 
 import { generateRandomProfileColor } from '../auth/Profile';
 import { classNames } from '../../utils';
@@ -50,6 +52,7 @@ function AccessRoleRadioGroup({
   const [role, updateRole] = useState(currentRole);
   const params = useParams();
   const revalidator = useRevalidator();
+
   return (
     <div className="flex items-center justify-between gap-4">
       <fieldset key={uniqueID} className="flex flex-wrap gap-3">
@@ -110,9 +113,13 @@ function AccessRoleRadioGroup({
 
 export default function ProjectAccess() {
   const [isLoading, setIsLoading] = useState(true);
-  const projectMembers = useLoaderData() as ProjectMembers[];
+  const [searchResults, setSearchResults] = useState<UserSearch[]>([]);
+
   const { user } = useContext(AuthContext);
+  const projectMembers = useLoaderData() as ProjectMembers[];
   const navigate = useNavigate();
+  const params = useParams();
+  const revalidator = useRevalidator();
 
   useEffect(() => {
     if (user) {
@@ -129,67 +136,128 @@ export default function ProjectAccess() {
     }
   }, []);
 
+  async function removeProjectMember(memberId: string) {
+    try {
+      const response = await axios.delete(
+        `${import.meta.env.VITE_API_V1_STR}/projects/${
+          params.projectId
+        }/members/${memberId}`
+      );
+      if (response) {
+        revalidator.revalidate();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   if (isLoading) {
     return <div className="p-4">Loading...</div>;
   } else {
     return (
-      <div className="p-4">
-        <h1>Manage Access</h1>
-        <h2>Access Role Descriptions</h2>
-        <div className="grid grid-rows-3 gap-1.5">
-          <div className="grid grid-cols-6 gap-4">
-            <span className="col-span-1 font-semibold text-slate-700">Owner:</span>
-            <span className="col-span-5">
-              Can create, update, view, and remove project data.
-            </span>
-          </div>
-          <div className="grid grid-cols-6 gap-4">
-            <span className="col-span-1 font-semibold text-slate-700">Manager:</span>
-            <span className="col-span-5">
-              Can create, update, and view project data.
-            </span>
-          </div>
-          <div className="grid grid-cols-6 gap-4">
-            <span className="col-span-1 font-semibold text-slate-700">Viewer:</span>
-            <span className="col-span-5">Can view project data.</span>
+      <div className="flex flex-col p-4">
+        <div>
+          <h1>Manage Access</h1>
+          <h2>Access Role Descriptions</h2>
+          <div className="grid grid-rows-3 gap-1.5">
+            <div className="grid grid-cols-6 gap-4">
+              <span className="col-span-1 font-semibold text-slate-700">Owner:</span>
+              <span className="col-span-5">
+                Can create, update, view, and remove project data.
+              </span>
+            </div>
+            <div className="grid grid-cols-6 gap-4">
+              <span className="col-span-1 font-semibold text-slate-700">Manager:</span>
+              <span className="col-span-5">
+                Can create, update, and view project data.
+              </span>
+            </div>
+            <div className="grid grid-cols-6 gap-4">
+              <span className="col-span-1 font-semibold text-slate-700">Viewer:</span>
+              <span className="col-span-5">Can view project data.</span>
+            </div>
           </div>
         </div>
-        <Table height={96}>
-          <TableHead align="left" columns={['Name', 'Email', 'Role']} />
-          <TableBody
-            align="left"
-            rows={projectMembers
-              .sort((a, b) => sorter(a.full_name, b.full_name))
-              .map(({ id, full_name, email, profile_url, role }) => [
-                profile_url ? (
-                  <div className="flex items-center justify-start gap-4 whitespace-nowrap">
-                    <img
-                      key={profile_url.split('/').slice(-1)[0].slice(0, -4)}
-                      className="h-8 w-8 rounded-full"
-                      src={profile_url}
-                    />
-                    <span>{full_name}</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-start gap-4 whitespace-nowrap">
-                    <div
-                      className="flex items-center justify-center h-8 w-8 text-white text-sm rounded-full"
-                      style={generateRandomProfileColor(full_name)}
-                    >
-                      {full_name[0]} {full_name.split(' ').slice(-1)[0][0]}
+        <div className="grow min-h-0">
+          <Table>
+            <TableHead align="left" columns={['Name', 'Email', 'Role', 'Actions']} />
+            <TableBody
+              align="left"
+              rows={projectMembers
+                .sort((a, b) => sorter(a.full_name, b.full_name))
+                .map(({ id, full_name, email, profile_url, role }) => [
+                  profile_url ? (
+                    <div className="flex items-center justify-start gap-4 whitespace-nowrap">
+                      <img
+                        key={profile_url.split('/').slice(-1)[0].slice(0, -4)}
+                        className="h-8 w-8 rounded-full"
+                        src={profile_url}
+                      />
+                      <span>{full_name}</span>
                     </div>
-                    <span>{full_name}</span>
-                  </div>
-                ),
-                <span>{email}</span>,
-                <AccessRoleRadioGroup
-                  currentRole={role}
-                  memberId={id}
-                  uniqueID={btoa(full_name)}
-                />,
-              ])}
-          />
-        </Table>
+                  ) : (
+                    <div className="flex items-center justify-start gap-4 whitespace-nowrap">
+                      <div
+                        className="flex items-center justify-center h-8 w-8 text-white text-sm rounded-full"
+                        style={generateRandomProfileColor(full_name)}
+                      >
+                        {full_name[0]} {full_name.split(' ').slice(-1)[0][0]}
+                      </div>
+                      <span>{full_name}</span>
+                    </div>
+                  ),
+                  <span>{email}</span>,
+                  <AccessRoleRadioGroup
+                    currentRole={role}
+                    memberId={id}
+                    uniqueID={btoa(full_name)}
+                  />,
+                  <button
+                    className="text-sky-600"
+                    type="button"
+                    onClick={() => removeProjectMember(id)}
+                  >
+                    Remove
+                  </button>,
+                ])}
+            />
+          </Table>
+        </div>
+        <div className="mt-4">
+          <h3>Find new project members</h3>
+          <div className="mb-4 grid grid-flow-row gap-4">
+            <SearchUsers
+              currentMembers={projectMembers}
+              searchResults={searchResults}
+              setSearchResults={setSearchResults}
+              user={user}
+            />
+            {searchResults.length > 0 &&
+            searchResults.filter((u) => u.checked).length > 0 ? (
+              <Button
+                size="sm"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const selectedMembers = searchResults.filter((u) => u.checked);
+                  if (selectedMembers.length > 0) {
+                    axios
+                      .post(
+                        `/api/v1/projects/${params.projectId}/members/multi`,
+                        selectedMembers.map(({ id }) => id)
+                      )
+                      .then(() => {
+                        setSearchResults([]);
+                        revalidator.revalidate();
+                      })
+                      .catch((err) => console.error(err));
+                  }
+                }}
+              >
+                Add Selected
+              </Button>
+            ) : null}
+          </div>
+        </div>
       </div>
     );
   }

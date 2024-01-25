@@ -61,16 +61,18 @@ class CRUDProjectMember(
     def create_multi_with_project(
         self, db: Session, member_ids: [UUID], project_id: UUID
     ) -> Sequence[ProjectMember]:
+        current_members = self.get_list_of_project_members(db, project_id=project_id)
+        current_member_ids = [cm.member_id for cm in current_members]
         project_members = []
         for member_id in member_ids:
-            project_members.append(
-                {"member_id": member_id, "role": "viewer", "project_id": project_id}
-            )
-        with db as session:
-            session.execute(
-                insert(ProjectMember).values(project_members).on_conflict_do_nothing()
-            )
-            session.commit()
+            if member_id not in current_member_ids:
+                project_members.append(
+                    {"member_id": member_id, "role": "viewer", "project_id": project_id}
+                )
+        if len(project_members) > 0:
+            with db as session:
+                session.execute(insert(ProjectMember).values(project_members))
+                session.commit()
         return self.get_list_of_project_members(db, project_id=project_id)
 
     def get_by_project_and_member_id(

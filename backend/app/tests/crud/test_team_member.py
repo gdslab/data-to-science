@@ -71,7 +71,7 @@ def test_create_multi_team_members_adds_project_members(db: Session) -> None:
     # add new team members
     new_team_members = crud.team_member.create_multi_with_team(
         db,
-        team_members=[user1.id, user2.id, user3.id, team_owner.id, user3.id],
+        team_members=[user1.id, user2.id, user3.id, user3.id, team_owner.id],
         team_id=team.id,
     )
     # fetch project members
@@ -165,11 +165,11 @@ def test_remove_team_member_removes_from_project_members(db: Session) -> None:
     member1 = create_team_member(db, team_id=team.id)
     for i in range(0, 4):
         create_team_member(db, team_id=team.id)
-    member_removed = crud.team_member.remove_team_member(
+    removed_project_member = crud.team_member.remove_team_member(
         db, member_id=member1.member_id, team_id=team.id
     )
-    assert member_removed
-    project_member = crud.project_member.get_by_project_and_member_id(
+    assert removed_project_member
+    removed_project_member = crud.project_member.get_by_project_and_member_id(
         db, project_id=project.id, member_id=member1.member_id
     )
-    assert project_member is None
+    assert removed_project_member is None

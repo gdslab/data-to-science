@@ -27,6 +27,11 @@ def create_project(
         raise HTTPException(
             status_code=project["response_code"], detail=project["message"]
         )
+    if not project["result"].id:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to create project",
+        )
     # Create preview image for project field boundary
     project_in_db = crud.project.get_user_project(
         db, user_id=current_user.id, project_id=project["result"].id

@@ -32,17 +32,25 @@ def test_create_team(client: TestClient, normal_user_access_token: str) -> None:
 def test_create_team_with_project(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
-    project = create_project(db)
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
+    project = create_project(db, owner_id=current_user.id)
     data = {
         "title": random_team_name(),
         "description": random_team_description(),
         "project": str(project.id),
     }
     response = client.post(f"{settings.API_V1_STR}/teams", json=data)
-    project_in_db = crud.project.get(db, id=project.id)
     assert response.status_code == status.HTTP_201_CREATED
+    project_in_db = crud.project.get(db, id=project.id)
     team = response.json()
     assert str(project_in_db.team_id) == team["id"]
+    project_members = crud.project_member.get_list_of_project_members(
+        db, project_id=project.id
+    )
+    assert len(project_members) == 1
+    assert current_user.id == project_members[0].member_id
 
 
 def test_create_team_with_project_already_assigned_team(

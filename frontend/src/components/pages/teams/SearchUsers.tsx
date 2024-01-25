@@ -154,7 +154,7 @@ function SearchUsersResults({
                   <td className="text-center">
                     {currentMembers.filter(({ email }) => email === user.email).length >
                     0 ? (
-                      <span className="italic text-slate-700">Already on team</span>
+                      <span className="italic text-slate-700">Already member</span>
                     ) : (
                       <label
                         htmlFor="AcceptConditions"

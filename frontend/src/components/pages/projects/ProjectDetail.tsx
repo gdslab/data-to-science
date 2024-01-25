@@ -103,28 +103,44 @@ export async function loader({ params }: { params: Params<string> }) {
   const user: User | null = profile ? JSON.parse(profile) : null;
   if (!user) return null;
 
-  const project = await axios.get(
-    `${import.meta.env.VITE_API_V1_STR}/projects/${params.projectId}`
-  );
-  const project_member = await axios.get(
-    `${import.meta.env.VITE_API_V1_STR}/projects/${params.projectId}/members/${user.id}`
-  );
-  const flights = await axios.get(
-    `${import.meta.env.VITE_API_V1_STR}/projects/${params.projectId}/flights`
-  );
-  const teams = await axios.get(`${import.meta.env.VITE_API_V1_STR}/teams`);
+  try {
+    const project = await axios.get(
+      `${import.meta.env.VITE_API_V1_STR}/projects/${params.projectId}`
+    );
+    const project_member = await axios.get(
+      `${import.meta.env.VITE_API_V1_STR}/projects/${params.projectId}/members/${
+        user.id
+      }`
+    );
+    const flights = await axios.get(
+      `${import.meta.env.VITE_API_V1_STR}/projects/${params.projectId}/flights`
+    );
+    const teams = await axios.get(`${import.meta.env.VITE_API_V1_STR}/teams`);
 
-  if (project && project_member && flights && teams) {
-    const teamsf = teams.data;
-    teamsf.unshift({ title: 'No team', id: '' });
+    if (project && project_member && flights && teams) {
+      const teamsf = teams.data;
+      teamsf.unshift({ title: 'No team', id: '' });
+      return {
+        project: project.data,
+        role: project_member.data.role,
+        flights: flights.data,
+        teams: teamsf,
+      };
+    } else {
+      return {
+        project: null,
+        role: null,
+        flights: [],
+        teams: [],
+      };
+    }
+  } catch (err) {
     return {
-      project: project.data,
-      role: project_member.data.role,
-      flights: flights.data,
-      teams: teamsf,
+      project: null,
+      role: null,
+      flights: [],
+      teams: [],
     };
-  } else {
-    return null;
   }
 }
 
@@ -146,7 +162,7 @@ export default function ProjectDetail() {
   const currentTeam = teams ? teams.filter(({ id }) => project.team_id === id) : null;
 
   useEffect(() => {
-    if (project.field) {
+    if (project && project.field) {
       setLocation({
         geojson: project.field,
         center: {
@@ -164,292 +180,306 @@ export default function ProjectDetail() {
 
   const flightColumns = ['Platform', 'Sensor', 'Acquisition Date', 'Data', 'Actions'];
 
-  return (
-    <div className="flex flex-col h-full gap-4 p-4">
-      {project.is_owner ? (
-        <Formik
-          initialValues={{
-            title: project.title,
-            description: project.description,
-            plantingDate: project.planting_date ? project.planting_date : '',
-            harvestDate: project.harvest_date ? project.harvest_date : '',
-            locationId: project.location_id,
-            teamId: project.team_id ? project.team_id : '',
-          }}
-          validationSchema={validationSchema}
-          onSubmit={async (values) => {
-            try {
-              const data = {
-                title: values.title,
-                description: values.description,
-                location_id: values.locationId,
-                team_id: values.teamId ? values.teamId : null,
-                ...(values.plantingDate && { planting_date: values.plantingDate }),
-                ...(values.harvestDate && { harvest_date: values.harvestDate }),
-              };
-              const response = await axios.put(`/api/v1/projects/${project.id}`, data);
-              if (response) {
-                revalidator.revalidate();
+  if (project) {
+    return (
+      <div className="flex flex-col h-full gap-4 p-4">
+        {project.is_owner ? (
+          <Formik
+            initialValues={{
+              title: project.title,
+              description: project.description,
+              plantingDate: project.planting_date ? project.planting_date : '',
+              harvestDate: project.harvest_date ? project.harvest_date : '',
+              locationId: project.location_id,
+              teamId: project.team_id ? project.team_id : '',
+            }}
+            validationSchema={validationSchema}
+            onSubmit={async (values) => {
+              try {
+                const data = {
+                  title: values.title,
+                  description: values.description,
+                  location_id: values.locationId,
+                  team_id: values.teamId ? values.teamId : null,
+                  ...(values.plantingDate && { planting_date: values.plantingDate }),
+                  ...(values.harvestDate && { harvest_date: values.harvestDate }),
+                };
+                const response = await axios.put(
+                  `/api/v1/projects/${project.id}`,
+                  data
+                );
+                if (response) {
+                  revalidator.revalidate();
+                }
+                setIsEditing(null);
+              } catch (err) {
+                setIsEditing(null);
               }
-              setIsEditing(null);
-            } catch (err) {
-              setIsEditing(null);
-            }
-          }}
-        >
-          {({ setStatus, status }) => (
-            <Form>
-              <div className="flex justify-between">
-                <div className="grid rows-auto gap-2">
-                  <EditField
-                    fieldName="title"
-                    isEditing={isEditing}
-                    setIsEditing={setIsEditing}
-                  >
-                    {!isEditing || isEditing.field !== 'title' ? (
-                      <h2 className="mb-0">{project.title}</h2>
-                    ) : (
-                      <TextField name="title" />
-                    )}
-                  </EditField>
-                  <EditField
-                    fieldName="description"
-                    isEditing={isEditing}
-                    setIsEditing={setIsEditing}
-                  >
-                    {!isEditing || isEditing.field !== 'description' ? (
-                      <span className="text-gray-600">{project.description}</span>
-                    ) : (
-                      <TextField name="description" />
-                    )}
-                  </EditField>
+            }}
+          >
+            {({ setStatus, status }) => (
+              <Form>
+                <div className="flex justify-between">
+                  <div className="grid rows-auto gap-2">
+                    <EditField
+                      fieldName="title"
+                      isEditing={isEditing}
+                      setIsEditing={setIsEditing}
+                    >
+                      {!isEditing || isEditing.field !== 'title' ? (
+                        <h2 className="mb-0">{project.title}</h2>
+                      ) : (
+                        <TextField name="title" />
+                      )}
+                    </EditField>
+                    <EditField
+                      fieldName="description"
+                      isEditing={isEditing}
+                      setIsEditing={setIsEditing}
+                    >
+                      {!isEditing || isEditing.field !== 'description' ? (
+                        <span className="text-gray-600">{project.description}</span>
+                      ) : (
+                        <TextField name="description" />
+                      )}
+                    </EditField>
+                  </div>
+                  <div className="text-sky-600 cursor-pointer">
+                    <h2>
+                      <Link to={`/projects/${projectId}/access`}>Manage Access</Link>
+                    </h2>
+                  </div>
                 </div>
-                <div className="text-sky-600 cursor-pointer">
-                  <h2>
-                    <Link to={`/projects/${projectId}/access`}>Manage Access</Link>
-                  </h2>
-                </div>
-              </div>
-              <Table>
-                <TableHead
-                  columns={['Planting Date', 'Harvest Date', 'Team', 'Location']}
-                />
-                <TableBody
-                  rows={[
-                    [
-                      <div className="flex justify-center">
-                        <EditField
-                          fieldName="plantingDate"
-                          isEditing={isEditing}
-                          setIsEditing={setIsEditing}
-                        >
-                          {!isEditing || isEditing.field !== 'plantingDate' ? (
-                            <span>
-                              {project.planting_date ? project.planting_date : 'N/A'}
-                            </span>
-                          ) : (
-                            <TextField type="date" name="plantingDate" />
-                          )}
-                        </EditField>
-                      </div>,
-                      <div className="flex justify-center">
-                        <EditField
-                          fieldName="harvestDate"
-                          isEditing={isEditing}
-                          setIsEditing={setIsEditing}
-                        >
-                          {!isEditing || isEditing.field !== 'harvestDate' ? (
-                            <span>
-                              {project.harvest_date ? project.harvest_date : 'N/A'}
-                            </span>
-                          ) : (
-                            <TextField type="date" name="harvestDate" />
-                          )}
-                        </EditField>
-                      </div>,
-                      <div className="flex justify-center">
-                        <EditField
-                          fieldName="teamId"
-                          isEditing={isEditing}
-                          setIsEditing={setIsEditing}
-                        >
-                          {!isEditing || isEditing.field !== 'teamId' ? (
-                            <span>
-                              {currentTeam && currentTeam.length > 0
-                                ? currentTeam[0].title
-                                : 'N/A'}
-                            </span>
-                          ) : (
-                            <SelectField
-                              name="teamId"
-                              options={teams.map((team) => ({
-                                label: team.title,
-                                value: team.id,
-                              }))}
-                            />
-                          )}
-                        </EditField>
-                      </div>,
-                      <div className="flex justify-center">
-                        <MapIcon
-                          className="h-6 w-6 cursor-pointer"
-                          onClick={() => {
-                            setStatus(null);
-                            setOpenMap(true);
-                          }}
-                        />
-                        <span className="sr-only">View or Edit Location</span>
-                        <Modal open={openMap} setOpen={setOpenMap}>
-                          <div className="m-4">
-                            <ProjectFormMap
-                              isUpdate={true}
-                              location={location}
-                              locationId={project.location_id}
-                              open={openUpload}
-                              projectId={project.id}
-                              setLocation={setLocation}
-                              setOpen={setOpenUpload}
-                            />
-                          </div>
-                          {status && status.type && status.msg ? (
+                <Table>
+                  <TableHead
+                    columns={['Planting Date', 'Harvest Date', 'Team', 'Location']}
+                  />
+                  <TableBody
+                    rows={[
+                      [
+                        <div className="flex justify-center">
+                          <EditField
+                            fieldName="plantingDate"
+                            isEditing={isEditing}
+                            setIsEditing={setIsEditing}
+                          >
+                            {!isEditing || isEditing.field !== 'plantingDate' ? (
+                              <span>
+                                {project.planting_date ? project.planting_date : 'N/A'}
+                              </span>
+                            ) : (
+                              <TextField type="date" name="plantingDate" />
+                            )}
+                          </EditField>
+                        </div>,
+                        <div className="flex justify-center">
+                          <EditField
+                            fieldName="harvestDate"
+                            isEditing={isEditing}
+                            setIsEditing={setIsEditing}
+                          >
+                            {!isEditing || isEditing.field !== 'harvestDate' ? (
+                              <span>
+                                {project.harvest_date ? project.harvest_date : 'N/A'}
+                              </span>
+                            ) : (
+                              <TextField type="date" name="harvestDate" />
+                            )}
+                          </EditField>
+                        </div>,
+                        <div className="flex justify-center">
+                          <EditField
+                            fieldName="teamId"
+                            isEditing={isEditing}
+                            setIsEditing={setIsEditing}
+                          >
+                            {!isEditing || isEditing.field !== 'teamId' ? (
+                              <span>
+                                {currentTeam && currentTeam.length > 0
+                                  ? currentTeam[0].title
+                                  : 'N/A'}
+                              </span>
+                            ) : (
+                              <SelectField
+                                name="teamId"
+                                options={teams.map((team) => ({
+                                  label: team.title,
+                                  value: team.id,
+                                }))}
+                              />
+                            )}
+                          </EditField>
+                        </div>,
+                        <div className="flex justify-center">
+                          <MapIcon
+                            className="h-6 w-6 cursor-pointer"
+                            onClick={() => {
+                              setStatus(null);
+                              setOpenMap(true);
+                            }}
+                          />
+                          <span className="sr-only">View or Edit Location</span>
+                          <Modal open={openMap} setOpen={setOpenMap}>
                             <div className="m-4">
-                              <Alert alertType={status.type}>{status.msg}</Alert>
+                              <ProjectFormMap
+                                isUpdate={true}
+                                location={location}
+                                locationId={project.location_id}
+                                open={openUpload}
+                                projectId={project.id}
+                                setLocation={setLocation}
+                                setOpen={setOpenUpload}
+                              />
                             </div>
-                          ) : null}
-                        </Modal>
-                      </div>,
-                    ],
-                  ]}
-                />
-              </Table>
-              <div className="flex flex-row justify-end w-full mt-4">
-                <div className="w-48">
-                  <Button
-                    type="button"
-                    size="sm"
-                    icon="trash"
-                    onClick={() => setOpenConfirmationPopup(true)}
-                  >
-                    Deactivate project
-                  </Button>
-                </div>
-                <Modal open={openConfirmationPopup} setOpen={setOpenConfirmationPopup}>
-                  <ConfirmationPopup
-                    title="Are you sure you want to deactivate this project?"
-                    content="Deactivating this project will cause all team and project members to immediately lose access to any flights, and data associated with the project."
-                    confirmText="Yes, deactivate"
-                    rejectText="No, keep project"
+                            {status && status.type && status.msg ? (
+                              <div className="m-4">
+                                <Alert alertType={status.type}>{status.msg}</Alert>
+                              </div>
+                            ) : null}
+                          </Modal>
+                        </div>,
+                      ],
+                    ]}
+                  />
+                </Table>
+                <div className="flex flex-row justify-end w-full mt-4">
+                  <div className="w-48">
+                    <Button
+                      type="button"
+                      size="sm"
+                      icon="trash"
+                      onClick={() => setOpenConfirmationPopup(true)}
+                    >
+                      Deactivate project
+                    </Button>
+                  </div>
+                  <Modal
+                    open={openConfirmationPopup}
                     setOpen={setOpenConfirmationPopup}
-                    action={async () => {
-                      try {
-                        const response = await axios.delete(
-                          `/api/v1/projects/${project.id}`
-                        );
-                        if (response) {
-                          setOpenConfirmationPopup(false);
-                          navigate('/projects', { state: { reload: true } });
-                        } else {
+                  >
+                    <ConfirmationPopup
+                      title="Are you sure you want to deactivate this project?"
+                      content="Deactivating this project will cause all team and project members to immediately lose access to any flights, and data associated with the project."
+                      confirmText="Yes, deactivate"
+                      rejectText="No, keep project"
+                      setOpen={setOpenConfirmationPopup}
+                      action={async () => {
+                        try {
+                          const response = await axios.delete(
+                            `/api/v1/projects/${project.id}`
+                          );
+                          if (response) {
+                            setOpenConfirmationPopup(false);
+                            navigate('/projects', { state: { reload: true } });
+                          } else {
+                            setOpenConfirmationPopup(false);
+                            setStatus({
+                              type: 'error',
+                              msg: 'Unable to deactivate project',
+                            });
+                          }
+                        } catch (err) {
                           setOpenConfirmationPopup(false);
                           setStatus({
                             type: 'error',
                             msg: 'Unable to deactivate project',
                           });
                         }
-                      } catch (err) {
-                        setOpenConfirmationPopup(false);
-                        setStatus({
-                          type: 'error',
-                          msg: 'Unable to deactivate project',
-                        });
-                      }
-                    }}
-                  />
-                </Modal>
-              </div>
-              {status && status.type && status.msg ? (
-                <div className="mt-4">
-                  <Alert alertType={status.type}>{status.msg}</Alert>
+                      }}
+                    />
+                  </Modal>
                 </div>
-              ) : null}
-            </Form>
-          )}
-        </Formik>
-      ) : null}
-      <div className="grow min-h-0">
-        <div className="h-full flex flex-col">
-          <div className="h-24">
-            <h2>Flights</h2>
-            <TableCardRadioInput
-              tableView={tableView}
-              toggleTableView={toggleTableView}
-            />
-          </div>
-          {flights.length > 0 ? (
-            tableView === 'table' ? (
-              <Table>
-                <TableHead
-                  columns={
-                    role === 'viewer'
-                      ? flightColumns.slice(0, flightColumns.length - 1)
-                      : flightColumns
-                  }
-                />
-                <TableBody
-                  rows={flights
-                    .sort((a, b) =>
-                      sorter(
-                        new Date(a.acquisition_date),
-                        new Date(b.acquisition_date),
-                        'asc'
-                      )
-                    )
-                    .map((flight) => [
-                      flight.platform.replace(/_/g, ' '),
-                      flight.sensor,
-                      flight.acquisition_date,
-                      <Link
-                        className="!text-sky-600 visited:text-sky-600"
-                        to={`/projects/${projectId}/flights/${flight.id}/data`}
-                      >
-                        Manage
-                      </Link>,
-                    ])}
-                  actions={
-                    role === 'viewer'
-                      ? undefined
-                      : flights.map((flight, i) => [
-                          {
-                            key: `action-edit-${i}`,
-                            icon: <PencilIcon className="h-4 w-4" />,
-                            label: 'Edit',
-                            url: `/projects/${projectId}/flights/${flight.id}/edit`,
-                          },
-                          {
-                            key: `action-delete-${i}`,
-                            icon: <TrashIcon className="h-4 w-4" />,
-                            label: 'Delete',
-                            url: '#',
-                          },
-                        ])
-                  }
-                />
-              </Table>
-            ) : (
-              <FlightCarousel flights={flights} />
-            )
-          ) : null}
-          {role !== 'viewer' ? (
-            <div className="my-4 flex justify-center">
-              <Modal open={open} setOpen={setOpen}>
-                <FlightForm setOpen={setOpen} teamId={project.team_id} />
-              </Modal>
-              <Button size="sm" onClick={() => setOpen(true)}>
-                Add New Flight
-              </Button>
+                {status && status.type && status.msg ? (
+                  <div className="mt-4">
+                    <Alert alertType={status.type}>{status.msg}</Alert>
+                  </div>
+                ) : null}
+              </Form>
+            )}
+          </Formik>
+        ) : null}
+        <div className="grow min-h-0">
+          <div className="h-full flex flex-col">
+            <div className="h-24">
+              <h2>Flights</h2>
+              <TableCardRadioInput
+                tableView={tableView}
+                toggleTableView={toggleTableView}
+              />
             </div>
-          ) : null}
+            {flights.length > 0 ? (
+              tableView === 'table' ? (
+                <Table>
+                  <TableHead
+                    columns={
+                      role === 'viewer'
+                        ? flightColumns.slice(0, flightColumns.length - 1)
+                        : flightColumns
+                    }
+                  />
+                  <TableBody
+                    rows={flights
+                      .sort((a, b) =>
+                        sorter(
+                          new Date(a.acquisition_date),
+                          new Date(b.acquisition_date),
+                          'asc'
+                        )
+                      )
+                      .map((flight) => [
+                        flight.platform.replace(/_/g, ' '),
+                        flight.sensor,
+                        flight.acquisition_date,
+                        <Link
+                          className="!text-sky-600 visited:text-sky-600"
+                          to={`/projects/${projectId}/flights/${flight.id}/data`}
+                        >
+                          Manage
+                        </Link>,
+                      ])}
+                    actions={
+                      role === 'viewer'
+                        ? undefined
+                        : flights.map((flight, i) => [
+                            {
+                              key: `action-edit-${i}`,
+                              icon: <PencilIcon className="h-4 w-4" />,
+                              label: 'Edit',
+                              url: `/projects/${projectId}/flights/${flight.id}/edit`,
+                            },
+                            {
+                              key: `action-delete-${i}`,
+                              icon: <TrashIcon className="h-4 w-4" />,
+                              label: 'Delete',
+                              url: '#',
+                            },
+                          ])
+                    }
+                  />
+                </Table>
+              ) : (
+                <FlightCarousel flights={flights} />
+              )
+            ) : null}
+            {role !== 'viewer' ? (
+              <div className="my-4 flex justify-center">
+                <Modal open={open} setOpen={setOpen}>
+                  <FlightForm setOpen={setOpen} teamId={project.team_id} />
+                </Modal>
+                <Button size="sm" onClick={() => setOpen(true)}>
+                  Add New Flight
+                </Button>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  } else {
+    return (
+      <div className="flex flex-col h-full gap-4 p-4">
+        Unable to load selected project
+      </div>
+    );
+  }
 }

@@ -62,22 +62,26 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
     def create_multi_with_team(
         self, db: Session, team_members: list[UUID], team_id: UUID
     ) -> Sequence[TeamMember]:
-        with db as session:
-            team_member_objs = []
-            for user_id in team_members:
-                team_member_objs.append({"member_id": user_id, "team_id": team_id})
-            session.execute(
-                insert(TeamMember).values(team_member_objs).on_conflict_do_nothing()
-            )
-            session.commit()
-        # add as project members if team is associated with project
-        project_query = select(Project).where(Project.team_id == team_id)
-        with db as session:
-            project = session.scalar(project_query)
-            if project:
-                crud.project_member.create_multi_with_project(
-                    db, member_ids=team_members, project_id=project.id
-                )
+        team = crud.team.get(db, id=team_id)
+        team_members = list(set(team_members))
+        if team:
+            with db as session:
+                team_member_objs = []
+                for user_id in team_members:
+                    if user_id != team.owner_id:
+                        team_member_objs.append(
+                            {"member_id": user_id, "team_id": team_id}
+                        )
+                session.execute(insert(TeamMember).values(team_member_objs))
+                session.commit()
+            # add as project members if team is associated with project
+            project_query = select(Project).where(Project.team_id == team_id)
+            with db as session:
+                project = session.scalar(project_query)
+                if project:
+                    crud.project_member.create_multi_with_project(
+                        db, member_ids=team_members, project_id=project.id
+                    )
 
         return self.get_list_of_team_members(db, team_id=team_id)
 
@@ -180,7 +184,8 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
         with db as session:
             project_member = session.scalar(statement)
             if project_member and project_member.role != "owner":
-                crud.project_member.remove(db, id=project_member.id)
+                session.delete(project_member)
+                session.commit()
 
         return team_member
 

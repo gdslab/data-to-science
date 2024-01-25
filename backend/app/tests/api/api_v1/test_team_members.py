@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api.deps import get_current_user, get_current_approved_user
 from app.core.config import settings
+from app.tests.utils.project import create_project
 from app.tests.utils.team import create_team
 from app.tests.utils.team_member import create_team_member
 from app.tests.utils.user import create_user
@@ -96,7 +97,7 @@ def test_add_team_members(
     )
     assert 201 == r.status_code
     response_data = r.json()
-    len(response_data) == 3
+    assert len(response_data) == 4  # three new members plus owner
 
 
 def test_get_team_members(
@@ -109,6 +110,7 @@ def test_get_team_members(
     current_user_tm = crud.team_member.get_team_member_by_email(
         db, email=current_user.email, team_id=team.id
     )
+    assert current_user_tm
     team_member_ids = [str(current_user_tm.id)]
     for i in range(0, 3):
         team_member = create_team_member(db, team_id=team.id)
@@ -147,3 +149,28 @@ def test_remove_team_member_by_unauthorized_user(
     team_member = create_team_member(db, team_id=team.id)
     r = client.delete(f"{settings.API_V1_STR}/teams/{team.id}/members/{team_member.id}")
     assert r.status_code == 403
+
+
+def test_remove_team_member_associated_with_project(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """
+    Test removing a team member from a team associated with a project also removes
+    that team member as a project member.
+    """
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    team = create_team(db, project=project.id, owner_id=current_user.id)
+    team_member = create_team_member(db, team_id=team.id)
+    project_member_before_delete = crud.project_member.get_by_project_and_member_id(
+        db, project_id=project.id, member_id=team_member.member_id
+    )
+    assert project_member_before_delete
+    r = client.delete(f"{settings.API_V1_STR}/teams/{team.id}/members/{team_member.id}")
+    assert r.status_code == 200
+    project_member_after_delete = crud.project_member.get_by_project_and_member_id(
+        db, project_id=project.id, member_id=team_member.member_id
+    )
+    assert project_member_after_delete is None

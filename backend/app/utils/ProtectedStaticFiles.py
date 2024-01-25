@@ -82,9 +82,15 @@ async def verify_static_file_access(request: Request) -> None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="project not found"
             )
-        project = crud.project.get_user_project(
-            SessionLocal(), user_id=user.id, project_id=project_id_uuid
-        )
+        try:
+            project = crud.project.get_user_project(
+                SessionLocal(), user_id=user.id, project_id=project_id_uuid
+            )
+            assert project
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="unable to load project"
+            )
         if project["response_code"] != status.HTTP_200_OK:
             raise HTTPException(
                 status_code=project["response_code"], detail=project["message"]

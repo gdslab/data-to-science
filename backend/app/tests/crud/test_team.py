@@ -19,6 +19,34 @@ def test_create_team(db: Session) -> None:
     assert team.owner_id == user.id
 
 
+def test_create_team_with_project(db: Session) -> None:
+    """
+    Test that a team created with a project updates assigns the team id to the
+    project's 'team_id' and adds any team members included in the team creation.
+    """
+    user = create_user(db)
+    project = create_project(db, owner_id=user.id)
+    # create team with two team members plus the owner
+    team_member1 = create_user(db)
+    team_member2 = create_user(db)
+    team = create_team(
+        db,
+        project=project.id,
+        new_members=[team_member1.id, team_member2.id],
+        owner_id=user.id,
+    )
+    # verify project is associated with team
+    stored_project = crud.project.get(db, id=project.id)
+    assert stored_project.team_id == team.id
+    # verify project members table includes team members
+    project_members = crud.project_member.get_list_of_project_members(
+        db, project_id=stored_project.id
+    )
+    assert len(project_members) == 3  # project/team owner plus two team members
+    for project_member in project_members:
+        assert project_member.member_id in [user.id, team_member1.id, team_member2.id]
+
+
 def test_get_team(db: Session) -> None:
     team = create_team(db)
     stored_team = crud.team.get(db, id=team.id)
