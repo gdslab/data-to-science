@@ -81,6 +81,20 @@ export default function FileUpload({
     }
   });
 
+  uppy.on('upload-error', (_file, _error, response) => {
+    if (response && response.body && response.body.detail) {
+      uppy.info(
+        {
+          message: response.body.detail,
+          details:
+            'Zip must contain at least .dbf, .shp, and .shx. Shapefile must be in root directory of zip.',
+        },
+        'error',
+        10000
+      );
+    }
+  });
+
   uppy.on('upload-success', (_file, response) => {
     if (
       response &&

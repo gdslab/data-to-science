@@ -115,10 +115,16 @@ def upload_field_shapefile(
                                     geojson = shapefile_to_geojson(src)
                             else:
                                 raise ValueError("Unable to find .shp in zip")
-        except Exception:
+                        else:
+                            raise ValueError("Missing required shapefile parts in zip")
+        except ValueError as e:
+            logger.error(e)
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        except Exception as e:
+            logger.error(e)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Unable to unzip shapefile",
+                detail="Unable process shapefile",
             )
     if not geojson:
         raise HTTPException(
