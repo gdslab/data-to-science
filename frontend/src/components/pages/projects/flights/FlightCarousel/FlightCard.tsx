@@ -43,14 +43,14 @@ export default function FlightCard({ flight }: { flight: Flight }) {
             </div>
             {/* action buttons */}
             <div className="flex items-center justify-between gap-4">
-              <div className="w-28">
+              <div className="w-32">
                 <OutlineButton size="sm">
                   <Link to={`/projects/${flight.project_id}/flights/${flight.id}/data`}>
                     Manage
                   </Link>
                 </OutlineButton>
               </div>
-              <div className="w-28">
+              <div className="w-32">
                 <Button size="sm">Edit</Button>
               </div>
             </div>

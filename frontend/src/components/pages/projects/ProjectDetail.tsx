@@ -458,7 +458,7 @@ export default function ProjectDetail() {
                   />
                 </Table>
               ) : (
-                <div className="min-h-96">
+                <div className="h-full min-h-96">
                   <FlightCarousel flights={flights} />
                 </div>
               )
