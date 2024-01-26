@@ -1,5 +1,6 @@
 import base64
 import logging
+import math
 import os
 from pathlib import Path
 
@@ -17,6 +18,7 @@ class ColorBar:
         outpath: str,
         cmap: str = "Spectral",
         orientation: str = "vertical",
+        refresh: bool = False,
     ):
         self.logger = logger
 
@@ -24,6 +26,7 @@ class ColorBar:
         self.cmax = cmax
         self.cmap = cmap
         self.orientation = orientation
+        self.refresh = refresh
         self.outdir = Path(outpath)
 
         if type(self.cmin) is not int and type(self.cmin) is not float:
@@ -41,12 +44,18 @@ class ColorBar:
         if not os.path.exists(self.outdir):
             os.makedirs(self.outdir)
 
+        self.cmin = math.floor(self.cmin)
+        self.cmax = math.ceil(self.cmax)
+
         self.outfilename = create_outfilename(self.cmin, self.cmax, self.cmap)
 
     def generate_colorbar(self) -> Path | None:
         out_fullpath = self.outdir / self.outfilename
         if os.path.exists(out_fullpath):
-            return out_fullpath
+            if self.refresh is False:
+                return out_fullpath
+            else:
+                os.remove(out_fullpath)
 
         if self.orientation == "vertical":
             figsize = (1, 4)

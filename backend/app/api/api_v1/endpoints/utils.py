@@ -19,6 +19,7 @@ def get_colorbar_for_data_product_with_public_access(
     cmin: int | float,
     cmax: int | float,
     cmap: str,
+    refresh: bool,
     project_id: UUID,
     flight_id: UUID,
     data_product_id: UUID,
@@ -50,7 +51,9 @@ def get_colorbar_for_data_product_with_public_access(
         output_dir = f"{settings.STATIC_DIR}/projects/{project_id}/flights/{flight_id}/dsm/colorbars/{data_product_id}"
 
     try:
-        colorbar = ColorBar(cmin=cmin, cmax=cmax, outpath=output_dir, cmap=cmap)
+        colorbar = ColorBar(
+            cmin=cmin, cmax=cmax, outpath=output_dir, cmap=cmap, refresh=refresh
+        )
         colorbar_url = colorbar.generate_colorbar()
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -64,6 +67,7 @@ def get_colorbar_for_data_product_with_user_access(
     cmin: int | float,
     cmax: int | float,
     cmap: str,
+    refresh: bool,
     data_product_id: UUID,
     current_user: models.User = Depends(deps.get_current_approved_user),
     project: models.Project = Depends(deps.can_read_project),
@@ -101,7 +105,9 @@ def get_colorbar_for_data_product_with_user_access(
         output_dir = f"{settings.STATIC_DIR}/projects/{project.id}/flights/{flight.id}/dsm/colorbars/{data_product_id}"
 
     try:
-        colorbar = ColorBar(cmin=cmin, cmax=cmax, outpath=output_dir, cmap=cmap)
+        colorbar = ColorBar(
+            cmin=cmin, cmax=cmax, outpath=output_dir, cmap=cmap, refresh=refresh
+        )
         colorbar_url = colorbar.generate_colorbar()
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
