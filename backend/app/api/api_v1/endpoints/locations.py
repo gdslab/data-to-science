@@ -1,10 +1,17 @@
+import logging
 import json
 import os
+import shutil
+import tempfile
+from pathlib import Path
 from uuid import UUID
 from typing import Any
+from zipfile import ZipFile
 
+import fiona
 import geopandas as gpd
 from fastapi import APIRouter, Depends, HTTPException, Request, status, UploadFile
+from fiona.errors import DriverError
 from fiona.io import ZipMemoryFile
 from geojson_pydantic import FeatureCollection, Polygon
 from sqlalchemy.orm import Session
@@ -16,6 +23,12 @@ from app.core.config import settings
 from app.utils.MapMaker import MapMaker
 
 router = APIRouter()
+
+
+logger = logging.getLogger("__name__")
+
+
+REQUIRED_SHP_PARTS = [".dbf", ".shp", ".shx"]
 
 
 @router.post(
@@ -78,20 +91,98 @@ def upload_field_shapefile(
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
+    """Handles zipped shapefile upload and converts to geojson format."""
     geojson = {}
+    uploaded_file = files.file.read()
     try:
-        with ZipMemoryFile(files.file.read()) as zmf:
+        # attempt to directly access uploaded shapefile from memory
+        with ZipMemoryFile(uploaded_file) as zmf:
             with zmf.open() as src:
-                gdf = gpd.GeoDataFrame.from_features(src, crs=src.crs)
-                geojson = json.loads(gdf.to_json())
-
-                fc = FeatureCollection(**geojson)
-                assert fc.type == "FeatureCollection"
-                assert len(fc.features) > 0
-                assert isinstance(fc.features[0].geometry, Polygon)
-    except Exception:
+                geojson = shapefile_to_geojson(src)
+    except DriverError as e:
+        logger.error(e)
+        try:
+            # attempt temporarily writing zip to disk and accessing shapefile
+            with tempfile.TemporaryDirectory() as tmpdirname:
+                with tempfile.NamedTemporaryFile(dir=tmpdirname) as tmpf:
+                    with open(tmpf.name, "wb") as buffer:
+                        buffer.write(uploaded_file)
+                    with ZipFile(tmpf.name) as zip_contents:
+                        if is_shapefile(zip_contents.namelist()):
+                            shp_path = extract_shapefile_parts(zip_contents, tmpdirname)
+                            if shp_path:
+                                with fiona.open(shp_path) as src:
+                                    geojson = shapefile_to_geojson(src)
+                            else:
+                                raise ValueError("Unable to find .shp in zip")
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Unable to unzip shapefile",
+            )
+    if not geojson:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to unzip shapefile"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unable process shapefile",
         )
 
     return geojson
+
+
+def shapefile_to_geojson(src: fiona.model.Feature) -> dict:
+    """Loads shapefile with geopandas and returns GeoJSON object.
+
+    Args:
+        src (fiona.model.Feature): Shapefile object.
+
+    Returns:
+        dict: GeoJSON object.
+    """
+    gdf = gpd.GeoDataFrame.from_features(src, crs=src.crs)
+    geojson = json.loads(gdf.to_json())
+
+    fc = FeatureCollection(**geojson)
+    assert fc.type == "FeatureCollection"
+    assert len(fc.features) > 0
+    assert isinstance(fc.features[0].geometry, Polygon)
+
+    return geojson
+
+
+def is_shapefile(zip_contents: list) -> bool:
+    """Checks if zip archive contains necessary shapefile parts in its root dir.
+
+    Args:
+        zip_contents (list): Contents of zip's root directory.
+
+    Returns:
+        bool: True if required shapefile parts were present in archive.
+    """
+    zip_rootdir_extensions = [Path(zfile).suffix for zfile in zip_contents]
+    for required_file in REQUIRED_SHP_PARTS:
+        if required_file not in zip_rootdir_extensions:
+            return False
+    return True
+
+
+def extract_shapefile_parts(zip: ZipFile, tmpdirname: str) -> str:
+    """Extracts the required shapefile parts from a zip archive. If a projection
+    file (.prj) is available, it is also extracted.
+
+    Args:
+        zip (ZipFile): Zip archive containing shapefile.
+        tmpdirname (str): Temporary directory for zip.
+
+    Returns:
+        str: Path to .shp file.
+    """
+    zip_contents = zip.namelist()
+    shp_path = ""
+    for required_file in REQUIRED_SHP_PARTS:
+        for zip_file in zip_contents:
+            zip_file_ext = Path(zip_file).suffix
+            if zip_file_ext == required_file or zip_file_ext == ".prj":
+                zip.extract(zip_file, path=tmpdirname)
+                if zip_file_ext == ".shp":
+                    shp_path = os.path.join(tmpdirname, zip_file)
+    return shp_path
