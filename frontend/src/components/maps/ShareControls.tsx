@@ -5,14 +5,15 @@ import Alert, { Status } from '../Alert';
 import { Button } from '../Buttons';
 import { DataProduct } from '../pages/projects/ProjectDetail';
 import { SymbologySettings, useMapContext } from './MapContext';
+import { Project } from '../pages/projects/ProjectList';
 
 export default function ShareControls({
   dataProduct,
-  projectID,
+  project,
   symbologySettings,
 }: {
   dataProduct: DataProduct;
-  projectID: string;
+  project: Project;
   symbologySettings: SymbologySettings;
 }) {
   const [accessOption, setAccessOption] = useState<boolean>(dataProduct.public);
@@ -25,7 +26,7 @@ export default function ShareControls({
   const updateAccess = async (newAccess: boolean) => {
     try {
       const response = await axios.put(
-        `${import.meta.env.VITE_API_V1_STR}/projects/${projectID}/flights/${
+        `${import.meta.env.VITE_API_V1_STR}/projects/${project.id}/flights/${
           dataProduct.flight_id
         }/data_products/${dataProduct.id}/file_permission`,
         { is_public: newAccess }
@@ -58,9 +59,6 @@ export default function ShareControls({
     <div className="grid grid-flow-row auto-rows-max p-8 gap-4">
       <div>
         <h1>Share Settings</h1>
-        <span className="italic">
-          Only the project owner can adjust these settings.
-        </span>
       </div>
       <fieldset>
         <legend className="sr-only">Access Control</legend>
@@ -73,10 +71,11 @@ export default function ShareControls({
             className="peer hidden [&:checked_+_label_svg]:block"
             checked={!accessOption}
             onChange={onChange}
+            disabled={!project.is_owner}
           />
           <label
             htmlFor="accessRestricted"
-            className="flex cursor-pointer items-center justify-between rounded-lg border border-gray-50 bg-gray-100 p-4 text-sm font-medium shadow-sm hover:border-gray-200 peer-checked:border-accent3 peer-checked:ring-1 peer-checked:ring-accent3"
+            className="flex items-center justify-between cursor-pointer peer-disabled:cursor-default rounded-lg border border-gray-50 bg-gray-100 p-4 text-sm font-medium shadow-sm hover:border-gray-200 peer-checked:border-accent3 peer-checked:ring-1 peer-checked:ring-accent3"
           >
             <div className="flex-none flex items-center gap-2 w-48">
               <svg
@@ -100,41 +99,44 @@ export default function ShareControls({
             </p>
           </label>
         </div>
-        <div className="mt-2">
-          <input
-            type="radio"
-            name="accessOption"
-            value="true"
-            id="accessUnrestricted"
-            className="peer hidden [&:checked_+_label_svg]:block"
-            checked={accessOption}
-            onChange={onChange}
-          />
-          <label
-            htmlFor="accessUnrestricted"
-            className="flex cursor-pointer items-center justify-between rounded-lg border border-gray-50 bg-gray-100 p-4 text-sm font-medium shadow-sm hover:border-gray-200 peer-checked:border-accent3 peer-checked:ring-1 peer-checked:ring-accent3"
-          >
-            <div className="flex-none flex items-center gap-2 w-48">
-              <svg
-                className="hidden h-5 w-5 text-slate-600"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <p className="text-gray-700">Anyone</p>
-            </div>
-            <p className="text-gray-900">
-              Anyone can access this data product. It can be downloaded, used outside of
-              the platform, and shared links can be viewed without signing in.
-            </p>
-          </label>
-        </div>
+        {project.is_owner ? (
+          <div className="mt-2">
+            <input
+              type="radio"
+              name="accessOption"
+              value="true"
+              id="accessUnrestricted"
+              className="peer hidden [&:checked_+_label_svg]:block"
+              checked={accessOption}
+              onChange={onChange}
+              disabled={!project.is_owner}
+            />
+            <label
+              htmlFor="accessUnrestricted"
+              className="flex cursor-pointer items-center justify-between rounded-lg border border-gray-50 bg-gray-100 p-4 text-sm font-medium shadow-sm hover:border-gray-200 peer-checked:border-accent3 peer-checked:ring-1 peer-checked:ring-accent3"
+            >
+              <div className="flex-none flex items-center gap-2 w-48">
+                <svg
+                  className="hidden h-5 w-5 text-slate-600"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <p className="text-gray-700">Anyone</p>
+              </div>
+              <p className="text-gray-900">
+                Anyone can access this data product. It can be downloaded, used outside
+                of the platform, and shared links can be viewed without signing in.
+              </p>
+            </label>
+          </div>
+        ) : null}
       </fieldset>
       <div className="flex items-center gap-4">
         <Button

@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import { cmaps } from './cmaps';
 import { Button } from '../Buttons';
+import { DataProduct } from '../pages/projects/ProjectDetail';
 import { NumberField, SelectField } from '../InputFields';
 import {
   DSMSymbologySettings,
@@ -13,7 +14,7 @@ import {
   useMapContext,
 } from './MapContext';
 import Modal from '../Modal';
-import { DataProduct } from '../pages/projects/ProjectDetail';
+import { Project } from '../pages/projects/ProjectList';
 import ShareControls from './ShareControls';
 
 /**
@@ -60,11 +61,11 @@ const saveSymbology = async (
 
 function ShareDataProduct({
   dataProduct,
-  projectID,
+  project,
   symbologySettings,
 }: {
   dataProduct: DataProduct;
-  projectID: string;
+  project: Project;
   symbologySettings: SymbologySettings;
 }) {
   const [open, setOpen] = useState(false);
@@ -76,7 +77,7 @@ function ShareDataProduct({
       <Modal open={open} setOpen={setOpen}>
         <ShareControls
           dataProduct={dataProduct}
-          projectID={projectID}
+          project={project}
           symbologySettings={symbologySettings}
         />
       </Modal>
@@ -218,7 +219,7 @@ function DSMSymbologyControls() {
               <div className="w-36">
                 <ShareDataProduct
                   dataProduct={activeDataProduct}
-                  projectID={activeProject.id}
+                  project={activeProject}
                   symbologySettings={symbologySettings}
                 />
               </div>
@@ -409,7 +410,7 @@ function OrthoSymbologyControls() {
               <div className="w-36">
                 <ShareDataProduct
                   dataProduct={activeDataProduct}
-                  projectID={activeProject.id}
+                  project={activeProject}
                   symbologySettings={symbologySettings}
                 />
               </div>
