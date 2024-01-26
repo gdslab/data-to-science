@@ -458,7 +458,9 @@ export default function ProjectDetail() {
                   />
                 </Table>
               ) : (
-                <FlightCarousel flights={flights} />
+                <div className="min-h-96">
+                  <FlightCarousel flights={flights} />
+                </div>
               )
             ) : null}
             {role !== 'viewer' ? (

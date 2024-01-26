@@ -159,7 +159,7 @@ export default function DataProducts({
             />
           </Table>
         ) : (
-          <div className="grow flex flex-cols flex-wrap justify-start gap-4 overflow-auto">
+          <div className="grow flex flex-cols flex-wrap justify-start gap-4 min-h-96 overflow-auto">
             {data.map((dataProduct) => (
               <DataProductCard
                 key={dataProduct.id}

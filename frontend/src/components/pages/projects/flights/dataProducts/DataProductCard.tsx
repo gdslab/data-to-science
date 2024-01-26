@@ -31,14 +31,14 @@ export default function DataProductCard({
   const [isCopied, setIsCopied] = useState(false);
 
   return (
-    <div className="flex items-center justify-center">
+    <div className="flex items-center justify-center min-h-80">
       <div className="relative w-80">
         <Card rounded={true}>
           <div className="grid grid-flow-row auto-rows-max gap-2">
             {/* preview image */}
             <div className="relative flex items-center justify-center bg-accent3/20">
               {dataProduct.status === 'SUCCESS' && isGeoTIFF(dataProduct.data_type) ? (
-                <div className="flex items-center justify-center w-full h-40">
+                <div className="flex items-center justify-center w-full h-48">
                   <img
                     className="object-scale-down h-full"
                     src={dataProduct.url.replace('tif', 'jpg')}
@@ -59,7 +59,7 @@ export default function DataProductCard({
                 </div>
               ) : dataProduct.status === 'SUCCESS' &&
                 dataProduct.data_type === 'point_cloud' ? (
-                <div className="flex items-center justify-center w-full h-40">
+                <div className="flex items-center justify-center w-full h-48">
                   <div className="w-full h-full bg-white flex flex-wrap items-center justify-center">
                     add stock point cloud img
                   </div>
@@ -77,7 +77,7 @@ export default function DataProductCard({
                   </div>
                 </div>
               ) : dataProduct.status === 'FAILED' ? (
-                <div className="flex items-center justify-center w-full h-40">
+                <div className="flex items-center justify-center w-full h-48">
                   <span className="sr-only">Process failed</span>
                   <ExclamationCircleIcon className="h-full text-accent2" />
                   <span>
@@ -85,7 +85,7 @@ export default function DataProductCard({
                   </span>
                 </div>
               ) : (
-                <div className="flex items-center justify-center w-full h-40 bg-white">
+                <div className="flex items-center justify-center w-full h-48 bg-white">
                   <span className="sr-only">Preview not available</span>
                   <PhotoIcon className="h-full" />
                 </div>

@@ -7,7 +7,7 @@ import 'swiper/css/navigation';
 import './FlightCarousel.css';
 
 // swiper required modules
-import { Pagination, Mousewheel, Navigation } from 'swiper/modules';
+import { Pagination, Navigation } from 'swiper/modules';
 
 import FlightCard from './FlightCard';
 import { Flight } from '../../ProjectDetail';
@@ -16,13 +16,15 @@ import { sorter } from '../../../../utils';
 import useWindowDimensions from '../../../../hooks/useWindowDimensions';
 
 function getSlidesPerView(width: number): number {
-  if (width > 1600) {
+  if (width > 1920) {
+    return 6;
+  } else if (width > 1600 && width <= 1920) {
     return 5;
   } else if (width > 1280 && width <= 1600) {
     return 4;
-  } else if (width > 1024 && width <= 1280) {
+  } else if (width > 980 && width <= 1280) {
     return 3;
-  } else if (width > 640 && width <= 1024) {
+  } else if (width > 768 && width <= 980) {
     return 2;
   } else {
     return 1;
@@ -38,10 +40,9 @@ export default function FlightCarousel({ flights }: { flights: Flight[] }) {
         slidesPerView={getSlidesPerView(width)}
         spaceBetween={30}
         centeredSlides={true}
-        mousewheel={true}
         navigation={true}
         pagination={{ clickable: true }}
-        modules={[Pagination, Mousewheel, Navigation]}
+        modules={[Pagination, Navigation]}
       >
         {flights
           .sort((a, b) =>
