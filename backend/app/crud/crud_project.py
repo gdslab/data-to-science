@@ -7,10 +7,12 @@ from fastapi import status
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import func, select, update, or_
 from sqlalchemy.exc import MultipleResultsFound
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import joinedload, Session
 
 from app import crud
 from app.crud.base import CRUDBase
+from app.models.data_product import DataProduct
+from app.models.flight import Flight
 from app.models.location import Location
 from app.models.project import Project
 from app.models.project_member import ProjectMember
@@ -122,7 +124,12 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     }
                 setattr(project[0], "is_owner", user_id == project[0].owner_id)
                 setattr(project[0], "field", json.loads(project[1]))
-                setattr(project[0], "flight_count", len(project[0].flights))
+                flight_count = 0
+                for flight in project[0].flights:
+                    print(project[0].flights)
+                    if flight.is_active:
+                        flight_count += 1
+                setattr(project[0], "flight_count", flight_count)
                 return {
                     "response_code": status.HTTP_200_OK,
                     "message": "Project fetched successfully",
@@ -154,7 +161,12 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             for project in projects:
                 setattr(project[0], "is_owner", user_id == project[0].owner_id)
                 setattr(project[0], "field", json.loads(project[1]))
-                setattr(project[0], "flight_count", len(project[0].flights))
+                flight_count = 0
+                for flight in project[0].flights:
+                    print(project[0].flights)
+                    if flight.is_active:
+                        flight_count += 1
+                setattr(project[0], "flight_count", flight_count)
                 final_projects.append(project[0])
         return final_projects
 
@@ -225,16 +237,28 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         }
 
     def deactivate(self, db: Session, project_id: UUID) -> Project | None:
-        deactivate_project = (
+        update_project_sql = (
             update(Project)
             .where(Project.id == project_id)
             .values(is_active=False, deactivated_at=utcnow())
         )
         with db as session:
-            session.execute(deactivate_project)
+            session.execute(update_project_sql)
             session.commit()
 
-        deactivated_project = crud.project.get(db, id=project_id)
+        get_project_sql = (
+            select(Project)
+            .options(joinedload(Project.flights))
+            .where(Project.id == project_id)
+        )
+        with db as session:
+            deactivated_project = session.execute(get_project_sql).scalar()
+
+        if deactivated_project and len(deactivated_project.flights) > 0:
+            for flight in deactivated_project.flights:
+                with db as session:
+                    crud.flight.deactivate(db, flight_id=flight.id)
+
         return deactivated_project
 
 

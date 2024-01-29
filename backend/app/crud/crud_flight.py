@@ -13,6 +13,7 @@ from app.crud.crud_data_product import (
     set_url_attr,
     set_user_style_attr,
 )
+from app.models.data_product import DataProduct
 from app.models.flight import Flight
 from app.models.job import Job
 from app.models.project import Project
@@ -52,6 +53,13 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
         )
         with db as session:
             flight = session.scalar(stmt)
+            # drop any inactive data products
+            if flight and len(flight.data_products) > 0:
+                active_data_products = []
+                for data_product in flight.data_products:
+                    if data_product.is_active:
+                        active_data_products.append(data_product)
+                flight.data_products = active_data_products
             if not flight:
                 return {
                     "response_code": status.HTTP_404_NOT_FOUND,
@@ -97,32 +105,52 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                             keep_data_products.append(data_product)
                     flight.data_products = keep_data_products
 
+                active_data_products = []
                 for data_product in flight.data_products:
-                    set_public_attr(
-                        data_product, data_product.file_permission.is_public
-                    )
-                    set_url_attr(data_product, upload_dir)
-                    # check for saved user style
-                    user_style_query = (
-                        select(UserStyle)
-                        .where(UserStyle.data_product_id == data_product.id)
-                        .where(UserStyle.user_id == user_id)
-                    )
-                    user_style = session.execute(user_style_query).scalar_one_or_none()
-                    if user_style:
-                        set_user_style_attr(data_product, user_style.settings)
+                    if data_product.is_active:
+                        active_data_products.append(data_product)
+                        set_public_attr(
+                            data_product, data_product.file_permission.is_public
+                        )
+                        set_url_attr(data_product, upload_dir)
+                        # check for saved user style
+                        user_style_query = (
+                            select(UserStyle)
+                            .where(UserStyle.data_product_id == data_product.id)
+                            .where(UserStyle.user_id == user_id)
+                        )
+                        user_style = session.execute(
+                            user_style_query
+                        ).scalar_one_or_none()
+                        if user_style:
+                            set_user_style_attr(data_product, user_style.settings)
+                flight.data_products = active_data_products
             return flights_with_data
 
     def deactivate(self, db: Session, flight_id: UUID) -> Flight | None:
-        deactivate_flight = (
+        update_flight_sql = (
             update(Flight)
             .where(Flight.id == flight_id)
             .values(is_active=False, deactivated_at=utcnow())
         )
         with db as session:
-            session.execute(deactivate_flight)
+            session.execute(update_flight_sql)
             session.commit()
-        return crud.flight.get(db, id=flight_id)
+
+        get_flight_sql = (
+            select(Flight)
+            .options(joinedload(Flight.data_products))
+            .where(Flight.id == flight_id)
+        )
+        with db as session:
+            deactivated_flight = session.execute(get_flight_sql).scalar()
+
+        if deactivated_flight and len(deactivated_flight.data_products) > 0:
+            for data_product in deactivated_flight.data_products:
+                with db as session:
+                    crud.data_product.deactivate(db, data_product_id=data_product.id)
+
+        return deactivated_flight
 
 
 flight = CRUDFlight(Flight)

@@ -118,14 +118,15 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             return updated_data_products
 
     def deactivate(self, db: Session, data_product_id: UUID) -> DataProduct | None:
-        deactivate_data_product = (
+        update_data_product_sql = (
             update(DataProduct)
             .where(DataProduct.id == data_product_id)
             .values(is_active=False, deactivated_at=utcnow())
         )
         with db as session:
-            session.execute(deactivate_data_product)
+            session.execute(update_data_product_sql)
             session.commit()
+
         return crud.data_product.get(db, id=data_product_id)
 
 

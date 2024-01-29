@@ -1,7 +1,6 @@
-import { Link } from 'react-router-dom';
 import { PhotoIcon } from '@heroicons/react/24/outline';
 
-import { Button, OutlineButton } from '../../../../Buttons';
+import { LinkButton, LinkOutlineButton } from '../../../../Buttons';
 import Card from '../../../../Card';
 import HintText from '../../../../HintText';
 import { Flight } from '../../ProjectDetail';
@@ -44,14 +43,20 @@ export default function FlightCard({ flight }: { flight: Flight }) {
             {/* action buttons */}
             <div className="flex items-center justify-between gap-4">
               <div className="w-32">
-                <OutlineButton size="sm">
-                  <Link to={`/projects/${flight.project_id}/flights/${flight.id}/data`}>
-                    Manage
-                  </Link>
-                </OutlineButton>
+                <LinkOutlineButton
+                  size="sm"
+                  url={`/projects/${flight.project_id}/flights/${flight.id}/data`}
+                >
+                  Manage
+                </LinkOutlineButton>
               </div>
               <div className="w-32">
-                <Button size="sm">Edit</Button>
+                <LinkButton
+                  size="sm"
+                  url={`/projects/${flight.project_id}/flights/${flight.id}/edit`}
+                >
+                  Edit
+                </LinkButton>
               </div>
             </div>
           </div>

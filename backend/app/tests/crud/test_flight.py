@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from sqlalchemy.orm import Session
 
@@ -135,6 +135,56 @@ def test_update_flight(db: Session) -> None:
     assert flight_in_update.sensor == flight_update.sensor
 
 
+def test_deactivate_flight(db: Session) -> None:
+    flight = create_flight(db)
+    flight2 = crud.flight.deactivate(db, flight_id=flight.id)
+    flight3 = crud.flight.get(db, id=flight.id)
+    assert flight2 and flight3
+    assert flight3.id == flight.id
+    assert flight3.is_active is False
+    assert isinstance(flight3.deactivated_at, datetime)
+    assert flight3.deactivated_at < datetime.utcnow()
+
+
+def test_deactivate_flight_deactivates_data_products(db: Session) -> None:
+    user = create_user(db)
+    project = create_project(db, owner_id=user.id)
+    flight = create_flight(db, project_id=project.id)
+    data_product = SampleDataProduct(db, project=project, flight=flight)
+    flight2 = crud.flight.deactivate(db, flight_id=flight.id)
+    flight3 = crud.flight.get(db, id=flight.id)
+    assert flight3 and flight3.is_active is False
+    upload_dir = settings.TEST_STATIC_DIR
+    data_product = crud.data_product.get(db, id=data_product.obj.id)
+    assert data_product and data_product.is_active is False
+
+
+def test_get_deactivated_flight_returns_none(db: Session) -> None:
+    user = create_user(db)
+    project = create_project(db, owner_id=user.id)
+    flight = create_flight(db, project_id=project.id)
+    crud.flight.deactivate(db, flight_id=flight.id)
+    flight2 = crud.flight.get_flight_by_id(
+        db, project_id=project.id, flight_id=flight.id
+    )
+    assert flight2 and flight2["result"] is None
+
+
+def test_get_flights_ignores_deactivated_flight(db: Session) -> None:
+    user = create_user(db)
+    project = create_project(db, owner_id=user.id)
+    flight_to_deactivate = create_flight(db, project_id=project.id)
+    create_flight(db, project_id=project.id)
+    create_flight(db, project_id=project.id)
+    crud.flight.deactivate(db, flight_id=flight_to_deactivate.id)
+    upload_dir = settings.TEST_STATIC_DIR
+    flights = crud.flight.get_multi_by_project(
+        db, project_id=project.id, upload_dir=upload_dir, user_id=user.id
+    )
+    assert type(flights) is list
+    assert len(flights) == 2
+
+
 def test_get_flight_for_deactivated_project_returns_none(db: Session) -> None:
     user = create_user(db)
     project = create_project(db, owner_id=user.id)
@@ -159,3 +209,56 @@ def test_get_flights_ignores_deactivated_project(db: Session) -> None:
     )
     assert type(flights) is list
     assert len(flights) == 0
+
+
+def test_get_flight_ignores_deactivated_data_products(db: Session) -> None:
+    user = create_user(db)
+    project = create_project(db, owner_id=user.id)
+    flight = create_flight(db, project_id=project.id)
+    data_product1 = SampleDataProduct(db, project=project, flight=flight)
+    data_product2 = SampleDataProduct(db, project=project, flight=flight)
+    data_product3 = SampleDataProduct(db, project=project, flight=flight)
+    crud.data_product.deactivate(db, data_product_id=data_product1.obj.id)
+    upload_dir = settings.TEST_STATIC_DIR
+    flight = crud.flight.get_flight_by_id(
+        db, project_id=project.id, flight_id=flight.id
+    )
+    assert flight and flight.get("result")
+    assert len(flight.get("result").data_products) == 2
+
+
+def test_get_flights_ignores_deactivated_data_products(db: Session) -> None:
+    user = create_user(db)
+    project = create_project(db, owner_id=user.id)
+
+    flight1 = create_flight(db, project_id=project.id)
+    flight2 = create_flight(db, project_id=project.id)
+
+    data_f1d1 = SampleDataProduct(db, project=project, flight=flight1)
+    data_f2d1 = SampleDataProduct(db, project=project, flight=flight2)
+    data_f1d2 = SampleDataProduct(db, project=project, flight=flight1)
+    data_f2d2 = SampleDataProduct(db, project=project, flight=flight2)
+
+    upload_dir = settings.TEST_STATIC_DIR
+    flights = crud.flight.get_multi_by_project(
+        db,
+        project_id=project.id,
+        upload_dir=upload_dir,
+        user_id=user.id,
+        include_all=True,
+    )
+    for flight in flights:
+        assert len(flight.data_products) == 2
+
+    crud.data_product.deactivate(db, data_product_id=data_f1d1.obj.id)
+    crud.data_product.deactivate(db, data_product_id=data_f2d1.obj.id)
+
+    flights2 = crud.flight.get_multi_by_project(
+        db,
+        project_id=project.id,
+        upload_dir=upload_dir,
+        user_id=user.id,
+        include_all=True,
+    )
+    for flight in flights2:
+        assert len(flight.data_products) == 1

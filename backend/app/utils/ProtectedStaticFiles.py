@@ -59,6 +59,11 @@ async def verify_static_file_access(request: Request) -> None:
         file_permission = crud.file_permission.get_by_filename(
             SessionLocal(), filename=str(data_product_id_uuid)
         )
+        # if file is deactivated return 404
+        if file_permission and file_permission.file.is_active is False:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="data product not found"
+            )
         # public, return file
         if file_permission and file_permission.is_public:
             return

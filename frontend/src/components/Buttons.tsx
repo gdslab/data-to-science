@@ -6,11 +6,25 @@ import {
   LinkIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline';
+import { Link } from 'react-router-dom';
 
 interface Button extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
   icon?: string;
   size?: string;
+}
+
+interface LinkButton extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
+  children: React.ReactNode;
+  icon?: string;
+  size?: string;
+  url: string;
+}
+
+interface LinkOutlineButton extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
+  children: React.ReactNode;
+  size?: string;
+  url: string;
 }
 
 function classNames(...classes: [string, string]) {
@@ -60,17 +74,58 @@ function getIcon(iconName: string) {
   }
 }
 
+const getButtonSizeClassNames = (size: string) =>
+  size === 'xs'
+    ? 'text-xs font-semibold py-0.5 px-2'
+    : size === 'sm'
+    ? 'text-sm font-bold py-1.5 px-4'
+    : 'text-xl font-extrabold py-2 px-8';
+
+export function LinkOutlineButton({
+  children,
+  url,
+  size = 'normal',
+}: LinkOutlineButton) {
+  return (
+    <div
+      className={classNames(
+        getButtonSizeClassNames(size),
+        'cursor-pointer border-2 border-accent3 text-accent3 rounded-md py-2 px-8 w-full hover:bg-accent3 hover:text-white ease-in-out duration-300'
+      )}
+    >
+      <Link to={url}>{children}</Link>
+    </div>
+  );
+}
+
+export function LinkButton({ children, icon, url, size = 'normal' }: LinkButton) {
+  return (
+    <div className="relative">
+      {icon ? getIcon(icon) : null}
+      <div
+        className={classNames(
+          getButtonSizeClassNames(size),
+          classNames(
+            icon === 'trash'
+              ? 'bg-red-600 hover:bg-red-700 border-red-700 hover:border-red-800'
+              : 'bg-accent3 hover:bg-accent3-dark border-accent3 hover:border-accent3-dark',
+            'cursor-pointer border-2 rounded-md w-full text-center text-white ease-in-out duration-300'
+          )
+        )}
+      >
+        <Link to={url}>{children}</Link>
+      </div>
+    </div>
+  );
+}
+
 export function Button({ children, icon, size = 'normal', ...props }: Button) {
   return (
     <div className="relative">
       {icon ? getIcon(icon) : null}
       <button
         className={classNames(
-          size === 'xs'
-            ? 'text-xs font-semibold py-0.5 px-2'
-            : size === 'sm'
-            ? 'text-sm font-bold py-1.5 px-4'
-            : 'text-xl font-extrabold py-2 px-8',
+          getButtonSizeClassNames(size),
           classNames(
             props.disabled
               ? 'text-slate-300 bg-slate-600'
@@ -95,7 +150,7 @@ export function OutlineButton({ children, size = 'normal', ...props }: Button) {
   return (
     <button
       className={classNames(
-        size === 'sm' ? 'text-sm font-bold' : 'text-xl font-extrabold',
+        getButtonSizeClassNames(size),
         'border-2 border-accent3 text-accent3 rounded-md py-2 px-8 w-full hover:bg-accent3 hover:text-white ease-in-out duration-300'
       )}
       {...props}

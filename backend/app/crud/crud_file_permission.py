@@ -28,24 +28,30 @@ class CRUDFilePermission(
         statement = select(FilePermission).where(FilePermission.file_id == file_id)
         with db as session:
             file_permission = session.scalar(statement)
+            # update last accessed timestamp
+            if file_permission:
+                crud.file_permission.update(
+                    db,
+                    db_obj=file_permission,
+                    obj_in=FilePermissionUpdate(last_accessed_at=datetime.now()),
+                )
             return file_permission
 
     def get_by_filename(self, db: Session, filename: str) -> FilePermission | None:
         statement = (
             select(FilePermission)
             .join(DataProduct)
-            .options(joinedload(FilePermission.file))
+            .where(func.lower(DataProduct.filepath).contains(filename))
         )
         with db as session:
-            file_permission = session.scalar(
-                statement.where(func.lower(DataProduct.filepath).contains(filename))
-            )
+            file_permission = session.scalar(statement)
             # update last accessed timestamp
-            crud.file_permission.update(
-                db,
-                db_obj=file_permission,
-                obj_in=FilePermissionUpdate(last_accessed_at=datetime.now()),
-            )
+            if file_permission:
+                crud.file_permission.update(
+                    db,
+                    db_obj=file_permission,
+                    obj_in=FilePermissionUpdate(last_accessed_at=datetime.now()),
+                )
             return file_permission
 
 

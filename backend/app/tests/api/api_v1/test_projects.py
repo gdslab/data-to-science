@@ -10,6 +10,8 @@ from app.api.deps import get_current_user, get_current_approved_user
 from app.core.config import settings
 from app.schemas.project import ProjectUpdate
 from app.schemas.project_member import ProjectMemberCreate
+from app.tests.utils.data_product import SampleDataProduct
+from app.tests.utils.flight import create_flight
 from app.tests.utils.location import create_location
 from app.tests.utils.project import (
     create_project,
@@ -454,3 +456,31 @@ def test_get_deactivated_project_by_project_member(
     crud.project.deactivate(db, project_id=project.id)
     response = client.get(f"{API_URL}/{project.id}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_deactivate_project_deactivates_flights_and_data_products(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    flight_ids = []
+    data_product_ids = []
+    # create three flights with one data product each for the project
+    for n in range(0, 3):
+        flight = create_flight(db, project_id=project.id)
+        flight_ids.append(flight.id)
+        data_product = SampleDataProduct(db, project=project, flight=flight)
+        data_product_ids.append(data_product.obj.id)
+
+    response = client.delete(f"{API_URL}/{project.id}")
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data.get("is_active", True) is False
+    for flight_id in flight_ids:
+        deactivated_flight = crud.flight.get(db, id=flight_id)
+        assert deactivated_flight.is_active is False
+    for data_product_id in data_product_ids:
+        deactivated_data_product = crud.data_product.get(db, id=data_product_id)
+        assert deactivated_data_product.is_active is False

@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app import crud
 from app.schemas.project import ProjectUpdate
+from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.flight import create_flight
 from app.tests.utils.location import create_location
 from app.tests.utils.team import create_team
@@ -157,6 +158,20 @@ def test_get_project_flight_count(db: Session) -> None:
     assert stored_project["result"].flight_count == 5
 
 
+def test_get_project_flight_count_with_deactivated_flight(db: Session) -> None:
+    user = create_user(db)
+    project = create_project(db, owner_id=user.id)
+    flight1 = create_flight(db, project_id=project.id)
+    flight2 = create_flight(db, project_id=project.id)
+    flight3 = create_flight(db, project_id=project.id)
+    crud.flight.deactivate(db, flight_id=flight1.id)
+    stored_project = crud.project.get_user_project(
+        db, project_id=project.id, user_id=user.id
+    )
+    assert stored_project and stored_project["result"]
+    assert stored_project["result"].flight_count == 2
+
+
 def test_deactivate_project(db: Session) -> None:
     project = create_project(db)
     project2 = crud.project.deactivate(db, project_id=project.id)
@@ -166,6 +181,21 @@ def test_deactivate_project(db: Session) -> None:
     assert project3.is_active is False
     assert isinstance(project3.deactivated_at, datetime)
     assert project3.deactivated_at < datetime.utcnow()
+
+
+def test_deactivate_project_deactivates_flights_and_data_products(db: Session) -> None:
+    project = create_project(db)
+    flight = create_flight(db, project_id=project.id)
+    data_product = SampleDataProduct(db, project=project, flight=flight)
+    project2 = crud.project.deactivate(db, project_id=project.id)
+    project3 = crud.project.get(db, id=project.id)
+    assert project2 and project3
+    assert project3.id == project.id
+    assert project3.is_active is False
+    flight2 = crud.flight.get(db, id=flight.id)
+    assert flight2 and flight2.is_active is False
+    data_product2 = crud.data_product.get(db, id=data_product.obj.id)
+    assert data_product2 and data_product2.is_active is False
 
 
 def test_get_deactivated_project_returns_none(db: Session) -> None:

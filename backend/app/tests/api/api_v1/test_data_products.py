@@ -149,7 +149,7 @@ def test_generate_data_product_colorbar_with_viewer_role(
     )
     response = client.get(
         f"{settings.API_V1_STR}/projects/{data_product.project.id}"
-        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}/utils/colorbar?cmin=100&cmax=200&cmap=terrain"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}/utils/colorbar?cmin=100&cmax=200&cmap=terrain&refresh=false"
     )
     colorbar_filename = create_outfilename(100, 200, "terrain")
     assert response.status_code == status.HTTP_200_OK
@@ -174,7 +174,7 @@ def test_generate_data_product_colorbar_with_invalid_parameters(
     )
     response = client.get(
         f"{settings.API_V1_STR}/projects/{data_product.project.id}"
-        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}/utils/colorbar?cmin=100&cmax=200&cmap=invalid-cmap"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}/utils/colorbar?cmin=100&cmax=200&cmap=invalid-cmap&refresh=false"
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 

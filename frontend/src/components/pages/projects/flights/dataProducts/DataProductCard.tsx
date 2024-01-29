@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import axios from 'axios';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   CogIcon,
   ExclamationCircleIcon,
@@ -8,8 +10,11 @@ import {
 } from '@heroicons/react/24/outline';
 
 import Card from '../../../../Card';
+import { ConfirmationPopup } from '../../../../ConfirmationPopup';
 import { DataProductStatus } from '../FlightData';
 import { isGeoTIFF } from './DataProducts';
+import Modal from '../../../../Modal';
+import { AlertBar, Status } from '../../../../Alert';
 
 function ProgressBar() {
   return (
@@ -29,6 +34,10 @@ export default function DataProductCard({
   userRole: string;
 }) {
   const [isCopied, setIsCopied] = useState(false);
+  const [openConfirmationPopup, setOpenConfirmationPopup] = useState(false);
+  const [status, setStatus] = useState<Status | null>(null);
+  const params = useParams();
+  const navigate = useNavigate();
 
   return (
     <div className="flex items-center justify-center min-h-80">
@@ -94,10 +103,49 @@ export default function DataProductCard({
             {/* data product details */}
             <div className="flex items-center justify-between text-lg">
               <span>{dataProduct.data_type.split('_').join(' ').toUpperCase()}</span>
-              {userRole !== 'viewer' ? (
-                <div onClick={() => alert('not implemented')}>
-                  <span className="sr-only">Delete</span>
-                  <TrashIcon className="w-4 h-4 text-red-600 cursor-pointer" />
+              {userRole === 'owner' ? (
+                <div>
+                  <div onClick={() => setOpenConfirmationPopup(true)}>
+                    <span className="sr-only">Delete</span>
+                    <TrashIcon className="w-4 h-4 text-red-600 cursor-pointer" />
+                  </div>
+                  <Modal
+                    open={openConfirmationPopup}
+                    setOpen={setOpenConfirmationPopup}
+                  >
+                    <ConfirmationPopup
+                      title="Are you sure you want to deactivate this data product?"
+                      content="Deactivating this data product will cause all team and project members to immediately lose access to the data product."
+                      confirmText="Yes, deactivate"
+                      rejectText="No, keep data product"
+                      setOpen={setOpenConfirmationPopup}
+                      action={async () => {
+                        try {
+                          const response = await axios.delete(
+                            `/api/v1/projects/${params.projectId}/flights/${dataProduct.flight_id}/data_products/${dataProduct.id}`
+                          );
+                          if (response) {
+                            setOpenConfirmationPopup(false);
+                            navigate(`/projects/${params.projectId}`, {
+                              state: { reload: true },
+                            });
+                          } else {
+                            setOpenConfirmationPopup(false);
+                            setStatus({
+                              type: 'error',
+                              msg: 'Unable to deactivate flight',
+                            });
+                          }
+                        } catch (err) {
+                          setOpenConfirmationPopup(false);
+                          setStatus({
+                            type: 'error',
+                            msg: 'Unable to deactivate flight',
+                          });
+                        }
+                      }}
+                    />
+                  </Modal>
                 </div>
               ) : null}
             </div>
@@ -131,6 +179,7 @@ export default function DataProductCard({
           </div>
         ) : null}
       </div>
+      {status ? <AlertBar alertType={status.type}>{status.msg}</AlertBar> : null}
     </div>
   );
 }
