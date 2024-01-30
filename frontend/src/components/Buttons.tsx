@@ -87,14 +87,17 @@ export function LinkOutlineButton({
   size = 'normal',
 }: LinkOutlineButton) {
   return (
-    <div
-      className={classNames(
-        getButtonSizeClassNames(size),
-        'cursor-pointer border-2 border-accent3 text-accent3 rounded-md py-2 px-8 w-full hover:bg-accent3 hover:text-white ease-in-out duration-300'
-      )}
-    >
-      <Link to={url}>{children}</Link>
-    </div>
+    <Link to={url}>
+      <button
+        className={classNames(
+          getButtonSizeClassNames(size),
+          'w-full border-2 border-accent3 text-accent3 rounded-md py-2 px-8 w-full hover:bg-accent3 hover:text-white ease-in-out duration-300'
+        )}
+        type="button"
+      >
+        {children}
+      </button>
+    </Link>
   );
 }
 
@@ -102,19 +105,22 @@ export function LinkButton({ children, icon, url, size = 'normal' }: LinkButton)
   return (
     <div className="relative">
       {icon ? getIcon(icon) : null}
-      <div
-        className={classNames(
-          getButtonSizeClassNames(size),
-          classNames(
-            icon === 'trash'
-              ? 'bg-red-600 hover:bg-red-700 border-red-700 hover:border-red-800'
-              : 'bg-accent3 hover:bg-accent3-dark border-accent3 hover:border-accent3-dark',
-            'cursor-pointer border-2 rounded-md w-full text-center text-white ease-in-out duration-300'
-          )
-        )}
-      >
-        <Link to={url}>{children}</Link>
-      </div>
+      <Link to={url}>
+        <button
+          className={classNames(
+            getButtonSizeClassNames(size),
+            classNames(
+              icon === 'trash'
+                ? 'bg-red-600 hover:bg-red-700 border-red-700 hover:border-red-800'
+                : 'bg-accent3 hover:bg-accent3-dark border-accent3 hover:border-accent3-dark',
+              'cursor-pointer border-2 rounded-md w-full text-center text-white ease-in-out duration-300'
+            )
+          )}
+          type="button"
+        >
+          {children}
+        </button>
+      </Link>
     </div>
   );
 }
