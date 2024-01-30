@@ -22,7 +22,7 @@ export default function ProjectBreadcrumbs() {
     } else {
       setProjectCrumb('');
     }
-  }, [projectId]);
+  }, [project, projectId]);
 
   useEffect(() => {
     if (flightId) {
@@ -40,7 +40,7 @@ export default function ProjectBreadcrumbs() {
     } else {
       setFlightCrumb('');
     }
-  }, [flightId]);
+  }, [flights, flightId]);
 
   if (projectId) {
     return (
