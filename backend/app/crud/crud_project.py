@@ -126,7 +126,6 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 setattr(project[0], "field", json.loads(project[1]))
                 flight_count = 0
                 for flight in project[0].flights:
-                    print(project[0].flights)
                     if flight.is_active:
                         flight_count += 1
                 setattr(project[0], "flight_count", flight_count)
@@ -163,7 +162,6 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 setattr(project[0], "field", json.loads(project[1]))
                 flight_count = 0
                 for flight in project[0].flights:
-                    print(project[0].flights)
                     if flight.is_active:
                         flight_count += 1
                 setattr(project[0], "flight_count", flight_count)

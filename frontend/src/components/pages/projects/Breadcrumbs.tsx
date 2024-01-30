@@ -54,7 +54,7 @@ export default function ProjectBreadcrumbs() {
 
           {projectCrumb ? (
             <>
-              <li className="rtl:rotate-180">
+              <li>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-4 w-4"
@@ -85,7 +85,7 @@ export default function ProjectBreadcrumbs() {
 
           {projectCrumb && flightCrumb ? (
             <>
-              <li className="rtl:rotate-180">
+              <li>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-4 w-4"

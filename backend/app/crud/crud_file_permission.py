@@ -41,6 +41,7 @@ class CRUDFilePermission(
         statement = (
             select(FilePermission)
             .join(DataProduct)
+            .options(joinedload(FilePermission.file))
             .where(func.lower(DataProduct.filepath).contains(filename))
         )
         with db as session:
