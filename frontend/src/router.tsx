@@ -34,6 +34,7 @@ import TeamDetail, {
 
 import { RootPublic, RootProtected } from './components/layout/Root';
 import { RequireAuth } from './AuthContext';
+import ProjectLayout from './components/pages/projects/ProjectLayout';
 
 export const router = createBrowserRouter([
   {
@@ -108,29 +109,35 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        path: '/projects/:projectId/flights/:flightId/data',
-        element: <FlightData />,
-        loader: flightDataLoader,
-      },
-      {
-        path: '/projects/:projectId/flights/:flightId/edit',
-        element: <FlightForm editMode={true} />,
-        loader: flightFormLoader,
-      },
-      {
-        path: '/projects/:projectId',
-        element: <ProjectDetail />,
-        loader: projectDetailLoader,
-      },
-      {
-        path: '/projects/:projectId/access',
-        element: <ProjectAccess />,
-        loader: projectAccessLoader,
-      },
-      {
         path: '/projects',
-        element: <ProjectList />,
-        loader: projectListLoader,
+        element: <ProjectLayout />,
+        children: [
+          {
+            path: '/projects/:projectId/flights/:flightId/data',
+            element: <FlightData />,
+            loader: flightDataLoader,
+          },
+          {
+            path: '/projects/:projectId/flights/:flightId/edit',
+            element: <FlightForm editMode={true} />,
+            loader: flightFormLoader,
+          },
+          {
+            path: '/projects/:projectId',
+            element: <ProjectDetail />,
+            loader: projectDetailLoader,
+          },
+          {
+            path: '/projects/:projectId/access',
+            element: <ProjectAccess />,
+            loader: projectAccessLoader,
+          },
+          {
+            path: '/projects',
+            element: <ProjectList />,
+            loader: projectListLoader,
+          },
+        ],
       },
     ],
   },

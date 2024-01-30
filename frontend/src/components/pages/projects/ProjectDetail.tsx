@@ -27,6 +27,15 @@ import { SymbologySettings } from '../../maps/MapContext';
 import { Team } from '../teams/Teams';
 import validationSchema from './validationSchema';
 import { sorter } from '../../utils';
+import { useProjectContext } from './ProjectContext';
+
+interface FieldProperties {
+  [key: string]: string;
+}
+
+export type FieldGeoJSONFeature = Omit<GeoJSON.Feature, 'properties'> & {
+  properties: FieldProperties;
+};
 
 interface Project {
   id: string;
@@ -36,6 +45,8 @@ interface Project {
   harvest_date: string;
   location_id: string;
   team_id: string;
+  flight_count: number;
+  owner_id: string;
   is_owner: boolean;
   field: GeoJSONFeature;
 }
@@ -149,6 +160,7 @@ export default function ProjectDetail() {
   const { project, role, flights, teams } = useLoaderData() as ProjectData;
   const { projectId } = useParams();
   const revalidator = useRevalidator();
+  const { flightsDispatch, projectDispatch } = useProjectContext();
 
   const [location, setLocation] = useState<Location | null>(null);
   const [tableView, toggleTableView] = useState<'table' | 'carousel'>('carousel');
@@ -173,6 +185,15 @@ export default function ProjectDetail() {
       });
     }
   }, [project]);
+
+  useEffect(() => {
+    // @ts-ignore
+    if (project) projectDispatch({ type: 'set', payload: project });
+  }, [project]);
+
+  useEffect(() => {
+    if (flights) flightsDispatch({ type: 'set', payload: flights });
+  }, [flights]);
 
   useEffect(() => {
     if (location) revalidator.revalidate();
