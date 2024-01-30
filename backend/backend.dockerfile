@@ -88,11 +88,11 @@ ENV LD_LIBRARY_PATH=/usr/local/lib
 COPY . /app
 
 # create directory for logs, temp files, and user uploads
-RUN mkdir /app/logs && mkdir /var/tmp/d2s && mkdir /static
+RUN mkdir -p /app/logs && mkdir /var/tmp/d2s && mkdir /static
 
 # update permissions for d2s user/group
 RUN chown -R d2s:d2s /app && chown -R d2s:d2s /static && chown -R d2s:d2s /var/tmp/d2s
 
 USER d2s
 
-CMD uvicorn app.main:app --proxy-headers --workers ${UVICORN_WORKERS} --host 0.0.0.0 --port 5000
+CMD /app/backend-start.sh

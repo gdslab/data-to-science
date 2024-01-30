@@ -73,26 +73,6 @@
    docker compose stop
    ```
 
-### Database migrations with Alembic
-
-The first time you build and run the containers you must run the following command to set up the database tables:
-
-```
-docker compose exec backend alembic upgrade head
-```
-
-If you make any changes the backend models, run the following command to create a new migration:
-
-```
-docker compose exec backend alembic revision --autogenerate -m "migration comment"
-```
-
-After creating the new migration, use the following command to update to the tables in the database:
-
-```
-docker compose exec backend alembic upgrade head
-```
-
 ### Accessing the web application
 
 The Data To Science web application can be accessed from `http://localhost:8000`. Replace `localhost` with the `DOMAIN` environment variable if it was changed to a different value. If port `8000` is already use, or you want to use a different port, change the port in `docker-compose.yml` under the `proxy` service's `ports` setting.
@@ -111,4 +91,18 @@ The `pytest` library can be used to run tests for the FastAPI backend. Use the f
 
 ```
 docker compose exec backend pytest
+```
+
+## Database migrations with Alembic
+
+If you make any changes the database models, run the following command to create a new migration:
+
+```
+docker compose exec backend alembic revision --autogenerate -m "migration comment"
+```
+
+After creating the new migration, use the following command to update to the tables in the database:
+
+```
+docker compose exec backend alembic upgrade head
 ```
