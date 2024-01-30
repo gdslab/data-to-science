@@ -87,11 +87,8 @@ ENV LD_LIBRARY_PATH=/usr/local/lib
 # copy over application code
 COPY . /app
 
-# create directory for user uploads
-RUN cd /app && mkdir /static
-
-# create directory for temp files
-RUN mkdir /var/tmp/d2s
+# create directory for logs, temp files, and user uploads
+RUN mkdir /app/logs && mkdir /var/tmp/d2s && mkdir /static
 
 # update permissions for d2s user/group
 RUN chown -R d2s:d2s /app && chown -R d2s:d2s /static && chown -R d2s:d2s /var/tmp/d2s

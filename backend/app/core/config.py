@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     STATIC_DIR: str = "/static"
     POTREE_DIR: str = "/app/potree"
 
-    API_LOGDIR: str = ""
+    API_LOGDIR: str = "/app/logs"
 
     # Database
     POSTGRES_HOST: str = ""
