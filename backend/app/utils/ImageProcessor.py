@@ -39,13 +39,15 @@ class ImageProcessor:
         else:
             convert_to_cog(self.img_path, self.out_path, info)
 
-        os.remove(self.img_path)
+        if os.path.exists(self.img_path):
+            os.remove(self.img_path)
+
         if os.path.exists(self.img_path + ".aux.xml"):
             os.remove(self.img_path + ".aux.xml")
 
-        create_preview_image(self.out_path, self.preview_out_path, info)
-
         self.stac_properties = get_stac_properties(info)
+
+        create_preview_image(self.out_path, self.preview_out_path, self.stac_properties)
 
         return self.out_path
 
@@ -219,52 +221,55 @@ def convert_to_cog(
     result.check_returncode()
 
 
-def create_preview_image(img_path: str, out_path: str, info: dict) -> None:
+def create_preview_image(
+    img_path: str, out_path: str, stac_props: STACProperties
+) -> None:
     """Generates preview image for GeoTIFF data products.
 
     Args:
         img_path (str): Path to input dataset
         out_path (str): Path for output dataset
-        info (dict): gdalinfo -json output
+        stac_props (STACProperties): gdalinfo STAC output
     """
-    band_count = get_band_count(info)
-    if band_count == 3 or band_count == 4:
-        result = subprocess.run(
-            [
-                "gdal_translate",
-                "-of",
-                "JPEG",
-                "-co",
-                "QUALITY=75",
-                "-b",
-                "1",
-                "-b",
-                "2",
-                "-b",
-                "3",
-                img_path,
-                out_path,
-                "-outsize",
-                "6.25%",
-                "6.25%",
-            ]
-        )
+    band_count = len(stac_props["raster"])
+    if band_count > 2:
+        band_params = ["-b", "1", "-b", "2", "-b", "3"]
+        scale_params = [
+            "-scale_1",
+            str(stac_props["raster"][0]["stats"]["minimum"]),
+            str(stac_props["raster"][0]["stats"]["maximum"]),
+            "0",
+            "255",
+            "-scale_2",
+            str(stac_props["raster"][1]["stats"]["minimum"]),
+            str(stac_props["raster"][1]["stats"]["maximum"]),
+            "0",
+            "255",
+            "-scale_3",
+            str(stac_props["raster"][2]["stats"]["minimum"]),
+            str(stac_props["raster"][2]["stats"]["maximum"]),
+            "0",
+            "255",
+        ]
     else:
-        result = subprocess.run(
-            [
-                "gdal_translate",
-                "-scale",
-                "-of",
-                "JPEG",
-                "-co",
-                "QUALITY=75",
-                "-b",
-                "1",
-                img_path,
-                out_path,
-                "-outsize",
-                "6.25%",
-                "6.25%",
-            ]
-        )
+        band_params = ["-b", "1"]
+        scale_params = [
+            "-scale_1",
+            str(stac_props["raster"][0]["stats"]["minimum"]),
+            str(stac_props["raster"][0]["stats"]["maximum"]),
+            "0",
+            "255",
+        ]
+
+    size_params = ["-outsize", "6.25%", "6.25%"]
+    inout_params = [img_path, out_path]
+
+    command = ["gdal_translate", "-of", "JPEG", "-ot", "Byte", "-co", "QUALITY=75"]
+    command.extend(band_params)
+    command.extend(size_params)
+    command.extend(scale_params)
+    command.extend(inout_params)
+
+    result = subprocess.run(command)
+
     result.check_returncode()
