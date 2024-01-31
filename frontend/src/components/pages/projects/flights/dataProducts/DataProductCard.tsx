@@ -126,9 +126,12 @@ export default function DataProductCard({
                           );
                           if (response) {
                             setOpenConfirmationPopup(false);
-                            navigate(`/projects/${params.projectId}`, {
-                              state: { reload: true },
-                            });
+                            navigate(
+                              `/projects/${params.projectId}/flights/${params.flightId}/data`,
+                              {
+                                state: { reload: true },
+                              }
+                            );
                           } else {
                             setOpenConfirmationPopup(false);
                             setStatus({
