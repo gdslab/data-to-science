@@ -266,20 +266,24 @@ export default function LayerPane({
                                     }
                                   }}
                                 >
-                                  <strong className="text-bold">
+                                  <strong>
                                     {getDataProductName(dataProduct.data_type)}
                                   </strong>
                                   {dataProduct.data_type !== 'point_cloud' ? (
-                                    <div className="grid grid-flow-col auto-cols-max gap-1.5">
-                                      Bands:{' '}
-                                      {dataProduct.stac_properties.eo.map((b) => {
-                                        return (
-                                          <span key={b.name} className="mr-2">
-                                            {b.name} ({b.description})
-                                          </span>
-                                        );
-                                      })}
-                                    </div>
+                                    <fieldset className="border border-solid border-slate-300 p-3">
+                                      <legend className="block text-sm text-gray-400 font-bold pt-2 pb-1">
+                                        Band Info
+                                      </legend>
+                                      <div className="flex flex-row flex-wrap justify-start gap-1.5">
+                                        {dataProduct.stac_properties.eo.map((b) => {
+                                          return (
+                                            <span key={b.name} className="mr-2">
+                                              {b.name} ({b.description})
+                                            </span>
+                                          );
+                                        })}
+                                      </div>
+                                    </fieldset>
                                   ) : null}
                                   {dataProduct.data_type !== 'point_cloud' ? (
                                     <div className="grid grid-flow-col auto-cols-max gap-1.5">

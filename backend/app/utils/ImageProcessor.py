@@ -19,21 +19,21 @@ class ImageProcessor:
     compressed COG for visualization will be created along with a small preview image.
     """
 
-    def __init__(self, img_path):
-        self.img_path = img_path
+    def __init__(self, img_path: str) -> None:
+        self.img_path: str = img_path
 
-        output_dir = os.path.dirname(self.img_path)
+        output_dir: str = os.path.dirname(self.img_path)
         output_name = os.path.basename(self.img_path).replace("__temp", "")
 
-        self.out_path = os.path.join(output_dir, output_name)
-        self.preview_out_path = os.path.join(
+        self.out_path: str = os.path.join(output_dir, output_name)
+        self.preview_out_path: str = os.path.join(
             output_dir, output_name.replace("tif", "jpg")
         )
 
-        self.stac_properties = {"raster": [], "eo": []}
+        self.stac_properties: dict = {"raster": [], "eo": []}
 
-    def run(self):
-        info = get_info(self.img_path)
+    def run(self) -> str:
+        info: dict = get_info(self.img_path)
         if is_cog(info):
             shutil.move(self.img_path, self.out_path)
         else:
@@ -58,7 +58,7 @@ class ImageProcessor:
             and len(self.stac_properties["eo"]) > 0
         ):
             if len(self.stac_properties["raster"]) == 1:
-                stats = self.stac_properties["raster"][0].get("stats")
+                stats: dict = self.stac_properties["raster"][0].get("stats")
 
                 return {
                     "settings": {
@@ -72,7 +72,7 @@ class ImageProcessor:
                     }
                 }
             elif len(self.stac_properties["raster"]) > 2:
-                symbology: OrthoSymbology = {
+                symbology: dict = {
                     "mode": "minMax",
                     "meanStdDev": 2,
                     "red": {},
@@ -81,7 +81,7 @@ class ImageProcessor:
                 }
 
                 for idx, band in enumerate(["red", "green", "blue"]):
-                    stats = self.stac_properties["raster"][idx]
+                    stats: dict = self.stac_properties["raster"][idx]["stats"]
                     symbology[band] = {
                         "idx": idx + 1,
                         "min": stats.get("minimum", 0),
@@ -111,14 +111,14 @@ def get_info(img_path: str) -> dict:
     Returns:
         dict: _description_
     """
-    result = subprocess.run(
-        ["gdalinfo", "-stats", "-hist", "-json", img_path],
+    result: subprocess.CompletedProcess = subprocess.run(
+        ["gdalinfo", "-approx_stats", "-json", img_path],
         stdout=subprocess.PIPE,
         check=True,
     )
     result.check_returncode()
     try:
-        gdalinfo = json.loads(result.stdout)
+        gdalinfo: dict = json.loads(result.stdout)
     except Exception as e:
         logging.error(str(e))
         raise e
@@ -135,11 +135,11 @@ def is_cog(info: dict) -> bool:
         bool: True if in COG layout, False otherwise
     """
     if info and info.get("metadata"):
-        metadata = info.get("metadata")
+        metadata: dict = info.get("metadata")
         if type(metadata) is dict and metadata.get("IMAGE_STRUCTURE"):
-            image_struct = metadata.get("IMAGE_STRUCTURE")
+            image_struct: dict = metadata.get("IMAGE_STRUCTURE")
             if type(image_struct) is dict and image_struct.get("LAYOUT"):
-                layout = image_struct.get("LAYOUT")
+                layout: str = image_struct.get("LAYOUT")
                 return layout == "COG"
     return False
 
@@ -155,11 +155,13 @@ def get_stac_properties(info: dict) -> STACProperties:
     """
     stac_properties: STACProperties = {"raster": [], "eo": []}
     if info and info.get("stac"):
-        stac = info.get("stac")
+        stac: dict = info.get("stac")
         if type(stac) is dict and stac.get("raster:bands") and stac.get("eo:bands"):
             try:
-                stac_properties = STACPropertiesValidator.validate_python(
-                    {"raster": stac.get("raster:bands"), "eo": stac.get("eo:bands")}
+                stac_properties: STACProperties = (
+                    STACPropertiesValidator.validate_python(
+                        {"raster": stac.get("raster:bands"), "eo": stac.get("eo:bands")}
+                    )
                 )
             except ValidationError as e:
                 logger.error(e)
@@ -167,23 +169,6 @@ def get_stac_properties(info: dict) -> STACProperties:
                 logger.error(e)
 
     return stac_properties
-
-
-def get_band_count(info: dict) -> int:
-    """Return number of bands in raster. If unable to determine
-    number of bands, treat as a single band raster and return 1.
-
-    Args:
-        info (dict): gdalinfo -json output
-
-    Returns:
-        int: Number of bands
-    """
-    if info and info.get("bands"):
-        bands = info.get("bands")
-        if type(bands) is list:
-            return len(bands)
-    return 1
 
 
 def convert_to_cog(
@@ -198,9 +183,9 @@ def convert_to_cog(
         num_threads (int | None, optional): No. of CPUs to use. Defaults to None.
     """
     if not num_threads:
-        num_threads = int(multiprocessing.cpu_count() / 2)
+        num_threads: int = int(multiprocessing.cpu_count() / 2)
 
-    result = subprocess.run(
+    result: subprocess.CompletedProcess = subprocess.run(
         [
             "gdalwarp",
             img_path,
@@ -231,10 +216,10 @@ def create_preview_image(
         out_path (str): Path for output dataset
         stac_props (STACProperties): gdalinfo STAC output
     """
-    band_count = len(stac_props["raster"])
+    band_count: int = len(stac_props["raster"])
     if band_count > 2:
-        band_params = ["-b", "1", "-b", "2", "-b", "3"]
-        scale_params = [
+        band_params: list = ["-b", "1", "-b", "2", "-b", "3"]
+        scale_params: list = [
             "-scale_1",
             str(stac_props["raster"][0]["stats"]["minimum"]),
             str(stac_props["raster"][0]["stats"]["maximum"]),
@@ -252,8 +237,8 @@ def create_preview_image(
             "255",
         ]
     else:
-        band_params = ["-b", "1"]
-        scale_params = [
+        band_params: list = ["-b", "1"]
+        scale_params: list = [
             "-scale_1",
             str(stac_props["raster"][0]["stats"]["minimum"]),
             str(stac_props["raster"][0]["stats"]["maximum"]),
@@ -261,8 +246,8 @@ def create_preview_image(
             "255",
         ]
 
-    size_params = ["-outsize", "6.25%", "6.25%"]
-    inout_params = [img_path, out_path]
+    size_params: list = ["-outsize", "6.25%", "6.25%"]
+    inout_params: list = [img_path, out_path]
 
     command = ["gdal_translate", "-of", "JPEG", "-ot", "Byte", "-co", "QUALITY=75"]
     command.extend(band_params)
