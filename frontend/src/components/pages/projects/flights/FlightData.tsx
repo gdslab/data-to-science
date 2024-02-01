@@ -3,6 +3,7 @@ import { Params, useLoaderData } from 'react-router-dom';
 
 import { DataProduct } from '../ProjectDetail';
 import DataProducts from './dataProducts/DataProducts';
+import FlightDataNav from './FlightDataNav';
 import RawData from './rawData/RawData';
 import { User } from '../../../../AuthContext';
 
@@ -60,12 +61,15 @@ interface FlightData {
 export default function FlightData() {
   const { dataProducts, rawData, role } = useLoaderData() as FlightData;
   return (
-    <div className="flex flex-col h-full gap-4 p-4">
-      <div className="max-h-32">
-        <RawData data={rawData} role={role} />
-      </div>
-      <div className="grow min-h-0">
-        <DataProducts data={dataProducts} role={role} />
+    <div className="flex flex-row">
+      <FlightDataNav />
+      <div className="flex flex-col h-full gap-4 p-4">
+        <div className="max-h-32">
+          <RawData data={rawData} role={role} />
+        </div>
+        <div className="grow min-h-0">
+          <DataProducts data={dataProducts} role={role} />
+        </div>
       </div>
     </div>
   );
