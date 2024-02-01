@@ -28,7 +28,7 @@ export default function DataProductDeleteModal({
       <div>
         {tableView ? (
           <div
-            className="flex items-center text-red-600 text-sm cursor-pointer"
+            className="flex items-center text-sky-600 text-sm cursor-pointer"
             onClick={() => setOpenConfirmationPopup(true)}
           >
             <div className="relative rounded-full accent3 p-1 focus:outline-none">
@@ -42,7 +42,7 @@ export default function DataProductDeleteModal({
             onClick={() => setOpenConfirmationPopup(true)}
           >
             <span className="sr-only">Delete</span>
-            <TrashIcon className="w-4 h-4 text-red-600 cursor-pointer" />
+            <TrashIcon className="w-6 h-6 cursor-pointer" />
           </div>
         ) : (
           <Button

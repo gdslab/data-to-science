@@ -79,7 +79,7 @@ const getButtonSizeClassNames = (size: string) =>
     ? 'text-xs font-semibold py-0.5 px-2'
     : size === 'sm'
     ? 'text-sm font-bold py-1.5 px-4'
-    : 'text-xl font-extrabold py-2 px-8';
+    : 'text-xl font-extrabold py-2 px-4';
 
 export function LinkOutlineButton({
   children,
@@ -91,7 +91,7 @@ export function LinkOutlineButton({
       <button
         className={classNames(
           getButtonSizeClassNames(size),
-          'w-full border-2 border-accent3 text-accent3 rounded-md py-2 px-8 w-full hover:bg-accent3 hover:text-white ease-in-out duration-300'
+          'w-full border-2 border-accent3 text-accent3 rounded-md py-2 px-4 w-full hover:bg-accent3 hover:text-white ease-in-out duration-300'
         )}
         type="button"
       >
@@ -157,7 +157,7 @@ export function OutlineButton({ children, size = 'normal', ...props }: Button) {
     <button
       className={classNames(
         getButtonSizeClassNames(size),
-        'border-2 border-accent3 text-accent3 rounded-md py-2 px-8 w-full hover:bg-accent3 hover:text-white ease-in-out duration-300'
+        'border-2 border-accent3 text-accent3 rounded-md py-2 px-4 w-full hover:bg-accent3 hover:text-white ease-in-out duration-300'
       )}
       {...props}
     >
@@ -171,7 +171,7 @@ export function LandingButton({ children, size = 'normal', ...props }: Button) {
     <button
       className={classNames(
         size === 'sm' ? 'text-sm font-bold' : 'text-xl font-extrabold',
-        'border-2 border-white text-white rounded-md py-2 px-8 w-full hover:bg-accent3 hover:text-white ease-in-out duration-300'
+        'border-2 border-white text-white rounded-md py-2 px-4 w-full hover:bg-accent3 hover:text-white ease-in-out duration-300'
       )}
       {...props}
     >

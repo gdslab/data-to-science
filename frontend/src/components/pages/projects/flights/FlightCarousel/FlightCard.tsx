@@ -13,6 +13,7 @@ import Modal from '../../../../Modal';
 
 import { isGeoTIFF } from '../dataProducts/DataProducts';
 import { useProjectContext } from '../../ProjectContext';
+import FlightDeleteModal from '../FlightDeleteModal';
 
 export default function FlightCard({ flight }: { flight: Flight }) {
   const [openConfirmationPopup, setOpenConfirmationPopup] = useState(false);
@@ -55,59 +56,17 @@ export default function FlightCard({ flight }: { flight: Flight }) {
                 <HintText>On: {flight.acquisition_date}</HintText>
               </div>
               {projectRole === 'owner' ? (
-                <div>
-                  <div onClick={() => setOpenConfirmationPopup(true)}>
-                    <span className="sr-only">Delete</span>
-                    <TrashIcon className="w-4 h-4 text-red-600 cursor-pointer" />
-                  </div>
-                  <Modal
-                    open={openConfirmationPopup}
-                    setOpen={setOpenConfirmationPopup}
-                  >
-                    <ConfirmationPopup
-                      title="Are you sure you want to deactivate this flight?"
-                      content="Deactivating this flight will cause all team and project members to immediately lose access to any data products associated with the flight."
-                      confirmText="Yes, deactivate"
-                      rejectText="No, keep flight"
-                      setOpen={setOpenConfirmationPopup}
-                      action={async () => {
-                        try {
-                          const response = await axios.delete(
-                            `/api/v1/projects/${params.projectId}/flights/${flight.id}`
-                          );
-                          if (response) {
-                            setOpenConfirmationPopup(false);
-                            navigate(`/projects/${params.projectId}`, {
-                              state: { reload: true },
-                            });
-                          } else {
-                            setOpenConfirmationPopup(false);
-                            setStatus({
-                              type: 'error',
-                              msg: 'Unable to deactivate flight',
-                            });
-                          }
-                        } catch (err) {
-                          setOpenConfirmationPopup(false);
-                          setStatus({
-                            type: 'error',
-                            msg: 'Unable to deactivate flight',
-                          });
-                        }
-                      }}
-                    />
-                  </Modal>
-                </div>
+                <FlightDeleteModal iconOnly={true} />
               ) : null}
             </div>
             {/* action buttons */}
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-2">
               <div className="w-32">
                 <LinkOutlineButton
                   size="sm"
                   url={`/projects/${flight.project_id}/flights/${flight.id}/data`}
                 >
-                  Manage
+                  Manage Data
                 </LinkOutlineButton>
               </div>
               {projectRole === 'manager' || projectRole === 'owner' ? (
@@ -116,7 +75,7 @@ export default function FlightCard({ flight }: { flight: Flight }) {
                     size="sm"
                     url={`/projects/${flight.project_id}/flights/${flight.id}/edit`}
                   >
-                    Edit
+                    Edit Flight
                   </LinkButton>
                 </div>
               ) : null}

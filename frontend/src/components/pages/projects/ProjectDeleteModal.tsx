@@ -19,7 +19,6 @@ export default function ProjectDeleteModal({ project }: { project: Project }) {
         <Button
           type="button"
           size="sm"
-          icon="trash"
           onClick={() => setOpenConfirmationPopup(true)}
         >
           Deactivate project

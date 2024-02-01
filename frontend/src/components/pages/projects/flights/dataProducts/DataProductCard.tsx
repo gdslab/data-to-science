@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import {
-  CogIcon,
   ExclamationCircleIcon,
   EyeIcon,
   PhotoIcon,
+  WrenchScrewdriverIcon
 } from '@heroicons/react/24/outline';
 
 import Card from '../../../../Card';
@@ -118,8 +118,8 @@ export default function DataProductCard({
                       alert('not implemented yet');
                     }}
                   >
-                    <CogIcon className="h-6 w-6" />
-                    <span>Processing</span>
+                    <WrenchScrewdriverIcon className="h-6 w-6" />
+                    <span>Toolbox</span>
                   </div>
                 </>
               ) : null}
