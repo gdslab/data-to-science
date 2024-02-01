@@ -1,4 +1,4 @@
-import { Fragment, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import FileUpload from './FileUpload';
 
@@ -130,6 +130,17 @@ function DtypeRadioInput({
 export default function UploadModal({ apiRoute, open, setOpen, uploadType }: Props) {
   const cancelButtonRef = useRef(null);
   const [dtype, setDtype] = useState('dsm');
+  const [uploadHistory, setUploadHistory] = useState<string[]>([]);
+
+  useEffect(() => {
+    setUploadHistory([]);
+  }, [open]);
+
+  function updateUploadHistory(newUpload: string) {
+    const currentUploadHistory = uploadHistory.slice();
+    currentUploadHistory.push(newUpload);
+    setUploadHistory(currentUploadHistory);
+  }
 
   if (!uploadType) {
     if (['dsm', 'ortho', 'point_cloud', 'other'].indexOf(dtype) > -1) {
@@ -190,11 +201,25 @@ export default function UploadModal({ apiRoute, open, setOpen, uploadType }: Pro
                       minNumberOfFiles: 1,
                     }}
                     uploadType={uploadType}
+                    updateUploadHistory={updateUploadHistory}
                   />
                 </div>
 
                 {uploadType === 'dataProduct' || uploadType === 'zip' ? (
                   <DtypeRadioInput dtype={dtype} setDtype={setDtype} />
+                ) : null}
+
+                {uploadHistory.length > 0 ? (
+                  <fieldset className="border border-solid border-slate-300 m-4 px-4 py-3 sm:px-6">
+                    <legend className="block text-sm text-gray-400 font-bold pt-2 pb-1">
+                      Previously uploaded:
+                    </legend>
+                    <ul className="list-disc">
+                      {uploadHistory.map((recentUpload) => (
+                        <li>{recentUpload}</li>
+                      ))}
+                    </ul>
+                  </fieldset>
                 ) : null}
 
                 <div className="flex items-center justify-between bg-gray-50 px-4 py-3 sm:px-6">

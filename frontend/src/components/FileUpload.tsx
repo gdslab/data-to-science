@@ -35,6 +35,7 @@ interface FileUpload {
   restrictions: Restrictions;
   setOpen?: React.Dispatch<React.SetStateAction<boolean>>;
   uploadType: string;
+  updateUploadHistory?: (param: string) => void;
 }
 
 export default function FileUpload({
@@ -46,6 +47,7 @@ export default function FileUpload({
   setUploadResponse,
   setOpen = () => {},
   uploadType,
+  updateUploadHistory,
 }: FileUpload) {
   const [uppy] = useState(() => createUppy(endpoint));
 
@@ -104,12 +106,23 @@ export default function FileUpload({
     ) {
       setUploadResponse(response.body);
     }
+    if (_file && updateUploadHistory) updateUploadHistory(_file.meta.name);
     if (_file) uppy.removeFile(_file.id);
     if (onSuccess) onSuccess();
   });
 
   if (inline) {
-    return <Dashboard uppy={uppy} height="240px" />;
+    return (
+      <Dashboard
+        uppy={uppy}
+        height="240px"
+        locale={{
+          strings: { dropPasteFiles: 'Drop data product here or %{browseFiles}' },
+        }}
+        proudlyDisplayPoweredByUppy={false}
+        disableThumbnailGenerator={uploadType !== 'img'}
+      />
+    );
   } else {
     return (
       <DashboardModal
@@ -119,6 +132,9 @@ export default function FileUpload({
         closeAfterFinish={true}
         proudlyDisplayPoweredByUppy={false}
         disableThumbnailGenerator={uploadType !== 'img'}
+        locale={{
+          strings: { dropPasteFiles: 'Drop file here or %{browseFiles}' },
+        }}
       />
     );
   }
