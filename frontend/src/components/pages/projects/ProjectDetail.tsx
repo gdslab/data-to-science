@@ -6,14 +6,12 @@ import {
   Params,
   useLoaderData,
   useParams,
-  useNavigate,
   useRevalidator,
 } from 'react-router-dom';
-import { MapIcon, TrashIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { MapIcon, PencilIcon } from '@heroicons/react/24/outline';
 
 import Alert from '../../Alert';
 import { Button } from '../../Buttons';
-import { ConfirmationPopup } from '../../ConfirmationPopup';
 import { Editing, EditField, SelectField, TextField } from '../../InputFields';
 import FlightCarousel from './flights/FlightCarousel';
 import FlightForm from './flights/FlightForm';
@@ -28,6 +26,8 @@ import { Team } from '../teams/Teams';
 import validationSchema from './validationSchema';
 import { sorter } from '../../utils';
 import { useProjectContext } from './ProjectContext';
+import FlightDeleteModal from './flights/FlightDeleteModal';
+import ProjectDeleteModal from './ProjectDeleteModal';
 
 interface FieldProperties {
   [key: string]: string;
@@ -37,7 +37,7 @@ export type FieldGeoJSONFeature = Omit<GeoJSON.Feature, 'properties'> & {
   properties: FieldProperties;
 };
 
-interface Project {
+export interface Project {
   id: string;
   title: string;
   description: string;
@@ -156,16 +156,14 @@ export async function loader({ params }: { params: Params<string> }) {
 }
 
 export default function ProjectDetail() {
-  const navigate = useNavigate();
   const { project, role, flights, teams } = useLoaderData() as ProjectData;
   const { projectId } = useParams();
   const revalidator = useRevalidator();
-  const { flightsDispatch, projectDispatch } = useProjectContext();
+  const { flightsDispatch, projectDispatch, projectRoleDispatch } = useProjectContext();
 
   const [location, setLocation] = useState<Location | null>(null);
   const [tableView, toggleTableView] = useState<'table' | 'carousel'>('carousel');
   const [openUpload, setOpenUpload] = useState(false);
-  const [openConfirmationPopup, setOpenConfirmationPopup] = useState(false);
   const [open, setOpen] = useState(false);
   const [openMap, setOpenMap] = useState(false);
 
@@ -185,6 +183,10 @@ export default function ProjectDetail() {
       });
     }
   }, [project]);
+
+  useEffect(() => {
+    if (role) projectRoleDispatch({ type: 'set', payload: role });
+  }, [role]);
 
   useEffect(() => {
     // @ts-ignore
@@ -364,51 +366,7 @@ export default function ProjectDetail() {
                   />
                 </Table>
                 <div className="flex flex-row justify-end w-full mt-4">
-                  <div className="w-48">
-                    <Button
-                      type="button"
-                      size="sm"
-                      icon="trash"
-                      onClick={() => setOpenConfirmationPopup(true)}
-                    >
-                      Deactivate project
-                    </Button>
-                  </div>
-                  <Modal
-                    open={openConfirmationPopup}
-                    setOpen={setOpenConfirmationPopup}
-                  >
-                    <ConfirmationPopup
-                      title="Are you sure you want to deactivate this project?"
-                      content="Deactivating this project will cause all team and project members to immediately lose access to any flights, and data associated with the project."
-                      confirmText="Yes, deactivate"
-                      rejectText="No, keep project"
-                      setOpen={setOpenConfirmationPopup}
-                      action={async () => {
-                        try {
-                          const response = await axios.delete(
-                            `/api/v1/projects/${project.id}`
-                          );
-                          if (response) {
-                            setOpenConfirmationPopup(false);
-                            navigate('/projects', { state: { reload: true } });
-                          } else {
-                            setOpenConfirmationPopup(false);
-                            setStatus({
-                              type: 'error',
-                              msg: 'Unable to deactivate project',
-                            });
-                          }
-                        } catch (err) {
-                          setOpenConfirmationPopup(false);
-                          setStatus({
-                            type: 'error',
-                            msg: 'Unable to deactivate project',
-                          });
-                        }
-                      }}
-                    />
-                  </Modal>
+                  <ProjectDeleteModal project={project} />
                 </div>
                 {status && status.type && status.msg ? (
                   <div className="mt-4">
@@ -418,7 +376,12 @@ export default function ProjectDetail() {
               </Form>
             )}
           </Formik>
-        ) : null}
+        ) : (
+          <div>
+            <h2 className="mb-0">{project.title}</h2>
+            <span className="text-gray-600">{project.description}</span>
+          </div>
+        )}
         <div className="grow min-h-0">
           <div className="h-full flex flex-col">
             <div className="h-24">
@@ -461,20 +424,24 @@ export default function ProjectDetail() {
                     actions={
                       role === 'viewer'
                         ? undefined
-                        : flights.map((flight, i) => [
-                            {
+                        : flights.map((flight, i) => {
+                            const editAction = {
                               key: `action-edit-${i}`,
                               icon: <PencilIcon className="h-4 w-4" />,
                               label: 'Edit',
                               url: `/projects/${projectId}/flights/${flight.id}/edit`,
-                            },
-                            {
+                            };
+                            const deleteAction = {
                               key: `action-delete-${i}`,
-                              icon: <TrashIcon className="h-4 w-4" />,
+                              type: 'component',
+                              component: (
+                                <FlightDeleteModal flight={flight} tableView={true} />
+                              ),
                               label: 'Delete',
-                              url: '#',
-                            },
-                          ])
+                            };
+                            if (role === 'owner') return [editAction, deleteAction];
+                            return [editAction];
+                          })
                     }
                   />
                 </Table>

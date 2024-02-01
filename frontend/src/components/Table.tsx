@@ -3,13 +3,14 @@ import { Link } from 'react-router-dom';
 
 import { classNames } from './utils';
 
-interface Action {
+export interface Action {
   key: string;
-  icon: ReactNode;
+  component?: ReactNode;
+  icon?: ReactNode;
   label: string;
   onClick?: () => void;
   type?: string;
-  url: string;
+  url?: string;
 }
 
 function TableRow({ children }: { children: ReactNode }) {
@@ -77,6 +78,8 @@ export function TableBody({
                         <span>{action.label}</span>
                       </button>
                     </div>
+                  ) : action.type === 'component' && action.component ? (
+                    <>{action.component}</>
                   ) : (
                     <Link
                       key={action.key}
@@ -86,7 +89,7 @@ export function TableBody({
                           : '!text-sky-600 visited:!text-sky-600',
                         'text-sm'
                       )}
-                      to={action.url}
+                      to={action.url ? action.url : ''}
                     >
                       <div className="flex items-center">
                         <div className="relative rounded-full accent3 p-1 focus:outline-none">

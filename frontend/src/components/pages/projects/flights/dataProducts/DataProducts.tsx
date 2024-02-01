@@ -4,7 +4,6 @@ import {
   CheckCircleIcon,
   CogIcon,
   PhotoIcon,
-  TrashIcon,
   XCircleIcon,
   QuestionMarkCircleIcon,
 } from '@heroicons/react/24/outline';
@@ -18,6 +17,7 @@ import { useInterval } from '../../../../hooks';
 
 import { DataProductStatus } from '../FlightData';
 import DataProductCard from './DataProductCard';
+import DataProductDeleteModal from './DataProductDeleteModal';
 
 export function getDataProductName(dataType: string): string {
   switch (dataType) {
@@ -147,12 +147,17 @@ export default function DataProducts({
               actions={
                 role === 'viewer'
                   ? undefined
-                  : data.map(({ id }) => [
+                  : data.map((dataProduct) => [
                       {
-                        key: `action-delete-${id}`,
-                        icon: <TrashIcon className="h-4 w-4" />,
+                        key: `action-delete-${dataProduct.id}`,
+                        type: 'component',
+                        component: (
+                          <DataProductDeleteModal
+                            dataProduct={dataProduct}
+                            tableView={true}
+                          />
+                        ),
                         label: 'Delete',
-                        url: '#',
                       },
                     ])
               }
@@ -161,11 +166,7 @@ export default function DataProducts({
         ) : (
           <div className="grow flex flex-cols flex-wrap justify-start gap-4 min-h-96 overflow-auto">
             {data.map((dataProduct) => (
-              <DataProductCard
-                key={dataProduct.id}
-                dataProduct={dataProduct}
-                userRole={role}
-              />
+              <DataProductCard key={dataProduct.id} dataProduct={dataProduct} />
             ))}
           </div>
         )
