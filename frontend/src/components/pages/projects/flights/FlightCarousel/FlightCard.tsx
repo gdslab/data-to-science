@@ -1,26 +1,16 @@
-import axios from 'axios';
-import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { PhotoIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PhotoIcon } from '@heroicons/react/24/outline';
 
-import { AlertBar, Status } from '../../../../Alert';
 import { LinkButton, LinkOutlineButton } from '../../../../Buttons';
 import Card from '../../../../Card';
-import { ConfirmationPopup } from '../../../../ConfirmationPopup';
 import HintText from '../../../../HintText';
 import { Flight } from '../../ProjectDetail';
-import Modal from '../../../../Modal';
 
 import { isGeoTIFF } from '../dataProducts/DataProducts';
 import { useProjectContext } from '../../ProjectContext';
 import FlightDeleteModal from '../FlightDeleteModal';
 
 export default function FlightCard({ flight }: { flight: Flight }) {
-  const [openConfirmationPopup, setOpenConfirmationPopup] = useState(false);
-  const [status, setStatus] = useState<Status | null>(null);
   const { projectRole } = useProjectContext();
-  const params = useParams();
-  const navigate = useNavigate();
 
   const dataProduct = flight.data_products.length > 0 ? flight.data_products[0] : null;
 
@@ -56,7 +46,7 @@ export default function FlightCard({ flight }: { flight: Flight }) {
                 <HintText>On: {flight.acquisition_date}</HintText>
               </div>
               {projectRole === 'owner' ? (
-                <FlightDeleteModal iconOnly={true} />
+                <FlightDeleteModal flight={flight} iconOnly={true} />
               ) : null}
             </div>
             {/* action buttons */}
@@ -85,7 +75,6 @@ export default function FlightCard({ flight }: { flight: Flight }) {
         {/* positions pagination controls below card */}
         <div className="h-16"></div>
       </div>
-      {status ? <AlertBar alertType={status.type}>{status.msg}</AlertBar> : null}
     </div>
   );
 }
