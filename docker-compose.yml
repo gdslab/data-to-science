@@ -25,9 +25,9 @@ services:
       args:
         INSTALL_DEV: true
     image: d2s-api:dev
-    command: uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
     volumes:
       - ./backend:/app
+      - log-data:/app/logs
       - user-data:/static
     restart: always
     depends_on:
@@ -109,4 +109,5 @@ services:
 
 volumes:
   db-data:
+  log-data:
   user-data:

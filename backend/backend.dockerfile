@@ -51,12 +51,16 @@ FROM python-base
 WORKDIR /app/
 
 # build args
+ARG INSTALL_DEV=false
 ARG NUM_OF_WORKERS=1
 
 # do not buffer log messages and do not write byte code .pyc
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app \
     PYTHONUNBUFFERED=1
+
+# set dev mode
+ENV DEV_MODE=$INSTALL_DEV
 
 # set number of workers for uvicorn process
 ENV UVICORN_WORKERS=$NUM_OF_WORKERS
@@ -95,4 +99,4 @@ RUN chown -R d2s:d2s /app && chown -R d2s:d2s /static && chown -R d2s:d2s /var/t
 
 USER d2s
 
-CMD /app/backend-start.sh
+CMD /bin/bash /app/backend-start.sh

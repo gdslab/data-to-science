@@ -35,7 +35,6 @@ services:
       context: ./backend
       dockerfile: backend.dockerfile
       args:
-        INSTALL_DEV: true
         NUM_OF_WORKERS: 1
     image: d2s-api:latest
     volumes:
