@@ -42,7 +42,7 @@ export default function DataProductDeleteModal({
             onClick={() => setOpenConfirmationPopup(true)}
           >
             <span className="sr-only">Delete</span>
-            <TrashIcon className="w-6 h-6 cursor-pointer" />
+            <TrashIcon className="w-5 h-5 cursor-pointer" />
           </div>
         ) : (
           <Button

@@ -18,6 +18,7 @@ import { useInterval } from '../../../../hooks';
 import { DataProductStatus } from '../FlightData';
 import DataProductCard from './DataProductCard';
 import DataProductDeleteModal from './DataProductDeleteModal';
+import { useProjectContext } from '../../ProjectContext';
 
 export function getDataProductName(dataType: string): string {
   switch (dataType) {
@@ -36,17 +37,12 @@ export function isGeoTIFF(dataType: string): boolean {
   return dataType === 'ortho' || dataType === 'dsm';
 }
 
-export default function DataProducts({
-  data,
-  role,
-}: {
-  data: DataProductStatus[];
-  role: string;
-}) {
+export default function DataProducts({ data }: { data: DataProductStatus[] }) {
   const { flightId, projectId } = useParams();
   const [open, setOpen] = useState(false);
   const [tableView, toggleTableView] = useState<'table' | 'carousel'>('carousel');
   const revalidator = useRevalidator();
+  const { projectRole } = useProjectContext();
 
   useEffect(() => {
     if (!open) revalidator.revalidate();
@@ -76,7 +72,7 @@ export default function DataProducts({
           <Table>
             <TableHead
               columns={
-                role === 'viewer'
+                projectRole === 'viewer'
                   ? dataProductColumns.slice(0, dataProductColumns.length - 1)
                   : dataProductColumns
               }
@@ -145,7 +141,7 @@ export default function DataProducts({
                 ),
               ])}
               actions={
-                role === 'viewer'
+                projectRole !== 'owner'
                   ? undefined
                   : data.map((dataProduct) => [
                       {
@@ -171,7 +167,7 @@ export default function DataProducts({
           </div>
         )
       ) : null}
-      {role !== 'viewer' ? (
+      {projectRole !== 'viewer' ? (
         <div className="my-4 flex justify-center">
           <UploadModal
             apiRoute={`/api/v1/projects/${projectId}/flights/${flightId}`}

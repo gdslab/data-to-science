@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from pydantic import AnyHttpUrl, BaseModel
@@ -5,7 +6,9 @@ from pydantic import AnyHttpUrl, BaseModel
 
 # shared properties
 class RawDataBase(BaseModel):
-    pass
+    filepath: str | None = None
+    original_filename: str | None = None
+    is_active: bool = True
 
 
 # properties to receive via API on creation
@@ -25,12 +28,14 @@ class RawDataInDBBase(RawDataBase, from_attributes=True):
     filepath: str
     flight_id: UUID
     original_filename: str
+    is_active: bool
+    deactivated_at: datetime | None = None
 
 
 # additional properties to return via API
 class RawData(RawDataInDBBase):
     status: str | None = None
-    url: AnyHttpUrl
+    url: AnyHttpUrl | None = None
 
 
 # additional properties stored in DB

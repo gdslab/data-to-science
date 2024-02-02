@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 from sqlalchemy.orm import Session
 
@@ -88,3 +89,17 @@ def test_read_data_products(db: Session) -> None:
     for data_product in data_products:
         assert data_product.flight_id == flight.id
         assert data_product.public is False
+
+
+def test_deactivate_data_product(db: Session) -> None:
+    user = create_user(db)
+    data_product = SampleDataProduct(db, user=user)
+    data_product2 = crud.data_product.deactivate(
+        db, data_product_id=data_product.obj.id
+    )
+    data_product3 = crud.data_product.get(db, id=data_product.obj.id)
+    assert data_product2 and data_product3
+    assert data_product3.id == data_product.obj.id
+    assert data_product3.is_active is False
+    assert isinstance(data_product3.deactivated_at, datetime)
+    assert data_product3.deactivated_at < datetime.utcnow()

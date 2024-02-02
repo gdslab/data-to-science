@@ -1,5 +1,3 @@
-import axios from 'axios';
-import { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { useProjectContext } from '../ProjectContext';
@@ -9,24 +7,7 @@ import { sorter } from '../../../utils';
 
 export default function FlightDataNav() {
   const { projectId } = useParams();
-  const { flights, flightsDispatch } = useProjectContext();
-
-  async function fetchFlights() {
-    try {
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/flights`
-      );
-      if (response) flightsDispatch({ type: 'set', payload: response.data });
-    } catch (err) {
-      flightsDispatch({ type: 'clear', payload: null });
-    }
-  }
-
-  useEffect(() => {
-    if (!flights) {
-      fetchFlights();
-    }
-  }, [flights]);
+  const { flights } = useProjectContext();
 
   if (flights && flights.length > 0) {
     return (

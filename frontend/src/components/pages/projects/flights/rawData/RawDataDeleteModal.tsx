@@ -3,18 +3,18 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { TrashIcon } from '@heroicons/react/24/outline';
 
-import { AlertBar, Status } from '../../../Alert';
-import { Button } from '../../../Buttons';
-import { ConfirmationPopup } from '../../../ConfirmationPopup';
-import Modal from '../../../Modal';
-import { Flight } from '../ProjectDetail';
+import { AlertBar, Status } from '../../../../Alert';
+import { Button } from '../../../../Buttons';
+import { ConfirmationPopup } from '../../../../ConfirmationPopup';
+import Modal from '../../../../Modal';
+import { RawData } from '../FlightData';
 
-export default function FlightDeleteModal({
-  flight,
+export default function RawDataDeleteModal({
+  rawData,
   iconOnly = true,
   tableView = false,
 }: {
-  flight: Flight;
+  rawData: RawData;
   iconOnly?: boolean;
   tableView?: boolean;
 }) {
@@ -50,40 +50,43 @@ export default function FlightDeleteModal({
             icon="trash"
             onClick={() => setOpenConfirmationPopup(true)}
           >
-            Deactivate flight
+            Deactivate raw data
           </Button>
         )}
       </div>
       <Modal open={openConfirmationPopup} setOpen={setOpenConfirmationPopup}>
         <ConfirmationPopup
-          title="Are you sure you want to deactivate this flight?"
-          content="Deactivating this flight will cause all team and project members to immediately lose access to any data products associated with the flight."
+          title="Are you sure you want to deactivate this raw data?"
+          content="Deactivating this raw data will cause all team and project members to immediately lose access to the raw data."
           confirmText="Yes, deactivate"
-          rejectText="No, keep flight"
+          rejectText="No, keep raw data"
           setOpen={setOpenConfirmationPopup}
           action={async () => {
             setStatus(null);
             try {
               const response = await axios.delete(
-                `/api/v1/projects/${params.projectId}/flights/${flight.id}`
+                `/api/v1/projects/${params.projectId}/flights/${params.flightId}/raw_data/${rawData.id}`
               );
               if (response) {
                 setOpenConfirmationPopup(false);
-                navigate(`/projects/${params.projectId}`, {
-                  state: { reload: true },
-                });
+                navigate(
+                  `/projects/${params.projectId}/flights/${params.flightId}/data`,
+                  {
+                    state: { reload: true },
+                  }
+                );
               } else {
                 setOpenConfirmationPopup(false);
                 setStatus({
                   type: 'error',
-                  msg: 'Unable to deactivate flight',
+                  msg: 'Unable to deactivate raw data',
                 });
               }
             } catch (err) {
               setOpenConfirmationPopup(false);
               setStatus({
                 type: 'error',
-                msg: 'Unable to deactivate flight',
+                msg: 'Unable to deactivate raw data',
               });
             }
           }}

@@ -3,13 +3,15 @@ from typing import Sequence
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
+from app import crud
 from app.core.config import settings
 from app.crud.base import CRUDBase
 from app.models.raw_data import RawData
 from app.schemas.raw_data import RawDataCreate, RawDataUpdate
+from app.models.utils.user import utcnow
 
 
 class CRUDRawData(CRUDBase[RawData, RawDataCreate, RawDataUpdate]):
@@ -27,7 +29,7 @@ class CRUDRawData(CRUDBase[RawData, RawDataCreate, RawDataUpdate]):
     def get_single_by_id(
         self, db: Session, raw_data_id: UUID, upload_dir: str
     ) -> RawData | None:
-        stmt = select(RawData).where(RawData.id == raw_data_id)
+        stmt = select(RawData).where(RawData.id == raw_data_id).where(RawData.is_active)
         with db as session:
             raw_data = session.scalar(stmt)
             if raw_data:
@@ -42,7 +44,11 @@ class CRUDRawData(CRUDBase[RawData, RawDataCreate, RawDataUpdate]):
         skip: int = 0,
         limit: int = 100,
     ) -> Sequence[RawData]:
-        stmt = select(RawData).where(RawData.flight_id == flight_id)
+        stmt = (
+            select(RawData)
+            .where(RawData.flight_id == flight_id)
+            .where(RawData.is_active)
+        )
         with db as session:
             all_raw_data = session.execute(stmt).all()
             all_raw_data_with_status = []
@@ -50,6 +56,18 @@ class CRUDRawData(CRUDBase[RawData, RawDataCreate, RawDataUpdate]):
                 set_url_attr(raw_data[0], upload_dir)
                 all_raw_data_with_status.append(raw_data[0])
         return all_raw_data_with_status
+
+    def deactivate(self, db: Session, raw_data_id: UUID) -> RawData | None:
+        update_raw_data_sql = (
+            update(RawData)
+            .where(RawData.id == raw_data_id)
+            .values(is_active=False, deactivated_at=utcnow())
+        )
+        with db as session:
+            session.execute(update_raw_data_sql)
+            session.commit()
+
+        return crud.raw_data.get(db, id=raw_data_id)
 
 
 def set_url_attr(raw_data_obj: RawData, upload_dir: str):

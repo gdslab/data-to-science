@@ -1,5 +1,6 @@
 import os
 import shutil
+from datetime import datetime
 
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -310,5 +311,73 @@ def test_read_data_products_without_project_access(
     response = client.get(
         f"{settings.API_V1_STR}/projects/{project.id}"
         f"/flights/{flight.id}/data_products"
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_deactivate_data_product_with_owner_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+):
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, create_style=True, user=current_user)
+    response = client.delete(
+        f"{settings.API_V1_STR}/projects/{data_product.project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}"
+    )
+    assert response.status_code == status.HTTP_200_OK
+    deactivated_data_product = response.json()
+    assert deactivated_data_product
+    assert deactivated_data_product.get("id", None) == str(data_product.obj.id)
+    assert deactivated_data_product.get("is_active", True) is False
+    deactivated_at = datetime.strptime(
+        deactivated_data_product.get("deactivated_at"), "%Y-%m-%dT%H:%M:%S.%f"
+    )
+    assert isinstance(deactivated_at, datetime)
+    assert deactivated_at < datetime.utcnow()
+
+
+def test_deactivate_data_product_with_manager_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+):
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, create_style=True)
+    create_project_member(
+        db,
+        role="manager",
+        member_id=current_user.id,
+        project_id=data_product.project.id,
+    )
+    response = client.delete(
+        f"{settings.API_V1_STR}/projects/{data_product.project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}"
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_deactivate_data_product_with_viewer_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+):
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, create_style=True)
+    create_project_member(
+        db,
+        role="viewer",
+        member_id=current_user.id,
+        project_id=data_product.project.id,
+    )
+    response = client.delete(
+        f"{settings.API_V1_STR}/projects/{data_product.project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}"
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_deactivate_data_product_without_project_access(
+    client: TestClient, db: Session, normal_user_access_token: str
+):
+    data_product = SampleDataProduct(db, create_style=True)
+    response = client.delete(
+        f"{settings.API_V1_STR}/projects/{data_product.project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}"
     )
     assert response.status_code == status.HTTP_404_NOT_FOUND

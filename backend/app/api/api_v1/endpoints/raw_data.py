@@ -108,3 +108,31 @@ def read_all_raw_data(
         db, flight_id=flight.id, upload_dir=upload_dir
     )
     return all_raw_data
+
+
+@router.delete("/{raw_data_id}", response_model=schemas.RawData)
+def deactivate_raw_data(
+    raw_data_id: UUID,
+    project: models.Project = Depends(deps.can_read_write_project),
+    flight: models.Flight = Depends(deps.can_read_write_flight),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+        )
+    if not project.is_owner:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access forbidden"
+        )
+    if not flight:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
+        )
+    deactivated_raw_data = crud.raw_data.deactivate(db, raw_data_id=raw_data_id)
+    print(deactivate_raw_data)
+    if not deactivated_raw_data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to deactivate"
+        )
+    return deactivated_raw_data

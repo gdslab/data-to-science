@@ -214,7 +214,7 @@ export default function UploadModal({ apiRoute, open, setOpen, uploadType }: Pro
                     <legend className="block text-sm text-gray-400 font-bold pt-2 pb-1">
                       Previously uploaded:
                     </legend>
-                    <ul className="list-disc">
+                    <ul className="list-disc max-h-32 overflow-y-auto">
                       {uploadHistory.map((recentUpload, index) => (
                         <li key={`upload-${index}`}>{recentUpload}</li>
                       ))}

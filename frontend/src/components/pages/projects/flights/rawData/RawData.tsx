@@ -1,13 +1,10 @@
-import { TrashIcon } from '@heroicons/react/24/outline';
 import { RawData as RawDataInterface } from '../FlightData';
+import { useProjectContext } from '../../ProjectContext';
+import RawDataDeleteModal from './RawDataDeleteModal';
 
-export default function RawData({
-  data,
-  role,
-}: {
-  data: RawDataInterface[];
-  role: string;
-}) {
+export default function RawData({ data }: { data: RawDataInterface[] }) {
+  const { projectRole } = useProjectContext();
+
   return (
     <div className="h-full flex flex-col">
       <h2>Raw Data</h2>
@@ -23,11 +20,8 @@ export default function RawData({
               >
                 {dataset.original_filename}
               </a>
-              {role !== 'viewer' ? (
-                <div onClick={() => alert('not implemented')}>
-                  <span className="sr-only">Delete {dataset.original_filename}</span>
-                  <TrashIcon className="h-4 w-4 text-red-500 cursor-pointer" />
-                </div>
+              {projectRole === 'owner' ? (
+                <RawDataDeleteModal rawData={dataset} iconOnly={true} />
               ) : null}
             </div>
           ))

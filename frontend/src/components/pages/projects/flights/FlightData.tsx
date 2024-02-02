@@ -5,18 +5,9 @@ import { DataProduct } from '../ProjectDetail';
 import DataProducts from './dataProducts/DataProducts';
 import FlightDataNav from './FlightDataNav';
 import RawData from './rawData/RawData';
-import { User } from '../../../../AuthContext';
 
 export async function loader({ params }: { params: Params<string> }) {
-  const profile = localStorage.getItem('userProfile');
-  const user: User | null = profile ? JSON.parse(profile) : null;
-  if (!user) return { dataProducts: [], rawData: [], role: 'viewer' };
   try {
-    const projectMember = await axios.get(
-      `${import.meta.env.VITE_API_V1_STR}/projects/${params.projectId}/members/${
-        user.id
-      }`
-    );
     const dataProducts = await axios.get(
       `${import.meta.env.VITE_API_V1_STR}/projects/${params.projectId}/flights/${
         params.flightId
@@ -27,11 +18,10 @@ export async function loader({ params }: { params: Params<string> }) {
         params.flightId
       }/raw_data`
     );
-    if (dataProducts && rawData && projectMember) {
+    if (dataProducts && rawData) {
       return {
         dataProducts: dataProducts.data,
         rawData: rawData.data,
-        role: projectMember.data.role,
       };
     } else {
       return { dataProducts: [], rawData: [], role: 'viewer' };
@@ -55,20 +45,19 @@ export interface RawData {
 interface FlightData {
   dataProducts: DataProductStatus[];
   rawData: RawData[];
-  role: string;
 }
 
 export default function FlightData() {
-  const { dataProducts, rawData, role } = useLoaderData() as FlightData;
+  const { dataProducts, rawData } = useLoaderData() as FlightData;
   return (
     <div className="flex flex-row h-full">
       <FlightDataNav />
       <div className="flex flex-col h-full w-full gap-4 p-4">
         <div className="max-h-32">
-          <RawData data={rawData} role={role} />
+          <RawData data={rawData} />
         </div>
         <div className="grow min-h-0">
-          <DataProducts data={dataProducts} role={role} />
+          <DataProducts data={dataProducts} />
         </div>
       </div>
     </div>
