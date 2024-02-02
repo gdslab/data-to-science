@@ -9,7 +9,13 @@ import { isGeoTIFF } from '../dataProducts/DataProducts';
 import { useProjectContext } from '../../ProjectContext';
 import FlightDeleteModal from '../FlightDeleteModal';
 
-export default function FlightCard({ flight }: { flight: Flight }) {
+export default function FlightCard({
+  flight,
+  recentFlight,
+}: {
+  flight: Flight;
+  recentFlight: string;
+}) {
   const { projectRole } = useProjectContext();
 
   const dataProduct = flight.data_products.length > 0 ? flight.data_products[0] : null;
@@ -17,7 +23,10 @@ export default function FlightCard({ flight }: { flight: Flight }) {
   return (
     <div className="flex items-center justify-center min-h-96">
       <div className="w-80">
-        <Card rounded={true}>
+        <Card
+          rounded={true}
+          backgroundColor={flight.id === recentFlight ? 'accent2' : 'white'}
+        >
           <div className="grid grid-flow-row auto-rows-max gap-4">
             {/* preview image */}
             <div className="relative flex items-center justify-center bg-accent3/20">

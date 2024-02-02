@@ -31,28 +31,40 @@ function getSlidesPerView(width: number): number {
   }
 }
 
-export default function FlightCarousel({ flights }: { flights: Flight[] }) {
+export default function FlightCarousel({
+  flights,
+  sortOrder,
+}: {
+  flights: Flight[];
+  sortOrder: string;
+}) {
   const { width } = useWindowDimensions();
+
+  const sortedFlights = flights.sort((a, b) =>
+    sorter(new Date(a.acquisition_date), new Date(b.acquisition_date), sortOrder)
+  );
 
   return (
     <>
       <Swiper
         slidesPerView={getSlidesPerView(width)}
         spaceBetween={30}
-        centeredSlides={true}
         navigation={true}
         pagination={{ clickable: true }}
         modules={[Pagination, Navigation]}
       >
-        {flights
-          .sort((a, b) =>
-            sorter(new Date(a.acquisition_date), new Date(b.acquisition_date), 'asc')
-          )
-          .map((flight) => (
-            <SwiperSlide key={flight.id}>
-              <FlightCard flight={flight} />
-            </SwiperSlide>
-          ))}
+        {sortedFlights.map((flight) => (
+          <SwiperSlide key={flight.id}>
+            <FlightCard
+              flight={flight}
+              recentFlight={
+                sortOrder === 'asc'
+                  ? sortedFlights.slice(-1)[0].id
+                  : sortedFlights[0].id
+              }
+            />
+          </SwiperSlide>
+        ))}
       </Swiper>
     </>
   );

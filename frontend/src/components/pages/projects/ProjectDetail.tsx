@@ -168,6 +168,7 @@ export default function ProjectDetail() {
   const [openMap, setOpenMap] = useState(false);
 
   const [isEditing, setIsEditing] = useState<Editing>(null);
+  const [flightSortOrder, setFlightSortOrder] = useState('asc');
 
   const currentTeam = teams ? teams.filter(({ id }) => project.team_id === id) : null;
 
@@ -383,13 +384,32 @@ export default function ProjectDetail() {
           </div>
         )}
         <div className="grow min-h-0">
-          <div className="h-full flex flex-col">
+          <div className="h-full flex flex-col gap-4">
             <div className="h-24">
               <h2>Flights</h2>
-              <TableCardRadioInput
-                tableView={tableView}
-                toggleTableView={toggleTableView}
-              />
+              <div className="flex justify-between">
+                <div className="flex flex-row items-center gap-2">
+                  <label
+                    htmlFor="flightSortOrder"
+                    className="text-sm font-medium text-gray-900 w-20"
+                  >
+                    Sort by
+                  </label>
+                  <select
+                    name="flightSortOrder"
+                    id="flightSortOrder"
+                    className="w-full px-1.5 font-semibold rounded-md border-2 border-zinc-300 text-gray-700 sm:text-sm"
+                    onChange={(e) => setFlightSortOrder(e.target.value)}
+                  >
+                    <option value="asc">Date (ascending)</option>
+                    <option value="desc">Date (descending)</option>
+                  </select>
+                </div>
+                <TableCardRadioInput
+                  tableView={tableView}
+                  toggleTableView={toggleTableView}
+                />
+              </div>
             </div>
             {flights.length > 0 ? (
               tableView === 'table' ? (
@@ -407,7 +427,7 @@ export default function ProjectDetail() {
                         sorter(
                           new Date(a.acquisition_date),
                           new Date(b.acquisition_date),
-                          'asc'
+                          flightSortOrder
                         )
                       )
                       .map((flight) => [
@@ -447,7 +467,7 @@ export default function ProjectDetail() {
                 </Table>
               ) : (
                 <div className="h-full min-h-96">
-                  <FlightCarousel flights={flights} />
+                  <FlightCarousel flights={flights} sortOrder={flightSortOrder} />
                 </div>
               )
             ) : null}

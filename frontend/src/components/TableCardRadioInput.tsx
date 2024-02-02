@@ -10,7 +10,7 @@ export default function TableCardRadioInput({
   }
 
   return (
-    <fieldset className="mb-4 flex flex-wrap justify-end">
+    <fieldset className="flex flex-wrap justify-end">
       <legend className="sr-only">Toggle Table View</legend>
 
       <div>
