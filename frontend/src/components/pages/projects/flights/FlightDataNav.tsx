@@ -30,7 +30,7 @@ export default function FlightDataNav() {
 
   if (flights && flights.length > 0) {
     return (
-      <nav className="flex flex-col gap-4 p-4">
+      <nav className="grow flex flex-col min-h-0 items-center gap-4 p-4 min-w-48 overflow-y-auto">
         {flights
           .sort((a, b) =>
             sorter(new Date(a.acquisition_date), new Date(b.acquisition_date), 'desc')
@@ -39,7 +39,7 @@ export default function FlightDataNav() {
             flight.data_products.length > 0 ? (
               <Link
                 key={flight.id}
-                className="flex flex-col items-center justify-center h-36 w-36 bg-white border-2 border-slate-400 hover:border-slate-700 rounded-md"
+                className="flex flex-col items-center justify-center h-36 min-h-36 w-36 bg-white border-2 border-slate-400 hover:border-slate-700 rounded-md"
                 to={`/projects/${projectId}/flights/${flight.id}/data`}
               >
                 <img className="w-8" src={UASIcon} />
