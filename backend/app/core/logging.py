@@ -82,20 +82,24 @@ class CustomJsonFormatter(logging.Formatter):
 
 
 @lru_cache
-def get_logger_config():
-    # file
-    output_file_handler = logging.FileHandler(API_LOGFILE)
-    output_file_handler.setFormatter(CustomJsonFormatter(datefmt=DATE_FORMAT))
-    output_file_handler.setLevel(logging.DEBUG)
-
-    # stdout
+def get_logger_config(nofile = False):  
+    # stdout handler
     stdout_handler_format = logging.Formatter(LOGGER_FORMAT, datefmt=DATE_FORMAT)
     stdout_handler = logging.StreamHandler(sys.stdout)
     stdout_handler.setFormatter(stdout_handler_format)
     stdout_handler.setLevel(logging.DEBUG)
 
+    handlers = [stdout_handler]
+    if not nofile:
+        # file handler
+        output_file_handler = logging.FileHandler(API_LOGFILE)
+        output_file_handler.setFormatter(CustomJsonFormatter(datefmt=DATE_FORMAT))
+        output_file_handler.setLevel(logging.DEBUG)
+
+        handlers.append(output_file_handler)
+
     return LoggerConfig(
-        handlers=[output_file_handler, stdout_handler],
+        handlers=handlers,
         format="%(levelname)s: %(asctime)s \t%(message)s",
         date_format="%d-%b-%Y %H:%M:%S",
         logger_file=API_LOGFILE,
@@ -128,7 +132,10 @@ def setup_logger():
         logging.getLogger(name).handlers = []
         logging.getLogger(name).propagate = True
 
-    logger_config = get_logger_config()
+    try:
+        logger_config = get_logger_config()
+    except PermissionError:
+        logger_config = get_logger_config(nofile=True)
 
     logging.basicConfig(
         level=logger_config.level,
