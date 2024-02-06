@@ -31,6 +31,8 @@ fastapi-mail = {extras = ["aioredis"], version = "^1.4.1"}
 staticmap = "^0.5.7"
 titiler-core = "^0.15.4"
 matplotlib = "^3.8.2"
+numpy = "^1.26.3"
+gdal = "3.6.2"
 
 [tool.poetry.group.dev.dependencies]
 httpx = "^0.24.1"

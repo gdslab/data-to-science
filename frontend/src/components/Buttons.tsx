@@ -134,14 +134,16 @@ export function Button({ children, icon, size = 'normal', ...props }: Button) {
           getButtonSizeClassNames(size),
           classNames(
             props.disabled
-              ? 'text-slate-300 bg-slate-600'
+              ? 'text-gray-400 bg-gray-200 cursor-not-allowed'
               : 'text-white ease-in-out duration-300',
-            classNames(
-              icon === 'trash'
-                ? 'bg-red-600 hover:bg-red-700 border-red-700 hover:border-red-800'
-                : 'bg-accent3 hover:bg-accent3-dark border-accent3 hover:border-accent3-dark',
-              'border-2 rounded-md w-full'
-            )
+            !props.disabled
+              ? classNames(
+                  icon === 'trash'
+                    ? 'bg-red-600 hover:bg-red-700 border-red-700 hover:border-red-800'
+                    : 'bg-accent3 hover:bg-accent3-dark border-accent3 hover:border-accent3-dark',
+                  'border-2 rounded-md w-full'
+                )
+              : 'border-2 rounded-md w-full'
           )
         )}
         {...props}

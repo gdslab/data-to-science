@@ -11,6 +11,7 @@ import { DataProductStatus } from '../FlightData';
 import { isGeoTIFF } from './DataProducts';
 import DataProductDeleteModal from './DataProductDeleteModal';
 import { useProjectContext } from '../../ProjectContext';
+import ToolboxModal from './ToolboxModal';
 
 function ProgressBar() {
   return (
@@ -112,15 +113,7 @@ export default function DataProductCard({
               {projectRole === 'manager' || projectRole === 'owner' ? (
                 <>
                   <span className="text-slate-300">|</span>
-                  <div
-                    className="flex items-center gap-2 text-sky-600 cursor-pointer"
-                    onClick={() => {
-                      alert('not implemented yet');
-                    }}
-                  >
-                    <WrenchScrewdriverIcon className="h-6 w-6" />
-                    <span>Toolbox</span>
-                  </div>
+                  <ToolboxModal dataProduct={dataProduct} />
                 </>
               ) : null}
             </div>

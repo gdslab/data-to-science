@@ -7,6 +7,7 @@ import { Project } from './ProjectList';
 import { User } from '../../../AuthContext';
 
 type ProjectAction = { type: string; payload: Project | null };
+type FlightAction = { type: string; payload: Flight | null };
 type FlightsAction = { type: string; payload: Flight[] | null };
 type ProjectRoleAction = { type: string; payload: string | undefined };
 
@@ -38,6 +39,20 @@ function projectRoleReducer(state: string | undefined, action: ProjectRoleAction
   }
 }
 
+function flightReducer(state: Flight | null, action: FlightAction) {
+  switch (action.type) {
+    case 'set': {
+      return action.payload;
+    }
+    case 'clear': {
+      return null;
+    }
+    default: {
+      return state;
+    }
+  }
+}
+
 function flightsReducer(state: Flight[] | null, action: FlightsAction) {
   switch (action.type) {
     case 'set': {
@@ -57,6 +72,8 @@ interface Context {
   projectDispatch: React.Dispatch<ProjectAction>;
   projectRole: string | undefined;
   projectRoleDispatch: React.Dispatch<ProjectRoleAction>;
+  flight: Flight | null;
+  flightDispatch: React.Dispatch<FlightAction>;
   flights: Flight[] | null;
   flightsDispatch: React.Dispatch<FlightsAction>;
 }
@@ -66,6 +83,8 @@ const context: Context = {
   projectDispatch: () => {},
   projectRole: undefined,
   projectRoleDispatch: () => {},
+  flight: null,
+  flightDispatch: () => {},
   flights: null,
   flightsDispatch: () => {},
 };
@@ -75,11 +94,12 @@ const ProjectContext = createContext(context);
 export function ProjectContextProvider({ children }: { children: React.ReactNode }) {
   const [project, projectDispatch] = useReducer(projectReducer, null);
   const [projectRole, projectRoleDispatch] = useReducer(projectRoleReducer, undefined);
+  const [flight, flightDispatch] = useReducer(flightReducer, null);
   const [flights, flightsDispatch] = useReducer(flightsReducer, null);
-  const { projectId } = useParams();
+  const { projectId, flightId } = useParams();
 
   useEffect(() => {
-    async function getProject(projectId: string) {
+    async function getProject() {
       try {
         const response = await axios.get(
           `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}`
@@ -93,11 +113,31 @@ export function ProjectContextProvider({ children }: { children: React.ReactNode
         projectDispatch({ type: 'clear', payload: null });
       }
     }
-    if (projectId && !project) getProject(projectId);
+    if ((projectId && !project) || (project && project.id !== projectId)) getProject();
   }, [project, projectId]);
 
   useEffect(() => {
-    async function getProjectRole(projectId: string) {
+    async function getFlight() {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/flights/${flightId}`
+        );
+        if (response) {
+          flightDispatch({ type: 'set', payload: response.data });
+        } else {
+          flightDispatch({ type: 'clear', payload: null });
+        }
+      } catch {
+        flightDispatch({ type: 'clear', payload: null });
+      }
+    }
+
+    if ((projectId && flightId && !flight) || (flight && flight.id !== flightId))
+      getFlight();
+  }, [flight, flightId]);
+
+  useEffect(() => {
+    async function getProjectRole() {
       try {
         const profile = localStorage.getItem('userProfile');
         const user: User | null = profile ? JSON.parse(profile) : null;
@@ -115,11 +155,12 @@ export function ProjectContextProvider({ children }: { children: React.ReactNode
         projectRoleDispatch({ type: 'clear', payload: undefined });
       }
     }
-    if (projectId && !projectRole) getProjectRole(projectId);
-  }, [projectRole, projectId]);
+    if ((projectId && !projectRole) || (project && project.id !== projectId))
+      getProjectRole();
+  }, [projectRole, project, projectId]);
 
   useEffect(() => {
-    async function getFlights(projectId: string) {
+    async function getFlights() {
       try {
         const response = await axios.get(
           `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/flights`
@@ -133,8 +174,8 @@ export function ProjectContextProvider({ children }: { children: React.ReactNode
         flightsDispatch({ type: 'clear', payload: null });
       }
     }
-    if (projectId && !flights) getFlights(projectId);
-  }, [flights, projectId]);
+    if ((projectId && !flights) || (project && project.id !== projectId)) getFlights();
+  }, [flights, project, projectId]);
 
   return (
     <ProjectContext.Provider
@@ -143,6 +184,8 @@ export function ProjectContextProvider({ children }: { children: React.ReactNode
         projectDispatch,
         projectRole,
         projectRoleDispatch,
+        flight,
+        flightDispatch,
         flights,
         flightsDispatch,
       }}

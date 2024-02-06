@@ -28,6 +28,7 @@ COPY pyproject.toml poetry.lock ./
 # allow installing dev dependencies to run tests
 ARG INSTALL_DEV=false
 RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install --no-root ; else poetry install --no-root --no-dev ; fi"
+RUN poetry remove numpy gdal && poetry add numpy && poetry add gdal==3.6.2
 
 WORKDIR /tmp
 
@@ -69,7 +70,7 @@ ENV UVICORN_WORKERS=$NUM_OF_WORKERS
 ENV MPLCONFIGDIR=/var/tmp/d2s
 
 # install gdal and remove apt package info to reduce image size
-RUN apt-get update && apt-get install -y gdal-bin curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y gdal-bin libgdal-dev curl && rm -rf /var/lib/apt/lists/*
 
 # create unprivileged d2s user
 RUN useradd d2s
