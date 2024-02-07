@@ -145,7 +145,7 @@ def shapefile_to_geojson(src: fiona.model.Feature) -> dict:
         dict: GeoJSON object.
     """
     gdf = gpd.GeoDataFrame.from_features(src, crs=src.crs)
-    geojson = json.loads(gdf.to_json())
+    geojson = json.loads(gdf.to_json(to_wgs84=True))
 
     fc = FeatureCollection(**geojson)
     assert fc.type == "FeatureCollection"

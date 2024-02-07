@@ -71,8 +71,9 @@ COPY --from=builder /usr/local/bin/untwine /usr/local/bin/untwine
 # update path to include venv bin
 ENV PATH="$CONDA_ENV_PATH/bin:$PATH"
 
-# entwine lib
+# entwine and proj libs
 ENV LD_LIBRARY_PATH=/usr/local/lib
+ENV PROJ_LIB="$CONDA_ENV_PATH/share/proj"
 
 # copy over application code
 COPY . /app
