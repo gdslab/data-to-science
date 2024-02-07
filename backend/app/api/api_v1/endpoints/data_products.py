@@ -284,4 +284,35 @@ def run_processing_tool(
         )
 
     # exg
-    pass
+    if toolbox_in.exg:
+        out_raster = os.path.join(upload_dir, str(uuid4()) + ".tif")
+
+        # create new data product record
+        exg_data_product = crud.data_product.create_with_flight(
+            db,
+            schemas.DataProductCreate(
+                data_type=data_product.data_type,
+                filepath=out_raster,
+                original_filename=data_product.original_filename,
+            ),
+            flight_id=flight.id,
+        )
+
+        # run exg tool in background
+        tool_params = {
+            "red_band_idx": toolbox_in.exgRed,
+            "green_band_idx": toolbox_in.exgGreen,
+            "blue_band_idx": toolbox_in.exgBlue,
+        }
+        run_toolbox_process.apply_async(
+            args=[
+                "exg",
+                data_product.filepath,
+                out_raster,
+                tool_params,
+                exg_data_product.id,
+                current_user.id,
+            ],
+            kwargs={},
+            queue="main-queue",
+        )

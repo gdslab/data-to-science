@@ -164,6 +164,7 @@ export default function ToolboxModal({ dataProduct }: { dataProduct: DataProduct
               } as ToolboxFields
             }
             onSubmit={async (values, actions) => {
+              console.log(values);
               actions.setSubmitting(true);
               if (projectId && flightId && dataProduct.id) {
                 try {
