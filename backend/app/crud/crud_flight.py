@@ -107,7 +107,7 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
 
                 active_data_products = []
                 for data_product in flight.data_products:
-                    if data_product.is_active:
+                    if data_product.is_active and data_product.stac_properties:
                         active_data_products.append(data_product)
                         set_public_attr(
                             data_product, data_product.file_permission.is_public

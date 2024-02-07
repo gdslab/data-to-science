@@ -1,5 +1,7 @@
+import axios from 'axios';
 import { Field, Form, Formik, useFormikContext } from 'formik';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useParams, useRevalidator } from 'react-router-dom';
 import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 
 import { Button } from '../../../../Buttons';
@@ -125,6 +127,12 @@ const LidarTools = () => {
 export default function ToolboxModal({ dataProduct }: { dataProduct: DataProduct }) {
   const [open, setOpen] = useState(false);
   const { flight } = useProjectContext();
+  const { projectId, flightId } = useParams();
+  const revalidator = useRevalidator();
+
+  useEffect(() => {
+    if (!open) revalidator.revalidate();
+  }, [open]);
 
   return (
     <div>
@@ -155,12 +163,27 @@ export default function ToolboxModal({ dataProduct }: { dataProduct: DataProduct
                 ndviRed: 3,
               } as ToolboxFields
             }
-            onSubmit={(values, actions) => {
+            onSubmit={async (values, actions) => {
               actions.setSubmitting(true);
-              setTimeout(() => {
-                actions.setSubmitting(false);
-              }, 3000);
-              console.log(values);
+              if (projectId && flightId && dataProduct.id) {
+                try {
+                  const response = await axios.post(
+                    `${
+                      import.meta.env.VITE_API_V1_STR
+                    }/projects/${projectId}/flights/${flightId}/data_products/${
+                      dataProduct.id
+                    }/tools`,
+                    values
+                  );
+                  if (response) {
+                    setOpen(false);
+                  }
+                } catch (err) {
+                  console.error(err);
+                }
+              } else {
+                console.log('');
+              }
             }}
           >
             {({ isSubmitting, values }) => (

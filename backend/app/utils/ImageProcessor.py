@@ -19,10 +19,12 @@ class ImageProcessor:
     compressed COG for visualization will be created along with a small preview image.
     """
 
-    def __init__(self, img_path: str) -> None:
+    def __init__(self, img_path: str, output_dir: str | None = None) -> None:
         self.img_path: str = img_path
 
-        output_dir: str = os.path.dirname(self.img_path)
+        if not output_dir:
+            output_dir: str = os.path.dirname(self.img_path)
+
         output_name = os.path.basename(self.img_path).replace("__temp", "")
 
         self.out_path: str = os.path.join(output_dir, output_name)

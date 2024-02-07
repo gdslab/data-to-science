@@ -130,7 +130,6 @@ def deactivate_raw_data(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
     deactivated_raw_data = crud.raw_data.deactivate(db, raw_data_id=raw_data_id)
-    print(deactivate_raw_data)
     if not deactivated_raw_data:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to deactivate"

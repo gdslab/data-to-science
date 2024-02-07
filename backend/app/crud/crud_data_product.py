@@ -102,6 +102,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             data_products = session.execute(data_products_query).scalars().all()
             updated_data_products = []
             for data_product in data_products:
+                skip_data_product = False
                 user_style_query = (
                     select(UserStyle)
                     .where(UserStyle.data_product_id == data_product.id)
@@ -110,11 +111,16 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                 user_style = session.execute(user_style_query).scalar_one_or_none()
                 set_public_attr(data_product, data_product.file_permission.is_public)
                 set_url_attr(data_product, upload_dir)
-                set_status_attr(data_product, data_product.jobs.status)
+                if data_product.jobs and data_product.jobs.status:
+                    set_status_attr(data_product, data_product.jobs.status)
+                else:
+                    skip_data_product = True
                 if user_style:
                     set_user_style_attr(data_product, user_style.settings)
-
-                updated_data_products.append(data_product)
+                if not data_product.stac_properties:
+                    skip_data_product = True
+                if not skip_data_product:
+                    updated_data_products.append(data_product)
             return updated_data_products
 
     def deactivate(self, db: Session, data_product_id: UUID) -> DataProduct | None:

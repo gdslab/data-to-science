@@ -14,14 +14,31 @@ from fastapi import (
     Query,
     UploadFile,
 )
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
-from app.worker import process_geotiff, process_point_cloud
+from app.worker import process_geotiff, process_point_cloud, run_toolbox_process
 from app.core.config import settings
 
 router = APIRouter()
+
+
+def get_upload_dir(
+    request: Request, projectId: UUID, flightId: UUID, dType: str
+) -> str:
+    if request.client and request.client.host == "testclient":
+        upload_dir = f"{settings.TEST_STATIC_DIR}/projects/{projectId}/flights/{flightId}/{dType}"
+    else:
+        upload_dir = (
+            f"{settings.STATIC_DIR}/projects/{projectId}/flights/{flightId}/{dType}"
+        )
+
+    if not os.path.exists(upload_dir):
+        os.makedirs(upload_dir)
+
+    return upload_dir
 
 
 @router.post("", status_code=status.HTTP_202_ACCEPTED)
@@ -44,15 +61,7 @@ def upload_data_product(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown data type"
         )
 
-    if request.client and request.client.host == "testclient":
-        upload_dir = f"{settings.TEST_STATIC_DIR}/projects/{project.id}/flights/{flight.id}/{dtype}"
-    else:
-        upload_dir = (
-            f"{settings.STATIC_DIR}/projects/{project.id}/flights/{flight.id}/{dtype}"
-        )
-
-    if not os.path.exists(upload_dir):
-        os.makedirs(upload_dir)
+    upload_dir = get_upload_dir(request, project.id, flight.id, dtype)
 
     original_filename = pathlib.Path(files.filename)
     unique_filename = str(uuid4())
@@ -200,3 +209,79 @@ def deactivate_data_product(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to deactivate"
         )
     return deactivated_data_product
+
+
+class ProcessingRequest(BaseModel):
+    chm: bool
+    exg: bool
+    exgRed: int
+    exgGreen: int
+    exgBlue: int
+    ndvi: bool
+    ndviNIR: int
+    ndviRed: int
+
+
+@router.post("/{data_product_id}/tools", status_code=status.HTTP_202_ACCEPTED)
+def run_processing_tool(
+    request: Request,
+    data_product_id: UUID,
+    toolbox_in: ProcessingRequest,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    project: models.Project = Depends(deps.can_read_write_project),
+    flight: models.Flight = Depends(deps.can_read_write_flight),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    if not project or not flight:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
+        )
+
+    if toolbox_in.exg is False and toolbox_in.ndvi is False:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="No product selected"
+        )
+
+    data_product = crud.data_product.get(db, id=data_product_id)
+    if not data_product or not data_product.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
+        )
+
+    upload_dir = get_upload_dir(request, project.id, flight.id, data_product.data_type)
+
+    # ndvi
+    if toolbox_in.ndvi:
+        out_raster = os.path.join(upload_dir, str(uuid4()) + ".tif")
+
+        # create new data product record
+        ndvi_data_product = crud.data_product.create_with_flight(
+            db,
+            schemas.DataProductCreate(
+                data_type=data_product.data_type,
+                filepath=out_raster,
+                original_filename=data_product.original_filename,
+            ),
+            flight_id=flight.id,
+        )
+
+        # run ndvi tool in background
+        tool_params = {
+            "red_band_idx": toolbox_in.ndviRed,
+            "nir_band_idx": toolbox_in.ndviNIR,
+        }
+        run_toolbox_process.apply_async(
+            args=[
+                "ndvi",
+                data_product.filepath,
+                out_raster,
+                tool_params,
+                ndvi_data_product.id,
+                current_user.id,
+            ],
+            kwargs={},
+            queue="main-queue",
+        )
+
+    # exg
+    pass

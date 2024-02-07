@@ -55,7 +55,7 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
     data &&
       data.length > 0 &&
       data.filter(({ status }) => status === 'INPROGRESS').length > 0
-      ? 5000
+      ? 30000 // 30 seconds
       : null
   );
 
