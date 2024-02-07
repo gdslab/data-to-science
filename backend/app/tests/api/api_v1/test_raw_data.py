@@ -35,14 +35,13 @@ def test_create_raw_data(
 
         assert response.status_code == status.HTTP_200_OK
 
-    shutil.rmtree(settings.TEST_STATIC_DIR)
-
 
 def test_read_raw_data_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
     raw_data = SampleRawData(db, user=current_user)
+    print(client)
     response = client.get(
         f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
         f"/flights/{raw_data.flight.id}/raw_data/{raw_data.obj.id}"

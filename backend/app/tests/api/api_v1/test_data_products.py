@@ -35,8 +35,6 @@ def test_create_data_product(
 
         assert response.status_code == 202
 
-    shutil.rmtree(settings.TEST_STATIC_DIR)
-
 
 def test_read_data_product_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str

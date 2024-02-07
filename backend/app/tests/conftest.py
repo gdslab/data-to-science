@@ -1,3 +1,5 @@
+import os
+import shutil
 from typing import Generator
 
 import pytest
@@ -46,6 +48,8 @@ def db_fixture() -> Generator:
     finally:
         db.close()
         Base.metadata.drop_all(engine)
+        if os.path.exists(settings.TEST_STATIC_DIR):
+            shutil.rmtree(settings.TEST_STATIC_DIR)
 
 
 @pytest.fixture(name="client")
