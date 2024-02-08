@@ -113,7 +113,10 @@ export default function ShareMap() {
           tileLayerRef={tileLayerRef}
         />
       ) : null}
-      {dataProduct && dataProduct.data_type === 'dsm' ? (
+      {dataProduct &&
+      (dataProduct.data_type === 'dsm' ||
+        (dataProduct.stac_properties &&
+          dataProduct.stac_properties.raster.length === 1)) ? (
         <ColorBarControl
           dataProduct={dataProduct}
           symbology={symbology as DSMSymbologySettings}

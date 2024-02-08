@@ -51,7 +51,7 @@ export default function FlightData() {
   const { dataProducts, rawData } = useLoaderData() as FlightData;
   return (
     <div className="flex flex-row h-full">
-      {dataProducts.length > 0 ? <FlightDataNav /> : null}
+      <FlightDataNav />
       <div className="flex flex-col h-full w-full gap-4 p-4">
         <div className="max-h-32">
           <RawData data={rawData} />

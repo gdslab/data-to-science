@@ -52,7 +52,10 @@ export function getDataProductTileLayer(
   symbologySettings?: SymbologySettings | undefined,
   tileLayerRef?: undefined | React.MutableRefObject<L.TileLayer | null>
 ) {
-  if (dataProduct.data_type === 'dsm') {
+  if (
+    dataProduct.data_type === 'dsm' ||
+    (dataProduct.stac_properties && dataProduct.stac_properties.raster.length === 1)
+  ) {
     const stats = dataProduct.stac_properties.raster[0].stats;
     const symbology = symbologySettings as DSMSymbologySettings | undefined;
     const savedStyle = dataProduct.user_style

@@ -95,7 +95,8 @@ function DSMSymbologyControls() {
   } = useMapContext();
   if (activeProject && activeDataProduct) {
     const symbology = symbologySettings as DSMSymbologySettings;
-
+    console.log(activeDataProduct);
+    console.log(symbology);
     return (
       <Formik
         initialValues={symbology}
@@ -442,11 +443,11 @@ function OrthoSymbologyControls() {
 }
 
 interface SymbologyControls {
-  dataProductType: string;
+  numOfBands: number;
 }
 
-export default function SymbologyControls({ dataProductType }: SymbologyControls) {
-  if (dataProductType === 'ortho') return <OrthoSymbologyControls />;
-  if (dataProductType === 'dsm') return <DSMSymbologyControls />;
+export default function SymbologyControls({ numOfBands }: SymbologyControls) {
+  if (numOfBands > 1) return <OrthoSymbologyControls />;
+  if (numOfBands === 1) return <DSMSymbologyControls />;
   return null;
 }

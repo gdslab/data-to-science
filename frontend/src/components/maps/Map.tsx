@@ -67,7 +67,9 @@ export default function Map({
         {activeProject &&
         flights &&
         activeDataProduct &&
-        activeDataProduct.data_type === 'dsm' &&
+        (activeDataProduct.data_type === 'dsm' ||
+          (activeDataProduct.stac_properties &&
+            activeDataProduct.stac_properties.raster.length === 1)) &&
         activeMapTool === 'map' ? (
           <ColorBarControl
             projectId={activeProject.id}

@@ -134,6 +134,7 @@ export default function ToolboxModal({ dataProduct }: { dataProduct: DataProduct
 
   useEffect(() => {
     if (!open) revalidator.revalidate();
+    setStatus(null);
   }, [open]);
 
   return (
@@ -166,7 +167,7 @@ export default function ToolboxModal({ dataProduct }: { dataProduct: DataProduct
               } as ToolboxFields
             }
             onSubmit={async (values, actions) => {
-              actions.setSubmitting(true);
+              setStatus(null);
               if (projectId && flightId && dataProduct.id) {
                 try {
                   const response = await axios.post(
@@ -178,9 +179,15 @@ export default function ToolboxModal({ dataProduct }: { dataProduct: DataProduct
                     values
                   );
                   if (response) {
-                    setTimeout(() => {
+                    setStatus({
+                      type: 'success',
+                      msg: 'Processing has begun. You may close this window.',
+                    });
+                    actions.resetForm({ values: values });
+                    setInterval(() => {
+                      setStatus(null);
                       setOpen(false);
-                    }, 3000);
+                    }, 10000);
                   }
                 } catch (err) {
                   setStatus({ type: 'error', msg: 'Unable to complete request' });
@@ -190,7 +197,7 @@ export default function ToolboxModal({ dataProduct }: { dataProduct: DataProduct
               }
             }}
           >
-            {({ isSubmitting, values }) => (
+            {({ dirty, values }) => (
               <Form className="grid grid-row-auto gap-4">
                 <HintText>Select data products to be generated</HintText>
                 {/* rgb tools */}
@@ -209,14 +216,18 @@ export default function ToolboxModal({ dataProduct }: { dataProduct: DataProduct
                 ) : null}
                 <Button
                   type="submit"
-                  disabled={!values.exg && !values.ndvi && !values.chm}
+                  disabled={(!values.exg && !values.ndvi && !values.chm) || !dirty}
                 >
-                  {isSubmitting ? 'Processing...' : 'Process'}
+                  Run
                 </Button>
               </Form>
             )}
           </Formik>
-          {status ? <Alert alertType={status.type}>{status.msg}</Alert> : null}
+          {status ? (
+            <div className="mt-4">
+              <Alert alertType={status.type}>{status.msg}</Alert>
+            </div>
+          ) : null}
         </div>
       </Modal>
     </div>

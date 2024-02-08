@@ -107,23 +107,29 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
 
                 active_data_products = []
                 for data_product in flight.data_products:
-                    if data_product.is_active and data_product.stac_properties:
-                        active_data_products.append(data_product)
-                        set_public_attr(
-                            data_product, data_product.file_permission.is_public
-                        )
-                        set_url_attr(data_product, upload_dir)
-                        # check for saved user style
-                        user_style_query = (
-                            select(UserStyle)
-                            .where(UserStyle.data_product_id == data_product.id)
-                            .where(UserStyle.user_id == user_id)
-                        )
-                        user_style = session.execute(
-                            user_style_query
-                        ).scalar_one_or_none()
-                        if user_style:
-                            set_user_style_attr(data_product, user_style.settings)
+                    if data_product.is_active and data_product.filepath != "null":
+                        if (
+                            data_product.data_type == "point_cloud"
+                            or data_product.data_type != "point_cloud"
+                            and data_product.stac_properties
+                        ):
+                            # do not include geotiffs without stac props
+                            active_data_products.append(data_product)
+                            set_public_attr(
+                                data_product, data_product.file_permission.is_public
+                            )
+                            set_url_attr(data_product, upload_dir)
+                            # check for saved user style
+                            user_style_query = (
+                                select(UserStyle)
+                                .where(UserStyle.data_product_id == data_product.id)
+                                .where(UserStyle.user_id == user_id)
+                            )
+                            user_style = session.execute(
+                                user_style_query
+                            ).scalar_one_or_none()
+                            if user_style:
+                                set_user_style_attr(data_product, user_style.settings)
                 flight.data_products = active_data_products
             return flights_with_data
 

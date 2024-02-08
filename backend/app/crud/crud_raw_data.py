@@ -29,7 +29,12 @@ class CRUDRawData(CRUDBase[RawData, RawDataCreate, RawDataUpdate]):
     def get_single_by_id(
         self, db: Session, raw_data_id: UUID, upload_dir: str
     ) -> RawData | None:
-        stmt = select(RawData).where(RawData.id == raw_data_id).where(RawData.is_active)
+        stmt = (
+            select(RawData)
+            .where(RawData.id == raw_data_id)
+            .where(RawData.is_active)
+            .where(RawData.filepath != "null")
+        )
         with db as session:
             raw_data = session.scalar(stmt)
             if raw_data:
@@ -48,6 +53,7 @@ class CRUDRawData(CRUDBase[RawData, RawDataCreate, RawDataUpdate]):
             select(RawData)
             .where(RawData.flight_id == flight_id)
             .where(RawData.is_active)
+            .where(RawData.filepath != "null")
         )
         with db as session:
             all_raw_data = session.execute(stmt).all()

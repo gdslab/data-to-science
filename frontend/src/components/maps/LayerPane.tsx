@@ -255,8 +255,7 @@ export default function LayerPane({
                                           payload: dataProduct.user_style,
                                         });
                                       } else if (
-                                        dataProduct.data_type === 'dsm' ||
-                                        dataProduct.data_type === 'ortho'
+                                        dataProduct.data_type !== 'point_cloud'
                                       ) {
                                         symbologySettingsDispatch({
                                           type: 'update',
@@ -302,7 +301,12 @@ export default function LayerPane({
                                 activeDataProduct.id === dataProduct.id ? (
                                   <div className="mt-2">
                                     <SymbologyControls
-                                      dataProductType={dataProduct.data_type}
+                                      numOfBands={
+                                        dataProduct.data_type !== 'point_cloud' &&
+                                        dataProduct.stac_properties
+                                          ? dataProduct.stac_properties.raster.length
+                                          : 1 // default to single band
+                                      }
                                     />{' '}
                                   </div>
                                 ) : null}

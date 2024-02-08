@@ -2,7 +2,10 @@ import { DataProduct } from '../pages/projects/ProjectDetail';
 import { SymbologySettings } from './MapContext';
 
 function getDefaultStyle(dataProduct: DataProduct): SymbologySettings {
-  if (dataProduct.data_type === 'dsm') {
+  if (
+    dataProduct.data_type === 'dsm' ||
+    (dataProduct.stac_properties && dataProduct.stac_properties.raster.length === 1)
+  ) {
     const stats = dataProduct.stac_properties.raster[0].stats;
     return {
       colorRamp: 'rainbow',
