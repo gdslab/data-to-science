@@ -1,6 +1,7 @@
 from .data_product import DataProduct, DataProductCreate, DataProductUpdate
 from .file_permission import FilePermission, FilePermissionCreate, FilePermissionUpdate
 from .flight import Flight, FlightCreate, FlightUpdate
+from .job import Job, JobCreate, JobUpdate
 from .location import Location, LocationCreate, LocationUpdate
 from .project import Project, ProjectCreate, ProjectUpdate
 from .project_member import ProjectMember, ProjectMemberCreate, ProjectMemberUpdate

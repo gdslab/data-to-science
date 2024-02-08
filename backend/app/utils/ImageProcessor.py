@@ -4,6 +4,7 @@ import multiprocessing
 import os
 import shutil
 import subprocess
+from pathlib import Path
 
 from pydantic import ValidationError
 
@@ -19,39 +20,36 @@ class ImageProcessor:
     compressed COG for visualization will be created along with a small preview image.
     """
 
-    def __init__(self, img_path: str, output_dir: str | None = None) -> None:
-        self.img_path: str = img_path
+    def __init__(self, in_raster: str, output_dir: str | None = None) -> None:
+        self.in_raster = Path(in_raster)
 
         if not output_dir:
-            output_dir: str = os.path.dirname(self.img_path)
+            output_dir = self.in_raster.parents[1]
 
-        output_name = os.path.basename(self.img_path).replace("__temp", "")
-
-        self.out_path: str = os.path.join(output_dir, output_name)
-        self.preview_out_path: str = os.path.join(
-            output_dir, output_name.replace("tif", "jpg")
-        )
+        self.out_dir = Path(output_dir)
+        self.out_raster = self.out_dir / self.in_raster.name
+        self.preview_out_path = self.out_raster.with_suffix(".jpg")
 
         self.stac_properties: dict = {"raster": [], "eo": []}
 
     def run(self) -> str:
-        info: dict = get_info(self.img_path)
+        info: dict = get_info(self.in_raster)
+
         if is_cog(info):
-            shutil.move(self.img_path, self.out_path)
+            shutil.move(self.in_raster, self.out_dir)
         else:
-            convert_to_cog(self.img_path, self.out_path, info)
+            convert_to_cog(self.in_raster, self.out_raster, info)
 
-        if os.path.exists(self.img_path):
-            os.remove(self.img_path)
-
-        if os.path.exists(self.img_path + ".aux.xml"):
-            os.remove(self.img_path + ".aux.xml")
+        if os.path.exists(self.in_raster.parent):
+            shutil.rmtree(self.in_raster.parent)
 
         self.stac_properties = get_stac_properties(info)
 
-        create_preview_image(self.out_path, self.preview_out_path, self.stac_properties)
+        create_preview_image(
+            self.out_raster, self.preview_out_path, self.stac_properties
+        )
 
-        return self.out_path
+        return self.out_raster
 
     def get_default_symbology(self) -> dict:
         """Creates default symbology settings based on raster type and stats."""
@@ -101,11 +99,11 @@ class ImageProcessor:
             )
 
 
-def get_info(img_path: str) -> dict:
+def get_info(in_raster: str) -> dict:
     """Returns output from gdalinfo -json <input_dataset>.
 
     Args:
-        img_path (str): Path to input dataset
+        in_raster (str): Path to input dataset
 
     Raises:
         e: Raise exception
@@ -114,7 +112,7 @@ def get_info(img_path: str) -> dict:
         dict: _description_
     """
     result: subprocess.CompletedProcess = subprocess.run(
-        ["gdalinfo", "-approx_stats", "-json", img_path],
+        ["gdalinfo", "-approx_stats", "-json", in_raster],
         stdout=subprocess.PIPE,
         check=True,
     )
@@ -174,13 +172,13 @@ def get_stac_properties(info: dict) -> STACProperties:
 
 
 def convert_to_cog(
-    img_path: str, out_path: str, info: dict, num_threads: int | None = None
+    in_raster: str, out_raster: str, info: dict, num_threads: int | None = None
 ) -> None:
     """Runs gdalwarp to generate new raster in COG layout.
 
     Args:
-        img_path (str): Path to input raster dataset
-        out_path (str): Path for output raster dataset
+        in_raster (str): Path to input raster dataset
+        out_raster (str): Path for output raster dataset
         info (dict): gdalinfo -json output
         num_threads (int | None, optional): No. of CPUs to use. Defaults to None.
     """
@@ -190,8 +188,8 @@ def convert_to_cog(
     result: subprocess.CompletedProcess = subprocess.run(
         [
             "gdalwarp",
-            img_path,
-            out_path,
+            in_raster,
+            out_raster,
             "-of",
             "COG",
             "-co",
@@ -209,14 +207,14 @@ def convert_to_cog(
 
 
 def create_preview_image(
-    img_path: str, out_path: str, stac_props: STACProperties
+    in_raster: str, preview_out_path: str, stac_props: STACProperties
 ) -> None:
     """Generates preview image for GeoTIFF data products.
 
     Args:
-        img_path (str): Path to input dataset
-        out_path (str): Path for output dataset
-        stac_props (STACProperties): gdalinfo STAC output
+        in_raster (str): Path to input dataset.
+        preview_out_path (str): Path for preview image.
+        stac_props (STACProperties): gdalinfo STAC output.
     """
     band_count: int = len(stac_props["raster"])
     if band_count > 2:
@@ -249,7 +247,7 @@ def create_preview_image(
         ]
 
     size_params: list = ["-outsize", "6.25%", "6.25%"]
-    inout_params: list = [img_path, out_path]
+    inout_params: list = [in_raster, preview_out_path]
 
     command = ["gdal_translate", "-of", "JPEG", "-ot", "Byte", "-co", "QUALITY=75"]
     command.extend(band_params)

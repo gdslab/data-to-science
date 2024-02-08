@@ -2,7 +2,7 @@ import os
 import shutil
 import subprocess
 from datetime import datetime
-from pathlib import Path, PosixPath
+from pathlib import Path
 from typing import TypedDict
 from uuid import UUID
 
@@ -74,7 +74,9 @@ def run_toolbox_process(
             crud.data_product.update(
                 db,
                 db_obj=new_data_product,
-                obj_in=DataProductUpdate(stac_properties=ip.stac_properties),
+                obj_in=DataProductUpdate(
+                    filepath=out_raster, stac_properties=ip.stac_properties
+                ),
             )
             # create user style record with default symbology settings
             crud.user_style.create_with_data_product_and_user(
@@ -99,66 +101,72 @@ def process_geotiff(
     project_id: UUID,
     flight_id: UUID,
     job_id: UUID,
-    dtype: str,
-    data_product: DataProduct | None = None,
+    data_product_id: UUID,
 ) -> None:
+    """Celery task for processing an uploaded GeoTIFF.
+
+    Args:
+        original_filename (str): Original filename for GeoTIFF.
+        geotiff_filepath (str): Filepath for GeoTIFF.
+        user_id (UUID): User ID for user that uploaded GeoTIFF.
+        project_id (UUID): Project ID associated with data product.
+        flight_id (UUID): Flight ID associated with data product.
+        job_id (UUID): Job ID for job associated with upload process.
+        data_product_id (UUID): Data product ID for uploaded GeoTIFF.
+
+    Returns:
+        _type_: _description_
+    """
+    geotiff_filepath = Path(geotiff_filepath)
+    # get database session
     db = next(get_db())
-
+    # retrieve job associated with this task
     job = crud.job.get(db, id=job_id)
+    # retrieve data product associated with this task
+    data_product = crud.data_product.get(db, id=data_product_id)
+
     if not job:
-        raise Exception
-
-    if job.status == "WAITING":
-        crud.job.update(
-            db, db_obj=job, obj_in=JobUpdate(state="STARTED", status="INPROGRESS")
-        )
-
-    if not data_product:
-        data_product = crud.data_product.create_with_flight(
-            db,
-            schemas.DataProductCreate(
-                data_type=dtype,
-                filepath=geotiff_filepath.replace("__temp", ""),
-                original_filename=original_filename,
-            ),
-            flight_id=flight_id,
-        )
-        if not data_product:
-            crud.job.update(
-                db,
-                db_obj=job,
-                obj_in=JobUpdate(
-                    state="COMPLETED", status="FAILED", end_time=datetime.now()
-                ),
-            )
-            return None
-
-    crud.job.update(db, db_obj=job, obj_in=JobUpdate(data_product_id=data_product.id))
-
-    # create COG for uploaded GeoTIFF if necessary
-    try:
-        ip = ImageProcessor(geotiff_filepath)
-        ip.run()
-        default_symbology = ip.get_default_symbology()
-    except Exception as e:
-        logger.exception("Failed to process uploaded GeoTIFF")
+        # remove uploaded file and raise exception
         if os.path.exists(geotiff_filepath):
-            os.remove(geotiff_filepath)
-        crud.job.update(
-            db,
-            db_obj=job,
-            obj_in=JobUpdate(
-                state="COMPLETED", status="FAILED", end_time=datetime.now()
-            ),
-        )
+            shutil.rmtree(geotiff_filepath.parent)
+        logger.error("Could not find job in DB for upload process")
         return None
 
+    if not data_product:
+        # remove uploaded file and raise exception
+        if os.path.exists(geotiff_filepath):
+            shutil.rmtree(geotiff_filepath.parent)
+        # remove job if exists
+        if job:
+            update_job_status(job, state="ERROR")
+        logger.error("Could not find data product in DB for upload process")
+        return None
+
+    # update job status to indicate process has started
+    update_job_status(job, state="INPROGRESS")
+
+    # create get STAC properties and convert to COG (if needed)
+    try:
+        ip = ImageProcessor(geotiff_filepath)
+        out_raster = ip.run()
+        default_symbology = ip.get_default_symbology()
+    except Exception as e:
+        if os.path.exists(geotiff_filepath.parents[1]):
+            shutil.rmtree(geotiff_filepath.parents[1])
+        update_job_status(job, state="ERROR")
+        logger.exception("Failed to process uploaded GeoTIFF")
+        return None
+
+    # update data product with STAC properties
     crud.data_product.update(
         db,
         db_obj=data_product,
-        obj_in=DataProductUpdate(stac_properties=ip.stac_properties),
+        obj_in=DataProductUpdate(
+            filepath=str(out_raster), stac_properties=ip.stac_properties
+        ),
     )
 
+    # create user style record for data product and user
     crud.user_style.create_with_data_product_and_user(
         db,
         obj_in=default_symbology,
@@ -166,11 +174,8 @@ def process_geotiff(
         user_id=user_id,
     )
 
-    crud.job.update(
-        db,
-        db_obj=job,
-        obj_in=JobUpdate(state="COMPLETED", status="SUCCESS", end_time=datetime.now()),
-    )
+    # update job to indicate process finished
+    update_job_status(job, state="DONE")
 
     return None
 
@@ -182,49 +187,57 @@ def process_point_cloud(
     project_id: UUID,
     flight_id: UUID,
     job_id: UUID,
-    dtype: str,
+    data_product_id,
 ) -> None:
+    """Celery task for processing uploaded point cloud.
+
+    Args:
+        original_filename (str): Original filename for point cloud.
+        las_filepath (str): Filepath for point cloud.
+        project_id (UUID): Project ID associated with data product.
+        flight_id (UUID): Flight ID associated with data product.
+        job_id (UUID): Job ID for job associated with upload process.
+        data_product_id (UUID): Data product ID for uploaded point cloud.
+
+    Raises:
+        Exception: Raise if EPT or COPG subprocesses fail.
+
+    Returns:
+        _type_: _description_
+    """
+    las_filepath = Path(las_filepath)
+    # get database session
     db = next(get_db())
-
+    # retrieve job associated with this task
     job = crud.job.get(db, id=job_id)
+    # retrieve data product associated with this task
+    data_product = crud.data_product.get(db, id=data_product_id)
+
     if not job:
-        raise Exception
-
-    crud.job.update(
-        db, db_obj=job, obj_in=JobUpdate(state="STARTED", status="INPROGRESS")
-    )
-
-    copc_laz_filepath = str(
-        Path(las_filepath).parent / (Path(las_filepath).stem + ".copc.laz")
-    )
-
-    data_product = crud.data_product.create_with_flight(
-        db,
-        schemas.DataProductCreate(
-            data_type=dtype,
-            filepath=copc_laz_filepath,
-            original_filename=original_filename,
-        ),
-        flight_id=flight_id,
-    )
-
-    if not data_product:
-        crud.job.update(
-            db,
-            db_obj=job,
-            obj_in=JobUpdate(
-                state="COMPLETED", status="FAILED", end_time=datetime.now()
-            ),
-        )
+        # remove uploaded file and raise exception
+        if os.path.exists(las_filepath):
+            shutil.rmtree(las_filepath.parents[1])
+        logger.error("Could not find job in DB for upload process")
         return None
 
-    crud.job.update(db, db_obj=job, obj_in=JobUpdate(data_product_id=data_product.id))
+    if not data_product:
+        # remove uploaded file and raise exception
+        if os.path.exists(las_filepath):
+            shutil.rmtree(las_filepath.parents[1])
+        # remove job if exists
+        if job:
+            update_job_status(job, state="ERROR")
+        logger.error("Could not find data product in DB for upload process")
+        return None
 
-    # Convert to entwine format
-    out_root_dir = Path(las_filepath).parent
-    out_ept_dir = Path(las_filepath).stem
+    # update job status to indicate process has started
+    update_job_status(job, state="INPROGRESS")
 
     try:
+        # create entwine point cloud
+        ept_out_dir = las_filepath.parents[1] / "ept"
+        if not os.path.exists(ept_out_dir):
+            os.makedirs(ept_out_dir)
         result = subprocess.run(
             [
                 "entwine",
@@ -232,7 +245,7 @@ def process_point_cloud(
                 "-i",
                 las_filepath,
                 "-o",
-                os.path.join(out_root_dir, out_ept_dir),
+                ept_out_dir,
             ],
             stdout=subprocess.PIPE,
             check=True,
@@ -240,17 +253,15 @@ def process_point_cloud(
         result.check_returncode()
     except Exception as e:
         logger.exception("Failed to build EPT from uploaded point cloud")
-        os.remove(las_filepath)
-        crud.job.update(
-            db,
-            db_obj=job,
-            obj_in=JobUpdate(
-                state="COMPLETED", status="FAILED", end_time=datetime.now()
-            ),
-        )
+        shutil.rmtree(las_filepath.parents[1])
+        update_job_status(job, state="ERROR")
         return None
-
+    # create cloud optimized point cloud
     try:
+        # construct path for compressed COPC
+        copc_laz_filepath = (
+            las_filepath.parents[1] / las_filepath.with_suffix(".copc.laz").name
+        )
         result = subprocess.run(
             [
                 "untwine",
@@ -261,29 +272,28 @@ def process_point_cloud(
                 copc_laz_filepath,
             ]
         )
+        # clean up temp directory created by untwine
         if os.path.exists(f"{copc_laz_filepath}_tmp"):
             shutil.rmtree(f"{copc_laz_filepath}_tmp")
     except Exception as e:
         logger.exception("Failed to build COPC from uploaded point cloud")
-        os.remove(las_filepath)
-        if os.path.exists(f"{copc_laz_filepath}_tmp"):
-            shutil.rmtree(f"{copc_laz_filepath}_tmp")
-        crud.job.update(
-            db,
-            db_obj=job,
-            obj_in=JobUpdate(
-                state="COMPLETED", status="FAILED", end_time=datetime.now()
-            ),
-        )
+        shutil.rmtree(las_filepath.parents[1])
+        update_job_status(job, state="ERROR")
         return None
 
-    crud.job.update(
+    # update data product filepath to copc.laz
+    crud.data_product.update(
         db,
-        db_obj=job,
-        obj_in=JobUpdate(state="COMPLETED", status="SUCCESS", end_time=datetime.now()),
+        db_obj=data_product,
+        obj_in=DataProductUpdate(filepath=str(copc_laz_filepath)),
     )
 
-    os.remove(las_filepath)
+    # update job to indicate process finished
+    update_job_status(job, state="DONE")
+
+    # remove originally uploaded las/laz
+    if os.path.exists(las_filepath.parent):
+        shutil.rmtree(las_filepath.parent)
 
     return None
 

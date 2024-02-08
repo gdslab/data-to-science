@@ -29,12 +29,12 @@ export function getDataProductName(dataType: string): string {
     case 'point_cloud':
       return 'Point Cloud';
     default:
-      return 'Unknown';
+      return dataType;
   }
 }
 
 export function isGeoTIFF(dataType: string): boolean {
-  return dataType === 'ortho' || dataType === 'dsm';
+  return dataType !== 'point_cloud';
 }
 
 export default function DataProducts({ data }: { data: DataProductStatus[] }) {

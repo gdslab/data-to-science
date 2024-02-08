@@ -1,7 +1,9 @@
+import logging
 import os
-import pathlib
 import shutil
+import tempfile
 from datetime import datetime
+from pathlib import Path, PosixPath
 from typing import Any, Sequence
 from uuid import UUID, uuid4
 
@@ -25,20 +27,34 @@ from app.core.config import settings
 router = APIRouter()
 
 
-def get_upload_dir(
-    request: Request, projectId: UUID, flightId: UUID, dType: str
-) -> str:
+logger = logging.getLogger("__name__")
+
+
+def get_data_product_dir(project_id: str, flight_id: str, data_product_id: str) -> str:
+    """Construct path to directory that will store uploaded data product.
+
+    Args:
+        project_id (str): Project ID associated with data product.
+        flight_id (str): Flight ID associated with data product.
+        data_product_id (str): ID for data product.
+
+    Returns:
+        str: Full path to data product directory.
+    """
+    # get root static path
     if os.environ.get("RUNNING_TESTS") == "1":
-        upload_dir = f"{settings.TEST_STATIC_DIR}/projects/{projectId}/flights/{flightId}/{dType}"
+        data_product_dir = Path(settings.TEST_STATIC_DIR)
     else:
-        upload_dir = (
-            f"{settings.STATIC_DIR}/projects/{projectId}/flights/{flightId}/{dType}"
-        )
+        data_product_dir = Path(settings.STATIC_DIR)
+    # construct path to project/flight/dataproduct
+    data_product_dir = data_product_dir / "projects" / project_id
+    data_product_dir = data_product_dir / "flights" / flight_id
+    data_product_dir = data_product_dir / "data_products" / data_product_id
+    # create folder for data product
+    if not os.path.exists(data_product_dir):
+        os.makedirs(data_product_dir)
 
-    if not os.path.exists(upload_dir):
-        os.makedirs(upload_dir)
-
-    return upload_dir
+    return data_product_dir
 
 
 @router.post("", status_code=status.HTTP_202_ACCEPTED)
@@ -51,41 +67,59 @@ def upload_data_product(
     flight: models.Flight = Depends(deps.can_read_write_flight),
     db: Session = Depends(deps.get_db),
 ) -> Any:
+    # confirm project and flight exist
     if not project or not flight:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
-
-    upload_dir = get_upload_dir(request, project.id, flight.id, dtype)
-
-    original_filename = pathlib.Path(files.filename)
-    unique_filename = str(uuid4())
-
-    if dtype == "point_cloud":
-        destination_filepath = os.path.join(
-            upload_dir, unique_filename + original_filename.suffix
-        )
-    else:
-        destination_filepath = os.path.join(
-            upload_dir, f"{unique_filename}__temp{original_filename.suffix}"
-        )
-
-    if original_filename.suffix not in [".tif", ".las", ".laz"]:
+    # uploaded file info and new filename
+    original_filename = Path(files.filename)
+    new_filename = str(uuid4())
+    # check if uploaded file has supported extension
+    suffix = original_filename.suffix
+    if suffix not in [".tif", ".las", ".laz"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported file extension"
         )
-
+    # create new data product record
+    data_product = crud.data_product.create_with_flight(
+        db,
+        obj_in=schemas.data_product.DataProductCreate(
+            data_type=dtype, filepath="null", original_filename=str(original_filename)
+        ),
+        flight_id=flight.id,
+    )
+    # get path for uploaded data product
+    data_product_dir = get_data_product_dir(
+        str(project.id), str(flight.id), str(data_product.id)
+    )
+    # construct fullpath for uploaded data product
+    tmpdir = tempfile.mkdtemp(dir=data_product_dir)
+    destination_filepath = f"{tmpdir}/{new_filename}{suffix}"
+    # write uploaded data product to disk and create new job
     with open(destination_filepath, "wb") as buffer:
         shutil.copyfileobj(files.file, buffer)
-        job_in = schemas.job.JobCreate(
-            name="upload-data-products",
-            state="PENDING",
-            status="WAITING",
-            start_time=datetime.now(),
-        )
-        job = crud.job.create_job(db, job_in)
+        try:
+            job_in = schemas.job.JobCreate(
+                name="upload-data-product",
+                state="PENDING",
+                status="WAITING",
+                start_time=datetime.now(),
+                data_product_id=data_product.id,
+            )
+            job = crud.job.create_job(db, job_in)
+        except Exception:
+            logger.exception("Failed to create new job for data product upload")
+            # clean up any files written to tmp location and remove data product record
+            shutil.rmtree(data_product_dir)
+            with db as session:
+                session.delete(data_product)
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Unable to process upload"
+            )
 
     if dtype == "point_cloud":
+        # start point cloud process in background
         process_point_cloud.apply_async(
             args=[
                 original_filename.name,
@@ -93,25 +127,37 @@ def upload_data_product(
                 project.id,
                 flight.id,
                 job.id,
-                dtype,
+                data_product.id,
             ],
             kwargs={},
             queue="main-queue",
         )
     else:
-        process_geotiff.apply_async(
-            args=[
-                original_filename.name,
-                destination_filepath,
-                current_user.id,
-                project.id,
-                flight.id,
-                job.id,
-                dtype,
-            ],
-            kwargs={},
-            queue="main-queue",
-        )
+        # start geotiff process in background
+        try:
+            process_geotiff.apply_async(
+                args=[
+                    original_filename.name,
+                    destination_filepath,
+                    current_user.id,
+                    project.id,
+                    flight.id,
+                    job.id,
+                    data_product.id,
+                ],
+                kwargs={},
+                queue="main-queue",
+            )
+        except Exception:
+            logger.exception("Unable to start upload process geotiff task")
+            # clean up any files written to tmp location and remove data product and job
+            shutil.rmtree(data_product_dir)
+            with db as session:
+                session.delete(job)
+                session.delete(data_product)
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Unable to process upload"
+            )
 
     return {"status": "processing"}
 
@@ -216,41 +262,45 @@ def run_processing_tool(
     flight: models.Flight = Depends(deps.can_read_write_flight),
     db: Session = Depends(deps.get_db),
 ) -> Any:
+    # verify project and flight exist
     if not project or not flight:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
-
+    # verify at least one processing tool was selected
     if toolbox_in.exg is False and toolbox_in.ndvi is False:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="No product selected"
         )
-
-    data_product = crud.data_product.get(db, id=data_product_id)
+    # find existing data product that will be used as input raster
+    data_product: models.DataProduct | None = crud.data_product.get(
+        db, id=data_product_id
+    )
+    # verify input raster exists and it is active
     if not data_product or not data_product.is_active:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
         )
-
-    upload_dir = get_upload_dir(request, project.id, flight.id, data_product.data_type)
-
     # ndvi
     if toolbox_in.ndvi:
-        out_raster = os.path.join(upload_dir, str(uuid4()) + ".tif")
-
         # create new data product record
-        ndvi_data_product = crud.data_product.create_with_flight(
+        ndvi_data_product: models.DataProduct = crud.data_product.create_with_flight(
             db,
             schemas.DataProductCreate(
-                data_type=data_product.data_type,
-                filepath=out_raster,
+                data_type="NDVI",
+                filepath="null",
                 original_filename=data_product.original_filename,
             ),
             flight_id=flight.id,
         )
-
+        # get path for ndvi tool output raster
+        data_product_dir: PosixPath = get_data_product_dir(
+            str(project.id), str(flight.id), str(ndvi_data_product.id)
+        )
+        ndvi_filename: str = str(uuid4()) + ".tif"
+        out_raster: PosixPath = data_product_dir / ndvi_filename
         # run ndvi tool in background
-        tool_params = {
+        tool_params: dict = {
             "red_band_idx": toolbox_in.ndviRed,
             "nir_band_idx": toolbox_in.ndviNIR,
         }
@@ -258,7 +308,7 @@ def run_processing_tool(
             args=[
                 "ndvi",
                 data_product.filepath,
-                out_raster,
+                str(out_raster),
                 tool_params,
                 ndvi_data_product.id,
                 current_user.id,
@@ -269,19 +319,22 @@ def run_processing_tool(
 
     # exg
     if toolbox_in.exg:
-        out_raster = os.path.join(upload_dir, str(uuid4()) + ".tif")
-
         # create new data product record
-        exg_data_product = crud.data_product.create_with_flight(
+        exg_data_product: models.DataProduct = crud.data_product.create_with_flight(
             db,
             schemas.DataProductCreate(
-                data_type=data_product.data_type,
-                filepath=out_raster,
+                data_type="ExG",
+                filepath="null",
                 original_filename=data_product.original_filename,
             ),
             flight_id=flight.id,
         )
-
+        # get path for exg tool output raster
+        data_product_dir: PosixPath = get_data_product_dir(
+            str(project.id), str(flight.id), str(exg_data_product.id)
+        )
+        exg_filename: str = str(uuid4()) + ".tif"
+        out_raster: PosixPath = data_product_dir / exg_filename
         # run exg tool in background
         tool_params = {
             "red_band_idx": toolbox_in.exgRed,
@@ -292,7 +345,7 @@ def run_processing_tool(
             args=[
                 "exg",
                 data_product.filepath,
-                out_raster,
+                str(out_raster),
                 tool_params,
                 exg_data_product.id,
                 current_user.id,
