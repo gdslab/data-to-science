@@ -28,7 +28,7 @@ router = APIRouter()
 def get_upload_dir(
     request: Request, projectId: UUID, flightId: UUID, dType: str
 ) -> str:
-    if request.client and request.client.host == "testclient":
+    if os.environ.get("RUNNING_TESTS") == "1":
         upload_dir = f"{settings.TEST_STATIC_DIR}/projects/{projectId}/flights/{flightId}/{dType}"
     else:
         upload_dir = (
@@ -45,7 +45,7 @@ def get_upload_dir(
 def upload_data_product(
     request: Request,
     files: UploadFile,
-    dtype: str = Query(),
+    dtype: str = Query(min_length=2, max_length=16),
     current_user: models.User = Depends(deps.get_current_approved_user),
     project: models.Project = Depends(deps.can_read_write_project),
     flight: models.Flight = Depends(deps.can_read_write_flight),
@@ -54,11 +54,6 @@ def upload_data_product(
     if not project or not flight:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
-        )
-
-    if dtype not in ["dsm", "ortho", "point_cloud"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown data type"
         )
 
     upload_dir = get_upload_dir(request, project.id, flight.id, dtype)
@@ -90,21 +85,7 @@ def upload_data_product(
         )
         job = crud.job.create_job(db, job_in)
 
-    if dtype == "dsm" or dtype == "ortho":
-        process_geotiff.apply_async(
-            args=[
-                original_filename.name,
-                destination_filepath,
-                current_user.id,
-                project.id,
-                flight.id,
-                job.id,
-                dtype,
-            ],
-            kwargs={},
-            queue="main-queue",
-        )
-    elif dtype == "point_cloud":
+    if dtype == "point_cloud":
         process_point_cloud.apply_async(
             args=[
                 original_filename.name,
@@ -118,15 +99,18 @@ def upload_data_product(
             queue="main-queue",
         )
     else:
-        crud.job.update(
-            db,
-            db_obj=job,
-            obj_in=schemas.JobUpdate(
-                state="COMPLETED", status="FAILED", end_time=datetime.now()
-            ),
-        )
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown data type"
+        process_geotiff.apply_async(
+            args=[
+                original_filename.name,
+                destination_filepath,
+                current_user.id,
+                project.id,
+                flight.id,
+                job.id,
+                dtype,
+            ],
+            kwargs={},
+            queue="main-queue",
         )
 
     return {"status": "processing"}
@@ -146,7 +130,7 @@ def read_data_product(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
-    if request.client and request.client.host == "testclient":
+    if os.environ.get("RUNNING_TESTS") == "1":
         upload_dir = settings.TEST_STATIC_DIR
     else:
         upload_dir = settings.STATIC_DIR
@@ -172,7 +156,7 @@ def read_all_data_product(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
-    if request.client and request.client.host == "testclient":
+    if os.environ.get("RUNNING_TESTS") == "1":
         upload_dir = settings.TEST_STATIC_DIR
     else:
         upload_dir = settings.STATIC_DIR

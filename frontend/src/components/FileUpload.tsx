@@ -85,11 +85,21 @@ export default function FileUpload({
 
   uppy.on('upload-error', (_file, _error, response) => {
     if (response && response.body && response.body.detail) {
+      let errorDetails = '';
+      if (typeof response.body.detail === 'string') {
+        errorDetails = response.body.detail;
+      } else if (response.status === 422 && Array.isArray(response.body.detail)) {
+        response.body.detail.forEach((err, idx) => {
+          errorDetails = `${err.loc[1]}: ${err.msg}`;
+          errorDetails += idx < response.body.detail.length - 1 ? '; ' : '';
+        });
+      } else {
+        errorDetails = 'Unexpected error occurred';
+      }
       uppy.info(
         {
-          message: response.body.detail,
-          details:
-            'Zip must contain at least .dbf, .shp, and .shx. Shapefile must be in root directory of zip.',
+          message: `Error ${response.status}`,
+          details: errorDetails,
         },
         'error',
         10000

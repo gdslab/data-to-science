@@ -11,10 +11,16 @@ interface Props {
 
 function DtypeRadioInput({
   dtype,
+  dtypeOther,
   setDtype,
+  setDtypeOther,
+  setDtypeOtherTouched,
 }: {
   dtype: string;
+  dtypeOther: string;
   setDtype: React.Dispatch<React.SetStateAction<string>>;
+  setDtypeOther: React.Dispatch<React.SetStateAction<string>>;
+  setDtypeOtherTouched: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   function changeDtype(e) {
     if (e.target.value) {
@@ -22,106 +28,131 @@ function DtypeRadioInput({
     }
   }
 
+  function updateDtypeOther(e) {
+    e.preventDefault();
+    setDtypeOther(e.target.value);
+  }
+
   return (
-    <div className="px-4 py-3 sm:flex sm:px-6">
-      <fieldset className="w-full flex flex-wrap justify-evenly gap-1.5">
-        <legend className="sr-only">Data type</legend>
+    <div className="px-4 py-3 flex flex-col gap-4 sm:px-6">
+      <fieldset className="w-full flex flex-col border border-solid border-slate-300 p-1.5 gap-1.5">
+        <legend className="block text-sm text-gray-400 font-bold pt-2 pb-1">
+          Upload Data Type
+        </legend>
+        <div className="w-full flex justify-between">
+          <div>
+            <input
+              type="radio"
+              name="dtypeOption"
+              value="dsm"
+              id="dtypeDSM"
+              className="peer hidden"
+              checked={dtype === 'dsm'}
+              onChange={changeDtype}
+            />
 
-        <div>
-          <input
-            type="radio"
-            name="dtypeOption"
-            value="dsm"
-            id="dtypeDSM"
-            className="peer hidden"
-            checked={dtype === 'dsm'}
-            onChange={changeDtype}
-          />
+            <label
+              htmlFor="dtypeDSM"
+              className="flex cursor-pointer items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white"
+            >
+              <p className="text-sm font-medium">DSM</p>
+            </label>
+          </div>
 
-          <label
-            htmlFor="dtypeDSM"
-            className="flex cursor-pointer items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white"
-          >
-            <p className="text-sm font-medium">DSM</p>
-          </label>
+          <div>
+            <input
+              type="radio"
+              name="dtypeOption"
+              value="point_cloud"
+              id="dtypePointCloud"
+              className="peer hidden"
+              checked={dtype === 'point_cloud'}
+              onChange={changeDtype}
+            />
+
+            <label
+              htmlFor="dtypePointCloud"
+              className="flex cursor-pointer items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white"
+            >
+              <p className="text-sm font-medium">Point Cloud</p>
+            </label>
+          </div>
+
+          <div>
+            <input
+              type="radio"
+              name="dtypeOption"
+              value="ortho"
+              id="dtypeOrtho"
+              className="peer hidden"
+              checked={dtype === 'ortho'}
+              onChange={changeDtype}
+            />
+
+            <label
+              htmlFor="dtypeOrtho"
+              className="flex cursor-pointer items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white"
+            >
+              <p className="text-sm font-medium">Ortho</p>
+            </label>
+          </div>
+
+          <div>
+            <input
+              type="radio"
+              name="dtypeOption"
+              value="raw"
+              id="dtypeRaw"
+              className="peer hidden"
+              checked={dtype === 'raw'}
+              onChange={changeDtype}
+            />
+
+            <label
+              htmlFor="dtypeRaw"
+              className="flex cursor-pointer items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white"
+            >
+              <p className="text-sm font-medium">Raw Data</p>
+            </label>
+          </div>
+
+          <div>
+            <input
+              type="radio"
+              name="dtypeOption"
+              value="other"
+              id="dtypeOther"
+              className="peer hidden"
+              checked={dtype === 'other'}
+              onChange={changeDtype}
+            />
+
+            <label
+              htmlFor="dtypeOther"
+              className="flex cursor-pointer items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white"
+            >
+              <p className="text-sm font-medium">Other</p>
+            </label>
+          </div>
         </div>
 
-        <div>
-          <input
-            type="radio"
-            name="dtypeOption"
-            value="point_cloud"
-            id="dtypePointCloud"
-            className="peer hidden"
-            checked={dtype === 'point_cloud'}
-            onChange={changeDtype}
-          />
-
-          <label
-            htmlFor="dtypePointCloud"
-            className="flex cursor-pointer items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white"
-          >
-            <p className="text-sm font-medium">Point Cloud</p>
-          </label>
-        </div>
-
-        <div>
-          <input
-            type="radio"
-            name="dtypeOption"
-            value="ortho"
-            id="dtypeOrtho"
-            className="peer hidden"
-            checked={dtype === 'ortho'}
-            onChange={changeDtype}
-          />
-
-          <label
-            htmlFor="dtypeOrtho"
-            className="flex cursor-pointer items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white"
-          >
-            <p className="text-sm font-medium">Ortho</p>
-          </label>
-        </div>
-
-        <div>
-          <input
-            type="radio"
-            name="dtypeOption"
-            value="raw"
-            id="dtypeRaw"
-            className="peer hidden"
-            checked={dtype === 'raw'}
-            onChange={changeDtype}
-          />
-
-          <label
-            htmlFor="dtypeRaw"
-            className="flex cursor-pointer items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white"
-          >
-            <p className="text-sm font-medium">Raw Data</p>
-          </label>
-        </div>
-
-        <div>
-          <input
-            disabled={true}
-            type="radio"
-            name="dtypeOption"
-            value="other"
-            id="dtypeOther"
-            className="peer hidden"
-            checked={dtype === 'other'}
-            onChange={changeDtype}
-          />
-
-          <label
-            htmlFor="dtypeOther"
-            className="flex cursor-not-allowed items-center justify-center rounded-md border border-gray-100 bg-gray-200 px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white"
-          >
-            <p className="text-sm font-medium">Other</p>
-          </label>
-        </div>
+        {dtype === 'other' ? (
+          <fieldset className="w-full flex flex-wrap justify-evenly gap-1.5">
+            <legend className="sr-only">Data type other</legend>
+            <label htmlFor="Search" className="sr-only">
+              Other
+            </label>
+            <input
+              type="text"
+              id="dTypeOther"
+              placeholder="Enter other data type (e.g., NDVI)"
+              className="w-full rounded-md border-gray-200 px-4 py-2.5 pe-10 shadow sm:text-sm"
+              value={dtypeOther}
+              onChange={updateDtypeOther}
+              onBlur={() => setDtypeOtherTouched(true)}
+            />
+          </fieldset>
+        ) : null}
       </fieldset>
     </div>
   );
@@ -130,11 +161,35 @@ function DtypeRadioInput({
 export default function UploadModal({ apiRoute, open, setOpen, uploadType }: Props) {
   const cancelButtonRef = useRef(null);
   const [dtype, setDtype] = useState('dsm');
+  const [dtypeOther, setDtypeOther] = useState('');
+  const [dtypeOtherTouched, setDtypeOtherTouched] = useState(false);
   const [uploadHistory, setUploadHistory] = useState<string[]>([]);
 
   useEffect(() => {
+    setDtype('dsm');
+    setDtypeOther('');
+    setDtypeOtherTouched(false);
     setUploadHistory([]);
   }, [open]);
+
+  useEffect(() => {
+    if (dtype !== 'other') {
+      setDtypeOther('');
+      setDtypeOtherTouched(false);
+    }
+  }, [dtype]);
+
+  function getAllowedFileTypes(dtype: string): string[] {
+    if (dtype === 'dsm' || dtype === 'ortho' || dtype === 'other') {
+      return ['.tif'];
+    } else if (dtype === 'point_cloud') {
+      return ['.las', '.laz'];
+    } else if (dtype === 'raw') {
+      return ['.zip'];
+    } else {
+      return ['.tif'];
+    }
+  }
 
   function updateUploadHistory(newUpload: string) {
     const currentUploadHistory = uploadHistory.slice();
@@ -184,29 +239,43 @@ export default function UploadModal({ apiRoute, open, setOpen, uploadType }: Pro
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
               <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
-                <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                  <FileUpload
-                    endpoint={
-                      ['dsm', 'ortho', 'point_cloud', 'other'].indexOf(dtype) > -1
-                        ? apiRoute + `/data_products?dtype=${dtype}`
-                        : dtype === 'raw'
-                        ? apiRoute + '/raw_data'
-                        : apiRoute
-                    }
-                    inline={true}
-                    restrictions={{
-                      allowedFileTypes:
-                        uploadType === 'zip' ? ['.zip'] : ['.las', '.laz', '.tif'],
-                      maxNumberOfFiles: 1,
-                      minNumberOfFiles: 1,
-                    }}
-                    uploadType={uploadType}
-                    updateUploadHistory={updateUploadHistory}
-                  />
-                </div>
-
                 {uploadType === 'dataProduct' || uploadType === 'zip' ? (
-                  <DtypeRadioInput dtype={dtype} setDtype={setDtype} />
+                  <DtypeRadioInput
+                    dtype={dtype}
+                    dtypeOther={dtypeOther}
+                    setDtype={setDtype}
+                    setDtypeOther={setDtypeOther}
+                    setDtypeOtherTouched={setDtypeOtherTouched}
+                  />
+                ) : null}
+
+                {dtype !== 'other' || (dtype === 'other' && dtypeOther.length > 1) ? (
+                  <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <FileUpload
+                      endpoint={
+                        ['dsm', 'ortho', 'point_cloud', 'other'].indexOf(dtype) > -1
+                          ? apiRoute +
+                            `/data_products?dtype=${
+                              dtype === 'other' ? dtypeOther : dtype
+                            }`
+                          : dtype === 'raw'
+                          ? apiRoute + '/raw_data'
+                          : apiRoute
+                      }
+                      inline={true}
+                      restrictions={{
+                        allowedFileTypes: getAllowedFileTypes(dtype),
+                        maxNumberOfFiles: 1,
+                        minNumberOfFiles: 1,
+                      }}
+                      uploadType={uploadType}
+                      updateUploadHistory={updateUploadHistory}
+                    />
+                  </div>
+                ) : dtypeOtherTouched ? (
+                  <span className="px-4 pb-4 pt-5 sm:p-6 sm:pb-4 text-red-600">
+                    Data type must be at least 2 characters in length
+                  </span>
                 ) : null}
 
                 {uploadHistory.length > 0 ? (

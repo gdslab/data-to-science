@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, String
-from sqlalchemy.dialects.postgresql import ENUM, JSONB, UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base
@@ -24,9 +24,7 @@ class DataProduct(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    data_type: Mapped[enumerate] = mapped_column(
-        ENUM(*DATA_TYPES, name="dtype"), nullable=False
-    )
+    data_type: Mapped[str] = mapped_column(String(16), nullable=False)
     filepath: Mapped[str] = mapped_column(String, nullable=False)
     original_filename: Mapped[str] = mapped_column(String, nullable=False)
     stac_properties: Mapped[dict] = mapped_column(JSONB, nullable=True)

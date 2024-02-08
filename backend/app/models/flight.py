@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, String
 from sqlalchemy.dialects.postgresql import ENUM, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -16,7 +16,10 @@ if TYPE_CHECKING:
     from .raw_data import RawData
     from .user import User
 
+# default platforms, "Other" can be any string value
 PLATFORMS = ["Phantom_4", "M300", "M350", "Other"]
+
+# default sensors, only these exact values are accepted
 SENSORS = ["RGB", "Multispectral", "LiDAR", "Other"]
 
 
@@ -33,9 +36,7 @@ class Flight(Base):
     sensor: Mapped[enumerate] = mapped_column(
         ENUM(*SENSORS, name="sensor_type"), nullable=False
     )
-    platform: Mapped[enumerate] = mapped_column(
-        ENUM(*PLATFORMS, name="platform_type"), nullable=False
-    )
+    platform: Mapped[str] = mapped_column(String(64), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     deactivated_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     project_id: Mapped[uuid.UUID] = mapped_column(

@@ -20,9 +20,8 @@ const initialValues = {
   forwardOverlap: 75,
   sensor: SENSOR_OPTIONS[0].value,
   platform: PLATFORM_OPTIONS[0].value,
+  platformOther: '',
   pilotId: '',
-  //   pilot: "" // List of team members with access to the project?
-  // If no team associated with the project, pilot = logged in user?
 };
 
 export function getInitialValues(flight: Flight | null) {
@@ -34,6 +33,7 @@ export function getInitialValues(flight: Flight | null) {
       forwardOverlap: flight.forward_overlap,
       sensor: flight.sensor,
       platform: flight.platform,
+      platformOther: '',
       pilotId: '',
     };
   } else {

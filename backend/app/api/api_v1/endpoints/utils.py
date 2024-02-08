@@ -1,3 +1,4 @@
+import os
 from typing import Any
 from uuid import UUID
 
@@ -25,7 +26,7 @@ def get_colorbar_for_data_product_with_public_access(
     data_product_id: UUID,
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    if request.headers and request.headers.get("User-Agent") == "testclient":
+    if os.environ.get("RUNNING_TESTS") == "1":
         upload_dir = settings.TEST_STATIC_DIR
     else:
         upload_dir = settings.STATIC_DIR
@@ -45,7 +46,7 @@ def get_colorbar_for_data_product_with_public_access(
             detail="Colorbars only available for DSM data products",
         )
 
-    if request.headers and request.headers.get("User-Agent") == "testclient":
+    if os.environ.get("RUNNING_TESTS") == "1":
         output_dir = f"{settings.TEST_STATIC_DIR}/projects/{project_id}/flights/{flight_id}/dsm/colorbars/{data_product_id}"
     else:
         output_dir = f"{settings.STATIC_DIR}/projects/{project_id}/flights/{flight_id}/dsm/colorbars/{data_product_id}"
@@ -79,7 +80,7 @@ def get_colorbar_for_data_product_with_user_access(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
 
-    if request.headers and request.headers.get("User-Agent") == "testclient":
+    if os.environ.get("RUNNING_TESTS") == "1":
         upload_dir = settings.TEST_STATIC_DIR
     else:
         upload_dir = settings.STATIC_DIR
@@ -99,7 +100,7 @@ def get_colorbar_for_data_product_with_user_access(
             detail="Colorbars only available for DSM data products",
         )
 
-    if request.headers and request.headers.get("User-Agent") == "testclient":
+    if os.environ.get("RUNNING_TESTS") == "1":
         output_dir = f"{settings.TEST_STATIC_DIR}/projects/{project.id}/flights/{flight.id}/dsm/colorbars/{data_product_id}"
     else:
         output_dir = f"{settings.STATIC_DIR}/projects/{project.id}/flights/{flight.id}/dsm/colorbars/{data_product_id}"

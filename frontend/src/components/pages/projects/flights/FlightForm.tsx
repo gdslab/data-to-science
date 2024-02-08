@@ -103,7 +103,10 @@ export default function FlightForm({
                   forward_overlap: values.forwardOverlap,
                   sensor: values.sensor,
                   pilot_id: values.pilotId,
-                  platform: values.platform,
+                  platform:
+                    values.platform === 'Other'
+                      ? values.platformOther
+                      : values.platform,
                 };
                 let response: AxiosResponse | null = null;
                 if (editMode && flight) {
@@ -134,7 +137,7 @@ export default function FlightForm({
               setSubmitting(false);
             }}
           >
-            {({ isSubmitting, status }) => (
+            {({ isSubmitting, status, values }) => (
               <Form>
                 <TextField
                   type="date"
@@ -150,6 +153,9 @@ export default function FlightForm({
                   name="platform"
                   options={PLATFORM_OPTIONS}
                 />
+                {values && values.platform === 'Other' ? (
+                  <TextField label="Platform other" name="platformOther" />
+                ) : null}
                 <SelectField label="Pilot" name="pilotId" options={pilots} />
                 <div className="flex flex-col gap-4 mt-4">
                   <Button type="submit" disabled={isSubmitting}>

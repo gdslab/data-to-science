@@ -152,7 +152,7 @@ def upload_user_profile(
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    if request.client and request.client.host == "testclient":
+    if os.environ.get("RUNNING_TESTS") == "1":
         upload_dir = f"{settings.TEST_STATIC_DIR}/users/{current_user.id}"
     else:
         upload_dir = f"{settings.STATIC_DIR}/users/{current_user.id}"
@@ -181,7 +181,7 @@ def delete_user_profile(
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    if request.client and request.client.host == "testclient":
+    if os.environ.get("RUNNING_TESTS") == "1":
         upload_dir = f"{settings.TEST_STATIC_DIR}/users/{current_user.id}"
     else:
         upload_dir = f"{settings.STATIC_DIR}/users/{current_user.id}"

@@ -25,7 +25,7 @@ export default function DataProductCard({
 }) {
   const [isCopied, setIsCopied] = useState(false);
   const { projectRole } = useProjectContext();
-  console.log(dataProduct);
+
   return (
     <div className="flex items-center justify-center min-h-80">
       <div className="relative w-80">

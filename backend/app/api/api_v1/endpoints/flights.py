@@ -1,3 +1,4 @@
+import os
 from typing import Any, Sequence
 from uuid import UUID
 
@@ -45,7 +46,7 @@ def read_flights(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Retrieve flights associated with project user can access."""
-    if request.client and request.client.host == "testclient":
+    if os.environ.get("RUNNING_TESTS") == "1":
         upload_dir = settings.TEST_STATIC_DIR
     else:
         upload_dir = settings.STATIC_DIR

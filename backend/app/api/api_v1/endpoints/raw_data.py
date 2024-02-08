@@ -34,7 +34,7 @@ def upload_raw_data(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
-    if request.headers and request.headers.get("User-Agent") == "testclient":
+    if os.environ.get("RUNNING_TESTS") == "1":
         upload_dir = (
             f"{settings.TEST_STATIC_DIR}/projects/{project.id}/flights/{flight.id}"
         )
@@ -78,7 +78,7 @@ def read_data_product(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
-    if request.headers and request.headers.get("User-Agent") == "testclient":
+    if os.environ.get("RUNNING_TESTS") == "1":
         upload_dir = settings.TEST_STATIC_DIR
     else:
         upload_dir = settings.STATIC_DIR
@@ -100,7 +100,7 @@ def read_all_raw_data(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
-    if request.headers and request.headers.get("User-Agent") == "testclient":
+    if os.environ.get("RUNNING_TESTS") == "1":
         upload_dir = settings.TEST_STATIC_DIR
     else:
         upload_dir = settings.STATIC_DIR

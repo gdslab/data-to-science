@@ -79,7 +79,7 @@ def test_read_data_products(db: Session) -> None:
     flight = create_flight(db)
     SampleDataProduct(db, flight=flight, user=user)
     SampleDataProduct(db, flight=flight, user=user)
-    SampleDataProduct(db, flight=flight, user=user)
+    SampleDataProduct(db, flight=flight, user=user, data_type="NDVI")
     SampleDataProduct(db)
     data_products = crud.data_product.get_multi_by_flight(
         db, flight_id=flight.id, upload_dir=settings.TEST_STATIC_DIR, user_id=user.id

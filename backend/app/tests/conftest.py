@@ -21,6 +21,9 @@ TEST_DB_PATH = f"{settings.POSTGRES_DB or ''}_test"
 SQLALCHEMY_TEST_DATABASE_URI: PostgresDsn = build_sqlalchemy_uri(db_path=TEST_DB_PATH)
 
 
+os.environ["RUNNING_TESTS"] = "1"
+
+
 @pytest.fixture(name="db")
 def db_fixture() -> Generator:
     """Generate database session for each test."""

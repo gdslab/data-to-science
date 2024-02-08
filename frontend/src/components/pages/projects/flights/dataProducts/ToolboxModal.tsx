@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRevalidator } from 'react-router-dom';
 import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 
+import Alert, { Status } from '../../../../Alert';
 import { Button } from '../../../../Buttons';
 import { DataProduct } from '../../ProjectDetail';
 import Modal from '../../../../Modal';
@@ -126,6 +127,7 @@ const LidarTools = () => {
 
 export default function ToolboxModal({ dataProduct }: { dataProduct: DataProduct }) {
   const [open, setOpen] = useState(false);
+  const [status, setStatus] = useState<Status | null>(null);
   const { flight } = useProjectContext();
   const { projectId, flightId } = useParams();
   const revalidator = useRevalidator();
@@ -164,7 +166,6 @@ export default function ToolboxModal({ dataProduct }: { dataProduct: DataProduct
               } as ToolboxFields
             }
             onSubmit={async (values, actions) => {
-              console.log(values);
               actions.setSubmitting(true);
               if (projectId && flightId && dataProduct.id) {
                 try {
@@ -177,13 +178,15 @@ export default function ToolboxModal({ dataProduct }: { dataProduct: DataProduct
                     values
                   );
                   if (response) {
-                    setOpen(false);
+                    setTimeout(() => {
+                      setOpen(false);
+                    }, 3000);
                   }
                 } catch (err) {
-                  console.error(err);
+                  setStatus({ type: 'error', msg: 'Unable to complete request' });
                 }
               } else {
-                console.log('');
+                setStatus({ type: 'error', msg: 'Unable to complete request' });
               }
             }}
           >
@@ -213,6 +216,7 @@ export default function ToolboxModal({ dataProduct }: { dataProduct: DataProduct
               </Form>
             )}
           </Formik>
+          {status ? <Alert alertType={status.type}>{status.msg}</Alert> : null}
         </div>
       </Modal>
     </div>

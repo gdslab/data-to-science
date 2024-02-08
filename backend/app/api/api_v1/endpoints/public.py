@@ -1,3 +1,4 @@
+import os
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -18,7 +19,7 @@ def read_shared_data_product_with_public_access(
     file_id: str,
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    if request.client and request.client.host == "testclient":
+    if os.environ.get("RUNNING_TESTS") == "1":
         upload_dir = settings.TEST_STATIC_DIR
     else:
         upload_dir = settings.STATIC_DIR
@@ -39,7 +40,7 @@ def read_shared_data_product_with_user_access(
     db: Session = Depends(deps.get_db),
     current_user: models.User = Depends(deps.get_current_approved_user),
 ):
-    if request.client and request.client.host == "testclient":
+    if os.environ.get("RUNNING_TESTS") == "1":
         upload_dir = settings.TEST_STATIC_DIR
     else:
         upload_dir = settings.STATIC_DIR
