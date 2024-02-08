@@ -48,6 +48,7 @@ export default function FlightCarousel({
     <>
       <Swiper
         slidesPerView={getSlidesPerView(width)}
+        initialSlide={sortedFlights.length - 1}
         spaceBetween={30}
         navigation={true}
         pagination={{ clickable: true }}

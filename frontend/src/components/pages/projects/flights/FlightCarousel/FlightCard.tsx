@@ -23,10 +23,7 @@ export default function FlightCard({
   return (
     <div className="flex items-center justify-center min-h-96">
       <div className="w-80">
-        <Card
-          rounded={true}
-          backgroundColor={flight.id === recentFlight ? 'accent2' : 'white'}
-        >
+        <Card rounded={true}>
           <div className="grid grid-flow-row auto-rows-max gap-4">
             {/* preview image */}
             <div className="relative flex items-center justify-center bg-accent3/20">
