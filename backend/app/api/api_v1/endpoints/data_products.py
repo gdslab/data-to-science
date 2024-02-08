@@ -84,12 +84,12 @@ def upload_data_product(
     # create new data product record
     data_product = crud.data_product.create_with_flight(
         db,
-        obj_in=schemas.data_product.DataProductCreate(
+        obj_in=schemas.DataProductCreate(
             data_type=dtype, filepath="null", original_filename=str(original_filename)
         ),
         flight_id=flight.id,
     )
-    # get path for uploaded data product
+    # get path for uploaded data product directory
     data_product_dir = get_data_product_dir(
         str(project.id), str(flight.id), str(data_product.id)
     )
