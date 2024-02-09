@@ -46,23 +46,27 @@ async def verify_static_file_access(request: Request) -> None:
     # check if access to requested data product is restricted or public
     if "data_products" in request.url.path and "colorbars" not in request.url.path:
         try:
-            request_path = Path(request.url.path)
-            data_product_id = UUID(request_path.parent.name)
+            request_path = Path(request.url.path.split("data_products")[1])
+            data_product_id = UUID(request_path.parents[-2].name)
+            data_product = crud.data_product.get(SessionLocal(), id=data_product_id)
         except (IndexError, ValueError):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="data product not found"
             )
-        file_permission = crud.file_permission.get_by_data_product(
-            SessionLocal(), file_id=data_product_id
-        )
-        # if file is deactivated return 404
-        if file_permission and file_permission.file.is_active is False:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="data product not found"
+        if data_product != "point_cloud":
+            file_permission = crud.file_permission.get_by_data_product(
+                SessionLocal(), file_id=data_product_id
             )
-        # public, return file
-        if file_permission and file_permission.is_public:
-            return
+            # if file is deactivated return 404
+            if file_permission and file_permission.file.is_active is False:
+                print("HEYO")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="data product not found",
+                )
+            # public, return file
+            if file_permission and file_permission.is_public:
+                return
 
     # restricted access authorization
     access_token = request.cookies.get("access_token")
