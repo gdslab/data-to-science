@@ -2,7 +2,7 @@ import argparse
 import os
 
 import numpy as np
-from osgeo import gdal, gdalnumeric, ogr, osr
+from osgeo import gdal
 
 from app.utils.toolbox.lib import rs3
 

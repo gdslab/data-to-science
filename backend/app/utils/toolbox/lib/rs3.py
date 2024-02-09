@@ -2,7 +2,7 @@ import os
 import numpy as np
 from osgeo import gdal
 from osgeo import osr
-from osgeo import gdalnumeric, ogr
+from osgeo import gdal_array, ogr
 from osgeo.gdalconst import *
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
@@ -15,20 +15,19 @@ from PIL import Image, ImageDraw
 def imageToArray(i):
     """
     Converts a Python Imaging Library array to a
-    gdalnumeric image.
+    gdal_array image.
     """
-    a = gdalnumeric.fromstring(i.tobytes(), 'b')
+    a = gdal_array.fromstring(i.tobytes(), "b")
     a.shape = i.im.size[1], i.im.size[0]
     return a
 
 
 def arrayToImage(a):
     """
-    Converts a gdalnumeric array to a
+    Converts a gdal_array array to a
     Python Imaging Library Image.
     """
-    i = Image.fromstring('L', (a.shape[1], a.shape[0]),
-                         (a.astype('b')).tobytes())
+    i = Image.fromstring("L", (a.shape[1], a.shape[0]), (a.astype("b")).tobytes())
     return i
 
 
@@ -49,13 +48,13 @@ def world2Pixel(geoMatrix, x, y):
 
 
 def OpenArray(array, prototype_ds=None, xoff=0, yoff=0):
-    ds = gdal.Open(gdalnumeric.GetArrayFilename(array))
+    ds = gdal.Open(gdal_array.GetArrayFilename(array))
 
     if ds is not None and prototype_ds is not None:
-        if type(prototype_ds).__name__ == 'str':
+        if type(prototype_ds).__name__ == "str":
             prototype_ds = gdal.Open(prototype_ds)
         if prototype_ds is not None:
-            gdalnumeric.CopyDatasetInfo(prototype_ds, ds, xoff=xoff, yoff=yoff)
+            gdal_array.CopyDatasetInfo(prototype_ds, ds, xoff=xoff, yoff=yoff)
     return ds
 
 
@@ -66,32 +65,32 @@ def histogram(a, bins=range(0, 256)):
     bins = range of numbers to match
     """
     fa = a.flat
-    n = gdalnumeric.searchsorted(gdalnumeric.sort(fa), bins)
-    n = gdalnumeric.concatenate([n, [len(fa)]])
-    hist = n[1:]-n[:-1]
+    n = gdal_array.searchsorted(gdal_array.sort(fa), bins)
+    n = gdal_array.concatenate([n, [len(fa)]])
+    hist = n[1:] - n[:-1]
     return hist
 
 
 def stretch(a):
     """
-    Performs a histogram stretch on a gdalnumeric array image.
+    Performs a histogram stretch on a gdal_array array image.
     """
     hist = histogram(a)
     im = arrayToImage(a)
     lut = []
     for b in range(0, len(hist), 256):
         # step size
-        step = reduce(operator.add, hist[b:b+256]) / 255
+        step = reduce(operator.add, hist[b : b + 256]) / 255
         # create equalization lookup table
         n = 0
         for i in range(256):
             lut.append(n / step)
-            n = n + hist[i+b]
+            n = n + hist[i + b]
     im = im.point(lut)
     return imageToArray(im)
 
 
-class LightImage():
+class LightImage:
     """
     Image class with memory efficient implementation
     """
@@ -155,7 +154,12 @@ class LightImage():
         """
 
         # Check if the coordinate given is inside the image
-        if (x < self.ext_left) or (x > self.ext_right) or (y < self.ext_down) or (y > self.ext_up):
+        if (
+            (x < self.ext_left)
+            or (x > self.ext_right)
+            or (y < self.ext_down)
+            or (y > self.ext_up)
+        ):
             print("The given point (%f, %f) is not inside the image." % (x, y))
             return None
 
@@ -196,7 +200,6 @@ class LightImage():
 
         return band.ReadAsArray(minx, miny, maxx - minx + 1, maxy - miny + 1)
 
-
     def get_box_all(self, minx, maxx, miny, maxy):
         """
         Return the value of box.
@@ -218,14 +221,15 @@ class LightImage():
             print("Y coordinate is out of range")
             return None
 
-        box_img = np.zeros((self.nband, maxy-miny+1, maxx-minx+1),
-                            dtype=self.dtype)
+        box_img = np.zeros(
+            (self.nband, maxy - miny + 1, maxx - minx + 1), dtype=self.dtype
+        )
 
         for i in range(self.nband):
             band = self.ds.GetRasterBand(i + 1)
-            box_img[i,:,:] = band.ReadAsArray(int(minx), int(miny),
-                                            int(maxx - minx + 1),
-                                            int(maxy - miny + 1))
+            box_img[i, :, :] = band.ReadAsArray(
+                int(minx), int(miny), int(maxx - minx + 1), int(maxy - miny + 1)
+            )
 
         return box_img
 
@@ -235,20 +239,31 @@ class LightImage():
 
         Will return (x_min, x_max, y_min, y_max) pair
         """
-        return self.ext_left + self.x_spacing * x, self.ext_left + self.x_spacing * (x+1), \
-            self.ext_up + self.y_spacing * y, self.ext_up + self.y_spacing * (y+1)
+        return (
+            self.ext_left + self.x_spacing * x,
+            self.ext_left + self.x_spacing * (x + 1),
+            self.ext_up + self.y_spacing * y,
+            self.ext_up + self.y_spacing * (y + 1),
+        )
 
     def get_pixel_ul(self, x, y):
         return self.ext_left + self.x_spacing * x, self.ext_up + self.y_spacing * y
 
     def get_pixel_ll(self, x, y):
-        return self.ext_left + self.x_spacing * x, self.ext_up + self.y_spacing * (y+1)
+        return self.ext_left + self.x_spacing * x, self.ext_up + self.y_spacing * (
+            y + 1
+        )
 
     def get_pixel_lr(self, x, y):
-        return self.ext_left + self.x_spacing * (x+1), self.ext_up + self.y_spacing * (y+1)
+        return self.ext_left + self.x_spacing * (
+            x + 1
+        ), self.ext_up + self.y_spacing * (y + 1)
 
     def get_pixel_ur(self, x, y):
-        return self.ext_left + self.x_spacing * (x+1), self.ext_up + self.y_spacing * y
+        return (
+            self.ext_left + self.x_spacing * (x + 1),
+            self.ext_up + self.y_spacing * y,
+        )
 
     def get_pixel_center(self, x, y):
         """
@@ -256,7 +271,9 @@ class LightImage():
 
         Input: (x,y) is the image coordinate of the pixel
         """
-        return self.ext_left + self.x_spacing * (x+0.5), self.ext_up + self.y_spacing * (y + 0.5)
+        return self.ext_left + self.x_spacing * (
+            x + 0.5
+        ), self.ext_up + self.y_spacing * (y + 0.5)
 
     def get_pixel_coordinate(self, x, y):
         """
@@ -318,7 +335,7 @@ class LightImage():
         rasterize.polygon(pixels_clipped, 0)
         mask = imageToArray(rasterPoly)
 
-        clipped_img_masked = gdalnumeric.choose(mask, (clipped_img, 0))
+        clipped_img_masked = gdal_array.choose(mask, (clipped_img, 0))
 
         return clipped_img_masked
 
@@ -371,27 +388,41 @@ class LightImage():
         rasterize.polygon(pixels_clipped, 0)
         mask = imageToArray(rasterPoly)
 
-        clipped_img_masked = gdalnumeric.choose(mask, (clipped_img, 0))
+        clipped_img_masked = gdal_array.choose(mask, (clipped_img, 0))
 
         num_band = clipped_img_masked.shape[0]
 
         clipped_lc = self.ext_left + minx * self.x_spacing
-        clipped_uc = self.ext_up   + miny * self.y_spacing
+        clipped_uc = self.ext_up + miny * self.y_spacing
 
-        driver = gdal.GetDriverByName('ENVI')
-        outds = driver.Create(out_fn, clipped_img_width, clipped_img_height,
-                            clipped_img_masked.shape[0], self.gdal_dtype)
-        outds.SetGeoTransform([clipped_lc, self.x_spacing, self.geotransform[2],
-                clipped_uc, self.geotransform[4], self.y_spacing])
+        driver = gdal.GetDriverByName("ENVI")
+        outds = driver.Create(
+            out_fn,
+            clipped_img_width,
+            clipped_img_height,
+            clipped_img_masked.shape[0],
+            self.gdal_dtype,
+        )
+        outds.SetGeoTransform(
+            [
+                clipped_lc,
+                self.x_spacing,
+                self.geotransform[2],
+                clipped_uc,
+                self.geotransform[4],
+                self.y_spacing,
+            ]
+        )
         outds.SetProjection(self.ds.GetProjection())
 
         if num_band == 1:
-            outds.GetRasterBand(1).WriteArray(clipped_img_masked[:,:])
+            outds.GetRasterBand(1).WriteArray(clipped_img_masked[:, :])
         else:
             for i in range(num_band):
-                outds.GetRasterBand(i+1).WriteArray(clipped_img_masked[i,:,:])
+                outds.GetRasterBand(i + 1).WriteArray(clipped_img_masked[i, :, :])
 
         outds = None
+
 
 class RSImage(object):
     """
@@ -425,7 +456,7 @@ class RSImage(object):
 
         # Read file onto memory
         for i in range(self.nband):
-            self.band = self.ds.GetRasterBand(i+1)
+            self.band = self.ds.GetRasterBand(i + 1)
             self.img[i, :, :] = self.band.ReadAsArray(0, 0, self.ncol, self.nrow)
 
         # Compute extent of the image
@@ -477,7 +508,7 @@ class RSImage(object):
         ds.SetMetadata(meta)
 
         for i in xrange(self.nband):
-            band = ds.GetRasterBand(i+1)
+            band = ds.GetRasterBand(i + 1)
             band.WriteArray(self.norm_img[i, :, :])
 
         ds = None
@@ -536,7 +567,12 @@ class RSImage(object):
         """
 
         # Check if the coordinate given is inside the image
-        if (x < self.ext_left) or (x > self.ext_right) or (y < self.ext_down) or (y > self.ext_up):
+        if (
+            (x < self.ext_left)
+            or (x > self.ext_right)
+            or (y < self.ext_down)
+            or (y > self.ext_up)
+        ):
             # print ("The given point (%f, %f) is not inside the image." % (x,y))
             # self.print_extent()
             return None
@@ -561,8 +597,13 @@ class RSImage(object):
         """
 
         # Check if the coordinate given is inside the image
-        if (x < self.ext_left) or (x > self.ext_right) or (y < self.ext_down) or (y > self.ext_up):
-            #print ("The given point (%f, %f) is not inside the image." % (x,y))
+        if (
+            (x < self.ext_left)
+            or (x > self.ext_right)
+            or (y < self.ext_down)
+            or (y > self.ext_up)
+        ):
+            # print ("The given point (%f, %f) is not inside the image." % (x,y))
             # self.print_extent()
             return None, None
 
@@ -584,8 +625,8 @@ class RSImage(object):
         fig = plt.figure()
         ax = fig.add_subplot(111)
 
-        cax = ax.imshow(self.img[band-1, :, :], cmap=cmap, interpolation='nearest')
-        ax.axis('off')
+        cax = ax.imshow(self.img[band - 1, :, :], cmap=cmap, interpolation="nearest")
+        ax.axis("off")
         cbar = fig.colorbar(cax)
 
         plt.show()
@@ -669,12 +710,12 @@ class RSImage(object):
         rasterize.polygon(pixels_clipped, 0)
         mask = imageToArray(rasterPoly)
 
-        clipped_img_masked = gdalnumeric.choose(mask, (clipped_img, 0))
+        clipped_img_masked = gdal_array.choose(mask, (clipped_img, 0))
 
         return clipped_img_masked
 
 
-class ImageArray():
+class ImageArray:
     """
     ImageArray class designed for dealing numpy array as Image
     """
@@ -682,7 +723,16 @@ class ImageArray():
     def __init__(self, data):
         self.data = data
 
-    def set_box_coordinate_utm(self, up, left, spatial_resolution, num_row, num_col, utm_zone_number, utm_ns_code=1):
+    def set_box_coordinate_utm(
+        self,
+        up,
+        left,
+        spatial_resolution,
+        num_row,
+        num_col,
+        utm_zone_number,
+        utm_ns_code=1,
+    ):
         self.up = up
         self.left = left
         self.spatial_resolution = spatial_resolution
@@ -699,28 +749,46 @@ class ImageArray():
         nob = self.data.shape[0]
 
         if self.data.dtype == np.uint8:
-            outds = driver.Create(out_fn, self.num_col, self.num_row, nob, gdal.GDT_Byte)
+            outds = driver.Create(
+                out_fn, self.num_col, self.num_row, nob, gdal.GDT_Byte
+            )
         if self.data.dtype == np.int16:
-            outds = driver.Create(out_fn, self.num_col, self.num_row, nob, gdal.GDT_Int16)
+            outds = driver.Create(
+                out_fn, self.num_col, self.num_row, nob, gdal.GDT_Int16
+            )
         elif self.data.dtype == np.int32:
-            outds = driver.Create(out_fn, self.num_col, self.num_row, nob, gdal.GDT_Int32)
+            outds = driver.Create(
+                out_fn, self.num_col, self.num_row, nob, gdal.GDT_Int32
+            )
         elif self.data.dtype == np.float32:
-            outds = driver.Create(out_fn, self.num_col, self.num_row, nob, gdal.GDT_Float32)
+            outds = driver.Create(
+                out_fn, self.num_col, self.num_row, nob, gdal.GDT_Float32
+            )
         elif self.data.dtype == np.float64:
-            outds = driver.Create(out_fn, self.num_col, self.num_row, nob, gdal.GDT_Float64)
+            outds = driver.Create(
+                out_fn, self.num_col, self.num_row, nob, gdal.GDT_Float64
+            )
 
-        outds.SetGeoTransform([self.left, self.spatial_resolution, 0,
-                               self.up, 0, -self.spatial_resolution])
+        outds.SetGeoTransform(
+            [
+                self.left,
+                self.spatial_resolution,
+                0,
+                self.up,
+                0,
+                -self.spatial_resolution,
+            ]
+        )
 
         srs = osr.SpatialReference()
         # UTM Zone information
         srs.SetUTM(self.zone_number, self.ns_code)
         # Datum
-        srs.SetWellKnownGeogCS('WGS84')
+        srs.SetWellKnownGeogCS("WGS84")
         outds.SetProjection(srs.ExportToWkt())
 
         for i in range(nob):
-            outds.GetRasterBand(i+1).WriteArray(self.data[i, :, :])
+            outds.GetRasterBand(i + 1).WriteArray(self.data[i, :, :])
 
         outds = None
 
@@ -732,20 +800,24 @@ class ImageArray():
         # Determine data type
         if self.data.dtype == np.int16:
             outds = driver.Create(
-                out_fn, self.data.shape[2], self.data.shape[1], nob, gdal.GDT_Int16)
+                out_fn, self.data.shape[2], self.data.shape[1], nob, gdal.GDT_Int16
+            )
         elif self.data.dtype == np.int32:
             outds = driver.Create(
-                out_fn, self.data.shape[2], self.data.shape[1], nob, gdal.GDT_Int32)
+                out_fn, self.data.shape[2], self.data.shape[1], nob, gdal.GDT_Int32
+            )
         elif self.data.dtype == np.float32:
             outds = driver.Create(
-                out_fn, self.data.shape[2], self.data.shape[1], nob, gdal.GDT_Float32)
+                out_fn, self.data.shape[2], self.data.shape[1], nob, gdal.GDT_Float32
+            )
         elif self.data.dtype == np.float64:
             outds = driver.Create(
-                out_fn, self.data.shape[2], self.data.shape[1], nob, gdal.GDT_Float64)
+                out_fn, self.data.shape[2], self.data.shape[1], nob, gdal.GDT_Float64
+            )
 
         outds.SetGeoTransform(geo_transform)
 
-        #srs = osr.SpatialReference()
+        # srs = osr.SpatialReference()
         # UTM Zone information
         # srs.SetUTM(self.zone_number,self.ns_code)
         # Datum
@@ -753,7 +825,7 @@ class ImageArray():
         outds.SetProjection(projection_ref)
 
         for i in range(nob):
-            outds.GetRasterBand(i+1).WriteArray(self.data[i, :, :])
+            outds.GetRasterBand(i + 1).WriteArray(self.data[i, :, :])
 
         outds = None
 
@@ -774,24 +846,49 @@ class ImageArray():
 
         # Determine data type
         if self.data.dtype == np.uint8:
-            outds = driver.Create(out_fn, other_image.ds.RasterXSize,
-                                  other_image.ds.RasterYSize, nob, gdal.GDT_Byte)
+            outds = driver.Create(
+                out_fn,
+                other_image.ds.RasterXSize,
+                other_image.ds.RasterYSize,
+                nob,
+                gdal.GDT_Byte,
+            )
         if self.data.dtype == np.int16:
-            outds = driver.Create(out_fn, other_image.ds.RasterXSize,
-                                  other_image.ds.RasterYSize, nob, gdal.GDT_Int16)
+            outds = driver.Create(
+                out_fn,
+                other_image.ds.RasterXSize,
+                other_image.ds.RasterYSize,
+                nob,
+                gdal.GDT_Int16,
+            )
         elif self.data.dtype == np.int32:
-            outds = driver.Create(out_fn, other_image.ds.RasterXSize,
-                                  other_image.ds.RasterYSize, nob, gdal.GDT_Int32)
+            outds = driver.Create(
+                out_fn,
+                other_image.ds.RasterXSize,
+                other_image.ds.RasterYSize,
+                nob,
+                gdal.GDT_Int32,
+            )
         elif self.data.dtype == np.float32:
-            outds = driver.Create(out_fn, other_image.ds.RasterXSize,
-                                  other_image.ds.RasterYSize, nob, gdal.GDT_Float32)
+            outds = driver.Create(
+                out_fn,
+                other_image.ds.RasterXSize,
+                other_image.ds.RasterYSize,
+                nob,
+                gdal.GDT_Float32,
+            )
         elif self.data.dtype == np.float64:
-            outds = driver.Create(out_fn, other_image.ds.RasterXSize,
-                                  other_image.ds.RasterYSize, nob, gdal.GDT_Float64)
+            outds = driver.Create(
+                out_fn,
+                other_image.ds.RasterXSize,
+                other_image.ds.RasterYSize,
+                nob,
+                gdal.GDT_Float64,
+            )
 
         outds.SetGeoTransform(other_image.ds.GetGeoTransform())
 
-        #srs = osr.SpatialReference()
+        # srs = osr.SpatialReference()
         # UTM Zone information
         # srs.SetUTM(self.zone_number,self.ns_code)
         # Datum
@@ -799,7 +896,7 @@ class ImageArray():
         outds.SetProjection(other_image.ds.GetProjection())
 
         for i in range(nob):
-            outds.GetRasterBand(i+1).WriteArray(self.data[i, :, :])
+            outds.GetRasterBand(i + 1).WriteArray(self.data[i, :, :])
 
         outds = None
 
@@ -845,8 +942,8 @@ def find_intercept(p1, p2):
         y1 = y2
         y2 = temp
 
-    xlist = range(int(x1)+1, int(x2)+1)
-    ylist = range(int(y1)+1, int(y2)+1)
+    xlist = range(int(x1) + 1, int(x2) + 1)
+    ylist = range(int(y1) + 1, int(y2) + 1)
 
     point_list = []
 
@@ -902,11 +999,11 @@ def image_resample(img, ratio):
 
     for i in xrange(nrow):
         row_start = i * ratio
-        row_end = (i+1) * ratio
+        row_end = (i + 1) * ratio
 
         for j in xrange(ncol):
             col_start = j * ratio
-            col_end = (j+1) * ratio
+            col_end = (j + 1) * ratio
 
             out_img[i, j] = img[row_start:row_end, col_start:col_end].mean()
 
