@@ -30,34 +30,30 @@ async def verify_static_file_access(request: Request) -> None:
     # check if access to color bar's data product is restricted or public
     if "colorbars" in request.url.path:
         try:
-            data_product_id = Path(request.url.path.split("colorbars")[-1]).parent.name
-            data_product_id_uuid = UUID(data_product_id)
+            request_path = Path(request.url.path)
+            data_product_id = UUID(request_path.parents[1].name)
         except (IndexError, ValueError):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="data product not found"
             )
         file_permission = crud.file_permission.get_by_data_product(
-            SessionLocal(), file_id=data_product_id_uuid
+            SessionLocal(), file_id=data_product_id
         )
         # public, return file
         if file_permission and file_permission.is_public:
             return
 
     # check if access to requested data product is restricted or public
-    if (
-        "flights" in request.url.path
-        and "colorbars" not in request.url.path
-        and "point_cloud" not in request.url.path
-    ):
+    if "data_products" in request.url.path and "colorbars" not in request.url.path:
         try:
-            data_product_id = request.url.path.split("flights")[1].split("/")[-1][:-4]
-            data_product_id_uuid = UUID(data_product_id)
+            request_path = Path(request.url.path)
+            data_product_id = UUID(request_path.parent.name)
         except (IndexError, ValueError):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="data product not found"
             )
-        file_permission = crud.file_permission.get_by_filename(
-            SessionLocal(), filename=str(data_product_id_uuid)
+        file_permission = crud.file_permission.get_by_data_product(
+            SessionLocal(), file_id=data_product_id
         )
         # if file is deactivated return 404
         if file_permission and file_permission.file.is_active is False:

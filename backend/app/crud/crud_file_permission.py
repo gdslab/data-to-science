@@ -25,7 +25,11 @@ class CRUDFilePermission(
         return file_permission
 
     def get_by_data_product(self, db: Session, file_id: UUID) -> FilePermission | None:
-        statement = select(FilePermission).where(FilePermission.file_id == file_id)
+        statement = (
+            select(FilePermission)
+            .options(joinedload(FilePermission.file))
+            .where(FilePermission.file_id == file_id)
+        )
         with db as session:
             file_permission = session.scalar(statement)
             # update last accessed timestamp

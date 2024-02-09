@@ -95,8 +95,6 @@ function DSMSymbologyControls() {
   } = useMapContext();
   if (activeProject && activeDataProduct) {
     const symbology = symbologySettings as DSMSymbologySettings;
-    console.log(activeDataProduct);
-    console.log(symbology);
     return (
       <Formik
         initialValues={symbology}

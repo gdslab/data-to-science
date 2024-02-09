@@ -156,7 +156,7 @@ def test_generate_data_product_colorbar_with_viewer_role(
     assert "colorbar_url" in response_data
     assert response_data["colorbar_url"] == (
         f"{settings.TEST_STATIC_DIR}/projects/{data_product.project.id}"
-        f"/flights/{data_product.flight.id}/dsm/colorbars/{data_product.obj.id}/{colorbar_filename}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}/colorbars/{colorbar_filename}"
     )
 
 

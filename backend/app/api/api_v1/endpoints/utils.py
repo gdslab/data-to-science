@@ -8,10 +8,28 @@ from sqlalchemy.orm import Session
 
 from app import crud, models
 from app.api import deps
+from app.api.api_v1.endpoints.data_products import get_data_product_dir
 from app.core.config import settings
 from app.utils.ColorBar import ColorBar
 
 router = APIRouter()
+
+
+def is_singleband(data_product: models.DataProduct) -> bool:
+    """Return True if data product is a single band raster.
+
+    Args:
+        data_product (models.DataProduct): DataProduct object representing raster.
+
+    Returns:
+        bool: True if raster is singleband, False if not raster or multiband.
+    """
+    if data_product.stac_properties and "raster" in data_product.stac_properties:
+        if len(data_product.stac_properties.get("raster", [])) == 1:
+            return True
+        else:
+            return False
+    return False
 
 
 @router.get("/colorbar")
@@ -40,20 +58,20 @@ def get_colorbar_for_data_product_with_public_access(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
         )
-    if data_product.data_type != "dsm":
+    if not is_singleband(data_product):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Colorbars only available for DSM data products",
+            detail="Colorbars only available for single band data products",
         )
 
-    if os.environ.get("RUNNING_TESTS") == "1":
-        output_dir = f"{settings.TEST_STATIC_DIR}/projects/{project_id}/flights/{flight_id}/dsm/colorbars/{data_product_id}"
-    else:
-        output_dir = f"{settings.STATIC_DIR}/projects/{project_id}/flights/{flight_id}/dsm/colorbars/{data_product_id}"
+    data_product_dir = get_data_product_dir(
+        str(project.id), str(flight.id), str(data_product.id)
+    )
+    data_product_dir = data_product_dir / "colorbars"
 
     try:
         colorbar = ColorBar(
-            cmin=cmin, cmax=cmax, outpath=output_dir, cmap=cmap, refresh=refresh
+            cmin=cmin, cmax=cmax, outpath=data_product_dir, cmap=cmap, refresh=refresh
         )
         colorbar_url = colorbar.generate_colorbar()
     except Exception as e:
@@ -94,20 +112,21 @@ def get_colorbar_for_data_product_with_user_access(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
         )
-    if data_product.data_type != "dsm":
+
+    if not is_singleband(data_product):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Colorbars only available for DSM data products",
         )
 
-    if os.environ.get("RUNNING_TESTS") == "1":
-        output_dir = f"{settings.TEST_STATIC_DIR}/projects/{project.id}/flights/{flight.id}/dsm/colorbars/{data_product_id}"
-    else:
-        output_dir = f"{settings.STATIC_DIR}/projects/{project.id}/flights/{flight.id}/dsm/colorbars/{data_product_id}"
+    data_product_dir = get_data_product_dir(
+        str(project.id), str(flight.id), str(data_product.id)
+    )
+    data_product_dir = data_product_dir / "colorbars"
 
     try:
         colorbar = ColorBar(
-            cmin=cmin, cmax=cmax, outpath=output_dir, cmap=cmap, refresh=refresh
+            cmin=cmin, cmax=cmax, outpath=data_product_dir, cmap=cmap, refresh=refresh
         )
         colorbar_url = colorbar.generate_colorbar()
     except Exception as e:
