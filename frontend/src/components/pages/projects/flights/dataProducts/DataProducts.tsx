@@ -79,7 +79,10 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
             />
             <TableBody
               rows={data.map((dataset) => [
-                <div className="h-full flex items-center justify-center">
+                <div
+                  key={`row-${dataset.id}`}
+                  className="h-full flex items-center justify-center"
+                >
                   {getDataProductName(dataset.data_type)}
                 </div>,
                 <div className="h-full flex items-center justify-center">

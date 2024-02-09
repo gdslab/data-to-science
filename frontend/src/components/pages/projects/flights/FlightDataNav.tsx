@@ -16,20 +16,18 @@ export default function FlightDataNav() {
           .sort((a, b) =>
             sorter(new Date(a.acquisition_date), new Date(b.acquisition_date), 'desc')
           )
-          .map((flight) =>
-            flight.data_products.length > 0 ? (
-              <Link
-                key={flight.id}
-                className="flex flex-col items-center justify-center h-36 min-h-36 w-36 bg-white border-2 border-slate-400 hover:border-slate-700 rounded-md"
-                to={`/projects/${projectId}/flights/${flight.id}/data`}
-              >
-                <img className="w-8" src={UASIcon} />
-                <span className="block text-lg">{flight.sensor}</span>
-                {flight.acquisition_date}
-                <HintText>{flight.platform}</HintText>
-              </Link>
-            ) : null
-          )}
+          .map((flight) => (
+            <Link
+              key={flight.id}
+              className="flex flex-col items-center justify-center h-36 min-h-36 w-36 bg-white border-2 border-slate-400 hover:border-slate-700 rounded-md"
+              to={`/projects/${projectId}/flights/${flight.id}/data`}
+            >
+              <img className="w-8" src={UASIcon} />
+              <span className="block text-lg">{flight.sensor}</span>
+              {flight.acquisition_date}
+              <HintText>{flight.platform}</HintText>
+            </Link>
+          ))}
       </nav>
     );
   } else {

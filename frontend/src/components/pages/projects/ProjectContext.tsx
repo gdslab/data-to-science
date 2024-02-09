@@ -132,7 +132,10 @@ export function ProjectContextProvider({ children }: { children: React.ReactNode
       }
     }
 
-    if ((projectId && flightId && !flight) || (flight && flight.id !== flightId))
+    if (
+      (projectId && flightId && !flight) ||
+      (flightId && flight && flight.id !== flightId)
+    )
       getFlight();
   }, [flight, flightId]);
 

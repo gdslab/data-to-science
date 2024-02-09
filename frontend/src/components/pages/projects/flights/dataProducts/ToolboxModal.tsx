@@ -201,7 +201,9 @@ export default function ToolboxModal({ dataProduct }: { dataProduct: DataProduct
               <Form className="grid grid-row-auto gap-4">
                 <HintText>Select data products to be generated</HintText>
                 {/* rgb tools */}
-                {flight && flight.sensor.toLowerCase() === 'rgb' ? (
+                {flight &&
+                (flight.sensor.toLowerCase() === 'rgb' ||
+                  flight.sensor.toLowerCase() === 'multispectral') ? (
                   <RGBTools dataProduct={dataProduct} />
                 ) : null}
                 {/* multispectral tools */}
