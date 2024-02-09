@@ -56,14 +56,7 @@ export default function FlightCarousel({
       >
         {sortedFlights.map((flight) => (
           <SwiperSlide key={flight.id}>
-            <FlightCard
-              flight={flight}
-              recentFlight={
-                sortOrder === 'asc'
-                  ? sortedFlights.slice(-1)[0].id
-                  : sortedFlights[0].id
-              }
-            />
+            <FlightCard flight={flight} />
           </SwiperSlide>
         ))}
       </Swiper>

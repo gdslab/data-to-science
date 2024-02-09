@@ -9,13 +9,7 @@ import { isGeoTIFF } from '../dataProducts/DataProducts';
 import { useProjectContext } from '../../ProjectContext';
 import FlightDeleteModal from '../FlightDeleteModal';
 
-export default function FlightCard({
-  flight,
-  recentFlight,
-}: {
-  flight: Flight;
-  recentFlight: string;
-}) {
+export default function FlightCard({ flight }: { flight: Flight }) {
   const { projectRole } = useProjectContext();
 
   const dataProduct = flight.data_products.length > 0 ? flight.data_products[0] : null;

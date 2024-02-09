@@ -25,7 +25,6 @@
 
    - `API_PROJECT_NAME`: Name that will appear in the FastAPI docs.
    - `API_DOMAIN`: Domain used for accessing the application (e.g., http://localhost or https://customdomain)
-   - `API_LOGDIR`: Location where backend FastAPI log will be stored.
    - `CELERY_BROKER_URL`: Address for local redis service.
    - `CELERY_RESULT_BACKEND`: Address for local redis service.
    - `MAIL_ENABLED`: Enable SMTP email by changing value from 0 to 1.
