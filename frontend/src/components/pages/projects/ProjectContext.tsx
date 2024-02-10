@@ -113,7 +113,8 @@ export function ProjectContextProvider({ children }: { children: React.ReactNode
         projectDispatch({ type: 'clear', payload: null });
       }
     }
-    if ((projectId && !project) || (project && project.id !== projectId)) getProject();
+    if ((projectId && !project) || (projectId && project && project.id !== projectId))
+      getProject();
   }, [project, projectId]);
 
   useEffect(() => {
@@ -158,7 +159,10 @@ export function ProjectContextProvider({ children }: { children: React.ReactNode
         projectRoleDispatch({ type: 'clear', payload: undefined });
       }
     }
-    if ((projectId && !projectRole) || (project && project.id !== projectId))
+    if (
+      (projectId && !projectRole) ||
+      (projectId && project && project.id !== projectId)
+    )
       getProjectRole();
   }, [projectRole, project, projectId]);
 
@@ -177,7 +181,8 @@ export function ProjectContextProvider({ children }: { children: React.ReactNode
         flightsDispatch({ type: 'clear', payload: null });
       }
     }
-    if ((projectId && !flights) || (project && project.id !== projectId)) getFlights();
+    if ((projectId && !flights) || (projectId && project && project.id !== projectId))
+      getFlights();
   }, [flights, project, projectId]);
 
   return (

@@ -1,4 +1,5 @@
 import * as L from 'leaflet';
+import { useFormikContext } from 'formik';
 import { useEffect } from 'react';
 import { useLeafletContext } from '@react-leaflet/core';
 import '@geoman-io/leaflet-geoman-free';
@@ -18,7 +19,6 @@ export default function GeomanControl({
   layerRef,
   disableDraw = false,
   disableEdit = false,
-  disableRemove = false,
 }: {
   options: GeomanOptions;
   location: Location | null;
@@ -27,9 +27,9 @@ export default function GeomanControl({
   layerRef;
   disableDraw?: boolean;
   disableEdit?: boolean;
-  disableRemove?: boolean;
 }) {
   const context = useLeafletContext();
+  const { setFieldTouched, setFieldValue } = useFormikContext();
 
   useEffect(() => {
     if (layerRef.current) {
@@ -48,7 +48,7 @@ export default function GeomanControl({
     context.map.pm.addControls({
       ...options,
       drawPolygon: location || disableDraw ? false : true,
-      removalMode: !disableRemove,
+      removalMode: true,
       drawMarker: false,
       drawCircle: false,
       drawCircleMarker: false,
@@ -69,8 +69,15 @@ export default function GeomanControl({
         type: 'drawn',
       });
     });
+
     context.map.on('pm:remove', () => {
       setLocation(null);
+      setFieldValue('location', {
+        center_x: 0,
+        center_y: 0,
+        geom: '',
+      });
+      setFieldTouched('location', true);
     });
   }, []);
 

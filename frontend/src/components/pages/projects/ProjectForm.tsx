@@ -10,7 +10,7 @@ import { SelectField, TextField } from '../../InputFields';
 import { Team } from '../teams/Teams';
 
 import initialValues from './initialValues';
-import validationSchema from './validationSchema';
+import { projectCreateValidationSchema } from './validationSchema';
 
 export async function loader() {
   const response = await axios.get('/api/v1/teams');
@@ -79,7 +79,7 @@ export default function ProjectForm({
       <h1>New Project</h1>
       <Formik
         initialValues={initialValues}
-        validationSchema={validationSchema}
+        validationSchema={projectCreateValidationSchema}
         onSubmit={async (values, { setStatus, setSubmitting }) => {
           try {
             const data = {
@@ -90,8 +90,6 @@ export default function ProjectForm({
               ...(values.plantingDate && { planting_date: values.plantingDate }),
               ...(values.harvestDate && { harvest_date: values.harvestDate }),
             };
-            console.log(data);
-
             const response = await axios.post('/api/v1/projects', data);
             if (response) {
               navigate('/projects');

@@ -93,7 +93,6 @@ export default function DrawFieldMap({
         setGeomanLayer={setGeomanLayer}
         disableDraw={featureCollection ? true : false}
         disableEdit={location ? false : true}
-        disableRemove={location ? false : true}
       />
       <ZoomControl
         key={getGCKey(location, featureCollection) + 'zc'}

@@ -23,7 +23,7 @@ import TableCardRadioInput from '../../TableCardRadioInput';
 import { User } from '../../../AuthContext';
 import { SymbologySettings } from '../../maps/MapContext';
 import { Team } from '../teams/Teams';
-import validationSchema from './validationSchema';
+import { projectUpdateValidationSchema } from './validationSchema';
 import { sorter } from '../../utils';
 import { useProjectContext } from './ProjectContext';
 import FlightDeleteModal from './flights/FlightDeleteModal';
@@ -217,7 +217,7 @@ export default function ProjectDetail() {
               locationId: project.location_id,
               teamId: project.team_id ? project.team_id : '',
             }}
-            validationSchema={validationSchema}
+            validationSchema={projectUpdateValidationSchema}
             onSubmit={async (values) => {
               try {
                 const data = {
