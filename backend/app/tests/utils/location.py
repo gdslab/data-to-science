@@ -1,3 +1,5 @@
+from typing import TypedDict
+
 from sqlalchemy.orm import Session
 
 from app import crud, models
@@ -26,6 +28,19 @@ TEST_CENTROID = [
     {"lat": 40.42222989173847, "lon": -86.91776172873834},
     {"lat": 38.42222989173847, "lon": -84.91776172873834},
 ]
+
+
+class SampleLocation(TypedDict):
+    center_x: float
+    center_y: float
+    geom: str
+
+
+SAMPLE_LOCATION: SampleLocation = {
+    "center_x": TEST_CENTROID[0]["lon"],
+    "center_y": TEST_CENTROID[0]["lat"],
+    "geom": f"SRID=4326;POLYGON(({','.join(TEST_COORDS[0])}))",
+}
 
 
 def create_location(db: Session) -> models.Location:

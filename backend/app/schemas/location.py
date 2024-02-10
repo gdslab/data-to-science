@@ -23,7 +23,9 @@ class LocationBase(BaseModel):
 
 # properties to receive via API on creation
 class LocationCreate(LocationBase):
-    pass
+    center_x: float
+    center_y: float
+    geom: str
 
 
 # properties to receive via API on update
@@ -34,6 +36,10 @@ class LocationUpdate(LocationBase):
 # properties shared by models stored in DB
 class LocationInDBBase(LocationBase, from_attributes=True):
     id: UUID
+
+    center_x: float
+    center_y: float
+    geom: str
 
 
 # additional properties to return via API

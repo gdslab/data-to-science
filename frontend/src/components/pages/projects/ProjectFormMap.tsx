@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { ErrorMessage, useFormikContext } from 'formik';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Button, OutlineButton } from '../../Buttons';
 import DrawFieldMap from '../../maps/DrawFieldMap';
@@ -9,7 +9,7 @@ import { Coordinates, FeatureCollection, GeoJSONFeature } from './ProjectForm';
 import HintText from '../../HintText';
 import { Location } from './ProjectForm';
 
-function coordArrayToWKT(coordArray: Coordinates[] | Coordinates[][]) {
+export function coordArrayToWKT(coordArray: Coordinates[] | Coordinates[][]) {
   let wkt: string[][] = [];
   coordArray[0].forEach((coordPair) => {
     wkt.push([`${coordPair[0]} ${coordPair[1]}`]);
@@ -20,7 +20,7 @@ function coordArrayToWKT(coordArray: Coordinates[] | Coordinates[][]) {
 interface Props {
   isUpdate?: boolean;
   location: Location | null;
-  locationId: string;
+  locationId?: string;
   open: boolean;
   projectId?: string;
   setLocation: React.Dispatch<React.SetStateAction<Location | null>>;
@@ -30,7 +30,7 @@ interface Props {
 export default function ProjectFormMap({
   isUpdate = false,
   location,
-  locationId,
+  locationId = '',
   open,
   projectId = '',
   setLocation,
@@ -38,6 +38,20 @@ export default function ProjectFormMap({
 }: Props) {
   const [uploadResponse, setUploadResponse] = useState<FeatureCollection | null>(null);
   const { setFieldTouched, setFieldValue, setStatus } = useFormikContext();
+
+  useEffect(() => {
+    if (location) {
+      const locationData = {
+        center_x: location.center.lng,
+        center_y: location.center.lat,
+        geom: `SRID=4326;POLYGON((${coordArrayToWKT(
+          location.geojson.geometry.coordinates
+        )}))`,
+      };
+      setFieldTouched('location', true);
+      setFieldValue('location', locationData);
+    }
+  }, [location]);
 
   return (
     <div className="grid grid-rows-auto gap-4">
@@ -52,13 +66,14 @@ export default function ProjectFormMap({
       <div>
         <ErrorMessage
           className="text-red-500 text-sm"
-          name="locationId"
+          name="location.geom"
           component="span"
         />
-        {uploadResponse ? (
+        {uploadResponse && uploadResponse.features.length > 1 ? (
           <div className="mb-2">
             <span className="font-semibold text-slate-700">
-              Click on the project's field boundary.
+              Multiple boundaries detected. Click on the boundary you would like to
+              associate with this project.
             </span>
           </div>
         ) : (
@@ -90,53 +105,53 @@ export default function ProjectFormMap({
             />
           </div>
         )}
-        <Button
-          size="sm"
-          onClick={async (e) => {
-            e.preventDefault();
-            setStatus(null);
-            if (location) {
-              try {
-                const data = {
-                  center_x: location.center.lng,
-                  center_y: location.center.lat,
-                  geom: `SRID=4326;POLYGON((${coordArrayToWKT(
-                    location.geojson.geometry.coordinates
-                  )}))`,
-                };
-                const response = !isUpdate
-                  ? await axios.post<GeoJSONFeature>('/api/v1/locations', data)
-                  : await axios.put<GeoJSONFeature>(
-                      `/api/v1/locations/${projectId}/${locationId}`,
-                      data
-                    );
-                if (response) {
-                  setFieldTouched('locationId', true);
-                  setFieldValue('locationId', response.data.properties.id);
+        {isUpdate ? (
+          <Button
+            size="sm"
+            onClick={async (e) => {
+              e.preventDefault();
+              setStatus(null);
+              if (location) {
+                try {
+                  const data = {
+                    center_x: location.center.lng,
+                    center_y: location.center.lat,
+                    geom: `SRID=4326;POLYGON((${coordArrayToWKT(
+                      location.geojson.geometry.coordinates
+                    )}))`,
+                  };
+                  const response = await axios.put<GeoJSONFeature>(
+                    `/api/v1/locations/${projectId}/${locationId}`,
+                    data
+                  );
+                  if (response) {
+                    setFieldTouched('location', true);
+                    setFieldValue('location', data);
+                    setStatus({
+                      type: 'success',
+                      msg: 'Field updated',
+                    });
+                    setUploadResponse(null);
+                  }
+                  setOpen(false);
+                } catch (err) {
                   setStatus({
-                    type: 'success',
-                    msg: isUpdate ? 'Field updated' : 'Field saved',
+                    type: 'error',
+                    msg: 'Unable to save location',
                   });
                   setUploadResponse(null);
                 }
-                setOpen(false);
-              } catch (err) {
+              } else {
                 setStatus({
-                  type: 'error',
-                  msg: 'Unable to save location',
+                  type: 'warning',
+                  msg: 'Must draw field boundary before saving or select an uploaded field by clicking the boundary',
                 });
-                setUploadResponse(null);
               }
-            } else {
-              setStatus({
-                type: 'warning',
-                msg: 'Must draw field boundary before saving or select an uploaded field by clicking the boundary',
-              });
-            }
-          }}
-        >
-          {locationId ? 'Update Field' : 'Save Field'}
-        </Button>
+            }}
+          >
+            Update Field
+          </Button>
+        ) : null}
       </div>
     </div>
   );

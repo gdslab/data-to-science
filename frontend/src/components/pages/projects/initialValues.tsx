@@ -1,7 +1,7 @@
 export interface InitialValues {
   title: string;
   description: string;
-  locationId: string;
+  location: object;
   plantingDate: string;
   harvestDate: string;
   teamId: string;
@@ -10,7 +10,11 @@ export interface InitialValues {
 const initialValues: InitialValues = {
   title: '',
   description: '',
-  locationId: '',
+  location: {
+    center_x: 0,
+    center_y: 0,
+    geom: '',
+  },
   plantingDate: '',
   harvestDate: '',
   teamId: '',

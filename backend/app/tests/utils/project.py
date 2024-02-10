@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app import crud, models
 from app.schemas.project import ProjectCreate
-from app.tests.utils.location import create_location
+from app.tests.utils.location import create_location, SampleLocation, SAMPLE_LOCATION
 from app.tests.utils.user import create_user
 from app.tests.utils.utils import random_team_name, random_team_description
 
@@ -20,7 +20,7 @@ def create_project(
     description: str | None = None,
     planting_date: date | None = None,
     harvest_date: date | None = None,
-    location_id: UUID | None = None,
+    location: SampleLocation | None = None,
     owner_id: UUID | None = None,
     team_id: UUID | None = None,
 ) -> models.Project:
@@ -36,16 +36,15 @@ def create_project(
         planting_date = random_planting_date()
     if harvest_date is None:
         harvest_date = random_harvest_date()
-    if location_id is None:
-        location = create_location(db)
-        location_id = location.id
+    if location is None:
+        location = SAMPLE_LOCATION
 
     project_in = ProjectCreate(
         title=title,
         description=description,
         planting_date=planting_date,
         harvest_date=harvest_date,
-        location_id=location_id,
+        location=location,
         team_id=team_id,
     )
 

@@ -80,16 +80,18 @@ export default function ProjectForm({
       <Formik
         initialValues={initialValues}
         validationSchema={validationSchema}
-        onSubmit={async (values, { setSubmitting }) => {
+        onSubmit={async (values, { setStatus, setSubmitting }) => {
           try {
             const data = {
               title: values.title,
               description: values.description,
-              location_id: values.locationId,
+              location: values.location,
               team_id: values.teamId ? values.teamId : null,
               ...(values.plantingDate && { planting_date: values.plantingDate }),
               ...(values.harvestDate && { harvest_date: values.harvestDate }),
             };
+            console.log(data);
+
             const response = await axios.post('/api/v1/projects', data);
             if (response) {
               navigate('/projects');
@@ -99,24 +101,35 @@ export default function ProjectForm({
             }
           } catch (err) {
             if (axios.isAxiosError(err)) {
-              console.error(err);
+              setStatus({
+                type: 'error',
+                msg: 'Unexpected error occurred. Unable to save project.',
+              });
             } else {
-              // do something
+              setStatus({
+                type: 'error',
+                msg: 'Unexpected error occurred. Unable to save project.',
+              });
             }
           }
           setSubmitting(false);
         }}
       >
-        {({ isSubmitting, status, values }) => (
+        {({ isSubmitting, status }) => (
           <Form>
             <div className="grid md:grid-cols-2 grid-cols-1 gap-8">
-              <ProjectFormMap
-                location={location}
-                locationId={values.locationId}
-                open={open}
-                setLocation={setLocation}
-                setOpen={setOpen}
-              />
+              <div>
+                <div className="inline text-sm text-gray-400 font-bold pt-2 pb-1">
+                  Field location*
+                </div>
+
+                <ProjectFormMap
+                  location={location}
+                  open={open}
+                  setLocation={setLocation}
+                  setOpen={setOpen}
+                />
+              </div>
               <div className="">
                 <TextField label="Title" name="title" />
                 <TextField

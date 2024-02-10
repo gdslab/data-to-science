@@ -2,7 +2,7 @@ from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel
-from app.schemas.location import PolygonGeoJSONFeature
+from app.schemas.location import LocationCreate, PolygonGeoJSONFeature
 
 
 # shared properties
@@ -16,13 +16,14 @@ class ProjectBase(BaseModel):
     team_id: UUID | None = None
 
 
-# properties to receive via API on creation
+# properties to save in DB on creation
 class ProjectCreate(ProjectBase):
     title: str
     description: str
     planting_date: date | None = None
     harvest_date: date | None = None
-    location_id: UUID
+    location: LocationCreate
+    location_id: UUID | None = None
     team_id: UUID | None = None
 
 

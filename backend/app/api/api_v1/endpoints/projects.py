@@ -20,9 +20,17 @@ def create_project(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Create new project for current user."""
-    project = crud.project.create_with_owner(
-        db, obj_in=project_in, owner_id=current_user.id
-    )
+    try:
+        project = crud.project.create_with_owner(
+            db,
+            obj_in=project_in,
+            owner_id=current_user.id,
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to create project",
+        )
     if project["response_code"] != status.HTTP_201_CREATED:
         raise HTTPException(
             status_code=project["response_code"], detail=project["message"]

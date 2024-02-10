@@ -12,7 +12,7 @@ from app.schemas.project import ProjectUpdate
 from app.schemas.project_member import ProjectMemberCreate
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.flight import create_flight
-from app.tests.utils.location import create_location
+from app.tests.utils.location import create_location, SAMPLE_LOCATION
 from app.tests.utils.project import (
     create_project,
     random_planting_date,
@@ -37,17 +37,19 @@ def test_create_project(
             "description": random_team_description(),
             "planting_date": random_planting_date(),
             "harvest_date": random_harvest_date(),
-            "location_id": location.id,
+            "location": SAMPLE_LOCATION,
         }
     )
     response = client.post(API_URL, json=data)
     response.status_code == status.HTTP_201_CREATED
     response_data = response.json()
+    print(response_data)
     assert "id" in response_data
     assert data["title"] == response_data["title"]
     assert data["description"] == response_data["description"]
     assert data["planting_date"] == response_data["planting_date"]
     assert data["harvest_date"] == response_data["harvest_date"]
+    assert "location_id" in response_data
 
 
 def test_create_project_with_team_with_team_owner_role(
@@ -62,7 +64,7 @@ def test_create_project_with_team_with_team_owner_role(
             "description": random_team_description(),
             "planting_date": random_planting_date(),
             "harvest_date": random_harvest_date(),
-            "location_id": location.id,
+            "location": SAMPLE_LOCATION,
             "team_id": team.id,
         }
     )
@@ -83,7 +85,7 @@ def test_create_project_with_team_without_team_owner_role(
             "description": random_team_description(),
             "planting_date": random_planting_date(),
             "harvest_date": random_harvest_date(),
-            "location_id": location.id,
+            "location": SAMPLE_LOCATION,
             "team_id": team.id,
         }
     )
@@ -104,7 +106,7 @@ def test_get_project_with_owner_role(
     assert project.description == response_data["description"]
     assert str(project.planting_date) == response_data["planting_date"]
     assert str(project.harvest_date) == response_data["harvest_date"]
-    assert str(project.location_id) == response_data["location_id"]
+    assert response_data["location_id"]
     assert response_data["is_owner"] is True
 
 

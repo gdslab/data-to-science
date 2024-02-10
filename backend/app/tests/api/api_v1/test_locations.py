@@ -3,6 +3,7 @@ import os
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
 from app.tests.utils.location import create_location, TEST_CENTROID, TEST_COORDS
@@ -32,15 +33,15 @@ def test_update_location(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
-    location = create_location(db)
-    project = create_project(db, location_id=location.id, owner_id=current_user.id)
+    project = create_project(db, owner_id=current_user.id)
+    location_id = project.location_id
     update_data = {
         "center_x": TEST_CENTROID[1]["lon"],
         "center_y": TEST_CENTROID[1]["lat"],
         "geom": f"SRID=4326;POLYGON(({','.join(TEST_COORDS[1])}))",
     }
     r = client.put(
-        f"{settings.API_V1_STR}/locations/{project.id}/{location.id}", json=update_data
+        f"{settings.API_V1_STR}/locations/{project.id}/{location_id}", json=update_data
     )
     assert r.status_code == 200
     location_updated = r.json()

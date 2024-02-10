@@ -24,6 +24,20 @@ export default function UploadGeoJSON({ data, setLocation, setUploadResponse }: 
     }
   }, [fcRef.current]);
 
+  useEffect(() => {
+    if (fcRef.current) {
+      const layers = fcRef.current.getLayers() as L.Polygon[];
+      if (layers.length === 1) {
+        setLocation({
+          geojson: layers[0].toGeoJSON(),
+          center: layers[0].getCenter(),
+          type: 'uploaded',
+        });
+        setUploadResponse(null);
+      }
+    }
+  }, [fcRef.current]);
+
   return (
     <GeoJSON
       ref={fcRef}

@@ -6,7 +6,7 @@ from app import crud
 from app.schemas.project import ProjectUpdate
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.flight import create_flight
-from app.tests.utils.location import create_location
+from app.tests.utils.location import create_location, SAMPLE_LOCATION
 from app.tests.utils.team import create_team
 from app.tests.utils.team_member import create_team_member
 from app.tests.utils.project import (
@@ -24,7 +24,6 @@ def test_create_project_without_team(db: Session) -> None:
     description = random_team_description()
     planting_date = random_planting_date()
     harvest_date = random_harvest_date()
-    location = create_location(db)
     user = create_user(db)
     project = create_project(
         db,
@@ -32,14 +31,14 @@ def test_create_project_without_team(db: Session) -> None:
         description=description,
         planting_date=planting_date,
         harvest_date=harvest_date,
-        location_id=location.id,
+        location=SAMPLE_LOCATION,
         owner_id=user.id,
     )
     assert project.title == title
     assert project.description == description
     assert project.planting_date == planting_date
     assert project.harvest_date == harvest_date
-    assert project.location_id == location.id
+    assert project.location_id
     assert project.owner_id == user.id
 
 

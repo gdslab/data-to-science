@@ -9,7 +9,7 @@ from sqlalchemy import func, select, update, or_
 from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm import joinedload, Session
 
-from app import crud
+from app import crud, models, schemas
 from app.crud.base import CRUDBase
 from app.models.data_product import DataProduct
 from app.models.flight import Flight
@@ -48,6 +48,15 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     "message": "Only team owner can perform this action",
                     "result": None,
                 }
+        # add location to db
+        location_db_obj = models.Location(**jsonable_encoder(obj_in_data["location"]))
+        with db as session:
+            session.add(location_db_obj)
+            session.commit()
+            session.refresh(location_db_obj)
+        # remove location from project object and add location id
+        del obj_in_data["location"]
+        obj_in_data["location_id"] = location_db_obj.id
         # add project to db
         project_db_obj = self.model(**obj_in_data, owner_id=owner_id)
         with db as session:
