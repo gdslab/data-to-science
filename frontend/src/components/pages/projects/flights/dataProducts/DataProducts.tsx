@@ -1,8 +1,9 @@
 import { Fragment, useEffect, useState } from 'react';
-import { useParams, useRevalidator } from 'react-router-dom';
+import { useNavigate, useParams, useRevalidator } from 'react-router-dom';
 import {
   CheckCircleIcon,
   CogIcon,
+  EyeIcon,
   PhotoIcon,
   XCircleIcon,
   QuestionMarkCircleIcon,
@@ -42,7 +43,8 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
   const [open, setOpen] = useState(false);
   const [tableView, toggleTableView] = useState<'table' | 'carousel'>('carousel');
   const revalidator = useRevalidator();
-  const { projectRole } = useProjectContext();
+  const { project, projectRole } = useProjectContext();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!open) revalidator.revalidate();
@@ -145,8 +147,45 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
               ])}
               actions={
                 projectRole !== 'owner'
-                  ? undefined
+                  ? data.map((dataProduct) => [
+                      {
+                        key: `action-view-${dataProduct.id}`,
+                        type: 'component',
+                        component: (
+                          <div
+                            className="flex items-center gap-2 text-sky-600 cursor-pointer"
+                            onClick={() => {
+                              navigate('/home', {
+                                state: { project: project, dataProduct: dataProduct },
+                              });
+                            }}
+                          >
+                            <EyeIcon className="h-4 w-4" />
+                            <span className="text-sm">View</span>
+                          </div>
+                        ),
+                        label: 'View',
+                      },
+                    ])
                   : data.map((dataProduct) => [
+                      {
+                        key: `action-view-${dataProduct.id}`,
+                        type: 'component',
+                        component: (
+                          <div
+                            className="flex items-center gap-2 text-sky-600 cursor-pointer"
+                            onClick={() => {
+                              navigate('/home', {
+                                state: { project: project, dataProduct: dataProduct },
+                              });
+                            }}
+                          >
+                            <EyeIcon className="h-4 w-4" />
+                            <span className="text-sm">View</span>
+                          </div>
+                        ),
+                        label: 'View',
+                      },
                       {
                         key: `action-delete-${dataProduct.id}`,
                         type: 'component',

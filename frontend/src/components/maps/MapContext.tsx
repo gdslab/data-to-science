@@ -233,7 +233,7 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
         flightsDispatch({ type: 'set', payload: response.data });
       }
     } catch (err) {
-      console.error(err);
+      console.log('Unable to fetch flights');
     }
   }
 
@@ -250,11 +250,6 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
       getFlights(activeProject.id);
     }
   }, [activeDataProduct]);
-
-  // clears activeDataProduct when map tool changes
-  useEffect(() => {
-    activeDataProductDispatch({ type: 'clear', payload: null });
-  }, [activeMapTool]);
 
   return (
     <MapContext.Provider

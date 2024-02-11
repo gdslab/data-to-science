@@ -1,9 +1,8 @@
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   ArrowUturnLeftIcon,
   Bars3Icon,
-  ClockIcon,
   MapIcon,
   MapPinIcon,
   PaperAirplaneIcon,
@@ -28,7 +27,8 @@ function classNames(...classes: string[]) {
 }
 
 function MapToolbar() {
-  const { activeMapTool, activeMapToolDispatch } = useMapContext();
+  const { activeMapTool, activeDataProductDispatch, activeMapToolDispatch } =
+    useMapContext();
   return (
     <fieldset className="border border-solid border-slate-300 p-1.5">
       <legend>Map Tools</legend>
@@ -38,7 +38,10 @@ function MapToolbar() {
             activeMapTool === 'map' ? 'bg-accent2' : '',
             'h-8 w-8 cursor-pointer shadow-sm hover:shadow-xl rounded border-2 border-solid border-slate-500 p-1.5'
           )}
-          onClick={() => activeMapToolDispatch({ type: 'set', payload: 'map' })}
+          onClick={() => {
+            activeDataProductDispatch({ type: 'clear', payload: null });
+            activeMapToolDispatch({ type: 'set', payload: 'map' });
+          }}
         >
           <MapIcon className="h-4 w-4" />
           <span className="sr-only">Map Tool</span>
@@ -49,23 +52,12 @@ function MapToolbar() {
             'h-8 w-8 cursor-pointer shadow-sm hover:shadow-xl rounded border-2 border-solid border-slate-500 p-1.5'
           )}
           onClick={() => {
+            activeDataProductDispatch({ type: 'clear', payload: null });
             activeMapToolDispatch({ type: 'set', payload: 'compare' });
           }}
         >
           <ScaleIcon className="h-4 w-4" />
           <span className="sr-only">Compare Tool</span>
-        </div>
-        <div
-          className={classNames(
-            activeMapTool === 'timeline' ? 'bg-accent2' : '',
-            'h-8 w-8 cursor-not-allowed shadow-sm hover:shadow-xl rounded border-2 border-solid border-slate-500 p-1.5'
-          )}
-          // onClick={() =>
-          //   activeMapToolDispatch({ type: 'set', payload: 'timeline' })
-          // }
-        >
-          <ClockIcon className="h-4 w-4" />
-          <span className="sr-only">Timeline Tool</span>
         </div>
       </div>
     </fieldset>
@@ -135,11 +127,31 @@ export default function LayerPane({
     symbologySettingsDispatch,
   } = useMapContext();
 
+  const { state } = useLocation();
+
   useEffect(() => {
     if (activeDataProduct && activeDataProduct.data_type === 'point_cloud') {
       toggleHidePane(true);
     }
   }, [activeDataProduct]);
+
+  useEffect(() => {
+    if (state && state.project && state.dataProduct) {
+      activeProjectDispatch({ type: 'set', payload: state.project });
+      activeDataProductDispatch({ type: 'set', payload: state.dataProduct });
+      if (state.dataProduct.user_style) {
+        symbologySettingsDispatch({
+          type: 'update',
+          payload: state.dataProduct.user_style,
+        });
+      } else if (state.dataProduct.data_type !== 'point_cloud') {
+        symbologySettingsDispatch({
+          type: 'update',
+          payload: getDefaultStyle(state.dataProduct),
+        });
+      }
+    }
+  }, [state]);
 
   if (hidePane) {
     return (
@@ -222,7 +234,15 @@ export default function LayerPane({
                         </div>
                       </div>
                       {flight.data_products.length > 0 ? (
-                        <details className="group space-y-2 [&_summary::-webkit-details-marker]:hidden text-slate-600 overflow-visible">
+                        <details
+                          className="group space-y-2 [&_summary::-webkit-details-marker]:hidden text-slate-600 overflow-visible"
+                          open={
+                            activeDataProduct &&
+                            activeDataProduct.flight_id === flight.id
+                              ? true
+                              : false
+                          }
+                        >
                           <summary className="text-sm cursor-pointer">{`${flight.data_products.length} Data Products`}</summary>
                           {flight.data_products.map((dataProduct) => (
                             <LayerCard

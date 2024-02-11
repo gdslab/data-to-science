@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ExclamationCircleIcon, EyeIcon, PhotoIcon } from '@heroicons/react/24/outline';
 
 import Card from '../../../../Card';
@@ -24,7 +25,8 @@ export default function DataProductCard({
   dataProduct: DataProductStatus;
 }) {
   const [isCopied, setIsCopied] = useState(false);
-  const { projectRole } = useProjectContext();
+  const { project, projectRole } = useProjectContext();
+  const navigate = useNavigate();
 
   return (
     <div className="flex items-center justify-center min-h-80">
@@ -99,7 +101,9 @@ export default function DataProductCard({
               <div
                 className="flex items-center gap-2 text-sky-600 cursor-pointer"
                 onClick={() => {
-                  alert('not implemented yet');
+                  navigate('/home', {
+                    state: { project: project, dataProduct: dataProduct },
+                  });
                 }}
               >
                 <EyeIcon className="h-6 w-6" />
