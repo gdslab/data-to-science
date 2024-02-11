@@ -58,9 +58,8 @@ export default function DataProductCard({
               ) : dataProduct.status === 'SUCCESS' &&
                 dataProduct.data_type === 'point_cloud' ? (
                 <div className="flex items-center justify-center w-full h-48">
-                  <div className="w-full h-full bg-white flex flex-wrap items-center justify-center">
-                    add stock point cloud img
-                  </div>
+                  <span className="sr-only">Preview not available</span>
+                  <PhotoIcon className="h-full" />
                   <div
                     className="absolute bottom-0 w-full text-center text-white p-1 bg-accent3/80 cursor-pointer"
                     onClick={() => {
@@ -109,7 +108,8 @@ export default function DataProductCard({
                 <EyeIcon className="h-6 w-6" />
                 <span>View</span>
               </div>
-              {projectRole === 'manager' || projectRole === 'owner' ? (
+              {(projectRole === 'manager' || projectRole === 'owner') &&
+              dataProduct.data_type !== 'point_cloud' ? (
                 <>
                   <span className="text-slate-300">|</span>
                   <ToolboxModal dataProduct={dataProduct} />

@@ -24,6 +24,10 @@ interface ToolboxFields {
   ndviRed: number;
 }
 
+const getNumOfBands = (dataProduct: DataProduct) => {
+  return dataProduct.stac_properties.raster.length;
+};
+
 const EXGBandSelection = ({ dataProduct }: { dataProduct: DataProduct }) => {
   const bandOptions = dataProduct.stac_properties.eo.map((band, idx) => ({
     label: band.name,
@@ -125,7 +129,13 @@ const LidarTools = () => {
   );
 };
 
-export default function ToolboxModal({ dataProduct }: { dataProduct: DataProduct }) {
+export default function ToolboxModal({
+  dataProduct,
+  tableView = false,
+}: {
+  dataProduct: DataProduct;
+  tableView?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
   const { flight } = useProjectContext();
@@ -143,8 +153,17 @@ export default function ToolboxModal({ dataProduct }: { dataProduct: DataProduct
         className="flex items-center gap-2 text-sky-600 cursor-pointer"
         onClick={() => setOpen(true)}
       >
-        <WrenchScrewdriverIcon className="h-6 w-6" />
-        <span>Toolbox</span>
+        {tableView ? (
+          <>
+            <WrenchScrewdriverIcon className="h-4 w-4" />
+            <span className="text-sm">Toolbox</span>
+          </>
+        ) : (
+          <>
+            <WrenchScrewdriverIcon className="h-6 w-6" />
+            <span>Toolbox</span>
+          </>
+        )}
       </div>
       <Modal open={open} setOpen={setOpen}>
         <div className="p-4">
@@ -203,11 +222,14 @@ export default function ToolboxModal({ dataProduct }: { dataProduct: DataProduct
                 {/* rgb tools */}
                 {flight &&
                 (flight.sensor.toLowerCase() === 'rgb' ||
-                  flight.sensor.toLowerCase() === 'multispectral') ? (
+                  flight.sensor.toLowerCase() === 'multispectral') &&
+                getNumOfBands(dataProduct) > 2 ? (
                   <RGBTools dataProduct={dataProduct} />
                 ) : null}
                 {/* multispectral tools */}
-                {flight && flight.sensor.toLowerCase() === 'multispectral' ? (
+                {flight &&
+                flight.sensor.toLowerCase() === 'multispectral' &&
+                getNumOfBands(dataProduct) > 2 ? (
                   <MultiSpectralTools dataProduct={dataProduct} />
                 ) : null}
                 {/* lidar tools */}

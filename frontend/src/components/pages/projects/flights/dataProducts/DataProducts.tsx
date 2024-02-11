@@ -1,5 +1,10 @@
 import { Fragment, useEffect, useState } from 'react';
-import { useNavigate, useParams, useRevalidator } from 'react-router-dom';
+import {
+  NavigateFunction,
+  useNavigate,
+  useParams,
+  useRevalidator,
+} from 'react-router-dom';
 import {
   CheckCircleIcon,
   CogIcon,
@@ -20,6 +25,8 @@ import { DataProductStatus } from '../FlightData';
 import DataProductCard from './DataProductCard';
 import DataProductDeleteModal from './DataProductDeleteModal';
 import { useProjectContext } from '../../ProjectContext';
+import ToolboxModal from './ToolboxModal';
+import { Project } from '../../ProjectList';
 
 export function getDataProductName(dataType: string): string {
   switch (dataType) {
@@ -36,6 +43,61 @@ export function getDataProductName(dataType: string): string {
 
 export function isGeoTIFF(dataType: string): boolean {
   return dataType !== 'point_cloud';
+}
+
+function getDataProductActions(
+  role: string | undefined,
+  data: DataProductStatus[],
+  navigate: NavigateFunction,
+  project: Project | null
+) {
+  const getDeleteAction = (dataProduct: DataProductStatus) => ({
+    key: `action-delete-${dataProduct.id}`,
+    type: 'component',
+    component: <DataProductDeleteModal dataProduct={dataProduct} tableView={true} />,
+    label: 'Delete',
+  });
+
+  const getToolboxAction = (dataProduct: DataProductStatus) => ({
+    key: `action-toolbox-${dataProduct.id}`,
+    type: 'component',
+    component: <ToolboxModal dataProduct={dataProduct} tableView={true} />,
+    label: 'Toolbox',
+  });
+
+  const getViewAction = (dataProduct: DataProductStatus) => ({
+    key: `action-view-${dataProduct.id}`,
+    type: 'component',
+    component: (
+      <div
+        className="flex items-center gap-2 text-sky-600 cursor-pointer"
+        onClick={() => {
+          navigate('/home', {
+            state: { project: project, dataProduct: dataProduct },
+          });
+        }}
+      >
+        <EyeIcon className="h-4 w-4" />
+        <span className="text-sm">View</span>
+      </div>
+    ),
+    label: 'View',
+  });
+
+  if (role === 'owner') {
+    return data.map((dataProduct) => [
+      getViewAction(dataProduct),
+      getToolboxAction(dataProduct),
+      getDeleteAction(dataProduct),
+    ]);
+  } else if (role === 'manager') {
+    return data.map((dataProduct) => [
+      getViewAction(dataProduct),
+      getToolboxAction(dataProduct),
+    ]);
+  } else {
+    return data.map((dataProduct) => [getViewAction(dataProduct)]);
+  }
 }
 
 export default function DataProducts({ data }: { data: DataProductStatus[] }) {
@@ -145,60 +207,7 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
                   </div>
                 ),
               ])}
-              actions={
-                projectRole !== 'owner'
-                  ? data.map((dataProduct) => [
-                      {
-                        key: `action-view-${dataProduct.id}`,
-                        type: 'component',
-                        component: (
-                          <div
-                            className="flex items-center gap-2 text-sky-600 cursor-pointer"
-                            onClick={() => {
-                              navigate('/home', {
-                                state: { project: project, dataProduct: dataProduct },
-                              });
-                            }}
-                          >
-                            <EyeIcon className="h-4 w-4" />
-                            <span className="text-sm">View</span>
-                          </div>
-                        ),
-                        label: 'View',
-                      },
-                    ])
-                  : data.map((dataProduct) => [
-                      {
-                        key: `action-view-${dataProduct.id}`,
-                        type: 'component',
-                        component: (
-                          <div
-                            className="flex items-center gap-2 text-sky-600 cursor-pointer"
-                            onClick={() => {
-                              navigate('/home', {
-                                state: { project: project, dataProduct: dataProduct },
-                              });
-                            }}
-                          >
-                            <EyeIcon className="h-4 w-4" />
-                            <span className="text-sm">View</span>
-                          </div>
-                        ),
-                        label: 'View',
-                      },
-                      {
-                        key: `action-delete-${dataProduct.id}`,
-                        type: 'component',
-                        component: (
-                          <DataProductDeleteModal
-                            dataProduct={dataProduct}
-                            tableView={true}
-                          />
-                        ),
-                        label: 'Delete',
-                      },
-                    ])
-              }
+              actions={getDataProductActions(projectRole, data, navigate, project)}
             />
           </Table>
         ) : (
