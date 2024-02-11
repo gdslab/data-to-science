@@ -25,6 +25,9 @@ ENV MPLCONFIGDIR=/var/tmp/d2s
 # image for building python environment
 FROM condaforge/miniforge3:latest as conda-env-base
 
+# do not write byte code .pyc
+ENV PYTHONDONTWRITEBYTECODE=1
+
 # env for conda environment file
 ENV CONDA_ENV_DEPS=environment.yml
 
@@ -34,7 +37,9 @@ COPY $CONDA_ENV_DEPS ./
 
 # allow installing dev dependencies to run tests
 ARG INSTALL_DEV=false
-RUN conda env create -f $CONDA_ENV_DEPS
+RUN conda env create -f $CONDA_ENV_DEPS \
+    && conda clean -afy \
+    && find /opt/conda/ -follow -type f -name '*.pyc' -delete
 
 FROM python-base as builder
 
