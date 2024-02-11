@@ -41,37 +41,13 @@ RUN conda env create -f $CONDA_ENV_DEPS \
     && conda clean -afy \
     && find /opt/conda/ -follow -type f -name '*.pyc' -delete
 
-FROM python-base as builder
-
-# install dependencies
-ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y curl libpq-dev gcc bzip2 build-essential cmake ninja-build libpq-dev gdal-bin libgdal-dev wget && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /tmp
-
-# fetch, build, and install pdal, entwine, and untwine
-RUN wget https://github.com/PDAL/PDAL/releases/download/2.6.0/PDAL-2.6.0-src.tar.bz2 -O pdal.tar.bz2 \
-    && wget https://github.com/connormanning/entwine/archive/refs/tags/3.0.0.tar.gz -O entwine.tar.gz \
-    && wget https://github.com/hobuinc/untwine/archive/refs/tags/1.0.1.tar.gz -O untwine.tar.gz \
-    && cd /tmp && tar -xf pdal.tar.bz2 && cd PDAL-2.6.0-src \
-    && mkdir build && cd build && cmake -G Ninja .. && ninja && ninja install \
-    && cd /tmp && tar -xf entwine.tar.gz && cd entwine-3.0.0 \
-    && mkdir build && cd build && cmake -G Ninja .. && ninja && ninja install \
-    && cd /tmp && tar -xf untwine.tar.gz && cd untwine-1.0.1 \
-    && mkdir build && cd build && cmake .. && make && make install
-
 # final stage
 FROM python-base
 
 WORKDIR /app/
 
-# copy over virtual environment, pdal, entwine, and untwine from builder stage
+# copy over virtual environment
 COPY --from=conda-env-base $CONDA_ENV_PATH $CONDA_ENV_PATH
-COPY --from=builder /usr/local/bin/pdal /usr/local/bin/pdal
-COPY --from=builder /usr/local/lib/libpdalcpp.so.16 /usr/local/lib/libpdalcpp.so.16
-COPY --from=builder /usr/local/bin/entwine /usr/local/bin/entwine
-COPY --from=builder /usr/local/lib/libentwine.so.3 /usr/local/lib/libentwine.so.3
-COPY --from=builder /usr/local/bin/untwine /usr/local/bin/untwine
 
 # update path to include venv bin
 ENV PATH="$CONDA_ENV_PATH/bin:$PATH"

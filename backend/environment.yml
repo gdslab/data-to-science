@@ -50,6 +50,7 @@ dependencies:
   - cachetools=5.3.2=pyhd8ed1ab_0
   - cairo=1.18.0=h3faef2a_0
   - celery=5.3.6=pyhd8ed1ab_0
+  - ceres-solver=2.2.0=h2ea6fbf_1
   - certifi=2024.2.2=pyhd8ed1ab_0
   - cffi=1.16.0=py311hb3a22ac_0
   - cfitsio=4.3.1=hbdc6101_0
@@ -64,11 +65,15 @@ dependencies:
   - contourpy=1.2.0=py311h9547e67_0
   - coverage=7.4.1=py311h459d7ec_0
   - cryptography=42.0.2=py311hcb13ee4_0
+  - curl=8.5.0=hca28451_0
   - cycler=0.12.1=pyhd8ed1ab_0
   - dbus=1.13.6=h5008d03_3
   - dnspython=2.4.2=pyhd8ed1ab_0
+  - draco=1.5.7=h00ab1b0_0
   - ecdsa=0.18.0=pyhd8ed1ab_1
+  - eigen=3.4.0=h00ab1b0_0
   - email-validator=2.1.0.post1=pyhd8ed1ab_0
+  - entwine=3.0.0=hbd738d2_3
   - exceptiongroup=1.2.0=pyhd8ed1ab_2
   - expat=2.5.0=hcb278e6_1
   - faker=22.7.0=pyhd8ed1ab_0
@@ -176,6 +181,7 @@ dependencies:
   - libgoogle-cloud=2.12.0=hef10d8f_5
   - libgpg-error=1.47=h71f35ed_0
   - libgrpc=1.60.0=h74775cd_1
+  - libhwloc=2.9.3=default_h554bfaf_1009
   - libiconv=1.17=hd590300_2
   - libjpeg-turbo=3.0.0=hd590300_1
   - libkml=1.3.0=h01aab08_1018
@@ -222,6 +228,7 @@ dependencies:
   - matplotlib=3.8.2=py311h38be061_0
   - matplotlib-base=3.8.2=py311h54ef318_0
   - mccabe=0.7.0=pyhd8ed1ab_0
+  - metis=5.1.0=h59595ed_1007
   - minizip=4.0.4=h0ab5242_0
   - morecantile=5.2.3=pyhd8ed1ab_0
   - mpc=1.3.1=hfe3b2da_0
@@ -234,6 +241,7 @@ dependencies:
   - mysql-libs=8.0.33=hca2cd23_6
   - ncurses=6.4=h59595ed_2
   - networkx=3.2.1=pyhd8ed1ab_0
+  - nitro=2.7.dev8=h59595ed_0
   - nomkl=1.0=h5ca1d4c_0
   - nspr=4.35=h27087fc_0
   - nss=3.97=h1d7d5a4_0
@@ -247,6 +255,7 @@ dependencies:
   - passlib=1.7.4=pyhd8ed1ab_1
   - pathspec=0.12.1=pyhd8ed1ab_0
   - pcre2=10.42=hcad00b1_0
+  - pdal=2.6.3=h42c966b_0
   - pillow=10.2.0=py311ha6c5da5_0
   - pip=24.0=pyhd8ed1ab_0
   - pixman=0.43.2=h59595ed_0
@@ -312,6 +321,8 @@ dependencies:
   - sqlalchemy=2.0.25=py311h459d7ec_0
   - sqlite=3.44.2=h2c6b66d_0
   - starlette=0.36.3=pyhd8ed1ab_0
+  - suitesparse=5.10.1=h5a4f163_3
+  - tbb=2021.11.0=h00ab1b0_1
   - threadpoolctl=3.2.0=pyha21a80b_0
   - tiledb=2.19.1=h4386cac_0
   - titiler-core=0.17.0=pyhd8ed1ab_0
@@ -326,6 +337,7 @@ dependencies:
   - tzcode=2024a=h3f72095_0
   - tzdata=2024a=h0c530f3_0
   - ucx=1.15.0=h75e419f_3
+  - untwine=1.3.0=h59595ed_0
   - uriparser=0.9.7=hcb278e6_1
   - urllib3=1.26.18=pyhd8ed1ab_0
   - uvicorn=0.27.0.post1=py311h38be061_0
