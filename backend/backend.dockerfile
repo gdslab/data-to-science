@@ -46,8 +46,11 @@ FROM python-base
 
 WORKDIR /app/
 
+# create d2s user
+RUN useradd d2s
+
 # copy over virtual environment
-COPY --from=conda-env-base $CONDA_ENV_PATH $CONDA_ENV_PATH
+COPY --from=conda-env-base --chown=d2s:d2s $CONDA_ENV_PATH $CONDA_ENV_PATH
 
 # update path to include venv bin
 ENV PATH="$CONDA_ENV_PATH/bin:$PATH"
@@ -60,17 +63,15 @@ ENV PROJ_LIB="$CONDA_ENV_PATH/share/proj"
 RUN apt-get update && apt-get install -y curl gdal-bin && rm -rf /var/lib/apt/lists/*
 
 # copy over application code
-COPY . /app
+COPY --chown=d2s:d2s . /app
 
-# create user, create directory for logs, temp files, and user uploads, and update permissions
-RUN useradd d2s \
-    && mkdir -p /app/logs \
+# create directory for logs, temp files, and user uploads, and update permissions
+RUN mkdir -p /app/logs \
     && mkdir /var/tmp/d2s \
     && mkdir /static \
-    && chown -R d2s:d2s /app \
+    && chown -R d2s:d2s /app/logs \
     && chown -R d2s:d2s /static \
-    && chown -R d2s:d2s /var/tmp/d2s \
-    && chown -R d2s:d2s ${CONDA_ENV_PATH}
+    && chown -R d2s:d2s /var/tmp/d2s
 
 # change to non-root user
 USER d2s
