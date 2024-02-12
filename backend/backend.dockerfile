@@ -38,6 +38,7 @@ COPY $CONDA_ENV_DEPS ./
 # allow installing dev dependencies to run tests
 ARG INSTALL_DEV=false
 RUN conda env create -f $CONDA_ENV_DEPS \
+    && conda run -n d2s pip install staticmap redis types-python-jose types-passlib \
     && conda clean -afy \
     && find /opt/conda/ -follow -type f -name '*.pyc' -delete
 
