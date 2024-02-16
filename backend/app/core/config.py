@@ -29,6 +29,9 @@ class Settings(BaseSettings):
 
     API_LOGDIR: str = "/app/logs"
 
+    # Provide mapbox token for worldwide satellite imagery (optional)
+    MAPBOX_ACCESS_TOKEN: str | None = None
+
     # Database
     POSTGRES_HOST: str = ""
     POSTGRES_USER: str = ""

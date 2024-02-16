@@ -1,9 +1,40 @@
+import axios from 'axios';
+import { useEffect, useState } from 'react';
 import { LayersControl, TileLayer, WMSTileLayer } from 'react-leaflet';
 
 export default function MapLayersControl() {
+  const [mapboxAccessToken, setMapboxAccessToken] = useState('');
+
+  useEffect(() => {
+    async function getMapboxAccessToken() {
+      try {
+        const response = await axios.post(
+          `${import.meta.env.VITE_API_V1_STR}/auth/mapbox-access-token`
+        );
+        if (response && response.data && response.data.token) {
+          setMapboxAccessToken(response.data.token);
+        }
+      } catch (err) {
+        console.log('unable to fetch mapbox token');
+      }
+    }
+    getMapboxAccessToken();
+  }, []);
+
   return (
     <LayersControl position="topright">
       {/* Basemaps */}
+      {mapboxAccessToken ? (
+        <LayersControl.BaseLayer name="Mapbox Satellite" checked>
+          <TileLayer
+            id="mapbox.satellite"
+            attribution={`© <a href="https://www.mapbox.com/about/maps/">Mapbox</a> © <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> <strong><a href="https://www.mapbox.com/map-feedback/" target="_blank">Improve this map</a></strong>`}
+            url={`https://api.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=${mapboxAccessToken}`}
+            maxNativeZoom={21}
+            maxZoom={24}
+          />
+        </LayersControl.BaseLayer>
+      ) : null}
       <LayersControl.BaseLayer name="OpenStreetMap">
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -23,7 +54,7 @@ export default function MapLayersControl() {
           maxZoom={24}
         />
       </LayersControl.BaseLayer>
-      <LayersControl.BaseLayer name="USGS Imagery" checked>
+      <LayersControl.BaseLayer name="USGS Imagery" checked={!mapboxAccessToken}>
         <WMSTileLayer
           attribution="USGS The National Map: Orthoimagery. Data refreshed December, 2021."
           url="https://basemap.nationalmap.gov/arcgis/services/USGSImageryOnly/MapServer/WMSServer"

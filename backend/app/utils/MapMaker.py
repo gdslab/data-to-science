@@ -10,9 +10,17 @@ class MapMaker:
         self.coordinates = coordinates
         self.outpath = outpath
 
+        mapbox_access_token = os.environ.get("MAPBOX_ACCESS_TOKEN")
+
         size = (128, 128)
         padding = (16, 16)
-        basemap = "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}"
+        if mapbox_access_token:
+            basemap = (
+                "https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}.png?access_token="
+                + mapbox_access_token
+            )
+        else:
+            basemap = "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}"
 
         self.map = StaticMap(size[0], size[1], padding[0], padding[1], basemap)
         self.map.add_polygon(create_polygon(self.coordinates))

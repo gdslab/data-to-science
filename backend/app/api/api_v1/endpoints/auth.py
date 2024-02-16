@@ -257,3 +257,10 @@ def reset_user_password(
     crud.user.remove_single_use_token(db, db_obj=token_db_obj)
     # redirect to login page
     return {"status": "success"}
+
+
+@router.post("/mapbox-access-token")
+def get_mapbox_access_token(response: Response) -> Any:
+    """Returns mapbox access token."""
+    mapbox_acceses_token = settings.MAPBOX_ACCESS_TOKEN
+    return {"token": mapbox_acceses_token}
