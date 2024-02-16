@@ -51,6 +51,7 @@ export default function Map({
         maxZoom={24}
         scrollWheelZoom={true}
         zoomControl={false}
+        worldCopyJump={true}
       >
         {!activeProject ? <ProjectMarkers projects={projects} /> : null}
 

@@ -64,6 +64,7 @@ export default function DrawFieldMap({
       scrollWheelZoom={true}
       zoomControl={false}
       style={{ height: '100%', width: '100%' }}
+      worldCopyJump={true}
     >
       <InvalidateSize />
       {featureCollection ? (
