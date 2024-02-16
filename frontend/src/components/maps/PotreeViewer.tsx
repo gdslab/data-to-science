@@ -51,7 +51,7 @@ export default function PotreeViewer({ eptPath }: { eptPath: string }) {
           viewer.toggleSidebar();
         });
         
-        const path = '${eptPath.replace(import.meta.env.VITE_DOMAIN, '')}';
+        const path = '${eptPath.replace(window.origin, '')}';
         const name = 'Potree';
 
         Potree.loadPointCloud(path, name, function(e) {

@@ -7,6 +7,9 @@ dependencies:
   - alembic
   - celery
   - email-validator
+  - pdal
+  - entwine
+  - untwine
   - faker
   - fastapi
   - fastapi-mail

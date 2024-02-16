@@ -91,11 +91,7 @@ export function getDataProductTileLayer(
     return (
       <TileLayer
         ref={tileLayerRef}
-        url={getTileURL(
-          dataProduct.url.replace(import.meta.env.VITE_DOMAIN, ''),
-          colorRamp,
-          scale
-        )}
+        url={getTileURL(dataProduct.url.replace(window.origin, ''), colorRamp, scale)}
         zIndex={500}
         maxNativeZoom={21}
         maxZoom={24}
@@ -159,7 +155,7 @@ export function getDataProductTileLayer(
     return (
       <TileLayer
         url={getTileURL(
-          dataProduct.url.replace(import.meta.env.VITE_DOMAIN, ''),
+          dataProduct.url.replace(window.origin, ''),
           undefined,
           scale,
           bidxs

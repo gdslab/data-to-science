@@ -8,7 +8,6 @@ services:
       - VITE_BRAND_FULL=Data to Science
       - VITE_BRAND_SHORT=D2S
       - VITE_BRAND_SLOGAN=A Data-driven Open Science Community for Sustained Innovation
-      - VITE_DOMAIN=http://localhost:8000
     image: d2s-app:latest
     platform: linux/x86_64
     depends_on:

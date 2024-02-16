@@ -78,9 +78,7 @@ export default function ShareMap() {
   useEffect(() => {
     async function getBounds(filepath) {
       try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_DOMAIN}/cog/info?url=${filepath}`
-        );
+        const response = await axios.get(`${window.origin}/cog/info?url=${filepath}`);
         if (response) {
           setBounds(response.data.bounds);
         } else {

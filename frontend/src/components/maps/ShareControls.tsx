@@ -144,7 +144,7 @@ export default function ShareControls({
           onClick={() => {
             if (includeSymbology) {
               const newUrl =
-                import.meta.env.VITE_DOMAIN +
+                window.origin +
                 `/sharemap?file_id=${dataProduct.id}&symbology=` +
                 btoa(JSON.stringify(symbologySettings));
               navigator.clipboard.writeText(newUrl);
