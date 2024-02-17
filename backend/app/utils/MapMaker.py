@@ -2,6 +2,8 @@ import os
 
 from staticmap import Polygon, StaticMap
 
+from app.core.config import settings
+
 
 class MapMaker:
     """Used to create static map previews for display on frontend application."""
@@ -22,7 +24,10 @@ class MapMaker:
         else:
             basemap = "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}"
 
-        self.map = StaticMap(size[0], size[1], padding[0], padding[1], basemap)
+        headers = {"User-Agent": "StaticMap", "Referer": settings.API_DOMAIN}
+        self.map = StaticMap(
+            size[0], size[1], padding[0], padding[1], basemap, headers=headers
+        )
         self.map.add_polygon(create_polygon(self.coordinates))
 
     def save(self):

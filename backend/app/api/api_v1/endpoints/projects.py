@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 from uuid import UUID
 
@@ -8,6 +9,8 @@ from app import crud, models, schemas
 from app.api import deps
 from app.api.utils import create_project_field_preview
 
+
+logger = logging.getLogger("__name__")
 
 router = APIRouter()
 
@@ -46,7 +49,10 @@ def create_project(
     )
     if project_in_db["result"]:
         coordinates = project_in_db["result"].field["geometry"]["coordinates"]
-        create_project_field_preview(request, project["result"].id, coordinates)
+        try:
+            create_project_field_preview(request, project["result"].id, coordinates)
+        except Exception:
+            logger.exception("Unable to create preview map")
     return project["result"]
 
 
