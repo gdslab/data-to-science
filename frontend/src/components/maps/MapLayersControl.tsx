@@ -25,11 +25,11 @@ export default function MapLayersControl() {
     <LayersControl position="topright">
       {/* Basemaps */}
       {mapboxAccessToken ? (
-        <LayersControl.BaseLayer name="Mapbox Satellite" checked>
+        <LayersControl.BaseLayer name="Mapbox Satellite Streets" checked>
           <TileLayer
-            id="mapbox.satellite"
+            id="satellite-streets-v12"
             attribution={`© <a href="https://www.mapbox.com/about/maps/">Mapbox</a> © <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> <strong><a href="https://www.mapbox.com/map-feedback/" target="_blank">Improve this map</a></strong>`}
-            url={`https://api.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=${mapboxAccessToken}`}
+            url={`https://api.mapbox.com/styles/v1/mapbox/{id}/tiles/{z}/{x}/{y}?access_token=${mapboxAccessToken}`}
             maxNativeZoom={21}
             maxZoom={24}
           />
