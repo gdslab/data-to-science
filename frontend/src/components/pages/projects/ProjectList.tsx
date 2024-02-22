@@ -24,6 +24,7 @@ export interface Project {
   flight_count: number;
   owner_id: string;
   is_owner: boolean;
+  team_id: string;
 }
 
 export async function loader() {

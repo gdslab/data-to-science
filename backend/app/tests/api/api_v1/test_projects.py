@@ -43,7 +43,6 @@ def test_create_project(
     response = client.post(API_URL, json=data)
     response.status_code == status.HTTP_201_CREATED
     response_data = response.json()
-    print(response_data)
     assert "id" in response_data
     assert data["title"] == response_data["title"]
     assert data["description"] == response_data["description"]

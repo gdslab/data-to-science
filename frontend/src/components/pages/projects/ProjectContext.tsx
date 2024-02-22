@@ -2,16 +2,35 @@ import axios from 'axios';
 import React, { createContext, useContext, useEffect, useReducer } from 'react';
 import { useParams } from 'react-router-dom';
 
+import { ProjectMember } from './ProjectAccess';
 import { Flight } from './ProjectDetail';
 import { Project } from './ProjectList';
 import { User } from '../../../AuthContext';
 
 type ProjectAction = { type: string; payload: Project | null };
+type ProjectMembersAction = { type: string; payload: ProjectMember[] | null };
 type FlightAction = { type: string; payload: Flight | null };
 type FlightsAction = { type: string; payload: Flight[] | null };
 type ProjectRoleAction = { type: string; payload: string | undefined };
 
 function projectReducer(state: Project | null, action: ProjectAction) {
+  switch (action.type) {
+    case 'set': {
+      return action.payload;
+    }
+    case 'clear': {
+      return null;
+    }
+    default: {
+      return state;
+    }
+  }
+}
+
+function projectMembersReducer(
+  state: ProjectMember[] | null,
+  action: ProjectMembersAction
+) {
   switch (action.type) {
     case 'set': {
       return action.payload;
@@ -70,6 +89,8 @@ function flightsReducer(state: Flight[] | null, action: FlightsAction) {
 interface Context {
   project: Project | null;
   projectDispatch: React.Dispatch<ProjectAction>;
+  projectMembers: ProjectMember[] | null;
+  projectMembersDispatch: React.Dispatch<ProjectMembersAction>;
   projectRole: string | undefined;
   projectRoleDispatch: React.Dispatch<ProjectRoleAction>;
   flight: Flight | null;
@@ -81,6 +102,8 @@ interface Context {
 const context: Context = {
   project: null,
   projectDispatch: () => {},
+  projectMembers: null,
+  projectMembersDispatch: () => {},
   projectRole: undefined,
   projectRoleDispatch: () => {},
   flight: null,
@@ -93,6 +116,10 @@ const ProjectContext = createContext(context);
 
 export function ProjectContextProvider({ children }: { children: React.ReactNode }) {
   const [project, projectDispatch] = useReducer(projectReducer, null);
+  const [projectMembers, projectMembersDispatch] = useReducer(
+    projectMembersReducer,
+    null
+  );
   const [projectRole, projectRoleDispatch] = useReducer(projectRoleReducer, undefined);
   const [flight, flightDispatch] = useReducer(flightReducer, null);
   const [flights, flightsDispatch] = useReducer(flightsReducer, null);
@@ -116,6 +143,25 @@ export function ProjectContextProvider({ children }: { children: React.ReactNode
     if ((projectId && !project) || (projectId && project && project.id !== projectId))
       getProject();
   }, [project, projectId]);
+
+  useEffect(() => {
+    async function getProjectMembers() {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/members`
+        );
+        if (response) {
+          projectMembersDispatch({ type: 'set', payload: response.data });
+        } else {
+          projectMembersDispatch({ type: 'clear', payload: null });
+        }
+      } catch {
+        projectMembersDispatch({ type: 'clear', payload: null });
+      }
+    }
+    if ((projectId && !project) || (projectId && project && project.id !== projectId))
+      getProjectMembers();
+  }, [project, projectId, projectMembers]);
 
   useEffect(() => {
     async function getFlight() {
@@ -190,6 +236,8 @@ export function ProjectContextProvider({ children }: { children: React.ReactNode
       value={{
         project,
         projectDispatch,
+        projectMembers,
+        projectMembersDispatch,
         projectRole,
         projectRoleDispatch,
         flight,

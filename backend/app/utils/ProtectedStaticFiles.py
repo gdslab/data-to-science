@@ -59,7 +59,6 @@ async def verify_static_file_access(request: Request) -> None:
             )
             # if file is deactivated return 404
             if file_permission and file_permission.file.is_active is False:
-                print("HEYO")
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="data product not found",

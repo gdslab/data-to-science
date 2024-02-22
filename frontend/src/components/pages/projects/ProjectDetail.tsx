@@ -474,7 +474,7 @@ export default function ProjectDetail() {
             {role !== 'viewer' ? (
               <div className="my-4 flex justify-center">
                 <Modal open={open} setOpen={setOpen}>
-                  <FlightForm setOpen={setOpen} teamId={project.team_id} />
+                  <FlightForm setOpen={setOpen} />
                 </Modal>
                 <Button size="sm" onClick={() => setOpen(true)}>
                   Add New Flight

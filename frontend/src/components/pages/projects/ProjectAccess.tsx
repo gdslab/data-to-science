@@ -1,12 +1,6 @@
 import axios, { isAxiosError } from 'axios';
 import { useContext, useEffect, useState } from 'react';
-import {
-  Params,
-  useLoaderData,
-  useParams,
-  useNavigate,
-  useRevalidator,
-} from 'react-router-dom';
+import { useParams, useNavigate, useRevalidator } from 'react-router-dom';
 
 import { AlertBar } from '../../Alert';
 import { Button } from '../../Buttons';
@@ -18,25 +12,15 @@ import { generateRandomProfileColor } from '../auth/Profile';
 import { classNames } from '../../utils';
 import { sorter } from '../../utils';
 import AuthContext from '../../../AuthContext';
+import { useProjectContext } from './ProjectContext';
 
-interface ProjectMembers {
+export interface ProjectMember {
   id: string;
   full_name: string;
   email: string;
   role: string;
   profile_url: string | null;
   member_id: string;
-}
-
-export async function loader({ params }: { params: Params<string> }) {
-  const response = await axios.get(
-    `${import.meta.env.VITE_API_V1_STR}/projects/${params.projectId}/members`
-  );
-  if (response) {
-    return response.data;
-  } else {
-    return [];
-  }
 }
 
 function AccessRoleRadioGroup({
@@ -116,13 +100,13 @@ export default function ProjectAccess() {
   const [searchResults, setSearchResults] = useState<UserSearch[]>([]);
 
   const { user } = useContext(AuthContext);
-  const projectMembers = useLoaderData() as ProjectMembers[];
+  const { projectMembers, projectMembersDispatch } = useProjectContext();
+
   const navigate = useNavigate();
   const params = useParams();
-  const revalidator = useRevalidator();
 
   useEffect(() => {
-    if (user) {
+    if (user && projectMembers) {
       const userProjectMember = projectMembers.filter(
         ({ member_id }) => member_id === user.id
       );
@@ -136,7 +120,10 @@ export default function ProjectAccess() {
     }
   }, []);
 
-  async function removeProjectMember(memberId: string) {
+  async function removeProjectMember(
+    memberId: string,
+    projectMembers: ProjectMember[]
+  ) {
     try {
       const response = await axios.delete(
         `${import.meta.env.VITE_API_V1_STR}/projects/${
@@ -144,15 +131,24 @@ export default function ProjectAccess() {
         }/members/${memberId}`
       );
       if (response) {
-        revalidator.revalidate();
+        projectMembersDispatch({
+          type: 'set',
+          payload: projectMembers.filter(({ id }) => id !== memberId),
+        });
       }
     } catch (err) {
-      console.error(err);
+      if (isAxiosError(err)) {
+        console.log(err.response?.data.detail);
+      } else {
+        console.log('Unable to process request');
+      }
     }
   }
 
   if (isLoading) {
     return <div className="p-4">Loading...</div>;
+  } else if (!projectMembers) {
+    return <div className="p-4">Unable to find project members</div>;
   } else {
     return (
       <div className="flex flex-col p-4">
@@ -215,7 +211,7 @@ export default function ProjectAccess() {
                   <button
                     className="text-sky-600"
                     type="button"
-                    onClick={() => removeProjectMember(id)}
+                    onClick={() => removeProjectMember(id, projectMembers)}
                   >
                     Remove
                   </button>,
@@ -245,9 +241,9 @@ export default function ProjectAccess() {
                         `/api/v1/projects/${params.projectId}/members/multi`,
                         selectedMembers.map(({ id }) => id)
                       )
-                      .then(() => {
+                      .then((response) => {
+                        projectMembersDispatch({ type: 'set', payload: response.data });
                         setSearchResults([]);
-                        revalidator.revalidate();
                       })
                       .catch((err) => console.error(err));
                   }

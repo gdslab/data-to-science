@@ -20,6 +20,21 @@ def create_flight(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Create new flight for a project."""
+    # check if pilot exists and pilot is a project member
+    pilot_id = flight_in.pilot_id
+    pilot = crud.user.get(db, id=pilot_id)
+    if not pilot:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Pilot not found"
+        )
+    pilot_is_project_member = crud.project_member.get_by_project_and_member_id(
+        db, project_id=project_id, member_id=pilot_id
+    )
+    if not pilot_is_project_member:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Pilot must be project member",
+        )
     flight = crud.flight.create_with_project(
         db, obj_in=flight_in, project_id=project_id
     )

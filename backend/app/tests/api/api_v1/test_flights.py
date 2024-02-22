@@ -135,6 +135,63 @@ def test_create_flight_with_non_project_member(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+def test_create_flight_with_pilot_that_does_not_exist(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    pilot = create_user(db)
+    crud.user.remove(db, id=pilot.id)
+    project = create_project(db)
+    current_user = get_current_user(db, normal_user_access_token)
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="owner")
+    crud.project_member.create_with_project(
+        db,
+        obj_in=project_member_in,
+        project_id=project.id,
+    )
+    data = {
+        "acquisition_date": create_acquisition_date(),
+        "altitude": randint(0, 500),
+        "side_overlap": randint(40, 80),
+        "forward_overlap": randint(40, 80),
+        "sensor": SENSORS[0],
+        "platform": PLATFORMS[0],
+        "pilot_id": pilot.id,
+    }
+    data = jsonable_encoder(data)
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/flights", json=data
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_create_flight_with_pilot_that_does_not_belong_to_project(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    pilot = create_user(db)
+    project = create_project(db)
+    current_user = get_current_user(db, normal_user_access_token)
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="owner")
+    crud.project_member.create_with_project(
+        db,
+        obj_in=project_member_in,
+        project_id=project.id,
+    )
+    data = {
+        "acquisition_date": create_acquisition_date(),
+        "altitude": randint(0, 500),
+        "side_overlap": randint(40, 80),
+        "forward_overlap": randint(40, 80),
+        "sensor": SENSORS[0],
+        "platform": PLATFORMS[0],
+        "pilot_id": pilot.id,
+    }
+    data = jsonable_encoder(data)
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/flights", json=data
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
 def test_get_flight_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:

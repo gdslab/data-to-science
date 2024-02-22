@@ -108,5 +108,10 @@ def remove_project_member(
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
+    project_member = crud.project_member.get(db, id=project_member_id)
+    if not project_member:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project member not found"
+        )
     removed_project_member = crud.project_member.remove(db, id=project_member_id)
     return removed_project_member

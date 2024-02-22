@@ -1,18 +1,16 @@
 import axios, { AxiosResponse, isAxiosError } from 'axios';
 import { Formik, Form } from 'formik';
-import { useContext, useEffect, useState } from 'react';
 import { Params, useLoaderData, useNavigate, useParams } from 'react-router-dom';
 
 import Alert from '../../../Alert';
 import { Button, OutlineButton } from '../../../Buttons';
 import Card from '../../../Card';
 import { SelectField, TextField } from '../../../InputFields';
-import AuthContext, { User } from '../../../../AuthContext';
 
 import { classNames } from '../../../utils';
 import { getInitialValues, PLATFORM_OPTIONS, SENSOR_OPTIONS } from './initialValues';
 import validationSchema from './validationSchema';
-import { Flight, Pilot } from '../ProjectDetail';
+import { Flight } from '../ProjectDetail';
 import FlightDeleteModal from './FlightDeleteModal';
 import { useProjectContext } from '../ProjectContext';
 
@@ -28,74 +26,32 @@ export async function loader({ params }: { params: Params<string> }) {
   }
 }
 
-function fetchPilotFromUserProfile(user: User | null) {
-  if (user) {
-    return [{ label: `${user.first_name} ${user.last_name}`, value: user.id }];
-  } else {
-    return [];
-  }
-}
-
-async function fetchPilots(teamId: string | undefined, user: User | null) {
-  if (teamId) {
-    try {
-      const response = await axios.get(`/api/v1/teams/${teamId}/members`);
-      if (response) {
-        const pilots = response.data.map(({ full_name, member_id }) => ({
-          label: full_name,
-          value: member_id,
-        }));
-        if (pilots.length === 0) {
-          return fetchPilotFromUserProfile(user);
-        } else {
-          return pilots;
-        }
-      } else {
-        return [];
-      }
-    } catch (err) {
-      return [];
-    }
-  } else {
-    return fetchPilotFromUserProfile(user);
-  }
-}
-
 export default function FlightForm({
   editMode = false,
-  teamId,
   setOpen,
 }: {
   editMode?: boolean;
-  teamId?: string | undefined;
   setOpen?: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const { flight } = useLoaderData() as { flight: Flight };
   const params = useParams();
   const navigate = useNavigate();
-  const [pilots, setPilots] = useState<Pilot[]>([]);
-  const { user } = useContext(AuthContext);
-  const { projectRole } = useProjectContext();
-
-  useEffect(() => {
-    fetchPilots(teamId, user)
-      .then((data) => setPilots(data))
-      .catch((err) => console.error(err));
-  }, []);
+  const { projectRole, projectMembers } = useProjectContext();
 
   return (
     <div className={classNames(editMode ? 'w-1/2 m-8' : '', '')}>
       <Card>
         {!editMode ? <h1>Create Flight</h1> : <h1>Edit Flight</h1>}
-        {pilots.length > 0 ? (
+        {projectMembers && projectMembers.length > 0 ? (
           <Formik
             initialValues={{
               ...getInitialValues(editMode ? flight : null),
-              pilotId: pilots[0].value,
+              pilotId: projectMembers[0].member_id,
             }}
             validationSchema={validationSchema}
             onSubmit={async (values, { setSubmitting, setStatus }) => {
               try {
+                console.log(projectMembers);
                 const data = {
                   acquisition_date: values.acquisitionDate,
                   altitude: values.altitude,
@@ -156,7 +112,14 @@ export default function FlightForm({
                 {values && values.platform === 'Other' ? (
                   <TextField label="Platform other" name="platformOther" />
                 ) : null}
-                <SelectField label="Pilot" name="pilotId" options={pilots} />
+                <SelectField
+                  label="Pilot"
+                  name="pilotId"
+                  options={projectMembers.map(({ member_id, full_name }) => ({
+                    label: full_name,
+                    value: member_id,
+                  }))}
+                />
                 <div className="flex flex-col gap-4 mt-4">
                   <Button type="submit" disabled={isSubmitting}>
                     {editMode ? 'Update' : 'Create'}

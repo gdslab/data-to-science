@@ -380,3 +380,16 @@ def test_remove_project_member_without_project_access(
     project_member = create_project_member(db, project_id=project.id)
     response = client.delete(f"{API_URL}/{project.id}/members/{project_member.id}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_remove_project_member_that_does_not_exist(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
+    project = create_project(db, owner_id=current_user.id)
+    project_member = create_project_member(db, project_id=project.id, role="owner")
+    crud.project_member.remove(db, id=project_member.id)
+    response = client.delete(f"{API_URL}/{project.id}/members/{project_member.id}")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
