@@ -131,7 +131,11 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                         "message": "Permission denied",
                         "result": None,
                     }
-                setattr(project[0], "is_owner", user_id == project[0].owner_id)
+                setattr(
+                    project[0],
+                    "is_owner",
+                    user_id == project[0].owner_id or member_role == "owner",
+                )
                 setattr(project[0], "field", json.loads(project[1]))
                 flight_count = 0
                 for flight in project[0].flights:
@@ -156,7 +160,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         """List of projects the user belongs to."""
         # project member
         query_by_project_member = (
-            select(Project, func.ST_AsGeoJSON(Location))
+            select(Project, func.ST_AsGeoJSON(Location), ProjectMember)
             .join(Project.location)
             .join(Project.members)
             .where(Project.is_active)
@@ -167,7 +171,11 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             final_projects = []
             # indicate if project member is also project owner
             for project in projects:
-                setattr(project[0], "is_owner", user_id == project[0].owner_id)
+                setattr(
+                    project[0],
+                    "is_owner",
+                    user_id == project[0].owner_id or project[2].role == "owner",
+                )
                 setattr(project[0], "field", json.loads(project[1]))
                 flight_count = 0
                 for flight in project[0].flights:

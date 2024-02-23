@@ -1,6 +1,6 @@
-import axios, { isAxiosError } from 'axios';
+import axios, { AxiosResponse, isAxiosError } from 'axios';
 import { useContext, useEffect, useState } from 'react';
-import { useParams, useNavigate, useRevalidator } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 
 import { AlertBar } from '../../Alert';
 import { Button } from '../../Buttons';
@@ -27,15 +27,17 @@ function AccessRoleRadioGroup({
   currentRole,
   memberId,
   uniqueID,
+  updateProjectMemberRole,
 }: {
   currentRole: string;
   memberId: string;
   uniqueID: string;
+  updateProjectMemberRole: (projectMemberId: string, newRole: string) => void;
 }) {
   const [error, setError] = useState('');
   const [role, updateRole] = useState(currentRole);
+
   const params = useParams();
-  const revalidator = useRevalidator();
 
   return (
     <div className="flex items-center justify-between gap-4">
@@ -66,14 +68,14 @@ function AccessRoleRadioGroup({
           if (currentRole !== role) {
             try {
               const payload = { role: role };
-              const response = await axios.put(
+              const response: AxiosResponse<ProjectMember> = await axios.put(
                 `${import.meta.env.VITE_API_V1_STR}/projects/${
                   params.projectId
                 }/members/${memberId}`,
                 payload
               );
               if (response) {
-                revalidator.revalidate();
+                updateProjectMemberRole(response.data.id, response.data.role);
               } else {
                 alert('could not update user role');
               }
@@ -119,6 +121,21 @@ export default function ProjectAccess() {
       navigate(-1);
     }
   }, []);
+
+  function updateProjectMemberRole(projectMemberId: string, newRole: string): void {
+    if (projectMembers) {
+      projectMembersDispatch({
+        type: 'set',
+        payload: projectMembers.map((projectMember) => {
+          if (projectMember.id === projectMemberId) {
+            return { ...projectMember, role: newRole };
+          } else {
+            return projectMember;
+          }
+        }),
+      });
+    }
+  }
 
   async function removeProjectMember(
     memberId: string,
@@ -207,6 +224,7 @@ export default function ProjectAccess() {
                     currentRole={role}
                     memberId={id}
                     uniqueID={btoa(full_name)}
+                    updateProjectMemberRole={updateProjectMemberRole}
                   />,
                   <button
                     className="text-sky-600"

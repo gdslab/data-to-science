@@ -51,7 +51,6 @@ export default function FlightForm({
             validationSchema={validationSchema}
             onSubmit={async (values, { setSubmitting, setStatus }) => {
               try {
-                console.log(projectMembers);
                 const data = {
                   acquisition_date: values.acquisitionDate,
                   altitude: values.altitude,

@@ -25,12 +25,10 @@ def test_create_flight_with_project_owner_role(
     pilot = create_user(db)
     project = create_project(db)
     current_user = get_current_user(db, normal_user_access_token)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="owner")
-    crud.project_member.create_with_project(
-        db,
-        obj_in=project_member_in,
-        project_id=project.id,
+    create_project_member(
+        db, role="owner", member_id=current_user.id, project_id=project.id
     )
+    create_project_member(db, role="viewer", member_id=pilot.id, project_id=project.id)
     data = {
         "acquisition_date": create_acquisition_date(),
         "altitude": randint(0, 500),
@@ -61,11 +59,9 @@ def test_create_flight_with_project_manager_role(
     pilot = create_user(db)
     project = create_project(db)
     current_user = get_current_user(db, normal_user_access_token)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="manager")
-    crud.project_member.create_with_project(
-        db,
-        obj_in=project_member_in,
-        project_id=project.id,
+    create_project_member(db, role="viewer", member_id=pilot.id, project_id=project.id)
+    create_project_member(
+        db, role="manager", member_id=current_user.id, project_id=project.id
     )
     data = {
         "acquisition_date": create_acquisition_date(),
@@ -89,11 +85,9 @@ def test_create_flight_with_project_viewer_role(
     pilot = create_user(db)
     project = create_project(db)
     current_user = get_current_user(db, normal_user_access_token)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="viewer")
-    crud.project_member.create_with_project(
-        db,
-        obj_in=project_member_in,
-        project_id=project.id,
+    create_project_member(db, role="viewer", member_id=pilot.id, project_id=project.id)
+    create_project_member(
+        db, role="viewer", member_id=current_user.id, project_id=project.id
     )
     data = {
         "acquisition_date": create_acquisition_date(),
@@ -118,6 +112,7 @@ def test_create_flight_with_non_project_member(
 ) -> None:
     pilot = create_user(db)
     project = create_project(db)
+    create_project_member(db, role="viewer", member_id=pilot.id, project_id=project.id)
     data = {
         "acquisition_date": create_acquisition_date(),
         "altitude": randint(0, 500),
@@ -139,15 +134,17 @@ def test_create_flight_with_pilot_that_does_not_exist(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     pilot = create_user(db)
-    crud.user.remove(db, id=pilot.id)
     project = create_project(db)
-    current_user = get_current_user(db, normal_user_access_token)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="owner")
-    crud.project_member.create_with_project(
-        db,
-        obj_in=project_member_in,
-        project_id=project.id,
+    pilot_project_member = create_project_member(
+        db, role="viewer", member_id=pilot.id, project_id=project.id
     )
+    current_user = get_current_user(db, normal_user_access_token)
+    create_project_member(
+        db, role="owner", member_id=current_user.id, project_id=project.id
+    )
+    # remove pilot
+    crud.project_member.remove(db, id=pilot_project_member.id)
+    crud.user.remove(db, id=pilot.id)
     data = {
         "acquisition_date": create_acquisition_date(),
         "altitude": randint(0, 500),
@@ -170,11 +167,8 @@ def test_create_flight_with_pilot_that_does_not_belong_to_project(
     pilot = create_user(db)
     project = create_project(db)
     current_user = get_current_user(db, normal_user_access_token)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="owner")
-    crud.project_member.create_with_project(
-        db,
-        obj_in=project_member_in,
-        project_id=project.id,
+    create_project_member(
+        db, role="owner", member_id=current_user.id, project_id=project.id
     )
     data = {
         "acquisition_date": create_acquisition_date(),

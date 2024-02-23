@@ -159,7 +159,8 @@ export default function ProjectDetail() {
   const { project, role, flights, teams } = useLoaderData() as ProjectData;
   const { projectId } = useParams();
   const revalidator = useRevalidator();
-  const { flightsDispatch, projectDispatch, projectRoleDispatch } = useProjectContext();
+  const { projectRole, flightsDispatch, projectDispatch, projectRoleDispatch } =
+    useProjectContext();
 
   const [location, setLocation] = useState<Location | null>(null);
   const [tableView, toggleTableView] = useState<'table' | 'carousel'>('carousel');
@@ -207,7 +208,7 @@ export default function ProjectDetail() {
   if (project) {
     return (
       <div className="flex flex-col h-full gap-4 p-4">
-        {project.is_owner ? (
+        {projectRole === 'owner' || projectRole === 'manager' ? (
           <Formik
             initialValues={{
               title: project.title,
