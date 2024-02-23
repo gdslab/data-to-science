@@ -102,21 +102,15 @@ export default function ProjectAccess() {
   const [searchResults, setSearchResults] = useState<UserSearch[]>([]);
 
   const { user } = useContext(AuthContext);
-  const { projectMembers, projectMembersDispatch } = useProjectContext();
+  const { projectMembers, projectMembersDispatch, projectRole } = useProjectContext();
 
   const navigate = useNavigate();
   const params = useParams();
 
   useEffect(() => {
-    if (user && projectMembers) {
-      const userProjectMember = projectMembers.filter(
-        ({ member_id }) => member_id === user.id
-      );
-      if (userProjectMember.length > 0 && userProjectMember[0].role === 'owner') {
-        setIsLoading(false);
-      } else {
-        navigate(-1);
-      }
+    // limit access to project owners
+    if (projectRole && projectRole === 'owner') {
+      setIsLoading(false);
     } else {
       navigate(-1);
     }

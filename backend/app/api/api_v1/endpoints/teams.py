@@ -34,6 +34,7 @@ def read_team(
 
 @router.get("", response_model=list[schemas.Team])
 def read_teams(
+    owner_only: bool = False,
     skip: int = 0,
     limit: int = 100,
     current_user: models.User = Depends(deps.get_current_approved_user),
@@ -41,7 +42,7 @@ def read_teams(
 ) -> Any:
     """Retrieve list of user's teams."""
     teams = crud.team.get_user_team_list(
-        db, user_id=current_user.id, skip=skip, limit=limit
+        db, user_id=current_user.id, owner_only=owner_only, skip=skip, limit=limit
     )
     return teams
 

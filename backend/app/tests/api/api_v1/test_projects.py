@@ -73,7 +73,30 @@ def test_create_project_with_team_with_team_owner_role(
     assert response_data["team_id"] == str(team.id)
 
 
-def test_create_project_with_team_without_team_owner_role(
+def test_create_project_with_team_with_team_viewer_role(
+    client: TestClient, normal_user_access_token: str, db: Session
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    team = create_team(db)
+    create_team_member(db, email=current_user.email, team_id=team.id)
+    location = create_location(db)
+    data = jsonable_encoder(
+        {
+            "title": random_team_name(),
+            "description": random_team_description(),
+            "planting_date": random_planting_date(),
+            "harvest_date": random_harvest_date(),
+            "location": SAMPLE_LOCATION,
+            "team_id": team.id,
+        }
+    )
+    response = client.post(API_URL, json=data)
+    assert response.status_code == status.HTTP_201_CREATED
+    response_data = response.json()
+    assert response_data["team_id"] == str(team.id)
+
+
+def test_create_project_with_team_without_team_role(
     client: TestClient, normal_user_access_token: str, db: Session
 ) -> None:
     team = create_team(db)
@@ -360,7 +383,7 @@ def test_dropping_team_from_project(
     assert project_members[0].member_id == current_user.id
 
 
-def test_update_project_with_new_team_without_team_owner_role(
+def test_update_project_with_new_team_without_belonging_to_team(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_approved_user(

@@ -9,6 +9,7 @@ from app.core.config import settings
 from app.schemas.team import TeamUpdate
 from app.schemas.team_member import TeamMemberCreate
 from app.tests.utils.project import create_project
+from app.tests.utils.project_member import create_project_member
 from app.tests.utils.team import (
     create_team,
     random_team_description,
@@ -68,6 +69,30 @@ def test_create_team_with_project_already_assigned_team(
     assert response.status_code == status.HTTP_201_CREATED
     team = response.json()
     assert project_in_db.team_id == existing_team.id
+
+
+def test_create_team_with_project_by_project_manager(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
+    project_owner = create_user(db)
+    project = create_project(db, owner_id=project_owner.id)
+    # add current user as project member with manager role
+    create_project_member(
+        db, role="manager", member_id=current_user.id, project_id=project.id
+    )
+    data = {
+        "title": random_team_name(),
+        "description": random_team_description(),
+        "project": str(project.id),
+    }
+    response = client.post(f"{settings.API_V1_STR}/teams", json=data)
+    project_in_db = crud.project.get(db, id=project.id)
+    assert response.status_code == status.HTTP_201_CREATED
+    response_data = response.json()
+    assert str(project_in_db.team_id) == response_data["id"]
 
 
 def test_get_teams(

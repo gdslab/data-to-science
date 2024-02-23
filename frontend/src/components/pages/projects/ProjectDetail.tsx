@@ -269,11 +269,13 @@ export default function ProjectDetail() {
                       )}
                     </EditField>
                   </div>
-                  <div className="text-sky-600 cursor-pointer">
-                    <h2>
-                      <Link to={`/projects/${projectId}/access`}>Manage Access</Link>
-                    </h2>
-                  </div>
+                  {projectRole === 'owner' ? (
+                    <div className="text-sky-600 cursor-pointer">
+                      <h2>
+                        <Link to={`/projects/${projectId}/access`}>Manage Access</Link>
+                      </h2>
+                    </div>
+                  ) : null}
                 </div>
                 <Table>
                   <TableHead

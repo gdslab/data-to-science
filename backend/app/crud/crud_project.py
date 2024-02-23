@@ -16,11 +16,28 @@ from app.models.flight import Flight
 from app.models.location import Location
 from app.models.project import Project
 from app.models.project_member import ProjectMember
+from app.models.team_member import TeamMember
 from app.models.utils.user import utcnow
 from app.schemas.project import ProjectCreate, ProjectUpdate
 
 
 logger = logging.getLogger("__name__")
+
+
+def is_team_member(user_id: UUID, team_members: Sequence[TeamMember]) -> bool:
+    """Returns True if user_id matches a user on a team.
+
+    Args:
+        user_id (UUID): User ID to check for on a team.
+        team_members (Sequence[TeamMember]): List of team members.
+
+    Returns:
+        bool: True if the user ID matches a user in the team member list, otherwise False.
+    """
+    for team_member in team_members:
+        if team_member.member_id == user_id:
+            return True
+    return False
 
 
 class ReadProject(TypedDict):
@@ -38,14 +55,22 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
     ) -> ReadProject:
         """Create new project and add user as project member."""
         obj_in_data = jsonable_encoder(obj_in)
-        # check if team was included and if user owns team
-        team = None
+        # check if team was included and if user is team member
+        team_members = []
         if obj_in_data.get("team_id"):
-            team = crud.team.get(db, id=obj_in_data["team_id"])
-            if team and not team.owner_id == owner_id:
+            team_members = crud.team_member.get_list_of_team_members(
+                db, team_id=obj_in_data.get("team_id")
+            )
+            if len(team_members) < 1:
+                return {
+                    "response_code": status.HTTP_400_BAD_REQUEST,
+                    "message": "Team does not have any members",
+                    "result": None,
+                }
+            if not is_team_member(owner_id, team_members):
                 return {
                     "response_code": status.HTTP_403_FORBIDDEN,
-                    "message": "Only team owner can perform this action",
+                    "message": "Only team member can perform this action",
                     "result": None,
                 }
         # add location to db
@@ -72,10 +97,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             session.commit()
             session.refresh(member_db_obj)
         # add team members as project members
-        if team:
-            team_members = crud.team_member.get_list_of_team_members(
-                db, team_id=team.id
-            )
+        if len(team_members) > 0:
             project_members = []
             for team_member in team_members:
                 if team_member.member_id != owner_id:
@@ -155,17 +177,34 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 }
 
     def get_user_project_list(
-        self, db: Session, user_id: UUID, skip: int = 0, limit: int = 100
+        self,
+        db: Session,
+        user_id: UUID,
+        edit_only: bool = False,
+        skip: int = 0,
+        limit: int = 100,
     ) -> Sequence[Project]:
         """List of projects the user belongs to."""
         # project member
-        query_by_project_member = (
-            select(Project, func.ST_AsGeoJSON(Location), ProjectMember)
-            .join(Project.location)
-            .join(Project.members)
-            .where(Project.is_active)
-            .where(ProjectMember.member_id == user_id)
-        )
+        if edit_only:
+            query_by_project_member = (
+                select(Project, func.ST_AsGeoJSON(Location), ProjectMember)
+                .join(Project.location)
+                .join(Project.members)
+                .where(Project.is_active)
+                .where(ProjectMember.member_id == user_id)
+                .where(
+                    or_(ProjectMember.role == "manager", ProjectMember.role == "owner")
+                )
+            )
+        else:
+            query_by_project_member = (
+                select(Project, func.ST_AsGeoJSON(Location), ProjectMember)
+                .join(Project.location)
+                .join(Project.members)
+                .where(Project.is_active)
+                .where(ProjectMember.member_id == user_id)
+            )
         with db as session:
             projects = session.execute(query_by_project_member).all()
             final_projects = []
@@ -199,8 +238,10 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             project_in_data.get("team_id") is not None
             and project_obj.team_id != project_in_data["team_id"]
         ):
-            team = crud.team.get(db, id=project_in_data["team_id"])
-            if team and not team.owner_id == user_id:
+            team_members = crud.team_member.get_list_of_team_members(
+                db, team_id=project_in_data["team_id"]
+            )
+            if len(team_members) == 0 or not is_team_member(user_id, team_members):
                 return {
                     "response_code": status.HTTP_403_FORBIDDEN,
                     "message": "Only team owner can perform this action",

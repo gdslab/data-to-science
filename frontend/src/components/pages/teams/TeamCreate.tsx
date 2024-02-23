@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 import { Form, Formik } from 'formik';
 import { useContext, useEffect, useState } from 'react';
 import { Link, useLoaderData, useNavigate, useRevalidator } from 'react-router-dom';
@@ -14,6 +14,17 @@ import SearchUsers, { UserSearch } from './SearchUsers';
 
 import initialValues from './initialValues';
 import validationSchema from './validationSchema';
+
+export async function loader() {
+  const response: AxiosResponse<Project[]> = await axios.get(
+    '/api/v1/projects?edit_only=True'
+  );
+  if (response) {
+    return response.data;
+  } else {
+    return [];
+  }
+}
 
 export default function TeamCreate() {
   const { user } = useContext(AuthContext);

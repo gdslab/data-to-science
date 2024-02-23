@@ -25,7 +25,9 @@ import ProjectList, {
 import RegistrationForm from './components/pages/auth/RegistrationForm';
 import ShareMap from './components/maps/ShareMap';
 import Teams, { loader as teamsLoader } from './components/pages/teams/Teams';
-import TeamCreate from './components/pages/teams/TeamCreate';
+import TeamCreate, {
+  loader as teamCreateLoader,
+} from './components/pages/teams/TeamCreate';
 import TeamDetail, {
   loader as teamDetailLoader,
 } from './components/pages/teams/TeamDetail';
@@ -102,7 +104,7 @@ export const router = createBrowserRouter([
           {
             path: '/teams/create',
             element: <TeamCreate />,
-            loader: projectListLoader,
+            loader: teamCreateLoader,
           },
         ],
       },

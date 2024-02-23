@@ -36,7 +36,14 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
             session.refresh(team_db_obj)
         # add team member objects
         new_team_members = []
-        if team_member_ids and len(team_member_ids) > 0:
+        # create empty list if new_members not provided by obj_in
+        if not team_member_ids:
+            team_member_ids = []
+        # confirm owner_id is present in team_members ids and add it if not
+        if str(owner_id) not in team_member_ids:
+            team_member_ids.append(str(owner_id))
+        # iterate over team member ids and create team member objects
+        if len(team_member_ids) > 0:
             for user_id in team_member_ids:
                 new_team_members.append(
                     TeamMember(member_id=user_id, team_id=team_db_obj.id)
@@ -44,6 +51,8 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
             with db as session:
                 session.add_all(new_team_members)
                 session.commit()
+                for team_member in new_team_members:
+                    session.refresh(team_member)
         # add project object (if any)
         if project_id:
             project_obj = crud.project.get(db, id=project_id)
@@ -84,18 +93,34 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
         return db_obj
 
     def get_user_team_list(
-        self, db: Session, *, user_id: UUID, skip: int = 0, limit: int = 100
+        self,
+        db: Session,
+        *,
+        user_id: UUID,
+        owner_only: bool = False,
+        skip: int = 0,
+        limit: int = 100
     ) -> Sequence[Team]:
         """List of teams the user belongs to."""
-        stmt = (
-            select(Team)
-            .join(TeamMember.team)
-            .where(TeamMember.member_id == user_id)
-            .offset(skip)
-            .limit(limit)
-        )
+        if owner_only:
+            statement = (
+                select(Team)
+                .join(TeamMember.team)
+                .where(TeamMember.member_id == user_id)
+                .where(TeamMember.member_id == Team.owner_id)
+                .offset(skip)
+                .limit(limit)
+            )
+        else:
+            statement = (
+                select(Team)
+                .join(TeamMember.team)
+                .where(TeamMember.member_id == user_id)
+                .offset(skip)
+                .limit(limit)
+            )
         with db as session:
-            db_obj = session.scalars(stmt).all()
+            db_obj = session.scalars(statement).all()
             # indicate if team member is also team owner
             for team in db_obj:
                 setattr(team, "is_owner", user_id == team.owner_id)
