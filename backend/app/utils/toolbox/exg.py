@@ -2,16 +2,10 @@ import argparse
 import os
 
 import numpy as np
-from osgeo import gdal
-
-from app.utils.toolbox.lib import rs3
-
-gdal.UseExceptions()
-
-GDAL_DRIVER = "ENVI"
+import rasterio
 
 
-def run(in_raster: str, out_raster: str, params: dict) -> None:
+def run(in_raster: str, out_raster: str, params: dict) -> str:
     """Main function for creating Excess Green Index raster from input raster.
     Output EXG raster will be stored as a GeoTIFF in the 'out_dir' location.
 
@@ -25,33 +19,46 @@ def run(in_raster: str, out_raster: str, params: dict) -> None:
     """
     validate_params(params)
 
-    # Input file name
+    # input file name
     in_fn = in_raster
 
-    # Open image without loading to memory
-    in_img = rs3.RSImage(in_fn)
+    with rasterio.open(in_raster) as src:
+        nband = src.count  # number of bands
+        assert len(set(src.dtypes)) == 1  # assert each band has same dtype
+        dtype = src.dtypes[0]  # dtype from first band
 
-    # Read bands
-    red = in_img.img[params.get("red_band_idx"), :, :].astype(np.float32)
-    green = in_img.img[params.get("green_band_idx"), :, :].astype(np.float32)
-    blue = in_img.img[params.get("blue_band_idx"), :, :].astype(np.float32)
+        # update source raster profile to single band and float32
+        profile = src.profile
+        profile.update(dtype=rasterio.float32, count=1, compress="deflate")
 
-    # Calculate excess green vegetation index
-    red_s = red / (red + green + blue)
-    green_s = green / (red + green + blue)
-    blue_s = blue / (red + green + blue)
+        # use block windows to calculate exg and write to new file
+        with rasterio.open(out_raster, "w", **profile) as dst:
+            # all bands must have same block window shapes
+            assert len(set(src.block_shapes)) == 1
 
-    exg = 2 * green_s - red_s - blue_s
+            # iterate over each block window
+            for ji, window in src.block_windows(1):
+                # initialize array to store band values
+                img = np.zeros((nband, window.height, window.width), dtype=dtype)
 
-    # Save image
-    driver = gdal.GetDriverByName(GDAL_DRIVER)
-    outds = driver.Create(
-        out_raster, in_img.ds.RasterXSize, in_img.ds.RasterYSize, 1, gdal.GDT_Float32
-    )
-    outds.SetGeoTransform(in_img.ds.GetGeoTransform())
-    outds.SetProjection(in_img.ds.GetProjection())
-    outds.GetRasterBand(1).WriteArray(exg)
-    outds = None
+                # read bands into initialized array
+                for i in range(nband):
+                    band = src.read(i + 1, window=window)
+                    img[i, :, :] = band
+
+                # calculate exg for current window
+                red = img[params.get("red_band_idx"), :, :].astype(np.float32)
+                green = img[params.get("green_band_idx"), :, :].astype(np.float32)
+                blue = img[params.get("blue_band_idx"), :, :].astype(np.float32)
+
+                red_s = red / (red + green + blue)
+                green_s = green / (red + green + blue)
+                blue_s = blue / (red + green + blue)
+
+                exg = 2 * green_s - red_s - blue_s
+
+                # write exg window to out raster
+                dst.write(exg, window=window, indexes=1)
 
     return out_raster
 

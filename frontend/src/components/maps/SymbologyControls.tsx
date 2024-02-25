@@ -17,16 +17,6 @@ import Modal from '../Modal';
 import { Project } from '../pages/projects/ProjectList';
 import ShareControls from './ShareControls';
 
-/**
- * Determine number of decimal places for input number field's step attribute.
- * @param {number} n Integer or floating point number.
- * @returns {string} Numeric string of step value.
- */
-const findStep = (n: number): number =>
-  !Number.isInteger(n)
-    ? parseFloat('0.' + ''.padStart(n.toString().split('.')[1].length - 1, '0') + '1')
-    : 1;
-
 const saveSymbology = async (
   symbologyValues: SymbologySettings,
   symbologyDispatch: React.Dispatch<SymbologySettingsAction>,
@@ -95,6 +85,8 @@ function DSMSymbologyControls() {
   } = useMapContext();
   if (activeProject && activeDataProduct) {
     const symbology = symbologySettings as DSMSymbologySettings;
+    const step: number =
+      activeDataProduct.stac_properties.raster[0].data_type == 'unit8' ? 1 : 0.001;
     return (
       <Formik
         initialValues={symbology}
@@ -154,7 +146,7 @@ function DSMSymbologyControls() {
                       label="Min"
                       min={symbology.min}
                       max={symbology.max}
-                      step={findStep(symbology.min)}
+                      step={step}
                       disabled
                     />
                   </div>
@@ -164,7 +156,7 @@ function DSMSymbologyControls() {
                       label="Max"
                       min={symbology.min}
                       max={symbology.max}
-                      step={findStep(symbology.min)}
+                      step={step}
                       disabled
                     />
                   </div>
@@ -178,7 +170,7 @@ function DSMSymbologyControls() {
                       label="Min"
                       min={symbology.min}
                       max={symbology.max}
-                      step={findStep(symbology.min)}
+                      step={step}
                       required={false}
                     />
                   </div>
@@ -188,7 +180,7 @@ function DSMSymbologyControls() {
                       label="Max"
                       min={symbology.min}
                       max={symbology.max}
-                      step={findStep(symbology.min)}
+                      step={step}
                       required={false}
                     />
                   </div>
@@ -263,7 +255,8 @@ function OrthoSymbologyControls() {
       label: band.name,
       value: idx + 1,
     }));
-
+    const step: number =
+      activeDataProduct.stac_properties.raster[0].data_type == 'unit8' ? 1 : 0.1;
     return (
       <Formik
         initialValues={symbology}
@@ -319,13 +312,9 @@ function OrthoSymbologyControls() {
                     <NumberField
                       name={values.mode === 'userDefined' ? 'red.userMin' : 'red.min'}
                       label="Min"
-                      min={0}
-                      max={255}
-                      step={
-                        activeDataProduct.stac_properties.raster[0].data_type == 'unit8'
-                          ? 1
-                          : 0.1
-                      }
+                      min={symbology.red.min}
+                      max={symbology.red.max}
+                      step={step}
                       disabled={values.mode !== 'userDefined'}
                       required={false}
                     />
@@ -334,11 +323,7 @@ function OrthoSymbologyControls() {
                       label="Max"
                       min={symbology.red.min}
                       max={symbology.red.max}
-                      step={
-                        activeDataProduct.stac_properties.raster[0].data_type == 'unit8'
-                          ? 1
-                          : 0.1
-                      }
+                      step={step}
                       disabled={values.mode !== 'userDefined'}
                       required={false}
                     />
@@ -352,11 +337,7 @@ function OrthoSymbologyControls() {
                       label="Min"
                       min={symbology.green.min}
                       max={symbology.green.max}
-                      step={
-                        activeDataProduct.stac_properties.raster[0].data_type == 'unit8'
-                          ? 1
-                          : 0.1
-                      }
+                      step={step}
                       disabled={values.mode !== 'userDefined'}
                       required={false}
                     />
@@ -367,11 +348,7 @@ function OrthoSymbologyControls() {
                       label="Max"
                       min={symbology.green.min}
                       max={symbology.green.max}
-                      step={
-                        activeDataProduct.stac_properties.raster[0].data_type == 'unit8'
-                          ? 1
-                          : 0.1
-                      }
+                      step={step}
                       disabled={values.mode !== 'userDefined'}
                       required={false}
                     />
