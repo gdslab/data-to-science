@@ -141,12 +141,14 @@ function SearchUsersResults({
                       />
                     ) : (
                       <div
-                        className="flex items-center justify-center h-8 w-8 text-white text-sm rounded-full"
+                        className="flex items-center justify-center h-8 w-8 gap-1 text-white text-sm rounded-full"
                         style={generateRandomProfileColor(
                           user.first_name + ' ' + user.last_name
                         )}
                       >
-                        {`${user.first_name[0]} ${user.last_name[0]}`}
+                        <span className="indent-[0.1em] tracking-widest">
+                          {user.first_name[0] + user.last_name[0]}
+                        </span>
                       </div>
                     )}
                     <span>{`${user.first_name} ${user.last_name}`}</span>

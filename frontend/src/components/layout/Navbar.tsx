@@ -96,7 +96,9 @@ export default function Navbar() {
                                 user.first_name + ' ' + user.last_name
                               )}
                             >
-                              {`${user.first_name[0]} ${user.last_name[0]}`}
+                              <span className="indent-[0.1em] tracking-widest">
+                                {user.first_name[0] + user.last_name[0]}
+                              </span>
                             </div>
                           )}
 

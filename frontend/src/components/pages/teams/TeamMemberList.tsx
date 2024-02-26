@@ -71,8 +71,10 @@ export default function TeamMemberList({ teamMembers }: { teamMembers: TeamMembe
                         className="flex items-center justify-center h-8 w-8 text-white text-sm rounded-full"
                         style={generateRandomProfileColor(teamMember.full_name)}
                       >
-                        {teamMember.full_name[0]}{' '}
-                        {teamMember.full_name.split(' ').slice(-1)[0][0]}
+                        <span className="indent-[0.1em] tracking-widest">
+                          {teamMember.full_name[0] +
+                            teamMember.full_name.split(' ').slice(-1)[0][0]}
+                        </span>
                       </div>
                     )}
                     <span>{teamMember.full_name}</span>

@@ -274,12 +274,14 @@ export default function Profile() {
                   />
                 ) : (
                   <div
-                    className="flex items-center justify-center h-24 w-24 text-white text-3xl rounded-full"
+                    className="flex items-center justify-center h-24 w-24 text-white text-4xl rounded-full"
                     style={generateRandomProfileColor(
                       `${user.first_name} ${user.last_name}`
                     )}
                   >
-                    {user.first_name[0]} {user.last_name[0]}
+                    <span className="indent-[0.1em] tracking-widest">
+                      {user.first_name[0] + user.last_name[0]}
+                    </span>
                   </div>
                 )}
                 <EditProfilePicture updateProfile={updateProfile} />
