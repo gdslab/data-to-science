@@ -1,4 +1,4 @@
-import { Flight } from '../pages/projects/ProjectDetail';
+import { Flight } from '../pages/projects/Project';
 
 const POSITION_CLASSES = {
   bottomleft: 'leaflet-bottom leaflet-left',

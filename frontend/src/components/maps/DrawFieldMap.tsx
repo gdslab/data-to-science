@@ -8,11 +8,7 @@ import { useLeafletContext } from '@react-leaflet/core';
 import GeomanControl from './GeomanControl';
 import MapLayersControl from './MapLayersControl';
 import UploadGeoJSON from './UploadGeoJSON';
-import {
-  FeatureCollection,
-  Location,
-  SetLocation,
-} from '../pages/projects/ProjectForm';
+import { FeatureCollection, Location, SetLocation } from '../pages/projects/Project';
 
 // updates map (loads tiles) after container size changes
 const InvalidateSize = () => {

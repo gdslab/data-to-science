@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { GeoJSON } from 'react-leaflet/GeoJSON';
 import { useLeafletContext } from '@react-leaflet/core';
 
-import { FeatureCollection, SetLocation } from '../pages/projects/ProjectForm';
+import { FeatureCollection, SetLocation } from '../pages/projects/Project';
 
 interface Props {
   data: FeatureCollection;

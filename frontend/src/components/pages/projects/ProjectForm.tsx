@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 
 import Alert from '../../Alert';
 import { Button } from '../../Buttons';
+import { Location } from './Project';
 import ProjectFormMap from './ProjectFormMap';
 import { SelectField, TextField } from '../../InputFields';
 import { Team } from '../teams/Teams';
@@ -22,35 +23,6 @@ export async function loader() {
     return [];
   }
 }
-
-export type Coordinates = number[][];
-
-export interface GeoJSONFeature {
-  type: string;
-  geometry: {
-    type: string;
-    coordinates: Coordinates[] | Coordinates[][];
-  };
-  properties: {
-    [key: string]: string;
-  };
-}
-
-export interface FeatureCollection {
-  type: 'FeatureCollection';
-  features: GeoJSON.Feature[];
-}
-
-export interface Location {
-  geojson: GeoJSONFeature;
-  center: {
-    lat: number;
-    lng: number;
-  };
-  type: string;
-}
-
-export type SetLocation = React.Dispatch<React.SetStateAction<Location | null>>;
 
 export default function ProjectForm({
   setModalOpen,

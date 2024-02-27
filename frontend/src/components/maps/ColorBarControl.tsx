@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 
 import { DSMSymbologySettings, useMapContext } from './MapContext';
-import { DataProduct } from '../pages/projects/ProjectDetail';
+import { DataProduct } from '../pages/projects/Project';
 import { classNames } from '../utils';
 
 export default function ColorBarControl({

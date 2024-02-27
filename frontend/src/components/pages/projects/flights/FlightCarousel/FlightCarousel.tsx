@@ -10,7 +10,7 @@ import './FlightCarousel.css';
 import { Pagination, Navigation } from 'swiper/modules';
 
 import FlightCard from './FlightCard';
-import { Flight } from '../../ProjectDetail';
+import { Flight } from '../../Project';
 
 import { sorter } from '../../../../utils';
 import useWindowDimensions from '../../../../hooks/useWindowDimensions';

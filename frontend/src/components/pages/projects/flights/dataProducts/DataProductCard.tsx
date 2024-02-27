@@ -6,8 +6,8 @@ import Card from '../../../../Card';
 import { DataProductStatus } from '../FlightData';
 import { isGeoTIFF } from './DataProducts';
 import DataProductDeleteModal from './DataProductDeleteModal';
-import { useProjectContext } from '../../ProjectContext';
 import ToolboxModal from './ToolboxModal';
+import { useProjectContext } from '../../ProjectContext';
 
 function ProgressBar() {
   return (

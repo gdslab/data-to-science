@@ -1,4 +1,4 @@
-import { DataProduct } from '../pages/projects/ProjectDetail';
+import { DataProduct } from '../pages/projects/Project';
 import { SymbologySettings } from './MapContext';
 
 function getDefaultStyle(dataProduct: DataProduct): SymbologySettings {

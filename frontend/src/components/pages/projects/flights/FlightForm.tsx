@@ -10,8 +10,8 @@ import { SelectField, TextField } from '../../../InputFields';
 import { classNames } from '../../../utils';
 import { getInitialValues, PLATFORM_OPTIONS, SENSOR_OPTIONS } from './initialValues';
 import validationSchema from './validationSchema';
-import { Flight } from '../ProjectDetail';
 import FlightDeleteModal from './FlightDeleteModal';
+import { Flight } from '../Project';
 import { useProjectContext } from '../ProjectContext';
 
 export async function loader({ params }: { params: Params<string> }) {

@@ -2,7 +2,7 @@ import axios from 'axios';
 import { createContext, useContext, useEffect, useReducer } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
-import { DataProduct, Flight } from '../pages/projects/ProjectDetail';
+import { DataProduct, Flight } from '../pages/projects/Project';
 import { Project } from '../pages/projects/ProjectList';
 
 export interface DSMSymbologySettings {

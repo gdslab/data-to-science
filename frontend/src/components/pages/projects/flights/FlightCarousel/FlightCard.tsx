@@ -3,7 +3,7 @@ import { PhotoIcon } from '@heroicons/react/24/outline';
 import { LinkButton, LinkOutlineButton } from '../../../../Buttons';
 import Card from '../../../../Card';
 import HintText from '../../../../HintText';
-import { Flight } from '../../ProjectDetail';
+import { Flight } from '../../Project';
 
 import { isGeoTIFF } from '../dataProducts/DataProducts';
 import { useProjectContext } from '../../ProjectContext';

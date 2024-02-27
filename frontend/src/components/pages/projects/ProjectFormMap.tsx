@@ -5,9 +5,8 @@ import { useEffect, useState } from 'react';
 import { Button, OutlineButton } from '../../Buttons';
 import DrawFieldMap from '../../maps/DrawFieldMap';
 import FileUpload from '../../FileUpload';
-import { Coordinates, FeatureCollection, GeoJSONFeature } from './ProjectForm';
+import { Coordinates, FeatureCollection, GeoJSONFeature, Location } from './Project';
 import HintText from '../../HintText';
-import { Location } from './ProjectForm';
 
 export function coordArrayToWKT(coordArray: Coordinates[] | Coordinates[][]) {
   let wkt: string[][] = [];

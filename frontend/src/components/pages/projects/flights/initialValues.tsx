@@ -1,4 +1,4 @@
-import { Flight } from '../ProjectDetail';
+import { Flight } from '../Project';
 
 export const PLATFORM_OPTIONS = [
   { label: 'Phantom 4', value: 'Phantom_4' },

@@ -5,7 +5,7 @@ import 'leaflet-side-by-side';
 
 import CompareToolSelector from './CompareToolSelector';
 import { getDataProductTileLayer } from './DataProductTileLayer';
-import { Flight } from '../pages/projects/ProjectDetail';
+import { Flight } from '../pages/projects/Project';
 
 interface SideBySideControl extends L.Control {
   _leftLayer: L.TileLayer;

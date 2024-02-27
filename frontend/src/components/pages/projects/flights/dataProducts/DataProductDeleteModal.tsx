@@ -7,7 +7,7 @@ import { AlertBar, Status } from '../../../../Alert';
 import { Button } from '../../../../Buttons';
 import { ConfirmationPopup } from '../../../../ConfirmationPopup';
 import Modal from '../../../../Modal';
-import { DataProduct } from '../../ProjectDetail';
+import { DataProduct } from '../../Project';
 
 export default function DataProductDeleteModal({
   dataProduct,

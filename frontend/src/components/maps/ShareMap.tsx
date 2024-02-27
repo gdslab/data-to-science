@@ -9,7 +9,7 @@ import { AlertBar, Status } from '../Alert';
 import ColorBarControl from './ColorBarControl';
 import DataProductTileLayer from './DataProductTileLayer';
 import MapLayersControl from './MapLayersControl';
-import { DataProduct } from '../pages/projects/ProjectDetail';
+import { DataProduct } from '../pages/projects/Project';
 import { DSMSymbologySettings, OrthoSymbologySettings } from './MapContext';
 
 function useQuery() {

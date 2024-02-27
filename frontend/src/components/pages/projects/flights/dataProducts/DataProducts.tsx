@@ -24,9 +24,9 @@ import { useInterval } from '../../../../hooks';
 import { DataProductStatus } from '../FlightData';
 import DataProductCard from './DataProductCard';
 import DataProductDeleteModal from './DataProductDeleteModal';
-import { useProjectContext } from '../../ProjectContext';
 import ToolboxModal from './ToolboxModal';
 import { Project } from '../../ProjectList';
+import { useProjectContext } from '../../ProjectContext';
 
 export function getDataProductName(dataType: string): string {
   switch (dataType) {

@@ -6,7 +6,7 @@ import {
   SymbologySettings,
   useMapContext,
 } from './MapContext';
-import { DataProduct } from '../pages/projects/ProjectDetail';
+import { DataProduct } from '../pages/projects/Project';
 import { getDefaultStyle } from './utils';
 
 /**

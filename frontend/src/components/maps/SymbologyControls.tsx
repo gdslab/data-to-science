@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import { cmaps } from './cmaps';
 import { Button } from '../Buttons';
-import { DataProduct } from '../pages/projects/ProjectDetail';
+import { DataProduct } from '../pages/projects/Project';
 import { NumberField, SelectField } from '../InputFields';
 import {
   DSMSymbologySettings,

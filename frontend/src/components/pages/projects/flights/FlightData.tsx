@@ -1,11 +1,12 @@
 import axios from 'axios';
 import { Params, useLoaderData } from 'react-router-dom';
 
-import { DataProduct } from '../ProjectDetail';
 import DataProducts from './dataProducts/DataProducts';
 import FlightDataNav from './FlightDataNav';
 import RawData from './rawData/RawData';
 import { useProjectContext } from '../ProjectContext';
+
+import { DataProduct } from '../Project';
 
 export async function loader({ params }: { params: Params<string> }) {
   try {

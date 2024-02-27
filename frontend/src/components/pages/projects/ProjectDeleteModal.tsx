@@ -6,7 +6,7 @@ import { AlertBar, Status } from '../../Alert';
 import { Button } from '../../Buttons';
 import { ConfirmationPopup } from '../../ConfirmationPopup';
 import Modal from '../../Modal';
-import { Project } from './ProjectDetail';
+import { Project } from './Project';
 
 export default function ProjectDeleteModal({ project }: { project: Project }) {
   const [openConfirmationPopup, setOpenConfirmationPopup] = useState(false);
@@ -16,11 +16,7 @@ export default function ProjectDeleteModal({ project }: { project: Project }) {
   return (
     <div>
       <div className="w-48">
-        <Button
-          type="button"
-          size="sm"
-          onClick={() => setOpenConfirmationPopup(true)}
-        >
+        <Button type="button" size="sm" onClick={() => setOpenConfirmationPopup(true)}>
           Deactivate project
         </Button>
       </div>

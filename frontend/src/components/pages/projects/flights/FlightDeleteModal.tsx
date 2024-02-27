@@ -7,7 +7,7 @@ import { AlertBar, Status } from '../../../Alert';
 import { Button } from '../../../Buttons';
 import { ConfirmationPopup } from '../../../ConfirmationPopup';
 import Modal from '../../../Modal';
-import { Flight } from '../ProjectDetail';
+import { Flight } from '../Project';
 
 export default function FlightDeleteModal({
   flight,

@@ -1,4 +1,4 @@
-import { DataProduct, Flight } from '../pages/projects/ProjectDetail';
+import { DataProduct, Flight } from '../pages/projects/Project';
 import { Project } from '../pages/projects/ProjectList';
 
 export default function FlightControl({

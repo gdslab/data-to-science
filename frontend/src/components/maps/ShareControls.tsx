@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 import Alert, { Status } from '../Alert';
 import { Button } from '../Buttons';
-import { DataProduct } from '../pages/projects/ProjectDetail';
+import { DataProduct } from '../pages/projects/Project';
 import { SymbologySettings, useMapContext } from './MapContext';
 import { Project } from '../pages/projects/ProjectList';
 

@@ -18,7 +18,7 @@ import { useMapContext } from './MapContext';
 import SymbologyControls from './SymbologyControls';
 
 import UASIcon from '../../assets/uas-icon.svg';
-import { Band } from '../pages/projects/ProjectDetail';
+import { Band } from '../pages/projects/Project';
 import { getDefaultStyle } from './utils';
 import { sorter } from '../utils';
 
