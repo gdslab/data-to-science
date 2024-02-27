@@ -39,17 +39,19 @@ def run(in_raster: str, out_raster: str, params: dict) -> str:
             # iterate over each block window
             for ji, window in src.block_windows(1):
                 # initialize array to store band values
-                img = np.zeros((nband, window.height, window.width), dtype=dtype)
+                img = np.zeros((3, window.height, window.width), dtype=dtype)
 
-                # read bands into initialized array
-                for i in range(nband):
-                    band = src.read(i + 1, window=window)
-                    img[i, :, :] = band
+                # red band
+                img[0, :, :] = src.read(params.get("red_band_idx"), window=window)
+                # green band
+                img[1, :, :] = src.read(params.get("green_band_idx"), window=window)
+                # blue band
+                img[2, :, :] = src.read(params.get("blue_band_idx"), window=window)
 
                 # calculate exg for current window
-                red = img[params.get("red_band_idx"), :, :].astype(np.float32)
-                green = img[params.get("green_band_idx"), :, :].astype(np.float32)
-                blue = img[params.get("blue_band_idx"), :, :].astype(np.float32)
+                red = img[0, :, :].astype(np.float32)
+                green = img[1, :, :].astype(np.float32)
+                blue = img[2, :, :].astype(np.float32)
 
                 red_s = red / (red + green + blue)
                 green_s = green / (red + green + blue)
