@@ -65,6 +65,7 @@ type FlightsAction = { type: string; payload: Flight[] };
 type GeoRasterIdAction = { type: string };
 type ProjectHoverStateAction = { type: string; payload: string | null };
 export type SymbologySettingsAction = { type: string; payload: SymbologySettings };
+type TileScaleAction = { type: string; payload: number };
 
 function activeDataProductReducer(
   state: DataProduct | null,
@@ -171,6 +172,20 @@ function symbologySettingsReducer(
   }
 }
 
+function tileScaleReducer(state: number, action: TileScaleAction) {
+  switch (action.type) {
+    case 'set': {
+      if (action.payload > 0 && action.payload < 5) {
+        return action.payload;
+      } else {
+        return 2;
+      }
+    }
+    default:
+      return state;
+  }
+}
+
 const context: {
   activeDataProduct: DataProduct | null;
   activeDataProductDispatch: React.Dispatch<ActiveDataProductAction>;
@@ -185,6 +200,8 @@ const context: {
   projectHoverStateDispatch: React.Dispatch<ProjectHoverStateAction>;
   symbologySettings: SymbologySettings;
   symbologySettingsDispatch: React.Dispatch<SymbologySettingsAction>;
+  tileScale: number;
+  tileScaleDispatch: React.Dispatch<TileScaleAction>;
 } = {
   activeDataProduct: null,
   activeDataProductDispatch: () => {},
@@ -199,6 +216,8 @@ const context: {
   projectHoverStateDispatch: () => {},
   symbologySettings: defaultSymbologySettings,
   symbologySettingsDispatch: () => {},
+  tileScale: 2,
+  tileScaleDispatch: () => {},
 };
 
 const MapContext = createContext(context);
@@ -223,6 +242,7 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
     symbologySettingsReducer,
     defaultSymbologySettings
   );
+  const [tileScale, tileScaleDispatch] = useReducer(tileScaleReducer, 2);
 
   async function getFlights(projectId) {
     try {
@@ -267,6 +287,8 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
         projectHoverStateDispatch,
         symbologySettings,
         symbologySettingsDispatch,
+        tileScale,
+        tileScaleDispatch,
       }}
     >
       {children}

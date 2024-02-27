@@ -13,30 +13,32 @@ import { getDefaultStyle } from './utils';
  * Constructs URL for requesting tiles from TiTiler service.
  * @param {string} url URL for Cloud Optimized GeoTIFF.
  * @param {string} cmap Color map name.
- * @param {number[]} scale Array of min/max rescale values for one or more bands.
+ * @param {number[]} rescale Array of min/max rescale values for one or more bands.
  * @param {number[]} bidxs Array of band IDs.
+ * @param {number} scale Tile size scale.
  * @returns {string} URL for requesting dynamic tiles from TiTiler service.
  */
 function getTileURL(
   url: string,
   cmap: string | undefined = undefined,
-  scale: number[] | undefined = undefined,
-  bidxs: number[] | undefined = undefined
+  rescale: number[] | undefined = undefined,
+  bidxs: number[] | undefined = undefined,
+  scale: number = 2
 ): string {
   // URL for TiTIler service
-  let titilerURL = `/cog/tiles/WebMercatorQuad/{z}/{x}/{y}@1x?url=${url}`;
+  let titilerURL = `/cog/tiles/WebMercatorQuad/{z}/{x}/{y}@${scale}x?url=${url}`;
   // Add band ids, color map, and rescale parameters to URL (if necessary)
   if (bidxs) titilerURL += `&bidx=${bidxs[0]}&bidx=${bidxs[1]}&bidx=${bidxs[2]}`;
   if (cmap) titilerURL += `&colormap_name=${cmap}`;
-  if (scale)
-    scale
+  if (rescale)
+    rescale
       .reduce(
         (result: number[][], _, index, array) =>
           index % 2 === 0 ? [...result, array.slice(index, index + 2)] : result,
         []
       )
       .map((x) => `&rescale=${x}`)
-      .forEach((rescale) => (titilerURL += rescale));
+      .forEach((rescaleValue) => (titilerURL += rescaleValue));
 
   return titilerURL;
 }
@@ -50,7 +52,8 @@ function getTileURL(
 export function getDataProductTileLayer(
   dataProduct: DataProduct,
   symbologySettings?: SymbologySettings | undefined,
-  tileLayerRef?: undefined | React.MutableRefObject<L.TileLayer | null>
+  tileLayerRef?: undefined | React.MutableRefObject<L.TileLayer | null>,
+  scale: number = 2
 ) {
   if (
     dataProduct.data_type === 'dsm' ||
@@ -62,7 +65,7 @@ export function getDataProductTileLayer(
       ? (dataProduct.user_style as DSMSymbologySettings)
       : (getDefaultStyle(dataProduct) as DSMSymbologySettings);
     const colorRamp = symbology ? symbology.colorRamp : savedStyle.colorRamp;
-    let scale = [
+    let rescale = [
       symbology ? symbology.min : savedStyle.min,
       symbology ? symbology.max : savedStyle.max,
     ];
@@ -71,7 +74,7 @@ export function getDataProductTileLayer(
       (symbology && symbology.mode === 'userDefined') ||
       (!symbology && savedStyle.mode === 'userDefined')
     ) {
-      scale = [
+      rescale = [
         symbology ? symbology.userMin : savedStyle.userMin,
         symbology ? symbology.userMax : savedStyle.userMax,
       ];
@@ -80,7 +83,7 @@ export function getDataProductTileLayer(
       (symbology && symbology.mode === 'meanStdDev') ||
       (!symbology && savedStyle.mode === 'meanStdDev')
     ) {
-      scale = [
+      rescale = [
         stats.mean -
           stats.stddev * (symbology ? symbology.meanStdDev : savedStyle.meanStdDev),
         stats.mean +
@@ -91,10 +94,16 @@ export function getDataProductTileLayer(
     return (
       <TileLayer
         ref={tileLayerRef}
-        url={getTileURL(dataProduct.url.replace(window.origin, ''), colorRamp, scale)}
+        url={getTileURL(
+          dataProduct.url.replace(window.origin, ''),
+          colorRamp,
+          rescale,
+          undefined,
+          scale
+        )}
         zIndex={500}
-        maxNativeZoom={21}
-        maxZoom={24}
+        maxNativeZoom={24}
+        maxZoom={26}
       />
     );
   } else {
@@ -110,13 +119,13 @@ export function getDataProductTileLayer(
     const bidxs = [red.idx, green.idx, blue.idx];
     const raster_props = dataProduct.stac_properties.raster;
 
-    let scale = [red.min, red.max, green.min, green.max, blue.min, blue.max];
+    let rescale = [red.min, red.max, green.min, green.max, blue.min, blue.max];
 
     if (
       (symbology && symbology.mode === 'userDefined') ||
       (!symbology && savedStyle.mode === 'userDefined')
     ) {
-      scale = [
+      rescale = [
         red.userMin,
         red.userMax,
         green.userMin,
@@ -130,7 +139,7 @@ export function getDataProductTileLayer(
       (symbology && symbology.mode === 'meanStdDev') ||
       (!symbology && savedStyle.mode === 'meanStdDev')
     ) {
-      scale = [
+      rescale = [
         raster_props[red.idx - 1].stats.mean -
           raster_props[red.idx - 1].stats.stddev *
             (symbology ? symbology.meanStdDev : savedStyle.meanStdDev),
@@ -157,8 +166,9 @@ export function getDataProductTileLayer(
         url={getTileURL(
           dataProduct.url.replace(window.origin, ''),
           undefined,
-          scale,
-          bidxs
+          rescale,
+          bidxs,
+          scale
         )}
         zIndex={500}
         maxNativeZoom={21}
@@ -177,13 +187,14 @@ export default function DataProductTileLayer({
   symbology?: OrthoSymbologySettings | DSMSymbologySettings | undefined;
   tileLayerRef?: undefined | React.MutableRefObject<L.TileLayer | null>;
 }) {
-  const { symbologySettings } = useMapContext();
+  const { symbologySettings, tileScale } = useMapContext();
 
   if (!activeDataProduct) throw Error('No active data product');
 
   return getDataProductTileLayer(
     activeDataProduct,
     symbology ? symbology : symbologySettings,
-    tileLayerRef
+    tileLayerRef,
+    tileScale
   );
 }

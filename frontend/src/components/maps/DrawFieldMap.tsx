@@ -59,8 +59,7 @@ export default function DrawFieldMap({
       center={[40.428655143949925, -86.9138040788386]}
       preferCanvas={true}
       zoom={8}
-      minZoom={5}
-      maxZoom={16}
+      maxZoom={26}
       scrollWheelZoom={true}
       zoomControl={false}
       style={{ height: '100%', width: '100%' }}

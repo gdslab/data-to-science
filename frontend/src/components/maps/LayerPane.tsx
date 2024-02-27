@@ -27,8 +27,12 @@ function classNames(...classes: string[]) {
 }
 
 function MapToolbar() {
-  const { activeMapTool, activeDataProductDispatch, activeMapToolDispatch } =
-    useMapContext();
+  const {
+    activeMapTool,
+    activeDataProductDispatch,
+    activeMapToolDispatch,
+    tileScaleDispatch,
+  } = useMapContext();
   return (
     <fieldset className="border border-solid border-slate-300 p-1.5">
       <legend>Map Tools</legend>
@@ -58,6 +62,26 @@ function MapToolbar() {
         >
           <ScaleIcon className="h-4 w-4" />
           <span className="sr-only">Compare Tool</span>
+        </div>
+        <div className="mt-4">
+          <input
+            id="scale-checkbox"
+            type="checkbox"
+            name="scale"
+            onChange={(e) => {
+              tileScaleDispatch({
+                type: 'set',
+                payload: e.currentTarget.checked ? 4 : 2,
+              });
+            }}
+          />
+          <label
+            htmlFor="scale-checkbox"
+            className="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+            title="Increases tile resolution from 512x512 to 1024x1024"
+          >
+            Increase tile resolution
+          </label>
         </div>
       </div>
     </fieldset>
