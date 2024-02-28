@@ -1,12 +1,30 @@
 import axios from 'axios';
-import { Link, isRouteErrorResponse, useRouteError } from 'react-router-dom';
+import { useEffect } from 'react';
+import {
+  Link,
+  isRouteErrorResponse,
+  useNavigate,
+  useRouteError,
+} from 'react-router-dom';
 
 export default function ErrorPage() {
+  const navigate = useNavigate();
   const error = useRouteError();
   let statusCode: number | undefined = 404;
-  if (axios.isAxiosError(error)) {
-    statusCode = error.response?.status;
-  }
+
+  useEffect(() => {
+    if (axios.isAxiosError(error)) {
+      statusCode = error.response?.status;
+      if (
+        (error.response?.status === 404 &&
+          error.response?.data.detail === 'Account not found') ||
+        error.response?.status === 403 ||
+        error.response?.status === 401
+      ) {
+        navigate('/auth/login');
+      }
+    }
+  }, [error]);
 
   return (
     <div className="grid h-screen px-4 bg-white place-content-center">
