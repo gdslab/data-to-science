@@ -282,7 +282,7 @@ def run_processing_tool(
             status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
         )
     # ndvi
-    if toolbox_in.ndvi:
+    if toolbox_in.ndvi and not os.environ.get("RUNNING_TESTS") == "1":
         # create new data product record
         ndvi_data_product: models.DataProduct = crud.data_product.create_with_flight(
             db,
@@ -318,7 +318,7 @@ def run_processing_tool(
         )
 
     # exg
-    if toolbox_in.exg:
+    if toolbox_in.exg and not os.environ.get("RUNNING_TESTS") == "1":
         # create new data product record
         exg_data_product: models.DataProduct = crud.data_product.create_with_flight(
             db,

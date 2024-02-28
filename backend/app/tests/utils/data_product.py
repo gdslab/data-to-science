@@ -25,6 +25,7 @@ class SampleDataProduct:
         project: models.Project | None = None,
         user: models.User | None = None,
         skip_job: bool = False,
+        multispectral: bool = False,
     ):
         # Set up user, project, and flight
         self.data_type = data_type
@@ -45,6 +46,15 @@ class SampleDataProduct:
         else:
             self.flight = flight
 
+        if multispectral:
+            self.test_data_product = os.path.join(
+                os.sep, "app", "app", "tests", "data", "test_multispectral.tif"
+            )
+        else:
+            self.test_data_product = os.path.join(
+                os.sep, "app", "app", "tests", "data", "test.tif"
+            )
+
         # Copy data product to test directory
         filename, filepath = self.copy_test_data_product_to_test_directory()
 
@@ -62,7 +72,7 @@ class SampleDataProduct:
             self.job = create_job(db, data_product_id=self.obj.id)
 
     def copy_test_data_product_to_test_directory(self) -> tuple[str, str]:
-        src_filepath = os.path.join(os.sep, "app", "app", "tests", "data", "test.tif")
+        src_filepath = self.test_data_product
         dest_filepath = os.path.join(
             f"{settings.TEST_STATIC_DIR}/projects/{self.project.id}"
             f"/flights/{self.flight.id}/myfile.tif"

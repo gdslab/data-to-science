@@ -379,3 +379,29 @@ def test_deactivate_data_product_without_project_access(
         f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}"
     )
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_running_tool_on_data_product(
+    client: TestClient, db: Session, normal_user_access_token: str
+):
+    current_user = get_current_user(db, normal_user_access_token)
+    rgb_data_product = SampleDataProduct(
+        db, data_type="ortho", multispectral=True, user=current_user
+    )
+    processing_request = {
+        "chm": False,
+        "exg": True,
+        "exgRed": 3,
+        "exgGreen": 2,
+        "exgBlue": 1,
+        "ndvi": False,
+        "ndviNIR": 4,
+        "ndviRed": 3,
+    }
+
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{rgb_data_product.project.id}"
+        f"/flights/{rgb_data_product.flight.id}/data_products/{rgb_data_product.obj.id}/tools",
+        json=processing_request,
+    )
+    assert response.status_code == status.HTTP_202_ACCEPTED

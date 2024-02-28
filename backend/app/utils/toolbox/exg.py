@@ -23,7 +23,7 @@ def run(in_raster: str, out_raster: str, params: dict) -> str:
     in_fn = in_raster
 
     with rasterio.open(in_raster) as src:
-        nband = src.count  # number of bands
+        assert src.count >= 3  # assert at least 3 bands available
         assert len(set(src.dtypes)) == 1  # assert each band has same dtype
         dtype = src.dtypes[0]  # dtype from first band
 
@@ -36,22 +36,33 @@ def run(in_raster: str, out_raster: str, params: dict) -> str:
             # all bands must have same block window shapes
             assert len(set(src.block_shapes)) == 1
 
+            # indexes for bands in img array
+            red_band_img_idx = 0
+            green_band_img_idx = 1
+            blue_band_img_idx = 2
+
             # iterate over each block window
             for ji, window in src.block_windows(1):
                 # initialize array to store band values
                 img = np.zeros((3, window.height, window.width), dtype=dtype)
 
                 # red band
-                img[0, :, :] = src.read(params.get("red_band_idx"), window=window)
+                img[red_band_img_idx, :, :] = src.read(
+                    params.get("red_band_idx"), window=window
+                )
                 # green band
-                img[1, :, :] = src.read(params.get("green_band_idx"), window=window)
+                img[green_band_img_idx, :, :] = src.read(
+                    params.get("green_band_idx"), window=window
+                )
                 # blue band
-                img[2, :, :] = src.read(params.get("blue_band_idx"), window=window)
+                img[blue_band_img_idx, :, :] = src.read(
+                    params.get("blue_band_idx"), window=window
+                )
 
                 # calculate exg for current window
-                red = img[0, :, :].astype(np.float32)
-                green = img[1, :, :].astype(np.float32)
-                blue = img[2, :, :].astype(np.float32)
+                red = img[red_band_img_idx, :, :].astype(np.float32)
+                green = img[green_band_img_idx, :, :].astype(np.float32)
+                blue = img[blue_band_img_idx, :, :].astype(np.float32)
 
                 red_s = red / (red + green + blue)
                 green_s = green / (red + green + blue)

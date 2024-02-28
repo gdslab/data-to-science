@@ -23,7 +23,7 @@ def run(in_raster: str, out_raster: str, params: dict) -> str:
     in_fn = in_raster
 
     with rasterio.open(in_raster) as src:
-        nband = src.count  # number of bands
+        assert src.count >= 2  # assert at least 2 bands available
         assert len(set(src.dtypes)) == 1  # assert each band has same dtype
         dtype = src.dtypes[0]  # dtype from first band
 
@@ -36,19 +36,29 @@ def run(in_raster: str, out_raster: str, params: dict) -> str:
             # all bands must have same block window shapes
             assert len(set(src.block_shapes)) == 1
 
+            # indexes for bands in img array
+            red_band_img_idx = 0
+            nir_band_img_idx = 1
+
             # iterate over each block window
             for ji, window in src.block_windows(1):
                 # initialize array to store band values
-                img = np.zeros((nband, window.height, window.width), dtype=dtype)
+                img = np.zeros((2, window.height, window.width), dtype=dtype)
 
                 # read bands into initialized array
-                for i in range(nband):
-                    band = src.read(i + 1, window=window)
-                    img[i, :, :] = band
+                for i in range(2):
+                    # red band
+                    img[red_band_img_idx, :, :] = src.read(
+                        params.get("red_band_idx"), window=window
+                    )
+                    # nir band
+                    img[nir_band_img_idx, :, :] = src.read(
+                        params.get("nir_band_idx"), window=window
+                    )
 
                 # calculate ndvi
-                nir = img[params.get("nir_band_idx"), :, :].astype(np.float32)
-                red = img[params.get("red_band_idx"), :, :].astype(np.float32)
+                nir = img[nir_band_img_idx, :, :].astype(np.float32)
+                red = img[red_band_img_idx, :, :].astype(np.float32)
                 ndvi = (nir - red) / (nir + red)
 
                 # write ndvi window to out raster
