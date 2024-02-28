@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import status
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import select, update
+from sqlalchemy import select, update, and_
 from sqlalchemy.orm import joinedload, Session
 
 from app import crud
@@ -43,23 +43,20 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
     def get_flight_by_id(
         self, db: Session, project_id: UUID, flight_id: UUID
     ) -> ReadFlight:
-        stmt = (
+        statement = (
             select(Flight)
-            .join(Project)
-            .where(Flight.project_id == project_id)
-            .where(Flight.id == flight_id)
-            .where(Flight.is_active)
-            .where(Project.is_active)
+            .where(
+                and_(
+                    Flight.project_id == project_id,
+                    Flight.id == flight_id,
+                    Flight.is_active,
+                )
+            )
+            .join(Flight.project.and_(Project.is_active))
+            .options(joinedload(Flight.data_products.and_(DataProduct.is_active)))
         )
         with db as session:
-            flight = session.scalar(stmt)
-            # drop any inactive data products
-            if flight and len(flight.data_products) > 0:
-                active_data_products = []
-                for data_product in flight.data_products:
-                    if data_product.is_active:
-                        active_data_products.append(data_product)
-                flight.data_products = active_data_products
+            flight = session.scalar(statement)
             if not flight:
                 return {
                     "response_code": status.HTTP_404_NOT_FOUND,
@@ -84,11 +81,9 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
     ) -> Sequence[Flight]:
         statement = (
             select(Flight)
-            .join(Project)
-            .options(joinedload(Flight.data_products))
-            .where(Flight.project_id == project_id)
-            .where(Flight.is_active)
-            .where(Project.is_active)
+            .where(and_(Flight.project_id == project_id, Flight.is_active))
+            .join(Flight.project.and_(Project.is_active))
+            .options(joinedload(Flight.data_products.and_(DataProduct.is_active)))
         )
         with db as session:
             flights_with_data = session.execute(statement).scalars().unique().all()
@@ -105,16 +100,16 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                             keep_data_products.append(data_product)
                     flight.data_products = keep_data_products
 
-                active_data_products = []
+                available_data_products = []
                 for data_product in flight.data_products:
-                    if data_product.is_active and data_product.filepath != "null":
+                    if data_product.filepath != "null":
                         if (
                             data_product.data_type == "point_cloud"
                             or data_product.data_type != "point_cloud"
                             and data_product.stac_properties
                         ):
                             # do not include geotiffs without stac props
-                            active_data_products.append(data_product)
+                            available_data_products.append(data_product)
                             set_public_attr(
                                 data_product, data_product.file_permission.is_public
                             )
@@ -130,7 +125,7 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                             ).scalar_one_or_none()
                             if user_style:
                                 set_user_style_attr(data_product, user_style.settings)
-                flight.data_products = active_data_products
+                flight.data_products = available_data_products
             return flights_with_data
 
     def deactivate(self, db: Session, flight_id: UUID) -> Flight | None:

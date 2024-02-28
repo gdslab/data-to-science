@@ -25,7 +25,7 @@ class FlightCreate(FlightBase):
     forward_overlap: float
     sensor: str
     platform: str
-    pilot_id: UUID | None = None
+    pilot_id: UUID
 
 
 # properties to receive via API on update
