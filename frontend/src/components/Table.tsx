@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
 
 import { classNames } from './utils';
 
@@ -14,7 +15,11 @@ export interface Action {
 }
 
 function TableRow({ children }: { children: ReactNode }) {
-  return <div className="flex flex-wrap gap-1.5 mb-1.5">{children}</div>;
+  return (
+    <div key={uuidv4()} className="flex flex-wrap gap-1.5 mb-1.5">
+      {children}
+    </div>
+  );
 }
 
 function TableCell({ align, children }: { align: string; children: ReactNode }) {

@@ -334,10 +334,12 @@ def test_update_project_with_new_team_replacing_old_team(
         get_current_user(db, normal_user_access_token)
     )
     current_team = create_team(db, owner_id=current_user.id)
+    current_team_member_ids = []
     new_team = create_team(db, owner_id=current_user.id)
     new_team_member_ids = []
     for i in range(0, 5):
-        create_team_member(db, team_id=current_team.id)
+        current_team_member = create_team_member(db, team_id=current_team.id)
+        current_team_member_ids.append(current_team_member.member_id)
         new_team_member = create_team_member(db, team_id=new_team.id)
         new_team_member_ids.append(new_team_member.member_id)
     # create new project associated with current team
@@ -351,9 +353,14 @@ def test_update_project_with_new_team_replacing_old_team(
     project_members = crud.project_member.get_list_of_project_members(
         db, project_id=project.id
     )
+    assert len(project_members) == 11  # ten team members plus owner
     for project_member in project_members:
         if project_member.role != "owner":
-            assert project_member.member_id in new_team_member_ids
+            assert (
+                project_member.member_id in new_team_member_ids
+                or project_member.member_id in current_team_member_ids
+                or project_member.id == current_user.id
+            )
 
 
 def test_dropping_team_from_project(
@@ -379,7 +386,7 @@ def test_dropping_team_from_project(
     project_members = crud.project_member.get_list_of_project_members(
         db, project_id=project.id
     )
-    assert len(project_members) == 1
+    assert len(project_members) == 6  # number of project members should remain same
     assert project_members[0].member_id == current_user.id
 
 

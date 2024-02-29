@@ -295,8 +295,8 @@ def test_remove_team_with_project(
     # create project associated with team - team members added to project members table
     project = create_project(db, team_id=team.id, owner_id=current_user.id)
     # get list of project members (should include owner plus five team members, 6)
-    project_members_before_delete = crud.project_member.get_list_of_project_members(
-        db, project_id=project.id
+    project_members_before_team_deleted = (
+        crud.project_member.get_list_of_project_members(db, project_id=project.id)
     )
     # delete the team
     response = client.delete(f"{settings.API_V1_STR}/teams/{team.id}")
@@ -304,9 +304,13 @@ def test_remove_team_with_project(
     # confirm team has been removed
     team_in_db = crud.team.get(db, id=team.id)
     assert team_in_db is None
-    # get list of project members (should only include owner, 1)
-    project_members_after_delete = crud.project_member.get_list_of_project_members(
-        db, project_id=project.id
+    # get list of project members (should still be 6 members)
+    project_members_after_team_deleted = (
+        crud.project_member.get_list_of_project_members(db, project_id=project.id)
     )
-    assert len(project_members_before_delete) == 6
-    assert len(project_members_after_delete) == 1
+    project_after_team_deleted = crud.project.get(db, id=project.id)
+    assert len(project_members_before_team_deleted) == 6
+    assert len(project_members_after_team_deleted) == 6
+    # verify team_id is now null in project record
+    project_after_team_deleted = crud.project.get(db, id=project.id)
+    assert project_after_team_deleted.team_id is None

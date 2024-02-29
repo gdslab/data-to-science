@@ -33,7 +33,9 @@ class Project(Base):
         ForeignKey("locations.id"), nullable=False
     )
     owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
-    team_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("teams.id"), nullable=True)
+    team_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("teams.id", ondelete="SET NULL"), nullable=True
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     deactivated_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 

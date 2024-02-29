@@ -127,19 +127,6 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
         return db_obj
 
     def delete_team(self, db: Session, team_id: UUID) -> Team | None:
-        # delete any project members associated with team first
-        statement = (
-            select(ProjectMember)
-            .join(Project)
-            .where(Project.team_id == team_id)
-            .where(ProjectMember.role != "owner")
-        )
-        with db as session:
-            project_members = session.scalars(statement).all()
-            if len(project_members) > 0:
-                for project_member in project_members:
-                    session.delete(project_member)
-                session.commit()
         # delete team
         with db as session:
             team = session.get(self.model, team_id)

@@ -35,7 +35,7 @@ def test_create_project_member_by_email_with_project_owner_role(
     project.id == response_data["project_id"]
 
 
-def teset_create_project_member_by_user_id_with_project_owner_role(
+def test_create_project_member_by_user_id_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_approved_user(
@@ -393,3 +393,20 @@ def test_remove_project_member_that_does_not_exist(
     crud.project_member.remove(db, id=project_member.id)
     response = client.delete(f"{API_URL}/{project.id}/members/{project_member.id}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_remove_project_owner_as_project_member_fails(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # create project with current user as owner
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
+    project = create_project(db, owner_id=current_user.id)
+    # get project member instance for current user/project owner
+    project_member = crud.project_member.get_by_project_and_member_id(
+        db, project_id=project.id, member_id=current_user.id
+    )
+    # attempt to remove current user from project member table
+    response = client.delete(f"{API_URL}/{project.id}/members/{project_member.id}")
+    assert response.status_code == status.HTTP_400_BAD_REQUEST

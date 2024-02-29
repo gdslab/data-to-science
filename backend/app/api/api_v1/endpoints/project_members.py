@@ -113,5 +113,10 @@ def remove_project_member(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Project member not found"
         )
+    if project_member.member_id == project.owner_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Project creator cannot be removed",
+        )
     removed_project_member = crud.project_member.remove(db, id=project_member_id)
     return removed_project_member

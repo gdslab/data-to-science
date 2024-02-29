@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app import crud
+from app import crud, schemas
 from app.tests.utils.project import create_project
 from app.tests.utils.team import create_team
 from app.tests.utils.team_member import create_team_member
@@ -86,6 +86,61 @@ def test_create_multi_team_members_adds_project_members(db: Session) -> None:
         assert project_member.member_id in [team_owner.id, user1.id, user2.id, user3.id]
 
 
+def test_no_duplicate_project_members_when_multiple_teams_assigned(db: Session) -> None:
+    """
+    If a project is edited to have a different team assignment, any
+    current project members that are in the new team assignment should
+    not be added again.
+    """
+    team_owner = create_user(db)
+    team1 = create_team(db, owner_id=team_owner.id)
+    team2 = create_team(db, owner_id=team_owner.id)
+    # add same team members to both teams
+    duplicate_team_members = []
+    duplicate_team_members.append(team_owner.id)
+    for i in range(0, 5):
+        user = create_user(db)
+        duplicate_team_members.append(user.id)
+        create_team_member(db, email=user.email, team_id=team1.id)
+        create_team_member(db, email=user.email, team_id=team2.id)
+    # add one additional team member to team2
+    extra_team_member = create_user(db)
+    create_team_member(db, email=extra_team_member.email, team_id=team2.id)
+    # create project with team1 association initially
+    project = create_project(db, team_id=team1.id, owner_id=user.id)
+    project_members = crud.project_member.get_list_of_project_members(
+        db, project_id=project.id
+    )
+    assert len(project_members) == 6
+    for project_member in project_members:
+        assert project_member.member_id in duplicate_team_members
+    # remove team1 association from project
+    updated_project = crud.project.update(
+        db, db_obj=project, obj_in=schemas.ProjectUpdate(team_id=None)
+    )
+    assert updated_project.team_id is None
+    project_members_after_team_removal = (
+        crud.project_member.get_list_of_project_members(db, project_id=project.id)
+    )
+    assert len(project_members_after_team_removal) == 6
+    # assign team2 to the project
+    updated_project2 = crud.project.update_project(
+        db,
+        project_obj=project,
+        project_in=schemas.ProjectUpdate(team_id=team2.id),
+        project_id=project.id,
+        user_id=user.id,
+    )
+    project_members_after_new_team_assignment = (
+        crud.project_member.get_list_of_project_members(db, project_id=project.id)
+    )
+    team_members = crud.team_member.get_list_of_team_members(db, team_id=team2.id)
+    assert len(project_members_after_new_team_assignment) == 7
+    duplicate_team_members.append(extra_team_member.id)
+    for project_member in project_members_after_new_team_assignment:
+        assert project_member.member_id in duplicate_team_members
+
+
 def test_get_team_member_by_email(db: Session) -> None:
     """Verify a team member can be retrieved by email."""
     team = create_team(db)
@@ -156,20 +211,3 @@ def test_remove_team_member_by_id(db: Session) -> None:
     assert member_in_db_after_removed is None
     assert member_removed.id == member.id
     assert member_removed.member_id == member.member_id
-
-
-def test_remove_team_member_removes_from_project_members(db: Session) -> None:
-    owner = create_user(db)
-    team = create_team(db, owner_id=owner.id)
-    project = create_project(db, owner_id=owner.id, team_id=team.id)
-    member1 = create_team_member(db, team_id=team.id)
-    for i in range(0, 4):
-        create_team_member(db, team_id=team.id)
-    removed_project_member = crud.team_member.remove_team_member(
-        db, member_id=member1.member_id, team_id=team.id
-    )
-    assert removed_project_member
-    removed_project_member = crud.project_member.get_by_project_and_member_id(
-        db, project_id=project.id, member_id=member1.member_id
-    )
-    assert removed_project_member is None

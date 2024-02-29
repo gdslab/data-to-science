@@ -98,6 +98,7 @@ function AccessRoleRadioGroup({
 }
 
 export default function ProjectAccess() {
+  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [searchResults, setSearchResults] = useState<UserSearch[]>([]);
 
@@ -149,9 +150,9 @@ export default function ProjectAccess() {
       }
     } catch (err) {
       if (isAxiosError(err)) {
-        console.log(err.response?.data.detail);
+        setError(err.response?.data.detail);
       } else {
-        console.log('Unable to process request');
+        setError('Unable to process request');
       }
     }
   }
@@ -208,7 +209,10 @@ export default function ProjectAccess() {
                         className="flex items-center justify-center h-8 w-8 text-white text-sm rounded-full"
                         style={generateRandomProfileColor(full_name)}
                       >
-                        {full_name[0]} {full_name.split(' ').slice(-1)[0][0]}
+                        <span className="indent-[0.1em] tracking-widest">
+                          {full_name[0]}
+                          {full_name.split(' ').slice(-1)[0][0]}
+                        </span>
                       </div>
                       <span>{full_name}</span>
                     </div>
@@ -253,11 +257,17 @@ export default function ProjectAccess() {
                         `/api/v1/projects/${params.projectId}/members/multi`,
                         selectedMembers.map(({ id }) => id)
                       )
-                      .then((response) => {
+                      .then((response: AxiosResponse<ProjectMember[]>) => {
                         projectMembersDispatch({ type: 'set', payload: response.data });
                         setSearchResults([]);
                       })
-                      .catch((err) => console.error(err));
+                      .catch((err) => {
+                        if (isAxiosError(err)) {
+                          setError(err.response?.data.detail);
+                        } else {
+                          setError('Unable to process request');
+                        }
+                      });
                   }
                 }}
               >
@@ -266,6 +276,7 @@ export default function ProjectAccess() {
             ) : null}
           </div>
         </div>
+        {error ? <AlertBar alertType="error">{error}</AlertBar> : null}
       </div>
     );
   }

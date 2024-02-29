@@ -249,10 +249,6 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 }
         # replacing current team with new team
         if project_obj.team_id and project_in_data.get("team_id") is not None:
-            # remove current team's project members
-            crud.project_member.delete_multi(
-                db, project_id=project_id, team_id=project_obj.team_id
-            )
             # add new team's project members
             team_members = crud.team_member.get_list_of_team_members(
                 db, team_id=project_in_data["team_id"]
@@ -277,12 +273,6 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 crud.project_member.create_multi_with_project(
                     db, member_ids=team_member_ids, project_id=project_id
                 )
-        # dropping current team
-        if project_obj.team_id and project_in_data.get("team_id") is None:
-            # remove current team's project members
-            crud.project_member.delete_multi(
-                db, project_id=project_id, team_id=project_obj.team_id
-            )
 
         # finish updating project
         updated_project = crud.project.update(db, db_obj=project_obj, obj_in=project_in)

@@ -175,17 +175,6 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
             if team_member:
                 session.delete(team_member)
                 session.commit()
-        # remove team member from any projects associated with team
-        statement = (
-            select(ProjectMember)
-            .join(Project)
-            .where(ProjectMember.member_id == member_id)
-        )
-        with db as session:
-            project_member = session.scalar(statement)
-            if project_member and project_member.role != "owner":
-                session.delete(project_member)
-                session.commit()
 
         return team_member
 
