@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from 'axios';
 import { useEffect, useState } from 'react';
-import { Params, useLoaderData, useRevalidator } from 'react-router-dom';
+import { Params, useLoaderData, useParams, useRevalidator } from 'react-router-dom';
 
 import { User } from '../../../AuthContext';
 import { useProjectContext } from './ProjectContext';
@@ -10,6 +10,7 @@ import { ProjectMember } from './ProjectAccess';
 import ProjectDetailEditForm from './ProjectDetailEditForm';
 import { Team } from '../teams/Teams';
 import ProjectFlights from './ProjectFlights';
+import { getProjectMembers } from './ProjectContext/ProjectContext';
 
 export async function loader({ params }: { params: Params<string> }) {
   const profile = localStorage.getItem('userProfile');
@@ -62,8 +63,14 @@ export async function loader({ params }: { params: Params<string> }) {
 export default function ProjectDetail() {
   const { project, role, flights, teams } = useLoaderData() as ProjectLoaderData;
   const revalidator = useRevalidator();
-  const { projectRole, flightsDispatch, projectDispatch, projectRoleDispatch } =
-    useProjectContext();
+  const params = useParams();
+  const {
+    projectRole,
+    flightsDispatch,
+    projectDispatch,
+    projectMembersDispatch,
+    projectRoleDispatch,
+  } = useProjectContext();
 
   const [location, setLocation] = useState<Location | null>(null);
 
@@ -88,6 +95,11 @@ export default function ProjectDetail() {
     // @ts-ignore
     if (project) projectDispatch({ type: 'set', payload: project });
   }, [project]);
+
+  useEffect(() => {
+    // update project members if team changes
+    if (project) getProjectMembers(params, projectMembersDispatch);
+  }, [project.team_id]);
 
   useEffect(() => {
     if (flights) flightsDispatch({ type: 'set', payload: flights });

@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from 'axios';
 import { createContext, useContext, useEffect, useReducer } from 'react';
-import { useParams } from 'react-router-dom';
+import { Params, useParams } from 'react-router-dom';
 
 import { Project } from '../ProjectList';
 import { ProjectMember } from '../ProjectAccess';
@@ -42,6 +42,29 @@ const context: Context = {
   flights: null,
   flightsDispatch: () => {},
 };
+
+export async function getProjectMembers(
+  params: Params,
+  projectMembersDispatch: React.Dispatch<ProjectMembersAction>
+) {
+  try {
+    const response: AxiosResponse<ProjectMember[]> = await axios.get(
+      `${import.meta.env.VITE_API_V1_STR}/projects/${params.projectId}/members`
+    );
+    if (response) {
+      projectMembersDispatch({ type: 'set', payload: response.data });
+    } else {
+      projectMembersDispatch({ type: 'clear', payload: null });
+    }
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      console.log(err.response?.data);
+    } else {
+      console.error(err);
+    }
+    projectMembersDispatch({ type: 'clear', payload: null });
+  }
+}
 
 const ProjectContext = createContext(context);
 
@@ -113,28 +136,8 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
   }, [params.projectId]);
 
   useEffect(() => {
-    async function getProjectMembers() {
-      try {
-        const response: AxiosResponse<ProjectMember[]> = await axios.get(
-          `${import.meta.env.VITE_API_V1_STR}/projects/${params.projectId}/members`
-        );
-        if (response) {
-          projectMembersDispatch({ type: 'set', payload: response.data });
-        } else {
-          projectMembersDispatch({ type: 'clear', payload: null });
-        }
-      } catch (err) {
-        if (axios.isAxiosError(err)) {
-          console.log(err.response?.data);
-        } else {
-          console.error(err);
-        }
-        projectMembersDispatch({ type: 'clear', payload: null });
-      }
-    }
-
     if (params.projectId) {
-      getProjectMembers();
+      getProjectMembers(params, projectMembersDispatch);
     }
   }, [params.projectId]);
 
