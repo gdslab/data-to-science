@@ -1,6 +1,20 @@
 from typing_extensions import NotRequired, TypedDict
 
-from pydantic import TypeAdapter
+from pydantic import BaseModel, TypeAdapter
+
+
+class ImageStructureProps(BaseModel):
+    COMPRESSION: str
+    INTERLEAVE: str
+    LAYOUT: str
+
+
+class ImageStructure(BaseModel):
+    IMAGE_STRUCTURE: ImageStructureProps
+
+
+class Metadata(BaseModel):
+    metadata: ImageStructure
 
 
 class Stats(TypedDict):
@@ -12,7 +26,7 @@ class Stats(TypedDict):
 
 class STACRasterProperties(TypedDict):
     data_type: str
-    stats: dict[str, float]
+    stats: Stats
     nodata: NotRequired[int | float | None]
     unit: NotRequired[str | None]
 
