@@ -42,6 +42,8 @@ def get_db():
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Unexpected error has occurred",
                 )
+            else:
+                raise exception
     finally:
         db.close()
 
