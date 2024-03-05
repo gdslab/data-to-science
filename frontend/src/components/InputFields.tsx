@@ -26,8 +26,8 @@ interface InputField extends InputFieldLabels {
 }
 
 interface NumberField extends InputField {
-  max: number;
-  min: number;
+  max?: number;
+  min?: number;
   step?: number;
 }
 
@@ -56,8 +56,8 @@ export function NumberField({
   altLabel = false,
   disabled = false,
   label,
-  max,
-  min,
+  max = undefined,
+  min = undefined,
   name,
   required = true,
   step = 1,

@@ -79,7 +79,7 @@ export default function ColorBarControl({
     return (
       <div className="leaflet-control-container">
         <div className="leaflet-bottom leaflet-left bottom-8">
-          <div className="leaflet-control p-1.5 bg-white/40 border-4 border-white/20 rounded-md shadow-md">
+          <div className="leaflet-control p-1.5 bg-white/60 border-4 border-white/40 rounded-md shadow-md">
             <img src={url} className="h-80" />
             <button
               type="button"

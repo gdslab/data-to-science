@@ -44,8 +44,8 @@ class ColorBar:
         if not os.path.exists(self.outdir):
             os.makedirs(self.outdir)
 
-        self.cmin = math.floor(self.cmin)
-        self.cmax = math.ceil(self.cmax)
+        # self.cmin = math.floor(self.cmin)
+        # self.cmax = math.ceil(self.cmax)
 
         self.outfilename = create_outfilename(self.cmin, self.cmax, self.cmap)
 

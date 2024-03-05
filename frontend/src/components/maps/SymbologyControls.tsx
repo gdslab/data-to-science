@@ -168,8 +168,6 @@ function DSMSymbologyControls() {
                     <NumberField
                       name="userMin"
                       label="Min"
-                      min={symbology.min}
-                      max={symbology.max}
                       step={step}
                       required={false}
                     />
@@ -178,8 +176,6 @@ function DSMSymbologyControls() {
                     <NumberField
                       name="userMax"
                       label="Max"
-                      min={symbology.min}
-                      max={symbology.max}
                       step={step}
                       required={false}
                     />
@@ -312,8 +308,12 @@ function OrthoSymbologyControls() {
                     <NumberField
                       name={values.mode === 'userDefined' ? 'red.userMin' : 'red.min'}
                       label="Min"
-                      min={symbology.red.min}
-                      max={symbology.red.max}
+                      min={
+                        values.mode === 'userDefined' ? undefined : symbology.red.min
+                      }
+                      max={
+                        values.mode === 'userDefined' ? undefined : symbology.red.max
+                      }
                       step={step}
                       disabled={values.mode !== 'userDefined'}
                       required={false}
@@ -321,8 +321,12 @@ function OrthoSymbologyControls() {
                     <NumberField
                       name={values.mode === 'userDefined' ? 'red.userMax' : 'red.max'}
                       label="Max"
-                      min={symbology.red.min}
-                      max={symbology.red.max}
+                      min={
+                        values.mode === 'userDefined' ? undefined : symbology.red.min
+                      }
+                      max={
+                        values.mode === 'userDefined' ? undefined : symbology.red.max
+                      }
                       step={step}
                       disabled={values.mode !== 'userDefined'}
                       required={false}
@@ -335,8 +339,12 @@ function OrthoSymbologyControls() {
                         values.mode === 'userDefined' ? 'green.userMin' : 'green.min'
                       }
                       label="Min"
-                      min={symbology.green.min}
-                      max={symbology.green.max}
+                      min={
+                        values.mode === 'userDefined' ? undefined : symbology.green.min
+                      }
+                      max={
+                        values.mode === 'userDefined' ? undefined : symbology.green.max
+                      }
                       step={step}
                       disabled={values.mode !== 'userDefined'}
                       required={false}
@@ -346,8 +354,12 @@ function OrthoSymbologyControls() {
                         values.mode === 'userDefined' ? 'green.userMax' : 'green.max'
                       }
                       label="Max"
-                      min={symbology.green.min}
-                      max={symbology.green.max}
+                      min={
+                        values.mode === 'userDefined' ? undefined : symbology.green.min
+                      }
+                      max={
+                        values.mode === 'userDefined' ? undefined : symbology.green.max
+                      }
                       step={step}
                       disabled={values.mode !== 'userDefined'}
                       required={false}
@@ -358,8 +370,12 @@ function OrthoSymbologyControls() {
                     <NumberField
                       name={values.mode === 'userDefined' ? 'blue.userMin' : 'blue.min'}
                       label="Min"
-                      min={symbology.blue.min}
-                      max={symbology.blue.max}
+                      min={
+                        values.mode === 'userDefined' ? undefined : symbology.blue.min
+                      }
+                      max={
+                        values.mode === 'userDefined' ? undefined : symbology.blue.max
+                      }
                       step={0.1}
                       disabled={values.mode !== 'userDefined'}
                       required={false}
@@ -367,8 +383,12 @@ function OrthoSymbologyControls() {
                     <NumberField
                       name={values.mode === 'userDefined' ? 'blue.userMax' : 'blue.max'}
                       label="Max"
-                      min={symbology.blue.min}
-                      max={symbology.blue.max}
+                      min={
+                        values.mode === 'userDefined' ? undefined : symbology.blue.min
+                      }
+                      max={
+                        values.mode === 'userDefined' ? undefined : symbology.blue.max
+                      }
                       step={0.1}
                       disabled={values.mode !== 'userDefined'}
                       required={false}
