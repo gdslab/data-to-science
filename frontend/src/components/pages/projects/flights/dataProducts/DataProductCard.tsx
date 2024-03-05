@@ -4,7 +4,7 @@ import { ExclamationCircleIcon, EyeIcon, PhotoIcon } from '@heroicons/react/24/o
 
 import Card from '../../../../Card';
 import { DataProductStatus } from '../FlightData';
-import { isGeoTIFF } from './DataProducts';
+import { isGeoTIFF } from './DataProductsTable';
 import DataProductDeleteModal from './DataProductDeleteModal';
 import ToolboxModal from './ToolboxModal';
 import { useProjectContext } from '../../ProjectContext';

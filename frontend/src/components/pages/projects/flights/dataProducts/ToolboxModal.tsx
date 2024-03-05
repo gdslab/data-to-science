@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { Form, Formik } from 'formik';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useParams, useRevalidator } from 'react-router-dom';
 import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 
@@ -41,15 +41,10 @@ export default function ToolboxModal({
   const { projectId, flightId } = useParams();
   const revalidator = useRevalidator();
 
-  useEffect(() => {
-    if (!open) revalidator.revalidate();
-    setStatus(null);
-  }, [open]);
-
   return (
     <div>
       <div
-        className="flex items-center gap-2 text-sky-600 cursor-pointer"
+        className="flex items-center gap-1 text-sky-600 cursor-pointer"
         onClick={() => setOpen(true)}
       >
         {tableView ? (
@@ -66,7 +61,7 @@ export default function ToolboxModal({
       </div>
       <Modal open={open} setOpen={setOpen}>
         <div className="p-4">
-          <div className="flex flex-row items-center gap-1.5 mb-2">
+          <div className="flex flex-row items-center gap-1 mb-2">
             <WrenchScrewdriverIcon className="h-6 w-6" />
             <span className="text-xl font-bold">Toolbox</span>
           </div>
@@ -102,10 +97,9 @@ export default function ToolboxModal({
                       msg: 'Processing has begun. You may close this window.',
                     });
                     actions.resetForm({ values: values });
-                    setInterval(() => {
-                      setStatus(null);
-                      setOpen(false);
-                    }, 10000);
+                    setTimeout(() => {
+                      revalidator.revalidate();
+                    }, 3000);
                   }
                 } catch (err) {
                   setStatus({ type: 'error', msg: 'Unable to complete request' });

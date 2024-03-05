@@ -84,7 +84,7 @@ export function TableBody({
                       </button>
                     </div>
                   ) : action.type === 'component' && action.component ? (
-                    <>{action.component}</>
+                    <div key={action.key}>{action.component}</div>
                   ) : (
                     <Link
                       key={action.key}

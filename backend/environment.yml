@@ -14,6 +14,7 @@ dependencies:
   - fastapi
   - fastapi-mail
   - flower
+  - websockets
   - geoalchemy2
   - geojson-pydantic
   - geopandas

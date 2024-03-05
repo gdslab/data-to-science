@@ -5,7 +5,7 @@ import Card from '../../../../Card';
 import HintText from '../../../../HintText';
 import { Flight } from '../../Project';
 
-import { isGeoTIFF } from '../dataProducts/DataProducts';
+import { isGeoTIFF } from '../dataProducts/DataProductsTable';
 import { useProjectContext } from '../../ProjectContext';
 import FlightDeleteModal from '../FlightDeleteModal';
 

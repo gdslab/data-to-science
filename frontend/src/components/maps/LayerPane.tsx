@@ -11,7 +11,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 import { Button } from '../Buttons';
-import { getDataProductName } from '../pages/projects/flights/dataProducts/DataProducts';
+import { getDataProductName } from '../pages/projects/flights/dataProducts/DataProductsTable';
 import HintText from '../HintText';
 import { Project } from '../pages/projects/ProjectList';
 import { useMapContext } from './MapContext';
