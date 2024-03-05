@@ -342,11 +342,11 @@ export default function LayerPane({
                                   ) : null}
                                 </div>
                                 {activeDataProduct &&
-                                activeDataProduct.id === dataProduct.id ? (
+                                activeDataProduct.id === dataProduct.id &&
+                                dataProduct.data_type !== 'point_cloud' ? (
                                   <div className="mt-2">
                                     <SymbologyControls
                                       numOfBands={
-                                        dataProduct.data_type !== 'point_cloud' &&
                                         dataProduct.stac_properties
                                           ? dataProduct.stac_properties.raster.length
                                           : 1 // default to single band
