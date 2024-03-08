@@ -1968,13 +1968,13 @@ __metadata:
     leaflet: ^1.9.4
     leaflet-side-by-side: ^2.2.0
     leaflet.markercluster: ^1.5.3
-    leaflet.smooth_marker_bouncing: ^3.0.3
     localforage: ^1.10.0
     postcss: ^8.4.27
     react: ^18.2.0
     react-dom: ^18.2.0
     react-frame-component: ^5.2.6
     react-leaflet: ^4.2.1
+    react-leaflet-cluster: ^2.1.0
     react-router-dom: ^6.14.2
     seedrandom: ^3.0.5
     swiper: 10.3.1
@@ -3185,13 +3185,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"leaflet.smooth_marker_bouncing@npm:^3.0.3":
-  version: 3.0.3
-  resolution: "leaflet.smooth_marker_bouncing@npm:3.0.3"
-  checksum: a56a357e2512ee63002c3e090981979953b2d1c306d3f78670bb37e9d1c6b98c21ba9f42217e22e5bcfd5badb5724638925d3c1aaefa9ae32a0b19af9f47c0c7
-  languageName: node
-  linkType: hard
-
 "leaflet@npm:>=0.7.7 <2.0.0, leaflet@npm:^1.9.4":
   version: 1.9.4
   resolution: "leaflet@npm:1.9.4"
@@ -4183,6 +4176,20 @@ __metadata:
   version: 16.13.1
   resolution: "react-is@npm:16.13.1"
   checksum: f7a19ac3496de32ca9ae12aa030f00f14a3d45374f1ceca0af707c831b2a6098ef0d6bdae51bd437b0a306d7f01d4677fcc8de7c0d331eb47ad0f46130e53c5f
+  languageName: node
+  linkType: hard
+
+"react-leaflet-cluster@npm:^2.1.0":
+  version: 2.1.0
+  resolution: "react-leaflet-cluster@npm:2.1.0"
+  dependencies:
+    leaflet.markercluster: ^1.5.3
+  peerDependencies:
+    leaflet: ^1.8.0
+    react: ^18.0.0
+    react-dom: ^18.0.0
+    react-leaflet: ^4.0.0
+  checksum: 14e802fba65c29ab7607466178f4948a27d515ddcbfd48d54cb2c37051772fa71ab0f1d3da55862c345ccae86eae040333eb4f392c60405d1a1c3d83f1368501
   languageName: node
   linkType: hard
 

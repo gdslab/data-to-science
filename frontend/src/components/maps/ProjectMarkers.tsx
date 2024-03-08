@@ -1,11 +1,9 @@
 import L from 'leaflet';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FeatureGroup } from 'react-leaflet';
 import { Marker } from 'react-leaflet/Marker';
 import { useLeafletContext } from '@react-leaflet/core';
-import 'leaflet.markercluster';
-import 'leaflet.markercluster/dist/MarkerCluster.css';
-import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 
 import { Project } from '../pages/projects/ProjectList';
 import { FeatureGroup as FG } from 'leaflet';
@@ -16,47 +14,56 @@ interface ProjectMarkersProps {
 }
 
 export default function ProjectMarkers({ projects }: ProjectMarkersProps) {
-  const { activeDataProductDispatch, activeProjectDispatch, projectHoverState } =
-    useMapContext();
+  const { activeDataProductDispatch, activeProjectDispatch } = useMapContext();
+  const [markers, setMarkers] = useState<L.Marker[]>([]);
   const context = useLeafletContext();
+
   const fgRef = useRef<FG>(null);
 
   useEffect(() => {
-    // @ts-ignore
-    const markers = L.markerClusterGroup();
-    if (fgRef.current) {
-      console.log(fgRef.current);
-      fgRef.current.getLayers().forEach((marker) => {
-        markers.addLayer(marker);
+    if (projects.length > 0) {
+      const projectMarkers = projects.map((project) => {
+        const marker = L.marker([
+          project.field.properties.center_y,
+          project.field.properties.center_x,
+        ]);
+        marker.on('click', () => {
+          activeDataProductDispatch({ type: 'clear', payload: null });
+          activeProjectDispatch({ type: 'set', payload: project });
+        });
+        return marker;
       });
-      context.map.addLayer(markers);
+      setMarkers(projectMarkers);
     }
-  }, [fgRef.current]);
+  }, []);
 
   useEffect(() => {
-    if (fgRef.current) {
-      context.map.fitBounds(fgRef.current.getBounds(), { maxZoom: 16 });
+    if (markers.length > 0) {
+      const fg = L.featureGroup(markers);
+      context.map.fitBounds(fg.getBounds(), { maxZoom: 16 });
     }
-  }, [fgRef.current]);
+  }, [markers]);
 
   if (projects.length > 0) {
     return (
       <FeatureGroup ref={fgRef}>
-        {projects.map((project) => (
-          <Marker
-            key={project.field.properties.id}
-            position={[
-              project.field.properties.center_y,
-              project.field.properties.center_x,
-            ]}
-            eventHandlers={{
-              click: () => {
-                activeDataProductDispatch({ type: 'clear', payload: null });
-                activeProjectDispatch({ type: 'set', payload: project });
-              },
-            }}
-          />
-        ))}
+        <MarkerClusterGroup>
+          {projects.map((project) => (
+            <Marker
+              key={project.field.properties.id}
+              position={[
+                project.field.properties.center_y,
+                project.field.properties.center_x,
+              ]}
+              eventHandlers={{
+                click: () => {
+                  activeDataProductDispatch({ type: 'clear', payload: null });
+                  activeProjectDispatch({ type: 'set', payload: project });
+                },
+              }}
+            />
+          ))}
+        </MarkerClusterGroup>
       </FeatureGroup>
     );
   } else {
