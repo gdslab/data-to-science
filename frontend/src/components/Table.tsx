@@ -15,11 +15,7 @@ export interface Action {
 }
 
 function TableRow({ children }: { children: ReactNode }) {
-  return (
-    <div key={uuidv4()} className="flex flex-wrap gap-1.5 mb-1.5">
-      {children}
-    </div>
-  );
+  return <div className="flex flex-wrap gap-1.5 mb-1.5">{children}</div>;
 }
 
 function TableCell({ align, children }: { align: string; children: ReactNode }) {
@@ -39,6 +35,11 @@ function TableCell({ align, children }: { align: string; children: ReactNode }) 
   );
 }
 
+interface TableRow {
+  key: string;
+  values: (string | JSX.Element)[];
+}
+
 export function TableBody({
   actions,
   align = 'center',
@@ -46,14 +47,14 @@ export function TableBody({
 }: {
   actions?: Action[][];
   align?: string;
-  rows: (string | JSX.Element)[][];
+  rows: TableRow[];
 }) {
   return (
     <div className="overflow-y-scroll">
-      {rows.map((row, i) => (
-        <TableRow key={`row-${i}`}>
-          {row.map((value, j) => (
-            <TableCell align={align} key={`cell-${i},${j}`}>
+      {rows.map(({ key, values }, i) => (
+        <TableRow key={key}>
+          {values.map((value, j) => (
+            <TableCell align={align} key={`${key}_${j}`}>
               {value}
             </TableCell>
           ))}

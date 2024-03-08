@@ -105,76 +105,79 @@ export default function DataProductsTable({ data }: { data: DataProductStatus[] 
         }
       />
       <TableBody
-        rows={data.map((dataset) => [
-          <div
-            key={`row-${dataset.id}-datatype`}
-            className="h-full flex items-center justify-center"
-          >
-            {getDataProductName(dataset.data_type)}
-          </div>,
-          <div
-            key={`row-${dataset.id}-preview`}
-            className="h-full flex items-center justify-center"
-          >
-            {dataset.status === 'SUCCESS' && isGeoTIFF(dataset.data_type) ? (
-              <div className="h-full">
-                <img
-                  className="w-full max-h-28"
-                  src={dataset.url.replace('tif', 'jpg')}
-                  alt="Preview of data product"
-                />
-              </div>
-            ) : isGeoTIFF(dataset.data_type) ? (
-              <div>
-                <span className="sr-only">Preview photo not ready</span>
-                <PhotoIcon className="h-24 w-24" />
+        rows={data.map((dataset) => ({
+          key: dataset.id,
+          values: [
+            <div
+              key={`row-${dataset.id}-datatype`}
+              className="h-full flex items-center justify-center"
+            >
+              {getDataProductName(dataset.data_type)}
+            </div>,
+            <div
+              key={`row-${dataset.id}-preview`}
+              className="h-full flex items-center justify-center"
+            >
+              {dataset.status === 'SUCCESS' && isGeoTIFF(dataset.data_type) ? (
+                <div className="h-full">
+                  <img
+                    className="w-full max-h-28"
+                    src={dataset.url.replace('tif', 'jpg')}
+                    alt="Preview of data product"
+                  />
+                </div>
+              ) : isGeoTIFF(dataset.data_type) ? (
+                <div>
+                  <span className="sr-only">Preview photo not ready</span>
+                  <PhotoIcon className="h-24 w-24" />
+                </div>
+              ) : (
+                <div>No preview</div>
+              )}
+            </div>,
+            dataset.status === 'SUCCESS' ? (
+              <div
+                key={`row-${dataset.id}-file`}
+                className="h-full flex items-center justify-center"
+              >
+                <Button
+                  size="sm"
+                  onClick={() => navigator.clipboard.writeText(dataset.url)}
+                >
+                  {isGeoTIFF(dataset.data_type) ? 'Copy COG URL' : 'Copy COPC URL'}
+                </Button>
               </div>
             ) : (
-              <div>No preview</div>
-            )}
-          </div>,
-          dataset.status === 'SUCCESS' ? (
-            <div
-              key={`row-${dataset.id}-file`}
-              className="h-full flex items-center justify-center"
-            >
-              <Button
-                size="sm"
-                onClick={() => navigator.clipboard.writeText(dataset.url)}
+              <div
+                key={`row-${dataset.id}-file`}
+                className="h-full flex items-center justify-center"
               >
-                {isGeoTIFF(dataset.data_type) ? 'Copy COG URL' : 'Copy COPC URL'}
-              </Button>
-            </div>
-          ) : (
-            <div
-              key={`row-${dataset.id}-file`}
-              className="h-full flex items-center justify-center"
-            >
-              {dataset.status === 'INPROGRESS' ? (
-                <Fragment>
-                  <CogIcon className="h-8 w-8 mr-4 animate-spin" aria-hidden="true" />
-                  {isGeoTIFF(dataset.data_type)
-                    ? 'Generating COG'
-                    : 'Generating EPT & COPC'}
-                </Fragment>
-              ) : dataset.status === 'FAILED' ? (
-                <Fragment>
-                  <XCircleIcon className="h-8 h-8 mr-4 text-red-500" />
-                  Failed
-                </Fragment>
-              ) : dataset.status === 'SUCCESS' ? (
-                <Fragment>
-                  <CheckCircleIcon className="h-8 w-8 mr-4 text-green-500" /> Success
-                </Fragment>
-              ) : (
-                <Fragment>
-                  <QuestionMarkCircleIcon className="h-8 w-8 mr-4" />
-                  Unknown
-                </Fragment>
-              )}
-            </div>
-          ),
-        ])}
+                {dataset.status === 'INPROGRESS' ? (
+                  <Fragment>
+                    <CogIcon className="h-8 w-8 mr-4 animate-spin" aria-hidden="true" />
+                    {isGeoTIFF(dataset.data_type)
+                      ? 'Generating COG'
+                      : 'Generating EPT & COPC'}
+                  </Fragment>
+                ) : dataset.status === 'FAILED' ? (
+                  <Fragment>
+                    <XCircleIcon className="h-8 h-8 mr-4 text-red-500" />
+                    Failed
+                  </Fragment>
+                ) : dataset.status === 'SUCCESS' ? (
+                  <Fragment>
+                    <CheckCircleIcon className="h-8 w-8 mr-4 text-green-500" /> Success
+                  </Fragment>
+                ) : (
+                  <Fragment>
+                    <QuestionMarkCircleIcon className="h-8 w-8 mr-4" />
+                    Unknown
+                  </Fragment>
+                )}
+              </div>
+            ),
+          ],
+        }))}
         actions={getDataProductActions(projectRole, data, navigate, project)}
       />
     </Table>

@@ -70,17 +70,20 @@ export default function ProjectFlights() {
                       flightSortOrder
                     )
                   )
-                  .map((flight) => [
-                    flight.platform.replace(/_/g, ' '),
-                    flight.sensor,
-                    flight.acquisition_date,
-                    <Link
-                      className="!text-sky-600 visited:text-sky-600"
-                      to={`/projects/${project.id}/flights/${flight.id}/data`}
-                    >
-                      Manage
-                    </Link>,
-                  ])}
+                  .map((flight) => ({
+                    key: flight.id,
+                    values: [
+                      flight.platform.replace(/_/g, ' '),
+                      flight.sensor,
+                      flight.acquisition_date,
+                      <Link
+                        className="!text-sky-600 visited:text-sky-600"
+                        to={`/projects/${project.id}/flights/${flight.id}/data`}
+                      >
+                        Manage
+                      </Link>,
+                    ],
+                  }))}
                 actions={
                   projectRole === 'viewer'
                     ? undefined

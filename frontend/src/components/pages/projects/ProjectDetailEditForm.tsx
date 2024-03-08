@@ -106,85 +106,88 @@ export default function ProjectDetailEditForm({
             />
             <TableBody
               rows={[
-                [
-                  <div className="flex justify-center">
-                    <EditField
-                      fieldName="plantingDate"
-                      isEditing={isEditing}
-                      setIsEditing={setIsEditing}
-                    >
-                      {!isEditing || isEditing.field !== 'plantingDate' ? (
-                        <span>
-                          {project.planting_date ? project.planting_date : 'N/A'}
-                        </span>
-                      ) : (
-                        <TextField type="date" name="plantingDate" />
-                      )}
-                    </EditField>
-                  </div>,
-                  <div className="flex justify-center">
-                    <EditField
-                      fieldName="harvestDate"
-                      isEditing={isEditing}
-                      setIsEditing={setIsEditing}
-                    >
-                      {!isEditing || isEditing.field !== 'harvestDate' ? (
-                        <span>
-                          {project.harvest_date ? project.harvest_date : 'N/A'}
-                        </span>
-                      ) : (
-                        <TextField type="date" name="harvestDate" />
-                      )}
-                    </EditField>
-                  </div>,
-                  <div className="flex justify-center">
-                    <EditField
-                      fieldName="teamId"
-                      isEditing={isEditing}
-                      setIsEditing={setIsEditing}
-                    >
-                      {!isEditing || isEditing.field !== 'teamId' ? (
-                        <span>
-                          {currentTeam && currentTeam.length > 0
-                            ? currentTeam[0].title
-                            : 'N/A'}
-                        </span>
-                      ) : (
-                        <SelectField
-                          name="teamId"
-                          options={teams.map((team) => ({
-                            label: team.title,
-                            value: team.id,
-                          }))}
-                        />
-                      )}
-                    </EditField>
-                  </div>,
-                  <div className="flex justify-center">
-                    <MapIcon
-                      className="h-6 w-6 cursor-pointer"
-                      onClick={() => {
-                        setStatus(null);
-                        setOpenMap(true);
-                      }}
-                    />
-                    <span className="sr-only">View or Edit Location</span>
-                    <Modal open={openMap} setOpen={setOpenMap}>
-                      <div className="m-4">
-                        <ProjectFormMap
-                          isUpdate={true}
-                          locationId={project.location_id}
-                          projectId={project.id}
-                        />
-                      </div>
-                      {status && status.type && status.msg ? (
+                {
+                  key: project.id,
+                  values: [
+                    <div className="flex justify-center">
+                      <EditField
+                        fieldName="plantingDate"
+                        isEditing={isEditing}
+                        setIsEditing={setIsEditing}
+                      >
+                        {!isEditing || isEditing.field !== 'plantingDate' ? (
+                          <span>
+                            {project.planting_date ? project.planting_date : 'N/A'}
+                          </span>
+                        ) : (
+                          <TextField type="date" name="plantingDate" />
+                        )}
+                      </EditField>
+                    </div>,
+                    <div className="flex justify-center">
+                      <EditField
+                        fieldName="harvestDate"
+                        isEditing={isEditing}
+                        setIsEditing={setIsEditing}
+                      >
+                        {!isEditing || isEditing.field !== 'harvestDate' ? (
+                          <span>
+                            {project.harvest_date ? project.harvest_date : 'N/A'}
+                          </span>
+                        ) : (
+                          <TextField type="date" name="harvestDate" />
+                        )}
+                      </EditField>
+                    </div>,
+                    <div className="flex justify-center">
+                      <EditField
+                        fieldName="teamId"
+                        isEditing={isEditing}
+                        setIsEditing={setIsEditing}
+                      >
+                        {!isEditing || isEditing.field !== 'teamId' ? (
+                          <span>
+                            {currentTeam && currentTeam.length > 0
+                              ? currentTeam[0].title
+                              : 'N/A'}
+                          </span>
+                        ) : (
+                          <SelectField
+                            name="teamId"
+                            options={teams.map((team) => ({
+                              label: team.title,
+                              value: team.id,
+                            }))}
+                          />
+                        )}
+                      </EditField>
+                    </div>,
+                    <div className="flex justify-center">
+                      <MapIcon
+                        className="h-6 w-6 cursor-pointer"
+                        onClick={() => {
+                          setStatus(null);
+                          setOpenMap(true);
+                        }}
+                      />
+                      <span className="sr-only">View or Edit Location</span>
+                      <Modal open={openMap} setOpen={setOpenMap}>
                         <div className="m-4">
-                          <Alert alertType={status.type}>{status.msg}</Alert>
+                          <ProjectFormMap
+                            isUpdate={true}
+                            locationId={project.location_id}
+                            projectId={project.id}
+                          />
                         </div>
-                      ) : null}
-                    </Modal>
-                  </div>,
-                ],
+                        {status && status.type && status.msg ? (
+                          <div className="m-4">
+                            <Alert alertType={status.type}>{status.msg}</Alert>
+                          </div>
+                        ) : null}
+                      </Modal>
+                    </div>,
+                  ],
+                },
               ]}
             />
           </Table>
