@@ -26,7 +26,12 @@ class MapMaker:
 
         headers = {"User-Agent": "StaticMap", "Referer": settings.API_DOMAIN}
         self.map = StaticMap(
-            size[0], size[1], padding[0], padding[1], basemap, headers=headers
+            width=size[0],
+            height=size[1],
+            padding_x=padding[0],
+            padding_y=padding[1],
+            url_template=basemap,
+            headers=headers,
         )
         self.map.add_polygon(create_polygon(self.coordinates))
 

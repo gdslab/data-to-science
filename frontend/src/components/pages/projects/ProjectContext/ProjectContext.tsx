@@ -2,17 +2,20 @@ import axios, { AxiosResponse } from 'axios';
 import { createContext, useContext, useEffect, useReducer } from 'react';
 import { Params, useParams } from 'react-router-dom';
 
+import { GeoJSONFeature } from '../Project';
 import { Project } from '../ProjectList';
 import { ProjectMember } from '../ProjectAccess';
 import { User } from '../../../../AuthContext';
 
 import {
+  LocationAction,
   FlightsAction,
   ProjectAction,
   ProjectMembersAction,
   ProjectRoleAction,
 } from './actions';
 import {
+  locationReducer,
   flightsReducer,
   projectReducer,
   projectMembersReducer,
@@ -22,6 +25,8 @@ import {
 import { Flight } from '../Project';
 
 interface Context {
+  location: GeoJSONFeature | null;
+  locationDispatch: React.Dispatch<LocationAction>;
   project: Project | null;
   projectDispatch: React.Dispatch<ProjectAction>;
   projectMembers: ProjectMember[] | null;
@@ -33,6 +38,8 @@ interface Context {
 }
 
 const context: Context = {
+  location: null,
+  locationDispatch: () => {},
   project: null,
   projectDispatch: () => {},
   projectMembers: null,
@@ -73,6 +80,7 @@ interface ProjectContextProvider {
 }
 
 export function ProjectContextProvider({ children }: ProjectContextProvider) {
+  const [location, locationDispatch] = useReducer(locationReducer, null);
   const [flights, flightsDispatch] = useReducer(flightsReducer, null);
   const [project, projectDispatch] = useReducer(projectReducer, null);
   const [projectMembers, projectMembersDispatch] = useReducer(
@@ -82,6 +90,36 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
   const [projectRole, projectRoleDispatch] = useReducer(projectRoleReducer, undefined);
 
   const params = useParams();
+
+  useEffect(() => {
+    async function getLocation(project: Project) {
+      try {
+        const response: AxiosResponse<GeoJSONFeature> = await axios.get(
+          `${import.meta.env.VITE_API_V1_STR}/locations/${project.id}/${
+            project.location_id
+          }`
+        );
+        if (response) {
+          locationDispatch({ type: 'set', payload: response.data });
+        } else {
+          locationDispatch({ type: 'clear', payload: null });
+        }
+      } catch (err) {
+        if (axios.isAxiosError(err)) {
+          console.log(err.response?.data);
+        } else {
+          console.error(err);
+        }
+        locationDispatch({ type: 'clear', payload: null });
+      }
+    }
+
+    if (project) {
+      getLocation(project);
+    } else {
+      locationDispatch({ type: 'clear', payload: null });
+    }
+  }, [project]);
 
   useEffect(() => {
     async function getFlights() {
@@ -104,10 +142,12 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
       }
     }
 
-    if (params.projectId && params.flightId) {
+    if (params.projectId) {
       getFlights();
+    } else {
+      flightsDispatch({ type: 'clear', payload: null });
     }
-  }, [params.projectId, params.flightId]);
+  }, [params.projectId]);
 
   useEffect(() => {
     async function getProject() {
@@ -132,12 +172,16 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
 
     if (params.projectId) {
       getProject();
+    } else {
+      projectDispatch({ type: 'clear', payload: null });
     }
   }, [params.projectId]);
 
   useEffect(() => {
     if (params.projectId) {
       getProjectMembers(params, projectMembersDispatch);
+    } else {
+      projectMembersDispatch({ type: 'clear', payload: null });
     }
   }, [params.projectId]);
 
@@ -170,12 +214,16 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
 
     if (params.projectId) {
       getProjectRole();
+    } else {
+      projectRoleDispatch({ type: 'clear', payload: undefined });
     }
   }, [params.projectId]);
 
   return (
     <ProjectContext.Provider
       value={{
+        location,
+        locationDispatch,
         project,
         projectDispatch,
         projectMembers,

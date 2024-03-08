@@ -5,13 +5,13 @@ import { useNavigate } from 'react-router-dom';
 
 import Alert from '../../Alert';
 import { Button } from '../../Buttons';
-import { Location } from './Project';
 import ProjectFormMap from './ProjectFormMap';
 import { SelectField, TextField } from '../../InputFields';
 import { Team } from '../teams/Teams';
 
 import initialValues from './initialValues';
 import { projectCreateValidationSchema } from './validationSchema';
+import { useProjectContext } from './ProjectContext';
 
 export async function loader() {
   const response = await axios.get('/api/v1/teams');
@@ -31,8 +31,8 @@ export default function ProjectForm({
 }) {
   const navigate = useNavigate();
   const [teams, setTeams] = useState<Team[]>([]);
-  const [location, setLocation] = useState<Location | null>(null);
-  const [open, setOpen] = useState(false);
+
+  const { locationDispatch, project } = useProjectContext();
 
   useEffect(() => {
     async function loadTeams() {
@@ -44,6 +44,10 @@ export default function ProjectForm({
       }
     }
     loadTeams();
+  }, []);
+
+  useEffect(() => {
+    if (!project) locationDispatch({ type: 'clear', payload: null });
   }, []);
 
   return (
@@ -92,13 +96,7 @@ export default function ProjectForm({
                 <div className="inline text-sm text-gray-400 font-bold pt-2 pb-1">
                   Field location*
                 </div>
-
-                <ProjectFormMap
-                  location={location}
-                  open={open}
-                  setLocation={setLocation}
-                  setOpen={setOpen}
-                />
+                <ProjectFormMap />
               </div>
               <div className="">
                 <TextField label="Title" name="title" />

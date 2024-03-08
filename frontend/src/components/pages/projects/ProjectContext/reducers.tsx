@@ -1,13 +1,29 @@
+import { GeoJSONFeature } from '../Project';
 import { Flight } from '../Project';
 import { Project } from '../ProjectList';
 import { ProjectMember } from '../ProjectAccess';
 
 import {
+  LocationAction,
   FlightsAction,
   ProjectAction,
   ProjectMembersAction,
   ProjectRoleAction,
 } from './actions';
+
+function locationReducer(state: GeoJSONFeature | null, action: LocationAction) {
+  switch (action.type) {
+    case 'set': {
+      return action.payload;
+    }
+    case 'clear': {
+      return null;
+    }
+    default: {
+      return state;
+    }
+  }
+}
 
 function flightsReducer(state: Flight[] | null, action: FlightsAction) {
   switch (action.type) {
@@ -68,4 +84,10 @@ function projectRoleReducer(state: string | undefined, action: ProjectRoleAction
   }
 }
 
-export { flightsReducer, projectReducer, projectMembersReducer, projectRoleReducer };
+export {
+  locationReducer,
+  flightsReducer,
+  projectReducer,
+  projectMembersReducer,
+  projectRoleReducer,
+};

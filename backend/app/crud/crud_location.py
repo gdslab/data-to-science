@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
 from app.models.location import Location
+from app.models.project import Project
 from app.schemas.location import LocationCreate, LocationUpdate
 
 
@@ -21,9 +22,11 @@ class CRUDLocation(CRUDBase[Location, LocationCreate, LocationUpdate]):
         return location
 
     def get_geojson_location(self, db: Session, location_id: UUID) -> Location | None:
-        stmt = select(func.ST_AsGeoJSON(Location)).where(Location.id == location_id)
+        statement = select(func.ST_AsGeoJSON(Location)).where(
+            Location.id == location_id
+        )
         with db as session:
-            return session.scalar(stmt)
+            return session.scalar(statement)
 
     def update_location(
         self, db: Session, obj_in: LocationUpdate | dict[str, Any], location_id: UUID

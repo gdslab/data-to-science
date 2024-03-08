@@ -51,6 +51,29 @@ def create_location(
     return json.loads(geojson_location)
 
 
+@router.get(
+    "/{project_id}/{location_id}", response_model=schemas.location.PolygonGeoJSONFeature
+)
+def read_location(
+    request: Request,
+    location_id: UUID,
+    project_id: UUID,
+    project: models.Project = Depends(deps.can_read_write_project),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+        )
+    location = crud.location.get_geojson_location(db, location_id=location_id)
+    if not location:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Location not found"
+        )
+
+    return json.loads(location)
+
+
 @router.put(
     "/{project_id}/{location_id}", response_model=schemas.location.PolygonGeoJSONFeature
 )

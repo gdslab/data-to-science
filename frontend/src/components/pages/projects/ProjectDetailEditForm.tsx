@@ -7,7 +7,7 @@ import { MapIcon } from '@heroicons/react/24/outline';
 import Alert from '../../Alert';
 import { EditField, Editing, SelectField, TextField } from '../../InputFields';
 import Modal from '../../Modal';
-import { Location, Project } from './Project';
+import { Project } from './Project';
 import { useProjectContext } from './ProjectContext';
 import ProjectDeleteModal from './ProjectDeleteModal';
 import ProjectFormMap from './ProjectFormMap';
@@ -17,19 +17,14 @@ import { projectUpdateValidationSchema } from './validationSchema';
 import { Team } from '../teams/Teams';
 
 interface ProjectDetailEditForm {
-  location: Location | null;
   project: Project;
-  setLocation: React.Dispatch<React.SetStateAction<Location | null>>;
   teams: Team[];
 }
 
 export default function ProjectDetailEditForm({
-  location,
   project,
-  setLocation,
   teams,
 }: ProjectDetailEditForm) {
-  const [openUpload, setOpenUpload] = useState(false);
   const [openMap, setOpenMap] = useState(false);
   const [isEditing, setIsEditing] = useState<Editing>(null);
 
@@ -178,12 +173,8 @@ export default function ProjectDetailEditForm({
                       <div className="m-4">
                         <ProjectFormMap
                           isUpdate={true}
-                          location={location}
                           locationId={project.location_id}
-                          open={openUpload}
                           projectId={project.id}
-                          setLocation={setLocation}
-                          setOpen={setOpenUpload}
                         />
                       </div>
                       {status && status.type && status.msg ? (

@@ -8,7 +8,8 @@ import { useLeafletContext } from '@react-leaflet/core';
 import GeomanControl from './GeomanControl';
 import MapLayersControl from './MapLayersControl';
 import UploadGeoJSON from './UploadGeoJSON';
-import { FeatureCollection, Location, SetLocation } from '../pages/projects/Project';
+import { FeatureCollection } from '../pages/projects/Project';
+import { useProjectContext } from '../pages/projects/ProjectContext';
 
 // updates map (loads tiles) after container size changes
 const InvalidateSize = () => {
@@ -19,7 +20,7 @@ const InvalidateSize = () => {
 
 function getGCKey(location, fc) {
   if (location) {
-    return location.geojson.properties.id;
+    return location.properties.id;
   } else if (fc) {
     return 'feature-collection';
   } else {
@@ -28,30 +29,31 @@ function getGCKey(location, fc) {
 }
 
 interface Props {
+  isUpdate?: boolean;
   featureCollection: FeatureCollection | null;
-  location: Location | null;
-  setLocation: SetLocation;
-  setUploadResponse: React.Dispatch<React.SetStateAction<FeatureCollection | null>>;
+  setFeatureCollection: React.Dispatch<React.SetStateAction<FeatureCollection | null>>;
 }
 
 export default function DrawFieldMap({
+  isUpdate = false,
   featureCollection,
-  location,
-  setLocation,
-  setUploadResponse,
+  setFeatureCollection,
 }: Props) {
   const layerRef = useRef(null);
+  const mapRef = useRef<L.Map>(null);
   const [geomanLayer, setGeomanLayer] = useState<L.Polygon | null>(null);
 
+  const { location } = useProjectContext();
+
   useEffect(() => {
-    if (geomanLayer) {
-      geomanLayer.remove();
-      setGeomanLayer(null);
+    if (mapRef.current) {
+      mapRef.current.setZoom(8);
     }
-  }, [featureCollection]);
+  }, []);
 
   return (
     <MapContainer
+      ref={mapRef}
       center={[40.428655143949925, -86.9138040788386]}
       preferCanvas={true}
       zoom={8}
@@ -65,16 +67,17 @@ export default function DrawFieldMap({
       {featureCollection ? (
         <UploadGeoJSON
           data={featureCollection}
-          setLocation={setLocation}
-          setUploadResponse={setUploadResponse}
+          geomanLayer={geomanLayer}
+          setFeatureCollection={setFeatureCollection}
+          setGeomanLayer={setGeomanLayer}
         />
       ) : null}
       <MapLayersControl />
-      {location && location.type === 'uploaded' ? (
+      {location && !geomanLayer ? (
         <Polygon
           key={getGCKey(location, featureCollection) + 'poly'}
           ref={layerRef}
-          positions={location.geojson.geometry.coordinates[0].map((coordPair) => [
+          positions={location.geometry.coordinates[0].map((coordPair) => [
             coordPair[1],
             coordPair[0],
           ])}
@@ -82,13 +85,12 @@ export default function DrawFieldMap({
       ) : null}
       <GeomanControl
         key={getGCKey(location, featureCollection)}
+        isUpdate={isUpdate}
         layerRef={layerRef}
         options={{ position: 'topleft' }}
-        location={location}
-        setLocation={setLocation}
-        setGeomanLayer={setGeomanLayer}
         disableDraw={featureCollection ? true : false}
         disableEdit={location ? false : true}
+        setGeomanLayer={setGeomanLayer}
       />
       <ZoomControl
         key={getGCKey(location, featureCollection) + 'zc'}

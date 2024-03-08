@@ -1,12 +1,13 @@
 import axios from 'axios';
 import { ErrorMessage, useFormikContext } from 'formik';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { Button, OutlineButton } from '../../Buttons';
 import DrawFieldMap from '../../maps/DrawFieldMap';
 import FileUpload from '../../FileUpload';
-import { Coordinates, FeatureCollection, GeoJSONFeature, Location } from './Project';
+import { Coordinates, FeatureCollection, GeoJSONFeature } from './Project';
 import HintText from '../../HintText';
+import { useProjectContext } from './ProjectContext';
 
 export function coordArrayToWKT(coordArray: Coordinates[] | Coordinates[][]) {
   let wkt: string[][] = [];
@@ -18,48 +19,31 @@ export function coordArrayToWKT(coordArray: Coordinates[] | Coordinates[][]) {
 
 interface Props {
   isUpdate?: boolean;
-  location: Location | null;
   locationId?: string;
-  open: boolean;
   projectId?: string;
-  setLocation: React.Dispatch<React.SetStateAction<Location | null>>;
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export default function ProjectFormMap({
   isUpdate = false,
-  location,
   locationId = '',
-  open,
   projectId = '',
-  setLocation,
-  setOpen,
 }: Props) {
-  const [uploadResponse, setUploadResponse] = useState<FeatureCollection | null>(null);
+  const [open, setOpen] = useState(false);
+  const [featureCollection, setFeatureCollection] = useState<FeatureCollection | null>(
+    null
+  );
+
   const { setFieldTouched, setFieldValue, setStatus } = useFormikContext();
 
-  useEffect(() => {
-    if (location) {
-      const locationData = {
-        center_x: location.center.lng,
-        center_y: location.center.lat,
-        geom: `SRID=4326;POLYGON((${coordArrayToWKT(
-          location.geojson.geometry.coordinates
-        )}))`,
-      };
-      setFieldTouched('location', true);
-      setFieldValue('location', locationData);
-    }
-  }, [location]);
+  const { location } = useProjectContext();
 
   return (
     <div className="grid grid-rows-auto gap-4">
       <div className="h-96">
         <DrawFieldMap
-          featureCollection={uploadResponse}
-          location={location}
-          setLocation={setLocation}
-          setUploadResponse={setUploadResponse}
+          isUpdate={isUpdate}
+          featureCollection={featureCollection}
+          setFeatureCollection={setFeatureCollection}
         />
       </div>
       <div>
@@ -68,7 +52,7 @@ export default function ProjectFormMap({
           name="location.geom"
           component="span"
         />
-        {uploadResponse && uploadResponse.features.length > 1 ? (
+        {featureCollection && featureCollection.features.length > 1 ? (
           <div className="mb-2">
             <span className="font-semibold text-slate-700">
               Multiple boundaries detected. Click on the boundary you would like to
@@ -99,7 +83,7 @@ export default function ProjectFormMap({
                 minNumberOfFiles: 1,
               }}
               setOpen={setOpen}
-              setUploadResponse={setUploadResponse}
+              setUploadResponse={setFeatureCollection}
               uploadType="shp"
             />
           </div>
@@ -113,10 +97,10 @@ export default function ProjectFormMap({
               if (location) {
                 try {
                   const data = {
-                    center_x: location.center.lng,
-                    center_y: location.center.lat,
+                    center_x: location.properties.center_x,
+                    center_y: location.properties.center_y,
                     geom: `SRID=4326;POLYGON((${coordArrayToWKT(
-                      location.geojson.geometry.coordinates
+                      location.geometry.coordinates
                     )}))`,
                   };
                   const response = await axios.put<GeoJSONFeature>(
@@ -130,7 +114,7 @@ export default function ProjectFormMap({
                       type: 'success',
                       msg: 'Field updated',
                     });
-                    setUploadResponse(null);
+                    setFeatureCollection(null);
                   }
                   setOpen(false);
                 } catch (err) {
@@ -138,7 +122,7 @@ export default function ProjectFormMap({
                     type: 'error',
                     msg: 'Unable to save location',
                   });
-                  setUploadResponse(null);
+                  setFeatureCollection(null);
                 }
               } else {
                 setStatus({

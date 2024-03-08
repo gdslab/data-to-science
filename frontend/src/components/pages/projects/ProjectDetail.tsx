@@ -1,11 +1,11 @@
 import axios, { AxiosResponse } from 'axios';
-import { useEffect, useState } from 'react';
-import { Params, useLoaderData, useParams, useRevalidator } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Params, useLoaderData, useParams } from 'react-router-dom';
 
 import { User } from '../../../AuthContext';
 import { useProjectContext } from './ProjectContext';
 
-import { Flight, Location, Project, ProjectLoaderData } from './Project';
+import { Flight, Project, ProjectLoaderData } from './Project';
 import { ProjectMember } from './ProjectAccess';
 import ProjectDetailEditForm from './ProjectDetailEditForm';
 import { Team } from '../teams/Teams';
@@ -62,7 +62,7 @@ export async function loader({ params }: { params: Params<string> }) {
 
 export default function ProjectDetail() {
   const { project, role, flights, teams } = useLoaderData() as ProjectLoaderData;
-  const revalidator = useRevalidator();
+
   const params = useParams();
   const {
     projectRole,
@@ -71,21 +71,6 @@ export default function ProjectDetail() {
     projectMembersDispatch,
     projectRoleDispatch,
   } = useProjectContext();
-
-  const [location, setLocation] = useState<Location | null>(null);
-
-  useEffect(() => {
-    if (project && project.field) {
-      setLocation({
-        geojson: project.field,
-        center: {
-          lat: parseFloat(project.field.properties.center_y),
-          lng: parseFloat(project.field.properties.center_x),
-        },
-        type: 'uploaded',
-      });
-    }
-  }, [project]);
 
   useEffect(() => {
     if (role) projectRoleDispatch({ type: 'set', payload: role });
@@ -105,20 +90,11 @@ export default function ProjectDetail() {
     if (flights) flightsDispatch({ type: 'set', payload: flights });
   }, [flights]);
 
-  useEffect(() => {
-    if (location) revalidator.revalidate();
-  }, []);
-
   if (project) {
     return (
       <div className="flex flex-col h-full gap-4 p-4">
         {projectRole === 'owner' || projectRole === 'manager' ? (
-          <ProjectDetailEditForm
-            location={location}
-            project={project}
-            setLocation={setLocation}
-            teams={teams}
-          />
+          <ProjectDetailEditForm project={project} teams={teams} />
         ) : (
           <div>
             <h2 className="mb-0">{project.title}</h2>

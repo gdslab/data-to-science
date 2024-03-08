@@ -1,10 +1,11 @@
 import axios from 'axios';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLoaderData, Link } from 'react-router-dom';
 
 import { Button } from '../../Buttons';
 import Modal from '../../Modal';
 import ProjectForm from './ProjectForm';
+import { useProjectContext } from './ProjectContext';
 
 interface FieldProperties {
   id: string;
@@ -25,6 +26,7 @@ export interface Project {
   owner_id: string;
   is_owner: boolean;
   team_id: string;
+  location_id: string;
 }
 
 export async function loader() {
@@ -39,6 +41,18 @@ export async function loader() {
 export default function ProjectList() {
   const [open, setOpen] = useState(false);
   const projects = useLoaderData() as Project[];
+
+  const { locationDispatch, project, projectDispatch } = useProjectContext();
+
+  useEffect(() => {
+    locationDispatch({ type: 'clear', payload: null });
+  }, [open]);
+
+  useEffect(() => {
+    locationDispatch({ type: 'clear', payload: null });
+    projectDispatch({ type: 'clear', payload: null });
+  }, [project]);
+
   return (
     <div className="h-full p-4">
       <div className="h-full flex flex-col gap-4">
