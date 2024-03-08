@@ -3,7 +3,9 @@ import { useEffect, useRef } from 'react';
 import { FeatureGroup } from 'react-leaflet';
 import { Marker } from 'react-leaflet/Marker';
 import { useLeafletContext } from '@react-leaflet/core';
-import 'leaflet.smooth_marker_bouncing';
+import 'leaflet.markercluster';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
 import { Project } from '../pages/projects/ProjectList';
 import { FeatureGroup as FG } from 'leaflet';
@@ -21,20 +23,15 @@ export default function ProjectMarkers({ projects }: ProjectMarkersProps) {
 
   useEffect(() => {
     // @ts-ignore
-    L.Marker.stopAllBouncingMarkers();
+    const markers = L.markerClusterGroup();
     if (fgRef.current) {
-      let bounceMarkerIdx = -1;
-      if (projectHoverState) {
-        bounceMarkerIdx = projects
-          .map((project) => project.id)
-          .indexOf(projectHoverState);
-      }
-      if (bounceMarkerIdx > -1) {
-        // @ts-ignore
-        fgRef.current.getLayers()[bounceMarkerIdx].bounce();
-      }
+      console.log(fgRef.current);
+      fgRef.current.getLayers().forEach((marker) => {
+        markers.addLayer(marker);
+      });
+      context.map.addLayer(markers);
     }
-  }, [projectHoverState]);
+  }, [fgRef.current]);
 
   useEffect(() => {
     if (fgRef.current) {
