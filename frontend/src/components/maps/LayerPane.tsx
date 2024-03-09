@@ -36,7 +36,7 @@ function MapToolbar() {
   return (
     <fieldset className="border border-solid border-slate-300 p-1.5">
       <legend>Map Tools</legend>
-      <div className="flex items-center justify-start gap-1.5">
+      <div className="flex items-end justify-start gap-1.5">
         <div
           className={classNames(
             activeMapTool === 'map' ? 'bg-accent2' : '',
@@ -68,6 +68,7 @@ function MapToolbar() {
             id="scale-checkbox"
             type="checkbox"
             name="scale"
+            className="size-4 rounded text-accent2 border-gray-300"
             onChange={(e) => {
               tileScaleDispatch({
                 type: 'set',

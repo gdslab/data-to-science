@@ -683,6 +683,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tailwindcss/forms@npm:^0.5.7":
+  version: 0.5.7
+  resolution: "@tailwindcss/forms@npm:0.5.7"
+  dependencies:
+    mini-svg-data-uri: ^1.2.3
+  peerDependencies:
+    tailwindcss: ">=3.0.0 || >= 3.0.0-alpha.1"
+  checksum: 406fe102a44f89d896c9a945b705a40b926520472ffd8613d9fbfb9e63c23d600629f54096b8ba78316ce1278b79ae6070c166b820328256cf359e80f9d2146f
+  languageName: node
+  linkType: hard
+
 "@tanstack/react-virtual@npm:^3.0.0-beta.60":
   version: 3.0.4
   resolution: "@tanstack/react-virtual@npm:3.0.4"
@@ -1944,6 +1955,7 @@ __metadata:
     "@geoman-io/leaflet-geoman-free": ^2.14.2
     "@headlessui/react": latest
     "@heroicons/react": ^2.0.18
+    "@tailwindcss/forms": ^0.5.7
     "@types/leaflet": ^1.9.3
     "@types/react": ^18.2.15
     "@types/react-dom": ^18.2.7
@@ -3478,6 +3490,15 @@ __metadata:
   version: 1.2.11
   resolution: "mime@npm:1.2.11"
   checksum: 68248e74bd65db30d2b59c077cc8794e3caee1497fd7ca40efcf8797c4aea75dc9d5b05d1448fdfb3de09da0b894a47e90cde0985a0c5ec5d7d2305c36aa2c75
+  languageName: node
+  linkType: hard
+
+"mini-svg-data-uri@npm:^1.2.3":
+  version: 1.4.4
+  resolution: "mini-svg-data-uri@npm:1.4.4"
+  bin:
+    mini-svg-data-uri: cli.js
+  checksum: 997f1fbd8d59a70f03761e18626d335197a3479cb9d1ff75678e4b64b864d32a0b8fc18115eabde035e5299b8b4a354a78e57dd6ac10f9d604162a6170898d09
   languageName: node
   linkType: hard
 

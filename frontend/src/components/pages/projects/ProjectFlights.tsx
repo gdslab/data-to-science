@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { PencilIcon } from '@heroicons/react/24/outline';
 
 import { Button } from '../../Buttons';
+import Filter from '../../Filter';
 import FlightCarousel from './flights/FlightCarousel';
 import FlightDeleteModal from './flights/FlightDeleteModal';
 import FlightForm from './flights/FlightForm';
@@ -11,12 +12,13 @@ import Table, { TableBody, TableHead } from '../../Table';
 import TableCardRadioInput from '../../TableCardRadioInput';
 import { useProjectContext } from './ProjectContext';
 
-import { sorter } from '../../utils';
+import { getUnique, sorter } from '../../utils';
 
 export default function ProjectFlights() {
   const [flightSortOrder, setFlightSortOrder] = useState('asc');
   const [open, setOpen] = useState(false);
   const [tableView, toggleTableView] = useState<'table' | 'carousel'>('carousel');
+  const [selectedSensor, setSelectedSensor] = useState<string[]>([]);
 
   const { flights, project, projectRole } = useProjectContext();
 
@@ -28,22 +30,33 @@ export default function ProjectFlights() {
         <div className="h-24">
           <h2>Flights</h2>
           <div className="flex justify-between">
-            <div className="flex flex-row items-center gap-2">
-              <label
-                htmlFor="flightSortOrder"
-                className="text-sm font-medium text-gray-900 w-20"
-              >
-                Sort by
-              </label>
-              <select
-                name="flightSortOrder"
-                id="flightSortOrder"
-                className="w-full px-1.5 font-semibold rounded-md border-2 border-zinc-300 text-gray-700 sm:text-sm"
-                onChange={(e) => setFlightSortOrder(e.target.value)}
-              >
-                <option value="asc">Date (ascending)</option>
-                <option value="desc">Date (descending)</option>
-              </select>
+            <div className="flex flex-row gap-8">
+              <div className="flex flex-row items-center gap-2">
+                <label
+                  htmlFor="flightSortOrder"
+                  className="text-sm font-medium text-gray-900 w-20"
+                >
+                  Sort by
+                </label>
+                <select
+                  name="flightSortOrder"
+                  id="flightSortOrder"
+                  className="w-full px-1.5 font-semibold rounded-md border-2 border-zinc-300 text-gray-700 sm:text-sm"
+                  onChange={(e) => setFlightSortOrder(e.target.value)}
+                >
+                  <option value="asc">Date (ascending)</option>
+                  <option value="desc">Date (descending)</option>
+                </select>
+              </div>
+              {flights && flights.length > 0 ? (
+                <div className="flex flex-row items-center gap-2">
+                  <Filter
+                    categories={getUnique(flights, 'sensor')}
+                    selectedCategory={selectedSensor}
+                    setSelectedCategory={setSelectedSensor}
+                  />
+                </div>
+              ) : null}
             </div>
             <TableCardRadioInput
               tableView={tableView}
@@ -63,6 +76,7 @@ export default function ProjectFlights() {
               />
               <TableBody
                 rows={flights
+                  .filter(({ sensor }) => selectedSensor.indexOf(sensor) > -1)
                   .sort((a, b) =>
                     sorter(
                       new Date(a.acquisition_date),
@@ -110,7 +124,12 @@ export default function ProjectFlights() {
             </Table>
           ) : (
             <div className="h-full min-h-96">
-              <FlightCarousel flights={flights} sortOrder={flightSortOrder} />
+              <FlightCarousel
+                flights={flights.filter(
+                  ({ sensor }) => selectedSensor.indexOf(sensor) > -1
+                )}
+                sortOrder={flightSortOrder}
+              />
             </div>
           )
         ) : null}

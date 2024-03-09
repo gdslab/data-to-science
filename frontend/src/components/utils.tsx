@@ -30,3 +30,7 @@ export function sorter(a: Date | string, b: Date | string, order: string = 'asc'
     return a > b ? 1 : b > a ? -1 : 0;
   }
 }
+
+export function getUnique<T>(arr: T[], key: string): string[] {
+  return [...new Set(arr.map((elem) => elem[key]))];
+}
