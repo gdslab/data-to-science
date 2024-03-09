@@ -2,6 +2,7 @@ import 'leaflet/dist/leaflet.css';
 import { useEffect, useRef, useState } from 'react';
 import { MapContainer } from 'react-leaflet/MapContainer';
 import { Polygon } from 'react-leaflet/Polygon';
+import { ScaleControl } from 'react-leaflet';
 import { ZoomControl } from 'react-leaflet/ZoomControl';
 import { useLeafletContext } from '@react-leaflet/core';
 
@@ -96,6 +97,7 @@ export default function DrawFieldMap({
         key={getGCKey(location, featureCollection) + 'zc'}
         position="topleft"
       />
+      <ScaleControl position="bottomright" />
     </MapContainer>
   );
 }

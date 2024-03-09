@@ -2,6 +2,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect } from 'react';
 import { MapContainer } from 'react-leaflet/MapContainer';
+import { ScaleControl } from 'react-leaflet';
 import { ZoomControl } from 'react-leaflet/ZoomControl';
 
 import ColorBarControl from './ColorBarControl';
@@ -92,7 +93,8 @@ export default function Map({
         ) : null}
 
         <MapLayersControl />
-        <ZoomControl position="bottomright" />
+        <ZoomControl position="topleft" />
+        <ScaleControl position="bottomright" />
       </MapContainer>
     );
   } else {
