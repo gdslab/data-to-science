@@ -6,6 +6,7 @@ import { ProjectMember } from '../ProjectAccess';
 import {
   LocationAction,
   FlightsAction,
+  FlightsFilterSelectionAction,
   ProjectAction,
   ProjectMembersAction,
   ProjectRoleAction,
@@ -32,6 +33,23 @@ function flightsReducer(state: Flight[] | null, action: FlightsAction) {
     }
     case 'clear': {
       return null;
+    }
+    default: {
+      return state;
+    }
+  }
+}
+
+function flightsFilterSelectionReducer(
+  state: string[],
+  action: FlightsFilterSelectionAction
+) {
+  switch (action.type) {
+    case 'set': {
+      return action.payload ? action.payload : [];
+    }
+    case 'reset': {
+      return [];
     }
     default: {
       return state;
@@ -87,6 +105,7 @@ function projectRoleReducer(state: string | undefined, action: ProjectRoleAction
 export {
   locationReducer,
   flightsReducer,
+  flightsFilterSelectionReducer,
   projectReducer,
   projectMembersReducer,
   projectRoleReducer,

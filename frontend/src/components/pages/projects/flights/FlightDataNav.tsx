@@ -7,12 +7,13 @@ import { sorter } from '../../../utils';
 
 export default function FlightDataNav() {
   const { projectId } = useParams();
-  const { flights } = useProjectContext();
+  const { flights, flightsFilterSelection } = useProjectContext();
 
   if (flights && flights.length > 0) {
     return (
       <nav className="grow flex flex-col min-h-0 items-center gap-4 p-4 min-w-48 overflow-y-auto">
         {flights
+          .filter(({ sensor }) => flightsFilterSelection.indexOf(sensor) > -1)
           .sort((a, b) =>
             sorter(new Date(a.acquisition_date), new Date(b.acquisition_date), 'desc')
           )

@@ -10,6 +10,7 @@ import { User } from '../../../../AuthContext';
 import {
   LocationAction,
   FlightsAction,
+  FlightsFilterSelectionAction,
   ProjectAction,
   ProjectMembersAction,
   ProjectRoleAction,
@@ -17,6 +18,7 @@ import {
 import {
   locationReducer,
   flightsReducer,
+  flightsFilterSelectionReducer,
   projectReducer,
   projectMembersReducer,
   projectRoleReducer,
@@ -35,6 +37,8 @@ interface Context {
   projectRoleDispatch: React.Dispatch<ProjectRoleAction>;
   flights: Flight[] | null;
   flightsDispatch: React.Dispatch<FlightsAction>;
+  flightsFilterSelection: string[];
+  flightsFilterSelectionDispatch: React.Dispatch<FlightsFilterSelectionAction>;
 }
 
 const context: Context = {
@@ -48,6 +52,8 @@ const context: Context = {
   projectRoleDispatch: () => {},
   flights: null,
   flightsDispatch: () => {},
+  flightsFilterSelection: [],
+  flightsFilterSelectionDispatch: () => {},
 };
 
 export async function getProjectMembers(
@@ -82,6 +88,10 @@ interface ProjectContextProvider {
 export function ProjectContextProvider({ children }: ProjectContextProvider) {
   const [location, locationDispatch] = useReducer(locationReducer, null);
   const [flights, flightsDispatch] = useReducer(flightsReducer, null);
+  const [flightsFilterSelection, flightsFilterSelectionDispatch] = useReducer(
+    flightsFilterSelectionReducer,
+    []
+  );
   const [project, projectDispatch] = useReducer(projectReducer, null);
   const [projectMembers, projectMembersDispatch] = useReducer(
     projectMembersReducer,
@@ -129,8 +139,13 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
         );
         if (response) {
           flightsDispatch({ type: 'set', payload: response.data });
+          flightsFilterSelectionDispatch({
+            type: 'set',
+            payload: [...new Set(response.data.map(({ sensor }) => sensor))],
+          });
         } else {
           flightsDispatch({ type: 'clear', payload: null });
+          flightsFilterSelectionDispatch({ type: 'reset' });
         }
       } catch (err) {
         if (axios.isAxiosError(err)) {
@@ -139,6 +154,7 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
           console.error(err);
         }
         flightsDispatch({ type: 'clear', payload: null });
+        flightsFilterSelectionDispatch({ type: 'reset' });
       }
     }
 
@@ -146,6 +162,7 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
       getFlights();
     } else {
       flightsDispatch({ type: 'clear', payload: null });
+      flightsFilterSelectionDispatch({ type: 'reset' });
     }
   }, [params.projectId]);
 
@@ -232,6 +249,8 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
         projectRoleDispatch,
         flights,
         flightsDispatch,
+        flightsFilterSelection,
+        flightsFilterSelectionDispatch,
       }}
     >
       {children}

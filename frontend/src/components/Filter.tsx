@@ -1,5 +1,3 @@
-import { useEffect } from 'react';
-
 export default function Filter({
   categories,
   selectedCategory,
@@ -7,14 +5,8 @@ export default function Filter({
 }: {
   categories: string[];
   selectedCategory: string[];
-  setSelectedCategory: React.Dispatch<React.SetStateAction<string[]>>;
+  setSelectedCategory: (selectedCategories: string[]) => void;
 }) {
-  useEffect(() => {
-    if (categories.length > 0) {
-      setSelectedCategory([...categories]);
-    }
-  }, []);
-
   function onChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.checked) {
       setSelectedCategory([...selectedCategory, e.target.value]);

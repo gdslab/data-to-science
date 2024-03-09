@@ -18,11 +18,20 @@ export default function ProjectFlights() {
   const [flightSortOrder, setFlightSortOrder] = useState('asc');
   const [open, setOpen] = useState(false);
   const [tableView, toggleTableView] = useState<'table' | 'carousel'>('carousel');
-  const [selectedSensor, setSelectedSensor] = useState<string[]>([]);
 
-  const { flights, project, projectRole } = useProjectContext();
+  const {
+    flights,
+    flightsFilterSelection,
+    flightsFilterSelectionDispatch,
+    project,
+    projectRole,
+  } = useProjectContext();
 
   const flightColumns = ['Platform', 'Sensor', 'Acquisition Date', 'Data', 'Actions'];
+
+  function updateFlightsFilter(filterSelections: string[]) {
+    flightsFilterSelectionDispatch({ type: 'set', payload: filterSelections });
+  }
 
   return (
     <div className="grow min-h-0">
@@ -52,8 +61,8 @@ export default function ProjectFlights() {
                 <div className="flex flex-row items-center gap-2">
                   <Filter
                     categories={getUnique(flights, 'sensor')}
-                    selectedCategory={selectedSensor}
-                    setSelectedCategory={setSelectedSensor}
+                    selectedCategory={flightsFilterSelection}
+                    setSelectedCategory={updateFlightsFilter}
                   />
                 </div>
               ) : null}
@@ -76,7 +85,7 @@ export default function ProjectFlights() {
               />
               <TableBody
                 rows={flights
-                  .filter(({ sensor }) => selectedSensor.indexOf(sensor) > -1)
+                  .filter(({ sensor }) => flightsFilterSelection.indexOf(sensor) > -1)
                   .sort((a, b) =>
                     sorter(
                       new Date(a.acquisition_date),
@@ -126,7 +135,7 @@ export default function ProjectFlights() {
             <div className="h-full min-h-96">
               <FlightCarousel
                 flights={flights.filter(
-                  ({ sensor }) => selectedSensor.indexOf(sensor) > -1
+                  ({ sensor }) => flightsFilterSelection.indexOf(sensor) > -1
                 )}
                 sortOrder={flightSortOrder}
               />
