@@ -2,11 +2,16 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import FileUpload from './FileUpload';
 
-interface Props {
-  apiRoute: string;
-  open: boolean;
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  uploadType?: string;
+function getAllowedFileTypes(dtype: string): string[] {
+  if (dtype === 'dsm' || dtype === 'ortho' || dtype === 'other') {
+    return ['.tif'];
+  } else if (dtype === 'point_cloud') {
+    return ['.las', '.laz'];
+  } else if (dtype === 'raw') {
+    return ['.zip'];
+  } else {
+    return ['.tif'];
+  }
 }
 
 function DtypeRadioInput({
@@ -135,7 +140,6 @@ function DtypeRadioInput({
             </label>
           </div>
         </div>
-
         {dtype === 'other' ? (
           <fieldset className="w-full flex flex-wrap justify-evenly gap-1.5">
             <legend className="sr-only">Data type other</legend>
@@ -153,9 +157,20 @@ function DtypeRadioInput({
             />
           </fieldset>
         ) : null}
+        <span>
+          Accepted file extensions:{' '}
+          <strong>{getAllowedFileTypes(dtype).join(' ')}</strong>
+        </span>
       </fieldset>
     </div>
   );
+}
+
+interface Props {
+  apiRoute: string;
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  uploadType?: string;
 }
 
 export default function UploadModal({ apiRoute, open, setOpen, uploadType }: Props) {
@@ -178,18 +193,6 @@ export default function UploadModal({ apiRoute, open, setOpen, uploadType }: Pro
       setDtypeOtherTouched(false);
     }
   }, [dtype]);
-
-  function getAllowedFileTypes(dtype: string): string[] {
-    if (dtype === 'dsm' || dtype === 'ortho' || dtype === 'other') {
-      return ['.tif'];
-    } else if (dtype === 'point_cloud') {
-      return ['.las', '.laz'];
-    } else if (dtype === 'raw') {
-      return ['.zip'];
-    } else {
-      return ['.tif'];
-    }
-  }
 
   function updateUploadHistory(newUpload: string) {
     const currentUploadHistory = uploadHistory.slice();
