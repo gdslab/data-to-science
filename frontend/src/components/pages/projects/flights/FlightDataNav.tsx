@@ -3,10 +3,10 @@ import { Link, useParams } from 'react-router-dom';
 import { useProjectContext } from '../ProjectContext';
 import UASIcon from '../../../../assets/uas-icon.svg';
 import HintText from '../../../HintText';
-import { sorter } from '../../../utils';
+import { classNames, sorter } from '../../../utils';
 
 export default function FlightDataNav() {
-  const { projectId } = useParams();
+  const { flightId, projectId } = useParams();
   const { flights, flightsFilterSelection } = useProjectContext();
 
   if (flights && flights.length > 0) {
@@ -20,7 +20,12 @@ export default function FlightDataNav() {
           .map((flight) => (
             <Link
               key={flight.id}
-              className="flex flex-col items-center justify-center h-36 min-h-36 w-36 bg-white border-2 border-slate-400 hover:border-slate-700 rounded-md"
+              className={classNames(
+                flight.id === flightId
+                  ? 'border-accent2 border-4'
+                  : 'border-slate-400 border-2',
+                'flex flex-col items-center justify-center h-36 min-h-36 w-36 bg-white hover:border-accent2 rounded-md'
+              )}
               to={`/projects/${projectId}/flights/${flight.id}/data`}
             >
               <img className="w-8" src={UASIcon} />
