@@ -76,7 +76,7 @@ export default function FlightForm({
                   );
                 }
                 if (response) {
-                  setStatus({ type: 'success', msg: 'Created' });
+                  setStatus({ type: 'success', msg: editMode ? 'Updated' : 'Created' });
                   if (setOpen) setOpen(false);
                   navigate(`/projects/${params.projectId}`);
                 } else {

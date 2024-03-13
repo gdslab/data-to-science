@@ -66,7 +66,10 @@ export default function ProjectDetail() {
   const params = useParams();
   const {
     projectRole,
+    flights: flightsPrev,
     flightsDispatch,
+    flightsFilterSelection,
+    flightsFilterSelectionDispatch,
     projectDispatch,
     projectMembersDispatch,
     projectRoleDispatch,
@@ -88,6 +91,33 @@ export default function ProjectDetail() {
 
   useEffect(() => {
     if (flights) flightsDispatch({ type: 'set', payload: flights });
+    // check filter option for new flight if it is the first flight with its sensor
+    if (flights && flightsPrev) {
+      // no previous flights, so select any sensor in flights
+      if (flightsPrev.length === 0) {
+        flightsFilterSelectionDispatch({
+          type: 'set',
+          payload: [...new Set(flights.map(({ sensor }) => sensor))],
+        });
+      } else {
+        // compare previous sensors with sensor in new flights
+        const prevSensors = flightsPrev.map(({ sensor }) => sensor);
+        const newSensors = flights
+          .filter(
+            ({ sensor }) =>
+              prevSensors.indexOf(sensor) < 0 &&
+              flightsFilterSelection.indexOf(sensor) < 0
+          )
+          .map(({ sensor }) => sensor);
+        // if any new sensors were found, add to filter selection options and check
+        if (newSensors.length > 0) {
+          flightsFilterSelectionDispatch({
+            type: 'set',
+            payload: [...flightsFilterSelection, ...newSensors],
+          });
+        }
+      }
+    }
   }, [flights]);
 
   if (project) {
