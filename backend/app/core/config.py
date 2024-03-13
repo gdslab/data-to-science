@@ -2,7 +2,7 @@ import secrets
 from typing import Any
 
 from fastapi_mail.config import ConnectionConfig
-from pydantic import EmailStr, field_validator, FieldValidationInfo, PostgresDsn
+from pydantic import EmailStr, field_validator, ValidationInfo, PostgresDsn
 from pydantic_settings import BaseSettings
 
 
@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     SQLALCHEMY_DATABASE_URI: PostgresDsn | None = None
 
     @field_validator("SQLALCHEMY_DATABASE_URI", mode="before")
-    def assemble_db_connection(cls, v: str | None, info: FieldValidationInfo) -> Any:
+    def assemble_db_connection(cls, v: str | None, info: ValidationInfo) -> Any:
         if isinstance(v, str):
             return v
         values = info.data
@@ -68,7 +68,7 @@ class Settings(BaseSettings):
     MAIL_CONF: ConnectionConfig | None = None
 
     @field_validator("MAIL_CONF", mode="before")
-    def assemble_mail_conf(cls, v: str | None, info: FieldValidationInfo) -> Any:
+    def assemble_mail_conf(cls, v: str | None, info: ValidationInfo) -> Any:
         if isinstance(v, str):
             return v
         values = info.data

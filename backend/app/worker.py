@@ -68,7 +68,7 @@ def run_toolbox_process(
 
     try:
         new_data_product = crud.data_product.get(db, id=new_data_product_id)
-        if os.path.exists(out_raster) and ip:
+        if new_data_product and os.path.exists(out_raster) and ip:
             default_symbology = ip.get_default_symbology()
             # update data product record with stac properties
             crud.data_product.update(
@@ -117,7 +117,7 @@ def process_geotiff(
     Returns:
         _type_: _description_
     """
-    geotiff_filepath = Path(geotiff_filepath)
+    in_raster = Path(geotiff_filepath)
     # get database session
     db = next(get_db())
     # retrieve job associated with this task
@@ -127,15 +127,15 @@ def process_geotiff(
 
     if not job:
         # remove uploaded file and raise exception
-        if os.path.exists(geotiff_filepath):
-            shutil.rmtree(geotiff_filepath.parent)
+        if os.path.exists(in_raster):
+            shutil.rmtree(in_raster.parent)
         logger.error("Could not find job in DB for upload process")
         return None
 
     if not data_product:
         # remove uploaded file and raise exception
-        if os.path.exists(geotiff_filepath):
-            shutil.rmtree(geotiff_filepath.parent)
+        if os.path.exists(in_raster):
+            shutil.rmtree(in_raster.parent)
         # remove job if exists
         if job:
             update_job_status(job, state="ERROR")
@@ -147,12 +147,12 @@ def process_geotiff(
 
     # create get STAC properties and convert to COG (if needed)
     try:
-        ip = ImageProcessor(geotiff_filepath)
+        ip = ImageProcessor(str(in_raster))
         out_raster = ip.run()
         default_symbology = ip.get_default_symbology()
     except Exception as e:
-        if os.path.exists(geotiff_filepath.parents[1]):
-            shutil.rmtree(geotiff_filepath.parents[1])
+        if os.path.exists(in_raster.parents[1]):
+            shutil.rmtree(in_raster.parents[1])
         update_job_status(job, state="ERROR")
         logger.exception("Failed to process uploaded GeoTIFF")
         return None
@@ -187,7 +187,7 @@ def process_point_cloud(
     project_id: UUID,
     flight_id: UUID,
     job_id: UUID,
-    data_product_id,
+    data_product_id: UUID,
 ) -> None:
     """Celery task for processing uploaded point cloud.
 
@@ -205,7 +205,7 @@ def process_point_cloud(
     Returns:
         _type_: _description_
     """
-    las_filepath = Path(las_filepath)
+    in_las = Path(las_filepath)
     # get database session
     db = next(get_db())
     # retrieve job associated with this task
@@ -215,15 +215,15 @@ def process_point_cloud(
 
     if not job:
         # remove uploaded file and raise exception
-        if os.path.exists(las_filepath):
-            shutil.rmtree(las_filepath.parents[1])
+        if os.path.exists(in_las):
+            shutil.rmtree(in_las.parents[1])
         logger.error("Could not find job in DB for upload process")
         return None
 
     if not data_product:
         # remove uploaded file and raise exception
-        if os.path.exists(las_filepath):
-            shutil.rmtree(las_filepath.parents[1])
+        if os.path.exists(in_las):
+            shutil.rmtree(in_las.parents[1])
         # remove job if exists
         if job:
             update_job_status(job, state="ERROR")
@@ -235,7 +235,7 @@ def process_point_cloud(
 
     try:
         # create entwine point cloud
-        ept_out_dir = las_filepath.parents[1] / "ept"
+        ept_out_dir = in_las.parents[1] / "ept"
         if not os.path.exists(ept_out_dir):
             os.makedirs(ept_out_dir)
         result = subprocess.run(
@@ -243,7 +243,7 @@ def process_point_cloud(
                 "entwine",
                 "build",
                 "-i",
-                las_filepath,
+                in_las,
                 "-o",
                 ept_out_dir,
             ],
@@ -253,21 +253,19 @@ def process_point_cloud(
         result.check_returncode()
     except Exception as e:
         logger.exception("Failed to build EPT from uploaded point cloud")
-        shutil.rmtree(las_filepath.parents[1])
+        shutil.rmtree(in_las.parents[1])
         update_job_status(job, state="ERROR")
         return None
     # create cloud optimized point cloud
     try:
         # construct path for compressed COPC
-        copc_laz_filepath = (
-            las_filepath.parents[1] / las_filepath.with_suffix(".copc.laz").name
-        )
+        copc_laz_filepath = in_las.parents[1] / in_las.with_suffix(".copc.laz").name
         result = subprocess.run(
             [
                 "untwine",
                 "--single_file",
                 "-i",
-                las_filepath,
+                in_las,
                 "-o",
                 copc_laz_filepath,
             ]
@@ -277,7 +275,7 @@ def process_point_cloud(
             shutil.rmtree(f"{copc_laz_filepath}_tmp")
     except Exception as e:
         logger.exception("Failed to build COPC from uploaded point cloud")
-        shutil.rmtree(las_filepath.parents[1])
+        shutil.rmtree(in_las.parents[1])
         update_job_status(job, state="ERROR")
         return None
 
@@ -292,8 +290,8 @@ def process_point_cloud(
     update_job_status(job, state="DONE")
 
     # remove originally uploaded las/laz
-    if os.path.exists(las_filepath.parent):
-        shutil.rmtree(las_filepath.parent)
+    if os.path.exists(in_las.parent):
+        shutil.rmtree(in_las.parent)
 
     return None
 
@@ -303,7 +301,7 @@ def update_job_status(
     state: str,
     data_product_id: UUID | None = None,
     name: str = "unknown",
-) -> models.Job:
+) -> models.Job | None:
     """Update job table with changes to a task's status.
 
     Args:

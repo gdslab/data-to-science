@@ -52,7 +52,6 @@ def get_colorbar_for_data_product_with_public_access(
         db, file_id=data_product_id, upload_dir=upload_dir
     )
     if not data_product:
-        path_params = request.path_params
         query_params = request.query_params
         return RedirectResponse(f"colorbar/user_access?{query_params}")
         raise HTTPException(
@@ -63,15 +62,18 @@ def get_colorbar_for_data_product_with_public_access(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Colorbars only available for single band data products",
         )
-
     data_product_dir = get_data_product_dir(
-        str(project.id), str(flight.id), str(data_product.id)
+        str(project_id), str(flight_id), str(data_product_id)
     )
     data_product_dir = data_product_dir / "colorbars"
 
     try:
         colorbar = ColorBar(
-            cmin=cmin, cmax=cmax, outpath=data_product_dir, cmap=cmap, refresh=refresh
+            cmin=cmin,
+            cmax=cmax,
+            outpath=str(data_product_dir),
+            cmap=cmap,
+            refresh=refresh,
         )
         colorbar_url = colorbar.generate_colorbar()
     except Exception as e:
@@ -126,7 +128,11 @@ def get_colorbar_for_data_product_with_user_access(
 
     try:
         colorbar = ColorBar(
-            cmin=cmin, cmax=cmax, outpath=data_product_dir, cmap=cmap, refresh=refresh
+            cmin=cmin,
+            cmax=cmax,
+            outpath=str(data_product_dir),
+            cmap=cmap,
+            refresh=refresh,
         )
         colorbar_url = colorbar.generate_colorbar()
     except Exception as e:

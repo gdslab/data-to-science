@@ -71,7 +71,7 @@ def test_token(current_user: models.User = Depends(deps.get_current_user)) -> An
 @router.get(
     "/confirm-email", response_class=RedirectResponse, status_code=status.HTTP_302_FOUND
 )
-def confirm_user_email_address(token: str, db: Session = Depends(deps.get_db)):
+def confirm_user_email_address(token: str, db: Session = Depends(deps.get_db)) -> Any:
     """Confirm email address for user account."""
     token_db_obj = crud.user.get_single_use_token(
         db, token_hash=security.get_token_hash(token, salt="confirm")
@@ -105,7 +105,7 @@ def request_new_email_confirmation_link(
     email: EmailStr,
     background_tasks: BackgroundTasks,
     db: Session = Depends(deps.get_db),
-):
+) -> Any:
     """Send a new email confirmation link to the provided email address."""
     # find user requesting a new token
     user = crud.user.get_by_email(db, email=email)
@@ -138,7 +138,7 @@ def change_password(
     new_password: Annotated[str, Form()],
     db: Session = Depends(deps.get_db),
     current_user: models.User = Depends(deps.get_current_approved_user),
-):
+) -> Any:
     """Update user password when provided with current password and new password."""
     user = crud.user.authenticate(
         db, email=current_user.email, password=current_password
@@ -158,7 +158,7 @@ def send_reset_password_by_email(
     email: EmailStr,
     background_tasks: BackgroundTasks,
     db: Session = Depends(deps.get_db),
-):
+) -> Any:
     # check if user with provided email exists
     user = crud.user.get_by_email(db, email=email)
     if not user:
@@ -185,7 +185,7 @@ def send_reset_password_by_email(
 @router.get("/approve-account")
 def approve_user_account(
     token: str, background_tasks: BackgroundTasks, db: Session = Depends(deps.get_db)
-):
+) -> Any:
     token_db_obj = crud.user.get_single_use_token(
         db, token_hash=security.get_token_hash(token, salt="approve")
     )
@@ -221,7 +221,7 @@ def approve_user_account(
 @router.post("/reset-password")
 def reset_user_password(
     password: str = Body(), token: str = Body(), db: Session = Depends(deps.get_db)
-):
+) -> Any:
     """Change password for user account."""
     token_db_obj = crud.user.get_single_use_token(
         db, token_hash=security.get_token_hash(token, salt="reset")

@@ -3,7 +3,7 @@ import os
 import shutil
 import tempfile
 from datetime import datetime
-from pathlib import Path, PosixPath
+from pathlib import Path
 from typing import Any, Sequence
 from uuid import UUID, uuid4
 
@@ -30,7 +30,7 @@ router = APIRouter()
 logger = logging.getLogger("__name__")
 
 
-def get_data_product_dir(project_id: str, flight_id: str, data_product_id: str) -> str:
+def get_data_product_dir(project_id: str, flight_id: str, data_product_id: str) -> Path:
     """Construct path to directory that will store uploaded data product.
 
     Args:
@@ -73,6 +73,10 @@ def upload_data_product(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
     # uploaded file info and new filename
+    if not files.filename:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="File not found"
+        )
     original_filename = Path(files.filename)
     new_filename = str(uuid4())
     # check if uploaded file has supported extension
@@ -215,8 +219,8 @@ def read_all_data_product(
 @router.delete("/{data_product_id}", response_model=schemas.DataProduct)
 def deactivate_data_product(
     data_product_id: UUID,
-    project: models.Project = Depends(deps.can_read_write_project),
-    flight: models.Flight = Depends(deps.can_read_write_flight),
+    project: schemas.Project = Depends(deps.can_read_write_project),
+    flight: schemas.Flight = Depends(deps.can_read_write_flight),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     if not project:
@@ -294,11 +298,11 @@ def run_processing_tool(
             flight_id=flight.id,
         )
         # get path for ndvi tool output raster
-        data_product_dir: PosixPath = get_data_product_dir(
+        data_product_dir: Path = get_data_product_dir(
             str(project.id), str(flight.id), str(ndvi_data_product.id)
         )
         ndvi_filename: str = str(uuid4()) + ".tif"
-        out_raster: PosixPath = data_product_dir / ndvi_filename
+        out_raster: Path = data_product_dir / ndvi_filename
         # run ndvi tool in background
         tool_params: dict = {
             "red_band_idx": toolbox_in.ndviRed,
@@ -330,11 +334,11 @@ def run_processing_tool(
             flight_id=flight.id,
         )
         # get path for exg tool output raster
-        data_product_dir: PosixPath = get_data_product_dir(
+        data_product_dir = get_data_product_dir(
             str(project.id), str(flight.id), str(exg_data_product.id)
         )
         exg_filename: str = str(uuid4()) + ".tif"
-        out_raster: PosixPath = data_product_dir / exg_filename
+        out_raster = data_product_dir / exg_filename
         # run exg tool in background
         tool_params = {
             "red_band_idx": toolbox_in.exgRed,

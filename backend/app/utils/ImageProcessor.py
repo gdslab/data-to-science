@@ -9,6 +9,7 @@ from typing import Any, NoReturn
 
 from pydantic import ValidationError
 
+from app.schemas.user_style import UserStyleCreate
 from app.utils.STACProperties import (
     ImageStructure,
     Metadata,
@@ -58,7 +59,7 @@ class ImageProcessor:
 
         return self.out_raster
 
-    def get_default_symbology(self) -> dict | NoReturn:
+    def get_default_symbology(self) -> UserStyleCreate | NoReturn:
         """Creates default symbology settings based on raster type and stats."""
         if (
             len(self.stac_properties["raster"]) > 0
