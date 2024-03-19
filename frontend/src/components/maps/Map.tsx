@@ -98,10 +98,7 @@ export default function Map({
       </MapContainer>
     );
   } else {
-    let eptPath = activeDataProduct.url.replace(
-      activeDataProduct.url.split('/').slice(-1)[0],
-      'ept/ept.json'
-    );
-    return <PotreeViewer eptPath={eptPath} />;
+    const copcPath = activeDataProduct.url;
+    return <PotreeViewer copcPath={copcPath} />;
   }
 }

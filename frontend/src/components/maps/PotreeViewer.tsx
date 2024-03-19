@@ -1,6 +1,6 @@
 import Frame from 'react-frame-component';
 
-export default function PotreeViewer({ eptPath }: { eptPath: string }) {
+export default function PotreeViewer({ copcPath }: { copcPath: string }) {
   const initialContent = `<!DOCTYPE html>
   <html>
     <head>
@@ -22,6 +22,7 @@ export default function PotreeViewer({ eptPath }: { eptPath: string }) {
       <script src='/potree/libs/openlayers3/ol.js'></script>
       <script src='/potree/libs/i18next/i18next.js'></script>
       <script src='/potree/libs/jstree/jstree.js'></script>
+      <script src='/potree/libs/copc/index.js'></script>
       <script src='/potree/libs/potree/potree.js'></script>
       <script src='/potree/libs/plasio/js/laslaz.js'></script>
 
@@ -51,7 +52,7 @@ export default function PotreeViewer({ eptPath }: { eptPath: string }) {
           viewer.toggleSidebar();
         });
         
-        const path = '${eptPath.replace(window.origin, '')}';
+        const path = '${copcPath.replace(window.origin, '')}';
         const name = 'Potree';
 
         Potree.loadPointCloud(path, name, function(e) {
