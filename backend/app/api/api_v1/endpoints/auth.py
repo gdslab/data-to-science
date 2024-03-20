@@ -50,7 +50,11 @@ def login_access_token(
         )
     access_token = security.create_access_token(user.id)
     response.set_cookie(
-        key="access_token", value=f"Bearer {access_token}", httponly=True
+        key="access_token",
+        value=f"Bearer {access_token}",
+        httponly=True,
+        secure=True,
+        samesite="none",
     )
     return status.HTTP_200_OK
 

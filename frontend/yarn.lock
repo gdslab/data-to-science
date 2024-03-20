@@ -1984,7 +1984,6 @@ __metadata:
     postcss: ^8.4.27
     react: ^18.2.0
     react-dom: ^18.2.0
-    react-frame-component: ^5.2.6
     react-leaflet: ^4.2.1
     react-leaflet-cluster: ^2.1.0
     react-router-dom: ^6.14.2
@@ -4179,17 +4178,6 @@ __metadata:
   version: 2.0.4
   resolution: "react-fast-compare@npm:2.0.4"
   checksum: 06046595f90a4e3e3a56f40a8078c00aa71bdb064ddb98343f577f546aa22e888831fd45f009c93b34707cc842b4c637737e956fd13d6f80607ee92fb9cf9a1c
-  languageName: node
-  linkType: hard
-
-"react-frame-component@npm:^5.2.6":
-  version: 5.2.6
-  resolution: "react-frame-component@npm:5.2.6"
-  peerDependencies:
-    prop-types: ^15.5.9
-    react: ">= 16.3"
-    react-dom: ">= 16.3"
-  checksum: 6669a0acc1532b53e80b14688b06d64bfab88103a1e4377a386f4350a51d76494b48ac1b8f6818bd60ae2d37cce015314ce725d807be72e9fe9258e9303bb6ec
   languageName: node
   linkType: hard
 

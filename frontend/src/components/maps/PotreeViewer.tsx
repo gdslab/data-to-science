@@ -1,4 +1,4 @@
-import Frame from 'react-frame-component';
+import { Fragment } from 'react';
 
 export default function PotreeViewer({ copcPath }: { copcPath: string }) {
   const initialContent = `<!DOCTYPE html>
@@ -69,8 +69,8 @@ export default function PotreeViewer({ copcPath }: { copcPath: string }) {
     </body>
   </html>`;
   return (
-    <Frame initialContent={initialContent} style={{ height: '100vh', width: '100vw' }}>
-      <></>
-    </Frame>
+    <Fragment>
+      <iframe className="h-full w-full" srcDoc={initialContent}></iframe>
+    </Fragment>
   );
 }
