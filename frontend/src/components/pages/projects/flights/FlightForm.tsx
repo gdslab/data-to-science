@@ -46,7 +46,7 @@ export default function FlightForm({
           <Formik
             initialValues={{
               ...getInitialValues(editMode ? flight : null),
-              pilotId: projectMembers[0].member_id,
+              pilotId: editMode ? flight.pilot_id : projectMembers[0].member_id,
             }}
             validationSchema={validationSchema}
             onSubmit={async (values, { setSubmitting, setStatus }) => {

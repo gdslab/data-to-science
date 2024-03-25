@@ -109,8 +109,9 @@ def test_get_users_normal_current_user(
     normal_user_access_token: str,
 ) -> None:
     """Verify normal user can be retrieved with JWT token."""
-    r = client.get(f"{settings.API_V1_STR}/users/current")
-    current_user = r.json()
+    response = client.get(f"{settings.API_V1_STR}/users/current")
+    assert response.status_code == status.HTTP_200_OK
+    current_user = response.json()
     assert current_user
     assert settings.EMAIL_TEST_USER == current_user["email"]
 
@@ -128,12 +129,12 @@ def test_update_user(
         first_name=full_name["first"],
         last_name=full_name["last"],
     )
-    r = client.put(
+    response = client.put(
         f"{settings.API_V1_STR}/users/{current_user.id}",
         json=user_in.model_dump(),
     )
-    assert 200 == r.status_code
-    updated_user = r.json()
+    assert response.status_code == status.HTTP_200_OK
+    updated_user = response.json()
     assert updated_user
     assert str(current_user.id) == updated_user["id"]
     assert full_name["first"] == updated_user["first_name"]

@@ -15,6 +15,7 @@ class FlightBase(BaseModel):
     sensor: str | None = None
     platform: str | None = None
     is_active: bool = True
+    pilot_id: UUID | None = None
 
 
 # properties to receive via API on creation

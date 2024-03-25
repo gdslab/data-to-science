@@ -1,3 +1,4 @@
+import os
 import secrets
 from typing import Any, Annotated
 
@@ -49,11 +50,17 @@ def login_access_token(
             status_code=status.HTTP_403_FORBIDDEN, detail="Account requires approval"
         )
     access_token = security.create_access_token(user.id)
+
+    # Toggle secure off if running tests
+    secure_cookie = True
+    if os.environ.get("RUNNING_TESTS", False):
+        secure_cookie = False
+
     response.set_cookie(
         key="access_token",
         value=f"Bearer {access_token}",
         httponly=True,
-        secure=True,
+        secure=secure_cookie,
         samesite="none",
     )
     return status.HTTP_200_OK
