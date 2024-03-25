@@ -171,8 +171,8 @@ export function getDataProductTileLayer(
           scale
         )}
         zIndex={500}
-        maxNativeZoom={21}
-        maxZoom={24}
+        maxNativeZoom={24}
+        maxZoom={26}
       />
     );
   }
