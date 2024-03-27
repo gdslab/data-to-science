@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { LockClosedIcon, LockOpenIcon } from '@heroicons/react/24/outline';
 
 import { Button } from '../../../../Buttons';
