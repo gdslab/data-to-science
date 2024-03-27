@@ -1197,6 +1197,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@uppy/companion-client@npm:^3.7.3":
+  version: 3.7.4
+  resolution: "@uppy/companion-client@npm:3.7.4"
+  dependencies:
+    "@uppy/utils": ^5.7.4
+    namespace-emitter: ^2.0.1
+    p-retry: ^6.1.0
+  peerDependencies:
+    "@uppy/core": ^3.9.3
+  checksum: 3e0c7d1477cc7a9a9b978d7f66057da12440f9439ed3df5464f05267b04f8cff44260c9c087d0c99c63897629337a7f452470a91092af72e4b5f3692f6ab72a6
+  languageName: node
+  linkType: hard
+
 "@uppy/core@npm:^3.3.1":
   version: 3.8.0
   resolution: "@uppy/core@npm:3.8.0"
@@ -1348,6 +1361,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@uppy/tus@npm:^3.5.3":
+  version: 3.5.3
+  resolution: "@uppy/tus@npm:3.5.3"
+  dependencies:
+    "@uppy/companion-client": ^3.7.3
+    "@uppy/utils": ^5.7.3
+    tus-js-client: ^3.1.3
+  peerDependencies:
+    "@uppy/core": ^3.9.2
+  checksum: 1cd52da80ed628cd924bba106fc3fd047894eb1b4fc3852d99182d0490f16982d393ba60d897f61d759d90e5dea0245fb30f4e13e032fdee8c9cd5a9fa58a77d
+  languageName: node
+  linkType: hard
+
 "@uppy/utils@npm:^5.4.3, @uppy/utils@npm:^5.5.2, @uppy/utils@npm:^5.6.0, @uppy/utils@npm:^5.7.0":
   version: 5.7.0
   resolution: "@uppy/utils@npm:5.7.0"
@@ -1355,6 +1381,16 @@ __metadata:
     lodash: ^4.17.21
     preact: ^10.5.13
   checksum: 6182c2342b5f6618a8b96aa15afc67fc6e8288aaa35f309ef9d1b6f5e7eefb1b939faa34194d1a1c817448f7fd8616c33822c57276ac5020a456b038f1b9afbe
+  languageName: node
+  linkType: hard
+
+"@uppy/utils@npm:^5.7.3, @uppy/utils@npm:^5.7.4":
+  version: 5.7.4
+  resolution: "@uppy/utils@npm:5.7.4"
+  dependencies:
+    lodash: ^4.17.21
+    preact: ^10.5.13
+  checksum: 76330cece6bb08906166f5629326efb42c9f93c718ba4100fb9d8436b1cd1aab070924760b5e8d36374c04eca58fa1c12aa9728ff206046423cd5af39281adb8
   languageName: node
   linkType: hard
 
@@ -1681,6 +1717,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"buffer-from@npm:^1.1.2":
+  version: 1.1.2
+  resolution: "buffer-from@npm:1.1.2"
+  checksum: 0448524a562b37d4d7ed9efd91685a5b77a50672c556ea254ac9a6d30e3403a517d8981f10e565db24e8339413b43c97ca2951f10e399c6125a0d8911f5679bb
+  languageName: node
+  linkType: hard
+
 "cacache@npm:^18.0.0":
   version: 18.0.2
   resolution: "cacache@npm:18.0.2"
@@ -1842,6 +1885,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"combine-errors@npm:^3.0.3":
+  version: 3.0.3
+  resolution: "combine-errors@npm:3.0.3"
+  dependencies:
+    custom-error-instance: 2.1.1
+    lodash.uniqby: 4.5.0
+  checksum: bd0b0d2a4020f9976b8fe8eb7d5aa855b43ecacdcb61ee1fc5664d73ff8c1d7d0bbe4dd948bea7ba1870518bfc5688b89941de7a4967659418b4664cdb02884f
+  languageName: node
+  linkType: hard
+
 "combined-stream@npm:^1.0.8":
   version: 1.0.8
   resolution: "combined-stream@npm:1.0.8"
@@ -1955,6 +2008,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"custom-error-instance@npm:2.1.1":
+  version: 2.1.1
+  resolution: "custom-error-instance@npm:2.1.1"
+  checksum: db01483864c9f4356b720b443a1f9b374758745a75199187a0ccc12505cf822bc801a0d8e3f96d727559880024f40e09667d5c08e5de0bff243c6b5ae0bd303c
+  languageName: node
+  linkType: hard
+
 "d2s-react@workspace:.":
   version: 0.0.0-use.local
   resolution: "d2s-react@workspace:."
@@ -1976,6 +2036,7 @@ __metadata:
     "@uppy/progress-bar": ^3.0.2
     "@uppy/react": ^3.1.3
     "@uppy/status-bar": ^3.2.3
+    "@uppy/tus": ^3.5.3
     "@uppy/xhr-upload": ^3.3.1
     "@vitejs/plugin-react": ^4.0.3
     autoprefixer: ^10.4.14
@@ -2784,7 +2845,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graceful-fs@npm:^4.2.6":
+"graceful-fs@npm:^4.2.4, graceful-fs@npm:^4.2.6":
   version: 4.2.11
   resolution: "graceful-fs@npm:4.2.11"
   checksum: ac85f94da92d8eb6b7f5a8b20ce65e43d66761c55ce85ac96df6865308390da45a8d3f0296dd3a663de65d30ba497bd46c696cc1e248c72b13d6d567138a4fc7
@@ -3060,6 +3121,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"is-stream@npm:^2.0.0":
+  version: 2.0.1
+  resolution: "is-stream@npm:2.0.1"
+  checksum: b8e05ccdf96ac330ea83c12450304d4a591f9958c11fd17bed240af8d5ffe08aedafa4c0f4cfccd4d28dc9d4d129daca1023633d5c11601a6cbc77521f6fae66
+  languageName: node
+  linkType: hard
+
 "isarray@npm:0.0.1":
   version: 0.0.1
   resolution: "isarray@npm:0.0.1"
@@ -3107,6 +3175,13 @@ __metadata:
   bin:
     jiti: bin/jiti.js
   checksum: a7bd5d63921c170eaec91eecd686388181c7828e1fa0657ab374b9372bfc1f383cf4b039e6b272383d5cb25607509880af814a39abdff967322459cca41f2961
+  languageName: node
+  linkType: hard
+
+"js-base64@npm:^3.7.2":
+  version: 3.7.7
+  resolution: "js-base64@npm:3.7.7"
+  checksum: d1b02971db9dc0fd35baecfaf6ba499731fb44fe3373e7e1d6681fbd3ba665f29e8d9d17910254ef8104e2cb8b44117fe4202d3dc54c7cafe9ba300fe5433358
   languageName: node
   linkType: hard
 
@@ -3293,6 +3368,32 @@ __metadata:
   languageName: node
   linkType: hard
 
+"lodash._baseiteratee@npm:~4.7.0":
+  version: 4.7.0
+  resolution: "lodash._baseiteratee@npm:4.7.0"
+  dependencies:
+    lodash._stringtopath: ~4.8.0
+  checksum: 814a7125b9e2fa7e436c4402eae842a200189e2839b56bd6cde7cd0a3628b60842f5d39a9f5dceaf8766669b2e4a17a36ce2a213d1d6a891c1bef8a6bda36ea9
+  languageName: node
+  linkType: hard
+
+"lodash._basetostring@npm:~4.12.0":
+  version: 4.12.0
+  resolution: "lodash._basetostring@npm:4.12.0"
+  checksum: ccaf83827f86be5c9daeb7b939f761d6a43f0de0781bc3b6772fcb8568fbcbfa1e1082c66e5e12dd23e00ac40a18349c5a793a6a552e3574cbbcb3e1545fcb4c
+  languageName: node
+  linkType: hard
+
+"lodash._baseuniq@npm:~4.6.0":
+  version: 4.6.0
+  resolution: "lodash._baseuniq@npm:4.6.0"
+  dependencies:
+    lodash._createset: ~4.0.0
+    lodash._root: ~3.0.0
+  checksum: 8c16fe2e80716b18c2f28bbcc902768141d432b0b98e03b30a2fba6a097377fabdc8753da232568375d2aa9502dc6b3a390200aa1467d2f685a582a46a271936
+  languageName: node
+  linkType: hard
+
 "lodash._bindcallback@npm:^3.0.0":
   version: 3.0.1
   resolution: "lodash._bindcallback@npm:3.0.1"
@@ -3311,6 +3412,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"lodash._createset@npm:~4.0.0":
+  version: 4.0.3
+  resolution: "lodash._createset@npm:4.0.3"
+  checksum: fb4450fbf4846aa7b420837ee44400b88664e28499388b7e04b4db38adca1305915f68a245fb2a87e031e7f440b997de4f360de6dea2712952520e97c7898de1
+  languageName: node
+  linkType: hard
+
 "lodash._getnative@npm:^3.0.0":
   version: 3.9.1
   resolution: "lodash._getnative@npm:3.9.1"
@@ -3322,6 +3430,22 @@ __metadata:
   version: 3.0.9
   resolution: "lodash._isiterateecall@npm:3.0.9"
   checksum: 95ace291d07f2930d9f038ec3c662f88cef48ccebd508665ce08a3251f126b2a645234ab734a6dff0987e1ae9ef74dad706e0d9a2bf26828e50d19c7a6238cab
+  languageName: node
+  linkType: hard
+
+"lodash._root@npm:~3.0.0":
+  version: 3.0.1
+  resolution: "lodash._root@npm:3.0.1"
+  checksum: 3e12c6f409ae13164a8db358f44a691f1e038dad4e25463802980d0ed641ed118c147b65657501c51778c885422b913264dfbe33ec0c5d676443dd630a7e685a
+  languageName: node
+  linkType: hard
+
+"lodash._stringtopath@npm:~4.8.0":
+  version: 4.8.0
+  resolution: "lodash._stringtopath@npm:4.8.0"
+  dependencies:
+    lodash._basetostring: ~4.12.0
+  checksum: 00663b317796333e6315ebb4e8b590e68845de10d5d25c7585751fd9d28adf3e60e1ce85a6fbb6a0d440447c841465b91877e761239e358231eed2f52f0a5472
   languageName: node
   linkType: hard
 
@@ -3372,6 +3496,23 @@ __metadata:
   version: 3.6.1
   resolution: "lodash.restparam@npm:3.6.1"
   checksum: 8bda0c7aaeac93da2b7e856bfeec8e6fdefb4d7eadfe6fd84775312a729fc1cb985636d922fe33b49f41aba135204962f4b853d7946105b7704102edb2bf6082
+  languageName: node
+  linkType: hard
+
+"lodash.throttle@npm:^4.1.1":
+  version: 4.1.1
+  resolution: "lodash.throttle@npm:4.1.1"
+  checksum: 129c0a28cee48b348aef146f638ef8a8b197944d4e9ec26c1890c19d9bf5a5690fe11b655c77a4551268819b32d27f4206343e30c78961f60b561b8608c8c805
+  languageName: node
+  linkType: hard
+
+"lodash.uniqby@npm:4.5.0":
+  version: 4.5.0
+  resolution: "lodash.uniqby@npm:4.5.0"
+  dependencies:
+    lodash._baseiteratee: ~4.7.0
+    lodash._baseuniq: ~4.6.0
+  checksum: 40a4fdd4c31323fcb6db91ec3124020333212ca1f13e75cc9939decdd33e8b176d204fb277be36a51a855c2c90e14d67932b3b130b2f0eedc729e4cb9cdcaed1
   languageName: node
   linkType: hard
 
@@ -4126,6 +4267,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"proper-lockfile@npm:^4.1.2":
+  version: 4.1.2
+  resolution: "proper-lockfile@npm:4.1.2"
+  dependencies:
+    graceful-fs: ^4.2.4
+    retry: ^0.12.0
+    signal-exit: ^3.0.2
+  checksum: 00078ee6a61c216a56a6140c7d2a98c6c733b3678503002dc073ab8beca5d50ca271de4c85fca13b9b8ee2ff546c36674d1850509b84a04a5d0363bcb8638939
+  languageName: node
+  linkType: hard
+
 "property-expr@npm:^2.0.5":
   version: 2.0.6
   resolution: "property-expr@npm:2.0.6"
@@ -4144,6 +4296,13 @@ __metadata:
   version: 2.3.1
   resolution: "punycode@npm:2.3.1"
   checksum: bb0a0ceedca4c3c57a9b981b90601579058903c62be23c5e8e843d2c2d4148a3ecf029d5133486fb0e1822b098ba8bba09e89d6b21742d02fa26bda6441a6fb2
+  languageName: node
+  linkType: hard
+
+"querystringify@npm:^2.1.1":
+  version: 2.2.0
+  resolution: "querystringify@npm:2.2.0"
+  checksum: 5641ea231bad7ef6d64d9998faca95611ed4b11c2591a8cae741e178a974f6a8e0ebde008475259abe1621cb15e692404e6b6626e927f7b849d5c09392604b15
   languageName: node
   linkType: hard
 
@@ -4341,6 +4500,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"requires-port@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "requires-port@npm:1.0.0"
+  checksum: eee0e303adffb69be55d1a214e415cf42b7441ae858c76dfc5353148644f6fd6e698926fc4643f510d5c126d12a705e7c8ed7e38061113bdf37547ab356797ff
+  languageName: node
+  linkType: hard
+
 "resolve-from@npm:^4.0.0":
   version: 4.0.0
   resolution: "resolve-from@npm:4.0.0"
@@ -4517,6 +4683,13 @@ __metadata:
   version: 3.0.0
   resolution: "shebang-regex@npm:3.0.0"
   checksum: 1a2bcae50de99034fcd92ad4212d8e01eedf52c7ec7830eedcf886622804fe36884278f2be8be0ea5fde3fd1c23911643a4e0f726c8685b61871c8908af01222
+  languageName: node
+  linkType: hard
+
+"signal-exit@npm:^3.0.2":
+  version: 3.0.7
+  resolution: "signal-exit@npm:3.0.7"
+  checksum: a2f098f247adc367dffc27845853e9959b9e88b01cb301658cfe4194352d8d2bb32e18467c786a7fe15f1d44b233ea35633d076d5e737870b7139949d1ab6318
   languageName: node
   linkType: hard
 
@@ -4945,6 +5118,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"tus-js-client@npm:^3.1.3":
+  version: 3.1.3
+  resolution: "tus-js-client@npm:3.1.3"
+  dependencies:
+    buffer-from: ^1.1.2
+    combine-errors: ^3.0.3
+    is-stream: ^2.0.0
+    js-base64: ^3.7.2
+    lodash.throttle: ^4.1.1
+    proper-lockfile: ^4.1.2
+    url-parse: ^1.5.7
+  checksum: 6f25dbbdbe1de51f44688dfb9ee78cae8deb987ac0a8e5d7d3e09a52ed0a7bfa5e2c3e39e82f0913beb241da78ddf42bdcb4c44369ea57f7cf15fad17e5b954f
+  languageName: node
+  linkType: hard
+
 "type-check@npm:^0.4.0, type-check@npm:~0.4.0":
   version: 0.4.0
   resolution: "type-check@npm:0.4.0"
@@ -5033,6 +5221,16 @@ __metadata:
   dependencies:
     punycode: ^2.1.0
   checksum: 7167432de6817fe8e9e0c9684f1d2de2bb688c94388f7569f7dbdb1587c9f4ca2a77962f134ec90be0cc4d004c939ff0d05acc9f34a0db39a3c797dada262633
+  languageName: node
+  linkType: hard
+
+"url-parse@npm:^1.5.7":
+  version: 1.5.10
+  resolution: "url-parse@npm:1.5.10"
+  dependencies:
+    querystringify: ^2.1.1
+    requires-port: ^1.0.0
+  checksum: fbdba6b1d83336aca2216bbdc38ba658d9cfb8fc7f665eb8b17852de638ff7d1a162c198a8e4ed66001ddbf6c9888d41e4798912c62b4fd777a31657989f7bdf
   languageName: node
   linkType: hard
 

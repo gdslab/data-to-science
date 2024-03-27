@@ -3,6 +3,7 @@ import Uppy from '@uppy/core';
 import Dashboard from '@uppy/react/lib/Dashboard';
 import DashboardModal from '@uppy/react/lib/DashboardModal';
 import XHRUpload from '@uppy/xhr-upload';
+import Tus from '@uppy/tus';
 
 // Don't forget the CSS: core and the UI components + plugins you are using.
 import '@uppy/core/dist/style.min.css';
@@ -12,12 +13,13 @@ import { FeatureCollection } from './pages/projects/Project';
 
 // Don’t forget to keep the Uppy instance outside of your component.
 function createUppy(upload_endpoint: string) {
-  return new Uppy().use(XHRUpload, {
-    endpoint: upload_endpoint,
-    method: 'post',
-    formData: true,
-    fieldName: 'files',
-  });
+  // return new Uppy().use(XHRUpload, {
+  //   endpoint: upload_endpoint,
+  //   method: 'post',
+  //   formData: true,
+  //   fieldName: 'files',
+  // });
+  return new Uppy().use(Tus, { endpoint: '/files' });
 }
 
 interface Restrictions {

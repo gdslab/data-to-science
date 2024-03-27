@@ -127,6 +127,15 @@ services:
     depends_on:
       - frontend
 
+  tus:
+    image: tusproject/tusd:latest
+    volumes:
+      - user-data:/static
+    restart: always
+    depends_on:
+      - frontend
+      - backend
+
 volumes:
   db-data:
   log-data:
