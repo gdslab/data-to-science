@@ -2,6 +2,7 @@ import logging
 import time
 
 from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.background import BackgroundTask
 from titiler.core.factory import TilerFactory
@@ -16,6 +17,11 @@ from app.utils.ProtectedStaticFiles import ProtectedStaticFiles
 app = FastAPI(
     title=settings.API_PROJECT_NAME, openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
+
+app.add_middleware(
+    CORSMiddleware, allow_origins=["*"], allow_methods=["GET"], allow_headers=["*"]
+)
+
 cog = TilerFactory()
 
 setup_logger()
