@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import Alert, { Status } from '../Alert';
 import { Button } from '../Buttons';
@@ -11,15 +12,19 @@ export default function ShareControls({
   dataProduct,
   project,
   symbologySettings,
+  refreshUrl,
 }: {
   dataProduct: DataProduct;
   project: Project;
-  symbologySettings: SymbologySettings;
+  symbologySettings?: SymbologySettings;
+  refreshUrl?: string;
 }) {
   const [accessOption, setAccessOption] = useState<boolean>(dataProduct.public);
   const [includeSymbology, setIncludeSymbology] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
+
+  const navigate = useNavigate();
 
   const { activeDataProductDispatch } = useMapContext();
 
@@ -35,6 +40,11 @@ export default function ShareControls({
         setStatus({ type: 'success', msg: 'Access updated' });
         activeDataProductDispatch({ type: 'update', payload: { public: newAccess } });
         setTimeout(() => setStatus(null), 3000);
+        if (refreshUrl) {
+          navigate(refreshUrl, {
+            state: { reload: true },
+          });
+        }
       } else {
         setStatus({ type: 'error', msg: 'Unable to change access' });
         setTimeout(() => setStatus(null), 3000);
@@ -157,20 +167,22 @@ export default function ShareControls({
         >
           {isCopying ? 'Copied to clipboard' : 'Copy file link'}
         </Button>
-        <div className="flex items-center">
-          <input
-            id="default-checkbox"
-            type="checkbox"
-            className="w-4 h-4 text-slate-600 accent-slate-600 bg-gray-100 border-gray-300 rounded focus:ring-slate-500 dark:focus:ring-slate-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-            onChange={(e) => setIncludeSymbology(e.target.checked)}
-          />
-          <label
-            htmlFor="default-checkbox"
-            className="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-          >
-            Include symbology
-          </label>
-        </div>
+        {symbologySettings ? (
+          <div className="flex items-center">
+            <input
+              id="default-checkbox"
+              type="checkbox"
+              className="w-4 h-4 text-slate-600 accent-slate-600 bg-gray-100 border-gray-300 rounded focus:ring-slate-500 dark:focus:ring-slate-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+              onChange={(e) => setIncludeSymbology(e.target.checked)}
+            />
+            <label
+              htmlFor="default-checkbox"
+              className="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+            >
+              Include symbology
+            </label>
+          </div>
+        ) : null}
       </div>
       {status ? <Alert alertType={status.type}>{status.msg}</Alert> : null}
     </div>

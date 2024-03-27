@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ExclamationCircleIcon, EyeIcon, PhotoIcon } from '@heroicons/react/24/outline';
 
@@ -8,6 +8,7 @@ import { isGeoTIFF } from './DataProductsTable';
 import DataProductDeleteModal from './DataProductDeleteModal';
 import ToolboxModal from './ToolboxModal';
 import { useProjectContext } from '../../ProjectContext';
+import DataProductShareModal from './DataProductShareModal';
 
 function ProgressBar() {
   return (
@@ -92,7 +93,10 @@ export default function DataProductCard({
             <div className="flex items-center justify-between text-lg">
               <span>{dataProduct.data_type.split('_').join(' ').toUpperCase()}</span>
               {projectRole === 'owner' ? (
-                <DataProductDeleteModal dataProduct={dataProduct} />
+                <div className="flex flex-row gap-4">
+                  <DataProductShareModal dataProduct={dataProduct} />
+                  <DataProductDeleteModal dataProduct={dataProduct} />
+                </div>
               ) : null}
             </div>
             {/* action buttons */}

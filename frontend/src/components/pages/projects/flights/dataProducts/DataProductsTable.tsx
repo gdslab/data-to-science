@@ -16,6 +16,7 @@ import { useProjectContext } from '../../ProjectContext';
 import { Project } from '../../ProjectList';
 import Table, { TableBody, TableHead } from '../../../../Table';
 import ToolboxModal from './ToolboxModal';
+import DataProductShareModal from './DataProductShareModal';
 
 export function isGeoTIFF(dataType: string): boolean {
   return dataType !== 'point_cloud';
@@ -54,6 +55,13 @@ function getDataProductActions(
     label: 'Toolbox',
   });
 
+  const getShareAction = (dataProduct: DataProductStatus) => ({
+    key: `action-share-${dataProduct.id}`,
+    type: 'component',
+    component: <DataProductShareModal dataProduct={dataProduct} tableView={true} />,
+    label: 'Share',
+  });
+
   const getViewAction = (dataProduct: DataProductStatus) => ({
     key: `action-view-${dataProduct.id}`,
     type: 'component',
@@ -77,6 +85,7 @@ function getDataProductActions(
     return data.map((dataProduct) => [
       getViewAction(dataProduct),
       getToolboxAction(dataProduct),
+      getShareAction(dataProduct),
       getDeleteAction(dataProduct),
     ]);
   } else if (role === 'manager') {
