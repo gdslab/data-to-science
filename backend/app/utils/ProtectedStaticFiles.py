@@ -53,19 +53,19 @@ async def verify_static_file_access(request: Request) -> None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="data product not found"
             )
-        if data_product != "point_cloud":
-            file_permission = crud.file_permission.get_by_data_product(
-                SessionLocal(), file_id=data_product_id
+
+        file_permission = crud.file_permission.get_by_data_product(
+            SessionLocal(), file_id=data_product_id
+        )
+        # if file is deactivated return 404
+        if file_permission and file_permission.file.is_active is False:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="data product not found",
             )
-            # if file is deactivated return 404
-            if file_permission and file_permission.file.is_active is False:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="data product not found",
-                )
-            # public, return file
-            if file_permission and file_permission.is_public:
-                return
+        # public, return file
+        if file_permission and file_permission.is_public:
+            return
 
     # restricted access authorization
     access_token = request.cookies.get("access_token")
