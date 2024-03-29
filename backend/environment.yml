@@ -37,4 +37,5 @@ dependencies:
   - pytest-cov
   - types-aiofiles
   - types-psycopg2
+  - laspy
 prefix: /opt/conda/envs/d2s

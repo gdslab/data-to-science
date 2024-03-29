@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ExclamationCircleIcon, EyeIcon, PhotoIcon } from '@heroicons/react/24/outline';
 
@@ -25,6 +25,7 @@ export default function DataProductCard({
 }: {
   dataProduct: DataProductStatus;
 }) {
+  const [invalidPreviews, setInvalidPreviews] = useState<string[]>([]);
   const [isCopied, setIsCopied] = useState(false);
   const { project, projectRole } = useProjectContext();
   const navigate = useNavigate();
@@ -59,8 +60,21 @@ export default function DataProductCard({
               ) : dataProduct.status === 'SUCCESS' &&
                 dataProduct.data_type === 'point_cloud' ? (
                 <div className="flex items-center justify-center w-full h-48">
-                  <span className="sr-only">Preview not available</span>
-                  <PhotoIcon className="h-full" />
+                  {invalidPreviews.indexOf(dataProduct.id) < 0 ? (
+                    <img
+                      className="object-scale-down h-full"
+                      src={dataProduct.url.replace('copc.laz', 'png')}
+                      alt="Preview of data product"
+                      onError={() => {
+                        setInvalidPreviews([...invalidPreviews, dataProduct.id]);
+                      }}
+                    />
+                  ) : (
+                    <Fragment>
+                      <span className="sr-only">Preview not available</span>
+                      <PhotoIcon className="h-full" />
+                    </Fragment>
+                  )}
                   <div
                     className="absolute bottom-0 w-full text-center text-white p-1 bg-accent3/80 cursor-pointer"
                     onClick={() => {

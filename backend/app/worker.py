@@ -14,6 +14,7 @@ from app.core.celery_app import celery_app
 from app.schemas.data_product import DataProduct, DataProductUpdate
 from app.schemas.job import JobUpdate
 
+from app.utils import gen_preview_from_pointcloud
 from app.utils.ImageProcessor import ImageProcessor
 from app.utils.Toolbox import Toolbox
 
@@ -180,6 +181,32 @@ def process_geotiff(
     return None
 
 
+@celery_app.task(name="point_cloud_preview_img_task")
+def generate_point_cloud_preview_image(in_las: str) -> None:
+    """Celery task for creating a preview image for a point cloud.
+
+    Args:
+        in_las (str): Path to point cloud.
+
+    Raises:
+        Exception: Raise if preview image generation script fails.
+
+    Returns:
+        _type_: _description_
+    """
+    try:
+        preview_out_path = in_las.replace(".copc.laz", ".png")
+        gen_preview_from_pointcloud.create_preview_image(
+            input_las_path=Path(in_las),
+            preview_out_path=Path(preview_out_path),
+        )
+    except Exception as e:
+        logger.exception("Unable to generate preview image for uploaded point cloud")
+        # if this file is present the preview image generation will be skipped next time
+        with open(Path(in_las).parent / "preview_failed", "w") as preview:
+            pass
+
+
 @celery_app.task(name="point_cloud_upload_task")
 def process_point_cloud(
     original_filename: str,
@@ -233,46 +260,43 @@ def process_point_cloud(
     # update job status to indicate process has started
     update_job_status(job, state="INPROGRESS")
 
+    # create preview image with uploaded point cloud
     try:
-        # create entwine point cloud
-        ept_out_dir = in_las.parents[1] / "ept"
-        if not os.path.exists(ept_out_dir):
-            os.makedirs(ept_out_dir)
-        result = subprocess.run(
-            [
-                "entwine",
-                "build",
-                "-i",
-                in_las,
-                "-o",
-                ept_out_dir,
-            ],
-            stdout=subprocess.PIPE,
-            check=True,
+        if in_las.name.endswith(".copc.laz"):
+            preview_out_path = in_las.parents[1] / in_las.name.replace(
+                ".copc.laz", ".png"
+            )
+        else:
+            preview_out_path = in_las.parents[1] / in_las.with_suffix(".png").name
+        gen_preview_from_pointcloud.create_preview_image(
+            input_las_path=in_las,
+            preview_out_path=preview_out_path,
         )
-        result.check_returncode()
     except Exception as e:
-        logger.exception("Failed to build EPT from uploaded point cloud")
-        shutil.rmtree(in_las.parents[1])
-        update_job_status(job, state="ERROR")
-        return None
+        logger.exception("Unable to generate preview image for uploaded point cloud")
+
     # create cloud optimized point cloud
     try:
         # construct path for compressed COPC
-        copc_laz_filepath = in_las.parents[1] / in_las.with_suffix(".copc.laz").name
-        result = subprocess.run(
-            [
-                "untwine",
-                "--single_file",
-                "-i",
-                in_las,
-                "-o",
-                copc_laz_filepath,
-            ]
-        )
-        # clean up temp directory created by untwine
-        if os.path.exists(f"{copc_laz_filepath}_tmp"):
-            shutil.rmtree(f"{copc_laz_filepath}_tmp")
+        if in_las.name.endswith(".copc.laz"):
+            # skip if already copc laz (note - need to revise to actually verify format)
+            copc_laz_filepath = in_las
+        else:
+            copc_laz_filepath = in_las.parents[1] / in_las.with_suffix(".copc.laz").name
+
+            result = subprocess.run(
+                [
+                    "untwine",
+                    "--single_file",
+                    "-i",
+                    in_las,
+                    "-o",
+                    copc_laz_filepath,
+                ]
+            )
+            # clean up temp directory created by untwine
+            if os.path.exists(f"{copc_laz_filepath}_tmp"):
+                shutil.rmtree(f"{copc_laz_filepath}_tmp")
     except Exception as e:
         logger.exception("Failed to build COPC from uploaded point cloud")
         shutil.rmtree(in_las.parents[1])

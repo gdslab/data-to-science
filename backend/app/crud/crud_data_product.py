@@ -146,15 +146,10 @@ def set_public_attr(data_product_obj: DataProduct, is_public: bool):
 
 
 def set_url_attr(data_product_obj: DataProduct, upload_dir: str):
-    # update for point cloud ept.json
     try:
         static_url = settings.API_DOMAIN + settings.STATIC_DIR
-        if data_product_obj.data_type == "point_cloud":
-            relative_path = Path(data_product_obj.filepath).relative_to(upload_dir)
-            setattr(data_product_obj, "url", f"{static_url}/{str(relative_path)}")
-        else:
-            relative_path = Path(data_product_obj.filepath).relative_to(upload_dir)
-            setattr(data_product_obj, "url", f"{static_url}/{str(relative_path)}")
+        relative_path = Path(data_product_obj.filepath).relative_to(upload_dir)
+        setattr(data_product_obj, "url", f"{static_url}/{str(relative_path)}")
     except ValueError:
         setattr(data_product_obj, "url", None)
 

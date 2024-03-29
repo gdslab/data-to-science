@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import Any, Sequence
 from uuid import UUID
 
@@ -8,6 +9,7 @@ from sqlalchemy.orm import Session
 from app import crud, models, schemas
 from app.api import deps
 from app.core.config import settings
+from app.worker import generate_point_cloud_preview_image
 
 router = APIRouter()
 
