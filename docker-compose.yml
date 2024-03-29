@@ -117,19 +117,27 @@ services:
       - db.env
 
   proxy:
-    image: nginxinc/nginx-unprivileged:latest
+    build: 
+      context: ./nginx
+      dockerfile: nginx.dockerfile
+      args:
+        - DEFAULT_CONF=dev
+    image: d2s-proxy:dev
     platform: linux/x86_64
-    volumes:
-      - ./nginx/d2s-proxy.dev.conf:/etc/nginx/conf.d/default.conf
+    tmpfs:
+      - /tmp
     ports:
       - "0.0.0.0:8000:80"
     restart: always
     depends_on:
       - frontend
 
-  tus:
+  tusd:
     image: tusproject/tusd:latest
+    command: -verbose -behind-proxy -hooks-dir /srv/tusd-hooks
     volumes:
+      - ./tusd/hooks:/srv/tusd-hooks
+      - tusd-data:/srv/tusd-data/data
       - user-data:/static
     restart: always
     depends_on:
@@ -140,3 +148,4 @@ volumes:
   db-data:
   log-data:
   user-data:
+  tusd-data:

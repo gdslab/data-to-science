@@ -1,0 +1,82 @@
+upstream frontend {
+    server  frontend:8080;
+}
+
+upstream backend {
+    server  backend:5000;
+}
+
+upstream tusd {
+    server tusd:8080;
+}
+
+server {
+    listen 80;
+    server_name localhost;
+
+    location / {
+        proxy_set_header Host $host;
+
+        proxy_pass http://frontend;
+    }
+
+    location /api {
+        # forward incoming requests to FastAPI backend container
+        proxy_pass  http://backend;
+
+        # disable request and response buffering
+        proxy_request_buffering off;
+        proxy_buffering         off;
+        proxy_http_version      1.1;
+        
+        # add X-Forwarded-* headers
+        proxy_set_header X-Forwarded-Host  $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # disable checking request body size and increase timeouts
+        client_max_body_size 0;
+        client_body_timeout 600s;
+        keepalive_timeout 600s;
+    }
+
+    location /files {
+        # forward incoming requests to tusd container
+        proxy_pass http://tusd;
+
+        # disable request and response buffering
+        proxy_request_buffering off;
+        proxy_buffering         off;
+        proxy_http_version      1.1;
+        
+        # add X-Forwarded-* headers
+        proxy_set_header X-Forwarded-Host  $http_host;
+        proxy_set_header X-Forwarded-Proto https;
+        
+        # disable checking request body size and increase timeouts
+        client_max_body_size 0;
+        client_body_timeout 600s;
+        keepalive_timeout 600s;
+
+        # websocket proxying
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+
+    location /static {
+        proxy_set_header Host $host;
+
+        proxy_pass http://backend;
+    }
+
+    location /potree {
+        proxy_set_header Host $host;
+
+        proxy_pass http://backend;
+    }
+
+    location /cog {
+        proxy_set_header Host $host;
+
+        proxy_pass http://backend;
+    }
+}

@@ -4,10 +4,14 @@ ARG DEFAULT_CONF
 
 WORKDIR /etc/nginx
 
-COPY ./${DEFAULT_CONF} ./conf.d/default.conf
-
 EXPOSE 80
 
-ENTRYPOINT ["nginx"]
+# will copy conf templates from templates dir to /etc/nginx/conf.d/ substituting any
+# environment variables present in the templates
+COPY docker-entrypoint.sh /
+COPY 20-envsubst-on-templates.sh /docker-entrypoint.d
+COPY templates/${DEFAULT_CONF}/default.conf.template /etc/nginx/templates/
 
-CMD ["-g", "daemon off;"]
+ENTRYPOINT ["/docker-entrypoint.sh"]
+
+CMD ["nginx", "-g", "daemon off;"]
