@@ -74,12 +74,27 @@ services:
   celery_worker:
     image: d2s-api:dev
     platform: linux/x86_64
-    command: /app/worker-start.sh
+    command: /app/celery/worker-start.sh
     volumes:
       - user-data:/static
     restart: always
     depends_on:
-      - backend
+      - redis
+      - db
+    env_file:
+      - backend.env
+      - db.env
+
+  celery_beat:
+    image: d2s-api:dev
+    platform: linux/x86_64
+    command: /app/celery/beat-start.sh
+    volumes:
+      - user-data:/static
+    restart: always
+    depends_on:
+      - redis
+      - db
     env_file:
       - backend.env
       - db.env
@@ -87,17 +102,15 @@ services:
   flower:
     image: d2s-api:dev
     platform: linux/x86_64
-    command: /app/flower-start.sh
+    command: /app/celery/flower-start.sh
     volumes:
       - user-data:/user-data
     ports:
       - 5555:5555
     restart: always
     depends_on:
-      redis:
-        condition: service_started
-      db:
-        condition: service_healthy
+      - redis
+      - db
     env_file:
       - backend.env
       - db.env

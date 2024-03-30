@@ -22,9 +22,15 @@ from app.utils.Toolbox import Toolbox
 logger = get_task_logger(__name__)
 
 
-@celery_app.task(name="test_celery")
-def test_celery(word: str) -> str:
-    return f"test task return {word}"
+# Schedule periodic tasks here
+# celery_app.conf.beat_schedule = {
+#     "print-hello-every-10s": {"task": "tasks.test", "schedule": 10.0, "args": ("hello")}
+# }
+
+
+# @celery_app.task
+# def test(arg):
+#     print(arg)
 
 
 @celery_app.task(name="toolbox_task")

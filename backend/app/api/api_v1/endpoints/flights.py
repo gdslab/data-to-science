@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app import crud, models, schemas
 from app.api import deps
 from app.core.config import settings
-from app.worker import generate_point_cloud_preview_image
+from app.tasks import generate_point_cloud_preview_image
 
 router = APIRouter()
 

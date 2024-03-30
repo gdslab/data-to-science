@@ -19,6 +19,9 @@ ENV CONDA_ENV_PATH=/opt/conda/envs/d2s
 # set number of workers for uvicorn process
 ENV UVICORN_WORKERS=$NUM_OF_WORKERS
 
+# set path for celery beats schedule
+ENV CELERY_BEAT_SCHEDULE=/var/run/celery/celerybeat-schedule
+
 # matplotlib tmp dir
 ENV MPLCONFIGDIR=/var/tmp/d2s
 
@@ -70,8 +73,10 @@ COPY --chown=d2s:d2s . /app
 RUN mkdir -p /app/logs \
     && mkdir /var/tmp/d2s \
     && mkdir /static \
+    && mkdir /var/run/celery \
     && chown -R d2s:d2s /app/logs \
     && chown -R d2s:d2s /static \
+    && chown -R d2s:d2s /var/run/celery \
     && chown -R d2s:d2s /var/tmp/d2s
 
 # change to non-root user

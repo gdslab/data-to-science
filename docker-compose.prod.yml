@@ -118,16 +118,48 @@ services:
   celery_worker:
     image: d2s-api:latest
     platform: linux/x86_64
-    command: /app/worker-start.sh
+    command: /app/celery/worker-start.sh
     volumes:
       - user-data:/static
     read_only: true
     tmpfs:
       - /tmp
     depends_on:
-      - backend
+      - redis
+      - db
     healthcheck:
-      test: ["CMD", "celery", "-A", "app.worker", "inspect", "ping"]
+      test: ["CMD", "celery", "-A", "app.tasks", "inspect", "ping"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+    security_opt:
+      - no-new-privileges=true
+    env_file:
+      - backend.env
+      - db.env
+
+  celery_beat:
+    image: d2s-api:latest
+    platform: linux/x86_64
+    command: /app/celery/beat-start.sh
+    volumes:
+      - celery-data:/var/run/celery
+      - user-data:/static
+    read_only: true
+    tmpfs:
+      - /tmp
+    depends_on:
+      - redis
+      - db
+    healthcheck:
+      test: ["CMD", "celery", "-A", "app.tasks", "inspect", "ping"]
       interval: 1m30s
       timeout: 30s
       retries: 5
@@ -180,3 +212,4 @@ volumes:
   db-data:
   log-data:
   user-data:
+  celery-data:
