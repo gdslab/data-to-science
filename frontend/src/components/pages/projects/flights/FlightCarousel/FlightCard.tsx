@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { PhotoIcon } from '@heroicons/react/24/outline';
 
 import { LinkButton, LinkOutlineButton } from '../../../../Buttons';
@@ -10,6 +11,7 @@ import { useProjectContext } from '../../ProjectContext';
 import FlightDeleteModal from '../FlightDeleteModal';
 
 export default function FlightCard({ flight }: { flight: Flight }) {
+  const [invalidPreviews, setInvalidPreviews] = useState<string[]>([]);
   const { projectRole } = useProjectContext();
 
   const dataProduct = flight.data_products.length > 0 ? flight.data_products[0] : null;
@@ -26,6 +28,17 @@ export default function FlightCard({ flight }: { flight: Flight }) {
                   className="object-scale-down h-40"
                   src={dataProduct.url.replace('tif', 'jpg')}
                   alt="Preview of data product"
+                />
+              ) : dataProduct &&
+                dataProduct.data_type === 'point_cloud' &&
+                invalidPreviews.indexOf(dataProduct.id) < 0 ? (
+                <img
+                  className="object-scale-down h-40"
+                  src={dataProduct.url.replace('copc.laz', 'png')}
+                  alt="Preview of data product"
+                  onError={() => {
+                    setInvalidPreviews([...invalidPreviews, dataProduct.id]);
+                  }}
                 />
               ) : (
                 <div className="flex items-center justify-center w-full h-40 bg-white">
