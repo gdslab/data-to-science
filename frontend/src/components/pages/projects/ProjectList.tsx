@@ -40,6 +40,7 @@ export async function loader() {
 
 export default function ProjectList() {
   const [open, setOpen] = useState(false);
+  const [searchText, setSearchText] = useState('');
   const projects = useLoaderData() as Project[];
 
   const { locationDispatch, project, projectDispatch } = useProjectContext();
@@ -53,10 +54,14 @@ export default function ProjectList() {
     projectDispatch({ type: 'clear', payload: null });
   }, [project]);
 
+  function updateSearchText(e) {
+    setSearchText(e.target.value);
+  }
+
   return (
     <div className="h-full p-4">
       <div className="h-full flex flex-col gap-4">
-        <div>
+        <div className="flex flex-col gap-4">
           <h1>Projects</h1>
           <div className="w-96">
             <Button icon="folderplus" onClick={() => setOpen(true)}>
@@ -66,10 +71,55 @@ export default function ProjectList() {
               <ProjectForm setModalOpen={setOpen} />
             </Modal>
           </div>
+          <div className="flex flex-row gap-4">
+            <div className="relative min-w-96">
+              <label htmlFor="Search" className="sr-only">
+                {' '}
+                Search{' '}
+              </label>
+              <input
+                type="text"
+                id="Search"
+                placeholder="Search for project by name"
+                className="w-full rounded-md border-gray-200 px-4 py-2.5 pe-10 shadow sm:text-sm"
+                value={searchText}
+                onChange={updateSearchText}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    setSearchText('');
+                  }
+                }}
+              />
+              <span className="absolute inset-y-0 end-0 grid w-10 place-content-center">
+                <span className="sr-only">Search</span>
+
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.5"
+                  stroke="currentColor"
+                  className="h-4 w-4 text-slate-400"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                  />
+                </svg>
+              </span>
+            </div>
+          </div>
         </div>
         {projects.length > 0 ? (
-          <div className="h-full mt-6 overflow-auto">
+          <div className="h-full overflow-auto">
             {projects
+              .filter(
+                (project) =>
+                  !project.title ||
+                  project.title.toLowerCase().includes(searchText.toLowerCase())
+              )
               .sort((a, b) => (a.title > b.title ? 1 : b.title > a.title ? -1 : 0))
               .map((project) => (
                 <Link key={project.id} to={`/projects/${project.id}`} className="block">
