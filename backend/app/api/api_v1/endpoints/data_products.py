@@ -22,7 +22,6 @@ from sqlalchemy.orm import Session
 from app import crud, models, schemas
 from app.api import deps
 from app.tasks import (
-    generate_point_cloud_preview_image,
     process_geotiff,
     process_point_cloud,
     run_toolbox_process,
