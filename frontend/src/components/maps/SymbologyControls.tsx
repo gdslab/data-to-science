@@ -6,13 +6,13 @@ import { cmaps } from './cmaps';
 import { Button } from '../Buttons';
 import { DataProduct } from '../pages/projects/Project';
 import { NumberField, SelectField } from '../InputFields';
+import { useMapContext } from './MapContext';
 import {
   DSMSymbologySettings,
   OrthoSymbologySettings,
   SymbologySettings,
   SymbologySettingsAction,
-  useMapContext,
-} from './MapContext';
+} from './Maps';
 import Modal from '../Modal';
 import { Project } from '../pages/projects/ProjectList';
 import ShareControls from './ShareControls';

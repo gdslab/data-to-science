@@ -17,6 +17,7 @@ services:
       - VITE_BRAND_FULL=Data to Science
       - VITE_BRAND_SHORT=D2S
       - VITE_BRAND_SLOGAN=A Data-driven Open Science Community for Sustained Innovation
+
   backend:
     build:
       context: ./backend

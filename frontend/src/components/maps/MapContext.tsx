@@ -1,49 +1,23 @@
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 import { createContext, useContext, useEffect, useReducer } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { DataProduct, Flight } from '../pages/projects/Project';
 import { Project } from '../pages/projects/ProjectList';
-
-export interface DSMSymbologySettings {
-  colorRamp: string;
-  max: number;
-  meanStdDev: number;
-  min: number;
-  mode: string;
-  userMin: number;
-  userMax: number;
-}
-
-export interface OrthoSymbologySettings {
-  mode: string;
-  meanStdDev: number;
-  red: {
-    idx: number;
-    min: number;
-    max: number;
-    userMin: number;
-    userMax: number;
-  };
-  green: {
-    idx: number;
-    min: number;
-    max: number;
-    userMin: number;
-    userMax: number;
-  };
-  blue: {
-    idx: number;
-    min: number;
-    max: number;
-    userMin: number;
-    userMax: number;
-  };
-}
-
-export type MapTool = 'map' | 'compare' | 'timeline';
-
-export type SymbologySettings = DSMSymbologySettings | OrthoSymbologySettings;
+import {
+  ActiveDataProductAction,
+  ActiveMapToolAction,
+  ActiveProjectAction,
+  FlightsAction,
+  GeoRasterIdAction,
+  MapTool,
+  ProjectHoverStateAction,
+  ProjectsAction,
+  ProjectsVisibleAction,
+  SymbologySettings,
+  SymbologySettingsAction,
+  TileScaleAction,
+} from './Maps';
 
 const defaultSymbologySettings = {
   colorRamp: 'rainbow',
@@ -54,18 +28,6 @@ const defaultSymbologySettings = {
   userMin: 0,
   userMax: 255,
 };
-
-type ActiveDataProductAction = {
-  type: string;
-  payload: DataProduct | Partial<DataProduct> | null;
-};
-type ActiveMapToolAction = { type: string; payload: MapTool };
-type ActiveProjectAction = { type: string; payload: Project | null };
-type FlightsAction = { type: string; payload: Flight[] };
-type GeoRasterIdAction = { type: string };
-type ProjectHoverStateAction = { type: string; payload: string | null };
-export type SymbologySettingsAction = { type: string; payload: SymbologySettings };
-type TileScaleAction = { type: string; payload: number };
 
 function activeDataProductReducer(
   state: DataProduct | null,
@@ -159,6 +121,34 @@ function projectHoverStateReducer(
   }
 }
 
+function projectsReducer(state: Project[], action: ProjectsAction) {
+  switch (action.type) {
+    case 'set': {
+      return action.payload;
+    }
+    case 'clear': {
+      return [];
+    }
+    default: {
+      return state;
+    }
+  }
+}
+
+function projectsVisibleReducer(state: string[], action: ProjectsVisibleAction) {
+  switch (action.type) {
+    case 'set': {
+      return action.payload;
+    }
+    case 'clear': {
+      return [];
+    }
+    default: {
+      return state;
+    }
+  }
+}
+
 function symbologySettingsReducer(
   state: SymbologySettings,
   action: SymbologySettingsAction
@@ -198,6 +188,10 @@ const context: {
   geoRasterIdDispatch: React.Dispatch<GeoRasterIdAction>;
   projectHoverState: string | null;
   projectHoverStateDispatch: React.Dispatch<ProjectHoverStateAction>;
+  projects: Project[];
+  projectsDispatch: React.Dispatch<ProjectsAction>;
+  projectsVisible: string[];
+  projectsVisibleDispatch: React.Dispatch<ProjectsVisibleAction>;
   symbologySettings: SymbologySettings;
   symbologySettingsDispatch: React.Dispatch<SymbologySettingsAction>;
   tileScale: number;
@@ -214,6 +208,10 @@ const context: {
   geoRasterIdDispatch: () => {},
   projectHoverState: null,
   projectHoverStateDispatch: () => {},
+  projects: [],
+  projectsDispatch: () => {},
+  projectsVisible: [],
+  projectsVisibleDispatch: () => {},
   symbologySettings: defaultSymbologySettings,
   symbologySettingsDispatch: () => {},
   tileScale: 2,
@@ -238,6 +236,11 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
     projectHoverStateReducer,
     null
   );
+  const [projects, projectsDispatch] = useReducer(projectsReducer, []);
+  const [projectsVisible, projectsVisibleDispatch] = useReducer(
+    projectsVisibleReducer,
+    []
+  );
   const [symbologySettings, symbologySettingsDispatch] = useReducer(
     symbologySettingsReducer,
     defaultSymbologySettings
@@ -257,6 +260,26 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
     }
   }
 
+  async function getProjects() {
+    try {
+      const response: AxiosResponse<Project[]> = await axios.get(
+        `${import.meta.env.VITE_API_V1_STR}/projects`
+      );
+      if (response) {
+        projectsDispatch({ type: 'set', payload: response.data });
+        projectsVisibleDispatch({
+          type: 'set',
+          payload: response.data.map(({ id }) => id),
+        });
+      } else {
+        projectsDispatch({ type: 'clear', payload: [] });
+      }
+    } catch (err) {
+      console.log('Unable to fetch projects');
+      projectsDispatch({ type: 'clear', payload: [] });
+    }
+  }
+
   // fetches flights for active project
   useEffect(() => {
     if (activeProject) {
@@ -270,6 +293,10 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
       getFlights(activeProject.id);
     }
   }, [activeDataProduct]);
+
+  useEffect(() => {
+    getProjects();
+  }, []);
 
   return (
     <MapContext.Provider
@@ -285,6 +312,10 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
         geoRasterIdDispatch,
         projectHoverState,
         projectHoverStateDispatch,
+        projects,
+        projectsDispatch,
+        projectsVisible,
+        projectsVisibleDispatch,
         symbologySettings,
         symbologySettingsDispatch,
         tileScale,

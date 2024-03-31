@@ -1,6 +1,6 @@
 import L from 'leaflet';
 import { useEffect, useRef, useState } from 'react';
-import { FeatureGroup } from 'react-leaflet';
+import { FeatureGroup, useMapEvents } from 'react-leaflet';
 import { Marker } from 'react-leaflet/Marker';
 import { useLeafletContext } from '@react-leaflet/core';
 import MarkerClusterGroup from 'react-leaflet-cluster';
@@ -14,11 +14,31 @@ interface ProjectMarkersProps {
 }
 
 export default function ProjectMarkers({ projects }: ProjectMarkersProps) {
-  const { activeDataProductDispatch, activeProjectDispatch } = useMapContext();
+  const { activeDataProductDispatch, activeProjectDispatch, projectsVisibleDispatch } =
+    useMapContext();
   const [markers, setMarkers] = useState<L.Marker[]>([]);
   const context = useLeafletContext();
-
   const fgRef = useRef<FG>(null);
+
+  useMapEvents({
+    moveend(_e) {
+      // update visible project markers when map moves
+      let visibleProjects: string[] = [];
+      if (projects.length > 0) {
+        // add each project that is contained within current map to visible projects
+        projects.forEach((project) => {
+          const projCoordinates = L.latLng([
+            project.field.properties.center_y,
+            project.field.properties.center_x,
+          ]);
+          if (context.map.getBounds().contains(projCoordinates)) {
+            visibleProjects.push(project.id);
+          }
+        });
+        projectsVisibleDispatch({ type: 'set', payload: visibleProjects });
+      }
+    },
+  });
 
   useEffect(() => {
     if (projects.length > 0) {

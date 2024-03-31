@@ -13,7 +13,6 @@ import {
 import { Button } from '../Buttons';
 import { getDataProductName } from '../pages/projects/flights/dataProducts/DataProductsTable';
 import HintText from '../HintText';
-import { Project } from '../pages/projects/ProjectList';
 import { useMapContext } from './MapContext';
 import SymbologyControls from './SymbologyControls';
 
@@ -134,11 +133,11 @@ function RasterStats({ stats }: { stats: Band['stats'] }) {
 
 export default function LayerPane({
   hidePane,
-  projects,
+  // projects,
   toggleHidePane,
 }: {
   hidePane: boolean;
-  projects: Project[];
+  // projects: Project[];
   toggleHidePane: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const {
@@ -149,6 +148,8 @@ export default function LayerPane({
     activeProjectDispatch,
     flights,
     projectHoverStateDispatch,
+    projects,
+    projectsVisible,
     symbologySettingsDispatch,
   } = useMapContext();
 
@@ -371,6 +372,7 @@ export default function LayerPane({
             {projects.length > 0 ? (
               <ul className="mt-4 space-y-2">
                 {projects
+                  .filter(({ id }) => projectsVisible.includes(id))
                   .sort((a, b) => sorter(a.title, b.title))
                   .map((project) => (
                     <li key={project.id}>

@@ -2,7 +2,8 @@ import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 
-import { DSMSymbologySettings, useMapContext } from './MapContext';
+import { useMapContext } from './MapContext';
+import { DSMSymbologySettings } from './Maps';
 import { DataProduct } from '../pages/projects/Project';
 import { classNames } from '../utils';
 

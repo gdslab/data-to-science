@@ -8,7 +8,6 @@ import { ZoomControl } from 'react-leaflet/ZoomControl';
 import ColorBarControl from './ColorBarControl';
 import DataProductTileLayer from './DataProductTileLayer';
 import MapLayersControl from './MapLayersControl';
-import { Project } from '../pages/projects/ProjectList';
 import ProjectBoundary from './ProjectBoundary';
 import ProjectMarkers from './ProjectMarkers';
 import { useMapContext } from './MapContext';
@@ -20,14 +19,9 @@ import PotreeViewer from './PotreeViewer';
 
 import CompareTool, { CompareToolAlert, getFlightsWithGTIFF } from './CompareTool';
 
-export default function Map({
-  layerPaneHidden,
-  projects,
-}: {
-  layerPaneHidden: boolean;
-  projects: Project[];
-}) {
-  const { activeDataProduct, activeMapTool, activeProject, flights } = useMapContext();
+export default function Map({ layerPaneHidden }: { layerPaneHidden: boolean }) {
+  const { activeDataProduct, activeMapTool, activeProject, flights, projects } =
+    useMapContext();
 
   useEffect(() => {
     // @ts-ignore

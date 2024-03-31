@@ -1,11 +1,11 @@
 import { TileLayer } from 'react-leaflet/TileLayer';
 
+import { useMapContext } from './MapContext';
 import {
   DSMSymbologySettings,
   OrthoSymbologySettings,
   SymbologySettings,
-  useMapContext,
-} from './MapContext';
+} from './Maps';
 import { DataProduct } from '../pages/projects/Project';
 import { getDefaultStyle } from './utils';
 

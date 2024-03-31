@@ -1,5 +1,5 @@
 import { DataProduct } from '../pages/projects/Project';
-import { SymbologySettings } from './MapContext';
+import { SymbologySettings } from './Maps';
 
 function getDefaultStyle(dataProduct: DataProduct): SymbologySettings {
   if (

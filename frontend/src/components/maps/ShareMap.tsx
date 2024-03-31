@@ -10,7 +10,7 @@ import ColorBarControl from './ColorBarControl';
 import DataProductTileLayer from './DataProductTileLayer';
 import MapLayersControl from './MapLayersControl';
 import { DataProduct } from '../pages/projects/Project';
-import { DSMSymbologySettings, OrthoSymbologySettings } from './MapContext';
+import { DSMSymbologySettings, OrthoSymbologySettings } from './Maps';
 
 function useQuery() {
   const { search } = useLocation();
