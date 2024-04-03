@@ -14,6 +14,7 @@ import { Button } from '../Buttons';
 import { getDataProductName } from '../pages/projects/flights/dataProducts/DataProductsTable';
 import HintText from '../HintText';
 import { useMapContext } from './MapContext';
+import ProjectSearch from '../pages/projects/ProjectSearch';
 import SymbologyControls from './SymbologyControls';
 
 import UASIcon from '../../assets/uas-icon.svg';
@@ -141,6 +142,7 @@ export default function LayerPane({
   toggleHidePane: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const [currentPage, setCurrentPage] = useState(0);
+  const [searchText, setSearchText] = useState('');
 
   const {
     activeDataProduct,
@@ -158,9 +160,6 @@ export default function LayerPane({
   const { state } = useLocation();
 
   const MAX_ITEMS = 10;
-  const TOTAL_PAGES = Math.ceil(
-    projects.filter(({ id }) => projectsVisible.includes(id)).length / MAX_ITEMS
-  );
 
   useEffect(() => {
     if (activeDataProduct && activeDataProduct.data_type === 'point_cloud') {
@@ -193,6 +192,13 @@ export default function LayerPane({
   }, [state]);
 
   /**
+   * Updates the current search text.
+   */
+  function updateSearchText(query: string) {
+    setSearchText(query);
+  }
+
+  /**
    * Updates the current selected pagination page.
    * @param newPage Index of new page.
    */
@@ -209,13 +215,33 @@ export default function LayerPane({
   }
 
   /**
-   * Filters projects by visibility on map, limits to max items on a page, and sorts.
+   * Filters projects by visible markers on map and search text.
+   * @param projs Projects to filter.
+   * @returns
+   */
+  function filterByVisibilityAndSearch(projs): Project[] {
+    return projs
+      .filter(({ id }) => projectsVisible.includes(id))
+      .filter(
+        (project) =>
+          !project.title ||
+          project.title.toLowerCase().includes(searchText.toLowerCase()) ||
+          project.description.toLowerCase().includes(searchText.toLowerCase())
+      );
+  }
+
+  const TOTAL_PAGES = Math.ceil(
+    filterByVisibilityAndSearch(projects).length / MAX_ITEMS
+  );
+
+  /**
+   * Returns available projects based on visibility, search text,
+   * page limitations. Returned projects are sorted in alphabetical order.
    * @param projs Projects to filter, limit, and sort.
    * @returns Array of filtered projects.
    */
-  function filterAndSortProjects(projs): Project[] {
-    return projs
-      .filter(({ id }) => projectsVisible.includes(id))
+  function getAvailableProjects(projs): Project[] {
+    return filterByVisibilityAndSearch(projs)
       .slice(currentPage * MAX_ITEMS, MAX_ITEMS + currentPage * MAX_ITEMS)
       .sort((a, b) => sorter(a.title, b.title));
   }
@@ -411,8 +437,14 @@ export default function LayerPane({
           <article className="flex flex-col gap-2 p-4 overflow-y-auto">
             <h1>Projects</h1>
             {projects.length > 0 ? (
+              <ProjectSearch
+                searchText={searchText}
+                updateSearchText={updateSearchText}
+              />
+            ) : null}
+            {projects.length > 0 ? (
               <ul className="mt-4 space-y-2">
-                {filterAndSortProjects(projects).map((project) => (
+                {getAvailableProjects(projects).map((project) => (
                   <li key={project.id}>
                     <LayerCard hover={true}>
                       <div
