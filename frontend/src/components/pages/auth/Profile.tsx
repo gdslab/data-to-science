@@ -1,10 +1,10 @@
 import axios from 'axios';
 import { Formik, Form } from 'formik';
-import { useContext, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import seedrandom from 'seedrandom';
 import { ChevronDownIcon, TrashIcon } from '@heroicons/react/24/outline';
 
-import Alert from '../../Alert';
+import Alert, { Status } from '../../Alert';
 import AuthContext, { User } from '../../../AuthContext';
 import { Button } from '../../Buttons';
 import Card from '../../Card';
@@ -49,12 +49,27 @@ export function generateRandomProfileColor(username) {
   };
 }
 
-function ChangePasswordForm() {
+interface Profile {
+  setStatus: React.Dispatch<React.SetStateAction<Status | null>>;
+}
+
+interface ChangePasswordForm extends Profile {
+  setShowChangePasswordForm: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+function ChangePasswordForm({
+  setShowChangePasswordForm,
+  setStatus,
+}: ChangePasswordForm) {
+  useEffect(() => {
+    setStatus(null);
+  }, []);
+
   return (
     <Formik
       initialValues={{ passwordCurrent: '', passwordNew: '', passwordNewRetype: '' }}
       validationSchema={passwordChangeValidationSchema}
-      onSubmit={async (values, { setStatus }) => {
+      onSubmit={async (values) => {
         setStatus(null);
         try {
           const data = {
@@ -70,9 +85,12 @@ function ChangePasswordForm() {
             }
           );
           if (response) {
-            response.status === 200
-              ? setStatus({ type: 'success', msg: 'Password changed' })
-              : setStatus({ type: 'error', msg: 'Unable to change password' });
+            if (response.status === 200) {
+              setStatus({ type: 'success', msg: 'Password changed' });
+              setShowChangePasswordForm(false);
+            } else {
+              setStatus({ type: 'error', msg: 'Unable to change password' });
+            }
           }
         } catch (err) {
           if (axios.isAxiosError(err)) {
@@ -83,7 +101,7 @@ function ChangePasswordForm() {
         }
       }}
     >
-      {({ dirty, isSubmitting, status }) => (
+      {({ dirty, isSubmitting }) => (
         <Form className="grid gap-4">
           <HintText>{passwordHintText}</HintText>
           <TextField label="Current Password" name="passwordCurrent" type="password" />
@@ -96,26 +114,23 @@ function ChangePasswordForm() {
           <Button type="submit" size="sm" disabled={!dirty}>
             {isSubmitting ? 'Processing...' : 'Change Password'}
           </Button>
-          {status && status.type && status.msg ? (
-            <Alert alertType={status.type}>{status.msg}</Alert>
-          ) : null}
         </Form>
       )}
     </Formik>
   );
 }
 
-interface ProfileProps {
+interface ProfileProps extends Profile {
   updateProfile: () => void;
   user: User;
 }
 
-function ProfileForm({ updateProfile, user }: ProfileProps) {
+function ProfileForm({ setStatus, updateProfile, user }: ProfileProps) {
   return (
     <Formik
       initialValues={{ firstName: user.first_name, lastName: user.last_name }}
       validationSchema={profileValidationSchema}
-      onSubmit={async (values, { setSubmitting, setStatus }) => {
+      onSubmit={async (values, { setSubmitting }) => {
         setStatus(null);
         try {
           const data = {
@@ -144,7 +159,7 @@ function ProfileForm({ updateProfile, user }: ProfileProps) {
         setSubmitting(false);
       }}
     >
-      {({ dirty, isSubmitting, status }) => (
+      {({ dirty, isSubmitting }) => (
         <Form className="grid gap-4">
           <div className="grid grid-cols-2 gap-4">
             <TextField label="First Name" name="firstName" required={false} />
@@ -153,16 +168,17 @@ function ProfileForm({ updateProfile, user }: ProfileProps) {
           <Button type="submit" size="sm" disabled={!dirty}>
             {isSubmitting ? 'Processing...' : 'Update'}
           </Button>
-          {status && status.type && status.msg ? (
-            <Alert alertType={status.type}>{status.msg}</Alert>
-          ) : null}
         </Form>
       )}
     </Formik>
   );
 }
 
-function EditProfilePicture({ updateProfile }: { updateProfile: () => void }) {
+interface EditProfilePicture extends Profile {
+  updateProfile: () => Promise<void>;
+}
+
+function EditProfilePicture({ setStatus, updateProfile }: EditProfilePicture) {
   const [open, setOpen] = useState(false);
   const [menuVisibility, toggleMenuVisibility] = useState(false);
   const onSuccess = () => {
@@ -222,7 +238,7 @@ function EditProfilePicture({ updateProfile }: { updateProfile: () => void }) {
                     updateProfile();
                   }
                 } catch (err) {
-                  console.log('unable to remove profile');
+                  setStatus({ type: 'error', msg: 'Unable to remove profile picture' });
                 }
               }}
             >
@@ -250,6 +266,8 @@ function EditProfilePicture({ updateProfile }: { updateProfile: () => void }) {
 
 export default function Profile() {
   const { updateProfile, user } = useContext(AuthContext);
+  const [showChangePasswordForm, setShowChangePasswordForm] = useState(false);
+  const [status, setStatus] = useState<Status | null>(null);
 
   return (
     <div className="h-full flex justify-center bg-gradient-to-b from-primary from-20% to-slate-200 to-10%">
@@ -284,12 +302,35 @@ export default function Profile() {
                     </span>
                   </div>
                 )}
-                <EditProfilePicture updateProfile={updateProfile} />
+                <EditProfilePicture
+                  setStatus={setStatus}
+                  updateProfile={updateProfile}
+                />
               </div>
               {/* form column */}
-              <div className="grid gap-8">
-                <ProfileForm updateProfile={updateProfile} user={user} />
-                <ChangePasswordForm />
+              <div className="grid gap-4">
+                <ProfileForm
+                  setStatus={setStatus}
+                  updateProfile={updateProfile}
+                  user={user}
+                />
+                {showChangePasswordForm ? (
+                  <ChangePasswordForm
+                    setShowChangePasswordForm={setShowChangePasswordForm}
+                    setStatus={setStatus}
+                  />
+                ) : (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => setShowChangePasswordForm(true)}
+                  >
+                    Change Password
+                  </Button>
+                )}
+                {status && status.type && status.msg ? (
+                  <Alert alertType={status.type}>{status.msg}</Alert>
+                ) : null}
               </div>
             </div>
           )}

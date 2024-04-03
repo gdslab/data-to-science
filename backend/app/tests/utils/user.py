@@ -87,11 +87,11 @@ def authentication_token_from_email(
 
     If the user doesn't exist it is created first.
     """
-    password = random_password()
+    password = "testuserpassword"
     user = crud.user.get_by_email(db, email=email)
     if not user:
-        user = create_user(db, email)
+        user = create_user(db, email, password=password)
 
-    user_in_update = UserUpdate(password=password, is_approved=True)
+    user_in_update = UserUpdate(is_approved=True)
     user = crud.user.update(db, db_obj=user, obj_in=user_in_update)
     return login_and_get_access_token(client=client, email=email, password=password)

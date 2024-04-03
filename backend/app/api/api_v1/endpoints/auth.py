@@ -73,7 +73,7 @@ def logout_access_token(response: Response) -> Any:
     return status.HTTP_200_OK
 
 
-@router.post("/test-token", response_model=schemas.User)
+@router.post("/test-token", response_model=schemas.user.User)
 def test_token(current_user: models.User = Depends(deps.get_current_user)) -> Any:
     """Test access token."""
     return current_user
@@ -99,7 +99,7 @@ def confirm_user_email_address(token: str, db: Session = Depends(deps.get_db)) -
         crud.user.remove_single_use_token(db, db_obj=token_db_obj)
         return settings.API_DOMAIN + "/auth/login?error=notfound"
     # update user's email confirmation status
-    user_update_in = schemas.UserUpdate(is_email_confirmed=True)
+    user_update_in = schemas.user.UserUpdate(is_email_confirmed=True)
     user_updated = crud.user.update(db, db_obj=user, obj_in=user_update_in)
     if not user_updated or not user_updated.is_email_confirmed:
         raise HTTPException(
@@ -129,7 +129,7 @@ def request_new_email_confirmation_link(
     token = secrets.token_urlsafe()
     token_in_db = crud.user.create_single_use_token(
         db,
-        obj_in=schemas.SingleUseTokenCreate(
+        obj_in=schemas.single_use_token.SingleUseTokenCreate(
             token=security.get_token_hash(token, salt="confirm")
         ),
         user_id=user.id,
@@ -143,7 +143,7 @@ def request_new_email_confirmation_link(
         )
 
 
-@router.post("/change-password")
+@router.post("/change-password", response_model=schemas.user.User)
 def change_password(
     current_password: Annotated[str, Form()],
     new_password: Annotated[str, Form()],
@@ -159,7 +159,7 @@ def change_password(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Provided current password is incorrect",
         )
-    user_in = schemas.UserUpdate(password=new_password)
+    user_in = schemas.user.UserUpdate(password=new_password)
     user_updated = crud.user.update(db, db_obj=user, obj_in=user_in)
     return user_updated
 
@@ -212,7 +212,7 @@ def approve_user_account(
         crud.user.remove_single_use_token(db, db_obj=token_db_obj)
         return {"status": "account not found"}
     # update user's email confirmation status
-    user_update_in = schemas.UserUpdate(is_approved=True)
+    user_update_in = schemas.user.UserUpdate(is_approved=True)
     user_updated = crud.user.update(db, db_obj=user, obj_in=user_update_in)
     if not user_updated or not user_updated.is_approved:
         return {"status": "unable to approve"}
@@ -258,7 +258,7 @@ def reset_user_password(
             status_code=status.HTTP_404_NOT_FOUND, detail="Account not found"
         )
     # update user's email confirmation status
-    user_update_in = schemas.UserUpdate(password=password)
+    user_update_in = schemas.user.UserUpdate(password=password)
     user_updated = crud.user.update(db, db_obj=user, obj_in=user_update_in)
     if not user_updated:
         raise HTTPException(

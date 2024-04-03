@@ -2,10 +2,12 @@ import random
 import secrets
 import string
 
+from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app import crud
+from app.api.deps import get_current_user
 from app.core.config import settings
 from app.tests.utils.user import create_user
 
@@ -79,6 +81,27 @@ def test_email_confirmation_with_valid_token(client: TestClient, db: Session) ->
 #     user_in_db = crud.user.get(db, id=user.id)
 #     assert user_in_db and user_in_db.is_email_confirmed is False
 #     assert r.status_code == 403
+
+
+def test_change_password(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data = {
+        "current_password": "testuserpassword",
+        "new_password": "new-testuserpassword",
+    }
+    response = client.post(f"{settings.API_V1_STR}/auth/change-password", data=data)
+    assert response.status_code == status.HTTP_200_OK
+    # login with new credentials
+    login_data = {"username": current_user.email, "password": "new-testuserpassword"}
+    r = client.post(
+        f"{settings.API_V1_STR}/auth/access-token",
+        data=login_data,
+        headers={"content_type": "application/x-www-form-urlencoded"},
+    )
+    assert r.status_code == 200
+    assert r.cookies.get("access_token")
 
 
 def test_email_confirmation_with_invalid_token(client: TestClient, db: Session) -> None:
