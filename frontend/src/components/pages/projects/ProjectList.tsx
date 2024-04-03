@@ -80,7 +80,7 @@ export default function ProjectList() {
               <input
                 type="text"
                 id="Search"
-                placeholder="Search for project by name"
+                placeholder="Search for project by title or description"
                 className="w-full rounded-md border-gray-200 px-4 py-2.5 pe-10 shadow sm:text-sm"
                 value={searchText}
                 onChange={updateSearchText}
@@ -114,40 +114,47 @@ export default function ProjectList() {
         </div>
         {projects.length > 0 ? (
           <div className="h-full overflow-auto">
-            {projects
-              .filter(
-                (project) =>
-                  !project.title ||
-                  project.title.toLowerCase().includes(searchText.toLowerCase())
-              )
-              .sort((a, b) => (a.title > b.title ? 1 : b.title > a.title ? -1 : 0))
-              .map((project) => (
-                <Link key={project.id} to={`/projects/${project.id}`} className="block">
-                  <article className="flex items-center mb-4 shadow bg-white transition hover:shadow-xl">
-                    <div className="p-2"></div>
+            <div className="flex flex-row flex-wrap gap-4">
+              {projects
+                .filter(
+                  (project) =>
+                    !project.title ||
+                    project.title.toLowerCase().includes(searchText.toLowerCase()) ||
+                    project.description.toLowerCase().includes(searchText.toLowerCase())
+                )
+                .sort((a, b) => (a.title > b.title ? 1 : b.title > a.title ? -1 : 0))
+                .map((project) => (
+                  <Link
+                    key={project.id}
+                    to={`/projects/${project.id}`}
+                    className="block"
+                  >
+                    <article className="flex items-center w-96 mb-4 shadow bg-white transition hover:shadow-xl">
+                      <div className="p-2"></div>
 
-                    <div className="hidden sm:block sm:basis-56">
-                      {/* <PhotoIcon className="h-24 w-24" /> */}
-                      <img
-                        src={`/static/projects/${project.id}/preview_map.png`}
-                        height={128}
-                        width={128}
-                      />
-                    </div>
-
-                    <div className="flex flex-1 flex-col justify-between">
-                      <div className="border-s border-gray-900/10 p-4 sm:border-l-transparent sm:p-6">
-                        <h3 className="font-bold uppercase text-gray-900">
-                          {project.title}
-                        </h3>
-                        <p className="mt-2 line-clamp-3 text-sm/relaxed text-gray-700">
-                          {project.description}
-                        </p>
+                      <div className="hidden sm:block">
+                        {/* <PhotoIcon className="h-24 w-24" /> */}
+                        <img
+                          src={`/static/projects/${project.id}/preview_map.png`}
+                          height={128}
+                          width={128}
+                        />
                       </div>
-                    </div>
-                  </article>
-                </Link>
-              ))}
+
+                      <div className="flex flex-1 flex-col justify-between">
+                        <div className="border-s border-gray-900/10 p-4 sm:border-l-transparent sm:p-6">
+                          <h3 className="font-bold uppercase text-gray-900">
+                            {project.title}
+                          </h3>
+                          <p className="mt-2 line-clamp-3 text-sm/relaxed text-gray-700">
+                            {project.description}
+                          </p>
+                        </div>
+                      </div>
+                    </article>
+                  </Link>
+                ))}
+            </div>
           </div>
         ) : null}
       </div>
