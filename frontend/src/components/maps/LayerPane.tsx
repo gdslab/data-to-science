@@ -22,7 +22,7 @@ import { Band } from '../pages/projects/Project';
 import { Project } from '../pages/projects/ProjectList';
 import { getDefaultStyle } from './utils';
 import { sorter } from '../utils';
-import LayerPanePagination from './LayerPanePagination';
+import Pagination from '../Pagination';
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
@@ -246,6 +246,50 @@ export default function LayerPane({
       .sort((a, b) => sorter(a.title, b.title));
   }
 
+  /**
+   * Filters projects by search text and visibility.
+   * @param projs Projects to filter.
+   * @returns
+   */
+  function filterSearch(projs: Project[]) {
+    return projs
+      .filter(
+        (project) =>
+          !project.title ||
+          project.title.toLowerCase().includes(searchText.toLowerCase()) ||
+          project.description.toLowerCase().includes(searchText.toLowerCase())
+      )
+      .filter(({ id }) => projectsVisible.includes(id));
+  }
+
+  /**
+   * Filters projects by search text and limits to current page.
+   * @param projs Projects to filter.
+   * @returns
+   */
+  function filterAndSlice(projs: Project[]) {
+    return filterSearch(projs).slice(
+      currentPage * MAX_ITEMS,
+      MAX_ITEMS + currentPage * MAX_ITEMS
+    );
+  }
+
+  function getPaginationResults() {
+    if (filterAndSlice(projects).length === 1) {
+      return <span className="text-sm text-gray-600">Viewing 1 of 1</span>;
+    } else {
+      return (
+        <span className="text-sm text-gray-600">
+          Viewing {currentPage * MAX_ITEMS + 1} -{' '}
+          {currentPage * MAX_ITEMS + filterAndSlice(projects).length} of{' '}
+          {filterSearch(projects).length < MAX_ITEMS
+            ? filterSearch(projects).length
+            : projects.filter(({ id }) => projectsVisible.includes(id)).length}
+        </span>
+      );
+    }
+  }
+
   if (hidePane) {
     return (
       <div className="flex p-2.5 items-center justify-between text-slate-700">
@@ -437,10 +481,13 @@ export default function LayerPane({
           <article className="flex flex-col gap-2 p-4 overflow-y-auto">
             <h1>Projects</h1>
             {projects.length > 0 ? (
-              <ProjectSearch
-                searchText={searchText}
-                updateSearchText={updateSearchText}
-              />
+              <div className="flex flex-col gap-2">
+                <ProjectSearch
+                  searchText={searchText}
+                  updateSearchText={updateSearchText}
+                />
+                {getPaginationResults()}
+              </div>
             ) : null}
             {projects.length > 0 ? (
               <ul className="mt-4 space-y-2">
@@ -499,7 +546,7 @@ export default function LayerPane({
                 </Link>
               </div>
             )}
-            <LayerPanePagination
+            <Pagination
               currentPage={currentPage}
               totalPages={TOTAL_PAGES}
               updateCurrentPage={updateCurrentPage}

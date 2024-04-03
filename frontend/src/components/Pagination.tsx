@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 
-export default function LayerPanePagination({
+export default function Pagination({
   currentPage,
   updateCurrentPage,
   totalPages,
@@ -18,7 +18,7 @@ export default function LayerPanePagination({
             onClick={() => updateCurrentPage(i)}
             className={clsx('block size-8 rounded text-center leading-8', {
               'border border-gray-100 bg-white text-gray-900': currentPage !== i,
-              'border-blue-600 bg-blue-600 text-white': currentPage === i,
+              'border-accent2 bg-accent2 text-white': currentPage === i,
             })}
           >
             {(i + 1).toString()}
