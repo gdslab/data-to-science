@@ -275,7 +275,7 @@ export default function LayerPane({
   }
 
   function getPaginationResults() {
-    if (filterAndSlice(projects).length === 1) {
+    if (filterAndSlice(projects).length === 1 && currentPage === 0) {
       return <span className="text-sm text-gray-600">Viewing 1 of 1</span>;
     } else {
       return (

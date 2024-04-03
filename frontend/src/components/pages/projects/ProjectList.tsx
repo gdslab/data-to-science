@@ -118,7 +118,7 @@ export default function ProjectList() {
   );
 
   function getPaginationResults() {
-    if (filterAndSlice(projects).length === 1) {
+    if (filterAndSlice(projects).length === 1 && currentPage === 0) {
       return <span className="text-sm text-gray-600">Viewing 1 of 1</span>;
     } else {
       return (
@@ -165,7 +165,7 @@ export default function ProjectList() {
                     to={`/projects/${project.id}`}
                     className="block"
                   >
-                    <article className="flex items-center w-96 mb-4 shadow bg-white transition hover:shadow-xl">
+                    <article className="flex items-center w-96 h-36 mb-4 shadow bg-white transition hover:shadow-xl">
                       <div className="p-2"></div>
 
                       <div className="hidden sm:block">
