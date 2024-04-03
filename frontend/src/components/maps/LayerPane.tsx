@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   ArrowUturnLeftIcon,
@@ -18,8 +18,10 @@ import SymbologyControls from './SymbologyControls';
 
 import UASIcon from '../../assets/uas-icon.svg';
 import { Band } from '../pages/projects/Project';
+import { Project } from '../pages/projects/ProjectList';
 import { getDefaultStyle } from './utils';
 import { sorter } from '../utils';
+import LayerPanePagination from './LayerPanePagination';
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
@@ -133,13 +135,13 @@ function RasterStats({ stats }: { stats: Band['stats'] }) {
 
 export default function LayerPane({
   hidePane,
-  // projects,
   toggleHidePane,
 }: {
   hidePane: boolean;
-  // projects: Project[];
   toggleHidePane: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
+  const [currentPage, setCurrentPage] = useState(0);
+
   const {
     activeDataProduct,
     activeDataProductDispatch,
@@ -155,11 +157,22 @@ export default function LayerPane({
 
   const { state } = useLocation();
 
+  const MAX_ITEMS = 10;
+  const TOTAL_PAGES = Math.ceil(
+    projects.filter(({ id }) => projectsVisible.includes(id)).length / MAX_ITEMS
+  );
+
   useEffect(() => {
     if (activeDataProduct && activeDataProduct.data_type === 'point_cloud') {
       toggleHidePane(true);
     }
   }, [activeDataProduct]);
+
+  useEffect(() => {
+    if (projectsVisible.length < MAX_ITEMS) {
+      setCurrentPage(0);
+    }
+  }, [projectsVisible]);
 
   useEffect(() => {
     if (state && state.project && state.dataProduct) {
@@ -178,6 +191,34 @@ export default function LayerPane({
       }
     }
   }, [state]);
+
+  /**
+   * Updates the current selected pagination page.
+   * @param newPage Index of new page.
+   */
+  function updateCurrentPage(newPage: number): void {
+    const total_pages = Math.ceil(projects.length / MAX_ITEMS);
+
+    if (newPage + 1 > total_pages) {
+      setCurrentPage(total_pages - 1);
+    } else if (newPage < 0) {
+      setCurrentPage(0);
+    } else {
+      setCurrentPage(newPage);
+    }
+  }
+
+  /**
+   * Filters projects by visibility on map, limits to max items on a page, and sorts.
+   * @param projs Projects to filter, limit, and sort.
+   * @returns Array of filtered projects.
+   */
+  function filterAndSortProjects(projs): Project[] {
+    return projs
+      .filter(({ id }) => projectsVisible.includes(id))
+      .slice(currentPage * MAX_ITEMS, MAX_ITEMS + currentPage * MAX_ITEMS)
+      .sort((a, b) => sorter(a.title, b.title));
+  }
 
   if (hidePane) {
     return (
@@ -367,56 +408,53 @@ export default function LayerPane({
             </ul>
           </article>
         ) : (
-          <article className="p-4 p-4 overflow-y-auto">
+          <article className="flex flex-col gap-2 p-4 overflow-y-auto">
             <h1>Projects</h1>
             {projects.length > 0 ? (
               <ul className="mt-4 space-y-2">
-                {projects
-                  .filter(({ id }) => projectsVisible.includes(id))
-                  .sort((a, b) => sorter(a.title, b.title))
-                  .map((project) => (
-                    <li key={project.id}>
-                      <LayerCard hover={true}>
-                        <div
-                          onClick={() => {
-                            activeDataProductDispatch({ type: 'clear', payload: null });
-                            activeProjectDispatch({ type: 'set', payload: project });
-                          }}
-                          onMouseOver={() => {
-                            projectHoverStateDispatch({
-                              type: 'set',
-                              payload: project.id,
-                            });
-                          }}
-                          onMouseLeave={() => {
-                            projectHoverStateDispatch({ type: 'clear', payload: null });
-                          }}
-                        >
-                          <div className="grid grid-cols-4">
-                            <div className="flex items-center justify-center">
-                              <MapPinIcon className="h-8 w-8" />
-                            </div>
-                            <div className="col-span-2 flex flex-col items-start gap-2">
-                              <strong className="font-bold text-slate-700">
-                                {project.title}
-                              </strong>
-                              <div className="text-slate-700 text-sm">
-                                {project.description}
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-center">
-                              <span className="inline-flex items-center justify-center rounded-full text-sky-700 bg-sky-100 px-2.5 py-0.5">
-                                <PaperAirplaneIcon className="h-4 w-4 -ms-1 me-1.5" />
-                                <p className="whitespace-nowrap text-sm">
-                                  {project.flight_count} Flights
-                                </p>
-                              </span>
+                {filterAndSortProjects(projects).map((project) => (
+                  <li key={project.id}>
+                    <LayerCard hover={true}>
+                      <div
+                        onClick={() => {
+                          activeDataProductDispatch({ type: 'clear', payload: null });
+                          activeProjectDispatch({ type: 'set', payload: project });
+                        }}
+                        onMouseOver={() => {
+                          projectHoverStateDispatch({
+                            type: 'set',
+                            payload: project.id,
+                          });
+                        }}
+                        onMouseLeave={() => {
+                          projectHoverStateDispatch({ type: 'clear', payload: null });
+                        }}
+                      >
+                        <div className="grid grid-cols-4">
+                          <div className="flex items-center justify-center">
+                            <MapPinIcon className="h-8 w-8" />
+                          </div>
+                          <div className="col-span-2 flex flex-col items-start gap-2">
+                            <strong className="font-bold text-slate-700">
+                              {project.title}
+                            </strong>
+                            <div className="text-slate-700 text-sm">
+                              {project.description}
                             </div>
                           </div>
+                          <div className="flex items-center justify-center">
+                            <span className="inline-flex items-center justify-center rounded-full text-sky-700 bg-sky-100 px-2.5 py-0.5">
+                              <PaperAirplaneIcon className="h-4 w-4 -ms-1 me-1.5" />
+                              <p className="whitespace-nowrap text-sm">
+                                {project.flight_count} Flights
+                              </p>
+                            </span>
+                          </div>
                         </div>
-                      </LayerCard>
-                    </li>
-                  ))}
+                      </div>
+                    </LayerCard>
+                  </li>
+                ))}
               </ul>
             ) : (
               <div>
@@ -429,6 +467,11 @@ export default function LayerPane({
                 </Link>
               </div>
             )}
+            <LayerPanePagination
+              currentPage={currentPage}
+              totalPages={TOTAL_PAGES}
+              updateCurrentPage={updateCurrentPage}
+            />
           </article>
         )}
       </div>

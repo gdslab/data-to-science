@@ -55,7 +55,7 @@ export default function ProjectMarkers({ projects }: ProjectMarkersProps) {
       });
       setMarkers(projectMarkers);
     }
-  }, []);
+  }, [projects]);
 
   useEffect(() => {
     if (markers.length > 0) {
