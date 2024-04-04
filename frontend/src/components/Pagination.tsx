@@ -1,5 +1,40 @@
 import clsx from 'clsx';
 
+/**
+ * Displays total number of search results and range of results on current page.
+ * @param {number} currentPageNum Current pagination page number.
+ * @param {number} maxItemsPerPage Max number of items allowed on page.
+ * @param {number} numOfItemsOnPage Number of items on current page.
+ * @param {number} totalFilteredItems Overall total number of filtered items.
+ * @returns Span element for summarizing search results.
+ */
+export function getPaginationResults(
+  currentPageNum: number,
+  maxItemsPerPage: number,
+  numOfItemsOnPage: number,
+  totalFilteredItems: number
+) {
+  if (numOfItemsOnPage <= 1 && currentPageNum === 0) {
+    // either 0 of 0 or 1 of 1 being displayed
+    return (
+      <span className="text-sm text-gray-600">
+        Viewing {numOfItemsOnPage} of {numOfItemsOnPage}
+      </span>
+    );
+  } else {
+    // if max items = 10; page 1 = 1 of ..., page 2 = 11 of ..., page 3 = 21 of ...
+    const startItemOnPage = currentPageNum * maxItemsPerPage + 1;
+    // if max items = 10; page 1 = ... of 10, page 2 = ... of 20, page 3 = ... of 30
+    const endItemOnPage = currentPageNum * maxItemsPerPage + numOfItemsOnPage;
+
+    return (
+      <span className="text-sm text-gray-600">
+        Viewing {startItemOnPage}-{endItemOnPage} of {totalFilteredItems}
+      </span>
+    );
+  }
+}
+
 export default function Pagination({
   currentPage,
   updateCurrentPage,

@@ -14,15 +14,16 @@ import { Button } from '../Buttons';
 import { getDataProductName } from '../pages/projects/flights/dataProducts/DataProductsTable';
 import HintText from '../HintText';
 import { useMapContext } from './MapContext';
+import Pagination, { getPaginationResults } from '../Pagination';
+import { Band } from '../pages/projects/Project';
+import { Project } from '../pages/projects/ProjectList';
 import ProjectSearch from '../pages/projects/ProjectSearch';
 import SymbologyControls from './SymbologyControls';
 
-import UASIcon from '../../assets/uas-icon.svg';
-import { Band } from '../pages/projects/Project';
-import { Project } from '../pages/projects/ProjectList';
 import { getDefaultStyle } from './utils';
 import { sorter } from '../utils';
-import Pagination from '../Pagination';
+
+import UASIcon from '../../assets/uas-icon.svg';
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
@@ -159,19 +160,30 @@ export default function LayerPane({
 
   const { state } = useLocation();
 
-  const MAX_ITEMS = 10;
+  const MAX_ITEMS = 10; // max number of projects per page in left-side pane
 
   useEffect(() => {
+    // hide left-side pane when point cloud dataset is activated
     if (activeDataProduct && activeDataProduct.data_type === 'point_cloud') {
       toggleHidePane(true);
     }
   }, [activeDataProduct]);
 
   useEffect(() => {
-    if (projectsVisible.length < MAX_ITEMS) {
+    // reset to page one if the number of visible project markers
+    // on the map is less than or equal to the max items allowed on a page
+    if (projectsVisible.length <= MAX_ITEMS) {
       setCurrentPage(0);
     }
   }, [projectsVisible]);
+
+  useEffect(() => {
+    // reset to page one if the filtered number of projects
+    // is less than or equal to the max items allowed on a page
+    if (filterByVisibilityAndSearch(projects).length <= MAX_ITEMS) {
+      setCurrentPage(0);
+    }
+  }, [searchText]);
 
   useEffect(() => {
     if (state && state.project && state.dataProduct) {
@@ -235,59 +247,25 @@ export default function LayerPane({
   );
 
   /**
+   * Filters projects by search text and limits to current page.
+   * @param projs Projects to filter.
+   * @returns
+   */
+  function filterAndSlice(projs: Project[]) {
+    return filterByVisibilityAndSearch(projs).slice(
+      currentPage * MAX_ITEMS,
+      MAX_ITEMS + currentPage * MAX_ITEMS
+    );
+  }
+
+  /**
    * Returns available projects based on visibility, search text,
    * page limitations. Returned projects are sorted in alphabetical order.
    * @param projs Projects to filter, limit, and sort.
    * @returns Array of filtered projects.
    */
   function getAvailableProjects(projs): Project[] {
-    return filterByVisibilityAndSearch(projs)
-      .slice(currentPage * MAX_ITEMS, MAX_ITEMS + currentPage * MAX_ITEMS)
-      .sort((a, b) => sorter(a.title, b.title));
-  }
-
-  /**
-   * Filters projects by search text and visibility.
-   * @param projs Projects to filter.
-   * @returns
-   */
-  function filterSearch(projs: Project[]) {
-    return projs
-      .filter(
-        (project) =>
-          !project.title ||
-          project.title.toLowerCase().includes(searchText.toLowerCase()) ||
-          project.description.toLowerCase().includes(searchText.toLowerCase())
-      )
-      .filter(({ id }) => projectsVisible.includes(id));
-  }
-
-  /**
-   * Filters projects by search text and limits to current page.
-   * @param projs Projects to filter.
-   * @returns
-   */
-  function filterAndSlice(projs: Project[]) {
-    return filterSearch(projs).slice(
-      currentPage * MAX_ITEMS,
-      MAX_ITEMS + currentPage * MAX_ITEMS
-    );
-  }
-
-  function getPaginationResults() {
-    if (filterAndSlice(projects).length === 1 && currentPage === 0) {
-      return <span className="text-sm text-gray-600">Viewing 1 of 1</span>;
-    } else {
-      return (
-        <span className="text-sm text-gray-600">
-          Viewing {currentPage * MAX_ITEMS + 1} -{' '}
-          {currentPage * MAX_ITEMS + filterAndSlice(projects).length} of{' '}
-          {filterSearch(projects).length < MAX_ITEMS
-            ? filterSearch(projects).length
-            : projects.filter(({ id }) => projectsVisible.includes(id)).length}
-        </span>
-      );
-    }
+    return filterAndSlice(projs).sort((a, b) => sorter(a.title, b.title));
   }
 
   if (hidePane) {
@@ -486,7 +464,12 @@ export default function LayerPane({
                   searchText={searchText}
                   updateSearchText={updateSearchText}
                 />
-                {getPaginationResults()}
+                {getPaginationResults(
+                  currentPage,
+                  MAX_ITEMS,
+                  filterAndSlice(projects).length,
+                  filterByVisibilityAndSearch(projects).length
+                )}
               </div>
             ) : null}
             {projects.length > 0 ? (

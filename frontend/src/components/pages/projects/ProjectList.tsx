@@ -4,7 +4,7 @@ import { useLoaderData, Link } from 'react-router-dom';
 
 import { Button } from '../../Buttons';
 import Modal from '../../Modal';
-import Pagination from '../../Pagination';
+import Pagination, { getPaginationResults } from '../../Pagination';
 import ProjectForm from './ProjectForm';
 import { useProjectContext } from './ProjectContext';
 import ProjectSearch from './ProjectSearch';
@@ -48,7 +48,7 @@ export default function ProjectList() {
 
   const { locationDispatch, project, projectDispatch } = useProjectContext();
 
-  const MAX_ITEMS = 10;
+  const MAX_ITEMS = 12;
 
   useEffect(() => {
     locationDispatch({ type: 'clear', payload: null });
@@ -58,6 +58,12 @@ export default function ProjectList() {
     locationDispatch({ type: 'clear', payload: null });
     projectDispatch({ type: 'clear', payload: null });
   }, [project]);
+
+  useEffect(() => {
+    if (filterAndSlice(projects).length < MAX_ITEMS) {
+      setCurrentPage(0);
+    }
+  }, [searchText]);
 
   /**
    * Updates the current search text.
@@ -99,39 +105,16 @@ export default function ProjectList() {
   /**
    * Filters projects by search text and limits to current page.
    * @param projs Projects to filter.
-   * @returns
+   * @returns Array of filtered and sliced projects.
    */
-  function filterAndSlice(projs: Project[]) {
+  function filterAndSlice(projs: Project[]): Project[] {
     return filterSearch(projs).slice(
       currentPage * MAX_ITEMS,
       MAX_ITEMS + currentPage * MAX_ITEMS
     );
   }
 
-  const TOTAL_PAGES = Math.ceil(
-    projects.filter(
-      (project) =>
-        !project.title ||
-        project.title.toLowerCase().includes(searchText.toLowerCase()) ||
-        project.description.toLowerCase().includes(searchText.toLowerCase())
-    ).length / MAX_ITEMS
-  );
-
-  function getPaginationResults() {
-    if (filterAndSlice(projects).length === 1 && currentPage === 0) {
-      return <span className="text-sm text-gray-600">Viewing 1 of 1</span>;
-    } else {
-      return (
-        <span className="text-sm text-gray-600">
-          Viewing {currentPage * MAX_ITEMS + 1} -{' '}
-          {currentPage * MAX_ITEMS + filterAndSlice(projects).length} of{' '}
-          {filterSearch(projects).length < MAX_ITEMS
-            ? filterSearch(projects).length
-            : projects.length}
-        </span>
-      );
-    }
-  }
+  const TOTAL_PAGES = Math.ceil(filterSearch(projects).length / MAX_ITEMS);
 
   return (
     <div className="h-full p-4">
@@ -155,7 +138,12 @@ export default function ProjectList() {
         </div>
         {projects.length > 0 ? (
           <div className="h-full overflow-auto">
-            {getPaginationResults()}
+            {getPaginationResults(
+              currentPage,
+              MAX_ITEMS,
+              filterAndSlice(projects).length,
+              filterSearch(projects).length
+            )}
             <div className="flex flex-row flex-wrap gap-4">
               {filterAndSlice(projects)
                 .sort((a, b) => (a.title > b.title ? 1 : b.title > a.title ? -1 : 0))
