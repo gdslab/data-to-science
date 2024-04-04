@@ -6,7 +6,7 @@ import { ChevronDownIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 import Alert, { Status } from '../../Alert';
 import AuthContext, { User } from '../../../AuthContext';
-import { Button } from '../../Buttons';
+import { Button, OutlineButton } from '../../Buttons';
 import Card from '../../Card';
 import HintText from '../../HintText';
 import FileUpload from '../../FileUpload';
@@ -114,6 +114,13 @@ function ChangePasswordForm({
           <Button type="submit" size="sm" disabled={!dirty}>
             {isSubmitting ? 'Processing...' : 'Change Password'}
           </Button>
+          <OutlineButton
+            type="button"
+            size="sm"
+            onClick={() => setShowChangePasswordForm(false)}
+          >
+            Cancel
+          </OutlineButton>
         </Form>
       )}
     </Formik>
