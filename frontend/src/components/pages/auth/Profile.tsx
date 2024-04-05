@@ -1,8 +1,12 @@
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 import { Formik, Form } from 'formik';
 import { useContext, useEffect, useState } from 'react';
 import seedrandom from 'seedrandom';
-import { ChevronDownIcon, TrashIcon } from '@heroicons/react/24/outline';
+import {
+  ChevronDownIcon,
+  DocumentDuplicateIcon,
+  TrashIcon,
+} from '@heroicons/react/24/outline';
 
 import Alert, { Status } from '../../Alert';
 import AuthContext, { User } from '../../../AuthContext';
@@ -271,6 +275,111 @@ function EditProfilePicture({ setStatus, updateProfile }: EditProfilePicture) {
   );
 }
 
+interface APIAccessForm extends Profile {
+  updateProfile: () => Promise<void>;
+  user: User;
+}
+
+function APIAccessForm({ setStatus, updateProfile, user }: APIAccessForm) {
+  const [isSending, setIsSending] = useState(false);
+
+  async function revokeAPIKey() {
+    setIsSending(true);
+    try {
+      const response: AxiosResponse<User> = await axios.get(
+        `${import.meta.env.VITE_API_V1_STR}/auth/revoke-api-key`
+      );
+      if (response) {
+        // display API key with COPY API Key button
+        if (response) {
+          setIsSending(false);
+          updateProfile();
+        } else {
+          setIsSending(false);
+          setStatus({ type: 'error', msg: 'Unable to revoke API key' });
+        }
+      } else {
+        setIsSending(false);
+        setStatus({ type: 'error', msg: 'Unable to revoke API key' });
+      }
+    } catch (_err) {
+      setIsSending(false);
+      setStatus({ type: 'error', msg: 'Unable to revoke API key' });
+    }
+  }
+
+  async function requestAPIKey() {
+    setIsSending(true);
+    try {
+      const response: AxiosResponse<User> = await axios.get(
+        `${import.meta.env.VITE_API_V1_STR}/auth/request-api-key`
+      );
+      if (response) {
+        if (response) {
+          setIsSending(false);
+          updateProfile();
+        } else {
+          setIsSending(false);
+          setStatus({ type: 'error', msg: 'Unable to get API key' });
+        }
+      } else {
+        setIsSending(false);
+        setStatus({ type: 'error', msg: 'Unable to get API key' });
+      }
+    } catch (_err) {
+      setIsSending(false);
+      setStatus({ type: 'error', msg: 'Unable to get API key' });
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <span className="text-xl font-semibold">API Key Access</span>
+
+      <div className="flex flex-col gap-4">
+        {user.api_key ? (
+          <div className="flex flex-row gap-2 text-sm font-semibold">
+            <span>Current API Key:</span>
+            <div className="flex flex-row items-center justify-between gap-2 px-2 bg-gray-200">
+              <span>ABC123{user.api_key}</span>
+              <DocumentDuplicateIcon
+                className="w-4 h-4 cursor-pointer"
+                onClick={() =>
+                  navigator.clipboard.writeText(user.api_key ? user.api_key : '')
+                }
+              />
+            </div>
+          </div>
+        ) : (
+          <p>
+            Request an API key that can be used to access your data outside of{' '}
+            {import.meta.env.VITE_BRAND_SHORT}. If you think your API key may have been
+            exposed, return here to revoke it and generate a new API key.
+          </p>
+        )}
+        <div className="flex flex-col gap-1.5">
+          <span className="italic">Example usage:</span>
+          <p className="p-4 text-sm bg-gray-200">
+            {window.location.origin}
+            /static/projects/123/flights/123/data_products/123/mygeotiff.tif
+            <strong>&API_KEY=MYAPIKEY</strong>
+          </p>
+        </div>
+      </div>
+
+      {!user.api_key ? (
+        <Button type="button" size="sm" onClick={() => requestAPIKey()}>
+          {!isSending ? 'Request API Key' : 'Requesting...'}
+        </Button>
+      ) : (
+        <Button type="button" size="sm" onClick={() => revokeAPIKey()}>
+          {!isSending ? 'Revoke API Key' : 'Revoking...'}
+        </Button>
+      )}
+    </div>
+  );
+}
+
 export default function Profile() {
   const { updateProfile, user } = useContext(AuthContext);
   const [showChangePasswordForm, setShowChangePasswordForm] = useState(false);
@@ -321,6 +430,13 @@ export default function Profile() {
                   updateProfile={updateProfile}
                   user={user}
                 />
+                <APIAccessForm
+                  setStatus={setStatus}
+                  updateProfile={updateProfile}
+                  user={user}
+                />
+                <span className="text-xl font-semibold">Password Management</span>
+                <p>Update your current password by clicking the below button.</p>
                 {showChangePasswordForm ? (
                   <ChangePasswordForm
                     setShowChangePasswordForm={setShowChangePasswordForm}
