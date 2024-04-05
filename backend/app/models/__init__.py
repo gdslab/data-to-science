@@ -1,3 +1,4 @@
+from .api_key import APIKey
 from .data_product import DataProduct
 from .file_permission import FilePermission
 from .flight import Flight

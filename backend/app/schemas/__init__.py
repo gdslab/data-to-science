@@ -1,3 +1,4 @@
+from .api_key import APIKey, APIKeyCreate, APIKeyUpdate
 from .data_product import DataProduct, DataProductCreate, DataProductUpdate
 from .file_permission import FilePermission, FilePermissionCreate, FilePermissionUpdate
 from .flight import Flight, FlightCreate, FlightUpdate

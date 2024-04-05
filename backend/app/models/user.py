@@ -12,6 +12,7 @@ from app.models.utils.user import utcnow
 
 
 if TYPE_CHECKING:
+    from .api_key import APIKey
     from .flight import Flight
     from .team import Team
     from .team_member import TeamMember
@@ -43,6 +44,9 @@ class User(Base):
         DateTime, server_default=utcnow(), nullable=False
     )
 
+    api_key: Mapped["APIKey"] = relationship(
+        back_populates="owner", cascade="all, delete"
+    )
     flights: Mapped[list["Flight"]] = relationship(
         back_populates="pilot", cascade="all, delete"
     )

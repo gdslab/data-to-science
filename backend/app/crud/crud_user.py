@@ -6,6 +6,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app import crud
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.crud.base import CRUDBase
@@ -21,6 +22,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         with db as session:
             user = session.scalar(stmt)
             if user:
+                set_api_key_attr(db, user)
                 set_url_attr(user)
             return user
 
@@ -29,6 +31,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         with db as session:
             user = session.scalar(stmt)
             if user:
+                set_api_key_attr(db, user)
                 set_url_attr(user)
             return user
 
@@ -125,6 +128,16 @@ def find_profile_img(user_id: str) -> str | None:
         return os.path.basename(profile_img[0])
     else:
         return None
+
+
+def set_api_key_attr(db: Session, user: User) -> None:
+    api_key_obj = crud.api_key.get_by_user(db, user_id=user.id)
+    print(user)
+    if api_key_obj:
+        api_key = api_key_obj.api_key
+    else:
+        api_key = None
+    setattr(user, "api_access_token", api_key)
 
 
 def set_url_attr(user: User) -> None:

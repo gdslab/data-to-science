@@ -36,6 +36,7 @@ def login_access_token(
     user = crud.user.authenticate(
         db, email=form_data.username, password=form_data.password
     )
+    print(user)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
@@ -275,3 +276,38 @@ def get_mapbox_access_token(response: Response) -> Any:
     """Returns mapbox access token."""
     mapbox_acceses_token = settings.MAPBOX_ACCESS_TOKEN
     return {"token": mapbox_acceses_token}
+
+
+@router.get("/request-api-key", status_code=status.HTTP_200_OK)
+def get_api_key(
+    response: Response,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Returns user obj with api key."""
+    api_key = crud.api_key.create_with_user(db, user_id=current_user.id)
+    if not api_key:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to create API key",
+        )
+
+
+@router.get("/revoke-api-key", status_code=status.HTTP_200_OK)
+def deactivate_api_key(
+    response: Response,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Deactivates user's api key."""
+    api_key = crud.api_key.deactivate(db, user_id=current_user.id)
+    if not api_key:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="API key not found",
+        )
+    if api_key.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to revoke API key",
+        )

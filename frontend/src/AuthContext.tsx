@@ -15,7 +15,7 @@ export interface User {
   is_approved: boolean;
   is_email_confirmed: boolean;
   profile_url: string | null;
-  api_key: string | null;
+  api_access_token: string | null;
 }
 
 const context: {

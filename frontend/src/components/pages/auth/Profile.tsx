@@ -337,37 +337,43 @@ function APIAccessForm({ setStatus, updateProfile, user }: APIAccessForm) {
       <span className="text-xl font-semibold">API Key Access</span>
 
       <div className="flex flex-col gap-4">
-        {user.api_key ? (
-          <div className="flex flex-row gap-2 text-sm font-semibold">
-            <span>Current API Key:</span>
+        {user.api_access_token ? (
+          <div className="flex flex-col gap-2">
+            <p className="text-sm">
+              Access restricted static files outside of{' '}
+              {import.meta.env.VITE_BRAND_SHORT} with your API key.
+            </p>
+            <span className="text-sm">API Key:</span>
             <div className="flex flex-row items-center justify-between gap-2 px-2 bg-gray-200">
-              <span>ABC123{user.api_key}</span>
+              <span className="font-semibold">{user.api_access_token}</span>
               <DocumentDuplicateIcon
                 className="w-4 h-4 cursor-pointer"
                 onClick={() =>
-                  navigator.clipboard.writeText(user.api_key ? user.api_key : '')
+                  navigator.clipboard.writeText(
+                    user.api_access_token ? user.api_access_token : ''
+                  )
                 }
               />
             </div>
           </div>
         ) : (
-          <p>
+          <p className="text-sm">
             Request an API key that can be used to access your data outside of{' '}
             {import.meta.env.VITE_BRAND_SHORT}. If you think your API key may have been
             exposed, return here to revoke it and generate a new API key.
           </p>
         )}
         <div className="flex flex-col gap-1.5">
-          <span className="italic">Example usage:</span>
-          <p className="p-4 text-sm bg-gray-200">
+          <span className="italic text-sm">Example usage:</span>
+          <p className="grow-0 p-4 text-sm text-wrap bg-gray-200">
             {window.location.origin}
-            /static/projects/123/flights/123/data_products/123/mygeotiff.tif
-            <strong>&API_KEY=MYAPIKEY</strong>
+            /static/projects/1/flights/1/data_products/1/mygeotiff.tif&API_KEY=
+            {user.api_access_token ? user.api_access_token : 'MYKEY'}
           </p>
         </div>
       </div>
 
-      {!user.api_key ? (
+      {!user.api_access_token ? (
         <Button type="button" size="sm" onClick={() => requestAPIKey()}>
           {!isSending ? 'Request API Key' : 'Requesting...'}
         </Button>
