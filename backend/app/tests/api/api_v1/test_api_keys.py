@@ -36,3 +36,15 @@ def test_revoke_api_key_when_one_does_not_exist(
     current_user = get_current_user(db, normal_user_access_token)
     response = client.get(f"{settings.API_V1_STR}/auth/revoke-api-key")
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_access_authorized_data_product_with_api_key():
+    pass
+
+
+def test_access_authorized_deactivated_data_product_with_api_key():
+    pass
+
+
+def test_access_unauthorized_data_product_with_api_key():
+    pass

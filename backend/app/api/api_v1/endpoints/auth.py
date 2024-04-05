@@ -36,7 +36,6 @@ def login_access_token(
     user = crud.user.authenticate(
         db, email=form_data.username, password=form_data.password
     )
-    print(user)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"

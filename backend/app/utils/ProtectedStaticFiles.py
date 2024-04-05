@@ -9,6 +9,7 @@ from app.utils.staticfiles import RangedStaticFiles
 
 from app import crud
 from app.api.deps import decode_jwt
+from app.crud.crud_api_key import api_key_can_access_static_file
 from app.db.session import SessionLocal
 from app.schemas.file_permission import FilePermissionUpdate
 
@@ -53,6 +54,12 @@ async def verify_static_file_access(request: Request) -> None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="data product not found"
             )
+
+        if "API_KEY" in request.query_params:
+            api_key = request.query_params["API_KEY"]
+            # check if owner of api key has access to requested static file
+            if api_key_can_access_static_file(data_product, api_key):
+                return
 
         file_permission = crud.file_permission.get_by_data_product(
             SessionLocal(), file_id=data_product_id

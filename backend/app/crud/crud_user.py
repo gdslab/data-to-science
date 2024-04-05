@@ -132,7 +132,6 @@ def find_profile_img(user_id: str) -> str | None:
 
 def set_api_key_attr(db: Session, user: User) -> None:
     api_key_obj = crud.api_key.get_by_user(db, user_id=user.id)
-    print(user)
     if api_key_obj:
         api_key = api_key_obj.api_key
     else:

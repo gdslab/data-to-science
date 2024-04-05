@@ -106,7 +106,7 @@ function ChangePasswordForm({
       }}
     >
       {({ dirty, isSubmitting }) => (
-        <Form className="grid gap-4">
+        <Form className="flex flex-row gap-4">
           <HintText>{passwordHintText}</HintText>
           <TextField label="Current Password" name="passwordCurrent" type="password" />
           <TextField label="New Password" name="passwordNew" type="password" />
@@ -171,8 +171,8 @@ function ProfileForm({ setStatus, updateProfile, user }: ProfileProps) {
       }}
     >
       {({ dirty, isSubmitting }) => (
-        <Form className="grid gap-4">
-          <div className="grid grid-cols-2 gap-4">
+        <Form className="flex flex-col gap-4">
+          <div className="flex flex-row justify-between gap-4">
             <TextField label="First Name" name="firstName" required={false} />
             <TextField label="Last Name" name="lastName" required={false} />
           </div>
@@ -332,13 +332,19 @@ function APIAccessForm({ setStatus, updateProfile, user }: APIAccessForm) {
     }
   }
 
+  const exampleURL = `${
+    window.location.origin
+  }/static/projects/1/flights/1/data_products/1/mygeotiff.tif&API_KEY=${
+    user.api_access_token ? user.api_access_token : 'MYKEY'
+  }`;
+
   return (
     <div className="flex flex-col gap-4">
       <span className="text-xl font-semibold">API Key Access</span>
 
       <div className="flex flex-col gap-4">
         {user.api_access_token ? (
-          <div className="flex flex-col gap-2">
+          <div>
             <p className="text-sm">
               Access restricted static files outside of{' '}
               {import.meta.env.VITE_BRAND_SHORT} with your API key.
@@ -365,11 +371,9 @@ function APIAccessForm({ setStatus, updateProfile, user }: APIAccessForm) {
         )}
         <div className="flex flex-col gap-1.5">
           <span className="italic text-sm">Example usage:</span>
-          <p className="grow-0 p-4 text-sm text-wrap bg-gray-200">
-            {window.location.origin}
-            /static/projects/1/flights/1/data_products/1/mygeotiff.tif&API_KEY=
-            {user.api_access_token ? user.api_access_token : 'MYKEY'}
-          </p>
+          <div className="p-4 text-sm bg-gray-200 overflow-x-auto">
+            <span>{exampleURL}</span>
+          </div>
         </div>
       </div>
 
@@ -392,8 +396,8 @@ export default function Profile() {
   const [status, setStatus] = useState<Status | null>(null);
 
   return (
-    <div className="h-full flex justify-center bg-gradient-to-b from-primary from-20% to-slate-200 to-10%">
-      <div className="mt-16 sm:w-full md:w-1/2 max-w-xl mx-4">
+    <div className="h-full flex flex-row justify-center bg-gradient-to-b from-primary from-20% to-slate-200 to-10%">
+      <div className="mt-16 sm:w-full md:w-1/2 max-w-xl">
         <h1 className="text-white">Edit Profile</h1>
         <Card>
           {!user ? (
@@ -430,7 +434,7 @@ export default function Profile() {
                 />
               </div>
               {/* form column */}
-              <div className="grid gap-4">
+              <div className="flex flex-col gap-4">
                 <ProfileForm
                   setStatus={setStatus}
                   updateProfile={updateProfile}
