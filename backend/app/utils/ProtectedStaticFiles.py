@@ -3,15 +3,58 @@ from pathlib import Path
 from uuid import UUID
 
 from fastapi import HTTPException, Request, status
+from sqlalchemy.orm import Session
 
-# from fastapi.staticfiles import StaticFiles
 from app.utils.staticfiles import RangedStaticFiles
 
 from app import crud
-from app.api.deps import decode_jwt
-from app.crud.crud_api_key import api_key_can_access_static_file
+from app.api.deps import decode_jwt, can_read_project
 from app.db.session import SessionLocal
+from app.models.data_product import DataProduct
+from app.schemas.api_key import APIKeyUpdate
 from app.schemas.file_permission import FilePermissionUpdate
+
+
+def verify_api_key_static_file_access(
+    data_product: DataProduct, api_key: str, db: Session | None = None
+):
+    """Verify if user associated with API key is authorized to access the
+    requested data product.
+
+    Args:
+        data_product (DataProduct): Data product that was requested.
+        api_key (str): API key included in request.
+
+    Returns:
+        _type_: True if authorized to access, False otherwise.
+    """
+    # check if data product is active
+    if not data_product.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
+        )
+    # create database session
+    if not db:
+        db = SessionLocal()
+    # get api key db obj
+    api_key_obj = crud.api_key.get_by_api_key(db, api_key)
+
+    if api_key_obj:
+        # user associated with api key
+        user = api_key_obj.owner
+        # flight associated with data product
+        flight = crud.flight.get(db, id=data_product.flight_id)
+        # check if can read flight
+        if can_read_project(db=db, project_id=flight.project_id, current_user=user):
+            # update last accessed date and total requests
+            api_key_in = APIKeyUpdate(
+                last_used_at=datetime.utcnow(),
+                total_requests=api_key_obj.total_requests + 1,
+            )
+            crud.api_key.update(db, db_obj=api_key_obj, obj_in=api_key_in)
+            return True
+
+    return False
 
 
 async def verify_static_file_access(request: Request) -> None:
@@ -58,7 +101,7 @@ async def verify_static_file_access(request: Request) -> None:
         if "API_KEY" in request.query_params:
             api_key = request.query_params["API_KEY"]
             # check if owner of api key has access to requested static file
-            if api_key_can_access_static_file(data_product, api_key):
+            if verify_api_key_static_file_access(data_product, api_key):
                 return
 
         file_permission = crud.file_permission.get_by_data_product(

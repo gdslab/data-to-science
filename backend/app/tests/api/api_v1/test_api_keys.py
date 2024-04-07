@@ -1,10 +1,19 @@
-from fastapi import status
+import requests
+
+import pytest
+from fastapi import HTTPException, status
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
+from app.tests.utils.data_product import SampleDataProduct
+from app.tests.utils.project import create_project
+from app.tests.utils.project_member import create_project_member
+from app.tests.utils.flight import create_flight
+from app.tests.utils.user import create_user
+from app.utils.ProtectedStaticFiles import verify_api_key_static_file_access
 
 
 def test_request_api_key(
@@ -38,13 +47,78 @@ def test_revoke_api_key_when_one_does_not_exist(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_access_authorized_data_product_with_api_key():
-    pass
+def test_access_authorized_data_product_with_api_key(
+    client: TestClient, db: Session, normal_user_access_token: str
+):
+    # create user that will own project/data product
+    project_owner = create_user(db)
+    # user making request
+    current_user = get_current_user(db, normal_user_access_token)
+    # create api key for current_user
+    current_user_api_key = crud.api_key.create_with_user(db, user_id=current_user.id)
+    # create data product owned by project owner user
+    data_product = SampleDataProduct(db, user=project_owner)
+    # project associated with data product
+    project = data_product.project
+    # add current user as member of project with default "viewer" role
+    project_member = create_project_member(
+        db, role="viewer", member_id=current_user.id, project_id=project.id
+    )
+
+    # current user has access to the data product project
+    assert verify_api_key_static_file_access(
+        data_product=data_product.obj, api_key=current_user_api_key.api_key, db=db
+    )
 
 
-def test_access_authorized_deactivated_data_product_with_api_key():
-    pass
+def test_access_authorized_deactivated_data_product_with_api_key(
+    client: TestClient, db: Session, normal_user_access_token: str
+):
+    # create user that will own project/data product
+    project_owner = create_user(db)
+    # user making request
+    current_user = get_current_user(db, normal_user_access_token)
+    # create api key for current_user
+    current_user_api_key = crud.api_key.create_with_user(db, user_id=current_user.id)
+    # create data product owned by project owner user
+    data_product = SampleDataProduct(db, user=project_owner)
+    # project associated with data product
+    project = data_product.project
+    # add current user as member of project with default "viewer" role
+    project_member = create_project_member(
+        db, role="viewer", member_id=current_user.id, project_id=project.id
+    )
+    # deactivate data product
+    deactivated_data_product = crud.data_product.deactivate(
+        db, data_product_id=data_product.obj.id
+    )
+
+    # current user has access to the data product project, but data product deactivated
+    with pytest.raises(HTTPException) as exc_info:
+        print(exc_info)
+        verify_api_key_static_file_access(
+            data_product=deactivated_data_product,
+            api_key=current_user_api_key.api_key,
+            db=db,
+        )
 
 
-def test_access_unauthorized_data_product_with_api_key():
-    pass
+def test_access_unauthorized_data_product_with_api_key(
+    client: TestClient, db: Session, normal_user_access_token: str
+):
+    # create user that will own project/data product
+    project_owner = create_user(db)
+    # user making request
+    current_user = get_current_user(db, normal_user_access_token)
+    # create api key for current_user
+    current_user_api_key = crud.api_key.create_with_user(db, user_id=current_user.id)
+    # create data product owned by project owner user
+    data_product = SampleDataProduct(db, user=project_owner)
+
+    # current user does not have access to the data product project
+    with pytest.raises(HTTPException) as exc_info:
+        verify_api_key_static_file_access(
+            data_product=data_product.obj,
+            api_key=current_user_api_key.api_key,
+            db=db,
+        )

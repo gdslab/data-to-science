@@ -33,8 +33,9 @@ class APIKey(Base):
 
     def __repr__(self) -> str:
         return (
-            f"APIKey(id={self.id!r}, created_at={self.created_at!r}, "
-            f"is_active={self.is_active!r}, deactivated_at={self.deactivated_at!r}, "
+            f"APIKey(id={self.id!r}, api_key={self.api_key!r}, "
+            f"created_at={self.created_at!r}, is_active={self.is_active!r},  "
+            f"deactivated_at={self.deactivated_at!r}, "
             f"last_used_at={self.last_used_at!r}, "
             f"total_requests={self.total_requests!r}, user_id={self.user_id!r})"
         )
