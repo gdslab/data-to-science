@@ -17,7 +17,7 @@ from app.schemas.file_permission import FilePermissionUpdate
 
 def verify_api_key_static_file_access(
     data_product: DataProduct, api_key: str, db: Session | None = None
-):
+) -> bool:
     """Verify if user associated with API key is authorized to access the
     requested data product.
 

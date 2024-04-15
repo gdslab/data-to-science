@@ -1,4 +1,5 @@
 import requests
+from datetime import datetime
 
 import pytest
 from fastapi import HTTPException, status
@@ -95,12 +96,37 @@ def test_access_authorized_deactivated_data_product_with_api_key(
 
     # current user has access to the data product project, but data product deactivated
     with pytest.raises(HTTPException) as exc_info:
-        print(exc_info)
         verify_api_key_static_file_access(
             data_product=deactivated_data_product,
             api_key=current_user_api_key.api_key,
             db=db,
         )
+
+
+def test_access_authorized_data_product_with_deactivated_api_key(
+    client: TestClient, db: Session, normal_user_access_token: str
+):
+    # user making request
+    current_user = get_current_user(db, normal_user_access_token)
+    # create api key for current_user
+    current_user_api_key = crud.api_key.create_with_user(db, user_id=current_user.id)
+    # create data product owned by current user
+    data_product = SampleDataProduct(db, user=current_user)
+
+    # verify with valid api key
+    assert verify_api_key_static_file_access(
+        data_product=data_product.obj, api_key=current_user_api_key.api_key, db=db
+    )
+
+    # deactivate api key
+    deactivated_api_key = crud.api_key.deactivate(db, user_id=current_user.id)
+
+    # verify with deactivated api key
+    assert not deactivated_api_key.is_active
+    assert deactivated_api_key.deactivated_at < datetime.utcnow()
+    assert not verify_api_key_static_file_access(
+        data_product=data_product.obj, api_key=current_user_api_key.api_key, db=db
+    )
 
 
 def test_access_unauthorized_data_product_with_api_key(

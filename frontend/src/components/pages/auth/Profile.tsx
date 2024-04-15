@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from 'axios';
 import { Formik, Form } from 'formik';
-import { useContext, useEffect, useState } from 'react';
+import { Fragment, useContext, useEffect, useState } from 'react';
 import seedrandom from 'seedrandom';
 import {
   ChevronDownIcon,
@@ -106,7 +106,7 @@ function ChangePasswordForm({
       }}
     >
       {({ dirty, isSubmitting }) => (
-        <Form className="flex flex-row gap-4">
+        <Form className="flex flex-col gap-4">
           <HintText>{passwordHintText}</HintText>
           <TextField label="Current Password" name="passwordCurrent" type="password" />
           <TextField label="New Password" name="passwordNew" type="password" />
@@ -343,32 +343,30 @@ function APIAccessForm({ setStatus, updateProfile, user }: APIAccessForm) {
       <span className="text-xl font-semibold">API Key Access</span>
 
       <div className="flex flex-col gap-4">
-        {user.api_access_token ? (
-          <div>
-            <p className="text-sm">
-              Access restricted static files outside of{' '}
-              {import.meta.env.VITE_BRAND_SHORT} with your API key.
-            </p>
-            <span className="text-sm">API Key:</span>
-            <div className="flex flex-row items-center justify-between gap-2 px-2 bg-gray-200">
-              <span className="font-semibold">{user.api_access_token}</span>
-              <DocumentDuplicateIcon
-                className="w-4 h-4 cursor-pointer"
-                onClick={() =>
-                  navigator.clipboard.writeText(
-                    user.api_access_token ? user.api_access_token : ''
-                  )
-                }
-              />
-            </div>
-          </div>
-        ) : (
+        <div>
           <p className="text-sm">
-            Request an API key that can be used to access your data outside of{' '}
-            {import.meta.env.VITE_BRAND_SHORT}. If you think your API key may have been
-            exposed, return here to revoke it and generate a new API key.
+            Your API key is a sensitive credential that can be used to access your data
+            stored on {import.meta.env.VITE_BRAND_SHORT}. Please keep it secure and do
+            not share it with anyone. If you suspect unauthorized access using your API
+            key, you may revoke the key using this form and request a new one.
           </p>
-        )}
+          {user.api_access_token ? (
+            <Fragment>
+              <span className="text-sm">API Key:</span>
+              <div className="flex flex-row items-center justify-between gap-2 px-2 bg-gray-200">
+                <span className="font-semibold">{user.api_access_token}</span>
+                <DocumentDuplicateIcon
+                  className="w-4 h-4 cursor-pointer"
+                  onClick={() =>
+                    navigator.clipboard.writeText(
+                      user.api_access_token ? user.api_access_token : ''
+                    )
+                  }
+                />
+              </div>
+            </Fragment>
+          ) : null}
+        </div>
         <div className="flex flex-col gap-1.5">
           <span className="italic text-sm">Example usage:</span>
           <div className="p-4 text-sm bg-gray-200 overflow-x-auto">
