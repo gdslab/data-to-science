@@ -270,7 +270,7 @@ export default function PotreeViewer({ copcPath }: { copcPath: string }) {
           elToolbar.find('#sldPointBudget').slider({
             value: viewer.getPointBudget(),
             min: 100_000,
-            max: 1_000_000,
+            max: 2_000_000,
             step: 100_000,
             slide: (event, ui) => { viewer.setPointBudget(ui.value); }
           });
