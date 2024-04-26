@@ -1,31 +1,16 @@
 import logging
 import os
-import shutil
-import tempfile
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Sequence
 from uuid import UUID, uuid4
 
-from fastapi import (
-    APIRouter,
-    Depends,
-    HTTPException,
-    Request,
-    status,
-    Query,
-    UploadFile,
-)
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
-from app.tasks import (
-    process_geotiff,
-    process_point_cloud,
-    run_toolbox_process,
-)
+from app.tasks import run_toolbox_process
 from app.core.config import settings
 
 router = APIRouter()
@@ -43,7 +28,7 @@ def get_data_product_dir(project_id: str, flight_id: str, data_product_id: str) 
         data_product_id (str): ID for data product.
 
     Returns:
-        str: Full path to data product directory.
+        Path: Full path to data product directory.
     """
     # get root static path
     if os.environ.get("RUNNING_TESTS") == "1":
@@ -59,115 +44,6 @@ def get_data_product_dir(project_id: str, flight_id: str, data_product_id: str) 
         os.makedirs(data_product_dir)
 
     return data_product_dir
-
-
-@router.post("", status_code=status.HTTP_202_ACCEPTED)
-def upload_data_product(
-    request: Request,
-    files: UploadFile,
-    dtype: str = Query(min_length=2, max_length=16),
-    current_user: models.User = Depends(deps.get_current_approved_user),
-    project: models.Project = Depends(deps.can_read_write_project),
-    flight: models.Flight = Depends(deps.can_read_write_flight),
-    db: Session = Depends(deps.get_db),
-) -> Any:
-    # confirm project and flight exist
-    if not project or not flight:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
-        )
-    # uploaded file info and new filename
-    if not files.filename:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="File not found"
-        )
-    original_filename = Path(files.filename)
-    new_filename = str(uuid4())
-    # check if uploaded file has supported extension
-    suffix = original_filename.suffix
-    if suffix not in [".tif", ".las", ".laz"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported file extension"
-        )
-    # create new data product record
-    data_product = crud.data_product.create_with_flight(
-        db,
-        obj_in=schemas.DataProductCreate(
-            data_type=dtype, filepath="null", original_filename=str(original_filename)
-        ),
-        flight_id=flight.id,
-    )
-    # get path for uploaded data product directory
-    data_product_dir = get_data_product_dir(
-        str(project.id), str(flight.id), str(data_product.id)
-    )
-    # construct fullpath for uploaded data product
-    tmpdir = tempfile.mkdtemp(dir=data_product_dir)
-    destination_filepath = f"{tmpdir}/{new_filename}{suffix}"
-    # write uploaded data product to disk and create new job
-    with open(destination_filepath, "wb") as buffer:
-        shutil.copyfileobj(files.file, buffer)
-        try:
-            job_in = schemas.job.JobCreate(
-                name="upload-data-product",
-                state="PENDING",
-                status="WAITING",
-                start_time=datetime.now(),
-                data_product_id=data_product.id,
-            )
-            job = crud.job.create_job(db, job_in)
-        except Exception:
-            logger.exception("Failed to create new job for data product upload")
-            # clean up any files written to tmp location and remove data product record
-            shutil.rmtree(data_product_dir)
-            with db as session:
-                session.delete(data_product)
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Unable to process upload"
-            )
-
-    if dtype == "point_cloud":
-        # start point cloud process in background
-        process_point_cloud.apply_async(
-            args=[
-                original_filename.name,
-                destination_filepath,
-                project.id,
-                flight.id,
-                job.id,
-                data_product.id,
-            ],
-            kwargs={},
-            queue="main-queue",
-        )
-    else:
-        # start geotiff process in background
-        try:
-            process_geotiff.apply_async(
-                args=[
-                    original_filename.name,
-                    destination_filepath,
-                    current_user.id,
-                    project.id,
-                    flight.id,
-                    job.id,
-                    data_product.id,
-                ],
-                kwargs={},
-                queue="main-queue",
-            )
-        except Exception:
-            logger.exception("Unable to start upload process geotiff task")
-            # clean up any files written to tmp location and remove data product and job
-            shutil.rmtree(data_product_dir)
-            with db as session:
-                session.delete(job)
-                session.delete(data_product)
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Unable to process upload"
-            )
-
-    return {"status": "processing"}
 
 
 @router.get("/{data_product_id}", response_model=schemas.DataProduct)

@@ -18,24 +18,6 @@ from app.tests.utils.user import create_user
 from app.utils.ColorBar import create_outfilename
 
 
-def test_create_data_product(
-    client: TestClient, db: Session, normal_user_access_token: str
-) -> None:
-    current_user = get_current_user(db, normal_user_access_token)
-    project = create_project(db, owner_id=current_user.id)
-    flight = create_flight(db, project_id=project.id)
-    geotiff = os.path.join(os.sep, "app", "app", "tests", "data", "test.tif")
-    with open(geotiff, "rb") as data:
-        response = client.post(
-            f"{settings.API_V1_STR}/projects/{flight.project_id}"
-            f"/flights/{flight.id}/data_products",
-            params={"dtype": "dsm"},
-            files={"files": data},
-        )
-
-        assert response.status_code == 202
-
-
 def test_read_data_product_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:

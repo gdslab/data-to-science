@@ -11,5 +11,6 @@ from .single_use_token import SingleUseToken, SingleUseTokenCreate
 from .team import Team, TeamCreate, TeamUpdate
 from .team_member import TeamMember, TeamMemberCreate, TeamMemberUpdate
 from .token import Token, TokenPayload
+from .tusd import TUSDHook
 from .user import User, UserCreate, UserInDB, UserUpdate
 from .user_style import UserStyle, UserStyleCreate, UserStyleUpdate

@@ -4,10 +4,10 @@ import { useState } from 'react';
 
 import { Button, OutlineButton } from '../../Buttons';
 import DrawFieldMap from '../../maps/DrawFieldMap';
-import FileUpload from '../../FileUpload';
 import { Coordinates, FeatureCollection, GeoJSONFeature } from './Project';
 import HintText from '../../HintText';
 import { useProjectContext } from './ProjectContext';
+import ShapefileUpload from './ShapefileUpload';
 
 export function coordArrayToWKT(coordArray: Coordinates[] | Coordinates[][]) {
   let wkt: string[][] = [];
@@ -73,18 +73,12 @@ export default function ProjectFormMap({
             >
               Upload Shapefile (.zip)
             </OutlineButton>
-            <FileUpload
+            <ShapefileUpload
               endpoint={`/api/v1/locations/upload`}
               open={open}
               onSuccess={() => setOpen(false)}
-              restrictions={{
-                allowedFileTypes: ['.zip'],
-                maxNumberOfFiles: 1,
-                minNumberOfFiles: 1,
-              }}
               setOpen={setOpen}
               setUploadResponse={setFeatureCollection}
-              uploadType="shp"
             />
           </div>
         )}

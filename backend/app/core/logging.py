@@ -82,7 +82,7 @@ class CustomJsonFormatter(logging.Formatter):
 
 
 @lru_cache
-def get_logger_config(nofile = False):  
+def get_logger_config(nofile=False):
     # stdout handler
     stdout_handler_format = logging.Formatter(LOGGER_FORMAT, datefmt=DATE_FORMAT)
     stdout_handler = logging.StreamHandler(sys.stdout)
@@ -111,9 +111,9 @@ def get_http_info(request: Request, response: Response):
         "req": {
             "url": request.url.path,
             "headers": {
-                "host": request.headers["host"],
-                "user-agent": request.headers["user-agent"],
-                "accept": request.headers["accept"],
+                "host": request.headers.get("host"),
+                "user-agent": request.headers.get("user-agent"),
+                "accept": request.headers.get("accept"),
             },
             "method": request.method,
         },

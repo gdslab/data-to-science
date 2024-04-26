@@ -3,7 +3,7 @@ import { useParams, useRevalidator } from 'react-router-dom';
 
 import { Button } from '../../../../Buttons';
 import TableCardRadioInput from '../../../../TableCardRadioInput';
-import UploadModal from '../../../../UploadModal';
+import DataProductUploadModal from './DataProductUploadModal';
 import { useInterval } from '../../../../hooks';
 import { DataProductStatus } from '../FlightData';
 import DataProductCard from './DataProductCard';
@@ -49,11 +49,12 @@ export default function DataProducts({ data }: { data: DataProductStatus[] }) {
           </div>
         )
       ) : null}
-      {projectRole !== 'viewer' ? (
+      {projectRole !== 'viewer' && projectId && flightId ? (
         <div className="my-4 flex justify-center">
-          <UploadModal
-            apiRoute={`/api/v1/projects/${projectId}/flights/${flightId}`}
+          <DataProductUploadModal
+            flightID={flightId}
             open={open}
+            projectID={projectId}
             setOpen={setOpen}
           />
           <Button size="sm" onClick={() => setOpen(true)}>

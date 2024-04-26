@@ -17,25 +17,6 @@ from app.tests.utils.raw_data import SampleRawData
 from app.tests.utils.user import create_user
 
 
-def test_create_raw_data(
-    client: TestClient, db: Session, normal_user_access_token: str
-) -> None:
-    current_user = get_current_user(db, normal_user_access_token)
-    project = create_project(db, owner_id=current_user.id)
-    flight = create_flight(db, project_id=project.id)
-    raw_data_zip = os.path.join(
-        os.sep, "app", "app", "tests", "data", "test_raw_data.zip"
-    )
-    with open(raw_data_zip, "rb") as data:
-        response = client.post(
-            f"{settings.API_V1_STR}/projects/{flight.project_id}"
-            f"/flights/{flight.id}/raw_data",
-            files={"files": data},
-        )
-
-        assert response.status_code == status.HTTP_200_OK
-
-
 def test_read_raw_data_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -182,7 +163,7 @@ def test_read_multi_raw_data_with_viewer_role(
         assert "original_filename" in dataset
 
 
-def test_read_raw_data_without_project_access(
+def test_read_multi_raw_data_without_project_access(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)

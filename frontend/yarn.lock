@@ -1197,16 +1197,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@uppy/companion-client@npm:^3.7.3":
-  version: 3.7.4
-  resolution: "@uppy/companion-client@npm:3.7.4"
+"@uppy/companion-client@npm:^3.8.0":
+  version: 3.8.0
+  resolution: "@uppy/companion-client@npm:3.8.0"
   dependencies:
-    "@uppy/utils": ^5.7.4
+    "@uppy/utils": ^5.7.5
     namespace-emitter: ^2.0.1
     p-retry: ^6.1.0
   peerDependencies:
-    "@uppy/core": ^3.9.3
-  checksum: 3e0c7d1477cc7a9a9b978d7f66057da12440f9439ed3df5464f05267b04f8cff44260c9c087d0c99c63897629337a7f452470a91092af72e4b5f3692f6ab72a6
+    "@uppy/core": ^3.10.0
+  checksum: ee97ef7ba22a8b346e0c3e020288a8d3fa0d0836a5c9f4b3ae4d13ef6aef2e87d86c05ed731732c0b9418e093c3a7c5df24448091cd08b822cd9fe178b03a7a1
   languageName: node
   linkType: hard
 
@@ -1361,16 +1361,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@uppy/tus@npm:^3.5.3":
-  version: 3.5.3
-  resolution: "@uppy/tus@npm:3.5.3"
+"@uppy/tus@npm:^3.5.4":
+  version: 3.5.4
+  resolution: "@uppy/tus@npm:3.5.4"
   dependencies:
-    "@uppy/companion-client": ^3.7.3
-    "@uppy/utils": ^5.7.3
+    "@uppy/companion-client": ^3.8.0
+    "@uppy/utils": ^5.7.5
     tus-js-client: ^3.1.3
   peerDependencies:
-    "@uppy/core": ^3.9.2
-  checksum: 1cd52da80ed628cd924bba106fc3fd047894eb1b4fc3852d99182d0490f16982d393ba60d897f61d759d90e5dea0245fb30f4e13e032fdee8c9cd5a9fa58a77d
+    "@uppy/core": ^3.10.0
+  checksum: 4c466f51aca0bde4dc7d3b669beddb944ba6860217519c96e05feb044cefa692ccf2a5d0bf48d651c52786bff00a63a27b78f63cbc4711bc5ea6405512e2b2e1
   languageName: node
   linkType: hard
 
@@ -1384,13 +1384,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@uppy/utils@npm:^5.7.3, @uppy/utils@npm:^5.7.4":
-  version: 5.7.4
-  resolution: "@uppy/utils@npm:5.7.4"
+"@uppy/utils@npm:^5.7.5":
+  version: 5.8.0
+  resolution: "@uppy/utils@npm:5.8.0"
   dependencies:
     lodash: ^4.17.21
     preact: ^10.5.13
-  checksum: 76330cece6bb08906166f5629326efb42c9f93c718ba4100fb9d8436b1cd1aab070924760b5e8d36374c04eca58fa1c12aa9728ff206046423cd5af39281adb8
+  checksum: b0fc7eca8ac6efee04d59d5cc6c76e0d926b2997add9d0702c57e4a2458d8b7d9689c3356f5e1136565ba143b433d4b072778b8819fe94d040085e638dcfa2ba
   languageName: node
   linkType: hard
 
@@ -2036,7 +2036,7 @@ __metadata:
     "@uppy/progress-bar": ^3.0.2
     "@uppy/react": ^3.1.3
     "@uppy/status-bar": ^3.2.3
-    "@uppy/tus": ^3.5.3
+    "@uppy/tus": ^3.5.4
     "@uppy/xhr-upload": ^3.3.1
     "@vitejs/plugin-react": ^4.0.3
     autoprefixer: ^10.4.14

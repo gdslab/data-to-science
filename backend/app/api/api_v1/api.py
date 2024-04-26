@@ -14,6 +14,7 @@ from app.api.api_v1.endpoints import (
     style,
     teams,
     team_members,
+    tusd,
     utils,
     users,
 )
@@ -61,4 +62,5 @@ api_router.include_router(teams.router, prefix="/teams", tags=["teams"])
 api_router.include_router(
     team_members.router, prefix="/teams/{team_id}/members", tags=["team_members"]
 )
+api_router.include_router(tusd.router, prefix="/tusd", tags=["tusd"])
 api_router.include_router(users.router, prefix="/users", tags=["users"])

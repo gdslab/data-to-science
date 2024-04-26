@@ -29,6 +29,7 @@ services:
     volumes:
       - ./backend:/app
       - log-data:/app/logs
+      - tusd-data:/srv/tusd-data/data
       - user-data:/static
     restart: always
     depends_on:
@@ -134,7 +135,7 @@ services:
 
   tusd:
     image: tusproject/tusd:latest
-    command: -verbose -behind-proxy -hooks-dir /srv/tusd-hooks
+    command: -verbose -behind-proxy -hooks-http http://proxy/api/v1/tusd -hooks-http-forward-headers Cookie X-Project-ID X-Flight-ID X-Data-Type
     volumes:
       - ./tusd/hooks:/srv/tusd-hooks
       - tusd-data:/srv/tusd-data/data
@@ -143,6 +144,7 @@ services:
     depends_on:
       - frontend
       - backend
+      - proxy
 
 volumes:
   db-data:

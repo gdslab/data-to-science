@@ -13,8 +13,8 @@ import AuthContext, { User } from '../../../AuthContext';
 import { Button, OutlineButton } from '../../Buttons';
 import Card from '../../Card';
 import HintText from '../../HintText';
-import FileUpload from '../../FileUpload';
 import { TextField } from '../../InputFields';
+import ProfilePictureUpload from './ProfilePictureUpload';
 import { passwordHintText } from './RegistrationForm';
 
 import { classNames } from '../../utils';
@@ -259,17 +259,11 @@ function EditProfilePicture({ setStatus, updateProfile }: EditProfilePicture) {
           </div>
         </div>
       </div>
-      <FileUpload
+      <ProfilePictureUpload
         endpoint={`${import.meta.env.VITE_API_V1_STR}/users/profile`}
         open={open}
         onSuccess={onSuccess}
-        restrictions={{
-          allowedFileTypes: ['.jpg', '.png'],
-          maxNumberOfFiles: 1,
-          minNumberOfFiles: 1,
-        }}
         setOpen={setOpen}
-        uploadType="img"
       />
     </>
   );
