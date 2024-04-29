@@ -8,7 +8,7 @@ services:
       - VITE_BRAND_FULL=Data to Science
       - VITE_BRAND_SHORT=D2S
       - VITE_BRAND_SLOGAN=A Data-driven Open Science Community for Sustained Innovation
-    image: d2s-app:experimental
+    image: d2s-app:latest
     platform: linux/x86_64
     depends_on:
       - backend
@@ -36,7 +36,7 @@ services:
       dockerfile: backend.dockerfile
       args:
         NUM_OF_WORKERS: 1
-    image: d2s-api:experimental
+    image: d2s-api:latest
     platform: linux/x86_64
     volumes:
       - log-data:/app/logs
@@ -117,7 +117,7 @@ services:
       - no-new-privileges=true
 
   celery_worker:
-    image: d2s-api:experimental
+    image: d2s-api:latest
     platform: linux/x86_64
     command: /app/celery/worker-start.sh
     volumes:
