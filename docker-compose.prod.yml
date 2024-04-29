@@ -210,7 +210,6 @@ services:
     image: tusproject/tusd:latest
     command: -behind-proxy -hooks-http http://proxy/api/v1/tusd -hooks-http-forward-headers Cookie X-Project-ID X-Flight-ID X-Data-Type
     volumes:
-      - ./tusd/hooks:/srv/tusd-hooks
       - tusd-data:/srv/tusd-data/data
       - user-data:/static
     restart: always
