@@ -121,13 +121,13 @@ function projectHoverStateReducer(
   }
 }
 
-function projectsReducer(state: Project[], action: ProjectsAction) {
+function projectsReducer(state: Project[] | null, action: ProjectsAction) {
   switch (action.type) {
     case 'set': {
       return action.payload;
     }
     case 'clear': {
-      return [];
+      return null;
     }
     default: {
       return state;
@@ -188,7 +188,7 @@ const context: {
   geoRasterIdDispatch: React.Dispatch<GeoRasterIdAction>;
   projectHoverState: string | null;
   projectHoverStateDispatch: React.Dispatch<ProjectHoverStateAction>;
-  projects: Project[];
+  projects: Project[] | null;
   projectsDispatch: React.Dispatch<ProjectsAction>;
   projectsVisible: string[];
   projectsVisibleDispatch: React.Dispatch<ProjectsVisibleAction>;
@@ -208,7 +208,7 @@ const context: {
   geoRasterIdDispatch: () => {},
   projectHoverState: null,
   projectHoverStateDispatch: () => {},
-  projects: [],
+  projects: null,
   projectsDispatch: () => {},
   projectsVisible: [],
   projectsVisibleDispatch: () => {},
@@ -236,7 +236,7 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
     projectHoverStateReducer,
     null
   );
-  const [projects, projectsDispatch] = useReducer(projectsReducer, []);
+  const [projects, projectsDispatch] = useReducer(projectsReducer, null);
   const [projectsVisible, projectsVisibleDispatch] = useReducer(
     projectsVisibleReducer,
     []
@@ -271,12 +271,14 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
           type: 'set',
           payload: response.data.map(({ id }) => id),
         });
+        // add projects to local storage
+        localStorage.setItem('projects', JSON.stringify(response.data));
       } else {
-        projectsDispatch({ type: 'clear', payload: [] });
+        projectsDispatch({ type: 'clear', payload: null });
       }
     } catch (err) {
       console.log('Unable to fetch projects');
-      projectsDispatch({ type: 'clear', payload: [] });
+      projectsDispatch({ type: 'clear', payload: null });
     }
   }
 

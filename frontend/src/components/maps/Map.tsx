@@ -48,7 +48,7 @@ export default function Map({ layerPaneHidden }: { layerPaneHidden: boolean }) {
         zoomControl={false}
         worldCopyJump={true}
       >
-        {!activeProject ? <ProjectMarkers projects={projects} /> : null}
+        {!activeProject ? <ProjectMarkers projects={projects ? projects : []} /> : null}
 
         {activeProject ? <ProjectBoundary project={activeProject} /> : null}
 

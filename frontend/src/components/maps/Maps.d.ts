@@ -52,7 +52,7 @@ export type ActiveProjectAction = { type: string; payload: Project | null };
 
 export type FlightsAction = { type: string; payload: Flight[] };
 
-export type ProjectsAction = { type: string; payload: Project[] };
+export type ProjectsAction = { type: string; payload: Project[] | null };
 
 export type ProjectsVisibleAction = { type: string; payload: string[] };
 

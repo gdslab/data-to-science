@@ -215,7 +215,7 @@ export default function LayerPane({
    * @param newPage Index of new page.
    */
   function updateCurrentPage(newPage: number): void {
-    const total_pages = Math.ceil(projects.length / MAX_ITEMS);
+    const total_pages = Math.ceil(projects ? projects.length : 0 / MAX_ITEMS);
 
     if (newPage + 1 > total_pages) {
       setCurrentPage(total_pages - 1);
@@ -232,14 +232,18 @@ export default function LayerPane({
    * @returns
    */
   function filterByVisibilityAndSearch(projs): Project[] {
-    return projs
-      .filter(({ id }) => projectsVisible.includes(id))
-      .filter(
-        (project) =>
-          !project.title ||
-          project.title.toLowerCase().includes(searchText.toLowerCase()) ||
-          project.description.toLowerCase().includes(searchText.toLowerCase())
-      );
+    if (!projs) {
+      return [];
+    } else {
+      return projs
+        .filter(({ id }) => projectsVisible.includes(id))
+        .filter(
+          (project) =>
+            !project.title ||
+            project.title.toLowerCase().includes(searchText.toLowerCase()) ||
+            project.description.toLowerCase().includes(searchText.toLowerCase())
+        );
+    }
   }
 
   const TOTAL_PAGES = Math.ceil(
@@ -266,6 +270,18 @@ export default function LayerPane({
    */
   function getAvailableProjects(projs): Project[] {
     return filterAndSlice(projs).sort((a, b) => sorter(a.title, b.title));
+  }
+
+  function getLocalStorageProjects() {
+    let lsProjects = localStorage.getItem('projects');
+    if (lsProjects) {
+      lsProjects = JSON.parse(lsProjects);
+    }
+    if (lsProjects && lsProjects.length > 0) {
+      return lsProjects;
+    } else {
+      return null;
+    }
   }
 
   if (hidePane) {
@@ -458,7 +474,7 @@ export default function LayerPane({
         ) : (
           <article className="flex flex-col gap-2 p-4 overflow-y-auto">
             <h1>Projects</h1>
-            {projects.length > 0 ? (
+            {projects && projects.length > 0 ? (
               <div className="flex flex-col gap-2">
                 <ProjectSearch
                   searchText={searchText}
@@ -472,7 +488,7 @@ export default function LayerPane({
                 )}
               </div>
             ) : null}
-            {projects.length > 0 ? (
+            {(projects && projects.length > 0) || getLocalStorageProjects() ? (
               <ul className="mt-4 space-y-2">
                 {getAvailableProjects(projects).map((project) => (
                   <li key={project.id}>
@@ -518,7 +534,7 @@ export default function LayerPane({
                   </li>
                 ))}
               </ul>
-            ) : (
+            ) : projects && projects.length === 0 ? (
               <div>
                 <p className="mb-4">
                   You do not have any projects to display on the map. Use the below
@@ -527,6 +543,12 @@ export default function LayerPane({
                 <Link to="/projects">
                   <Button>My Projects</Button>
                 </Link>
+              </div>
+            ) : (
+              <div className="w-full">
+                <div className="h-1.5 w-full bg-blue-100 rounded-lg overflow-hidden">
+                  <div className="animate-progress w-full h-full bg-blue-500 origin-left-right"></div>
+                </div>
               </div>
             )}
             <Pagination
