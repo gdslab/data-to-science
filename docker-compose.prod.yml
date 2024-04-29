@@ -183,7 +183,7 @@ services:
       dockerfile: nginx.dockerfile
       args:
         - DEFAULT_CONF=prod
-    image: d2s-proxy:experimental
+    image: d2s-proxy:latest
     platform: linux/x86_64
     tmpfs:
       - /tmp
