@@ -1,3 +1,5 @@
+import clsx from 'clsx';
+
 export function getAllowedFileTypes(dtype: string): string[] {
   if (dtype === 'dsm' || dtype === 'ortho' || dtype === 'other') {
     return ['.tif'];
@@ -11,12 +13,14 @@ export function getAllowedFileTypes(dtype: string): string[] {
 }
 
 export default function DataTypeRadioInput({
+  disabled,
   dtype,
   dtypeOther,
   setDtype,
   setDtypeOther,
   setDtypeOtherTouched,
 }: {
+  disabled: boolean;
   dtype: string;
   dtypeOther: string;
   setDtype: React.Dispatch<React.SetStateAction<string>>;
@@ -50,11 +54,18 @@ export default function DataTypeRadioInput({
               className="peer hidden"
               checked={dtype === 'dsm'}
               onChange={changeDtype}
+              disabled={disabled}
             />
 
             <label
               htmlFor="dtypeDSM"
-              className="flex cursor-pointer items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white"
+              className={clsx(
+                'flex items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white',
+                {
+                  'bg-gray-500 opacity-50 cursor-not-allowed': disabled,
+                  'cursor-pointer': !disabled,
+                }
+              )}
             >
               <p className="text-sm font-medium">DSM</p>
             </label>
@@ -69,11 +80,18 @@ export default function DataTypeRadioInput({
               className="peer hidden"
               checked={dtype === 'point_cloud'}
               onChange={changeDtype}
+              disabled={disabled}
             />
 
             <label
               htmlFor="dtypePointCloud"
-              className="flex cursor-pointer items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white"
+              className={clsx(
+                'flex items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white',
+                {
+                  'bg-gray-500 opacity-50 cursor-not-allowed': disabled,
+                  'cursor-pointer': !disabled,
+                }
+              )}
             >
               <p className="text-sm font-medium">Point Cloud</p>
             </label>
@@ -88,11 +106,18 @@ export default function DataTypeRadioInput({
               className="peer hidden"
               checked={dtype === 'ortho'}
               onChange={changeDtype}
+              disabled={disabled}
             />
 
             <label
               htmlFor="dtypeOrtho"
-              className="flex cursor-pointer items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white"
+              className={clsx(
+                'flex items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white',
+                {
+                  'bg-gray-500 opacity-50 cursor-not-allowed': disabled,
+                  'cursor-pointer': !disabled,
+                }
+              )}
             >
               <p className="text-sm font-medium">Ortho</p>
             </label>
@@ -107,11 +132,18 @@ export default function DataTypeRadioInput({
               className="peer hidden"
               checked={dtype === 'raw'}
               onChange={changeDtype}
+              disabled={disabled}
             />
 
             <label
               htmlFor="dtypeRaw"
-              className="flex cursor-pointer items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white"
+              className={clsx(
+                'flex items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white',
+                {
+                  'bg-gray-500 opacity-50 cursor-not-allowed': disabled,
+                  'cursor-pointer': !disabled,
+                }
+              )}
             >
               <p className="text-sm font-medium">Raw Data</p>
             </label>
@@ -126,11 +158,18 @@ export default function DataTypeRadioInput({
               className="peer hidden"
               checked={dtype === 'other'}
               onChange={changeDtype}
+              disabled={disabled}
             />
 
             <label
               htmlFor="dtypeOther"
-              className="flex cursor-pointer items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white"
+              className={clsx(
+                'flex items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white',
+                {
+                  'bg-gray-500 opacity-50 cursor-not-allowed': disabled,
+                  'cursor-pointer': !disabled,
+                }
+              )}
             >
               <p className="text-sm font-medium">Other</p>
             </label>
@@ -150,6 +189,7 @@ export default function DataTypeRadioInput({
               value={dtypeOther}
               onChange={updateDtypeOther}
               onBlur={() => setDtypeOtherTouched(true)}
+              disabled={disabled}
             />
           </fieldset>
         ) : null}

@@ -29,6 +29,7 @@ type DataProductUpload = {
   info: DataProductInfo;
   fileType: string[];
   uploadType: string;
+  updateSetDisabled: (param: boolean) => void;
   updateUploadHistory?: (param: string) => void;
 };
 
@@ -36,6 +37,7 @@ export default function DataProductUpload({
   info,
   fileType,
   uploadType,
+  updateSetDisabled,
   updateUploadHistory,
 }: DataProductUpload) {
   const [uppy, updateUppy] = useState(() => createUppy(info));
@@ -43,7 +45,7 @@ export default function DataProductUpload({
   useEffect(() => {
     // updates custom headers when data type, project id, or flight id change
     updateUppy(() => createUppy(info));
-  }, [info]);
+  }, [info.dtype]);
 
   const restrictions = {
     allowedFileTypes: fileType,
@@ -66,7 +68,14 @@ export default function DataProductUpload({
     );
   });
 
+  uppy.on('upload', () => {
+    // disable data type inputs during upload
+    updateSetDisabled(true);
+  });
+
   uppy.on('upload-error', (_file, _error, response) => {
+    // re-enable data type inputs
+    updateSetDisabled(false);
     if (response && response.body && response.body.detail) {
       let errorDetails = '';
       if (typeof response.body.detail === 'string') {
@@ -91,6 +100,8 @@ export default function DataProductUpload({
   });
 
   uppy.on('upload-success', (_file, _response) => {
+    // re-enable data type inputs
+    updateSetDisabled(false);
     if (_file && updateUploadHistory) updateUploadHistory(_file.meta.name);
     if (_file) uppy.removeFile(_file.id);
   });

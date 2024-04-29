@@ -18,6 +18,7 @@ export default function DataProductUploadModal({
   setOpen,
 }: Props) {
   const cancelButtonRef = useRef(null);
+  const [disabled, setDisabled] = useState(false);
   const [dtype, setDtype] = useState('dsm');
   const [dtypeOther, setDtypeOther] = useState('');
   const [dtypeOtherTouched, setDtypeOtherTouched] = useState(false);
@@ -38,6 +39,10 @@ export default function DataProductUploadModal({
       setDtypeOtherTouched(false);
     }
   }, [dtype]);
+
+  function updateSetDisabled(newDisabledState: boolean) {
+    setDisabled(newDisabledState);
+  }
 
   function updateUploadHistory(newUpload: string) {
     const currentUploadHistory = uploadHistory.slice();
@@ -87,6 +92,7 @@ export default function DataProductUploadModal({
               <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
                 {uploadType === 'dataProduct' || uploadType === 'zip' ? (
                   <DataTypeRadioInput
+                    disabled={disabled}
                     dtype={dtype}
                     dtypeOther={dtypeOther}
                     setDtype={setDtype}
@@ -106,6 +112,7 @@ export default function DataProductUploadModal({
                       }}
                       fileType={getAllowedFileTypes(dtype)}
                       uploadType={uploadType}
+                      updateSetDisabled={updateSetDisabled}
                       updateUploadHistory={updateUploadHistory}
                     />
                   </div>
