@@ -37,7 +37,7 @@ class Header(BaseModel):
     Content_Length: List[str] = Field(alias="Content-Length")
     Content_Type: Optional[List[str]] = Field(alias="Content-Type", default=None)
     Cookie: List[str]
-    Dnt: List[str]
+    Dnt: Optional[List[str]] = None
     Host: List[str]
     Origin: List[str]
     Referer: List[str]
