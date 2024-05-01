@@ -103,6 +103,7 @@ def run_toolbox_process(
 @celery_app.task(name="geotiff_upload_task")
 def process_geotiff(
     original_filename: str,
+    storage_path: str,
     geotiff_filepath: str,
     user_id: UUID,
     project_id: UUID,
@@ -114,17 +115,17 @@ def process_geotiff(
 
     Args:
         original_filename (str): Original filename for GeoTIFF.
+        storage_path (Path): Filepath for GeoTIFF in tusd storage.
         geotiff_filepath (str): Filepath for GeoTIFF.
         user_id (UUID): User ID for user that uploaded GeoTIFF.
         project_id (UUID): Project ID associated with data product.
         flight_id (UUID): Flight ID associated with data product.
         job_id (UUID): Job ID for job associated with upload process.
         data_product_id (UUID): Data product ID for uploaded GeoTIFF.
-
-    Returns:
-        _type_: _description_
     """
     in_raster = Path(geotiff_filepath)
+    # copy uploaded point cloud to static files
+    shutil.copyfile(storage_path, in_raster)
     # get database session
     db = next(get_db())
     # retrieve job associated with this task
@@ -184,6 +185,13 @@ def process_geotiff(
     # update job to indicate process finished
     update_job_status(job, state="DONE")
 
+    # remove the uploaded geotiff from tusd
+    try:
+        os.remove(storage_path)
+        os.remove(f"{storage_path}.info")
+    except Exception:
+        logger.exception("Unable to cleanup upload on tusd server")
+
     return None
 
 
@@ -216,6 +224,7 @@ def generate_point_cloud_preview_image(in_las: str) -> None:
 @celery_app.task(name="point_cloud_upload_task")
 def process_point_cloud(
     original_filename: str,
+    storage_path: str,
     las_filepath: str,
     project_id: UUID,
     flight_id: UUID,
@@ -226,6 +235,7 @@ def process_point_cloud(
 
     Args:
         original_filename (str): Original filename for point cloud.
+        storage_path (str): Filepath for point cloud in tusd storage.
         las_filepath (str): Filepath for point cloud.
         project_id (UUID): Project ID associated with data product.
         flight_id (UUID): Flight ID associated with data product.
@@ -234,11 +244,10 @@ def process_point_cloud(
 
     Raises:
         Exception: Raise if EPT or COPG subprocesses fail.
-
-    Returns:
-        _type_: _description_
     """
     in_las = Path(las_filepath)
+    # copy uploaded point cloud to static files
+    shutil.copyfile(storage_path, in_las)
     # get database session
     db = next(get_db())
     # retrieve job associated with this task
@@ -323,7 +332,73 @@ def process_point_cloud(
     if os.path.exists(in_las.parent):
         shutil.rmtree(in_las.parent)
 
+    # remove the uploaded point cloud from tusd
+    try:
+        os.remove(storage_path)
+        os.remove(f"{storage_path}.info")
+    except Exception:
+        logger.exception("Unable to cleanup upload on tusd server")
+
     return None
+
+
+@celery_app.task(name="raw_data_upload_task")
+def process_raw_data(
+    raw_data_id: UUID,
+    storage_path: str,
+    destination_filepath: str,
+    job_id: UUID,
+) -> None:
+    """Celery task for copying uploaded raw data (.zip) to static files location.
+
+    Args:
+        raw_data_id (UUID): ID for raw data record.
+        storage_path (Path): Location of raw data on tusd server.
+        destination_filepath (Path): Destination in static files directory for raw data.
+        job_id (UUID): ID for job tracking task progress.
+
+    Raises:
+        HTTPException: Raised if copyfile process fails.
+    """
+    # get database session
+    db = next(get_db())
+    # retrieve job associated with this task
+    job = crud.job.get(db, id=job_id)
+    # retrieve raw data associated with this task
+    raw_data = crud.raw_data.get(db, id=raw_data_id)
+    # update job status to indicate process has started
+    update_job_status(job, state="INPROGRESS")
+    try:
+        # copy uploaded raw data to static files and update record
+        shutil.copyfile(storage_path, destination_filepath)
+        # add filepath to raw data object
+        crud.raw_data.update(
+            db,
+            db_obj=raw_data,
+            obj_in=schemas.RawDataUpdate(filepath=str(destination_filepath)),
+        )
+    except Exception:
+        logger.exception("Failed to process uploaded raw data")
+        # clean up any files
+        if os.path.exists(destination_filepath):
+            os.remove(destination_filepath)
+        # remove job
+        update_job_status(job, state="ERROR")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Unable to process upload"
+        )
+
+    # update job to indicate process finished
+    update_job_status(job, state="DONE")
+
+    # remove raw data from tusd
+    try:
+        # remove zip file
+        os.remove(storage_path)
+        # remove zip file metadata
+        os.remove(f"{storage_path}.info")
+    except Exception:
+        logger.exception("Unable to cleanup upload on tusd server")
 
 
 def update_job_status(

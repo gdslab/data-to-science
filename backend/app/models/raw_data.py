@@ -29,7 +29,7 @@ class RawData(Base):
     deactivated_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 
     flight: Mapped["Flight"] = relationship(back_populates="raw_data")
-    jobs: Mapped[list["Job"]] = relationship(back_populates="raw_data")
+    jobs: Mapped["Job"] = relationship(back_populates="raw_data")
 
     def __repr__(self) -> str:
         return (

@@ -121,6 +121,7 @@ services:
     platform: linux/x86_64
     command: /app/celery/worker-start.sh
     volumes:
+      - tusd-data:/srv/tusd-data/data
       - user-data:/static
     read_only: true
     tmpfs:
@@ -152,6 +153,7 @@ services:
     command: /app/celery/beat-start.sh
     volumes:
       - celery-data:/var/run/celery
+      - tusd-data:/srv/tusd-data/data
       - user-data:/static
     read_only: true
     tmpfs:

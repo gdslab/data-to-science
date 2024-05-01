@@ -10,9 +10,16 @@ import DataProductCard from './DataProductCard';
 import DataProductsTable from './DataProductsTable';
 import { useProjectContext } from '../../ProjectContext';
 
-export default function DataProducts({ data }: { data: DataProductStatus[] }) {
+export default function DataProducts({
+  data,
+  open,
+  setOpen,
+}: {
+  data: DataProductStatus[];
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
   const { flightId, projectId } = useParams();
-  const [open, setOpen] = useState(false);
   const [tableView, toggleTableView] = useState<'table' | 'carousel'>('carousel');
   const revalidator = useRevalidator();
   const { projectRole } = useProjectContext();

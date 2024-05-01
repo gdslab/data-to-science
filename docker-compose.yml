@@ -78,6 +78,7 @@ services:
     platform: linux/x86_64
     command: /app/celery/worker-start.sh
     volumes:
+      - tusd-data:/srv/tusd-data/data
       - user-data:/static
     restart: always
     depends_on:
@@ -92,6 +93,7 @@ services:
     platform: linux/x86_64
     command: /app/celery/beat-start.sh
     volumes:
+      - tusd-data:/srv/tusd-data/data
       - user-data:/static
     restart: always
     depends_on:

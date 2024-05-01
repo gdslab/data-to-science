@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from app import crud, models, schemas
 from app.api.api_v1.endpoints.data_products import get_data_product_dir
 from app.api.api_v1.endpoints.raw_data import get_raw_data_dir
-from app.tasks import process_geotiff, process_point_cloud
+from app.tasks import process_geotiff, process_point_cloud, process_raw_data
 
 
 logger = logging.getLogger("__name__")
@@ -71,32 +71,23 @@ def process_data_product_uploaded_to_tusd(
     # construct fullpath for uploaded data product
     tmpdir = tempfile.mkdtemp(dir=data_product_dir)
     destination_filepath = f"{tmpdir}/{new_filename}{suffix}"
-    # copy uploaded data product to static files and create new job
-    shutil.copyfile(storage_path, destination_filepath)
-    try:
-        job_in = schemas.job.JobCreate(
-            name="upload-data-product",
-            state="PENDING",
-            status="WAITING",
-            start_time=datetime.now(),
-            data_product_id=data_product.id,
-        )
-        job = crud.job.create_job(db, job_in)
-    except Exception:
-        logger.exception("Failed to create new job for data product upload")
-        # clean up any files written to tmp location and remove data product record
-        shutil.rmtree(data_product_dir)
-        with db as session:
-            session.delete(data_product)
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Unable to process upload"
-        )
+
+    # create job to track task progress
+    job_in = schemas.job.JobCreate(
+        name="upload-data-product",
+        state="PENDING",
+        status="WAITING",
+        start_time=datetime.now(),
+        data_product_id=data_product.id,
+    )
+    job = crud.job.create_job(db, job_in)
 
     if dtype == "point_cloud":
         # start point cloud process in background
         process_point_cloud.apply_async(
             args=[
                 original_filename.name,
+                str(storage_path),
                 destination_filepath,
                 project_id,
                 flight_id,
@@ -111,6 +102,7 @@ def process_data_product_uploaded_to_tusd(
         process_geotiff.apply_async(
             args=[
                 original_filename.name,
+                str(storage_path),
                 destination_filepath,
                 current_user.id,
                 project_id,
@@ -121,15 +113,6 @@ def process_data_product_uploaded_to_tusd(
             kwargs={},
             queue="main-queue",
         )
-
-    # remove data product from tusd
-    try:
-        # remove zip file
-        os.remove(storage_path)
-        # remove zip file metadata
-        os.remove(f"{storage_path}.info")
-    except Exception:
-        logger.exception("Unable to cleanup upload on tusd server")
 
     return {"status": "processing"}
 
@@ -192,31 +175,22 @@ def process_raw_data_uploaded_to_tusd(
     )
     # construct fullpath for uploaded raw data
     destination_filepath = raw_data_dir / (new_filename + suffix)
-    try:
-        # copy uploaded raw data to static files and update record
-        shutil.copyfile(storage_path, destination_filepath)
-        # add filepath to raw data object
-        crud.raw_data.update(
-            db,
-            db_obj=raw_data,
-            obj_in=schemas.RawDataUpdate(filepath=str(destination_filepath)),
-        )
-    except Exception:
-        logger.exception("Failed to process uploaded raw data")
-        # clean up any files
-        if os.path.exists(destination_filepath):
-            os.remove(destination_filepath)
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Unable to process upload"
-        )
 
-    # remove raw data from tusd
-    try:
-        # remove zip file
-        os.remove(storage_path)
-        # remove zip file metadata
-        os.remove(f"{storage_path}.info")
-    except Exception:
-        logger.exception("Unable to cleanup upload on tusd server")
+    # create job to track task progress
+    job_in = schemas.job.JobCreate(
+        name="upload-raw-data",
+        state="PENDING",
+        status="WAITING",
+        start_time=datetime.now(),
+        raw_data_id=raw_data.id,
+    )
+    job = crud.job.create_job(db, job_in)
 
-    return {"status": "success"}
+    # start copying raw data from tusd to static files in background
+    process_raw_data.apply_async(
+        args=[raw_data.id, str(storage_path), str(destination_filepath), job.id],
+        kwargs={},
+        queue="main-queue",
+    )
+
+    return {"status": "processing"}

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
@@ -53,14 +53,18 @@ class CRUDRawData(CRUDBase[RawData, RawDataCreate, RawDataUpdate]):
             select(RawData)
             .where(RawData.flight_id == flight_id)
             .where(RawData.is_active)
-            .where(RawData.filepath != "null")
         )
         with db as session:
-            all_raw_data = session.execute(stmt).all()
+            all_raw_data = session.execute(stmt).scalars().all()
             all_raw_data_with_status = []
             for raw_data in all_raw_data:
-                set_url_attr(raw_data[0], upload_dir)
-                all_raw_data_with_status.append(raw_data[0])
+                if raw_data.jobs and raw_data.jobs.status:
+                    set_status_attr(raw_data, raw_data.jobs.status)
+                else:
+                    set_status_attr(raw_data, "SUCCESS")
+                if raw_data.filepath != "null":
+                    set_url_attr(raw_data, upload_dir)
+                all_raw_data_with_status.append(raw_data)
         return all_raw_data_with_status
 
     def deactivate(self, db: Session, raw_data_id: UUID) -> RawData | None:
@@ -74,6 +78,10 @@ class CRUDRawData(CRUDBase[RawData, RawDataCreate, RawDataUpdate]):
             session.commit()
 
         return crud.raw_data.get(db, id=raw_data_id)
+
+
+def set_status_attr(raw_data_obj: RawData, status: str | Any):
+    setattr(raw_data_obj, "status", status)
 
 
 def set_url_attr(raw_data_obj: RawData, upload_dir: str):

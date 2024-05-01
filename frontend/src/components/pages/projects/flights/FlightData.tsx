@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { useState } from 'react';
 import { Params, useLoaderData } from 'react-router-dom';
 
 import DataProducts from './dataProducts/DataProducts';
@@ -41,6 +42,7 @@ export interface DataProductStatus extends DataProduct {
 export interface RawData {
   id: string;
   original_filename: string;
+  status: string;
   url: string;
 }
 
@@ -51,6 +53,7 @@ interface FlightData {
 
 export default function FlightData() {
   const { dataProducts, rawData } = useLoaderData() as FlightData;
+  const [open, setOpen] = useState(false);
   const { flights } = useProjectContext();
 
   return (
@@ -58,10 +61,10 @@ export default function FlightData() {
       {flights && flights.length > 0 ? <FlightDataNav /> : null}
       <div className="flex flex-col h-full w-full gap-4 p-4">
         <div className="max-h-32">
-          <RawData data={rawData} />
+          <RawData data={rawData} open={open} />
         </div>
         <div className="grow min-h-0">
-          <DataProducts data={dataProducts} />
+          <DataProducts data={dataProducts} open={open} setOpen={setOpen} />
         </div>
       </div>
     </div>
