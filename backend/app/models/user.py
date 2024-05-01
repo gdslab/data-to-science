@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from .team_member import TeamMember
     from .project import Project
     from .project_member import ProjectMember
+    from .upload import Upload
 
 
 class User(Base):
@@ -50,15 +51,18 @@ class User(Base):
     flights: Mapped[list["Flight"]] = relationship(
         back_populates="pilot", cascade="all, delete"
     )
+    project_memberships: Mapped[list["ProjectMember"]] = relationship(
+        back_populates="member"
+    )
     projects: Mapped[list["Project"]] = relationship(
         back_populates="owner", cascade="all, delete"
     )
+    team_memberships: Mapped[list["TeamMember"]] = relationship(back_populates="member")
     teams: Mapped[list["Team"]] = relationship(
         back_populates="owner", cascade="all, delete"
     )
-    team_memberships: Mapped[list["TeamMember"]] = relationship(back_populates="member")
-    project_memberships: Mapped[list["ProjectMember"]] = relationship(
-        back_populates="member"
+    upload: Mapped[list["Upload"]] = relationship(
+        back_populates="uploader", cascade="all, delete"
     )
 
     def __repr__(self) -> str:

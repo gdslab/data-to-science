@@ -10,5 +10,6 @@ from .raw_data import RawData
 from .single_use_token import SingleUseToken
 from .team import Team
 from .team_member import TeamMember
+from .upload import Upload
 from .user import User
 from .user_style import UserStyle

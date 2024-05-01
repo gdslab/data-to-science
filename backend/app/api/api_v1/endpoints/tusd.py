@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -12,7 +13,7 @@ from app.utils.tusd.post_processing import (
     process_data_product_uploaded_to_tusd,
     process_raw_data_uploaded_to_tusd,
 )
-from app.schemas import TUSDHook
+from app.schemas import TUSDHook, UploadCreate, UploadUpdate
 
 
 router = APIRouter()
@@ -79,36 +80,70 @@ def handle_tusd_http_hooks(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
 
+    # get upload event id
+    upload_id: str = payload.Event.Upload.ID
+    # check if upload already logged in db
+    existing_upload: models.Upload | None = crud.upload.get_upload_by_upload_id(
+        db, upload_id=upload_id
+    )
+    # upload status
+    is_uploading: bool | None = None
+    if existing_upload:
+        is_uploading = existing_upload.is_uploading
+
     # tusd http hooks
     # other possible hooks: pre-create, post-create, post-receive
+    if payload.Type == "post-create":
+        # if upload record does not already exist
+        if not existing_upload:
+            # create new upload record in db
+            crud.upload.create_with_user(
+                db, upload_id=upload_id, user_id=current_user.id
+            )
 
     # non-blocking, runs when upload to tusd server completed
     if payload.Type == "post-finish":
-        # verify uploaded file exists in tusd data dir
-        storage = payload.Event.Upload.Storage
-        if storage and os.path.exists(storage.Path):
-            # post-processing for geotiffs and point clouds
-            if data_type != "raw":
-                process_data_product_uploaded_to_tusd(
-                    db,
-                    current_user=current_user,
-                    storage_path=Path(storage.Path),
-                    original_filename=Path(payload.Event.Upload.MetaData.filename),
-                    dtype=data_type,
-                    project_id=project.id,
-                    flight_id=flight.id,
-                )
-            else:
-                process_raw_data_uploaded_to_tusd(
-                    db,
-                    current_user=current_user,
-                    storage_path=Path(storage.Path),
-                    original_filename=Path(payload.Event.Upload.MetaData.filename),
-                    dtype=data_type,
-                    project_id=project.id,
-                    flight_id=flight.id,
-                )
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Uploaded file not found"
+        if existing_upload:
+            # update record to indicate upload has finished
+            upload_update_in = UploadUpdate(
+                is_uploading=False, last_updated_at=datetime.utcnow()
             )
+            crud.upload.update(db, db_obj=existing_upload, obj_in=upload_update_in)
+        else:
+            # create record and indicate upload is finished
+            crud.upload.create_with_user(
+                db, upload_id=upload_id, user_id=current_user.id, is_uploading=False
+            )
+
+        # only run post processing scripts if "is_uploading" was True in existing
+        # upload or existing upload did not exist
+        if is_uploading == True or not existing_upload:
+            # verify uploaded file exists in tusd data dir
+            storage = payload.Event.Upload.Storage
+            if storage and os.path.exists(storage.Path):
+                # post-processing for geotiffs and point clouds
+                if data_type != "raw":
+                    process_data_product_uploaded_to_tusd(
+                        db,
+                        current_user=current_user,
+                        storage_path=Path(storage.Path),
+                        original_filename=Path(payload.Event.Upload.MetaData.filename),
+                        dtype=data_type,
+                        project_id=project.id,
+                        flight_id=flight.id,
+                    )
+                else:
+                    process_raw_data_uploaded_to_tusd(
+                        db,
+                        current_user=current_user,
+                        storage_path=Path(storage.Path),
+                        original_filename=Path(payload.Event.Upload.MetaData.filename),
+                        dtype=data_type,
+                        project_id=project.id,
+                        flight_id=flight.id,
+                    )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Uploaded file not found",
+                )

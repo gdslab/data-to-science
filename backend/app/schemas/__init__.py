@@ -12,5 +12,6 @@ from .team import Team, TeamCreate, TeamUpdate
 from .team_member import TeamMember, TeamMemberCreate, TeamMemberUpdate
 from .token import Token, TokenPayload
 from .tusd import TUSDHook
+from .upload import Upload, UploadCreate, UploadUpdate
 from .user import User, UserCreate, UserInDB, UserUpdate
 from .user_style import UserStyle, UserStyleCreate, UserStyleUpdate
