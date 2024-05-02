@@ -52,7 +52,7 @@ export default function RawData({
               ) : (
                 <div className="flex flex-row items-center gap-2">
                   <span>{dataset.original_filename}</span>
-                  <CogIcon className="h-4 w-4 animate-spin" />
+                  <CogIcon className="h-5 w-5 animate-spin" />
                   <span className="sr-only">Processing raw data</span>
                 </div>
               )}
