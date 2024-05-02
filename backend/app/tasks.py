@@ -195,24 +195,25 @@ def process_geotiff(
     return None
 
 
-@celery_app.task(name="point_cloud_preview_img_task")
-def generate_point_cloud_preview_image(in_las: str) -> None:
+@celery_app.task(name="point_cloud_preview_image_task")
+def create_point_cloud_preview_image(in_las: str) -> None:
     """Celery task for creating a preview image for a point cloud.
 
     Args:
         in_las (str): Path to point cloud.
-
-    Raises:
-        Exception: Raise if preview image generation script fails.
-
-    Returns:
-        _type_: _description_
     """
+    # create preview image with uploaded point cloud
     try:
-        preview_out_path = in_las.replace(".copc.laz", ".png")
+        in_las = Path(in_las)
+        if in_las.name.endswith(".copc.laz"):
+            preview_out_path = in_las.parents[0] / in_las.name.replace(
+                ".copc.laz", ".png"
+            )
+        else:
+            preview_out_path = in_las.parents[0] / in_las.with_suffix(".png").name
         gen_preview_from_pointcloud.create_preview_image(
-            input_las_path=Path(in_las),
-            preview_out_path=Path(preview_out_path),
+            input_las_path=in_las,
+            preview_out_path=preview_out_path,
         )
     except Exception as e:
         logger.exception("Unable to generate preview image for uploaded point cloud")
@@ -222,7 +223,7 @@ def generate_point_cloud_preview_image(in_las: str) -> None:
 
 
 @celery_app.task(name="point_cloud_upload_task")
-def process_point_cloud(
+def convert_las_to_copc(
     original_filename: str,
     storage_path: str,
     las_filepath: str,
@@ -230,8 +231,9 @@ def process_point_cloud(
     flight_id: UUID,
     job_id: UUID,
     data_product_id: UUID,
-) -> None:
-    """Celery task for processing uploaded point cloud.
+) -> str | None:
+    """Celery task for converting uploaded las/laz point cloud to cloud optimized
+    point cloud format. Untwine performs the conversion
 
     Args:
         original_filename (str): Original filename for point cloud.
@@ -274,21 +276,6 @@ def process_point_cloud(
 
     # update job status to indicate process has started
     update_job_status(job, state="INPROGRESS")
-
-    # create preview image with uploaded point cloud
-    try:
-        if in_las.name.endswith(".copc.laz"):
-            preview_out_path = in_las.parents[1] / in_las.name.replace(
-                ".copc.laz", ".png"
-            )
-        else:
-            preview_out_path = in_las.parents[1] / in_las.with_suffix(".png").name
-        gen_preview_from_pointcloud.create_preview_image(
-            input_las_path=in_las,
-            preview_out_path=preview_out_path,
-        )
-    except Exception as e:
-        logger.exception("Unable to generate preview image for uploaded point cloud")
 
     # create cloud optimized point cloud
     try:
@@ -339,7 +326,7 @@ def process_point_cloud(
     except Exception:
         logger.exception("Unable to cleanup upload on tusd server")
 
-    return None
+    return str(copc_laz_filepath)
 
 
 @celery_app.task(name="raw_data_upload_task")

@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from app.db.session import SessionLocal
 from app.models.data_product import DataProduct
-from app.tasks import generate_point_cloud_preview_image
+from app.tasks import create_point_cloud_preview_image
 
 logger = logging.getLogger("__name__")
 
@@ -37,7 +37,7 @@ def run(db: Session, check_only: bool) -> None:
             ):
                 # create preview image
                 if not check_only:
-                    generate_point_cloud_preview_image(point_clouds[idx].filepath)
+                    create_point_cloud_preview_image(point_clouds[idx].filepath)
                 else:
                     missing_previews += 1
 

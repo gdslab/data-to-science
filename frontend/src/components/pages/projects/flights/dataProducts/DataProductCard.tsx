@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ExclamationCircleIcon, EyeIcon, PhotoIcon } from '@heroicons/react/24/outline';
 
@@ -70,10 +70,10 @@ export default function DataProductCard({
                       }}
                     />
                   ) : (
-                    <Fragment>
-                      <span className="sr-only">Preview not available</span>
-                      <PhotoIcon className="h-full" />
-                    </Fragment>
+                    <div className="flex items-center justify-center h-full">
+                      <span>Generating preview...</span>
+                      <PhotoIcon className="h-1/2" />
+                    </div>
                   )}
                   <div
                     className="absolute bottom-0 w-full text-center text-white p-1 bg-accent3/80 cursor-pointer"

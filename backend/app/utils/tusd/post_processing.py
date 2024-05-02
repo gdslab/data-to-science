@@ -12,7 +12,12 @@ from sqlalchemy.orm import Session
 from app import crud, models, schemas
 from app.api.api_v1.endpoints.data_products import get_data_product_dir
 from app.api.api_v1.endpoints.raw_data import get_raw_data_dir
-from app.tasks import process_geotiff, process_point_cloud, process_raw_data
+from app.tasks import (
+    convert_las_to_copc,
+    create_point_cloud_preview_image,
+    process_geotiff,
+    process_raw_data,
+)
 
 
 logger = logging.getLogger("__name__")
@@ -84,8 +89,8 @@ def process_data_product_uploaded_to_tusd(
 
     if dtype == "point_cloud":
         # start point cloud process in background
-        process_point_cloud.apply_async(
-            args=[
+        res = convert_las_to_copc.apply_async(
+            args=(
                 original_filename.name,
                 str(storage_path),
                 destination_filepath,
@@ -93,14 +98,13 @@ def process_data_product_uploaded_to_tusd(
                 flight_id,
                 job.id,
                 data_product.id,
-            ],
-            kwargs={},
-            queue="main-queue",
+            ),
+            link=create_point_cloud_preview_image.s(),
         )
     else:
         # start geotiff process in background
         process_geotiff.apply_async(
-            args=[
+            args=(
                 original_filename.name,
                 str(storage_path),
                 destination_filepath,
@@ -109,9 +113,7 @@ def process_data_product_uploaded_to_tusd(
                 flight_id,
                 job.id,
                 data_product.id,
-            ],
-            kwargs={},
-            queue="main-queue",
+            ),
         )
 
     return {"status": "processing"}
@@ -188,9 +190,7 @@ def process_raw_data_uploaded_to_tusd(
 
     # start copying raw data from tusd to static files in background
     process_raw_data.apply_async(
-        args=[raw_data.id, str(storage_path), str(destination_filepath), job.id],
-        kwargs={},
-        queue="main-queue",
+        args=(raw_data.id, str(storage_path), str(destination_filepath), job.id)
     )
 
     return {"status": "processing"}
