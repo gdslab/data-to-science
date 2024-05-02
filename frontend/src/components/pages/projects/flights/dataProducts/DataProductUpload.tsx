@@ -115,6 +115,7 @@ export default function DataProductUpload({
       }}
       proudlyDisplayPoweredByUppy={false}
       disableThumbnailGenerator={uploadType !== 'img'}
+      showProgressDetails={true}
     />
   );
 }
