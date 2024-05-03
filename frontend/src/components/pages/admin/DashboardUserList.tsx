@@ -2,7 +2,6 @@ import { ReactNode, useState } from 'react';
 
 import { generateRandomProfileColor } from '../auth/Profile';
 import Pagination from '../../Pagination';
-import { sorter } from '../../utils';
 import { User } from '../../../AuthContext';
 
 const HeaderRow = ({ children }: { children?: ReactNode }) => (
@@ -63,13 +62,12 @@ export default function DashboardUserList({ users }: { users: User[] }) {
   }
 
   /**
-   * Returns available users on page limitations. Returned users are sorted
-   * in alphabetical order by last name.
+   * Returns available users on page limitations.
    * @param users Users to filter, limit, and sort.
    * @returns Array of filtered users.
    */
   function getAvailableUsers(users): User[] {
-    return filterAndSlice(users).sort((a, b) => sorter(a.last_name, b.last_name));
+    return filterAndSlice(users);
   }
 
   return (

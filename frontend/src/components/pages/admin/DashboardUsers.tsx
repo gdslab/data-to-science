@@ -4,6 +4,7 @@ import { useLoaderData } from 'react-router-dom';
 import { User } from '../../../AuthContext';
 import DashboardUserList from './DashboardUserList';
 import StatCard from './StatCard';
+import { sorter } from '../../utils';
 
 export async function loader() {
   const response: AxiosResponse<User[]> = await axios.get(
@@ -23,8 +24,9 @@ export async function loader() {
  * @returns Users registered within number of days.
  */
 function joinedInLastNDays(users: User[], nDays: number): number {
-  const today = new Date();
-  const pastDate = new Date(today.getDate() - nDays);
+  const pastDate = new Date();
+  // update today to today's date - number of days
+  pastDate.setDate(pastDate.getDate() - nDays);
   const filteredUsers = users.filter(
     ({ created_at }) => new Date(created_at).getTime() > pastDate.getTime()
   );
@@ -52,7 +54,9 @@ export default function DashboardUsers() {
             <StatCard title="Last 30 days" value={joinedInLastNDays(users, 30)} />
           </dl>
         </div>
-        <DashboardUserList users={users} />
+        <DashboardUserList
+          users={users.sort((a, b) => sorter(a.last_name, b.last_name))}
+        />
       </div>
     </section>
   );

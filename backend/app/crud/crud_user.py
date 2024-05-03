@@ -88,7 +88,10 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             .where(func.lower(User.full_name).contains(func.lower(q)))
         )
         with db as session:
-            return session.scalars(statement).all()
+            users = session.scalars(statement).all()
+            for user in users:
+                set_url_attr(user)
+            return users
 
     def update(
         self, db: Session, *, db_obj: User, obj_in: UserUpdate | dict[str, Any]
