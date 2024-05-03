@@ -107,6 +107,16 @@ def get_current_approved_user(
     return current_user
 
 
+def get_current_admin_user(
+    current_user: models.User = Depends(get_current_approved_user),
+) -> models.User:
+    if not crud.user.is_superuser(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
+        )
+    return current_user
+
+
 def can_read_team(
     team_id: UUID,
     db: Session = Depends(get_db),

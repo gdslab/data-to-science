@@ -1,6 +1,9 @@
 import { createBrowserRouter } from 'react-router-dom';
 
 // pages and data loaders
+import Dashboard, {
+  loader as dashboardLoader,
+} from './components/pages/admin/Dashboard';
 import ErrorPage from './components/ErrorPage';
 import FlightData, {
   loader as flightDataLoader,
@@ -85,6 +88,11 @@ export const router = createBrowserRouter([
       {
         path: '/home',
         element: <MapLayout />,
+      },
+      {
+        path: '/admin/dashboard',
+        element: <Dashboard />,
+        loader: dashboardLoader,
       },
       {
         path: '/auth/profile',

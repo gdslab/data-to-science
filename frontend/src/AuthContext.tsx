@@ -14,6 +14,7 @@ export interface User {
   last_name: string;
   is_approved: boolean;
   is_email_confirmed: boolean;
+  is_superuser: boolean;
   profile_url: string | null;
   api_access_token: string | null;
 }

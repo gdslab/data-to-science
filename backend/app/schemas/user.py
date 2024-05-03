@@ -40,6 +40,7 @@ class UserInDBBase(UserBase, from_attributes=True):
 # additional properties to return via API
 class User(UserInDBBase):
     api_access_token: str | None = None
+    is_superuser: bool
     profile_url: AnyHttpUrl | None = None
 
 

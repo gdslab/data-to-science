@@ -134,6 +134,21 @@ export default function Navbar() {
                               </Link>
                             )}
                           </Menu.Item>
+                          {user.is_superuser ? (
+                            <Menu.Item>
+                              {({ active }) => (
+                                <Link
+                                  to="/admin/dashboard"
+                                  className={classNames(
+                                    active ? 'bg-gray-100' : '',
+                                    'block px-4 py-2 text-sm text-gray-700 visited:text-gray-700'
+                                  )}
+                                >
+                                  Dashboard
+                                </Link>
+                              )}
+                            </Menu.Item>
+                          ) : null}
                           <Menu.Item>
                             {({ active }) => (
                               <Link
