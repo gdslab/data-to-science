@@ -17,6 +17,7 @@ export interface User {
   is_superuser: boolean;
   profile_url: string | null;
   api_access_token: string | null;
+  created_at: string;
 }
 
 const context: {

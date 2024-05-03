@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import Request, status
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -114,6 +116,48 @@ def test_get_users_normal_current_user(
     current_user = response.json()
     assert current_user
     assert settings.EMAIL_TEST_USER == current_user["email"]
+
+
+def test_read_users_without_query(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Verify retrieval of users without a query parameter."""
+    user1 = create_user(db)
+    user2 = create_user(db)
+    user3 = create_user(db)
+    current_user = get_current_user(db, normal_user_access_token)
+    response = client.get(f"{settings.API_V1_STR}/users")
+    assert response.status_code == status.HTTP_200_OK
+    users = response.json()
+    assert isinstance(users, List)
+    assert len(users) == 4  # three users created here plus user making request
+    for user in users:
+        assert user["id"] in [
+            str(user1.id),
+            str(user2.id),
+            str(user3.id),
+            str(current_user.id),
+        ]
+
+
+def test_read_users_with_query(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Verify retrieval of users with a query parameter."""
+    user1 = create_user(db, first_name="Bill", last_name="Harding")
+    user2 = create_user(db, first_name="Jo", last_name="Harding")
+    user3 = create_user(db, first_name="Dustin", last_name="Davis")
+    # ensure current user not randomly assigned name that matches query term
+    current_user = get_current_user(db, normal_user_access_token)
+    crud.user.update(
+        db, db_obj=current_user, obj_in=UserUpdate(first_name="Dorothy", last_name="IV")
+    )
+    response = client.get(f"{settings.API_V1_STR}/users?q=harding")
+    assert response.status_code == status.HTTP_200_OK
+    users = response.json()
+    assert isinstance(users, List)
+    assert len(users) == 2
+    assert users[0]["last_name"] == "Harding" and users[1]["last_name"] == "Harding"
 
 
 def test_update_user(

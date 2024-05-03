@@ -1,3 +1,5 @@
+from typing import List
+
 import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -44,6 +46,31 @@ def test_get_user_by_email(db: Session) -> None:
     assert retrieved_user
     assert user.email == retrieved_user.email
     assert user.id == retrieved_user.id
+
+
+def test_get_users(db: Session) -> None:
+    """Verify retrieving multiple users."""
+    user1 = create_user(db)
+    user2 = create_user(db)
+    user3 = create_user(db)
+    users = crud.user.get_multi_by_query(db)
+    assert users
+    assert isinstance(users, List)
+    assert len(users) == 3
+    for user in users:
+        assert user.id in [user1.id, user2.id, user3.id]
+
+
+def test_get_users_by_query(db: Session) -> None:
+    """Verify retrieving multiple users by a query term."""
+    user1 = create_user(db, first_name="Ellie", last_name="Sattler")
+    user2 = create_user(db, first_name="Alan", last_name="Grant")
+    user3 = create_user(db, first_name="Ian", last_name="Malcolm")
+    users = crud.user.get_multi_by_query(db, q="Grant")
+    assert users
+    assert isinstance(users, List)
+    assert len(users) == 1
+    assert users[0].first_name == "Alan" and users[0].last_name == "Grant"
 
 
 def test_update_user(db: Session) -> None:

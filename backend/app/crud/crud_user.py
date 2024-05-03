@@ -80,6 +80,8 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         skip: int = 0,
         limit: int = 100,
     ) -> Sequence[User]:
+        if not q:
+            q = ""
         statement = (
             select(User)
             .where(User.is_approved)

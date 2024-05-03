@@ -1,9 +1,13 @@
 import { createBrowserRouter } from 'react-router-dom';
 
 // pages and data loaders
-import Dashboard, {
-  loader as dashboardLoader,
-} from './components/pages/admin/Dashboard';
+import Dashboard from './components/pages/admin/Dashboard';
+import DashboardSiteStatistics, {
+  loader as dashboardSiteStatisticsLoader,
+} from './components/pages/admin/DashboardSiteStatistics';
+import DashboardUsers, {
+  loader as dashboardUsersLoader,
+} from './components/pages/admin/DashboardUsers';
 import ErrorPage from './components/ErrorPage';
 import FlightData, {
   loader as flightDataLoader,
@@ -92,7 +96,18 @@ export const router = createBrowserRouter([
       {
         path: '/admin/dashboard',
         element: <Dashboard />,
-        loader: dashboardLoader,
+        children: [
+          {
+            path: '/admin/dashboard',
+            element: <DashboardSiteStatistics />,
+            loader: dashboardSiteStatisticsLoader,
+          },
+          {
+            path: '/admin/dashboard/users',
+            element: <DashboardUsers />,
+            loader: dashboardUsersLoader,
+          },
+        ],
       },
       {
         path: '/auth/profile',

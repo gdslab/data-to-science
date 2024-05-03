@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 from typing import TYPE_CHECKING
 
@@ -35,6 +36,7 @@ class UserUpdate(UserBase):
 # properties shared by models stored in DB
 class UserInDBBase(UserBase, from_attributes=True):
     id: UUID
+    created_at: datetime
 
 
 # additional properties to return via API

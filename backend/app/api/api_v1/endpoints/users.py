@@ -95,7 +95,7 @@ def create_user(
 
 @router.get("", response_model=list[schemas.User])
 def read_users(
-    q: str = Query(Annotated[str | None, Query(max_length=50)]),
+    q: Annotated[str | None, Query(max_length=50)] = None,
     skip: int = 0,
     limit: int = 100,
     current_user: models.User = Depends(deps.get_current_approved_user),
