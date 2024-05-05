@@ -727,6 +727,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@transloadit/prettier-bytes@npm:^0.3.0":
+  version: 0.3.2
+  resolution: "@transloadit/prettier-bytes@npm:0.3.2"
+  checksum: dda069cf70fcb0b5aa6a7cb3e1ccfe3e33bdef440ad9be70d8e8a3233a65420b75bd15fdbb90576f5bb8e642381b1120e61de0c05cbad095260bf80706ec8f1f
+  languageName: node
+  linkType: hard
+
 "@turf/bbox@npm:*, @turf/bbox@npm:^6.5.0":
   version: 6.5.0
   resolution: "@turf/bbox@npm:6.5.0"
@@ -1210,19 +1217,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@uppy/core@npm:^3.3.1":
-  version: 3.8.0
-  resolution: "@uppy/core@npm:3.8.0"
+"@uppy/core@npm:^3.11.1":
+  version: 3.11.1
+  resolution: "@uppy/core@npm:3.11.1"
   dependencies:
-    "@transloadit/prettier-bytes": 0.0.9
-    "@uppy/store-default": ^3.2.0
-    "@uppy/utils": ^5.7.0
+    "@transloadit/prettier-bytes": ^0.3.0
+    "@uppy/store-default": ^3.2.2
+    "@uppy/utils": ^5.9.0
     lodash: ^4.17.21
     mime-match: ^1.0.2
     namespace-emitter: ^2.0.1
     nanoid: ^4.0.0
     preact: ^10.5.13
-  checksum: 0d471b1693b7d53b7926a912aaefe2311694ebe46f565675f0e7c1890b9b690764a4f0f688870c2eb028896b07d0cc462be1faffc4e5453c049f509ace192e5e
+  checksum: 2bbdad616cb0dcff5f22e0f5b338445af4cb3aaeb3c75550bcbded1c2f291e361e7308fc28703965b1fe712da41ef264ce58b57410341998cbdfac2f26eeaf23
   languageName: node
   linkType: hard
 
@@ -1342,10 +1349,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@uppy/store-default@npm:^3.2.0":
-  version: 3.2.0
-  resolution: "@uppy/store-default@npm:3.2.0"
-  checksum: 63fe5442a851423cacd536a735329e65cb7cecca95236478440a76052ccf2827929330fc3e894723afb16899a991a2b9d0836e58fe834cdb3e5fc2e3488afb8b
+"@uppy/store-default@npm:^3.2.2":
+  version: 3.2.2
+  resolution: "@uppy/store-default@npm:3.2.2"
+  checksum: 806c1dc605eee88abc5e781025c8d5331d94b605717aa72cd3b6c6b482614e1ee6817b9dd4a618ceba1d0a2f3db7500cd1cb72ba0c6e1f8a879eee6e6a93944c
   languageName: node
   linkType: hard
 
@@ -1391,6 +1398,16 @@ __metadata:
     lodash: ^4.17.21
     preact: ^10.5.13
   checksum: b0fc7eca8ac6efee04d59d5cc6c76e0d926b2997add9d0702c57e4a2458d8b7d9689c3356f5e1136565ba143b433d4b072778b8819fe94d040085e638dcfa2ba
+  languageName: node
+  linkType: hard
+
+"@uppy/utils@npm:^5.9.0":
+  version: 5.9.0
+  resolution: "@uppy/utils@npm:5.9.0"
+  dependencies:
+    lodash: ^4.17.21
+    preact: ^10.5.13
+  checksum: c8a8445a3675ba9a1ba96d6c0b3f9c71086fb59a49af05d249355a75a3c488f5d0be3a83827dac54495bfd9b9c697b22ec440b38b5a4192691403d3f6096ef5b
   languageName: node
   linkType: hard
 
@@ -2030,7 +2047,7 @@ __metadata:
     "@types/seedrandom": ^3.0.8
     "@typescript-eslint/eslint-plugin": ^6.0.0
     "@typescript-eslint/parser": ^6.0.0
-    "@uppy/core": ^3.3.1
+    "@uppy/core": ^3.11.1
     "@uppy/dashboard": ^3.5.0
     "@uppy/drag-drop": ^3.0.2
     "@uppy/progress-bar": ^3.0.2
