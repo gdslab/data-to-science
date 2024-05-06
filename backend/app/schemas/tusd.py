@@ -40,10 +40,10 @@ class Header(BaseModel):
     Dnt: Optional[List[str]] = None
     Host: List[str]
     Origin: List[str]
-    Referer: List[str]
-    Sec_Fetch_Dest: List[str] = Field(alias="Sec-Fetch-Dest")
-    Sec_Fetch_Mode: List[str] = Field(alias="Sec-Fetch-Mode")
-    Sec_Fetch_Site: List[str] = Field(alias="Sec-Fetch-Site")
+    Referer: Optional[List[str]] = None
+    Sec_Fetch_Dest: Optional[List[str]] = Field(alias="Sec-Fetch-Dest", default=None)
+    Sec_Fetch_Mode: Optional[List[str]] = Field(alias="Sec-Fetch-Mode", default=None)
+    Sec_Fetch_Site: Optional[List[str]] = Field(alias="Sec-Fetch-Site", default=None)
     Tus_Resumable: List[str] = Field(alias="Tus-Resumable")
     Upload_Length: Optional[List[str]] = Field(alias="Upload-Length", default=None)
     Upload_Metadata: Optional[List[str]] = Field(alias="Upload-Metadata", default=None)
