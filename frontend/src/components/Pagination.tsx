@@ -1,5 +1,7 @@
 import clsx from 'clsx';
 
+import { DOTS, usePagination } from './hooks/usePagination';
+
 /**
  * Displays total number of search results and range of results on current page.
  * @param {number} currentPageNum Current pagination page number.
@@ -44,29 +46,57 @@ export default function Pagination({
   updateCurrentPage: (page: number) => void;
   totalPages: number;
 }) {
+  const siblingCount = 2;
+  const totalCount = totalPages - 1;
+
+  const paginationRange = usePagination({
+    currentPage,
+    totalCount,
+    siblingCount,
+  });
+
   function PageNumberItems() {
+    if (!paginationRange) return [];
+
     let pageNumberItems: JSX.Element[] = [];
-    for (let i = 0; i < totalPages; i++) {
-      pageNumberItems.push(
-        <li className="cursor-pointer" key={`page-${i}`}>
-          <a
-            onClick={() => updateCurrentPage(i)}
-            className={clsx('block size-8 rounded text-center leading-8', {
-              'border border-gray-100 bg-white text-gray-900': currentPage !== i,
-              'border-accent2 bg-accent2 text-white': currentPage === i,
-            })}
-          >
-            {(i + 1).toString()}
-          </a>
-        </li>
-      );
+
+    {
+      paginationRange.map((pageNumber, idx) => {
+        if (pageNumber === DOTS) {
+          pageNumberItems.push(
+            <li
+              key={`page-${idx}-dots`}
+              className="block size-8 rounded text-center leading-8"
+            >
+              &#8230;
+            </li>
+          );
+        }
+
+        if (typeof pageNumber === 'number')
+          pageNumberItems.push(
+            <li className="cursor-pointer" key={`page-${pageNumber}`}>
+              <a
+                onClick={() => updateCurrentPage(pageNumber)}
+                className={clsx('block size-8 rounded text-center leading-8', {
+                  'border border-gray-100 bg-white text-gray-900':
+                    pageNumber !== currentPage,
+                  'border-accent2 bg-accent2 text-white': pageNumber === currentPage,
+                })}
+              >
+                {pageNumber + 1}
+              </a>
+            </li>
+          );
+      });
     }
+
     return pageNumberItems;
   }
 
   if (totalPages > 1) {
     return (
-      <ol className="flex justify-center gap-1 text-xs font-medium">
+      <ol className="flex items-center justify-center gap-1 text-xs font-medium">
         <li>
           <a
             onClick={() => updateCurrentPage(currentPage - 1)}
