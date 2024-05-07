@@ -24,6 +24,16 @@ const initialValues = {
   pilotId: '',
 };
 
+const getPlatform = (platform: string): string => {
+  const platformVals = PLATFORM_OPTIONS.map(({ value }) => value);
+  if (platformVals.includes(platform)) {
+    return platform;
+  } else {
+    // platform value entered in "Other" field
+    return 'Other';
+  }
+};
+
 export function getInitialValues(flight: Flight | null) {
   if (flight) {
     return {
@@ -32,8 +42,9 @@ export function getInitialValues(flight: Flight | null) {
       sideOverlap: flight.side_overlap,
       forwardOverlap: flight.forward_overlap,
       sensor: flight.sensor,
-      platform: flight.platform,
-      platformOther: '',
+      platform: getPlatform(flight.platform),
+      platformOther:
+        getPlatform(flight.platform).toLowerCase() === 'other' ? flight.platform : '',
       pilotId: '',
     };
   } else {
