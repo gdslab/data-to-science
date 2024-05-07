@@ -11,7 +11,6 @@ import {
   FlightsAction,
   GeoRasterIdAction,
   MapTool,
-  ProjectHoverStateAction,
   ProjectsAction,
   ProjectsVisibleAction,
   SymbologySettings,
@@ -105,22 +104,6 @@ function geoRasterIdReducer(state: string, action: GeoRasterIdAction) {
   }
 }
 
-function projectHoverStateReducer(
-  state: string | null,
-  action: ProjectHoverStateAction
-) {
-  switch (action.type) {
-    case 'set': {
-      return action.payload;
-    }
-    case 'clear': {
-      return null;
-    }
-    default:
-      return state;
-  }
-}
-
 function projectsReducer(state: Project[] | null, action: ProjectsAction) {
   switch (action.type) {
     case 'set': {
@@ -186,8 +169,6 @@ const context: {
   flights: Flight[];
   geoRasterId: string;
   geoRasterIdDispatch: React.Dispatch<GeoRasterIdAction>;
-  projectHoverState: string | null;
-  projectHoverStateDispatch: React.Dispatch<ProjectHoverStateAction>;
   projects: Project[] | null;
   projectsDispatch: React.Dispatch<ProjectsAction>;
   projectsVisible: string[];
@@ -206,8 +187,6 @@ const context: {
   flights: [],
   geoRasterId: '',
   geoRasterIdDispatch: () => {},
-  projectHoverState: null,
-  projectHoverStateDispatch: () => {},
   projects: null,
   projectsDispatch: () => {},
   projectsVisible: [],
@@ -232,10 +211,6 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
   const [activeProject, activeProjectDispatch] = useReducer(activeProjectReducer, null);
   const [flights, flightsDispatch] = useReducer(flightsReducer, []);
   const [geoRasterId, geoRasterIdDispatch] = useReducer(geoRasterIdReducer, '');
-  const [projectHoverState, projectHoverStateDispatch] = useReducer(
-    projectHoverStateReducer,
-    null
-  );
   const [projects, projectsDispatch] = useReducer(projectsReducer, null);
   const [projectsVisible, projectsVisibleDispatch] = useReducer(
     projectsVisibleReducer,
@@ -272,7 +247,9 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
           payload: response.data.map(({ id }) => id),
         });
         // add projects to local storage
-        localStorage.setItem('projects', JSON.stringify(response.data));
+        if (response.data.length > 0) {
+          localStorage.setItem('projects', JSON.stringify(response.data));
+        }
       } else {
         projectsDispatch({ type: 'clear', payload: null });
       }
@@ -312,8 +289,6 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
         flights,
         geoRasterId,
         geoRasterIdDispatch,
-        projectHoverState,
-        projectHoverStateDispatch,
         projects,
         projectsDispatch,
         projectsVisible,

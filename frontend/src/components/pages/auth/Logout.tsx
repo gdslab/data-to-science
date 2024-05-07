@@ -8,6 +8,7 @@ export default function Logout() {
   const navigate = useNavigate();
   useEffect(() => {
     async function removeUserData() {
+      localStorage.removeItem('projects');
       localStorage.removeItem('userProfile');
       await logout().then(() => navigate('/'));
     }

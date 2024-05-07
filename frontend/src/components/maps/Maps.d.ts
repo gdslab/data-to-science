@@ -58,8 +58,6 @@ export type ProjectsVisibleAction = { type: string; payload: string[] };
 
 export type GeoRasterIdAction = { type: string };
 
-export type ProjectHoverStateAction = { type: string; payload: string | null };
-
 export type SymbologySettingsAction = { type: string; payload: SymbologySettings };
 
 export type TileScaleAction = { type: string; payload: number };

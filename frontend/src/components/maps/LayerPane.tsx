@@ -135,6 +135,24 @@ function RasterStats({ stats }: { stats: Band['stats'] }) {
   );
 }
 
+/**
+ * Checks local storage for previously stored projects.
+ * @returns Array of projects retrieved from local storage.
+ */
+function getLocalStorageProjects(): Project[] | null {
+  if ('projects' in localStorage) {
+    const lsProjectsString = localStorage.getItem('projects');
+    if (lsProjectsString) {
+      const lsProjects: Project[] = JSON.parse(lsProjectsString);
+      if (lsProjects && lsProjects.length > 0) {
+        return lsProjects;
+      }
+    }
+  }
+
+  return null;
+}
+
 export default function LayerPane({
   hidePane,
   toggleHidePane,
@@ -144,6 +162,9 @@ export default function LayerPane({
 }) {
   const [currentPage, setCurrentPage] = useState(0);
   const [searchText, setSearchText] = useState('');
+  const [mapProjects, setMapProjects] = useState<Project[] | null>(
+    getLocalStorageProjects()
+  );
 
   const {
     activeDataProduct,
@@ -152,7 +173,6 @@ export default function LayerPane({
     activeProject,
     activeProjectDispatch,
     flights,
-    projectHoverStateDispatch,
     projects,
     projectsVisible,
     symbologySettingsDispatch,
@@ -161,6 +181,12 @@ export default function LayerPane({
   const { state } = useLocation();
 
   const MAX_ITEMS = 10; // max number of projects per page in left-side pane
+
+  useEffect(() => {
+    if (projects) {
+      setMapProjects(projects);
+    }
+  }, [projects]);
 
   useEffect(() => {
     // hide left-side pane when point cloud dataset is activated
@@ -180,7 +206,7 @@ export default function LayerPane({
   useEffect(() => {
     // reset to page one if the filtered number of projects
     // is less than or equal to the max items allowed on a page
-    if (filterByVisibilityAndSearch(projects).length <= MAX_ITEMS) {
+    if (filterByVisibilityAndSearch(mapProjects).length <= MAX_ITEMS) {
       setCurrentPage(0);
     }
   }, [searchText]);
@@ -215,7 +241,7 @@ export default function LayerPane({
    * @param newPage Index of new page.
    */
   function updateCurrentPage(newPage: number): void {
-    const total_pages = Math.ceil(projects ? projects.length : 0 / MAX_ITEMS);
+    const total_pages = Math.ceil(mapProjects ? mapProjects.length : 0 / MAX_ITEMS);
 
     if (newPage + 1 > total_pages) {
       setCurrentPage(total_pages - 1);
@@ -236,7 +262,13 @@ export default function LayerPane({
       return [];
     } else {
       return projs
-        .filter(({ id }) => projectsVisible.includes(id))
+        .filter(({ id }) =>
+          projects
+            ? projectsVisible.includes(id)
+            : mapProjects
+            ? mapProjects.map(({ id }) => id).includes(id)
+            : []
+        )
         .filter(
           (project) =>
             !project.title ||
@@ -247,7 +279,7 @@ export default function LayerPane({
   }
 
   const TOTAL_PAGES = Math.ceil(
-    filterByVisibilityAndSearch(projects).length / MAX_ITEMS
+    filterByVisibilityAndSearch(mapProjects).length / MAX_ITEMS
   );
 
   /**
@@ -270,18 +302,6 @@ export default function LayerPane({
    */
   function getAvailableProjects(projs): Project[] {
     return filterAndSlice(projs).sort((a, b) => sorter(a.title, b.title));
-  }
-
-  function getLocalStorageProjects() {
-    let lsProjects = localStorage.getItem('projects');
-    if (lsProjects) {
-      lsProjects = JSON.parse(lsProjects);
-    }
-    if (lsProjects && lsProjects.length > 0) {
-      return lsProjects;
-    } else {
-      return null;
-    }
   }
 
   if (hidePane) {
@@ -474,7 +494,7 @@ export default function LayerPane({
         ) : (
           <article className="flex flex-col gap-2 p-4 overflow-y-auto">
             <h1>Projects</h1>
-            {projects && projects.length > 0 ? (
+            {mapProjects && mapProjects.length > 0 ? (
               <div className="flex flex-col gap-2">
                 <ProjectSearch
                   searchText={searchText}
@@ -483,29 +503,20 @@ export default function LayerPane({
                 {getPaginationResults(
                   currentPage,
                   MAX_ITEMS,
-                  filterAndSlice(projects).length,
-                  filterByVisibilityAndSearch(projects).length
+                  filterAndSlice(mapProjects).length,
+                  filterByVisibilityAndSearch(mapProjects).length
                 )}
               </div>
             ) : null}
-            {(projects && projects.length > 0) || getLocalStorageProjects() ? (
+            {mapProjects && mapProjects.length > 0 ? (
               <ul className="mt-4 space-y-2">
-                {getAvailableProjects(projects).map((project) => (
+                {getAvailableProjects(mapProjects).map((project) => (
                   <li key={project.id}>
                     <LayerCard hover={true}>
                       <div
                         onClick={() => {
                           activeDataProductDispatch({ type: 'clear', payload: null });
                           activeProjectDispatch({ type: 'set', payload: project });
-                        }}
-                        onMouseOver={() => {
-                          projectHoverStateDispatch({
-                            type: 'set',
-                            payload: project.id,
-                          });
-                        }}
-                        onMouseLeave={() => {
-                          projectHoverStateDispatch({ type: 'clear', payload: null });
                         }}
                       >
                         <div className="grid grid-cols-4">
@@ -534,7 +545,7 @@ export default function LayerPane({
                   </li>
                 ))}
               </ul>
-            ) : projects && projects.length === 0 ? (
+            ) : mapProjects && mapProjects.length === 0 ? (
               <div>
                 <p className="mb-4">
                   You do not have any projects to display on the map. Use the below
