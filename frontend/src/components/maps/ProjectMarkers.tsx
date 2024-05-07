@@ -1,6 +1,6 @@
 import L from 'leaflet';
 import { useEffect, useRef, useState } from 'react';
-import { FeatureGroup, useMapEvents } from 'react-leaflet';
+import { FeatureGroup, Popup, useMapEvents } from 'react-leaflet';
 import { Marker } from 'react-leaflet/Marker';
 import { useLeafletContext } from '@react-leaflet/core';
 import MarkerClusterGroup from 'react-leaflet-cluster';
@@ -80,8 +80,21 @@ export default function ProjectMarkers({ projects }: ProjectMarkersProps) {
                   activeDataProductDispatch({ type: 'clear', payload: null });
                   activeProjectDispatch({ type: 'set', payload: project });
                 },
+                mouseover: (e) => {
+                  e.target.openPopup();
+                },
+                mouseout: (e) => {
+                  e.target.closePopup();
+                },
               }}
-            />
+            >
+              <Popup>
+                <div>
+                  <span className="font-bold">{project.title}</span>
+                  <p>{project.description}</p>
+                </div>
+              </Popup>
+            </Marker>
           ))}
         </MarkerClusterGroup>
       </FeatureGroup>
