@@ -1,5 +1,6 @@
-import axios, { AxiosResponse } from 'axios';
+import axios, { AxiosResponse, isAxiosError } from 'axios';
 import { createContext, useContext, useEffect, useReducer } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 
 import { DataProduct, Flight } from '../pages/projects/Project';
@@ -200,6 +201,7 @@ const context: {
 const MapContext = createContext(context);
 
 export function MapContextProvider({ children }: { children: React.ReactNode }) {
+  const navigate = useNavigate();
   const [activeDataProduct, activeDataProductDispatch] = useReducer(
     activeDataProductReducer,
     null
@@ -254,7 +256,11 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
         projectsDispatch({ type: 'clear', payload: null });
       }
     } catch (err) {
-      console.log('Unable to fetch projects');
+      if (isAxiosError(err)) {
+        if (err.response?.status === 401) {
+          navigate('/auth/login');
+        }
+      }
       projectsDispatch({ type: 'clear', payload: null });
     }
   }
