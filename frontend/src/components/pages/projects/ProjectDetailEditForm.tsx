@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Form, Formik } from 'formik';
 import { useState } from 'react';
-import { Link, useRevalidator } from 'react-router-dom';
+import { useRevalidator } from 'react-router-dom';
 import { MapIcon } from '@heroicons/react/24/outline';
 
 import Alert from '../../Alert';
@@ -15,6 +15,7 @@ import Table, { TableBody, TableHead } from '../../Table';
 
 import { projectUpdateValidationSchema } from './validationSchema';
 import { Team } from '../teams/Teams';
+import { LinkButton } from '../../Buttons';
 
 interface ProjectDetailEditForm {
   project: Project;
@@ -86,19 +87,14 @@ export default function ProjectDetailEditForm({
                 setIsEditing={setIsEditing}
               >
                 {!isEditing || isEditing.field !== 'description' ? (
-                  <span className="text-gray-600">{project.description}</span>
+                  <p className="text-gray-600 text-wrap break-all">
+                    {project.description}
+                  </p>
                 ) : (
                   <TextField name="description" />
                 )}
               </EditField>
             </div>
-            {projectRole === 'owner' ? (
-              <div className="text-sky-600 cursor-pointer">
-                <h2>
-                  <Link to={`/projects/${project.id}/access`}>Manage Access</Link>
-                </h2>
-              </div>
-            ) : null}
           </div>
           <Table>
             <TableHead
@@ -191,9 +187,17 @@ export default function ProjectDetailEditForm({
               ]}
             />
           </Table>
-          <div className="flex flex-row justify-end w-full mt-4">
-            <ProjectDeleteModal project={project} />
-          </div>
+
+          {projectRole === 'owner' ? (
+            <div className="flex flex-row justify-end gap-4 mt-4">
+              <LinkButton url={`/projects/${project.id}/access`} size="sm">
+                Manage Access
+              </LinkButton>
+
+              <ProjectDeleteModal project={project} />
+            </div>
+          ) : null}
+
           {status && status.type && status.msg ? (
             <div className="mt-4">
               <Alert alertType={status.type}>{status.msg}</Alert>

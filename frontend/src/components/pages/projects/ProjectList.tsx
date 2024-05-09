@@ -40,19 +40,39 @@ export async function loader() {
   }
 }
 
+function ProjectListHeader() {
+  const [open, setOpen] = useState(false);
+
+  const { locationDispatch } = useProjectContext();
+
+  useEffect(() => {
+    locationDispatch({ type: 'clear', payload: null });
+  }, [open]);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <h1>Projects</h1>
+      <div className="w-96">
+        <Button icon="folderplus" onClick={() => setOpen(true)}>
+          Create
+        </Button>
+        <Modal open={open} setOpen={setOpen}>
+          <ProjectForm setModalOpen={setOpen} />
+        </Modal>
+      </div>
+    </div>
+  );
+}
+
 export default function ProjectList() {
   const [currentPage, setCurrentPage] = useState(0);
-  const [open, setOpen] = useState(false);
+
   const [searchText, setSearchText] = useState('');
   const projects = useLoaderData() as Project[];
 
   const { locationDispatch, project, projectDispatch } = useProjectContext();
 
   const MAX_ITEMS = 12;
-
-  useEffect(() => {
-    locationDispatch({ type: 'clear', payload: null });
-  }, [open]);
 
   useEffect(() => {
     locationDispatch({ type: 'clear', payload: null });
@@ -116,77 +136,67 @@ export default function ProjectList() {
 
   const TOTAL_PAGES = Math.ceil(filterSearch(projects).length / MAX_ITEMS);
 
-  return (
-    <div className="h-full p-4">
-      <div className="h-full flex flex-col gap-4">
+  if (!projects || projects.length === 0) {
+    return (
+      <div className="flex flex-col p-4 gap-4">
+        <ProjectListHeader />
+        <p>
+          Use the above button to create your first project. Your projects will appear
+          in the space below.
+        </p>
+      </div>
+    );
+  } else {
+    return (
+      <div className="flex flex-col gap-4 p-4 h-full">
+        {/* Project header and search */}
         <div className="flex flex-col gap-4">
-          <h1>Projects</h1>
-          <div className="w-96">
-            <Button icon="folderplus" onClick={() => setOpen(true)}>
-              Create
-            </Button>
-            <Modal open={open} setOpen={setOpen}>
-              <ProjectForm setModalOpen={setOpen} />
-            </Modal>
-          </div>
-          <div className="flex flex-row gap-4">
-            <ProjectSearch
-              searchText={searchText}
-              updateSearchText={updateSearchText}
-            />
-          </div>
+          <ProjectListHeader />
+          <ProjectSearch searchText={searchText} updateSearchText={updateSearchText} />
         </div>
-        {projects.length > 0 ? (
-          <div className="h-full overflow-auto">
-            {getPaginationResults(
-              currentPage,
-              MAX_ITEMS,
-              filterAndSlice(projects).length,
-              filterSearch(projects).length
-            )}
-            <div className="flex flex-row flex-wrap gap-4">
-              {filterAndSlice(projects)
-                .sort((a, b) => (a.title > b.title ? 1 : b.title > a.title ? -1 : 0))
-                .map((project) => (
-                  <Link
-                    key={project.id}
-                    to={`/projects/${project.id}`}
-                    className="block"
-                  >
-                    <article className="flex items-center w-96 h-36 mb-4 shadow bg-white transition hover:shadow-xl">
-                      <div className="p-2"></div>
+        {/* Project cards */}
+        {getPaginationResults(
+          currentPage,
+          MAX_ITEMS,
+          filterAndSlice(projects).length,
+          filterSearch(projects).length
+        )}
+        <div className="flex-1 flex flex-wrap gap-4 pb-24 overflow-y-auto">
+          {filterAndSlice(projects)
+            .sort((a, b) => (a.title > b.title ? 1 : b.title > a.title ? -1 : 0))
+            .map((project) => (
+              <Link key={project.id} to={`/projects/${project.id}`} className="block">
+                <article className="flex items-center w-96 h-36shadow bg-white transition hover:shadow-xl">
+                  <div className="w-32 h-full p-1.5 hidden sm:block">
+                    <img
+                      className="h-full object-cover"
+                      src={`/static/projects/${project.id}/preview_map.png`}
+                    />
+                  </div>
 
-                      <div className="hidden sm:block">
-                        {/* <PhotoIcon className="h-24 w-24" /> */}
-                        <img
-                          src={`/static/projects/${project.id}/preview_map.png`}
-                          height={128}
-                          width={128}
-                        />
-                      </div>
-
-                      <div className="flex flex-1 flex-col justify-between">
-                        <div className="border-s border-gray-900/10 p-4 sm:border-l-transparent sm:p-6">
-                          <h3 className="font-bold uppercase text-gray-900">
-                            {project.title}
-                          </h3>
-                          <p className="mt-2 line-clamp-3 text-sm/relaxed text-gray-700">
-                            {project.description}
-                          </p>
-                        </div>
-                      </div>
-                    </article>
-                  </Link>
-                ))}
-            </div>
+                  <div className="w-full md:w-64 border-s border-gray-900/10 p-2 sm:border-l-transparent sm:p-4">
+                    <h3 className="font-bold uppercase text-gray-900 truncate">
+                      {project.title}
+                    </h3>
+                    <p className="mt-2 line-clamp-3 text-sm/relaxed text-gray-700 text-wrap truncate">
+                      {project.description}
+                    </p>
+                  </div>
+                </article>
+              </Link>
+            ))}
+        </div>
+        {/* Pagination */}
+        <div className="w-full bg-slate-200 fixed bottom-4 py-4 px-6">
+          <div className="flex justify-center">
             <Pagination
               currentPage={currentPage}
               totalPages={TOTAL_PAGES}
               updateCurrentPage={updateCurrentPage}
             />
           </div>
-        ) : null}
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 }

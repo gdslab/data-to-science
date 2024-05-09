@@ -1,10 +1,10 @@
+import clsx from 'clsx';
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   ArrowUturnLeftIcon,
   Bars3Icon,
   MapIcon,
-  MapPinIcon,
   PaperAirplaneIcon,
   ScaleIcon,
   XMarkIcon,
@@ -306,7 +306,7 @@ export default function LayerPane({
 
   if (hidePane) {
     return (
-      <div className="flex p-2.5 items-center justify-between text-slate-700">
+      <div className="flex items-center justify-between p-2.5 text-slate-700">
         <button type="button">
           <Bars3Icon
             className="h-6 w-6 cursor-pointers"
@@ -317,258 +317,280 @@ export default function LayerPane({
     );
   } else {
     return (
-      <div className="flex flex-col h-full text-slate-700 overflow-y-hidden">
-        <div className="flex p-2.5 items-center justify-between">
+      <div className="flex flex-col h-full">
+        <div className="flex-1 flex flex-col pb-12 text-slate-700 overflow-y-auto">
+          <div className="flex items-center justify-between p-2.5">
+            {activeProject ? (
+              <button
+                type="button"
+                onClick={() => {
+                  activeMapToolDispatch({ type: 'set', payload: 'map' });
+                  activeProjectDispatch({ type: 'clear', payload: null });
+                }}
+              >
+                <ArrowUturnLeftIcon className="h-6 w-6 cursor-pointer" />
+              </button>
+            ) : (
+              <span></span>
+            )}
+            <XMarkIcon
+              className="h-6 w-6 cursor-pointer float-right"
+              onClick={() => toggleHidePane(!hidePane)}
+            />
+          </div>
           {activeProject ? (
-            <button
-              type="button"
-              onClick={() => {
-                activeMapToolDispatch({ type: 'set', payload: 'map' });
-                activeProjectDispatch({ type: 'clear', payload: null });
-              }}
-            >
-              <ArrowUturnLeftIcon className="h-6 w-6 cursor-pointer" />
-            </button>
-          ) : (
-            <span></span>
-          )}
-          <XMarkIcon
-            className="h-6 w-6 cursor-pointer float-right"
-            onClick={() => toggleHidePane(!hidePane)}
-          />
-        </div>
-        {activeProject ? (
-          <article className="p-4 overflow-y-auto">
-            <h1>{activeProject.title}</h1>
-            <HintText>{activeProject.description}</HintText>
-            <MapToolbar />
-            <ul className="mt-4 space-y-2">
-              {flights
-                .sort((a, b) =>
-                  new Date(a.acquisition_date) < new Date(b.acquisition_date) ? 1 : -1
-                )
-                .map((flight) => (
-                  <li key={flight.id}>
-                    <LayerCard>
-                      <div className="grid grid-cols-6">
-                        <div className="col-span-1 flex items-center justify-center">
-                          <img src={UASIcon} width={'50%'} />
-                        </div>
-                        <div className="col-span-5 flex flex-col items-start gap-2">
-                          <strong className="font-bold text-slate-700">
-                            {formatDate(flight.acquisition_date)}
-                          </strong>
-                          <div className="grid grid-rows-2 text-slate-700 text-sm gap-1.5">
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <span className="text-sm text-slate-400 font-semibold">
-                                  Platform:{' '}
-                                </span>
-                                {flight.platform.replace('_', ' ')}
+            <article className="p-4 overflow-y-auto">
+              <h1>{activeProject.title}</h1>
+              <HintText>{activeProject.description}</HintText>
+              <MapToolbar />
+              <ul className="mt-4 space-y-2">
+                {flights
+                  .sort((a, b) =>
+                    new Date(a.acquisition_date) < new Date(b.acquisition_date) ? 1 : -1
+                  )
+                  .map((flight) => (
+                    <li key={flight.id}>
+                      <LayerCard>
+                        <div className="grid grid-cols-6">
+                          <div className="col-span-1 flex items-center justify-center">
+                            <img src={UASIcon} width={'50%'} />
+                          </div>
+                          <div className="col-span-5 flex flex-col items-start gap-2">
+                            <strong className="font-bold text-slate-700">
+                              {formatDate(flight.acquisition_date)}
+                            </strong>
+                            <div className="grid grid-rows-2 text-slate-700 text-sm gap-1.5">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <span className="text-sm text-slate-400 font-semibold">
+                                    Platform:{' '}
+                                  </span>
+                                  {flight.platform.replace('_', ' ')}
+                                </div>
+                                <div>
+                                  <span className="text-sm text-slate-400 font-semibold">
+                                    Sensor:
+                                  </span>{' '}
+                                  {flight.sensor}
+                                </div>
                               </div>
-                              <div>
-                                <span className="text-sm text-slate-400 font-semibold">
-                                  Sensor:
-                                </span>{' '}
-                                {flight.sensor}
-                              </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <span className="text-sm text-slate-400 font-semibold">
-                                  Altitude (m):
-                                </span>{' '}
-                                {flight.altitude}
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <span className="text-sm text-slate-400 font-semibold">
+                                    Altitude (m):
+                                  </span>{' '}
+                                  {flight.altitude}
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                      {flight.data_products.length > 0 ? (
-                        <details
-                          className="group space-y-2 [&_summary::-webkit-details-marker]:hidden text-slate-600 overflow-visible"
-                          open={
-                            activeDataProduct &&
-                            activeDataProduct.flight_id === flight.id
-                              ? true
-                              : false
-                          }
-                        >
-                          <summary className="text-sm cursor-pointer">{`${flight.data_products.length} Data Products`}</summary>
-                          {flight.data_products.map((dataProduct) => (
-                            <LayerCard
-                              key={dataProduct.id}
-                              hover={true}
-                              active={
-                                activeDataProduct &&
-                                dataProduct.id === activeDataProduct.id
-                                  ? true
-                                  : false
-                              }
-                            >
-                              <div className="text-slate-600 text-sm">
-                                <div
-                                  className="grid grid-flow-row auto-rows-max"
-                                  onClick={() => {
-                                    if (
-                                      (dataProduct && !activeDataProduct) ||
-                                      (dataProduct &&
-                                        activeDataProduct &&
-                                        dataProduct.id !== activeDataProduct.id)
-                                    ) {
-                                      activeDataProductDispatch({
-                                        type: 'set',
-                                        payload: dataProduct,
-                                      });
-                                      if (dataProduct.user_style) {
-                                        symbologySettingsDispatch({
-                                          type: 'update',
-                                          payload: dataProduct.user_style,
-                                        });
-                                      } else if (
-                                        dataProduct.data_type !== 'point_cloud'
+                        {flight.data_products.length > 0 ? (
+                          <details
+                            className="group space-y-2 [&_summary::-webkit-details-marker]:hidden text-slate-600 overflow-visible"
+                            open={
+                              activeDataProduct &&
+                              activeDataProduct.flight_id === flight.id
+                                ? true
+                                : false
+                            }
+                          >
+                            <summary className="text-sm cursor-pointer">{`${flight.data_products.length} Data Products`}</summary>
+                            {flight.data_products.map((dataProduct) => (
+                              <LayerCard
+                                key={dataProduct.id}
+                                hover={true}
+                                active={
+                                  activeDataProduct &&
+                                  dataProduct.id === activeDataProduct.id
+                                    ? true
+                                    : false
+                                }
+                              >
+                                <div className="text-slate-600 text-sm">
+                                  <div
+                                    className="grid grid-flow-row auto-rows-max"
+                                    onClick={() => {
+                                      if (
+                                        (dataProduct && !activeDataProduct) ||
+                                        (dataProduct &&
+                                          activeDataProduct &&
+                                          dataProduct.id !== activeDataProduct.id)
                                       ) {
-                                        symbologySettingsDispatch({
-                                          type: 'update',
-                                          payload: getDefaultStyle(dataProduct),
+                                        activeDataProductDispatch({
+                                          type: 'set',
+                                          payload: dataProduct,
                                         });
+                                        if (dataProduct.user_style) {
+                                          symbologySettingsDispatch({
+                                            type: 'update',
+                                            payload: dataProduct.user_style,
+                                          });
+                                        } else if (
+                                          dataProduct.data_type !== 'point_cloud'
+                                        ) {
+                                          symbologySettingsDispatch({
+                                            type: 'update',
+                                            payload: getDefaultStyle(dataProduct),
+                                          });
+                                        }
                                       }
-                                    }
-                                  }}
-                                >
-                                  <strong>
-                                    {getDataProductName(dataProduct.data_type)}
-                                  </strong>
-                                  {dataProduct.data_type !== 'point_cloud' ? (
-                                    <fieldset className="border border-solid border-slate-300 p-3">
-                                      <legend className="block text-sm text-gray-400 font-bold pt-2 pb-1">
-                                        Band Info
-                                      </legend>
-                                      <div className="flex flex-row flex-wrap justify-start gap-1.5">
-                                        {dataProduct.stac_properties.eo.map((b) => {
-                                          return (
-                                            <span key={b.name} className="mr-2">
-                                              {b.name} ({b.description})
-                                            </span>
-                                          );
-                                        })}
+                                    }}
+                                  >
+                                    <strong>
+                                      {getDataProductName(dataProduct.data_type)}
+                                    </strong>
+                                    {dataProduct.data_type !== 'point_cloud' ? (
+                                      <fieldset className="border border-solid border-slate-300 p-3">
+                                        <legend className="block text-sm text-gray-400 font-bold pt-2 pb-1">
+                                          Band Info
+                                        </legend>
+                                        <div className="flex flex-row flex-wrap justify-start gap-1.5">
+                                          {dataProduct.stac_properties.eo.map((b) => {
+                                            return (
+                                              <span key={b.name} className="mr-2">
+                                                {b.name} ({b.description})
+                                              </span>
+                                            );
+                                          })}
+                                        </div>
+                                      </fieldset>
+                                    ) : null}
+                                    {dataProduct.data_type !== 'point_cloud' ? (
+                                      <div className="grid grid-flow-col auto-cols-max gap-1.5">
+                                        {dataProduct.stac_properties.raster.length ===
+                                        1 ? (
+                                          <RasterStats
+                                            stats={
+                                              dataProduct.stac_properties.raster[0]
+                                                .stats
+                                            }
+                                          />
+                                        ) : null}
                                       </div>
-                                    </fieldset>
-                                  ) : null}
-                                  {dataProduct.data_type !== 'point_cloud' ? (
-                                    <div className="grid grid-flow-col auto-cols-max gap-1.5">
-                                      {dataProduct.stac_properties.raster.length ===
-                                      1 ? (
-                                        <RasterStats
-                                          stats={
-                                            dataProduct.stac_properties.raster[0].stats
-                                          }
-                                        />
-                                      ) : null}
+                                    ) : null}
+                                  </div>
+                                  {activeDataProduct &&
+                                  activeDataProduct.id === dataProduct.id &&
+                                  dataProduct.data_type !== 'point_cloud' ? (
+                                    <div className="mt-2">
+                                      <SymbologyControls
+                                        numOfBands={
+                                          dataProduct.stac_properties
+                                            ? dataProduct.stac_properties.raster.length
+                                            : 1 // default to single band
+                                        }
+                                      />{' '}
                                     </div>
                                   ) : null}
                                 </div>
-                                {activeDataProduct &&
-                                activeDataProduct.id === dataProduct.id &&
-                                dataProduct.data_type !== 'point_cloud' ? (
-                                  <div className="mt-2">
-                                    <SymbologyControls
-                                      numOfBands={
-                                        dataProduct.stac_properties
-                                          ? dataProduct.stac_properties.raster.length
-                                          : 1 // default to single band
-                                      }
-                                    />{' '}
-                                  </div>
-                                ) : null}
+                              </LayerCard>
+                            ))}
+                          </details>
+                        ) : null}
+                      </LayerCard>
+                    </li>
+                  ))}
+              </ul>
+            </article>
+          ) : (
+            <article className="flex flex-col p-4 overflow-auto">
+              <h1>Projects</h1>
+              {mapProjects && mapProjects.length > 0 ? (
+                <div className="flex flex-col gap-2">
+                  <ProjectSearch
+                    searchText={searchText}
+                    updateSearchText={updateSearchText}
+                  />
+                  {getPaginationResults(
+                    currentPage,
+                    MAX_ITEMS,
+                    filterAndSlice(mapProjects).length,
+                    filterByVisibilityAndSearch(mapProjects).length
+                  )}
+                </div>
+              ) : null}
+              {mapProjects && mapProjects.length > 0 ? (
+                <ul className="space-y-2 overflow-y-auto">
+                  {getAvailableProjects(mapProjects).map((project) => (
+                    <li key={project.id}>
+                      <LayerCard hover={true}>
+                        <div
+                          onClick={() => {
+                            activeDataProductDispatch({ type: 'clear', payload: null });
+                            activeProjectDispatch({ type: 'set', payload: project });
+                          }}
+                        >
+                          <div className="grid grid-cols-4">
+                            <div className="flex items-center justify-between">
+                              <img
+                                className="object-cover w-16"
+                                src={`/static/projects/${project.id}/preview_map.png`}
+                                alt="Image of project boundary"
+                              />
+                            </div>
+                            <div className="col-span-2 flex flex-col items-start gap-2">
+                              <strong className="font-bold text-slate-700">
+                                {project.title}
+                              </strong>
+                              <div className="text-slate-700 text-sm">
+                                {project.description}
                               </div>
-                            </LayerCard>
-                          ))}
-                        </details>
-                      ) : null}
-                    </LayerCard>
-                  </li>
-                ))}
-            </ul>
-          </article>
-        ) : (
-          <article className="flex flex-col gap-2 p-4 overflow-y-auto">
-            <h1>Projects</h1>
-            {mapProjects && mapProjects.length > 0 ? (
-              <div className="flex flex-col gap-2">
-                <ProjectSearch
-                  searchText={searchText}
-                  updateSearchText={updateSearchText}
-                />
-                {getPaginationResults(
-                  currentPage,
-                  MAX_ITEMS,
-                  filterAndSlice(mapProjects).length,
-                  filterByVisibilityAndSearch(mapProjects).length
-                )}
-              </div>
-            ) : null}
-            {mapProjects && mapProjects.length > 0 ? (
-              <ul className="mt-4 space-y-2">
-                {getAvailableProjects(mapProjects).map((project) => (
-                  <li key={project.id}>
-                    <LayerCard hover={true}>
-                      <div
-                        onClick={() => {
-                          activeDataProductDispatch({ type: 'clear', payload: null });
-                          activeProjectDispatch({ type: 'set', payload: project });
-                        }}
-                      >
-                        <div className="grid grid-cols-4">
-                          <div className="flex items-center justify-center">
-                            <MapPinIcon className="h-8 w-8" />
-                          </div>
-                          <div className="col-span-2 flex flex-col items-start gap-2">
-                            <strong className="font-bold text-slate-700">
-                              {project.title}
-                            </strong>
-                            <div className="text-slate-700 text-sm">
-                              {project.description}
+                            </div>
+                            <div className="flex items-center justify-center">
+                              <span
+                                className={clsx(
+                                  'inline-flex items-center justify-center rounded-full text-sky-700 px-2.5 py-0.5',
+                                  {
+                                    'bg-sky-50': project.flight_count === 0,
+                                    'bg-sky-100':
+                                      project.flight_count > 0 &&
+                                      project.flight_count < 5,
+                                    'bg-sky-200': project.flight_count > 4,
+                                  }
+                                )}
+                              >
+                                <PaperAirplaneIcon className="h-4 w-4 -ms-1 me-1.5" />
+                                <p className="whitespace-nowrap text-sm">
+                                  {project.flight_count} Flights
+                                </p>
+                              </span>
                             </div>
                           </div>
-                          <div className="flex items-center justify-center">
-                            <span className="inline-flex items-center justify-center rounded-full text-sky-700 bg-sky-100 px-2.5 py-0.5">
-                              <PaperAirplaneIcon className="h-4 w-4 -ms-1 me-1.5" />
-                              <p className="whitespace-nowrap text-sm">
-                                {project.flight_count} Flights
-                              </p>
-                            </span>
-                          </div>
                         </div>
-                      </div>
-                    </LayerCard>
-                  </li>
-                ))}
-              </ul>
-            ) : mapProjects && mapProjects.length === 0 ? (
-              <div>
-                <p className="mb-4">
-                  You do not have any projects to display on the map. Use the below
-                  button to navigate to the Projects page and create your first project.
-                </p>
-                <Link to="/projects">
-                  <Button>My Projects</Button>
-                </Link>
-              </div>
-            ) : (
-              <div className="w-full">
-                <div className="h-1.5 w-full bg-blue-100 rounded-lg overflow-hidden">
-                  <div className="animate-progress w-full h-full bg-blue-500 origin-left-right"></div>
+                      </LayerCard>
+                    </li>
+                  ))}
+                </ul>
+              ) : mapProjects && mapProjects.length === 0 ? (
+                <div>
+                  <p className="mb-4">
+                    You do not have any projects to display on the map. Use the below
+                    button to navigate to the Projects page and create your first
+                    project.
+                  </p>
+                  <Link to="/projects">
+                    <Button>My Projects</Button>
+                  </Link>
                 </div>
-              </div>
-            )}
-            <Pagination
-              currentPage={currentPage}
-              totalPages={TOTAL_PAGES}
-              updateCurrentPage={updateCurrentPage}
-            />
-          </article>
-        )}
+              ) : (
+                <div className="w-full">
+                  <div className="h-1.5 w-full bg-blue-100 rounded-lg overflow-hidden">
+                    <div className="animate-progress w-full h-full bg-blue-500 origin-left-right"></div>
+                  </div>
+                </div>
+              )}
+            </article>
+          )}
+        </div>
+
+        <div className="w-[450px] bg-slate-100 fixed bottom-0 p-2.5">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={TOTAL_PAGES}
+            updateCurrentPage={updateCurrentPage}
+          />
+        </div>
       </div>
     );
   }

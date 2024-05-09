@@ -131,6 +131,7 @@ export default function ProjectDetail() {
             <span className="text-gray-600">{project.description}</span>
           </div>
         )}
+
         <ProjectFlights />
       </div>
     );

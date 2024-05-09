@@ -116,16 +116,18 @@ interface EditField {
 
 export function EditField({ children, fieldName, isEditing, setIsEditing }: EditField) {
   return (
-    <div className="flex items-center gap-4">
-      {children}
+    <div className="flex items-center gap-8">
+      <p>{children}</p>
       {!isEditing ? (
-        <PencilIcon
-          className="inline h-4 w-4 text-slate-400 cursor-pointer"
-          onClick={(e) => {
-            e.preventDefault();
-            setIsEditing({ field: fieldName });
-          }}
-        />
+        <span>
+          <PencilIcon
+            className="inline h-4 w-4 text-slate-400 cursor-pointer"
+            onClick={(e) => {
+              e.preventDefault();
+              setIsEditing({ field: fieldName });
+            }}
+          />
+        </span>
       ) : null}
       {isEditing && isEditing.field === fieldName ? (
         <div className="flex gap-4">
