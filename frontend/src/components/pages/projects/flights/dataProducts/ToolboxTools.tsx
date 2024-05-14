@@ -52,7 +52,7 @@ const RGBTools = ({ dataProduct }: { dataProduct: DataProduct }) => {
             <Field id="exg-checkbox" type="checkbox" name="exg" />
             <label
               htmlFor="exg-checkbox"
-              className="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+              className="ms-2 text-sm font-medium text-gray-900"
             >
               Excess Green Vegetation Index (ExG)
             </label>
@@ -75,7 +75,7 @@ const MultiSpectralTools = ({ dataProduct }: { dataProduct: DataProduct }) => {
             <Field id="nvdi-checkbox" type="checkbox" name="ndvi" />
             <label
               htmlFor="nvdi-checkbox"
-              className="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+              className="ms-2 text-sm font-medium text-gray-900"
             >
               Normalized Difference Vegetation Index (NDVI)
             </label>

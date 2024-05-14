@@ -166,6 +166,8 @@ def run_processing_tool(
             status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
         )
     # ndvi
+    print(toolbox_in)
+    print(os.environ.get("RUNNING_TESTS"))
     if toolbox_in.ndvi and not os.environ.get("RUNNING_TESTS") == "1":
         # create new data product record
         ndvi_data_product: models.DataProduct = crud.data_product.create_with_flight(
@@ -189,16 +191,14 @@ def run_processing_tool(
             "nir_band_idx": toolbox_in.ndviNIR,
         }
         run_toolbox_process.apply_async(
-            args=[
+            args=(
                 "ndvi",
                 data_product.filepath,
                 str(out_raster),
                 tool_params,
                 ndvi_data_product.id,
                 current_user.id,
-            ],
-            kwargs={},
-            queue="main-queue",
+            )
         )
 
     # exg
@@ -226,14 +226,12 @@ def run_processing_tool(
             "blue_band_idx": toolbox_in.exgBlue,
         }
         run_toolbox_process.apply_async(
-            args=[
+            args=(
                 "exg",
                 data_product.filepath,
                 str(out_raster),
                 tool_params,
                 exg_data_product.id,
                 current_user.id,
-            ],
-            kwargs={},
-            queue="main-queue",
+            )
         )
