@@ -165,8 +165,12 @@ export default function ProjectList() {
           {filterAndSlice(projects)
             .sort((a, b) => (a.title > b.title ? 1 : b.title > a.title ? -1 : 0))
             .map((project) => (
-              <Link key={project.id} to={`/projects/${project.id}`} className="block">
-                <article className="flex items-center w-96 h-36shadow bg-white transition hover:shadow-xl">
+              <Link
+                key={project.id}
+                to={`/projects/${project.id}`}
+                className="block h-36"
+              >
+                <article className="flex items-center w-96 h-36 shadow bg-white transition hover:shadow-xl">
                   <div className="w-32 h-full p-1.5 hidden sm:block">
                     <img
                       className="h-full object-cover"
