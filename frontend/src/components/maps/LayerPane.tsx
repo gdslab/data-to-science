@@ -18,6 +18,7 @@ import Pagination, { getPaginationResults } from '../Pagination';
 import { Band } from '../pages/projects/Project';
 import { Project } from '../pages/projects/ProjectList';
 import ProjectSearch from '../pages/projects/ProjectSearch';
+import Sort, { SortSelection } from '../Sort';
 import SymbologyControls from './SymbologyControls';
 
 import { getDefaultStyle } from './utils';
@@ -161,10 +162,11 @@ export default function LayerPane({
   toggleHidePane: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const [currentPage, setCurrentPage] = useState(0);
-  const [searchText, setSearchText] = useState('');
   const [mapProjects, setMapProjects] = useState<Project[] | null>(
     getLocalStorageProjects()
   );
+  const [searchText, setSearchText] = useState('');
+  const [sortSelection, setSortSelection] = useState<SortSelection>('atoz');
 
   const {
     activeDataProduct,
@@ -301,7 +303,17 @@ export default function LayerPane({
    * @returns Array of filtered projects.
    */
   function getAvailableProjects(projs): Project[] {
-    return filterAndSlice(projs).sort((a, b) => sorter(a.title, b.title));
+    return filterAndSlice(
+      projs.sort((a, b) => {
+        if (sortSelection === 'atoz') {
+          return sorter(a.title.toLowerCase(), b.title.toLowerCase());
+        } else if (sortSelection === 'ztoa') {
+          return sorter(a.title.toLowerCase(), b.title.toLowerCase(), 'desc');
+        } else {
+          return sorter(a.title.toLowerCase(), b.title.toLowerCase());
+        }
+      })
+    );
   }
 
   if (hidePane) {
@@ -494,20 +506,26 @@ export default function LayerPane({
               </ul>
             </article>
           ) : (
-            <article className="flex flex-col p-4 overflow-auto">
+            <article className="flex flex-col p-4 overflow-y-auto overflow-x-hidden">
               <h1>Projects</h1>
               {mapProjects && mapProjects.length > 0 ? (
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 my-2">
                   <ProjectSearch
                     searchText={searchText}
                     updateSearchText={updateSearchText}
                   />
-                  {getPaginationResults(
-                    currentPage,
-                    MAX_ITEMS,
-                    filterAndSlice(mapProjects).length,
-                    filterByVisibilityAndSearch(mapProjects).length
-                  )}
+                  <div className="flex justify-between">
+                    {getPaginationResults(
+                      currentPage,
+                      MAX_ITEMS,
+                      filterAndSlice(mapProjects).length,
+                      filterByVisibilityAndSearch(mapProjects).length
+                    )}
+                    <Sort
+                      sortSelection={sortSelection}
+                      setSortSelection={setSortSelection}
+                    />
+                  </div>
                 </div>
               ) : null}
               {mapProjects && mapProjects.length > 0 ? (
@@ -521,7 +539,7 @@ export default function LayerPane({
                             activeProjectDispatch({ type: 'set', payload: project });
                           }}
                         >
-                          <div className="grid grid-cols-4">
+                          <div className="grid grid-cols-4 gap-4">
                             <div className="flex items-center justify-between">
                               <img
                                 className="object-cover w-16"
@@ -530,10 +548,10 @@ export default function LayerPane({
                               />
                             </div>
                             <div className="col-span-2 flex flex-col items-start gap-2">
-                              <strong className="font-bold text-slate-700">
+                              <strong className="font-bold text-slate-700 line-clamp-1">
                                 {project.title}
                               </strong>
-                              <div className="text-slate-700 text-sm">
+                              <div className="text-slate-700 text-sm line-clamp-1">
                                 {project.description}
                               </div>
                             </div>

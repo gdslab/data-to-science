@@ -45,21 +45,19 @@ export default function FlightCarousel({
   );
 
   return (
-    <>
-      <Swiper
-        slidesPerView={getSlidesPerView(width)}
-        initialSlide={sortedFlights.length - 1}
-        spaceBetween={30}
-        navigation={true}
-        pagination={{ clickable: true }}
-        modules={[Pagination, Navigation]}
-      >
-        {sortedFlights.map((flight) => (
-          <SwiperSlide key={flight.id}>
-            <FlightCard flight={flight} />
-          </SwiperSlide>
-        ))}
-      </Swiper>
-    </>
+    <Swiper
+      slidesPerView={getSlidesPerView(width)}
+      initialSlide={sortedFlights.length - 1}
+      spaceBetween={30}
+      navigation={true}
+      pagination={{ clickable: true }}
+      modules={[Pagination, Navigation]}
+    >
+      {sortedFlights.map((flight) => (
+        <SwiperSlide key={flight.id}>
+          <FlightCard flight={flight} />
+        </SwiperSlide>
+      ))}
+    </Swiper>
   );
 }

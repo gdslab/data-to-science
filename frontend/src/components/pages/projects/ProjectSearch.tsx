@@ -5,7 +5,7 @@ type ProjectSearch = {
 
 export default function ProjectSearch({ searchText, updateSearchText }: ProjectSearch) {
   return (
-    <div className="relative w-96">
+    <div className="relative w-full">
       <label htmlFor="Search" className="sr-only">
         {' '}
         Search{' '}

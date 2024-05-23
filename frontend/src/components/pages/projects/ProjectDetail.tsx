@@ -127,11 +127,10 @@ export default function ProjectDetail() {
           <ProjectDetailEditForm project={project} teams={teams} />
         ) : (
           <div>
-            <h2 className="mb-0">{project.title}</h2>
+            <span className="text-lg font-bold mb-0">{project.title}</span>
             <span className="text-gray-600">{project.description}</span>
           </div>
         )}
-
         <ProjectFlights />
       </div>
     );

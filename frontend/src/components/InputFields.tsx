@@ -117,7 +117,7 @@ interface EditField {
 export function EditField({ children, fieldName, isEditing, setIsEditing }: EditField) {
   return (
     <div className="flex items-center gap-8">
-      <p>{children}</p>
+      <div className="block my-1 mx-0">{children}</div>
       {!isEditing ? (
         <span>
           <PencilIcon

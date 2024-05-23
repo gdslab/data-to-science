@@ -132,7 +132,7 @@ export default function ProjectFlights() {
               />
             </Table>
           ) : (
-            <div className="h-full min-h-96">
+            <div className="h-full min-h-96 mx-4">
               <FlightCarousel
                 flights={flights.filter(
                   ({ sensor }) => flightsFilterSelection.indexOf(sensor) > -1

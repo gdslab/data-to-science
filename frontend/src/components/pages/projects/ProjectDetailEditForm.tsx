@@ -76,7 +76,7 @@ export default function ProjectDetailEditForm({
                 setIsEditing={setIsEditing}
               >
                 {!isEditing || isEditing.field !== 'title' ? (
-                  <h2 className="mb-0">{project.title}</h2>
+                  <span className="text-lg font-bold mb-0">{project.title}</span>
                 ) : (
                   <TextField name="title" />
                 )}
@@ -87,9 +87,9 @@ export default function ProjectDetailEditForm({
                 setIsEditing={setIsEditing}
               >
                 {!isEditing || isEditing.field !== 'description' ? (
-                  <p className="text-gray-600 text-wrap break-all">
+                  <div className="block my-1 mx-0 text-gray-600 text-wrap break-all">
                     {project.description}
-                  </p>
+                  </div>
                 ) : (
                   <TextField name="description" />
                 )}

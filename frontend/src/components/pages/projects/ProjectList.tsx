@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLoaderData, Link } from 'react-router-dom';
 
 import { Button } from '../../Buttons';
@@ -8,6 +8,9 @@ import Pagination, { getPaginationResults } from '../../Pagination';
 import ProjectForm from './ProjectForm';
 import { useProjectContext } from './ProjectContext';
 import ProjectSearch from './ProjectSearch';
+import Sort, { SortSelection } from '../../Sort';
+
+import { sorter } from '../../utils';
 
 interface FieldProperties {
   id: string;
@@ -66,6 +69,7 @@ function ProjectListHeader() {
 
 export default function ProjectList() {
   const [currentPage, setCurrentPage] = useState(0);
+  const [sortSelection, setSortSelection] = useState<SortSelection>('atoz');
 
   const [searchText, setSearchText] = useState('');
   const projects = useLoaderData() as Project[];
@@ -152,43 +156,63 @@ export default function ProjectList() {
         {/* Project header and search */}
         <div className="flex flex-col gap-4">
           <ProjectListHeader />
-          <ProjectSearch searchText={searchText} updateSearchText={updateSearchText} />
+          <div className="w-96">
+            <ProjectSearch
+              searchText={searchText}
+              updateSearchText={updateSearchText}
+            />
+          </div>
         </div>
-        {/* Project cards */}
-        {getPaginationResults(
-          currentPage,
-          MAX_ITEMS,
-          filterAndSlice(projects).length,
-          filterSearch(projects).length
-        )}
+        <div className="flex justify-between">
+          {/* Project cards */}
+          {getPaginationResults(
+            currentPage,
+            MAX_ITEMS,
+            filterAndSlice(projects).length,
+            filterSearch(projects).length
+          )}
+          <Sort sortSelection={sortSelection} setSortSelection={setSortSelection} />
+        </div>
         <div className="flex-1 flex flex-wrap gap-4 pb-24 overflow-y-auto">
-          {filterAndSlice(projects)
-            .sort((a, b) => (a.title > b.title ? 1 : b.title > a.title ? -1 : 0))
-            .map((project) => (
-              <Link
-                key={project.id}
-                to={`/projects/${project.id}`}
-                className="block h-36"
-              >
-                <article className="flex items-center w-96 h-36 shadow bg-white transition hover:shadow-xl">
-                  <div className="w-32 h-full p-1.5 hidden sm:block">
-                    <img
-                      className="h-full object-cover"
-                      src={`/static/projects/${project.id}/preview_map.png`}
-                    />
-                  </div>
+          {useMemo(
+            () =>
+              filterAndSlice(
+                projects.sort((a, b) => {
+                  if (sortSelection === 'atoz') {
+                    return sorter(a.title.toLowerCase(), b.title.toLowerCase());
+                  } else if (sortSelection === 'ztoa') {
+                    return sorter(a.title.toLowerCase(), b.title.toLowerCase(), 'desc');
+                  } else {
+                    return sorter(a.title.toLowerCase(), b.title.toLowerCase());
+                  }
+                })
+              ),
+            [currentPage, projects, sortSelection]
+          ).map((project) => (
+            <Link
+              key={project.id}
+              to={`/projects/${project.id}`}
+              className="block h-36"
+            >
+              <article className="flex items-center w-96 h-36 shadow bg-white transition hover:shadow-xl">
+                <div className="w-32 h-full p-1.5 hidden sm:block">
+                  <img
+                    className="h-full object-cover"
+                    src={`/static/projects/${project.id}/preview_map.png`}
+                  />
+                </div>
 
-                  <div className="w-full md:w-64 border-s border-gray-900/10 p-2 sm:border-l-transparent sm:p-4">
-                    <h3 className="font-bold uppercase text-gray-900 truncate">
-                      {project.title}
-                    </h3>
-                    <p className="mt-2 line-clamp-3 text-sm/relaxed text-gray-700 text-wrap truncate">
-                      {project.description}
-                    </p>
-                  </div>
-                </article>
-              </Link>
-            ))}
+                <div className="w-full md:w-64 border-s border-gray-900/10 p-2 sm:border-l-transparent sm:p-4">
+                  <h3 className="font-bold uppercase text-gray-900 truncate">
+                    {project.title}
+                  </h3>
+                  <p className="mt-2 line-clamp-3 text-sm/relaxed text-gray-700 text-wrap truncate">
+                    {project.description}
+                  </p>
+                </div>
+              </article>
+            </Link>
+          ))}
         </div>
         {/* Pagination */}
         <div className="w-full bg-slate-200 fixed bottom-4 py-4 px-6">
