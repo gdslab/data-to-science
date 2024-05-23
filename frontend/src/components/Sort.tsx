@@ -7,6 +7,42 @@ export type SortSelection = 'atoz' | 'ztoa' | 'recent';
 type SetSortSelection = React.Dispatch<React.SetStateAction<SortSelection>>;
 
 /**
+ * Return true if sort option matches one of the accepted sort option values.
+ * @param sortOption Sort option.
+ * @returns True if sort option is valid.
+ */
+function isValidSortOption(sortOption: string): boolean {
+  return (
+    typeof sortOption === 'string' &&
+    (sortOption === 'atoz' || sortOption === 'ztoa' || sortOption === 'recent')
+  );
+}
+
+/**
+ * Get sort preference from local storage (if available).
+ * @param key Local storage key for sort preference.
+ * @returns Sort preference stored in local storage or default value.
+ */
+export function getSortPreferenceFromLocalStorage(key: string): SortSelection {
+  const sortOption = localStorage.getItem(key);
+  if (sortOption && isValidSortOption(sortOption)) {
+    // @ts-ignore isValidSortOption checks type
+    return sortOption;
+  } else {
+    return 'atoz'; // default sort option
+  }
+}
+
+/**
+ * Set sort preference in local storage using provided key.
+ * @param key Local storage key for sort preference.
+ * @param sortOption Sort option.
+ */
+function setSortPreferenceInLocalStorage(key: string, sortOption: SortSelection) {
+  localStorage.setItem(key, sortOption);
+}
+
+/**
  * Sort array of projects by sort selection option.
  * @param projects Array of projects.
  * @param sortSelection Sort selection option.
@@ -91,6 +127,11 @@ export default function Sort({
         event.target.value === 'recent'
       )
         setSortSelection(event.target.value);
+      // update sort option in local storage
+      setSortPreferenceInLocalStorage(
+        'sortPreference',
+        event.target.value as SortSelection
+      );
     }
   }
 

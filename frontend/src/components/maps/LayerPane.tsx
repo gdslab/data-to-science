@@ -18,7 +18,11 @@ import Pagination, { getPaginationResults } from '../Pagination';
 import { Band } from '../pages/projects/Project';
 import { Project } from '../pages/projects/ProjectList';
 import ProjectSearch from '../pages/projects/ProjectSearch';
-import Sort, { SortSelection, sortProjects } from '../Sort';
+import Sort, {
+  getSortPreferenceFromLocalStorage,
+  SortSelection,
+  sortProjects,
+} from '../Sort';
 import SymbologyControls from './SymbologyControls';
 
 import { getDefaultStyle } from './utils';
@@ -165,7 +169,9 @@ export default function LayerPane({
     getLocalStorageProjects()
   );
   const [searchText, setSearchText] = useState('');
-  const [sortSelection, setSortSelection] = useState<SortSelection>('atoz');
+  const [sortSelection, setSortSelection] = useState<SortSelection>(
+    getSortPreferenceFromLocalStorage('sortPreference')
+  );
 
   const {
     activeDataProduct,

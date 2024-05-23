@@ -8,7 +8,11 @@ import Pagination, { getPaginationResults } from '../../Pagination';
 import ProjectForm from './ProjectForm';
 import { useProjectContext } from './ProjectContext';
 import ProjectSearch from './ProjectSearch';
-import Sort, { SortSelection, sortProjects } from '../../Sort';
+import Sort, {
+  SortSelection,
+  getSortPreferenceFromLocalStorage,
+  sortProjects,
+} from '../../Sort';
 
 interface FieldProperties {
   id: string;
@@ -68,7 +72,9 @@ function ProjectListHeader() {
 
 export default function ProjectList() {
   const [currentPage, setCurrentPage] = useState(0);
-  const [sortSelection, setSortSelection] = useState<SortSelection>('atoz');
+  const [sortSelection, setSortSelection] = useState<SortSelection>(
+    getSortPreferenceFromLocalStorage('sortPreference')
+  );
 
   const [searchText, setSearchText] = useState('');
   const projects = useLoaderData() as Project[];
