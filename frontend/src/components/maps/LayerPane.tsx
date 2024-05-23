@@ -18,11 +18,10 @@ import Pagination, { getPaginationResults } from '../Pagination';
 import { Band } from '../pages/projects/Project';
 import { Project } from '../pages/projects/ProjectList';
 import ProjectSearch from '../pages/projects/ProjectSearch';
-import Sort, { SortSelection } from '../Sort';
+import Sort, { SortSelection, sortProjects } from '../Sort';
 import SymbologyControls from './SymbologyControls';
 
 import { getDefaultStyle } from './utils';
-import { sorter } from '../utils';
 
 import UASIcon from '../../assets/uas-icon.svg';
 
@@ -303,17 +302,7 @@ export default function LayerPane({
    * @returns Array of filtered projects.
    */
   function getAvailableProjects(projs): Project[] {
-    return filterAndSlice(
-      projs.sort((a, b) => {
-        if (sortSelection === 'atoz') {
-          return sorter(a.title.toLowerCase(), b.title.toLowerCase());
-        } else if (sortSelection === 'ztoa') {
-          return sorter(a.title.toLowerCase(), b.title.toLowerCase(), 'desc');
-        } else {
-          return sorter(a.title.toLowerCase(), b.title.toLowerCase());
-        }
-      })
-    );
+    return filterAndSlice(sortProjects(projs, sortSelection));
   }
 
   if (hidePane) {

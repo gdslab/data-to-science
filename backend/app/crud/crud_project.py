@@ -160,10 +160,17 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 )
                 setattr(project[0], "field", json.loads(project[1]))
                 flight_count = 0
+                most_recent_flight = None
                 for flight in project[0].flights:
                     if flight.is_active:
+                        if most_recent_flight:
+                            if most_recent_flight < flight.acquisition_date:
+                                most_recent_flight = flight.acquisition_date
+                        else:
+                            most_recent_flight = flight.acquisition_date
                         flight_count += 1
                 setattr(project[0], "flight_count", flight_count)
+                setattr(project[0], "most_recent_flight", most_recent_flight)
                 return {
                     "response_code": status.HTTP_200_OK,
                     "message": "Project fetched successfully",
@@ -217,10 +224,17 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 )
                 setattr(project[0], "field", json.loads(project[1]))
                 flight_count = 0
+                most_recent_flight = None
                 for flight in project[0].flights:
                     if flight.is_active:
+                        if most_recent_flight:
+                            if most_recent_flight < flight.acquisition_date:
+                                most_recent_flight = flight.acquisition_date
+                        else:
+                            most_recent_flight = flight.acquisition_date
                         flight_count += 1
                 setattr(project[0], "flight_count", flight_count)
+                setattr(project[0], "most_recent_flight", most_recent_flight)
                 final_projects.append(project[0])
         return final_projects
 

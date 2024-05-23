@@ -1,7 +1,37 @@
 import { useEffect, useRef } from 'react';
+import { Project } from './pages/projects/ProjectList';
 
-export type SortSelection = 'atoz' | 'ztoa';
-type SetSortSelection = React.Dispatch<React.SetStateAction<'atoz' | 'ztoa'>>;
+import { sorter } from './utils';
+
+export type SortSelection = 'atoz' | 'ztoa' | 'recent';
+type SetSortSelection = React.Dispatch<React.SetStateAction<SortSelection>>;
+
+/**
+ * Sort array of projects by sort selection option.
+ * @param projects Array of projects.
+ * @param sortSelection Sort selection option.
+ * @returns Array of sorted projects.
+ */
+export function sortProjects(
+  projects: Project[],
+  sortSelection: SortSelection
+): Project[] {
+  return projects.sort((a, b) => {
+    if (sortSelection === 'atoz') {
+      return sorter(a.title.toLowerCase(), b.title.toLowerCase());
+    } else if (sortSelection === 'ztoa') {
+      return sorter(a.title.toLowerCase(), b.title.toLowerCase(), 'desc');
+    } else if (sortSelection === 'recent') {
+      return sorter(
+        new Date(a.most_recent_flight),
+        new Date(b.most_recent_flight),
+        'desc'
+      );
+    } else {
+      return sorter(a.title.toLowerCase(), b.title.toLowerCase());
+    }
+  });
+}
 
 export default function Sort({
   sortSelection,
@@ -11,8 +41,13 @@ export default function Sort({
   setSortSelection: SetSortSelection;
 }) {
   const categories = [
-    { key: 'atoz', label: 'Title A-Z' },
-    { key: 'ztoa', label: 'Title Z-A' },
+    { key: 'atoz', label: 'Title A-Z', title: 'Sort by title in ascending order' },
+    { key: 'ztoa', label: 'Title Z-A', title: 'Sort by title in descending order' },
+    {
+      key: 'recent',
+      label: 'Recent Flights',
+      title: 'Sort by projects with most recent flights',
+    },
   ];
 
   const detailsRef = useRef<HTMLDetailsElement>(null);
@@ -50,7 +85,11 @@ export default function Sort({
    */
   function onChange(event: React.ChangeEvent<HTMLInputElement>) {
     if (event.target.checked) {
-      if (event.target.value === 'atoz' || event.target.value === 'ztoa')
+      if (
+        event.target.value === 'atoz' ||
+        event.target.value === 'ztoa' ||
+        event.target.value === 'recent'
+      )
         setSortSelection(event.target.value);
     }
   }
@@ -63,9 +102,8 @@ export default function Sort({
           className="group [&_summary::-webkit-details-marker]:hidden"
         >
           <summary className="flex cursor-pointer items-center gap-2 border-b border-gray-400 pb-1 text-gray-900 transition hover:border-gray-600">
-            <span className="text-sm font-medium">
-              {' '}
-              Sort by: {getSortOptionLabel(sortSelection)}{' '}
+            <span className="w-36 text-sm font-medium">
+              Sort by: {getSortOptionLabel(sortSelection)}
             </span>
 
             <span className="transition group-open:-rotate-180">
@@ -89,9 +127,13 @@ export default function Sort({
           <div className="z-50 group-open:absolute group-open:start-0 group-open:top-auto group-open:mt-2">
             <div className="w-96 rounded border border-gray-200 bg-white">
               <ul className="space-y-1 border-t border-gray-200 p-4">
-                {categories.map(({ key, label }) => (
+                {categories.map(({ key, label, title }) => (
                   <li key={key}>
-                    <label htmlFor={key} className="inline-flex items-center gap-2">
+                    <label
+                      htmlFor={key}
+                      className="inline-flex items-center gap-2"
+                      title={title}
+                    >
                       <input
                         type="radio"
                         name="sortOption"
@@ -101,10 +143,7 @@ export default function Sort({
                         checked={sortSelection === key}
                         onChange={onChange}
                       />
-                      <span className="text-sm font-medium text-gray-700">
-                        {' '}
-                        {label}{' '}
-                      </span>
+                      <span className="text-sm font-medium text-gray-700">{label}</span>
                     </label>
                   </li>
                 ))}

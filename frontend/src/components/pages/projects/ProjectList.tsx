@@ -8,9 +8,7 @@ import Pagination, { getPaginationResults } from '../../Pagination';
 import ProjectForm from './ProjectForm';
 import { useProjectContext } from './ProjectContext';
 import ProjectSearch from './ProjectSearch';
-import Sort, { SortSelection } from '../../Sort';
-
-import { sorter } from '../../utils';
+import Sort, { SortSelection, sortProjects } from '../../Sort';
 
 interface FieldProperties {
   id: string;
@@ -28,6 +26,7 @@ export interface Project {
   description: string;
   field: FieldGeoJSONFeature;
   flight_count: number;
+  most_recent_flight: string;
   owner_id: string;
   is_owner: boolean;
   team_id: string;
@@ -175,18 +174,7 @@ export default function ProjectList() {
         </div>
         <div className="flex-1 flex flex-wrap gap-4 pb-24 overflow-y-auto">
           {useMemo(
-            () =>
-              filterAndSlice(
-                projects.sort((a, b) => {
-                  if (sortSelection === 'atoz') {
-                    return sorter(a.title.toLowerCase(), b.title.toLowerCase());
-                  } else if (sortSelection === 'ztoa') {
-                    return sorter(a.title.toLowerCase(), b.title.toLowerCase(), 'desc');
-                  } else {
-                    return sorter(a.title.toLowerCase(), b.title.toLowerCase());
-                  }
-                })
-              ),
+            () => filterAndSlice(sortProjects(projects, sortSelection)),
             [currentPage, projects, sortSelection]
           ).map((project) => (
             <Link

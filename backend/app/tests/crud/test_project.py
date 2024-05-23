@@ -189,6 +189,28 @@ def test_get_project_flight_count_with_deactivated_flight(db: Session) -> None:
     assert stored_project["result"].flight_count == 2
 
 
+def test_get_most_recent_flight(db: Session) -> None:
+    user = create_user(db)
+    project = create_project(db, owner_id=user.id)
+    flights = []
+    for _ in range(0, 5):
+        flight = create_flight(db, project_id=project.id)
+        flights.append(flight)
+    stored_project = crud.project.get_user_project(
+        db, project_id=project.id, user_id=user.id
+    )
+    assert stored_project and stored_project["result"]
+    assert stored_project["result"].most_recent_flight
+    most_recent_flight = None
+    for flight in flights:
+        if most_recent_flight:
+            if most_recent_flight < flight.acquisition_date:
+                most_recent_flight = flight.acquisition_date
+        else:
+            most_recent_flight = flight.acquisition_date
+    assert stored_project["result"].most_recent_flight == most_recent_flight
+
+
 def test_deactivate_project(db: Session) -> None:
     project = create_project(db)
     project2 = crud.project.deactivate(db, project_id=project.id)

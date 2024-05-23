@@ -52,6 +52,7 @@ class Project(ProjectInDBBase):
     is_owner: bool = False
     field: PolygonGeoJSONFeature | None = None
     flight_count: int = 0
+    most_recent_flight: date | None = None
 
 
 # additional properties stored in DB
