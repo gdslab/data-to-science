@@ -24,6 +24,8 @@ dependencies:
   - pydantic-settings
   - python-jose
   - python-multipart
+  - pyyaml
+  - types-pyyaml
   - shapely
   - sqlalchemy
   - titiler-core

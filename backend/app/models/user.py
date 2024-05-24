@@ -13,6 +13,7 @@ from app.models.utils.user import utcnow
 
 if TYPE_CHECKING:
     from .api_key import APIKey
+    from .campaign import Campaign
     from .flight import Flight
     from .team import Team
     from .team_member import TeamMember
@@ -47,6 +48,9 @@ class User(Base):
 
     api_key: Mapped["APIKey"] = relationship(
         back_populates="owner", cascade="all, delete"
+    )
+    campaigns: Mapped[list["Campaign"]] = relationship(
+        back_populates="lead", cascade="all, delete"
     )
     flights: Mapped[list["Flight"]] = relationship(
         back_populates="pilot", cascade="all, delete"
