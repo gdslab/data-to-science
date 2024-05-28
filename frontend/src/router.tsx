@@ -9,6 +9,10 @@ import DashboardUsers, {
   loader as dashboardUsersLoader,
 } from './components/pages/admin/DashboardUsers';
 import ErrorPage from './components/ErrorPage';
+import FieldCampaignCreate from './components/pages/projects/fieldCampaigns/FieldCampaignCreate';
+import FieldCampaignForm, {
+  loader as fieldCampaignLoader,
+} from './components/pages/projects/fieldCampaigns/FieldCampaignForm';
 import FlightData, {
   loader as flightDataLoader,
 } from './components/pages/projects/flights/FlightData';
@@ -134,6 +138,15 @@ export const router = createBrowserRouter([
         path: '/projects',
         element: <ProjectLayout />,
         children: [
+          {
+            path: '/projects/:projectId/campaigns/create',
+            element: <FieldCampaignCreate />,
+          },
+          {
+            path: '/projects/:projectId/campaigns/:campaignId',
+            element: <FieldCampaignForm />,
+            loader: fieldCampaignLoader,
+          },
           {
             path: '/projects/:projectId/flights/:flightId/data',
             element: <FlightData />,
