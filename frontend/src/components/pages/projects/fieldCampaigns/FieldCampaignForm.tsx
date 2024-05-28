@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { Formik, Form } from 'formik';
+import Papa from 'papaparse';
 import { useEffect, useState } from 'react';
 import { useLoaderData, useNavigate } from 'react-router-dom';
 import * as Yup from 'yup';
@@ -111,6 +112,9 @@ export default function FieldCampaignForm() {
   const navigate = useNavigate();
 
   const [activeStep, setActiveStep] = useState(0);
+  const [csvErrors, setCsvErrors] = useState<
+    Papa.ParseError[][] | Omit<Papa.ParseError, 'code'>[][]
+  >([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
 
@@ -127,6 +131,44 @@ export default function FieldCampaignForm() {
   useEffect(() => {
     setStatus(null);
   }, [activeStep]);
+
+  useEffect(() => {
+    // reset csv errors if opening existing form to edit
+    if (
+      fieldCampaign &&
+      fieldCampaign.form_data &&
+      fieldCampaign.form_data.treatments.length > 0
+    ) {
+      setCsvErrors(new Array(fieldCampaign.form_data.treatments.length).fill([]));
+    }
+  }, []);
+
+  /**
+   * Update array tracking csv parsing errors.
+   * @param errors New errors to add to array.
+   * @param index Position where to add new errors.
+   */
+  function updateCsvErrors(
+    errors: Papa.ParseError[] | Omit<Papa.ParseError, 'code'>[],
+    index: string,
+    op: 'add' | 'remove' | 'clear'
+  ) {
+    if (op === 'remove') {
+      let currentCsvErrors = csvErrors.slice();
+      currentCsvErrors.splice(parseInt(index), 1);
+      setCsvErrors(currentCsvErrors);
+    } else if (op === 'add') {
+      let currentCsvErrors = csvErrors.slice();
+      currentCsvErrors[parseInt(index)] = errors;
+      setCsvErrors(currentCsvErrors);
+    } else if (op === 'clear') {
+      let currentCsvErrors = csvErrors.slice();
+      currentCsvErrors[parseInt(index)] = [];
+      setCsvErrors(currentCsvErrors);
+    } else {
+      throw new Error('Unrecognized operation for updating csv errors');
+    }
+  }
 
   const handleSubmit = (extra) => async (values, _actions) => {
     setIsSubmitting(true);
@@ -167,7 +209,12 @@ export default function FieldCampaignForm() {
           {() => (
             <Form className="flex flex-col h-full gap-4">
               {activeStep === 0 ? <FieldCampaignFormStep1 /> : null}
-              {activeStep === 1 ? <FieldCampaignFormStep2 /> : null}
+              {activeStep === 1 ? (
+                <FieldCampaignFormStep2
+                  csvErrors={csvErrors}
+                  updateCsvErrors={updateCsvErrors}
+                />
+              ) : null}
               {activeStep === 2 ? <FieldCampaignFormStep3 /> : null}
               {status && status.type && status.msg ? (
                 <Alert alertType={status.type}>{status.msg}</Alert>

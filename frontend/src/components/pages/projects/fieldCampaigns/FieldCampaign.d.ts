@@ -47,9 +47,13 @@ export type TemplateInput = {
   [key: string]: unknown;
 };
 
+export type UpdateCSVErrors = (
+  errors: Papa.ParseError[] | Omit<Papa.ParseError, 'code'>[],
+  index: string,
+  op: 'add' | 'remove' | 'clear'
+) => void;
+
 export type TemplateUpload = {
   id: string;
-  setCsvErrors: React.Dispatch<
-    React.SetStateAction<Papa.ParseError[] | Omit<Papa.ParseError, 'code'>[]>
-  >;
+  updateCsvErrors: UpdateCSVErrors;
 };
