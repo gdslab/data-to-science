@@ -25,12 +25,14 @@ const headersMatch = (headers1: string[], headers2: string[]): boolean => {
   return true;
 };
 
-export default function UppyTemplateUpload({ id, setCsvErrors }: TemplateUpload) {
+export default function UppyTemplateUpload({ id, updateCsvErrors }: TemplateUpload) {
   const [uppy] = useState(() => new Uppy().use(FileInput, { id: id }));
 
   const { setFieldValue, setFieldTouched } = useFormikContext();
 
   uppy.on('files-added', (files) => {
+    // remove any previously tracked errors
+    updateCsvErrors([], id, 'clear');
     // add filename(s) to formik context
     const filenames = files.map(({ meta }) => meta.name);
     setFieldValue(`treatments.${id}.filenames`, filenames);
@@ -43,6 +45,7 @@ export default function UppyTemplateUpload({ id, setCsvErrors }: TemplateUpload)
             Papa.parse(file.data as File, {
               header: true,
               dynamicTyping: true,
+              skipEmptyLines: true,
               complete: (results: Papa.ParseResult<TemplateInput>) => resolve(results),
             })
           )
@@ -69,7 +72,7 @@ export default function UppyTemplateUpload({ id, setCsvErrors }: TemplateUpload)
       results.forEach((result, index) => {
         // check for errors
         if (result.errors.length > 0) {
-          setCsvErrors(result.errors);
+          updateCsvErrors(result.errors, id, 'add');
           setFieldValue(`treatments.${id}.columns`, []);
           throw new Error(`Error occurred in ${files[index].name}`);
         } else {
@@ -80,11 +83,15 @@ export default function UppyTemplateUpload({ id, setCsvErrors }: TemplateUpload)
             } else {
               // verify header length and names match between files
               if (!headersMatch(prevHeaders, result.meta.fields)) {
-                setCsvErrors([
-                  {
-                    message: `Headers do not match in ${files[index].name}`,
-                  } as Omit<Papa.ParseError, 'code'>,
-                ]);
+                updateCsvErrors(
+                  [
+                    {
+                      message: `Headers do not match in ${files[index].name}`,
+                    } as Omit<Papa.ParseError, 'code'>,
+                  ],
+                  id,
+                  'add'
+                );
                 setFieldValue(`treatments.${id}.columns`, []);
                 throw new Error(`Error occurred in ${files[index].name}`);
               }
@@ -99,9 +106,16 @@ export default function UppyTemplateUpload({ id, setCsvErrors }: TemplateUpload)
             // add file to list
             parsedFiles.push(files[index].name);
           } else {
-            setCsvErrors([
-              { message: 'Unable to detect headers' } as Omit<Papa.ParseError, 'code'>,
-            ]);
+            updateCsvErrors(
+              [
+                { message: 'Unable to detect headers' } as Omit<
+                  Papa.ParseError,
+                  'code'
+                >,
+              ],
+              id,
+              'add'
+            );
             setFieldValue(`treatments.${id}.columns`, []);
             throw new Error(`Error occurred in ${files[index].name}`);
           }

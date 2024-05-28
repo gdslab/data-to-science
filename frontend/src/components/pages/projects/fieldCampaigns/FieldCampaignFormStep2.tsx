@@ -1,17 +1,21 @@
 import { Field, FieldArray, FormikErrors, useFormikContext } from 'formik';
 import Papa from 'papaparse';
-import { Fragment, useState } from 'react';
+import { Fragment } from 'react';
 
 import Alert from '../../../Alert';
 import { Button } from '../../../Buttons';
 import { TextField } from '../../../InputFields';
 import { FieldCampaignInitialValues } from './FieldCampaign';
+import { UpdateCSVErrors } from './FieldCampaign';
 import UppyTemplateUpload from './UppyTemplateUpload';
 
-export default function FieldCampaignFormStep2() {
-  const [csvErrors, setCsvErrors] = useState<
-    Papa.ParseError[] | Omit<Papa.ParseError, 'code'>[]
-  >([]);
+export default function FieldCampaignFormStep2({
+  csvErrors,
+  updateCsvErrors,
+}: {
+  csvErrors: Papa.ParseError[][] | Omit<Papa.ParseError, 'code'>[][];
+  updateCsvErrors: UpdateCSVErrors;
+}) {
   const {
     errors,
     values,
@@ -39,7 +43,7 @@ export default function FieldCampaignFormStep2() {
                 {values['treatments'] && values['treatments'].length > 0
                   ? values['treatments'].map((treatment, index) => (
                       <div
-                        className="relative flex flex-col gap-2 min-h-96 max-h-96 min-w-80 rounded-lg border-2 border-slate-600 p-4 overflow-y-auto"
+                        className="relative flex flex-col gap-2 h-96 w-80 rounded-lg border-2 border-slate-600 p-4 overflow-y-auto"
                         key={index}
                       >
                         <TextField
@@ -49,10 +53,10 @@ export default function FieldCampaignFormStep2() {
                         {!treatment.columns || treatment.columns.length === 0 ? (
                           <UppyTemplateUpload
                             id={index.toString()}
-                            setCsvErrors={setCsvErrors}
+                            updateCsvErrors={updateCsvErrors}
                           />
                         ) : null}
-                        {csvErrors.length === 0 ? (
+                        {csvErrors[index].length === 0 ? (
                           <Fragment>
                             {treatment.filenames && treatment.filenames.length > 0 ? (
                               <div>
@@ -93,21 +97,25 @@ export default function FieldCampaignFormStep2() {
                                 ))}
                               </fieldset>
                             ) : null}
-                            <div className="mt-4 flex items-end justify-center w-full h-full">
-                              <div className="w-48">
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  onClick={() => arrayHelpers.remove(index)}
-                                >
-                                  Remove Treatment
-                                </Button>
-                              </div>
-                            </div>
                           </Fragment>
                         ) : null}
-                        {csvErrors.length > 0
-                          ? csvErrors.map((error, errorIndex) => (
+                        <div className="mt-4 flex items-end justify-center w-full h-full">
+                          <div className="w-48">
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => {
+                                arrayHelpers.remove(index);
+                                updateCsvErrors([], index.toString(), 'remove');
+                              }}
+                            >
+                              Remove Treatment
+                            </Button>
+                          </div>
+                        </div>
+
+                        {csvErrors.length > index && csvErrors[index].length > 0
+                          ? csvErrors[index].map((error, errorIndex) => (
                               <span key={errorIndex} className="text-red-500">
                                 {error.type}: {error.message}
                               </span>
@@ -117,8 +125,11 @@ export default function FieldCampaignFormStep2() {
                     ))
                   : null}
                 <div
-                  className="flex flex-row items-center justify-center gap-2 min-h-96 max-h-96 min-w-80 cursor-pointer rounded-lg border-2 border-dashed border-slate-400 p-4 overflow-y-auto"
-                  onClick={() => arrayHelpers.push({ name: '', columns: [] })}
+                  className="flex flex-row items-center justify-center gap-2 h-96 w-80 cursor-pointer rounded-lg border-2 border-dashed border-slate-400 p-4 overflow-y-auto"
+                  onClick={() => {
+                    updateCsvErrors([], csvErrors.length.toString(), 'add');
+                    arrayHelpers.push({ name: '', columns: [] });
+                  }}
                 >
                   <span className="text-lg text-slate-700 font-semibold">
                     Add Treatment
