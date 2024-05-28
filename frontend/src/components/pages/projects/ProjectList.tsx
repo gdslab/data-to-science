@@ -181,7 +181,7 @@ export default function ProjectList() {
         <div className="flex-1 flex flex-wrap gap-4 pb-24 overflow-y-auto">
           {useMemo(
             () => filterAndSlice(sortProjects(projects, sortSelection)),
-            [currentPage, projects, sortSelection]
+            [currentPage, projects, searchText, sortSelection]
           ).map((project) => (
             <Link
               key={project.id}
