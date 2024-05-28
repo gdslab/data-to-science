@@ -4,14 +4,12 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   ArrowDownTrayIcon,
-  ArrowUpTrayIcon,
   ChevronDownIcon,
   ChevronUpIcon,
 } from '@heroicons/react/24/outline';
 
 import { Measurement } from './FieldCampaign';
 import { useFieldCampaignContext } from './FieldCampaignContext';
-import TemplateUpload from './TemplateUpload';
 
 import { downloadFile, getFilenameFromContentDisposition } from './utils';
 import Alert, { Status } from '../../../Alert';
@@ -28,7 +26,6 @@ function FieldTimepoints({
   measurementIdx,
   treatmentIdx,
 }: FieldTimepoints) {
-  const [open, setOpen] = useState(false);
   const { addSelectedTimepoint, removeSelectedTimepoint, selectedTimepoints } =
     useFieldCampaignContext();
 
@@ -119,25 +116,6 @@ function FieldTimepoints({
               <span className="text-sm sr-only">Download Template</span>
               <ArrowDownTrayIcon className="w-4 h-4" />
             </button>
-            <button
-              className="flex flex-row items-center justify-between gap-2"
-              title="Upload Completed Template"
-              onClick={(e) => {
-                e.preventDefault();
-                setOpen(true);
-              }}
-            >
-              <span className="text-sm sr-only">Upload Completed Template</span>
-              <ArrowUpTrayIcon className="w-4 h-4" />
-            </button>
-            <TemplateUpload
-              endpoint={`${
-                import.meta.env.VITE_API_V1_STR
-              }/projects/${projectId}/campaigns/${campaignId}/upload`}
-              open={open}
-              onSuccess={() => setOpen(false)}
-              setOpen={setOpen}
-            />
           </div>
         </div>
       ))}
