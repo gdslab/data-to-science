@@ -19,6 +19,7 @@ from app.api.api_v1.endpoints import (
     tusd,
     utils,
     users,
+    vector_layers,
 )
 
 api_router = APIRouter()
@@ -31,6 +32,11 @@ api_router.include_router(
 api_router.include_router(locations.router, prefix="/locations", tags=["locations"])
 api_router.include_router(public.router, prefix="/public", tags=["public"])
 api_router.include_router(projects.router, prefix="/projects", tags=["projects"])
+api_router.include_router(
+    vector_layers.router,
+    prefix="/projects/{project_id}/vector_layers",
+    tags=["vector_layers"],
+)
 api_router.include_router(
     campaigns.router, prefix="/projects/{project_id}/campaigns", tags=["campaigns"]
 )

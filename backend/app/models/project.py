@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from .project_member import ProjectMember
     from .team import Team
     from .user import User
+    from .vector_layer import VectorLayer
 
 
 class Project(Base):
@@ -52,6 +53,9 @@ class Project(Base):
         back_populates="project", cascade="all, delete"
     )
     flights: Mapped[list["Flight"]] = relationship(
+        back_populates="project", cascade="all, delete"
+    )
+    vector_layer: Mapped[list["VectorLayer"]] = relationship(
         back_populates="project", cascade="all, delete"
     )
 

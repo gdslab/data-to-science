@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from .project import Project
     from .raw_data import RawData
     from .user import User
+    from .vector_layer import VectorLayer
 
 # default platforms, "Other" can be any string value
 PLATFORMS = ["Phantom_4", "M300", "M350", "Other"]
@@ -53,6 +54,7 @@ class Flight(Base):
     raw_data: Mapped[list["RawData"]] = relationship(
         back_populates="flight", cascade="all, delete", lazy="joined"
     )
+    vector_layer: Mapped[list["VectorLayer"]] = relationship(back_populates="flight")
 
     def __repr__(self) -> str:
         return (

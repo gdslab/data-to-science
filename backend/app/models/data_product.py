@@ -10,9 +10,11 @@ from app.db.base_class import Base
 
 
 if TYPE_CHECKING:
+    from .data_product_metadata import DataProductMetadata
     from .file_permission import FilePermission
     from .flight import Flight
     from .job import Job
+    from .vector_layer import VectorLayer
 
 
 DATA_TYPES = ["dsm", "point_cloud", "ortho", "other"]
@@ -35,9 +37,15 @@ class DataProduct(Base):
         ForeignKey("flights.id"), nullable=False
     )
     # relationships
+    data_product_metadata: Mapped["DataProductMetadata"] = relationship(
+        back_populates="data_product"
+    )
+    file_permission: Mapped["FilePermission"] = relationship(back_populates="file")
     flight: Mapped["Flight"] = relationship(back_populates="data_products")
     jobs: Mapped["Job"] = relationship(back_populates="data_product")
-    file_permission: Mapped["FilePermission"] = relationship(back_populates="file")
+    vector_layer: Mapped[list["VectorLayer"]] = relationship(
+        back_populates="data_product", cascade="all, delete"
+    )
 
     def __repr__(self) -> str:
         return (

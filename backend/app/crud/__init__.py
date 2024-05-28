@@ -13,3 +13,4 @@ from .crud_team_member import team_member
 from .crud_upload import upload
 from .crud_user import user
 from .crud_user_style import user_style
+from .crud_vector_layer import vector_layer
