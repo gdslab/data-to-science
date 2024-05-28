@@ -1,6 +1,13 @@
-import { ErrorMessage, Field } from 'formik';
+import {
+  ErrorMessage,
+  Field,
+  FieldArray,
+  FormikValues,
+  useFormikContext,
+} from 'formik';
 import { CheckIcon, PencilIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
+import { Button } from './Buttons';
 import { getIcon } from './utils';
 
 const styles = {
@@ -23,6 +30,8 @@ interface InputField extends InputFieldLabels {
   name: string;
   placeholder?: string;
   required?: boolean;
+  showError?: boolean;
+  onChange?: React.ChangeEventHandler<HTMLInputElement>;
 }
 
 interface NumberField extends InputField {
@@ -39,7 +48,14 @@ interface TextField extends InputField {
 const defaultLabelClass = 'block text-sm text-gray-400 font-bold pt-2 pb-1';
 const altLabelClass = 'block font-bold pt-2 pb-1';
 
-const InputField = ({ children, altLabel, label, name, required }: InputField) => (
+const InputField = ({
+  children,
+  altLabel,
+  label,
+  name,
+  required,
+  showError,
+}: InputField) => (
   <div className="relative">
     {label ? (
       <label className={altLabel ? altLabelClass : defaultLabelClass} htmlFor={name}>
@@ -48,7 +64,9 @@ const InputField = ({ children, altLabel, label, name, required }: InputField) =
       </label>
     ) : null}
     {children}
-    <ErrorMessage className="text-red-500 text-sm" name={name} component="span" />
+    {showError ? (
+      <ErrorMessage className="text-red-500 text-sm" name={name} component="span" />
+    ) : null}
   </div>
 );
 
@@ -60,10 +78,20 @@ export function NumberField({
   min = undefined,
   name,
   required = true,
+  showError = true,
   step = 1,
+  onChange = undefined,
 }: NumberField) {
+  const { handleChange } = useFormikContext();
+
   return (
-    <InputField altLabel={altLabel} label={label} name={name} required={required}>
+    <InputField
+      altLabel={altLabel}
+      label={label}
+      name={name}
+      required={required}
+      showError={showError}
+    >
       <Field
         className={disabled ? styles.disabled : styles.textField}
         id={name}
@@ -73,6 +101,7 @@ export function NumberField({
         min={min}
         max={max}
         step={step}
+        onChange={onChange ? onChange : handleChange}
       />
     </InputField>
   );
@@ -86,10 +115,17 @@ export function TextField({
   name,
   placeholder = '',
   required = true,
+  showError = true,
   type,
 }: TextField) {
   return (
-    <InputField altLabel={altLabel} label={label} name={name} required={required}>
+    <InputField
+      altLabel={altLabel}
+      label={label}
+      name={name}
+      required={required}
+      showError={showError}
+    >
       <Field
         as={type === 'textarea' ? 'textarea' : null}
         className={disabled ? styles.disabled : styles.textField}
@@ -201,5 +237,147 @@ export function SelectField({
             ))}
       </Field>
     </InputField>
+  );
+}
+
+interface TextFieldArray {
+  btnLabel: string;
+  name: string;
+  values: FormikValues;
+}
+
+export function TextArrayField({ btnLabel, name, values }: TextFieldArray) {
+  return (
+    <FieldArray
+      name={name}
+      render={(arrayHelpers) => (
+        <div className="flex flex-col items-start gap-2">
+          {values[name] && values[name].length > 0 ? (
+            values[name].map((_newName: string, index: number) => (
+              <div key={`${name}.${index}`}>
+                <div className="flex gap-4">
+                  <TextField name={`${name}.${index}`} />
+                  <div className="flex flex gap-4">
+                    <button type="button" onClick={() => arrayHelpers.remove(index)}>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth="1.5"
+                        stroke="currentColor"
+                        className="w-6 h-6"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M15 12H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => arrayHelpers.insert(index, '')}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth="1.5"
+                        stroke="currentColor"
+                        className="w-6 h-6"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <Button type="button" size="sm" onClick={() => arrayHelpers.push('')}>
+              {btnLabel}
+            </Button>
+          )}
+        </div>
+      )}
+    ></FieldArray>
+  );
+}
+
+interface SelectFieldArray {
+  btnLabel: string;
+  name: string;
+  values: FormikValues;
+  options: { label: string; value: string }[];
+}
+
+export function SelectFieldArray({
+  btnLabel,
+  name,
+  values,
+  options,
+}: SelectFieldArray) {
+  return (
+    <FieldArray
+      name={name}
+      render={(arrayHelpers) => (
+        <div className="flex flex-col items-start gap-2">
+          {values[name] && values[name].length > 0 ? (
+            values[name].map((_newName: string, index: number) => (
+              <div key={`${name}.${index}`}>
+                <div className="flex gap-4">
+                  <SelectField name={`${name}.${index}`} options={options} />
+                  <div className="flex flex gap-4">
+                    <button type="button" onClick={() => arrayHelpers.remove(index)}>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth="1.5"
+                        stroke="currentColor"
+                        className="w-6 h-6"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M15 12H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => arrayHelpers.insert(index, '')}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth="1.5"
+                        stroke="currentColor"
+                        className="w-6 h-6"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <Button type="button" size="sm" onClick={() => arrayHelpers.push('')}>
+              {btnLabel}
+            </Button>
+          )}
+        </div>
+      )}
+    ></FieldArray>
   );
 }

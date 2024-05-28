@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.api.api_v1.endpoints import (
     admin,
     auth,
+    campaigns,
     file_permission,
     flights,
     health,
@@ -30,6 +31,9 @@ api_router.include_router(
 api_router.include_router(locations.router, prefix="/locations", tags=["locations"])
 api_router.include_router(public.router, prefix="/public", tags=["public"])
 api_router.include_router(projects.router, prefix="/projects", tags=["projects"])
+api_router.include_router(
+    campaigns.router, prefix="/projects/{project_id}/campaigns", tags=["campaigns"]
+)
 api_router.include_router(
     project_members.router,
     prefix="/projects/{project_id}/members",

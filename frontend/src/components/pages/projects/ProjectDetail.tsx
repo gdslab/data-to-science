@@ -1,12 +1,14 @@
 import axios, { AxiosResponse } from 'axios';
-import { useEffect } from 'react';
-import { Params, useLoaderData, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Params, useLoaderData, useLocation, useParams } from 'react-router-dom';
+import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 
 import { User } from '../../../AuthContext';
 import { useProjectContext } from './ProjectContext';
 
 import { Flight, Project, ProjectLoaderData } from './Project';
 import { ProjectMember } from './ProjectAccess';
+import ProjectCampaigns from './ProjectCampaigns';
 import ProjectDetailEditForm from './ProjectDetailEditForm';
 import { Team } from '../teams/Teams';
 import ProjectFlights from './ProjectFlights';
@@ -61,9 +63,12 @@ export async function loader({ params }: { params: Params<string> }) {
 }
 
 export default function ProjectDetail() {
-  const { project, role, flights, teams } = useLoaderData() as ProjectLoaderData;
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
+  const { project, role, flights, teams } = useLoaderData() as ProjectLoaderData;
+  const location = useLocation();
   const params = useParams();
+
   const {
     projectRole,
     flights: flightsPrev,
@@ -74,6 +79,12 @@ export default function ProjectDetail() {
     projectMembersDispatch,
     projectRoleDispatch,
   } = useProjectContext();
+
+  useEffect(() => {
+    if (location.state && location.state.selectedIndex) {
+      setSelectedIndex(location.state.selectedIndex);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (role) projectRoleDispatch({ type: 'set', payload: role });
@@ -131,7 +142,27 @@ export default function ProjectDetail() {
             <span className="text-gray-600">{project.description}</span>
           </div>
         )}
-        <ProjectFlights />
+        <div className="grow min-h-0">
+          <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
+            <TabList>
+              <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium">
+                Flights
+              </Tab>
+              <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium">
+                Field Data
+              </Tab>
+            </TabList>
+            <hr className="my-4 border-gray-700" />
+            <TabPanels>
+              <TabPanel>
+                <ProjectFlights />
+              </TabPanel>
+              <TabPanel>
+                <ProjectCampaigns />
+              </TabPanel>
+            </TabPanels>
+          </TabGroup>
+        </div>
       </div>
     );
   } else {

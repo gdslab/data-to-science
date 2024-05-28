@@ -1,3 +1,5 @@
+import { FieldCampaignInitialValues } from './fieldCampaigns/FieldCampaign';
+
 // geojson object representing project field boundary
 export type FieldGeoJSONFeature = Omit<GeoJSON.Feature, 'properties'> & {
   properties: {
@@ -109,6 +111,14 @@ export interface ProjectLoaderData {
   pilots: Pilot[];
   project: Project;
   role: string;
+  fieldCampaigns: FieldCampaign[];
   flights: Flight[];
   teams: Team[];
 }
+
+export type FieldCampaign = {
+  id: string;
+  title: string;
+  lead_id: string;
+  form_data: FieldCampaignInitialValues;
+};

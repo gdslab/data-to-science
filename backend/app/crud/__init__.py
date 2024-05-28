@@ -1,4 +1,5 @@
 from .crud_api_key import api_key
+from .crud_campaign import campaign
 from .crud_data_product import data_product
 from .crud_file_permission import file_permission
 from .crud_flight import flight
