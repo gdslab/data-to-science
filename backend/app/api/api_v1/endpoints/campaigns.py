@@ -288,6 +288,8 @@ async def create_campaign_template(
                 new_columns = {
                     nc["name"]: nc["fill"] for nc in campaign.form_data["newColumns"]
                 }
+                # add treatment name to new columns
+                new_columns.update({"Treatment": treatment["name"]})
                 # add measurement name and unit (if available) to new columns
                 new_columns.update({"Measurement": measurement["name"]})
                 if measurement["units"]:
