@@ -1,6 +1,6 @@
-import { ErrorMessage, FieldArray, useFormikContext } from 'formik';
+import { ErrorMessage, FieldArray, FormikErrors, useFormikContext } from 'formik';
 import { Fragment, useEffect, useState } from 'react';
-import { PencilIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 import { NumberField, TextField } from '../../../InputFields';
 import { FieldCampaignInitialValues } from './FieldCampaign';
@@ -106,15 +106,21 @@ function TimepointForm({ mIndex, tIndex, values }) {
 }
 
 export default function FieldCampaignFormStep3() {
-  const [measurementSteps, setMeasurementStep] = useState<number[]>([]);
+  const [measurementSteps, setMeasurementSteps] = useState<number[]>([]);
   const [timepoints, setTimepoints] = useState<number[]>([]);
 
-  const { values }: { values: FieldCampaignInitialValues } = useFormikContext();
+  const {
+    errors,
+    values,
+  }: {
+    errors: FormikErrors<FieldCampaignInitialValues>;
+    values: FieldCampaignInitialValues;
+  } = useFormikContext();
   const { setFieldValue } = useFormikContext();
 
   useEffect(() => {
     if (values.measurements.length > 0) {
-      setMeasurementStep(new Array(values.measurements.length).fill(2));
+      setMeasurementSteps(new Array(values.measurements.length).fill(2));
       let initialTimepoints: number[] = [];
       values.measurements.forEach(() => {
         initialTimepoints.push(0);
@@ -124,7 +130,7 @@ export default function FieldCampaignFormStep3() {
   }, []);
 
   function forwardMeasurementStep(index: number) {
-    let currentSteps = measurementSteps.slice();
+    let currentSteps = [...measurementSteps];
     currentSteps[index] += 1;
 
     if (
@@ -137,13 +143,13 @@ export default function FieldCampaignFormStep3() {
         timepointIdentifier: '',
       });
     }
-    setMeasurementStep(currentSteps);
+    setMeasurementSteps(currentSteps);
   }
 
   function backwardMeasurementStep(index: number) {
-    let currentSteps = measurementSteps.slice();
+    let currentSteps = [...measurementSteps];
     currentSteps[index] -= 1;
-    setMeasurementStep(currentSteps);
+    setMeasurementSteps(currentSteps);
   }
 
   return (
@@ -161,7 +167,7 @@ export default function FieldCampaignFormStep3() {
       <FieldArray
         name="measurements"
         render={(arrayHelpers) => (
-          <div className="flex flex-row gap-4 p-4 overflow-y-auto">
+          <div className="flex flex-row gap-4 p-4">
             {values.measurements && values.measurements.length > 0
               ? values.measurements.map((_measurement, mIndex) => (
                   <div
@@ -206,7 +212,7 @@ export default function FieldCampaignFormStep3() {
                               // change active measurement step to timepoint form step
                               let currentMeasurementSteps = measurementSteps.slice();
                               currentMeasurementSteps[mIndex] = 0;
-                              setMeasurementStep(currentMeasurementSteps);
+                              setMeasurementSteps(currentMeasurementSteps);
                             }}
                           >
                             <span className="sr-only">Edit</span>
@@ -232,18 +238,35 @@ export default function FieldCampaignFormStep3() {
                                       type="button"
                                       onClick={() => {
                                         // set active timepoint for measurement to this timepoint
-                                        let currentTimepoints = timepoints.slice();
+                                        let currentTimepoints = [...timepoints];
                                         currentTimepoints[mIndex] = tIndex;
                                         setTimepoints(currentTimepoints);
                                         // change active measurement step to timepoint form step
-                                        let currentMeasurementSteps =
-                                          measurementSteps.slice();
+                                        let currentMeasurementSteps = [
+                                          ...measurementSteps,
+                                        ];
                                         currentMeasurementSteps[mIndex] = 1;
-                                        setMeasurementStep(currentMeasurementSteps);
+                                        setMeasurementSteps(currentMeasurementSteps);
                                       }}
                                     >
                                       <span className="sr-only">Edit</span>
                                       <PencilIcon className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        let currentTimepoints = [
+                                          ...values.measurements[mIndex].timepoints,
+                                        ];
+                                        currentTimepoints.splice(tIndex, 1);
+                                        setFieldValue(
+                                          `measurements.${mIndex}.timepoints`,
+                                          currentTimepoints
+                                        );
+                                      }}
+                                    >
+                                      <span className="sr-only">Remove</span>
+                                      <TrashIcon className="w-4 h-4" />
                                     </button>
                                   </div>
                                 )
@@ -270,13 +293,13 @@ export default function FieldCampaignFormStep3() {
                                 }
                               );
                               // set active timepoint for measurement to new timepoint
-                              let currentTimepoints = timepoints.slice();
+                              let currentTimepoints = [...timepoints];
                               currentTimepoints[mIndex] += 1;
                               setTimepoints(currentTimepoints);
                               // change active measurement step to timepoint form step
-                              let currentMeasurementSteps = measurementSteps.slice();
+                              let currentMeasurementSteps = [...measurementSteps];
                               currentMeasurementSteps[mIndex] = 1;
-                              setMeasurementStep(currentMeasurementSteps);
+                              setMeasurementSteps(currentMeasurementSteps);
                             }}
                           >
                             Add Timepoint
@@ -290,6 +313,13 @@ export default function FieldCampaignFormStep3() {
                           <Button
                             type="button"
                             size="sm"
+                            disabled={
+                              errors &&
+                              errors.measurements &&
+                              errors.measurements[mIndex]
+                                ? true
+                                : false
+                            }
                             onClick={() => forwardMeasurementStep(mIndex)}
                           >
                             {measurementSteps[mIndex] < 1 ? 'Next' : 'Done'}
@@ -308,11 +338,27 @@ export default function FieldCampaignFormStep3() {
                         ) : null}
                       </Fragment>
                     ) : null}
+                    {measurementSteps[mIndex] === 2 && (
+                      <div className="mt-4 flex items-end justify-start w-full h-full">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => {
+                            let currentMeasurementSteps = [...measurementSteps];
+                            currentMeasurementSteps.splice(mIndex, 1);
+                            setMeasurementSteps(currentMeasurementSteps);
+                            arrayHelpers.remove(mIndex);
+                          }}
+                        >
+                          Remove Measurement
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ))
               : null}
-            <div
-              className="h-72 w-96 shrink-0 flex flex-row items-center justify-center gap-2 cursor-pointer rounded-lg border-2 border-dashed border-slate-400 p-4 overflow-y-auto hover:border-slate-600"
+            <button
+              className="h-72 w-96 shrink-0 flex flex-row items-center justify-center gap-2 cursor-pointer rounded-lg border-2 border-dashed border-slate-400 p-4 overflow-y-auto hover:border-slate-600 text-lg text-slate-700 font-semibold disabled:text-slate-300"
               onClick={() => {
                 // add new measurement with default values
                 arrayHelpers.push({
@@ -321,14 +367,12 @@ export default function FieldCampaignFormStep3() {
                   timepoints: [],
                 });
                 // set step 0 as initial step for measurement form
-                setMeasurementStep([...measurementSteps, 0]);
+                setMeasurementSteps([...measurementSteps, 0]);
                 // set active timepoint for new measurement to 0
                 setTimepoints([...timepoints, 0]);
               }}
             >
-              <span className="text-lg text-slate-700 font-semibold">
-                Add Measurement
-              </span>
+              <span className="">Add Measurement</span>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
@@ -343,7 +387,7 @@ export default function FieldCampaignFormStep3() {
                   d="M12 4.5v15m7.5-7.5h-15"
                 />
               </svg>
-            </div>
+            </button>
           </div>
         )}
       />
