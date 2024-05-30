@@ -153,7 +153,7 @@ export default function FieldCampaignFormStep3() {
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 overflow-x-auto">
       <h1>Measurements</h1>
       <p>
         When sampling occurs, usually one person writes down one measurement (trial in
