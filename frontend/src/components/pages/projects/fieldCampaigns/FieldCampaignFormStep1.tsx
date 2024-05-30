@@ -31,41 +31,45 @@ export default function FieldCampaignFormStep1() {
                     ) => (
                       <div key={index}>
                         <div className="flex items-center gap-4 px-4 bg-white/60 rounded-md shadow-sm">
-                          <div className="min-h-24">
-                            <TextField
-                              name={`newColumns.${index}.name`}
-                              label="Column name"
-                              disabled={newColumn.name === 'Experiment'}
-                            />
+                          <div className="flex items-center gap-4 w-11/12">
+                            <div className="min-h-24 w-1/2">
+                              <TextField
+                                name={`newColumns.${index}.name`}
+                                label="Column name"
+                                disabled={newColumn.name === 'Experiment'}
+                              />
+                            </div>
+                            <div className="min-h-24 w-1/2">
+                              <TextField
+                                name={`newColumns.${index}.fill`}
+                                label="Fill value"
+                                placeholder={newColumn.placeholder}
+                              />
+                            </div>
                           </div>
-                          <div className="min-h-24">
-                            <TextField
-                              name={`newColumns.${index}.fill`}
-                              label="Fill value"
-                              placeholder={newColumn.placeholder}
-                            />
-                          </div>
-                          {newColumn.name !== 'Experiment' ? (
-                            <button
-                              type="button"
-                              onClick={() => arrayHelpers.remove(index)}
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                strokeWidth="1.5"
-                                stroke="currentColor"
-                                className="w-6 h-6"
+                          <div className="flex items-center justify-center min-h-24 w-1/12">
+                            {newColumn.name !== 'Experiment' ? (
+                              <button
+                                type="button"
+                                onClick={() => arrayHelpers.remove(index)}
                               >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M15 12H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                                />
-                              </svg>
-                            </button>
-                          ) : null}
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  strokeWidth="1.5"
+                                  stroke="currentColor"
+                                  className="w-6 h-6"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M15 12H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                                  />
+                                </svg>
+                              </button>
+                            ) : null}
+                          </div>
                         </div>
                       </div>
                     )
