@@ -61,7 +61,7 @@ export default function DataProductDeleteModal({
           confirmText="Yes, deactivate"
           rejectText="No, keep data product"
           setOpen={setOpenConfirmationPopup}
-          action={async () => {
+          onConfirm={async () => {
             setStatus(null);
             try {
               const response = await axios.delete(

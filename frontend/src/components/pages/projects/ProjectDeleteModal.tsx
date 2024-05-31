@@ -27,7 +27,7 @@ export default function ProjectDeleteModal({ project }: { project: Project }) {
           confirmText="Yes, deactivate"
           rejectText="No, keep project"
           setOpen={setOpenConfirmationPopup}
-          action={async () => {
+          onConfirm={async () => {
             setStatus(null);
             try {
               const response = await axios.delete(`/api/v1/projects/${project.id}`);

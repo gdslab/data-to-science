@@ -1,10 +1,11 @@
 import { ErrorMessage, FieldArray, FormikErrors, useFormikContext } from 'formik';
 import { Fragment, useEffect, useState } from 'react';
-import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PencilIcon } from '@heroicons/react/24/outline';
 
 import { NumberField, TextField } from '../../../InputFields';
 import { FieldCampaignInitialValues } from './FieldCampaign';
 import { Button } from '../../../Buttons';
+import ConfirmationModal from '../../../ConfirmationModal';
 
 function SampleNameFields({
   name,
@@ -252,9 +253,14 @@ export default function FieldCampaignFormStep3() {
                                       <span className="sr-only">Edit</span>
                                       <PencilIcon className="w-4 h-4" />
                                     </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
+                                    <ConfirmationModal
+                                      btnName="Remove Timepoint"
+                                      btnType="trashIcon"
+                                      title="Are you sure you want to remove this timepoint?"
+                                      content="You will not be able to recover this timepoint after removing it and saving the template."
+                                      confirmText="Remove timepoint"
+                                      rejectText="Keep timepoint"
+                                      onConfirm={() => {
                                         let currentTimepoints = [
                                           ...values.measurements[mIndex].timepoints,
                                         ];
@@ -264,10 +270,7 @@ export default function FieldCampaignFormStep3() {
                                           currentTimepoints
                                         );
                                       }}
-                                    >
-                                      <span className="sr-only">Remove</span>
-                                      <TrashIcon className="w-4 h-4" />
-                                    </button>
+                                    />
                                   </div>
                                 )
                               )}
@@ -340,24 +343,26 @@ export default function FieldCampaignFormStep3() {
                     ) : null}
                     {measurementSteps[mIndex] === 2 && (
                       <div className="mt-4 flex items-end justify-start w-full h-full">
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={() => {
+                        <ConfirmationModal
+                          btnName="Remove Measurement"
+                          title="Are you sure you want to remove this measurement?"
+                          content="You will not be able to recover this measurement after removing it and saving the template."
+                          confirmText="Remove measurement"
+                          rejectText="Keep measurement"
+                          onConfirm={() => {
                             let currentMeasurementSteps = [...measurementSteps];
                             currentMeasurementSteps.splice(mIndex, 1);
                             setMeasurementSteps(currentMeasurementSteps);
                             arrayHelpers.remove(mIndex);
                           }}
-                        >
-                          Remove Measurement
-                        </Button>
+                        />
                       </div>
                     )}
                   </div>
                 ))
               : null}
             <button
+              type="button"
               className="h-72 w-96 shrink-0 flex flex-row items-center justify-center gap-2 cursor-pointer rounded-lg border-2 border-dashed border-slate-400 p-4 overflow-y-auto hover:border-slate-600 text-lg text-slate-700 font-semibold disabled:text-slate-300"
               onClick={() => {
                 // add new measurement with default values

@@ -61,7 +61,7 @@ export default function FlightDeleteModal({
           confirmText="Yes, deactivate"
           rejectText="No, keep flight"
           setOpen={setOpenConfirmationPopup}
-          action={async () => {
+          onConfirm={async () => {
             setStatus(null);
             try {
               const response = await axios.delete(

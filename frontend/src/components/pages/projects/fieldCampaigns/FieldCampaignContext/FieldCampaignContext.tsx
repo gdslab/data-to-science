@@ -54,7 +54,9 @@ export function FieldCampaignContextProvider({ children }: ContextProvider) {
       }
     }
 
-    fetchFieldCampaign();
+    if (projectId) {
+      fetchFieldCampaign();
+    }
   }, [project]);
 
   function updateFieldCampaign(fieldCampaign: FieldCampaign | null) {

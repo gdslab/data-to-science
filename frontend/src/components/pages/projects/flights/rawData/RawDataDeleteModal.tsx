@@ -61,7 +61,7 @@ export default function RawDataDeleteModal({
           confirmText="Yes, deactivate"
           rejectText="No, keep raw data"
           setOpen={setOpenConfirmationPopup}
-          action={async () => {
+          onConfirm={async () => {
             setStatus(null);
             try {
               const response = await axios.delete(
