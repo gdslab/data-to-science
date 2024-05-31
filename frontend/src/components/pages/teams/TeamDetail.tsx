@@ -168,7 +168,7 @@ projects, flights, and data associated with the team."
                 confirmText="Yes, remove team"
                 rejectText="No, keep team"
                 setOpen={setOpen}
-                action={async () => {
+                onConfirm={async () => {
                   try {
                     const response = await axios.delete(
                       `/api/v1/teams/${teamData.team.id}`
