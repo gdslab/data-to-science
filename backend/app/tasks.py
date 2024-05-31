@@ -6,12 +6,16 @@ from pathlib import Path
 from typing import TypedDict
 from uuid import UUID
 
+import geopandas as gpd
+import rasterio
 from celery.utils.log import get_task_logger
+from rasterstats import zonal_stats
 
 from app import crud, models, schemas
 from app.api.deps import get_db
 from app.core.celery_app import celery_app
 from app.schemas.data_product import DataProduct, DataProductUpdate
+from app.schemas.data_product_metadata import ZonalStatistics
 from app.schemas.job import JobUpdate
 
 from app.utils import gen_preview_from_pointcloud
@@ -386,6 +390,24 @@ def process_raw_data(
         os.remove(f"{storage_path}.info")
     except Exception:
         logger.exception("Unable to cleanup upload on tusd server")
+
+
+@celery_app.task(name="zonal_statistics_task")
+def generate_zonal_statistics(
+    input_raster: str, zone_feature: str
+) -> list[ZonalStatistics]:
+    with rasterio.open(input_raster) as src:
+        # read first band into array
+        data = src.read(1)
+        # affine transformation
+        affine = src.transform
+        # read zone feature geojson and update crs to match src crs
+        zone = gpd.read_file(zone_feature, driver="GeoJSON")
+        zone = zone.to_crs(src.crs)
+        # get stats for zone
+        stats = zonal_stats(zone, data, affine=affine)
+
+    return stats
 
 
 def update_job_status(

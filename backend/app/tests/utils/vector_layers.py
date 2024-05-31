@@ -36,6 +36,32 @@ def create_feature_collection(
     return FeatureCollection(**feature_collection)
 
 
+def create_vector_layer_with_provided_feature_collection(
+    db: Session, feature_collection: FeatureCollection, project_id: UUID | None = None
+) -> FeatureCollection:
+    """Create new vector layer with provided feature collection.
+
+    Args:
+        db (Session): Database session.
+        feature_collection (FeatureCollection): GeoJSON Feature Collection.
+        project_id (UUID | None, optional): Project ID. Defaults to None.
+
+    Returns:
+        FeatureCollection: GeoJSON Feature Collection for vector layer.
+    """
+    if not project_id:
+        project = create_project(db)
+        project_id = project.id
+    vector_layer_in = schemas.VectorLayerCreate(
+        layer_name="Feature Collection Example", geojson=feature_collection.__dict__
+    )
+    features = crud.vector_layer.create_with_project(
+        db, vector_layer_in, project_id=project_id
+    )
+    feature_collection = {"type": "FeatureCollection", "features": features}
+    return FeatureCollection(**feature_collection)
+
+
 def get_geojson_feature_collection(
     geom_type: str,
 ) -> dict[str, str | FeatureCollection]:

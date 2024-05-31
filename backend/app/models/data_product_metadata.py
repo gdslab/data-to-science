@@ -22,9 +22,14 @@ class DataProductMetadata(Base):
     category: Mapped[str] = mapped_column(String(16), nullable=False)
     properties: Mapped[dict] = mapped_column(JSONB, nullable=False)
 
-    # foreign keys
+    # foreign keys (required)
     data_product_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("data_products.id"), nullable=False
+    )
+
+    # foreign keys (optional)
+    vector_layer_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("vector_layers.id"), nullable=True
     )
 
     # relationships
