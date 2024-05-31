@@ -3,7 +3,7 @@ import Papa from 'papaparse';
 import { Fragment } from 'react';
 
 import Alert from '../../../Alert';
-import { Button } from '../../../Buttons';
+import ConfirmationModal from '../../../ConfirmationModal';
 import { TextField } from '../../../InputFields';
 import { FieldCampaignInitialValues } from './FieldCampaign';
 import { UpdateCSVErrors } from './FieldCampaign';
@@ -100,18 +100,17 @@ export default function FieldCampaignFormStep2({
                           </Fragment>
                         ) : null}
                         <div className="mt-4 flex items-end justify-center w-full h-full">
-                          <div className="w-48">
-                            <Button
-                              type="button"
-                              size="sm"
-                              onClick={() => {
-                                arrayHelpers.remove(index);
-                                updateCsvErrors([], index.toString(), 'remove');
-                              }}
-                            >
-                              Remove Treatment
-                            </Button>
-                          </div>
+                          <ConfirmationModal
+                            btnName="Remove Treatment"
+                            title="Are you sure you want to remove this treatment?"
+                            content="You will not be able to recover this treatment after removing it and saving the template."
+                            confirmText="Remove treatment"
+                            rejectText="Keep treatment"
+                            onConfirm={() => {
+                              arrayHelpers.remove(index);
+                              updateCsvErrors([], index.toString(), 'remove');
+                            }}
+                          />
                         </div>
 
                         {csvErrors.length > index && csvErrors[index].length > 0
