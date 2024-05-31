@@ -2,6 +2,7 @@ import yaml
 import os
 import errno
 import pandas as pd
+import re
 
 
 def get_yml_item_value(file, item_input):
@@ -105,14 +106,14 @@ def create_new_template(config_file_name, item_TEMPLATE_INPUT, item_COLUMNS_TEMP
 
     # get the columns to select from template
     template_columns = get_yml_item_value(config_file_name, item_COLUMNS_TEMPLATE)
-    template_columns_lower = [s.lower().replace(' ', '') for s in template_columns]
+    template_columns_lower = [re.sub(r'\s+', '_', s.strip().lower()) for s in template_columns]
 
     first_list = template_columns_lower
 
     # names of columns from the template into a list
-    second_list = base_template.columns.tolist()
+    second_list = [re.sub(r'\s+', '_', col.strip().lower()) for col in base_template.columns]
 
-    # get a list of columns that exists in bot the list of config file and the template
+    # get a list of columns that exists in both the list of config file and the template
     columns_in_template = matching_elements_two_lists(first_list, second_list)
 
     # subset of the columns that are indicated in the config file
@@ -123,10 +124,20 @@ def create_new_template(config_file_name, item_TEMPLATE_INPUT, item_COLUMNS_TEMP
 
     # add the new columns and rows to the template dataframe
     number = len(base_template_subset.columns)  # it will be used to get the dataframe position of new columns
-    for key_column in new_columns:
-        base_template_subset.insert(number, key_column.lower(), new_columns.get(key_column))
+    # for key_column in new_columns:
+    #     base_template_subset.insert(number, key_column.lower(), new_columns.get(key_column))
 
-        number += 1
+    #     number += 1
+    for key_column in new_columns:
+        # Convert the column name to lowercase
+        key_column_lower = key_column.lower()
+        if key_column_lower in base_template_subset.columns:
+            # Delete the existing column if it already exists
+            base_template_subset = base_template_subset.drop(columns=[key_column_lower])
+            number -= 1
+        # Insert the new column at the current position
+        base_template_subset.insert(number, key_column_lower, new_columns.get(key_column)) 
+        number += 1  # Increment the position for the next column
 
     # create the rows for the number of measurements that are going to be taken from each row
     times_repeat_row = len([value for value in get_yml_item_value(config_file_name, item_SAMPLES_PER_PLOT).values()][0])
@@ -174,7 +185,7 @@ def create_new_template(config_file_name, item_TEMPLATE_INPUT, item_COLUMNS_TEMP
 
     # get the column names from the config file and make them lower case to create the file name
     list_columns_fileName = get_yml_item_value(config_file_name, item_TEMPLATE_OUTPUT)
-    list_columns_fileName_lower = [s.lower().replace(' ', '') for s in list_columns_fileName]
+    list_columns_fileName_lower = [re.sub(r'\s+', '_', s.strip().lower()) for s in list_columns_fileName]
 
     first_list = list_columns_fileName_lower
 
