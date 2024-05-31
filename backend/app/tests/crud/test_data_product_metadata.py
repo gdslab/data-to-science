@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.schemas.data_product_metadata import DataProductMetadataCreate
 from app.tests.utils.data_product import SampleDataProduct
-from app.tests.utils.data_product_metadata import get_zonal_statistics
+from app.tests.utils.data_product_metadata import create_metadata, get_zonal_statistics
 from app.tests.utils.project import create_project
 from app.tests.utils.vector_layers import (
     create_vector_layer_with_provided_feature_collection,
@@ -42,13 +42,29 @@ def test_create_data_product_metadata(db: Session) -> None:
     )
     assert metadata
     assert metadata.category == "zonal"
-    assert metadata.properties == {"stats": stats}
+    assert metadata.properties == {"stats": stats[0]}
     assert metadata.data_product_id == data_product.obj.id
-    assert metadata.vector_layer_id == bbox_vector_layer.features[0].properties.id
+    assert (
+        str(metadata.vector_layer_id) == bbox_vector_layer.features[0].properties["id"]
+    )
 
 
 def test_read_data_product_metadata(db: Session) -> None:
-    pass
+    metadata = create_metadata(db)
+    metadata_in_db = crud.data_product_metadata.get_by_data_product(
+        db,
+        category="zonal",
+        data_product_id=metadata.data_product_id,
+        vector_layer_id=metadata.vector_layer_id,
+    )
+    assert metadata_in_db
+    assert isinstance(metadata_in_db, list)
+    assert len(metadata_in_db) == 1
+    assert metadata_in_db.id == metadata.id
+    assert metadata_in_db.category == metadata.category
+    assert metadata_in_db.properties == metadata.properties
+    assert metadata_in_db.project_id == metadata.project_id
+    assert metadata_in_db.vector_layer_id == metadata.vector_layer_id
 
 
 def test_update_data_product_metadata(db: Session) -> None:
