@@ -43,8 +43,7 @@ const step3ValidationSchema = Yup.object({
         .required('Required'),
       units: Yup.string()
         .min(1, 'Must have at least 1 character')
-        .max(64, 'Cannot exceed 64 characters')
-        .required('Required'),
+        .max(64, 'Cannot exceed 64 characters'),
       timepoints: Yup.array().of(
         Yup.object({
           numberOfSamples: Yup.number()
