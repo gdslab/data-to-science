@@ -13,7 +13,11 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps, utils
-from app.tasks import generate_zonal_statistics, run_toolbox_process
+from app.tasks import (
+    generate_zonal_statistics,
+    generate_zonal_statistics_bulk,
+    run_toolbox_process,
+)
 from app.core.config import settings
 
 router = APIRouter()
@@ -134,11 +138,11 @@ class ProcessingRequest(BaseModel):
     exgRed: int
     exgGreen: int
     exgBlue: int
-    layer_id: UUID
     ndvi: bool
     ndviNIR: int
     ndviRed: int
     zonal: bool
+    zonal_layer_id: str
 
 
 @router.post("/{data_product_id}/tools", status_code=status.HTTP_202_ACCEPTED)
@@ -167,9 +171,9 @@ async def run_processing_tool(
         )
     # get upload_dir
     if os.environ.get("RUNNING_TESTS") == "1":
-        data_product_dir = Path(settings.TEST_STATIC_DIR)
+        upload_dir = Path(settings.TEST_STATIC_DIR)
     else:
-        data_product_dir = Path(settings.STATIC_DIR)
+        upload_dir = Path(settings.STATIC_DIR)
     # find existing data product that will be used as input raster
     data_product: models.DataProduct | None = crud.data_product.get_single_by_id(
         db,
@@ -253,12 +257,12 @@ async def run_processing_tool(
     # zonal
     if toolbox_in.zonal and not os.environ.get("RUNNING_TESTS") == "1":
         features = crud.vector_layer.get_vector_layer_by_id(
-            db, project_id=project.id, layer_id=toolbox_in.layer_id
+            db, project_id=project.id, layer_id=toolbox_in.zonal_layer_id
         )
         feature_collection = FeatureCollection(
             **{"type": "FeatureCollection", "features": features}
         )
-        run_toolbox_process.apply_async(
+        generate_zonal_statistics_bulk.apply_async(
             args=(
                 data_product.filepath,
                 data_product_id,

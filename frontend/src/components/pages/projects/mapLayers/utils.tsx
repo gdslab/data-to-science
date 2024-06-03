@@ -121,10 +121,14 @@ export function download(
     };
     shpwrite
       .zip(updatedFeatureCollection, options)
-      .then((zipData: ArrayBuffer) => {
-        const blob = new Blob([zipData], { type: 'application/zip' });
-        const downloadName = filename ? filename + '.zip' : 'feature_collection.zip';
-        createAndClickDownloadLink(blob, downloadName);
+      .then((zipData) => {
+        if (zipData instanceof ArrayBuffer) {
+          const blob = new Blob([zipData], { type: 'application/zip' });
+          const downloadName = filename ? filename + '.zip' : 'feature_collection.zip';
+          createAndClickDownloadLink(blob, downloadName);
+        } else {
+          throw new Error('Unrecognized zip data type');
+        }
       })
       .catch((err) => {
         console.error(err);

@@ -12,6 +12,7 @@ import rasterio
 from celery.utils.log import get_task_logger
 from geojson_pydantic import FeatureCollection
 from rasterstats import zonal_stats
+from sqlalchemy.exc import IntegrityError
 
 from app import crud, models, schemas
 from app.api.deps import get_db
@@ -414,7 +415,7 @@ def generate_zonal_statistics(
 
 @celery_app.task(name="zonal_statistics_bulk_task")
 def generate_zonal_statistics_bulk(
-    input_raster: str, data_product_id: UUID, layer_id: UUID, feature_collection: str
+    input_raster: str, data_product_id: UUID, feature_collection: str
 ) -> list[ZonalStatistics]:
     # database session for updating data product and job tables
     db = next(get_db())
@@ -433,7 +434,7 @@ def generate_zonal_statistics_bulk(
     except Exception:
         logger.exception("Unable to complete tool process")
         update_job_status(job=job, state="ERROR")
-        return None
+        return []
 
     try:
         # deserialize feature collection
@@ -444,15 +445,36 @@ def generate_zonal_statistics_bulk(
             metadata_in = schemas.DataProductMetadataCreate(
                 category="zonal",
                 properties={"stats": zonal_stats},
-                vector_layer_id=features[index].properties.id,
+                vector_layer_id=features[index].properties["id"],
             )
-            crud.data_product_metadata.create_with_data_product(
-                db, obj_in=metadata_in, data_product_id=data_product_id
-            )
+            try:
+                crud.data_product_metadata.create_with_data_product(
+                    db, obj_in=metadata_in, data_product_id=data_product_id
+                )
+            except IntegrityError:
+                # update existing metadata
+                existing_metadata = crud.data_product_metadata.get_by_data_product(
+                    db,
+                    category="zonal",
+                    data_product_id=data_product_id,
+                    vector_layer_id=features[index].properties["id"],
+                )
+                if len(existing_metadata) == 1:
+                    crud.data_product_metadata.update(
+                        db,
+                        db_obj=existing_metadata[0],
+                        obj_in=schemas.DataProductMetadataUpdate(
+                            properties={"stats": zonal_stats}
+                        ),
+                    )
+                else:
+                    logger.exception("Unable to save zonal statistics")
+                    update_job_status(job=job, state="ERROR")
+                    return []
     except Exception:
         logger.exception("Unable to save zonal statistics")
         update_job_status(job=job, state="ERROR")
-        return None
+        return []
 
     # update job to indicate process finished
     update_job_status(job, state="DONE")
