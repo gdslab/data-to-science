@@ -1,4 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
+import { FeatureCollection } from 'geojson';
 import { createContext, useContext, useEffect, useReducer } from 'react';
 import { Params, useParams } from 'react-router-dom';
 
@@ -11,6 +12,7 @@ import {
   LocationAction,
   FlightsAction,
   FlightsFilterSelectionAction,
+  MapLayersAction,
   ProjectAction,
   ProjectMembersAction,
   ProjectRoleAction,
@@ -19,6 +21,7 @@ import {
   locationReducer,
   flightsReducer,
   flightsFilterSelectionReducer,
+  mapLayersReducer,
   projectReducer,
   projectMembersReducer,
   projectRoleReducer,
@@ -29,6 +32,8 @@ import { Flight } from '../Project';
 interface Context {
   location: GeoJSONFeature | null;
   locationDispatch: React.Dispatch<LocationAction>;
+  mapLayers: FeatureCollection[];
+  mapLayersDispatch: React.Dispatch<MapLayersAction>;
   project: Project | null;
   projectDispatch: React.Dispatch<ProjectAction>;
   projectMembers: ProjectMember[] | null;
@@ -44,6 +49,8 @@ interface Context {
 const context: Context = {
   location: null,
   locationDispatch: () => {},
+  mapLayers: [],
+  mapLayersDispatch: () => {},
   project: null,
   projectDispatch: () => {},
   projectMembers: null,
@@ -92,6 +99,7 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
     flightsFilterSelectionReducer,
     []
   );
+  const [mapLayers, mapLayersDispatch] = useReducer(mapLayersReducer, []);
   const [project, projectDispatch] = useReducer(projectReducer, null);
   const [projectMembers, projectMembersDispatch] = useReducer(
     projectMembersReducer,
@@ -163,6 +171,35 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
     } else {
       flightsDispatch({ type: 'clear', payload: null });
       flightsFilterSelectionDispatch({ type: 'reset' });
+    }
+  }, [params.projectId]);
+
+  useEffect(() => {
+    async function getMapLayers() {
+      try {
+        const response: AxiosResponse<FeatureCollection[]> = await axios.get(
+          `${import.meta.env.VITE_API_V1_STR}/projects/${
+            params.projectId
+          }/vector_layers`
+        );
+        if (response.status === 200) {
+          mapLayersDispatch({ type: 'set', payload: response.data });
+        } else {
+          mapLayersDispatch({ type: 'clear' });
+        }
+      } catch (err) {
+        if (axios.isAxiosError(err)) {
+          console.log(err.response?.data);
+        } else {
+          console.error(err);
+        }
+        mapLayersDispatch({ type: 'clear' });
+      }
+    }
+    if (params.projectId) {
+      getMapLayers();
+    } else {
+      mapLayersDispatch({ type: 'clear' });
     }
   }, [params.projectId]);
 
@@ -239,18 +276,20 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
   return (
     <ProjectContext.Provider
       value={{
+        flights,
+        flightsDispatch,
+        flightsFilterSelection,
+        flightsFilterSelectionDispatch,
         location,
         locationDispatch,
+        mapLayers,
+        mapLayersDispatch,
         project,
         projectDispatch,
         projectMembers,
         projectMembersDispatch,
         projectRole,
         projectRoleDispatch,
-        flights,
-        flightsDispatch,
-        flightsFilterSelection,
-        flightsFilterSelectionDispatch,
       }}
     >
       {children}

@@ -1,4 +1,5 @@
 import axios, { AxiosResponse, isAxiosError } from 'axios';
+import { FeatureCollection } from 'geojson';
 import { createContext, useContext, useEffect, useReducer } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
@@ -105,6 +106,22 @@ function geoRasterIdReducer(state: string, action: GeoRasterIdAction) {
   }
 }
 
+type ProjectLayersAction = { type: string; payload?: FeatureCollection[] };
+
+function projectLayersReducer(state: FeatureCollection[], action: ProjectLayersAction) {
+  switch (action.type) {
+    case 'set': {
+      return action.payload ? action.payload : [];
+    }
+    case 'clear': {
+      return [];
+    }
+    default: {
+      return state;
+    }
+  }
+}
+
 function projectsReducer(state: Project[] | null, action: ProjectsAction) {
   switch (action.type) {
     case 'set': {
@@ -170,6 +187,8 @@ const context: {
   flights: Flight[];
   geoRasterId: string;
   geoRasterIdDispatch: React.Dispatch<GeoRasterIdAction>;
+  projectLayers: FeatureCollection[];
+  projectLayersDispatch: React.Dispatch<ProjectLayersAction>;
   projects: Project[] | null;
   projectsDispatch: React.Dispatch<ProjectsAction>;
   projectsVisible: string[];
@@ -188,6 +207,8 @@ const context: {
   flights: [],
   geoRasterId: '',
   geoRasterIdDispatch: () => {},
+  projectLayers: [],
+  projectLayersDispatch: () => {},
   projects: null,
   projectsDispatch: () => {},
   projectsVisible: [],
@@ -213,6 +234,7 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
   const [activeProject, activeProjectDispatch] = useReducer(activeProjectReducer, null);
   const [flights, flightsDispatch] = useReducer(flightsReducer, []);
   const [geoRasterId, geoRasterIdDispatch] = useReducer(geoRasterIdReducer, '');
+  const [projectLayers, projectLayersDispatch] = useReducer(projectLayersReducer, []);
   const [projects, projectsDispatch] = useReducer(projectsReducer, null);
   const [projectsVisible, projectsVisibleDispatch] = useReducer(
     projectsVisibleReducer,
@@ -295,6 +317,8 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
         flights,
         geoRasterId,
         geoRasterIdDispatch,
+        projectLayers,
+        projectLayersDispatch,
         projects,
         projectsDispatch,
         projectsVisible,

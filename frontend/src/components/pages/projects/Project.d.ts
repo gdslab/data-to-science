@@ -20,6 +20,21 @@ export interface GeoJSONFeature {
   };
 }
 
+type FieldGeoJSONFeature = Omit<GeoJSON.Feature, 'properties'> & {
+  properties: FieldProperties;
+};
+
+type MapLayerFeature = Omit<GeoJSON.Feature, 'properties'> & {
+  properties: {
+    id: string;
+    layer_id: string;
+    layer_name: string;
+    properties?: { [key: string]: any };
+  };
+};
+
+export type MapLayerFeatureCollection = GeoJSON.FeatureCollection<MapLayerFeature>;
+
 export interface FeatureCollection {
   type: 'FeatureCollection';
   features: GeoJSON.Feature[];
