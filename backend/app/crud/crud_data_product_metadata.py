@@ -33,7 +33,7 @@ class CRUDDataProductMetadata(
         category: str,
         data_product_id: UUID,
         vector_layer_id: UUID | None = None,
-    ) -> list[DataProductMetadata] | None:
+    ) -> list[DataProductMetadata]:
         if vector_layer_id:
             metadata_query = select(DataProductMetadata).where(
                 and_(

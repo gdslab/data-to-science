@@ -12,6 +12,9 @@ from app.schemas.data_product_metadata import DataProductMetadataCreate, ZonalSt
 from app.tasks import generate_zonal_statistics
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.project import create_project
+from app.tests.utils.vector_layers import (
+    create_vector_layer_with_provided_feature_collection,
+)
 
 
 def get_zonal_statistics(in_raster: str, bbox_feature: str) -> list[ZonalStatistics]:

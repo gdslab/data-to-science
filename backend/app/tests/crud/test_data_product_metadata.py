@@ -7,7 +7,10 @@ from geojson_pydantic import FeatureCollection
 from sqlalchemy.orm import Session
 
 from app import crud
-from app.schemas.data_product_metadata import DataProductMetadataCreate
+from app.schemas.data_product_metadata import (
+    DataProductMetadataCreate,
+    DataProductMetadataUpdate,
+)
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.data_product_metadata import create_metadata, get_zonal_statistics
 from app.tests.utils.project import create_project
@@ -60,16 +63,35 @@ def test_read_data_product_metadata(db: Session) -> None:
     assert metadata_in_db
     assert isinstance(metadata_in_db, list)
     assert len(metadata_in_db) == 1
-    assert metadata_in_db.id == metadata.id
-    assert metadata_in_db.category == metadata.category
-    assert metadata_in_db.properties == metadata.properties
-    assert metadata_in_db.project_id == metadata.project_id
-    assert metadata_in_db.vector_layer_id == metadata.vector_layer_id
+    assert metadata_in_db[0].id == metadata.id
+    assert metadata_in_db[0].category == metadata.category
+    assert metadata_in_db[0].properties == metadata.properties
+    assert metadata_in_db[0].data_product_id == metadata.data_product_id
+    assert metadata_in_db[0].vector_layer_id == metadata.vector_layer_id
 
 
 def test_update_data_product_metadata(db: Session) -> None:
-    pass
+    metadata = create_metadata(db)
+    metadata_in_db = crud.data_product_metadata.get_by_data_product(
+        db,
+        category="zonal",
+        data_product_id=metadata.data_product_id,
+        vector_layer_id=metadata.vector_layer_id,
+    )
+    updated_stats = {"stats": {"min": 9999, "max": 9999, "mean": 9999, "count": 9999}}
+    metadata_update_in = DataProductMetadataUpdate(properties=updated_stats)
+    metadata_updated = crud.data_product_metadata.update(
+        db, db_obj=metadata_in_db[0], obj_in=metadata_update_in
+    )
+    assert metadata_updated
+    assert metadata_in_db[0].id == metadata_updated.id
+    assert metadata_in_db[0].properties == updated_stats
 
 
 def test_delete_data_product_metadata(db: Session) -> None:
-    pass
+    metadata = create_metadata(db)
+    metadata_removed = crud.data_product_metadata.remove(db, id=metadata.id)
+    metadata_get_after_removed = crud.data_product_metadata.get(db, id=metadata.id)
+    assert metadata_get_after_removed is None
+    assert metadata_removed
+    assert metadata_removed.id == metadata.id
