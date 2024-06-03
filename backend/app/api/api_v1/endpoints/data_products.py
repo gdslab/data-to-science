@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Sequence
 from uuid import UUID, uuid4
 
-from geojson_pydantic import Feature
+from geojson_pydantic import Feature, FeatureCollection
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
@@ -134,13 +134,15 @@ class ProcessingRequest(BaseModel):
     exgRed: int
     exgGreen: int
     exgBlue: int
+    layer_id: UUID
     ndvi: bool
     ndviNIR: int
     ndviRed: int
+    zonal: bool
 
 
 @router.post("/{data_product_id}/tools", status_code=status.HTTP_202_ACCEPTED)
-def run_processing_tool(
+async def run_processing_tool(
     request: Request,
     data_product_id: UUID,
     toolbox_in: ProcessingRequest,
@@ -155,16 +157,28 @@ def run_processing_tool(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
     # verify at least one processing tool was selected
-    if toolbox_in.exg is False and toolbox_in.ndvi is False:
+    if (
+        toolbox_in.exg is False
+        and toolbox_in.ndvi is False
+        and toolbox_in.zonal is False
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="No product selected"
         )
+    # get upload_dir
+    if os.environ.get("RUNNING_TESTS") == "1":
+        data_product_dir = Path(settings.TEST_STATIC_DIR)
+    else:
+        data_product_dir = Path(settings.STATIC_DIR)
     # find existing data product that will be used as input raster
-    data_product: models.DataProduct | None = crud.data_product.get(
-        db, id=data_product_id
+    data_product: models.DataProduct | None = crud.data_product.get_single_by_id(
+        db,
+        data_product_id=data_product_id,
+        user_id=current_user.id,
+        upload_dir=upload_dir,
     )
     # verify input raster exists and it is active
-    if not data_product or not data_product.is_active:
+    if not data_product:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
         )
@@ -234,6 +248,21 @@ def run_processing_tool(
                 tool_params,
                 exg_data_product.id,
                 current_user.id,
+            )
+        )
+    # zonal
+    if toolbox_in.zonal and not os.environ.get("RUNNING_TESTS") == "1":
+        features = crud.vector_layer.get_vector_layer_by_id(
+            db, project_id=project.id, layer_id=toolbox_in.layer_id
+        )
+        feature_collection = FeatureCollection(
+            **{"type": "FeatureCollection", "features": features}
+        )
+        run_toolbox_process.apply_async(
+            args=(
+                data_product.filepath,
+                data_product_id,
+                json.dumps(jsonable_encoder(feature_collection.__dict__)),
             )
         )
 

@@ -12,7 +12,11 @@ from app.schemas.data_product_metadata import (
     DataProductMetadataUpdate,
 )
 from app.tests.utils.data_product import SampleDataProduct
-from app.tests.utils.data_product_metadata import create_metadata, get_zonal_statistics
+from app.tests.utils.data_product_metadata import (
+    create_metadata,
+    get_zonal_statistics,
+    get_zonal_statistics_bulk,
+)
 from app.tests.utils.project import create_project
 from app.tests.utils.vector_layers import (
     create_vector_layer_with_provided_feature_collection,
@@ -50,6 +54,39 @@ def test_create_data_product_metadata(db: Session) -> None:
     assert (
         str(metadata.vector_layer_id) == bbox_vector_layer.features[0].properties["id"]
     )
+
+
+def test_create_data_product_metadata_for_multiple_zones(db: Session) -> None:
+    data_product = SampleDataProduct(db, data_type="ortho")
+    bbox_filepath = os.path.join(
+        os.sep, "app", "app", "tests", "data", "test_bbox_multi.geojson"
+    )
+    with open(bbox_filepath) as bbox_file:
+        # create vector layer record for bbox
+        bbox_dict = json.loads(bbox_file.read())
+
+    bbox_feature_collection = FeatureCollection(**bbox_dict)
+    project = create_project(db)
+    bbox_vector_layer = create_vector_layer_with_provided_feature_collection(
+        db, feature_collection=bbox_feature_collection, project_id=project.id
+    )
+    stats = get_zonal_statistics_bulk(
+        data_product.obj.filepath, bbox_feature_collection
+    )
+    assert isinstance(stats, list)
+    assert len(stats) == 3  # number of features in text_bbox_multi feature collection
+    all_metadata = []
+    for index, feature in enumerate(bbox_vector_layer.features):
+        metadata_in = DataProductMetadataCreate(
+            category="zonal",
+            properties={"stats": stats[index]},
+            vector_layer_id=feature.properties["id"],
+        )
+        metadata = crud.data_product_metadata.create_with_data_product(
+            db, obj_in=metadata_in, data_product_id=data_product.obj.id
+        )
+        all_metadata.append(metadata)
+    assert len(all_metadata) == 3
 
 
 def test_read_data_product_metadata(db: Session) -> None:

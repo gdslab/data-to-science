@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import subprocess
@@ -9,6 +10,7 @@ from uuid import UUID
 import geopandas as gpd
 import rasterio
 from celery.utils.log import get_task_logger
+from geojson_pydantic import FeatureCollection
 from rasterstats import zonal_stats
 
 from app import crud, models, schemas
@@ -408,6 +410,54 @@ def generate_zonal_statistics(
         stats = zonal_stats(zone, data, affine=affine)
 
     return stats
+
+
+@celery_app.task(name="zonal_statistics_bulk_task")
+def generate_zonal_statistics_bulk(
+    input_raster: str, data_product_id: UUID, layer_id: UUID, feature_collection: str
+) -> list[ZonalStatistics]:
+    # database session for updating data product and job tables
+    db = next(get_db())
+
+    # create new job for tool process
+    job = update_job_status(
+        job=None,
+        state="CREATE",
+        data_product_id=data_product_id,
+        name="zonal",
+    )
+
+    try:
+        update_job_status(job=job, state="INPROGRESS")
+        all_zonal_stats = generate_zonal_statistics(input_raster, feature_collection)
+    except Exception:
+        logger.exception("Unable to complete tool process")
+        update_job_status(job=job, state="ERROR")
+        return None
+
+    try:
+        # deserialize feature collection
+        feature_collection = FeatureCollection(**json.loads(feature_collection))
+        features = feature_collection.features
+        # create metadata record for each zone
+        for index, zonal_stats in enumerate(all_zonal_stats):
+            metadata_in = schemas.DataProductMetadataCreate(
+                category="zonal",
+                properties={"stats": zonal_stats},
+                vector_layer_id=features[index].properties.id,
+            )
+            crud.data_product_metadata.create_with_data_product(
+                db, obj_in=metadata_in, data_product_id=data_product_id
+            )
+    except Exception:
+        logger.exception("Unable to save zonal statistics")
+        update_job_status(job=job, state="ERROR")
+        return None
+
+    # update job to indicate process finished
+    update_job_status(job, state="DONE")
+
+    return all_zonal_stats
 
 
 def update_job_status(

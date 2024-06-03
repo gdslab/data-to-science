@@ -3,7 +3,7 @@ import os
 from typing import TypedDict
 
 from fastapi.encoders import jsonable_encoder
-from geojson_pydantic import FeatureCollection
+from geojson_pydantic import Feature, FeatureCollection
 from sqlalchemy.orm import Session
 
 from app import crud
@@ -17,7 +17,9 @@ from app.tests.utils.vector_layers import (
 )
 
 
-def get_zonal_statistics(in_raster: str, bbox_feature: str) -> list[ZonalStatistics]:
+def get_zonal_statistics(
+    in_raster: str, bbox_feature: Feature
+) -> list[ZonalStatistics]:
     """Returns zonal statistics for polygon overlaying a single-band raster.
 
     Args:
@@ -29,6 +31,28 @@ def get_zonal_statistics(in_raster: str, bbox_feature: str) -> list[ZonalStatist
     """
     bbox_json_string = json.dumps(jsonable_encoder(bbox_feature.__dict__))
     stats = generate_zonal_statistics(in_raster, bbox_json_string)
+
+    return stats
+
+
+def get_zonal_statistics_bulk(
+    in_raster: str, feature_collection: FeatureCollection
+) -> list[ZonalStatistics]:
+    """Returns zonal statistics for multiple polygons in a Feature Collection
+    overlaying a single-band raster.
+
+    Args:
+        in_raster (str): Path to single-band raster.
+        feature_collection (FeatureCollection): GeoJSON FeatureCollection for zones.
+
+    Returns:
+        list[ZonalStatistics]: List of zonal statistic dictionaries for each zone.
+    """
+
+    feature_collection_string = json.dumps(
+        jsonable_encoder(feature_collection.__dict__)
+    )
+    stats = generate_zonal_statistics(in_raster, feature_collection_string)
 
     return stats
 
