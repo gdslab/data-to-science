@@ -1,16 +1,19 @@
+import json
 import logging
 import os
 from pathlib import Path
 from typing import Any, Sequence
 from uuid import UUID, uuid4
 
+from geojson_pydantic import Feature
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
-from app.tasks import run_toolbox_process
+from app.tasks import generate_zonal_statistics, run_toolbox_process
 from app.core.config import settings
 
 router = APIRouter()
@@ -166,8 +169,6 @@ def run_processing_tool(
             status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
         )
     # ndvi
-    print(toolbox_in)
-    print(os.environ.get("RUNNING_TESTS"))
     if toolbox_in.ndvi and not os.environ.get("RUNNING_TESTS") == "1":
         # create new data product record
         ndvi_data_product: models.DataProduct = crud.data_product.create_with_flight(
@@ -235,3 +236,37 @@ def run_processing_tool(
                 current_user.id,
             )
         )
+
+
+@router.post(
+    "/{data_product_id}/zonal_statistics",
+    response_model=list[schemas.data_product_metadata.ZonalStatistics],
+)
+async def get_zonal_statistics(
+    data_product_id: UUID,
+    zone_in: Feature,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    flight: models.Flight = Depends(deps.can_read_flight),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    if os.environ.get("RUNNING_TESTS") == "1":
+        upload_dir = settings.TEST_STATIC_DIR
+    else:
+        upload_dir = settings.STATIC_DIR
+
+    data_product = crud.data_product.get_single_by_id(
+        db,
+        data_product_id=data_product_id,
+        upload_dir=upload_dir,
+        user_id=current_user.id,
+    )
+
+    # serialize GeoJSON feature before passing to celery task
+    feature_string = json.dumps(jsonable_encoder(zone_in.__dict__))
+
+    # send request to celery task queue
+    result = generate_zonal_statistics.apply_async(
+        args=(data_product.filepath, feature_string)
+    )
+
+    return result.get()

@@ -9,6 +9,7 @@ import ColorBarControl from './ColorBarControl';
 import DataProductTileLayer from './DataProductTileLayer';
 import MapLayersControl from './MapLayersControl';
 import ProjectBoundary from './ProjectBoundary';
+import ProjectLayersControl from './ProjectLayersControl';
 import ProjectMarkers from './ProjectMarkers';
 import { useMapContext } from './MapContext';
 
@@ -48,9 +49,9 @@ export default function Map({ layerPaneHidden }: { layerPaneHidden: boolean }) {
         zoomControl={false}
         worldCopyJump={true}
       >
-        {!activeProject ? <ProjectMarkers projects={projects ? projects : []} /> : null}
-
-        {activeProject ? <ProjectBoundary project={activeProject} /> : null}
+        {!activeProject && <ProjectMarkers projects={projects ? projects : []} />}
+        {activeProject && <ProjectBoundary project={activeProject} />}
+        {activeProject && <ProjectLayersControl project={activeProject} />}
 
         {activeProject &&
         flights &&

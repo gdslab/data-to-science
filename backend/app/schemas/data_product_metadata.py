@@ -1,4 +1,3 @@
-from typing import TypedDict
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -42,7 +41,7 @@ class DataProductMetadataInDB(DataProductMetadataInDBBase):
     pass
 
 
-class ZonalStatistics(TypedDict):
+class ZonalStatistics(BaseModel):
     min: float
     max: float
     mean: float
