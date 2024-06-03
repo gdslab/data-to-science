@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.schema import UniqueConstraint
 
 from app.db.base_class import Base
 
@@ -35,4 +36,11 @@ class DataProductMetadata(Base):
     # relationships
     data_product: Mapped["DataProduct"] = relationship(
         back_populates="data_product_metadata"
+    )
+
+    # constraints
+    __table_args__ = (
+        UniqueConstraint(
+            "data_product_id", "vector_layer_id", "category", name="unique_metadata"
+        ),
     )

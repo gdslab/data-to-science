@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
-from app.api import deps
+from app.api import deps, utils
 from app.tasks import generate_zonal_statistics, run_toolbox_process
 from app.core.config import settings
 
@@ -261,6 +261,20 @@ async def get_zonal_statistics(
         user_id=current_user.id,
     )
 
+    vector_layer_id = zone_in.properties.get("id", None)
+
+    # check if statistics already exist for this feature/data product
+    if vector_layer_id and utils.is_valid_uuid(vector_layer_id):
+        metadata = crud.data_product_metadata.get_by_data_product(
+            db,
+            category="zonal",
+            data_product_id=data_product_id,
+            vector_layer_id=vector_layer_id,
+        )
+        if len(metadata) == 1:
+            if "stats" in metadata[0].properties:
+                return [metadata[0].properties["stats"]]
+
     # serialize GeoJSON feature before passing to celery task
     feature_string = json.dumps(jsonable_encoder(zone_in.__dict__))
 
@@ -269,4 +283,26 @@ async def get_zonal_statistics(
         args=(data_product.filepath, feature_string)
     )
 
-    return result.get()
+    # get zonal statistics from celery task once it finishes
+    zonal_stats = result.get()
+
+    # check if statistics were returned (returns array for each zone)
+    if len(zonal_stats) != 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unable to calculate zonal statistics",
+        )
+
+    # if zonal feature has a id, create metadata record for it
+    if vector_layer_id and utils.is_valid_uuid(vector_layer_id):
+        # create metadata entry for this combination of data product and vector layer
+        metadata_in = schemas.DataProductMetadataCreate(
+            category="zonal",
+            properties={"stats": zonal_stats[0]},
+            vector_layer_id=vector_layer_id,
+        )
+        crud.data_product_metadata.create_with_data_product(
+            db, obj_in=metadata_in, data_product_id=data_product.id
+        )
+
+    return zonal_stats
