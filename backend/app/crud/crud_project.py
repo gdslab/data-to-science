@@ -74,7 +74,12 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     "result": None,
                 }
         # add location to db
-        location_db_obj = models.Location(**jsonable_encoder(obj_in_data["location"]))
+        feature = obj_in_data["location"]
+        # Get geometry from GeoJSON Feature (not interested in props)
+        geometry = feature["geometry"]
+        # Serialize geometry for ST_GeomFromGeoJSON function
+        geom = func.ST_GeomFromGeoJSON(json.dumps(geometry))
+        location_db_obj = Location(geom=geom)
         with db as session:
             session.add(location_db_obj)
             session.commit()

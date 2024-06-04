@@ -1,35 +1,22 @@
+from typing import Dict
 from uuid import UUID
 
+from geojson_pydantic import Feature, Polygon
 from pydantic import BaseModel
-
-
-class PolygonGeometry(BaseModel):
-    type: str
-    coordinates: list[list[tuple[float, float]]]
-
-
-class PolygonGeoJSONFeature(BaseModel):
-    type: str
-    geometry: PolygonGeometry
-    properties: dict[str, str | float]
 
 
 # shared properties
 class LocationBase(BaseModel):
-    center_x: float | None = None
-    center_y: float | None = None
-    geom: str | None = None
+    geojson: Feature[Polygon, Dict] | None = None
 
 
 # properties to receive via API on creation
-class LocationCreate(LocationBase):
-    center_x: float
-    center_y: float
-    geom: str
+class LocationCreate(Feature[Polygon, Dict]):
+    pass
 
 
 # properties to receive via API on update
-class LocationUpdate(LocationBase):
+class LocationUpdate(LocationCreate):
     pass
 
 
@@ -37,14 +24,13 @@ class LocationUpdate(LocationBase):
 class LocationInDBBase(LocationBase, from_attributes=True):
     id: UUID
 
-    center_x: float
-    center_y: float
-    geom: str
+    geojson: Feature[Polygon, Dict]
 
 
 # additional properties to return via API
 class Location(LocationInDBBase):
-    pass
+    center_x: float
+    center_y: float
 
 
 # additional properties stored in DB

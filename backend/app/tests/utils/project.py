@@ -1,14 +1,20 @@
 from datetime import date
+from typing import Dict
 from uuid import UUID
 
 from faker import Faker
+from geojson_pydantic import Feature, Polygon
 from sqlalchemy.orm import Session
 
 from app import crud, models
 from app.schemas.project import ProjectCreate
-from app.tests.utils.location import create_location, SampleLocation, SAMPLE_LOCATION
+from app.tests.utils.location import create_location
 from app.tests.utils.user import create_user
-from app.tests.utils.utils import random_team_name, random_team_description
+from app.tests.utils.utils import (
+    get_geojson_feature_collection,
+    random_team_name,
+    random_team_description,
+)
 
 
 faker = Faker()
@@ -20,7 +26,7 @@ def create_project(
     description: str | None = None,
     planting_date: date | None = None,
     harvest_date: date | None = None,
-    location: SampleLocation | None = None,
+    location: Feature[Polygon, Dict] | None = None,
     owner_id: UUID | None = None,
     team_id: UUID | None = None,
 ) -> models.Project:
@@ -37,7 +43,8 @@ def create_project(
     if harvest_date is None:
         harvest_date = random_harvest_date()
     if location is None:
-        location = SAMPLE_LOCATION
+        feature_collection = get_geojson_feature_collection("polygon")
+        location = feature_collection["geojson"]["features"][0]
 
     project_in = ProjectCreate(
         title=title,
