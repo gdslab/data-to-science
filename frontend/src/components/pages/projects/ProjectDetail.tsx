@@ -13,6 +13,7 @@ import ProjectDetailEditForm from './ProjectDetailEditForm';
 import { Team } from '../teams/Teams';
 import ProjectFlights from './ProjectFlights';
 import { getProjectMembers } from './ProjectContext/ProjectContext';
+import ProjectVectorData from './ProjectVectorData';
 
 export async function loader({ params }: { params: Params<string> }) {
   const profile = localStorage.getItem('userProfile');
@@ -149,6 +150,9 @@ export default function ProjectDetail() {
                 Flights
               </Tab>
               <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium">
+                Map Layers
+              </Tab>
+              <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium">
                 Field Data
               </Tab>
             </TabList>
@@ -156,6 +160,9 @@ export default function ProjectDetail() {
             <TabPanels>
               <TabPanel>
                 <ProjectFlights />
+              </TabPanel>
+              <TabPanel>
+                <ProjectVectorData />
               </TabPanel>
               <TabPanel>
                 <ProjectCampaigns />

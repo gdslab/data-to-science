@@ -9,7 +9,12 @@ import { Button } from '../../../../Buttons';
 import Modal from '../../../../Modal';
 import HintText from '../../../../HintText';
 import { useFlightContext } from '../../FlightContext/FlightContext';
-import { RGBTools, MultiSpectralTools, LidarTools } from './ToolboxTools';
+import {
+  RGBTools,
+  MultiSpectralTools,
+  LidarTools,
+  ZonalStatisticTools,
+} from './ToolboxTools';
 
 import { DataProduct } from '../../Project';
 
@@ -22,6 +27,8 @@ export interface ToolboxFields {
   ndvi: boolean;
   ndviNIR: number;
   ndviRed: number;
+  zonal: boolean;
+  zonal_layer_id: string;
 }
 
 const getNumOfBands = (dataProduct: DataProduct) => {
@@ -77,6 +84,8 @@ export default function ToolboxModal({
                 ndvi: false,
                 ndviNIR: 4,
                 ndviRed: 3,
+                zonal: false,
+                zonal_layer_id: '',
               } as ToolboxFields
             }
             onSubmit={async (values, actions) => {
@@ -109,42 +118,45 @@ export default function ToolboxModal({
               }
             }}
           >
-            {({ dirty, values }) => (
+            {({ dirty, isSubmitting, values }) => (
               <Form className="grid grid-row-auto gap-4">
                 <HintText>Select data products to be generated</HintText>
                 {/* rgb tools */}
                 {flight &&
-                (flight.sensor.toLowerCase() === 'rgb' ||
-                  flight.sensor.toLowerCase() === 'multispectral') &&
-                getNumOfBands(dataProduct) > 2 ? (
-                  <RGBTools dataProduct={dataProduct} />
-                ) : null}
+                  (flight.sensor.toLowerCase() === 'rgb' ||
+                    flight.sensor.toLowerCase() === 'multispectral') &&
+                  getNumOfBands(dataProduct) > 2 && (
+                    <RGBTools dataProduct={dataProduct} />
+                  )}
                 {/* multispectral tools */}
                 {flight &&
-                flight.sensor.toLowerCase() === 'multispectral' &&
-                getNumOfBands(dataProduct) > 2 ? (
-                  <MultiSpectralTools dataProduct={dataProduct} />
-                ) : null}
+                  flight.sensor.toLowerCase() === 'multispectral' &&
+                  getNumOfBands(dataProduct) > 2 && (
+                    <MultiSpectralTools dataProduct={dataProduct} />
+                  )}
                 {/* lidar tools */}
                 {flight &&
-                flight.sensor.toLowerCase() === 'lidar' &&
-                dataProduct.data_type === 'dsm' ? (
-                  <LidarTools />
-                ) : null}
+                  flight.sensor.toLowerCase() === 'lidar' &&
+                  dataProduct.data_type === 'dsm' && <LidarTools />}
+                {flight && getNumOfBands(dataProduct) === 1 && <ZonalStatisticTools />}
                 <Button
                   type="submit"
-                  disabled={(!values.exg && !values.ndvi && !values.chm) || !dirty}
+                  disabled={
+                    (!values.exg && !values.ndvi && !values.chm && !values.zonal) ||
+                    (values.zonal && !values.zonal_layer_id) ||
+                    !dirty
+                  }
                 >
-                  Run
+                  {!isSubmitting ? 'Start' : 'Starting process...'}
                 </Button>
               </Form>
             )}
           </Formik>
-          {status ? (
+          {status && (
             <div className="mt-4">
               <Alert alertType={status.type}>{status.msg}</Alert>
             </div>
-          ) : null}
+          )}
         </div>
       </Modal>
     </div>

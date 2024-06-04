@@ -104,24 +104,43 @@ def update_location(
 
 
 @router.post(
-    "/upload",
+    "/upload_project_boundary",
     response_model=FeatureCollection,
     status_code=status.HTTP_200_OK,
 )
 def upload_field_shapefile(
-    request: Request,
     files: UploadFile,
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Handles zipped shapefile upload and converts to geojson format."""
-    geojson = {}
+    geojson = handle_zipped_shapefile(files, required_geom_type="Polygon")
+    return geojson
+
+
+@router.post(
+    "/upload_vector_layer",
+    response_model=FeatureCollection,
+    status_code=status.HTTP_200_OK,
+)
+def upload_vector_layer_shapefile(
+    files: UploadFile,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Handles zipped shapefile upload and coverts to geojson format."""
+    geojson = handle_zipped_shapefile(files)
+    return geojson
+
+
+def handle_zipped_shapefile(files: UploadFile, required_geom_type: str | None = None):
     uploaded_file = files.file.read()
+    geojson = {}
     try:
         # attempt to directly access uploaded shapefile from memory
         with ZipMemoryFile(uploaded_file) as zmf:
             with zmf.open() as src:
-                geojson = shapefile_to_geojson(src)
+                geojson = shapefile_to_geojson(src, required_geom_type)
     except DriverError as e:
         logger.error(e)
         try:
@@ -135,7 +154,9 @@ def upload_field_shapefile(
                             shp_path = extract_shapefile_parts(zip_contents, tmpdirname)
                             if shp_path:
                                 with fiona.open(shp_path) as src:
-                                    geojson = shapefile_to_geojson(src)
+                                    geojson = shapefile_to_geojson(
+                                        src, required_geom_type
+                                    )
                             else:
                                 raise ValueError("Unable to find .shp in zip")
                         else:
@@ -158,7 +179,9 @@ def upload_field_shapefile(
     return geojson
 
 
-def shapefile_to_geojson(src: fiona.model.Feature) -> dict:
+def shapefile_to_geojson(
+    src: fiona.model.Feature, required_geom_type: str | None = None
+) -> dict:
     """Loads shapefile with geopandas and returns GeoJSON object.
 
     Args:
@@ -173,7 +196,15 @@ def shapefile_to_geojson(src: fiona.model.Feature) -> dict:
     fc = FeatureCollection(**geojson)
     assert fc.type == "FeatureCollection"
     assert len(fc.features) > 0
-    assert isinstance(fc.features[0].geometry, Polygon)
+    if required_geom_type and required_geom_type == "Polygon":
+        try:
+            for feature in fc.features:
+                assert isinstance(feature.geometry, Polygon)
+        except:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Shapefile must contain polygon features",
+            )
 
     return geojson
 

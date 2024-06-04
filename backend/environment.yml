@@ -41,4 +41,5 @@ dependencies:
   - types-psycopg2
   - laspy
   - tqdm
+  - rasterstats
 prefix: /opt/conda/envs/d2s

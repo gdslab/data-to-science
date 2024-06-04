@@ -1,6 +1,7 @@
 from .api_key import APIKey
 from .campaign import Campaign
 from .data_product import DataProduct
+from .data_product_metadata import DataProductMetadata
 from .file_permission import FilePermission
 from .flight import Flight
 from .job import Job
@@ -14,3 +15,4 @@ from .team_member import TeamMember
 from .upload import Upload
 from .user import User
 from .user_style import UserStyle
+from .vector_layer import VectorLayer

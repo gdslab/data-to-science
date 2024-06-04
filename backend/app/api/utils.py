@@ -1,4 +1,5 @@
 import os
+import uuid
 
 from app.core.config import settings
 from app.utils.MapMaker import MapMaker
@@ -18,3 +19,19 @@ def create_project_field_preview(request, project_id, coordinates):
     # Generate project map with provided coordinates
     project_map = MapMaker(coordinates[0], project_map_path)
     project_map.save()
+
+
+def is_valid_uuid(id: str) -> bool:
+    """Checks if the provided ID is a version 4 UUID.
+
+    Args:
+        id (str): ID to check.
+
+    Returns:
+        bool: True if ID is valid ver. 4 UUID, False otherwise.
+    """
+    try:
+        uuid.UUID(id, version=4)
+        return True
+    except ValueError:
+        return False

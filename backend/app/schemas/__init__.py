@@ -2,6 +2,11 @@ from .admin import SiteStatistics
 from .api_key import APIKey, APIKeyCreate, APIKeyUpdate
 from .campaign import Campaign, CampaignCreate, CampaignUpdate, CampaignTemplateCreate
 from .data_product import DataProduct, DataProductCreate, DataProductUpdate
+from .data_product_metadata import (
+    DataProductMetadata,
+    DataProductMetadataCreate,
+    DataProductMetadataUpdate,
+)
 from .file_permission import FilePermission, FilePermissionCreate, FilePermissionUpdate
 from .flight import Flight, FlightCreate, FlightUpdate
 from .job import Job, JobCreate, JobUpdate
@@ -17,3 +22,4 @@ from .tusd import TUSDHook
 from .upload import Upload, UploadCreate, UploadUpdate
 from .user import User, UserCreate, UserInDB, UserUpdate
 from .user_style import UserStyle, UserStyleCreate, UserStyleUpdate
+from .vector_layer import VectorLayer, VectorLayerCreate, VectorLayerUpdate

@@ -4,7 +4,10 @@ import HintText from '../../../../HintText';
 import { SelectField } from '../../../../InputFields';
 
 import { DataProduct } from '../../Project';
+import { useProjectContext } from '../../ProjectContext';
 import { ToolboxFields } from './ToolboxModal';
+
+import { prepMapLayers } from '../../mapLayers/utils';
 
 const EXGBandSelection = ({ dataProduct }: { dataProduct: DataProduct }) => {
   const bandOptions = dataProduct.stac_properties.eo.map((band, idx) => ({
@@ -107,4 +110,45 @@ const LidarTools = () => {
   );
 };
 
-export { RGBTools, MultiSpectralTools, LidarTools };
+const ZonalStatisticTools = () => {
+  const { values } = useFormikContext<ToolboxFields>();
+  const { mapLayers } = useProjectContext();
+
+  return (
+    <ul>
+      <li>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center">
+            <Field id="zonal" type="checkbox" name="zonal" />
+            <label htmlFor="zonal" className="ms-2 text-sm font-medium text-gray-900">
+              Zonal Statistics
+            </label>
+          </div>
+          {values.zonal && (
+            <div>
+              <span className="text-sm">Select Layer with Zonal Features:</span>
+              {mapLayers &&
+                prepMapLayers(mapLayers)
+                  .filter(
+                    ({ geomType }) =>
+                      geomType.toLowerCase() === 'polygon' ||
+                      geomType.toLowerCase() === 'multipolyon'
+                  )
+                  .map((layer) => (
+                    <label
+                      key={layer.id}
+                      className="block text-sm text-gray-600 font-bold pb-1"
+                    >
+                      <Field type="radio" name="zonal_layer_id" value={layer.id} />
+                      <span className="ml-2">{layer.name}</span>
+                    </label>
+                  ))}
+            </div>
+          )}
+        </div>
+      </li>
+    </ul>
+  );
+};
+
+export { RGBTools, MultiSpectralTools, LidarTools, ZonalStatisticTools };

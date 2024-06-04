@@ -1,16 +1,23 @@
+import json
 import logging
 import os
 from pathlib import Path
 from typing import Any, Sequence
 from uuid import UUID, uuid4
 
+from geojson_pydantic import Feature, FeatureCollection
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
-from app.api import deps
-from app.tasks import run_toolbox_process
+from app.api import deps, utils
+from app.tasks import (
+    generate_zonal_statistics,
+    generate_zonal_statistics_bulk,
+    run_toolbox_process,
+)
 from app.core.config import settings
 
 router = APIRouter()
@@ -134,10 +141,12 @@ class ProcessingRequest(BaseModel):
     ndvi: bool
     ndviNIR: int
     ndviRed: int
+    zonal: bool
+    zonal_layer_id: str
 
 
 @router.post("/{data_product_id}/tools", status_code=status.HTTP_202_ACCEPTED)
-def run_processing_tool(
+async def run_processing_tool(
     request: Request,
     data_product_id: UUID,
     toolbox_in: ProcessingRequest,
@@ -152,22 +161,32 @@ def run_processing_tool(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
     # verify at least one processing tool was selected
-    if toolbox_in.exg is False and toolbox_in.ndvi is False:
+    if (
+        toolbox_in.exg is False
+        and toolbox_in.ndvi is False
+        and toolbox_in.zonal is False
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="No product selected"
         )
+    # get upload_dir
+    if os.environ.get("RUNNING_TESTS") == "1":
+        upload_dir = Path(settings.TEST_STATIC_DIR)
+    else:
+        upload_dir = Path(settings.STATIC_DIR)
     # find existing data product that will be used as input raster
-    data_product: models.DataProduct | None = crud.data_product.get(
-        db, id=data_product_id
+    data_product: models.DataProduct | None = crud.data_product.get_single_by_id(
+        db,
+        data_product_id=data_product_id,
+        user_id=current_user.id,
+        upload_dir=upload_dir,
     )
     # verify input raster exists and it is active
-    if not data_product or not data_product.is_active:
+    if not data_product:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
         )
     # ndvi
-    print(toolbox_in)
-    print(os.environ.get("RUNNING_TESTS"))
     if toolbox_in.ndvi and not os.environ.get("RUNNING_TESTS") == "1":
         # create new data product record
         ndvi_data_product: models.DataProduct = crud.data_product.create_with_flight(
@@ -235,3 +254,88 @@ def run_processing_tool(
                 current_user.id,
             )
         )
+    # zonal
+    if toolbox_in.zonal and not os.environ.get("RUNNING_TESTS") == "1":
+        features = crud.vector_layer.get_vector_layer_by_id(
+            db, project_id=project.id, layer_id=toolbox_in.zonal_layer_id
+        )
+        feature_collection = FeatureCollection(
+            **{"type": "FeatureCollection", "features": features}
+        )
+        generate_zonal_statistics_bulk.apply_async(
+            args=(
+                data_product.filepath,
+                data_product_id,
+                json.dumps(jsonable_encoder(feature_collection.__dict__)),
+            )
+        )
+
+
+@router.post(
+    "/{data_product_id}/zonal_statistics",
+    response_model=list[schemas.data_product_metadata.ZonalStatistics],
+)
+async def get_zonal_statistics(
+    data_product_id: UUID,
+    zone_in: Feature,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    flight: models.Flight = Depends(deps.can_read_flight),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    if os.environ.get("RUNNING_TESTS") == "1":
+        upload_dir = settings.TEST_STATIC_DIR
+    else:
+        upload_dir = settings.STATIC_DIR
+
+    data_product = crud.data_product.get_single_by_id(
+        db,
+        data_product_id=data_product_id,
+        upload_dir=upload_dir,
+        user_id=current_user.id,
+    )
+
+    vector_layer_id = zone_in.properties.get("id", None)
+
+    # check if statistics already exist for this feature/data product
+    if vector_layer_id and utils.is_valid_uuid(vector_layer_id):
+        metadata = crud.data_product_metadata.get_by_data_product(
+            db,
+            category="zonal",
+            data_product_id=data_product_id,
+            vector_layer_id=vector_layer_id,
+        )
+        if len(metadata) == 1:
+            if "stats" in metadata[0].properties:
+                return [metadata[0].properties["stats"]]
+
+    # serialize GeoJSON feature before passing to celery task
+    feature_string = json.dumps(jsonable_encoder(zone_in.__dict__))
+
+    # send request to celery task queue
+    result = generate_zonal_statistics.apply_async(
+        args=(data_product.filepath, feature_string)
+    )
+
+    # get zonal statistics from celery task once it finishes
+    zonal_stats = result.get()
+
+    # check if statistics were returned (returns array for each zone)
+    if len(zonal_stats) != 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unable to calculate zonal statistics",
+        )
+
+    # if zonal feature has a id, create metadata record for it
+    if vector_layer_id and utils.is_valid_uuid(vector_layer_id):
+        # create metadata entry for this combination of data product and vector layer
+        metadata_in = schemas.DataProductMetadataCreate(
+            category="zonal",
+            properties={"stats": zonal_stats[0]},
+            vector_layer_id=vector_layer_id,
+        )
+        crud.data_product_metadata.create_with_data_product(
+            db, obj_in=metadata_in, data_product_id=data_product.id
+        )
+
+    return zonal_stats

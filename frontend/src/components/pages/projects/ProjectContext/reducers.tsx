@@ -1,3 +1,5 @@
+import { FeatureCollection } from 'geojson';
+
 import { GeoJSONFeature } from '../Project';
 import { Flight } from '../Project';
 import { Project } from '../ProjectList';
@@ -7,6 +9,7 @@ import {
   LocationAction,
   FlightsAction,
   FlightsFilterSelectionAction,
+  MapLayersAction,
   ProjectAction,
   ProjectMembersAction,
   ProjectRoleAction,
@@ -49,6 +52,31 @@ function flightsFilterSelectionReducer(
       return action.payload ? action.payload : [];
     }
     case 'reset': {
+      return [];
+    }
+    default: {
+      return state;
+    }
+  }
+}
+
+function mapLayersReducer(state: FeatureCollection[], action: MapLayersAction) {
+  switch (action.type) {
+    case 'set': {
+      return action.payload ? action.payload : [];
+    }
+    case 'update': {
+      if (action.payload) {
+        if (state.length > 0) {
+          return [...state, ...action.payload];
+        } else {
+          return action.payload;
+        }
+      } else {
+        return state;
+      }
+    }
+    case 'clear': {
       return [];
     }
     default: {
@@ -106,6 +134,7 @@ export {
   locationReducer,
   flightsReducer,
   flightsFilterSelectionReducer,
+  mapLayersReducer,
   projectReducer,
   projectMembersReducer,
   projectRoleReducer,

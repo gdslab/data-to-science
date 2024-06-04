@@ -1,6 +1,7 @@
 from .crud_api_key import api_key
 from .crud_campaign import campaign
 from .crud_data_product import data_product
+from .crud_data_product_metadata import data_product_metadata
 from .crud_file_permission import file_permission
 from .crud_flight import flight
 from .crud_job import job
@@ -13,3 +14,4 @@ from .crud_team_member import team_member
 from .crud_upload import upload
 from .crud_user import user
 from .crud_user_style import user_style
+from .crud_vector_layer import vector_layer

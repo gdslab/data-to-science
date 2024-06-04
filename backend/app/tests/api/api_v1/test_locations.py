@@ -62,7 +62,9 @@ def test_upload_shapefile_zip(
     shp_zip = os.path.join(os.sep, "app", "app", "tests", "data", "single_field.zip")
     with open(shp_zip, "rb") as data:
         files = {"files": data}
-        r = client.post(f"{settings.API_V1_STR}/locations/upload", files=files)
+        r = client.post(
+            f"{settings.API_V1_STR}/locations/upload_project_boundary", files=files
+        )
         assert r.status_code == 200
         fc = r.json()
         assert fc["type"] == "FeatureCollection"
@@ -77,5 +79,7 @@ def test_upload_shapefile_zip_with_missing_parts(
     shp_zip = os.path.join(os.sep, "app", "app", "tests", "data", "incomplete-shp.zip")
     with open(shp_zip, "rb") as data:
         files = {"files": data}
-        r = client.post(f"{settings.API_V1_STR}/locations/upload", files=files)
+        r = client.post(
+            f"{settings.API_V1_STR}/locations/upload_project_boundary", files=files
+        )
         assert r.status_code == 400

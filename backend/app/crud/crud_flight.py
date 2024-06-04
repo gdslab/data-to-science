@@ -88,12 +88,16 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
         with db as session:
             flights_with_data = session.execute(statement).scalars().unique().all()
             for flight in flights_with_data:
-                # remove data product if its job status is FAILED or its state is not COMPLETED
+                # remove data product if its upload job status is FAILED
+                # or its state is not COMPLETED
                 if not include_all:
                     keep_data_products = []
                     for data_product in flight.data_products:
                         job_query = select(Job).where(
-                            Job.data_product_id == data_product.id
+                            and_(
+                                Job.data_product_id == data_product.id,
+                                Job.name == "upload-data-product",
+                            )
                         )
                         job = session.execute(job_query).scalar_one_or_none()
                         if job and job.state == "COMPLETED" and job.status == "SUCCESS":
