@@ -379,6 +379,8 @@ def test_running_tool_on_data_product(
         "ndvi": False,
         "ndviNIR": 4,
         "ndviRed": 3,
+        "zonal": False,
+        "zonal_layer_id": "",
     }
 
     response = client.post(

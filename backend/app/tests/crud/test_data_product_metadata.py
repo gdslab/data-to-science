@@ -2,8 +2,10 @@ import json
 import os
 
 import geopandas as gpd
+import pytest
 from fastapi.encoders import jsonable_encoder
 from geojson_pydantic import FeatureCollection
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import crud
@@ -24,7 +26,7 @@ from app.tests.utils.vector_layers import (
 
 
 def test_create_data_product_metadata(db: Session) -> None:
-    data_product = SampleDataProduct(db, data_type="ortho")
+    data_product = SampleDataProduct(db, data_type="dsm")
     bbox_filepath = os.path.join(
         os.sep, "app", "app", "tests", "data", "test_bbox.geojson"
     )
@@ -57,7 +59,7 @@ def test_create_data_product_metadata(db: Session) -> None:
 
 
 def test_create_data_product_metadata_for_multiple_zones(db: Session) -> None:
-    data_product = SampleDataProduct(db, data_type="ortho")
+    data_product = SampleDataProduct(db, data_type="dsm")
     bbox_filepath = os.path.join(
         os.sep, "app", "app", "tests", "data", "test_bbox_multi.geojson"
     )
@@ -87,6 +89,48 @@ def test_create_data_product_metadata_for_multiple_zones(db: Session) -> None:
         )
         all_metadata.append(metadata)
     assert len(all_metadata) == 3
+
+
+def test_create_duplicate_zonal_metadata(db: Session) -> None:
+    metadata = create_metadata(db)
+    # unique constraint should cause integrity error
+    with pytest.raises(IntegrityError):
+        metadata_duplicate = create_metadata(
+            db,
+            data_product_id=metadata.data_product_id,
+            vector_layer_id=metadata.vector_layer_id,
+        )
+
+
+def test_create_zonal_metadata_with_zone_outside_raster(db: Session) -> None:
+    data_product = SampleDataProduct(db, data_type="dsm")
+    bbox_filepath = os.path.join(
+        os.sep, "app", "app", "tests", "data", "zone_outside_raster.geojson"
+    )
+    with open(bbox_filepath) as bbox_file:
+        # create vector layer record for bbox
+        bbox_dict = json.loads(bbox_file.read())
+
+    bbox_feature_collection = FeatureCollection(**bbox_dict)
+    bbox_feature = bbox_feature_collection.features[0]
+    project = create_project(db)
+    bbox_vector_layer = create_vector_layer_with_provided_feature_collection(
+        db, feature_collection=bbox_feature_collection, project_id=project.id
+    )
+    stats = get_zonal_statistics(data_product.obj.filepath, bbox_feature)
+    metadata_in = DataProductMetadataCreate(
+        category="zonal",
+        properties={"stats": stats[0]},
+        vector_layer_id=bbox_vector_layer.features[0].properties["id"],
+    )
+    metadata = crud.data_product_metadata.create_with_data_product(
+        db, obj_in=metadata_in, data_product_id=data_product.obj.id
+    )
+    assert metadata
+    assert metadata.properties["stats"]["max"] is None
+    assert metadata.properties["stats"]["min"] is None
+    assert metadata.properties["stats"]["mean"] is None
+    assert metadata.properties["stats"]["count"] == 0
 
 
 def test_read_data_product_metadata(db: Session) -> None:

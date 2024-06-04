@@ -87,7 +87,7 @@ def test_get_flights_excluding_processing_or_failed_data_products(db: Session) -
     )
     create_job(
         db,
-        "test-job-1",
+        "upload-data-product",
         state="COMPLETED",
         status="FAILED",
         data_product_id=data_product1.obj.id,
@@ -97,7 +97,7 @@ def test_get_flights_excluding_processing_or_failed_data_products(db: Session) -
     )
     create_job(
         db,
-        "test-job-2",
+        "upload-data-product",
         state="COMPLETED",
         status="SUCCESS",
         data_product_id=data_product2.obj.id,
@@ -107,7 +107,7 @@ def test_get_flights_excluding_processing_or_failed_data_products(db: Session) -
     )
     create_job(
         db,
-        "test-job-3",
+        "upload-data-product",
         state="PENDING",
         status="SUCCESS",
         data_product_id=data_product3.obj.id,

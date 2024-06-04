@@ -1,6 +1,7 @@
 import json
 import os
 from typing import TypedDict
+from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
 from geojson_pydantic import Feature, FeatureCollection
@@ -57,7 +58,11 @@ def get_zonal_statistics_bulk(
     return stats
 
 
-def create_metadata(db: Session) -> DataProductMetadata:
+def create_metadata(
+    db: Session,
+    data_product_id: UUID | None = None,
+    vector_layer_id: UUID | None = None,
+) -> DataProductMetadata:
     """Create DataProductMetadata record with zonal statistics.
 
     Args:
@@ -66,7 +71,12 @@ def create_metadata(db: Session) -> DataProductMetadata:
     Returns:
         DataProductMetadata: Instance of DataProductMetadata.
     """
-    data_product = SampleDataProduct(db, data_type="ortho")
+    if not data_product_id:
+        data_product = SampleDataProduct(db, data_type="ortho")
+        data_product = data_product.obj
+    else:
+        data_product = crud.data_product.get(db, id=data_product_id)
+
     bbox_filepath = os.path.join(
         os.sep, "app", "app", "tests", "data", "test_bbox.geojson"
     )
@@ -80,13 +90,17 @@ def create_metadata(db: Session) -> DataProductMetadata:
     bbox_vector_layer = create_vector_layer_with_provided_feature_collection(
         db, feature_collection=bbox_feature_collection, project_id=project.id
     )
-    stats = get_zonal_statistics(data_product.obj.filepath, bbox_feature)
+
+    if not vector_layer_id:
+        vector_layer_id = bbox_vector_layer.features[0].properties["id"]
+
+    stats = get_zonal_statistics(data_product.filepath, bbox_feature)
     metadata_in = DataProductMetadataCreate(
         category="zonal",
         properties={"stats": stats[0]},
-        vector_layer_id=bbox_vector_layer.features[0].properties["id"],
+        vector_layer_id=vector_layer_id,
     )
     metadata = crud.data_product_metadata.create_with_data_product(
-        db, obj_in=metadata_in, data_product_id=data_product.obj.id
+        db, obj_in=metadata_in, data_product_id=data_product.id
     )
     return metadata
