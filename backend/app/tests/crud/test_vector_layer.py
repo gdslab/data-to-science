@@ -113,3 +113,20 @@ def test_read_vector_layers(db: Session) -> None:
             layer_id = features[0].properties["layer_id"]
             for feature in features:
                 assert feature.properties["layer_id"] == layer_id
+
+
+def test_remove_vector_layer(db: Session) -> None:
+    project = create_project(db)
+    # point feature collection with three points (features)
+    multi_feature = create_feature_collection(db, "multipoint", project_id=project.id)
+    multi_feature_layer_id = multi_feature.features[0].properties["layer_id"]
+    multi_feature_removed = crud.vector_layer.remove_layer_by_id(
+        db, project_id=project.id, layer_id=multi_feature_layer_id
+    )
+    multi_feature_after_removed = crud.vector_layer.get_vector_layer_by_id(
+        db, project_id=project.id, layer_id=multi_feature_layer_id
+    )
+    assert isinstance(multi_feature_after_removed, list)
+    assert len(multi_feature_after_removed) == 0
+    assert multi_feature_removed
+    assert multi_feature_removed == multi_feature.features

@@ -97,3 +97,19 @@ def read_vector_layers(
         return final_feature_collections
     else:
         return []
+
+
+@router.delete("/{layer_id}", response_model=FeatureCollection)
+def delete_vector_layer(
+    layer_id: str,
+    project: models.Project = Depends(deps.can_read_write_project),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    removed_vector_layer = crud.vector_layer.remove_layer_by_id(
+        db, project_id=project.id, layer_id=layer_id
+    )
+    if len(removed_vector_layer) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Vector layer not found"
+        )
+    return {"type": "FeatureCollection", "features": removed_vector_layer}
