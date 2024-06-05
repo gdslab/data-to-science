@@ -76,6 +76,29 @@ function mapLayersReducer(state: FeatureCollection[], action: MapLayersAction) {
         return state;
       }
     }
+    case 'remove': {
+      if (action.payload) {
+        if (state.length > 0 && action.payload.length === 1) {
+          const layerIdToRemove: string | undefined =
+            action.payload[0].features[0].properties?.layer_id;
+          if (layerIdToRemove) {
+            return state.filter((fc) => {
+              if (fc && fc.features && fc.features.length > 0) {
+                if (
+                  fc.features[0].properties &&
+                  'layer_id' in fc.features[0].properties
+                ) {
+                  if (fc.features[0].properties.layer_id !== layerIdToRemove) {
+                    return fc;
+                  }
+                }
+              }
+            });
+          }
+        }
+      }
+      return state;
+    }
     case 'clear': {
       return [];
     }

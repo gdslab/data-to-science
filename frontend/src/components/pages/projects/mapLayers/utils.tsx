@@ -122,7 +122,7 @@ export function download(
     shpwrite
       .zip(updatedFeatureCollection, options)
       .then((zipData) => {
-        if (zipData instanceof ArrayBuffer) {
+        if (zipData instanceof ArrayBuffer || zipData instanceof Blob) {
           const blob = new Blob([zipData], { type: 'application/zip' });
           const downloadName = filename ? filename + '.zip' : 'feature_collection.zip';
           createAndClickDownloadLink(blob, downloadName);
