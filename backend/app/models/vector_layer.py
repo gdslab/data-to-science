@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from .project import Project
     from .flight import Flight
     from .data_product import DataProduct
+    from .data_product_metadata import DataProductMetadata
 
 
 class VectorLayer(Base):
@@ -40,6 +41,9 @@ class VectorLayer(Base):
     project: Mapped["Project"] = relationship(back_populates="vector_layer")
     flight: Mapped["Flight"] = relationship(back_populates="vector_layer")
     data_product: Mapped["DataProduct"] = relationship(back_populates="vector_layer")
+    data_product_metadata: Mapped["DataProductMetadata"] = relationship(
+        back_populates="vector_layer", cascade="all, delete, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return (
