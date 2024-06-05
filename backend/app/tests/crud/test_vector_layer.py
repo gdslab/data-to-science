@@ -159,6 +159,15 @@ def test_remove_vector_layer_removes_metadata_associated_with_layer(
     assert (
         metadata_in_db and isinstance(metadata_in_db, list) and len(metadata_in_db) > 0
     )
+    # create metadata for a different vector layer and data product
+    metadata_other = create_metadata(db, project_id=project.id)
+    # get metadata associated with vector layer id and data product id
+    metadata_other_in_db = crud.data_product_metadata.get_by_data_product(
+        db,
+        category="zonal",
+        data_product_id=metadata_other.data_product_id,
+        vector_layer_id=metadata_other.vector_layer_id,
+    )
     # confirm vector layer in database
     vector_layer = crud.vector_layer.get(db, id=metadata.vector_layer_id)
     assert vector_layer
@@ -182,3 +191,14 @@ def test_remove_vector_layer_removes_metadata_associated_with_layer(
         vector_layer_id=metadata.vector_layer_id,
     )
     assert not metadata_after_remove
+    # confirm other metadata not associated with the vector id remains
+    metadata_other_after_remove = crud.data_product_metadata.get_by_data_product(
+        db,
+        category="zonal",
+        data_product_id=metadata_other.data_product_id,
+        vector_layer_id=metadata_other.vector_layer_id,
+    )
+    assert (
+        isinstance(metadata_other_after_remove, list)
+        and len(metadata_other_after_remove) == 1
+    )
