@@ -62,17 +62,25 @@ def create_metadata(
     db: Session,
     data_product_id: UUID | None = None,
     vector_layer_id: UUID | None = None,
+    project_id: UUID | None = None,
 ) -> DataProductMetadata:
     """Create DataProductMetadata record with zonal statistics.
 
     Args:
         db (Session): Database session.
+        data_product_id (UUID | None, optional): Data product ID. Defaults to None.
+        vector_layer_id (UUID | None, optional): Vector layer ID. Defaults to None.
+        project_id (UUID | None, optional): Project ID. Defaults to None.
 
     Returns:
         DataProductMetadata: Instance of DataProductMetadata.
     """
+    if not project_id:
+        project = create_project(db)
+    else:
+        project = crud.project.get(db, id=project_id)
     if not data_product_id:
-        data_product = SampleDataProduct(db, data_type="ortho")
+        data_product = SampleDataProduct(db, data_type="ortho", project=project)
         data_product = data_product.obj
     else:
         data_product = crud.data_product.get(db, id=data_product_id)
@@ -86,7 +94,6 @@ def create_metadata(
 
     bbox_feature_collection = FeatureCollection(**bbox_dict)
     bbox_feature = bbox_feature_collection.features[0]
-    project = create_project(db)
     bbox_vector_layer = create_vector_layer_with_provided_feature_collection(
         db, feature_collection=bbox_feature_collection, project_id=project.id
     )

@@ -11,6 +11,7 @@ from app.db.base_class import Base
 
 if TYPE_CHECKING:
     from .data_product import DataProduct
+    from .vector_layer import VectorLayer
 
 
 class DataProductMetadata(Base):
@@ -37,6 +38,9 @@ class DataProductMetadata(Base):
     data_product: Mapped["DataProduct"] = relationship(
         back_populates="data_product_metadata"
     )
+    vector_layer: Mapped["VectorLayer"] = relationship(
+        back_populates="data_product_metadata"
+    )
 
     # constraints
     __table_args__ = (
@@ -44,3 +48,10 @@ class DataProductMetadata(Base):
             "data_product_id", "vector_layer_id", "category", name="unique_metadata"
         ),
     )
+
+    def __repr__(self) -> str:
+        return (
+            f"DataProductMetadata(id={self.id!r}, category={self.category!r}, "
+            f"properties={self.properties!r}, data_product_id={self.data_product_id!r}, "
+            f"vector_layer_id={self.vector_layer_id!r})"
+        )

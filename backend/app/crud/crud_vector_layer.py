@@ -59,14 +59,14 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
         return self.get_vector_layer_by_id(db, project_id=project_id, layer_id=layer_id)
 
     def get_vector_layer_by_id(
-        self, db: Session, project_id: UUID, layer_id: UUID
+        self, db: Session, project_id: UUID, layer_id: str
     ) -> List[Feature]:
         """Fetches vector layers from feature collection associated with layer ID.
 
         Args:
             db (Session): Database session.
             project_id (UUID): Project ID for feature collection.
-            layer_id (UUID): Layer ID for feature collection.
+            layer_id (str): Layer ID for feature collection.
 
         Returns:
             List[Feature]: List of GeoJSON features.
@@ -118,6 +118,7 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
 
         Args:
             db (Session): Database session.
+            project_id (UUID): Project ID.
             layer_id (str): Layer ID for feature collection.
 
         Returns:
@@ -127,13 +128,17 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
         features_to_remove = self.get_vector_layer_by_id(
             db, project_id=project_id, layer_id=layer_id
         )
+        removed_features = []
         if len(features_to_remove) > 0:
             for feature in features_to_remove:
                 # Unique UUID associated with the feature
-                feature_uuid = feature.properties["id"]
-                # Remove feature using feature's UUID
-                self.remove(db, id=feature_uuid)
-        return features_to_remove
+                if feature.properties and "id" in feature.properties:
+                    feature_uuid = feature.properties["id"]
+                    # Remove feature using feature's UUID
+                    self.remove(db, id=feature_uuid)
+                    removed_features.append(feature)
+
+        return removed_features
 
 
 vector_layer = CRUDVectorLayer(VectorLayer)
