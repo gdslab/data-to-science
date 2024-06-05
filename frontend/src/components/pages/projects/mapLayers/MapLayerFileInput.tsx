@@ -26,7 +26,7 @@ export default function MapLayerFileInput({
   inputKey: number;
   setStatus: React.Dispatch<React.SetStateAction<Status | null>>;
 }) {
-  const { setFieldValue, setFieldTouched } = useFormikContext();
+  const { setFieldValue, setFieldTouched, setTouched } = useFormikContext();
   function clearFields() {
     setFieldValue('geojson', null);
     setFieldValue('layerName', '');
@@ -81,6 +81,7 @@ export default function MapLayerFileInput({
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     setStatus(null);
+    setTouched({});
 
     const files = event.target.files;
     if (files && files.length > 0) {

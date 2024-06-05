@@ -28,7 +28,7 @@ export default function MapLayerUpload() {
       <Formik
         initialValues={{ layerName: '', geojson: null }}
         validationSchema={validationSchema}
-        onSubmit={async (values) => {
+        onSubmit={async (values, actions) => {
           try {
             const response: AxiosResponse<FeatureCollection> = await axios.post(
               `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/vector_layers`,
@@ -36,10 +36,17 @@ export default function MapLayerUpload() {
             );
             if (response.status === 201) {
               setStatus({ type: 'success', msg: 'Project layer added' });
+              // reset upload form
+              actions.resetForm();
+              // update key for file input elem (clears out previous file)
               setMLFileInputKey(Date.now());
+              // update map layer context with new map layer
               mapLayersDispatch({ type: 'update', payload: [response.data] });
             } else {
               setStatus({ type: 'error', msg: 'Unable to add project layer' });
+              // reset upload form
+              actions.resetForm();
+              // update key for file input elem (clears out previous file)
               setMLFileInputKey(Date.now());
             }
           } catch (err) {
@@ -48,6 +55,9 @@ export default function MapLayerUpload() {
             } else {
               setStatus({ type: 'error', msg: 'Unable to add project layer' });
             }
+            // reset upload form
+            actions.resetForm();
+            // update key for file input elem (clears out previous file)
             setMLFileInputKey(Date.now());
           }
         }}
