@@ -111,5 +111,29 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
         # Each list element is a list of features from a feature collection
         return list(vector_layers.values())
 
+    def remove_layer_by_id(
+        self, db: Session, project_id: UUID, layer_id: str
+    ) -> List[Feature]:
+        """_summary_
+
+        Args:
+            db (Session): Database session.
+            layer_id (str): Layer ID for feature collection.
+
+        Returns:
+            List[Feature]: List of GeoJSON features that were removed.
+        """
+        # Find all features associated with the layer feature collection
+        features_to_remove = self.get_vector_layer_by_id(
+            db, project_id=project_id, layer_id=layer_id
+        )
+        if len(features_to_remove) > 0:
+            for feature in features_to_remove:
+                # Unique UUID associated with the feature
+                feature_uuid = feature.properties["id"]
+                # Remove feature using feature's UUID
+                self.remove(db, id=feature_uuid)
+        return features_to_remove
+
 
 vector_layer = CRUDVectorLayer(VectorLayer)
