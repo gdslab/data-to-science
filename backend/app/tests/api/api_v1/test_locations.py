@@ -78,7 +78,6 @@ def test_update_location(
     )
     assert response.status_code == status.HTTP_200_OK
     location_updated = response.json()
-    print(location_updated)
     assert Feature[Polygon, Dict](**location_updated)
     assert location_updated["properties"]["center_x"] != location.properties["center_x"]
     assert location_updated["properties"]["center_y"] != location.properties["center_y"]

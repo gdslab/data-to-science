@@ -10,11 +10,7 @@ export interface InitialValues {
 const initialValues: InitialValues = {
   title: '',
   description: '',
-  location: {
-    center_x: 0,
-    center_y: 0,
-    geom: '',
-  },
+  location: {},
   plantingDate: '',
   harvestDate: '',
   teamId: '',

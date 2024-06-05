@@ -74,7 +74,7 @@ def test_delete_location(db: Session) -> None:
     location = create_location(db)
     location_id = location.properties["id"]
     location_removed = crud.location.remove(db, id=location_id)
-    location_get_after_removed = crud.location.get(db, id=location.id)
+    location_get_after_removed = crud.location.get(db, id=location_id)
     assert location_get_after_removed is None
     assert location_removed
     assert str(location_removed.id) == location.properties["id"]
