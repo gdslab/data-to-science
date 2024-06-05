@@ -74,7 +74,12 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     "result": None,
                 }
         # add location to db
-        location_db_obj = models.Location(**jsonable_encoder(obj_in_data["location"]))
+        feature = obj_in_data["location"]
+        # Get geometry from GeoJSON Feature (not interested in props)
+        geometry = feature["geometry"]
+        # Serialize geometry for ST_GeomFromGeoJSON function
+        geom = func.ST_Force2D(func.ST_GeomFromGeoJSON(json.dumps(geometry)))
+        location_db_obj = Location(geom=geom)
         with db as session:
             session.add(location_db_obj)
             session.commit()
@@ -125,7 +130,13 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         """Retrieve project by id."""
         # Selects project by id if user is project member
         query_by_project_member = (
-            select(Project, func.ST_AsGeoJSON(Location), ProjectMember)
+            select(
+                Project,
+                ProjectMember,
+                func.ST_AsGeoJSON(Location),
+                func.ST_X(func.ST_Centroid(Location.geom)).label("center_x"),
+                func.ST_Y(func.ST_Centroid(Location.geom)).label("center_y"),
+            )
             .join(Project.location)
             .join(Project.members)
             .where(Project.id == project_id)
@@ -142,8 +153,8 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     "message": "Error occurred while fetching project",
                     "result": None,
                 }
-            if project and len(project) == 3:
-                member_role = project[2].role
+            if project and len(project) == 5:
+                member_role = project[1].role
                 if (permission == "rwd" and member_role != "owner") or (
                     permission == "rw"
                     and (member_role != "owner" and member_role != "manager")
@@ -158,7 +169,11 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     "is_owner",
                     user_id == project[0].owner_id or member_role == "owner",
                 )
-                setattr(project[0], "field", json.loads(project[1]))
+                field_dict = json.loads(project[2])
+                field_dict["properties"].update(
+                    {"center_x": project[3], "center_y": project[4]}
+                )
+                setattr(project[0], "field", field_dict)
                 flight_count = 0
                 most_recent_flight = None
                 for flight in project[0].flights:
@@ -195,7 +210,13 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         # project member
         if edit_only:
             query_by_project_member = (
-                select(Project, func.ST_AsGeoJSON(Location), ProjectMember)
+                select(
+                    Project,
+                    ProjectMember,
+                    func.ST_AsGeoJSON(Location),
+                    func.ST_X(func.ST_Centroid(Location.geom)).label("center_x"),
+                    func.ST_Y(func.ST_Centroid(Location.geom)).label("center_y"),
+                )
                 .join(Project.location)
                 .join(Project.members)
                 .where(Project.is_active)
@@ -206,7 +227,13 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             )
         else:
             query_by_project_member = (
-                select(Project, func.ST_AsGeoJSON(Location), ProjectMember)
+                select(
+                    Project,
+                    ProjectMember,
+                    func.ST_AsGeoJSON(Location),
+                    func.ST_X(func.ST_Centroid(Location.geom)).label("center_x"),
+                    func.ST_Y(func.ST_Centroid(Location.geom)).label("center_y"),
+                )
                 .join(Project.location)
                 .join(Project.members)
                 .where(Project.is_active)
@@ -220,9 +247,13 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 setattr(
                     project[0],
                     "is_owner",
-                    user_id == project[0].owner_id or project[2].role == "owner",
+                    user_id == project[0].owner_id or project[1].role == "owner",
                 )
-                setattr(project[0], "field", json.loads(project[1]))
+                field_dict = json.loads(project[2])
+                field_dict["properties"].update(
+                    {"center_x": project[3], "center_y": project[4]}
+                )
+                setattr(project[0], "field", field_dict)
                 flight_count = 0
                 most_recent_flight = None
                 for flight in project[0].flights:

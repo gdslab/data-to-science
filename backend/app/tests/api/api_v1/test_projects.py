@@ -12,7 +12,7 @@ from app.schemas.project import ProjectUpdate
 from app.schemas.project_member import ProjectMemberCreate
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.flight import create_flight
-from app.tests.utils.location import create_location, SAMPLE_LOCATION
+from app.tests.utils.location import create_location
 from app.tests.utils.project import (
     create_project,
     random_planting_date,
@@ -22,7 +22,7 @@ from app.tests.utils.project_member import create_project_member
 from app.tests.utils.team import create_team, random_team_name, random_team_description
 from app.tests.utils.team_member import create_team_member
 from app.tests.utils.user import create_user
-
+from app.tests.utils.utils import get_geojson_feature_collection
 
 API_URL = f"{settings.API_V1_STR}/projects"
 
@@ -37,7 +37,9 @@ def test_create_project(
             "description": random_team_description(),
             "planting_date": random_planting_date(),
             "harvest_date": random_harvest_date(),
-            "location": SAMPLE_LOCATION,
+            "location": get_geojson_feature_collection("polygon")["geojson"][
+                "features"
+            ][0],
         }
     )
     response = client.post(API_URL, json=data)
@@ -63,7 +65,9 @@ def test_create_project_with_team_with_team_owner_role(
             "description": random_team_description(),
             "planting_date": random_planting_date(),
             "harvest_date": random_harvest_date(),
-            "location": SAMPLE_LOCATION,
+            "location": get_geojson_feature_collection("polygon")["geojson"][
+                "features"
+            ][0],
             "team_id": team.id,
         }
     )
@@ -86,7 +90,9 @@ def test_create_project_with_team_with_team_viewer_role(
             "description": random_team_description(),
             "planting_date": random_planting_date(),
             "harvest_date": random_harvest_date(),
-            "location": SAMPLE_LOCATION,
+            "location": get_geojson_feature_collection("polygon")["geojson"][
+                "features"
+            ][0],
             "team_id": team.id,
         }
     )
@@ -107,7 +113,9 @@ def test_create_project_with_team_without_team_role(
             "description": random_team_description(),
             "planting_date": random_planting_date(),
             "harvest_date": random_harvest_date(),
-            "location": SAMPLE_LOCATION,
+            "location": get_geojson_feature_collection("polygon")["geojson"][
+                "features"
+            ][0],
             "team_id": team.id,
         }
     )
@@ -208,7 +216,7 @@ def test_update_project_with_owner_role(
             description=random_team_description(),
             planting_date=random_planting_date(),
             harvest_date=random_harvest_date(),
-            location_id=create_location(db).id,
+            location_id=create_location(db).properties["id"],
         ).model_dump()
     )
     response = client.put(f"{API_URL}/{project.id}", json=project_in)
@@ -239,7 +247,7 @@ def test_update_project_with_manager_role(
             "description": random_team_description(),
             "planting_date": random_planting_date(),
             "harvest_date": random_harvest_date(),
-            "location_id": create_location(db).id,
+            "location_id": create_location(db).properties["id"],
         }
     )
     response = client.put(f"{API_URL}/{project.id}", json=update_data)
@@ -270,7 +278,7 @@ def test_update_project_with_viewer_role(
             "description": random_team_description(),
             "planting_date": random_planting_date(),
             "harvest_date": random_harvest_date(),
-            "location_id": create_location(db).id,
+            "location_id": create_location(db).properties["id"],
         }
     )
     response = client.put(f"{API_URL}/{project.id}", json=update_data)
@@ -287,7 +295,7 @@ def test_update_project_with_non_project_member(
             "description": random_team_description(),
             "planting_date": random_planting_date(),
             "harvest_date": random_harvest_date(),
-            "location_id": create_location(db).id,
+            "location_id": create_location(db).properties["id"],
         }
     )
     response = client.put(f"{API_URL}/{project.id}", json=update_data)

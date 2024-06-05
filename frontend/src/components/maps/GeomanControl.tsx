@@ -7,7 +7,6 @@ import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
 
 import { LocationAction } from '../pages/projects/ProjectContext/actions';
 import { useProjectContext } from '../pages/projects/ProjectContext';
-import { coordArrayToWKT } from '../pages/projects/ProjectFormMap';
 
 interface GeomanOptions extends L.ControlOptions {
   position: L.ControlPosition;
@@ -29,13 +28,8 @@ export function updateLocation(
     type: 'set',
     payload: layerGeoJSON,
   });
-  const locationFormData = {
-    center_x: layerGeoJSON.properties.center_x,
-    center_y: layerGeoJSON.properties.center_y,
-    geom: `SRID=4326;POLYGON((${coordArrayToWKT(layerGeoJSON.geometry.coordinates)}))`,
-  };
   setFieldTouched('location', true);
-  setFieldValue('location', locationFormData);
+  setFieldValue('location', layerGeoJSON);
 }
 
 export default function GeomanControl({

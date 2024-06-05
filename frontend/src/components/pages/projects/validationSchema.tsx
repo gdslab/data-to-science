@@ -14,9 +14,14 @@ const baseProjectRules = Yup.object({
 
 const locationRule = Yup.object()
   .shape({
-    center_x: Yup.number().min(-180).max(180).required(),
-    center_y: Yup.number().min(-90).max(90).required(),
-    geom: Yup.string().required('Must save a field boundary'),
+    type: Yup.string().required(),
+    geometry: Yup.object()
+      .shape({
+        type: Yup.string().required(),
+        coordinates: Yup.array().required(),
+      })
+      .required(),
+    properties: Yup.object(),
   })
   .required('Must save a field boundary');
 

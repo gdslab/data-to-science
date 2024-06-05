@@ -1,32 +1,46 @@
 import os
+from typing import Dict
 
+from fastapi import status
 from fastapi.testclient import TestClient
+from geojson_pydantic import Feature, Polygon
 from sqlalchemy.orm import Session
 
 from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
-from app.tests.utils.location import create_location, TEST_CENTROID, TEST_COORDS
+from app.tests.utils.location import create_location
 from app.tests.utils.project import create_project
+from app.tests.utils.utils import get_geojson_feature_collection
 
 
 def test_create_location(client: TestClient, normal_user_access_token: str) -> None:
-    data = {
-        "center_x": TEST_CENTROID[0]["lon"],
-        "center_y": TEST_CENTROID[0]["lat"],
-        "geom": f"SRID=4326;POLYGON(({','.join(TEST_COORDS[0])}))",
-    }
-    r = client.post(f"{settings.API_V1_STR}/locations", json=data)
-    assert r.status_code == 201
-    location_in_db = r.json()
-    assert location_in_db["properties"]["center_x"] == data["center_x"]
-    assert location_in_db["properties"]["center_y"] == data["center_y"]
-    assert location_in_db["geometry"]["coordinates"] == [
-        [
-            [float(coord.split(" ")[0]), float(coord.split(" ")[1])]
-            for coord in TEST_COORDS[0]
-        ]
-    ]
+    data = get_geojson_feature_collection("polygon")["geojson"]["features"][0]
+    response = client.post(f"{settings.API_V1_STR}/locations", json=data)
+    assert response.status_code == status.HTTP_201_CREATED
+    location = response.json()
+    assert Feature[Polygon, Dict](**location)
+    assert location["properties"]["center_x"]
+    assert location["properties"]["center_y"]
+    assert location["geometry"] == data["geometry"]
+
+
+def test_read_location(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id)
+    # get feature used when initially creating project
+    location_id = project.location_id
+    location = crud.location.get_geojson_location(db, location_id=location_id)
+    response = client.get(f"{settings.API_V1_STR}/locations/{project.id}/{location_id}")
+    assert response.status_code == status.HTTP_200_OK
+    location_from_db = response.json()
+    assert Feature[Polygon, Dict](**location_from_db)
+    location_from_db["properties"]["id"] == location_id
+    location_from_db["properties"]["center_x"] == location.properties["center_x"]
+    location_from_db["properties"]["center_y"] == location.properties["center_y"]
+    location_from_db["geometry"] == location.geometry
 
 
 def test_update_location(
@@ -34,25 +48,39 @@ def test_update_location(
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db, owner_id=current_user.id)
+    # get feature used when initially creating project
     location_id = project.location_id
+    location = crud.location.get_geojson_location(db, location_id=location_id)
     update_data = {
-        "center_x": TEST_CENTROID[1]["lon"],
-        "center_y": TEST_CENTROID[1]["lat"],
-        "geom": f"SRID=4326;POLYGON(({','.join(TEST_COORDS[1])}))",
+        "type": "Feature",
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [150.0, 50.0],
+                    [151.0, 50.0],
+                    [151.0, 51.0],
+                    [150.0, 51.0],
+                    [150.0, 50.0],
+                ],
+            ],
+        },
+        "properties": {
+            "prop0": "value0",
+            "prop1": {
+                "this": "that",
+            },
+        },
     }
-    r = client.put(
-        f"{settings.API_V1_STR}/locations/{project.id}/{location_id}", json=update_data
+    response = client.put(
+        f"{settings.API_V1_STR}/locations/{project.id}/{location_id}",
+        json=update_data,
     )
-    assert r.status_code == 200
-    location_updated = r.json()
-    assert location_updated["properties"]["center_x"] == update_data["center_x"]
-    assert location_updated["properties"]["center_y"] == update_data["center_y"]
-    assert location_updated["geometry"]["coordinates"] == [
-        [
-            [float(coord.split(" ")[0]), float(coord.split(" ")[1])]
-            for coord in TEST_COORDS[1]
-        ]
-    ]
+    assert response.status_code == status.HTTP_200_OK
+    location_updated = response.json()
+    assert Feature[Polygon, Dict](**location_updated)
+    assert location_updated["properties"]["center_x"] != location.properties["center_x"]
+    assert location_updated["properties"]["center_y"] != location.properties["center_y"]
 
 
 def test_upload_shapefile_zip(

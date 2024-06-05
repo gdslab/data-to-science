@@ -1,8 +1,10 @@
 from datetime import date, datetime
+from typing import Dict
 from uuid import UUID
 
+from geojson_pydantic import Feature, Polygon
 from pydantic import BaseModel
-from app.schemas.location import LocationCreate, PolygonGeoJSONFeature
+from app.schemas.location import LocationCreate
 
 
 # shared properties
@@ -50,7 +52,7 @@ class ProjectInDBBase(ProjectBase, from_attributes=True):
 # additional properties to return via API
 class Project(ProjectInDBBase):
     is_owner: bool = False
-    field: PolygonGeoJSONFeature | None = None
+    field: Feature[Polygon, Dict] | None = None
     flight_count: int = 0
     most_recent_flight: date | None = None
 

@@ -4,18 +4,10 @@ import { useState } from 'react';
 
 import { Button, OutlineButton } from '../../Buttons';
 import DrawFieldMap from '../../maps/DrawFieldMap';
-import { Coordinates, FeatureCollection, GeoJSONFeature } from './Project';
+import { FeatureCollection, GeoJSONFeature } from './Project';
 import HintText from '../../HintText';
 import { useProjectContext } from './ProjectContext';
 import ShapefileUpload from './ShapefileUpload';
-
-export function coordArrayToWKT(coordArray: Coordinates[] | Coordinates[][]) {
-  let wkt: string[][] = [];
-  coordArray[0].forEach((coordPair) => {
-    wkt.push([`${coordPair[0]} ${coordPair[1]}`]);
-  });
-  return wkt.join();
-}
 
 interface Props {
   isUpdate?: boolean;
@@ -74,7 +66,9 @@ export default function ProjectFormMap({
               Upload Shapefile (.zip)
             </OutlineButton>
             <ShapefileUpload
-              endpoint={`/api/v1/locations/upload`}
+              endpoint={`${
+                import.meta.env.VITE_API_V1_STR
+              }/locations/upload_project_boundary`}
               open={open}
               onSuccess={() => setOpen(false)}
               setOpen={setOpen}
@@ -90,20 +84,15 @@ export default function ProjectFormMap({
               setStatus(null);
               if (location) {
                 try {
-                  const data = {
-                    center_x: location.properties.center_x,
-                    center_y: location.properties.center_y,
-                    geom: `SRID=4326;POLYGON((${coordArrayToWKT(
-                      location.geometry.coordinates
-                    )}))`,
-                  };
                   const response = await axios.put<GeoJSONFeature>(
-                    `/api/v1/locations/${projectId}/${locationId}`,
-                    data
+                    `${
+                      import.meta.env.VITE_API_V1_STR
+                    }/locations/${projectId}/${locationId}`,
+                    location
                   );
                   if (response) {
                     setFieldTouched('location', true);
-                    setFieldValue('location', data);
+                    setFieldValue('location', location);
                     setStatus({
                       type: 'success',
                       msg: 'Field updated',

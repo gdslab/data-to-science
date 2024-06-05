@@ -5,7 +5,7 @@ import shutil
 import tempfile
 from pathlib import Path
 from uuid import UUID
-from typing import Any
+from typing import Any, Dict
 from zipfile import ZipFile
 
 import fiona
@@ -13,7 +13,7 @@ import geopandas as gpd
 from fastapi import APIRouter, Depends, HTTPException, Request, status, UploadFile
 from fiona.errors import DriverError
 from fiona.io import ZipMemoryFile
-from geojson_pydantic import FeatureCollection, Polygon
+from geojson_pydantic import Feature, FeatureCollection, Polygon
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
@@ -33,7 +33,7 @@ REQUIRED_SHP_PARTS = [".dbf", ".shp", ".shx"]
 
 @router.post(
     "",
-    response_model=schemas.location.PolygonGeoJSONFeature,
+    response_model=Feature[Polygon, Dict],
     status_code=status.HTTP_201_CREATED,
 )
 def create_location(
@@ -42,18 +42,15 @@ def create_location(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Create new location."""
-    location = crud.location.create_with_owner(db, obj_in=location_in)
-    geojson_location = crud.location.get_geojson_location(db, location_id=location.id)
-    if not geojson_location:
+    location = crud.location.create_with_geojson(db, obj_in=location_in)
+    if not location:
         raise HTTPException(
-            status_code=status.HTTP_404_BAD_REQUEST, detail="Location not created"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Location not created"
         )
-    return json.loads(geojson_location)
+    return location
 
 
-@router.get(
-    "/{project_id}/{location_id}", response_model=schemas.location.PolygonGeoJSONFeature
-)
+@router.get("/{project_id}/{location_id}", response_model=Feature[Polygon, Dict])
 def read_location(
     request: Request,
     location_id: UUID,
@@ -71,11 +68,12 @@ def read_location(
             status_code=status.HTTP_404_NOT_FOUND, detail="Location not found"
         )
 
-    return json.loads(location)
+    return location
 
 
 @router.put(
-    "/{project_id}/{location_id}", response_model=schemas.location.PolygonGeoJSONFeature
+    "/{project_id}/{location_id}",
+    response_model=Feature[Polygon, Dict],
 )
 def update_location(
     request: Request,
@@ -97,10 +95,10 @@ def update_location(
             status_code=status.HTTP_404_NOT_FOUND, detail="Location not found"
         )
     # Update project map preview
-    coordinates = json.loads(location)["geometry"]["coordinates"]
+    coordinates = location.geometry.coordinates
     create_project_field_preview(request, project_id, coordinates)
 
-    return json.loads(location)
+    return location
 
 
 @router.post(
