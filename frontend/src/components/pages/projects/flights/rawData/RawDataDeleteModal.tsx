@@ -42,7 +42,7 @@ export default function RawDataDeleteModal({
             onClick={() => setOpenConfirmationPopup(true)}
           >
             <span className="sr-only">Delete</span>
-            <TrashIcon className="w-5 h-5 cursor-pointer" />
+            <TrashIcon className="w-5 h-5 cursor-pointer hover:scale-110" />
           </div>
         ) : (
           <Button

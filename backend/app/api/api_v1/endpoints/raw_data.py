@@ -4,7 +4,8 @@ from pathlib import Path
 from typing import Any, Sequence
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
@@ -45,8 +46,7 @@ def get_raw_data_dir(project_id: str, flight_id: str, raw_data_id: str) -> Path:
 
 
 @router.get("/{raw_data_id}", response_model=schemas.RawData)
-def read_data_product(
-    request: Request,
+def read_raw_data(
     raw_data_id: UUID,
     flight_id: UUID,
     flight: models.Flight = Depends(deps.can_read_flight),
@@ -67,9 +67,32 @@ def read_data_product(
     return raw_data
 
 
+@router.get("/{raw_data_id}/download")
+def download_raw_data(
+    raw_data_id: UUID,
+    flight: models.Flight = Depends(deps.can_read_flight),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    if os.environ.get("RUNNING_TESTS") == "1":
+        upload_dir = settings.TEST_STATIC_DIR
+    else:
+        upload_dir = settings.STATIC_DIR
+    raw_data = crud.raw_data.get_single_by_id(
+        db, raw_data_id=raw_data_id, upload_dir=upload_dir
+    )
+    if not raw_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Raw data not found"
+        )
+    return FileResponse(
+        raw_data.filepath,
+        filename=raw_data.original_filename,
+        media_type="application/zip",
+    )
+
+
 @router.get("", response_model=Sequence[schemas.RawData])
 def read_all_raw_data(
-    request: Request,
     flight_id: UUID,
     flight: models.Flight = Depends(deps.can_read_flight),
     db: Session = Depends(deps.get_db),
