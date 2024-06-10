@@ -86,6 +86,39 @@ def test_read_raw_data_without_project_access(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+def test_download_raw_data_with_viewer_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+):
+    current_user = get_current_user(db, normal_user_access_token)
+    raw_data = SampleRawData(db)
+    create_project_member(
+        db,
+        member_id=current_user.id,
+        project_id=raw_data.project.id,
+        role="viewer",
+    )
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
+        f"/flights/{raw_data.flight.id}/raw_data/{raw_data.obj.id}/download"
+    )
+    assert response.status_code == status.HTTP_200_OK
+    assert response.headers["Content-Type"] == "application/zip"
+
+    with open(
+        os.path.join(os.sep, "app", "app", "tests", "data", "test_raw_data.zip"), "rb"
+    ) as test_data:
+        assert len(test_data.read()) == len(response.content)
+
+
+def test_download_raw_data_without_project_role(client: TestClient, db: Session):
+    raw_data = SampleRawData(db)
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
+        f"/flights/{raw_data.flight.id}/raw_data/{raw_data.obj.id}/download"
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
 def test_read_multi_raw_data_with_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:

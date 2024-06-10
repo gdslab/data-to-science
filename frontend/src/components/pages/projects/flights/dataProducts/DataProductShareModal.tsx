@@ -44,9 +44,9 @@ export default function DataProductShareModal({
             <div className="cursor-pointer" onClick={() => setOpenShareModal(true)}>
               <span className="sr-only">Share</span>
               {dataProduct.public ? (
-                <LockOpenIcon className="w-5 w-5 cursor-pointer" />
+                <LockOpenIcon className="w-5 w-5 cursor-pointer hover:scale-110" />
               ) : (
-                <LockClosedIcon className="w-5 w-5 cursor-pointer" />
+                <LockClosedIcon className="w-5 w-5 cursor-pointer hover:scale-110" />
               )}
             </div>
           ) : (
