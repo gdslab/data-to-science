@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import uuid
 
 from geojson_pydantic import Feature
@@ -81,3 +82,30 @@ def is_valid_uuid(id: str) -> bool:
         return True
     except ValueError:
         return False
+
+
+def get_data_product_dir(project_id: str, flight_id: str, data_product_id: str) -> Path:
+    """Construct path to directory that will store uploaded data product.
+
+    Args:
+        project_id (str): Project ID associated with data product.
+        flight_id (str): Flight ID associated with data product.
+        data_product_id (str): ID for data product.
+
+    Returns:
+        Path: Full path to data product directory.
+    """
+    # get root static path
+    if os.environ.get("RUNNING_TESTS") == "1":
+        data_product_dir = Path(settings.TEST_STATIC_DIR)
+    else:
+        data_product_dir = Path(settings.STATIC_DIR)
+    # construct path to project/flight/dataproduct
+    data_product_dir = data_product_dir / "projects" / project_id
+    data_product_dir = data_product_dir / "flights" / flight_id
+    data_product_dir = data_product_dir / "data_products" / data_product_id
+    # create folder for data product
+    if not os.path.exists(data_product_dir):
+        os.makedirs(data_product_dir)
+
+    return data_product_dir

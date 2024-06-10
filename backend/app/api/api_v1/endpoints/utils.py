@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app import crud, models
 from app.api import deps
-from app.api.api_v1.endpoints.data_products import get_data_product_dir
+from app.api.utils import get_data_product_dir
 from app.core.config import settings
 from app.utils.ColorBar import ColorBar
 

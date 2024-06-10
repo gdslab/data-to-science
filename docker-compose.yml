@@ -28,6 +28,7 @@ services:
     platform: linux/x86_64
     volumes:
       - ./backend:/app
+      - external-data:/srv/external-data
       - log-data:/app/logs
       - tusd-data:/srv/tusd-data/data
       - user-data:/static
@@ -78,6 +79,7 @@ services:
     platform: linux/x86_64
     command: /app/celery/worker-start.sh
     volumes:
+      - external-data:/srv/external-data
       - tusd-data:/srv/tusd-data/data
       - user-data:/static
     restart: always
@@ -165,3 +167,9 @@ volumes:
   log-data:
   user-data:
   tusd-data:
+  external-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${EXTERNAL_STORAGE}
+      o: bind

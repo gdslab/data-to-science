@@ -10,8 +10,8 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
-from app.api.api_v1.endpoints.data_products import get_data_product_dir
 from app.api.api_v1.endpoints.raw_data import get_raw_data_dir
+from app.api.utils import get_data_product_dir
 from app.tasks import (
     convert_las_to_copc,
     create_point_cloud_preview_image,
@@ -25,7 +25,7 @@ logger = logging.getLogger("__name__")
 
 def process_data_product_uploaded_to_tusd(
     db: Session,
-    current_user: models.User,
+    user_id: UUID,
     storage_path: Path,
     original_filename: Path,
     dtype: str,
@@ -39,7 +39,7 @@ def process_data_product_uploaded_to_tusd(
 
     Args:
         db (Session): Database session.
-        current_user (models.User): User that uploaded the data product.
+        user_id (UUID): User ID for uploaded the data product.
         storage_path (Path): Location of data product on tus file server.
         original_filename (Path): Original name of uploaded data product.
         dtype (str): Type of data product (e.g., ortho, dsm, etc.)
@@ -108,7 +108,7 @@ def process_data_product_uploaded_to_tusd(
                 original_filename.name,
                 str(storage_path),
                 destination_filepath,
-                current_user.id,
+                user_id,
                 project_id,
                 flight_id,
                 job.id,
@@ -121,7 +121,7 @@ def process_data_product_uploaded_to_tusd(
 
 def process_raw_data_uploaded_to_tusd(
     db: Session,
-    current_user: models.User,
+    user_id: UUID,
     storage_path: Path,
     original_filename: Path,
     dtype: str,
@@ -134,7 +134,7 @@ def process_raw_data_uploaded_to_tusd(
 
     Args:
         db (Session): Database session.
-        current_user (models.User): User that uploaded the data product.
+        user_id (UUID): User ID for uploaded the data product.
         storage_path (Path): Location of data product on tus file server.
         original_filename (Path): Original name of uploaded data product.
         dtype (str): Type of data product (e.g., ortho, dsm, etc.)
@@ -190,7 +190,14 @@ def process_raw_data_uploaded_to_tusd(
 
     # start copying raw data from tusd to static files in background
     process_raw_data.apply_async(
-        args=(raw_data.id, str(storage_path), str(destination_filepath), job.id)
+        args=(
+            raw_data.id,
+            str(storage_path),
+            str(destination_filepath),
+            job.id,
+            project_id,
+            user_id,
+        )
     )
 
     return {"status": "processing"}

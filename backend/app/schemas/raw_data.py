@@ -1,7 +1,7 @@
 from datetime import datetime
-from uuid import UUID
+from typing import List
 
-from pydantic import AnyHttpUrl, BaseModel
+from pydantic import AnyHttpUrl, BaseModel, UUID4
 
 
 # shared properties
@@ -24,9 +24,9 @@ class RawDataUpdate(RawDataBase):
 
 # properties shared by models stored in DB
 class RawDataInDBBase(RawDataBase, from_attributes=True):
-    id: UUID
+    id: UUID4
     filepath: str
-    flight_id: UUID
+    flight_id: UUID4
     original_filename: str
     is_active: bool
     deactivated_at: datetime | None = None
@@ -41,3 +41,14 @@ class RawData(RawDataInDBBase):
 # additional properties stored in DB
 class RawDataInDB(RawDataInDBBase):
     pass
+
+
+class Product(BaseModel):
+    data_type: str
+    filename: str
+    storage_path: str
+
+
+class RawDataMetadata(BaseModel):
+    token: str
+    products: List[Product]

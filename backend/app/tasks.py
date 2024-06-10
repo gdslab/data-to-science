@@ -1,5 +1,6 @@
 import json
 import os
+import secrets
 import shutil
 import subprocess
 from datetime import datetime
@@ -8,6 +9,7 @@ from typing import TypedDict
 from uuid import UUID
 
 import geopandas as gpd
+import pika
 import rasterio
 from celery.utils.log import get_task_logger
 from geojson_pydantic import FeatureCollection
@@ -17,11 +19,15 @@ from sqlalchemy.exc import IntegrityError
 from app import crud, models, schemas
 from app.api.deps import get_db
 from app.core.celery_app import celery_app
+from app.core.config import settings
+from app.core.security import get_token_hash
 from app.schemas.data_product import DataProduct, DataProductUpdate
 from app.schemas.data_product_metadata import ZonalStatistics
 from app.schemas.job import JobUpdate
 
 from app.utils import gen_preview_from_pointcloud
+from app.utils.rabbitmq import get_pika_connection
+from app.utils.unique_id import generate_unique_id
 from app.utils.ImageProcessor import ImageProcessor
 from app.utils.Toolbox import Toolbox
 
@@ -342,6 +348,8 @@ def process_raw_data(
     storage_path: str,
     destination_filepath: str,
     job_id: UUID,
+    project_id: UUID,
+    user_id: UUID,
 ) -> None:
     """Celery task for copying uploaded raw data (.zip) to static files location.
 
@@ -350,9 +358,8 @@ def process_raw_data(
         storage_path (Path): Location of raw data on tusd server.
         destination_filepath (Path): Destination in static files directory for raw data.
         job_id (UUID): ID for job tracking task progress.
-
-    Raises:
-        HTTPException: Raised if copyfile process fails.
+        project_ID (UUID): ID for project associated with raw data.
+        user_id (UUID): ID for user associated with raw data upload.
     """
     # get database session
     db = next(get_db())
@@ -360,11 +367,71 @@ def process_raw_data(
     job = crud.job.get(db, id=job_id)
     # retrieve raw data associated with this task
     raw_data = crud.raw_data.get(db, id=raw_data_id)
+    if not raw_data:
+        logger.error("Unable to find raw data record")
+        return None
     # update job status to indicate process has started
     update_job_status(job, state="INPROGRESS")
     try:
         # copy uploaded raw data to static files and update record
         shutil.copyfile(storage_path, destination_filepath)
+        # copy to external storage
+        external_storage_dir = os.environ.get("EXTERNAL_STORAGE")
+        rabbitmq_host = os.environ.get("RABBITMQ_HOST")
+        # only start this workflow if external storage and rabbitmq host are provided
+        if (
+            external_storage_dir
+            and os.path.isdir(external_storage_dir)
+            and rabbitmq_host
+        ):
+            # destination for raw data zips
+            external_raw_data_dir = os.path.join(external_storage_dir, "raw_data")
+            if not os.path.exists(external_raw_data_dir):
+                os.makedirs(external_raw_data_dir)
+
+            # create unique id for raw data and copy file to external storage
+            raw_data_identifier = generate_unique_id()
+
+            shutil.copyfile(
+                storage_path,
+                os.path.join(external_raw_data_dir, raw_data_identifier + ".zip"),
+            )
+            # create one time token
+            token = secrets.token_urlsafe()
+            crud.user.create_single_use_token(
+                db,
+                obj_in=schemas.SingleUseTokenCreate(
+                    token=get_token_hash(token, salt="rawdata")
+                ),
+                user_id=user_id,
+            )
+            with open(
+                os.path.join(external_raw_data_dir, raw_data_identifier + ".info"), "w"
+            ) as info_file:
+                raw_data_meta = {
+                    "callback_url": f"{settings.API_DOMAIN}{settings.API_V1_STR}/projects/{project_id}/flights/{raw_data.flight_id}/data_products/create_from_ext_storage",
+                    "created_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+                    "flight_id": str(raw_data.flight_id),
+                    "original_filename": raw_data.original_filename,
+                    "project_id": str(project_id),
+                    "raw_data_id": str(raw_data_id),
+                    "root_dir": external_storage_dir,
+                    "token": token,
+                    "user_id": str(user_id),
+                }
+                info_file.write(json.dumps(raw_data_meta))
+
+            # publish message to external server
+            connection = get_pika_connection()
+            # establish channel connection and send raw data identifier
+            channel = connection.channel()
+            channel.queue_declare("raw-data-processing")
+            channel.basic_publish(
+                exchange="", routing_key="raw-data-processing", body=raw_data_identifier
+            )
+            # close connection
+            connection.close()
+
         # add filepath to raw data object
         crud.raw_data.update(
             db,
@@ -378,9 +445,7 @@ def process_raw_data(
             os.remove(destination_filepath)
         # remove job
         update_job_status(job, state="ERROR")
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Unable to process upload"
-        )
+        return None
 
     # update job to indicate process finished
     update_job_status(job, state="DONE")

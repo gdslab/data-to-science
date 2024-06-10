@@ -19,6 +19,7 @@ dependencies:
   - geojson-pydantic
   - geopandas
   - passlib
+  - pika
   - psycopg2
   - pydantic
   - pydantic-settings
