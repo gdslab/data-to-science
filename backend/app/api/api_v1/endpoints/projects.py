@@ -72,12 +72,18 @@ def read_projects(
     edit_only: bool = False,
     skip: int = 0,
     limit: int = 100,
+    has_raster: bool = False,
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Retrieve list of projects current user belongs to."""
     projects = crud.project.get_user_project_list(
-        db, user_id=current_user.id, edit_only=edit_only, skip=skip, limit=limit
+        db,
+        user_id=current_user.id,
+        edit_only=edit_only,
+        skip=skip,
+        limit=limit,
+        has_raster=has_raster,
     )
     return projects
 

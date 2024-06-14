@@ -205,6 +205,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         edit_only: bool = False,
         skip: int = 0,
         limit: int = 100,
+        has_raster: bool = False,
     ) -> Sequence[Project]:
         """List of projects the user belongs to."""
         # project member
@@ -256,6 +257,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 setattr(project[0], "field", field_dict)
                 flight_count = 0
                 most_recent_flight = None
+                has_required_data_type = False
                 for flight in project[0].flights:
                     if flight.is_active:
                         if most_recent_flight:
@@ -264,9 +266,19 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                         else:
                             most_recent_flight = flight.acquisition_date
                         flight_count += 1
+
+                        if has_raster:
+                            data_products = [
+                                data_product
+                                for data_product in flight.data_products
+                                if data_product.data_type != "point_cloud"
+                            ]
+                            if len(data_products) > 0:
+                                has_required_data_type = True
                 setattr(project[0], "flight_count", flight_count)
                 setattr(project[0], "most_recent_flight", most_recent_flight)
-                final_projects.append(project[0])
+                if not has_raster or (has_raster and has_required_data_type):
+                    final_projects.append(project[0])
         return final_projects
 
     def update_project(

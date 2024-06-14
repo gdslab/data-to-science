@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from app import crud
+from app import crud, schemas
 from app.schemas.project import ProjectUpdate
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.flight import create_flight
@@ -151,6 +151,46 @@ def test_get_projects_with_edit_permission(db: Session) -> None:
     assert len(projects) == 2
     for project in projects:
         assert project.id in [project2.id, project3.id]
+
+
+def test_get_projects_with_data_products_by_type(db: Session) -> None:
+    user = create_user(db)
+    # create three projects
+    project1 = create_project(db)
+    project2 = create_project(db)
+    project3 = create_project(db)
+    projects = [project1, project2, project3]
+    # add user as project member to all three projects
+    create_project_member(db, member_id=user.id, project_id=project1.id)
+    create_project_member(db, member_id=user.id, project_id=project2.id)
+    create_project_member(db, member_id=user.id, project_id=project3.id)
+    # create flight for each project
+    for project_idx, project in enumerate(projects):
+        flight = create_flight(db, project_id=project.id)
+        # add raster data product to first project
+        if project_idx == 0:
+            raster_data_product = SampleDataProduct(
+                db, data_type="ortho", flight=flight, project=project
+            )
+        # add point cloud data product to second project
+        if project_idx == 1:
+            point_cloud_data_product = crud.data_product.create_with_flight(
+                db,
+                obj_in=schemas.DataProductCreate(
+                    data_type="point_cloud",
+                    filepath="null",
+                    original_filename="test.las",
+                ),
+                flight_id=flight.id,
+            )
+    # get list of projects with raster data products
+    projects_with_rasters = crud.project.get_user_project_list(
+        db, user_id=user.id, has_raster=True
+    )
+    assert projects_with_rasters
+    assert isinstance(projects_with_rasters, list)
+    assert len(projects_with_rasters) == 1
+    assert projects_with_rasters[0].id == project1.id
 
 
 def test_update_project(db: Session) -> None:

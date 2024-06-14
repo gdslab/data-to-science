@@ -10,6 +10,7 @@ from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
 from app.models.flight import SENSORS, PLATFORMS
+from app.schemas.data_product import DataProductCreate
 from app.schemas.flight import FlightUpdate
 from app.schemas.project_member import ProjectMemberCreate
 from app.tests.utils.data_product import SampleDataProduct
@@ -310,6 +311,43 @@ def test_get_flight_with_non_project_member(
         f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}",
     )
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_get_flights_with_raster_data(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    project = create_project(db)
+    flight1 = create_flight(db, project_id=project.id)
+    flight2 = create_flight(db, project_id=project.id)
+    flight3 = create_flight(db, project_id=project.id)
+    current_user = get_current_user(db, normal_user_access_token)
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="viewer")
+    crud.project_member.create_with_project(
+        db, obj_in=project_member_in, project_id=project.id
+    )
+    # add raster data product to first flight
+    raster_data_product = SampleDataProduct(
+        db, data_type="ortho", flight=flight1, project=project
+    )
+    # add point cloud data product to second flight
+    point_cloud_data_product = crud.data_product.create_with_flight(
+        db,
+        obj_in=DataProductCreate(
+            data_type="point_cloud",
+            filepath="null",
+            original_filename="test.las",
+        ),
+        flight_id=flight2.id,
+    )
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{project.id}/flights",
+        params={"has_raster": True},
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert isinstance(response_data, list)
+    assert len(response_data) == 1
+    assert response_data[0]["id"] == str(flight1.id)
 
 
 def test_update_flight_with_project_owner_role(

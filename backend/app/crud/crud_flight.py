@@ -76,6 +76,7 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
         upload_dir: str,
         user_id: UUID,
         include_all: bool = False,
+        has_raster: bool = False,
         skip: int = 0,
         limit: int = 100,
     ) -> Sequence[Flight]:
@@ -87,6 +88,8 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
         )
         with db as session:
             flights_with_data = session.execute(statement).scalars().unique().all()
+            # flights returned by crud
+            final_flights = []
             for flight in flights_with_data:
                 # remove data product if its upload job status is FAILED
                 # or its state is not COMPLETED
@@ -105,6 +108,7 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                     flight.data_products = keep_data_products
 
                 available_data_products = []
+                has_required_data_type = False
                 for data_product in flight.data_products:
                     if data_product.filepath != "null":
                         if (
@@ -129,8 +133,14 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                             ).scalar_one_or_none()
                             if user_style:
                                 set_user_style_attr(data_product, user_style.settings)
+                            if has_raster and data_product.data_type != "point_cloud":
+                                has_required_data_type = True
                 flight.data_products = available_data_products
-            return flights_with_data
+
+                if not has_raster or (has_raster and has_required_data_type):
+                    final_flights.append(flight)
+
+            return final_flights
 
     def deactivate(self, db: Session, flight_id: UUID) -> Flight | None:
         update_flight_sql = (

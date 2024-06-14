@@ -57,6 +57,7 @@ def read_flights(
     request: Request,
     project_id: UUID,
     include_all: bool = True,
+    has_raster: bool = False,
     current_user: models.User = Depends(deps.get_current_approved_user),
     project: models.Project = Depends(deps.can_read_project),
     db: Session = Depends(deps.get_db),
@@ -72,6 +73,7 @@ def read_flights(
         upload_dir=upload_dir,
         user_id=current_user.id,
         include_all=include_all,
+        has_raster=has_raster,
     )
     return flights
 
