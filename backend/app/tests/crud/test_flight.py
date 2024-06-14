@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.core.config import settings
 from app.models.flight import PLATFORMS, SENSORS
+from app.schemas.data_product import DataProductCreate
 from app.schemas.flight import FlightUpdate
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.flight import create_flight
@@ -76,6 +77,41 @@ def test_get_flights(db: Session) -> None:
     assert len(flights) == 3
     for flight in flights:
         assert flight.project_id == project.id
+
+
+def test_get_flights_with_raster_data_products(db: Session) -> None:
+    user = create_user(db)
+    project = create_project(db, owner_id=user.id)
+    flight1 = create_flight(db, project_id=project.id)
+    flight2 = create_flight(db, project_id=project.id)
+    flight3 = create_flight(db, project_id=project.id)
+    # Add raster data product to flight1
+    raster_data_product1 = SampleDataProduct(
+        db, data_type="ortho", flight=flight1, project=project
+    )
+    # Add point cloud data product to flight2
+    point_cloud_data_product = crud.data_product.create_with_flight(
+        db,
+        obj_in=DataProductCreate(
+            data_type="point_cloud",
+            filepath=f"/some/path/to/test.las",
+            original_filename="test.las",
+        ),
+        flight_id=flight2.id,
+    )
+    upload_dir = settings.TEST_STATIC_DIR
+    flights_with_rasters = crud.flight.get_multi_by_project(
+        db,
+        project_id=project.id,
+        upload_dir=upload_dir,
+        user_id=user.id,
+        has_raster=True,
+        include_all=True,
+    )
+    assert flights_with_rasters
+    assert isinstance(flights_with_rasters, list)
+    assert len(flights_with_rasters) == 1
+    assert flights_with_rasters[0].id == flight1.id
 
 
 def test_get_flights_excluding_processing_or_failed_data_products(db: Session) -> None:

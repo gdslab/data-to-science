@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api.deps import get_current_user, get_current_approved_user
 from app.core.config import settings
+from app.schemas.data_product import DataProductCreate
 from app.schemas.project import ProjectUpdate
 from app.schemas.project_member import ProjectMemberCreate
 from app.tests.utils.data_product import SampleDataProduct
@@ -203,6 +204,46 @@ def test_get_projects(
             assert project["is_owner"] is True
         if str(project2.id) == project["id"]:
             assert project["is_owner"] is False
+
+
+def test_get_projects_with_specific_data_type(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    # create three projects
+    project1 = create_project(db)
+    project2 = create_project(db)
+    project3 = create_project(db)
+    projects = [project1, project2, project3]
+    # add user as project member to all three projects
+    create_project_member(db, member_id=current_user.id, project_id=project1.id)
+    create_project_member(db, member_id=current_user.id, project_id=project2.id)
+    create_project_member(db, member_id=current_user.id, project_id=project3.id)
+    # create flight for each project
+    for project_idx, project in enumerate(projects):
+        flight = create_flight(db, project_id=project.id)
+        # add raster data product to first project
+        if project_idx == 0:
+            raster_data_product = SampleDataProduct(
+                db, data_type="ortho", flight=flight, project=project
+            )
+        # add point cloud data product to second project
+        if project_idx == 1:
+            point_cloud_data_product = crud.data_product.create_with_flight(
+                db,
+                obj_in=DataProductCreate(
+                    data_type="point_cloud",
+                    filepath="null",
+                    original_filename="test.las",
+                ),
+                flight_id=flight.id,
+            )
+    response = client.get(API_URL, params={"has_raster": True})
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert isinstance(response_data, list)
+    assert len(response_data) == 1
+    assert response_data[0]["id"] == str(project1.id)
 
 
 def test_update_project_with_owner_role(
