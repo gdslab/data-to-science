@@ -145,80 +145,75 @@ export default function ProjectList() {
 
   const TOTAL_PAGES = Math.ceil(filterSearch(projects).length / MAX_ITEMS);
 
-  if (!projects || projects.length === 0) {
-    return (
-      <div className="flex flex-col p-4 gap-4">
+  return (
+    <div className="flex flex-col gap-4 p-4 h-full">
+      {/* Project header and search */}
+      <div className="flex flex-col gap-4">
         <ProjectListHeader />
-        <p>
-          Use the above button to create your first project. Your projects will appear
-          in the space below.
-        </p>
+        {!projects ||
+          (projects.length === 0 && (
+            <p>
+              Use the above button to create your first project. Your projects will
+              appear in the space below.
+            </p>
+          ))}
       </div>
-    );
-  } else {
-    return (
-      <div className="flex flex-col gap-4 p-4 h-full">
-        {/* Project header and search */}
-        <div className="flex flex-col gap-4">
-          <ProjectListHeader />
-          <div className="w-96">
+      {projects && projects.length > 0 && (
+        <div>
+          <div className="w-96 mb-4">
             <ProjectSearch
               searchText={searchText}
               updateSearchText={updateSearchText}
             />
           </div>
-        </div>
-        <div className="flex justify-between">
-          {/* Project cards */}
-          {getPaginationResults(
-            currentPage,
-            MAX_ITEMS,
-            filterAndSlice(projects).length,
-            filterSearch(projects).length
-          )}
-          <Sort sortSelection={sortSelection} setSortSelection={setSortSelection} />
-        </div>
-        <div className="flex-1 flex flex-wrap gap-4 pb-24 overflow-y-auto">
-          {useMemo(
-            () => filterAndSlice(sortProjects(projects, sortSelection)),
-            [currentPage, projects, searchText, sortSelection]
-          ).map((project) => (
-            <Link
-              key={project.id}
-              to={`/projects/${project.id}`}
-              className="block h-36"
-            >
-              <article className="flex items-center w-96 h-36 shadow bg-white transition hover:shadow-xl">
-                <div className="w-32 h-full p-1.5 hidden sm:block">
-                  <img
-                    className="h-full object-cover"
-                    src={`/static/projects/${project.id}/preview_map.png`}
-                  />
-                </div>
-
-                <div className="w-full md:w-64 border-s border-gray-900/10 p-2 sm:border-l-transparent sm:p-4">
-                  <h3 className="font-bold uppercase text-gray-900 truncate">
-                    {project.title}
-                  </h3>
-                  <p className="mt-2 line-clamp-3 text-sm/relaxed text-gray-700 text-wrap truncate">
-                    {project.description}
-                  </p>
-                </div>
-              </article>
-            </Link>
-          ))}
-        </div>
-        {/* Pagination */}
-        <div className="w-full bg-slate-200 fixed bottom-4 py-4 px-6">
-          <div className="flex justify-center">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={TOTAL_PAGES}
-              updateCurrentPage={updateCurrentPage}
-            />
+          <div className="flex justify-between">
+            {/* Project cards */}
+            {getPaginationResults(
+              currentPage,
+              MAX_ITEMS,
+              filterAndSlice(projects).length,
+              filterSearch(projects).length
+            )}
+            <Sort sortSelection={sortSelection} setSortSelection={setSortSelection} />
           </div>
         </div>
+      )}
+      <div className="flex-1 flex flex-wrap gap-4 pb-24 overflow-y-auto">
+        {useMemo(
+          () => filterAndSlice(sortProjects(projects, sortSelection)),
+          [currentPage, projects, searchText, sortSelection]
+        ).map((project) => (
+          <Link key={project.id} to={`/projects/${project.id}`} className="block h-36">
+            <article className="flex items-center w-96 h-36 shadow bg-white transition hover:shadow-xl">
+              <div className="w-32 h-full p-1.5 hidden sm:block">
+                <img
+                  className="h-full object-cover"
+                  src={`/static/projects/${project.id}/preview_map.png`}
+                />
+              </div>
+
+              <div className="w-full md:w-64 border-s border-gray-900/10 p-2 sm:border-l-transparent sm:p-4">
+                <h3 className="font-bold uppercase text-gray-900 truncate">
+                  {project.title}
+                </h3>
+                <p className="mt-2 line-clamp-3 text-sm/relaxed text-gray-700 text-wrap truncate">
+                  {project.description}
+                </p>
+              </div>
+            </article>
+          </Link>
+        ))}
       </div>
-    );
-  }
+      {/* Pagination */}
+      <div className="w-full bg-slate-200 fixed bottom-4 py-4 px-6">
+        <div className="flex justify-center">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={TOTAL_PAGES}
+            updateCurrentPage={updateCurrentPage}
+          />
+        </div>
+      </div>
+    </div>
+  );
 }
