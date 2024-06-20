@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ExclamationCircleIcon, EyeIcon, PhotoIcon } from '@heroicons/react/24/outline';
+import {
+  ArrowDownTrayIcon,
+  ExclamationCircleIcon,
+  EyeIcon,
+  PhotoIcon,
+} from '@heroicons/react/24/outline';
 
 import Card from '../../../../Card';
 import { DataProductStatus } from '../FlightData';
@@ -108,6 +113,12 @@ export default function DataProductCard({
               <span>{dataProduct.data_type.split('_').join(' ').toUpperCase()}</span>
               {projectRole === 'owner' ? (
                 <div className="flex flex-row gap-4">
+                  <a href={dataProduct.url} target="_blank" download>
+                    <ArrowDownTrayIcon
+                      className="w-5 h-5"
+                      title="Download data product"
+                    />
+                  </a>
                   <DataProductShareModal dataProduct={dataProduct} />
                   <DataProductDeleteModal dataProduct={dataProduct} />
                 </div>

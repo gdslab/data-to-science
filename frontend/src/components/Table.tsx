@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -59,7 +60,12 @@ export function TableBody({
           ))}
           {actions ? (
             <TableCell align={align}>
-              <div className="w-full h-full flex items-center justify-around">
+              <div
+                className={clsx('w-full h-full grid content-around gap-2', {
+                  'grid-cols-3': actions.length > 2,
+                  'grid-cols-2': actions.length < 3,
+                })}
+              >
                 {actions[i].map((action) =>
                   action.type === 'button' ? (
                     <div key={action.key}>

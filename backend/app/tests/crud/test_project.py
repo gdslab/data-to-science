@@ -58,6 +58,18 @@ def test_create_project_with_team(db: Session) -> None:
     assert project.team_id == team.id
 
 
+def test_create_project_creates_project_member_for_owner(db: Session) -> None:
+    user = create_user(db)
+    project = create_project(db, owner_id=user.id)
+    project_member = crud.project_member.get_by_project_and_member_id(
+        db, project_id=project.id, member_id=user.id
+    )
+    assert project_member
+    assert project_member.role == "owner"
+    assert user.id == project_member.member_id
+    assert project.id == project_member.project_id
+
+
 def test_get_project_by_id(db: Session) -> None:
     project = create_project(db)
     stored_project = crud.project.get(db, id=project.id)

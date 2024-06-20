@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   ArrowRightIcon,
   ArrowUpOnSquareIcon,
@@ -6,7 +8,6 @@ import {
   LinkIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline';
-import { Link } from 'react-router-dom';
 
 interface Button extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
@@ -179,5 +180,29 @@ export function LandingButton({ children, size = 'normal', ...props }: Button) {
     >
       {children}
     </button>
+  );
+}
+
+type CopyURLButton = {
+  copyText: string;
+  copiedText: string;
+  title?: string;
+  url: string;
+};
+export function CopyURLButton({ copyText, copiedText, title, url }: CopyURLButton) {
+  const [buttonText, setButtonText] = useState(copyText);
+
+  return (
+    <Button
+      size="sm"
+      onClick={() => {
+        navigator.clipboard.writeText(url);
+        setButtonText(copiedText);
+        setTimeout(() => setButtonText(copyText), 2000);
+      }}
+      title={title ? title : 'Click to copy URL'}
+    >
+      {buttonText}
+    </Button>
   );
 }

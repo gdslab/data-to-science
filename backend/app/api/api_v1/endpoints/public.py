@@ -3,6 +3,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
+from pydantic import UUID4
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
@@ -16,7 +17,7 @@ router = APIRouter()
 @router.get("", response_model=schemas.DataProduct)
 def read_shared_data_product_with_public_access(
     request: Request,
-    file_id: str,
+    file_id: UUID4,
     db: Session = Depends(deps.get_db),
 ) -> Any:
     if os.environ.get("RUNNING_TESTS") == "1":
@@ -36,7 +37,7 @@ def read_shared_data_product_with_public_access(
 @router.get("/user_access", response_model=schemas.DataProduct)
 def read_shared_data_product_with_user_access(
     request: Request,
-    file_id: str,
+    file_id: UUID4,
     db: Session = Depends(deps.get_db),
     current_user: models.User = Depends(deps.get_current_approved_user),
 ):
