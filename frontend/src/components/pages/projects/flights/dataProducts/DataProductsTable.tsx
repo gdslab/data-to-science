@@ -1,6 +1,7 @@
 import { Fragment } from 'react';
 import { NavigateFunction, useNavigate } from 'react-router-dom';
 import {
+  ArrowDownTrayIcon,
   CheckCircleIcon,
   CogIcon,
   EyeIcon,
@@ -9,7 +10,7 @@ import {
   QuestionMarkCircleIcon,
 } from '@heroicons/react/24/outline';
 
-import { Button } from '../../../../Buttons';
+import { CopyURLButton } from '../../../../Buttons';
 import DataProductDeleteModal from './DataProductDeleteModal';
 import { DataProductStatus } from '../FlightData';
 import { useProjectContext } from '../../ProjectContext';
@@ -55,6 +56,23 @@ function getDataProductActions(
     label: 'Toolbox',
   });
 
+  const getDownloadAction = (dataProduct: DataProductStatus) => ({
+    key: `action-download-${dataProduct.id}`,
+    type: 'component',
+    component: (
+      <a
+        className="flex items-center gap-1 text-sky-600"
+        href={dataProduct.url}
+        target="_blank"
+        download
+      >
+        <ArrowDownTrayIcon className="w-4 h-4" title="Download data product" />
+        <span className="text-sm">Download</span>
+      </a>
+    ),
+    label: 'Download',
+  });
+
   const getShareAction = (dataProduct: DataProductStatus) => ({
     key: `action-share-${dataProduct.id}`,
     type: 'component',
@@ -85,12 +103,14 @@ function getDataProductActions(
     return data.map((dataProduct) => [
       getViewAction(dataProduct),
       getToolboxAction(dataProduct),
+      getDownloadAction(dataProduct),
       getShareAction(dataProduct),
       getDeleteAction(dataProduct),
     ]);
   } else if (role === 'manager') {
     return data.map((dataProduct) => [
       getViewAction(dataProduct),
+      getDownloadAction(dataProduct),
       getToolboxAction(dataProduct),
     ]);
   } else {
@@ -149,12 +169,11 @@ export default function DataProductsTable({ data }: { data: DataProductStatus[] 
                 key={`row-${dataset.id}-file`}
                 className="h-full flex items-center justify-center"
               >
-                <Button
-                  size="sm"
-                  onClick={() => navigator.clipboard.writeText(dataset.url)}
-                >
-                  {isGeoTIFF(dataset.data_type) ? 'Copy COG URL' : 'Copy COPC URL'}
-                </Button>
+                <CopyURLButton
+                  copyText="Copy File URL"
+                  copiedText="Copied"
+                  url={dataset.url}
+                />
               </div>
             ) : (
               <div

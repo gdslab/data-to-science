@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import Alert, { Status } from '../Alert';
-import { Button } from '../Buttons';
+import { CopyURLButton } from '../Buttons';
 import { DataProduct } from '../pages/projects/Project';
 import { useMapContext } from './MapContext';
 import { SymbologySettings } from './Maps';
@@ -21,8 +21,6 @@ export default function ShareControls({
   refreshUrl?: string;
 }) {
   const [accessOption, setAccessOption] = useState<boolean>(dataProduct.public);
-  const [includeSymbology, setIncludeSymbology] = useState(false);
-  const [isCopying, setIsCopying] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
 
   const navigate = useNavigate();
@@ -149,39 +147,37 @@ export default function ShareControls({
           </div>
         ) : null}
       </fieldset>
-      <div className="flex items-center gap-4">
-        <Button
-          size="sm"
-          onClick={() => {
-            if (includeSymbology) {
-              const newUrl =
+      <div className="grid grid-cols-6 gap-4">
+        <div className="col-span-2">
+          <CopyURLButton
+            copyText="Copy File URL"
+            copiedText="Copied"
+            url={dataProduct.url}
+            title="Copy link that can be used to directly access the data product"
+          />
+        </div>
+        {symbologySettings ? (
+          <div className="col-span-2">
+            <CopyURLButton
+              copyText="Copy Share URL"
+              copiedText="Copied"
+              url={
                 window.origin +
                 `/sharemap?file_id=${dataProduct.id}&symbology=` +
-                btoa(JSON.stringify(symbologySettings));
-              navigator.clipboard.writeText(newUrl);
-            } else {
-              navigator.clipboard.writeText(dataProduct.url);
-            }
-            setIsCopying(true);
-            setTimeout(() => setIsCopying(false), 3000);
-          }}
-        >
-          {isCopying ? 'Copied to clipboard' : 'Copy file link'}
-        </Button>
-        {symbologySettings ? (
-          <div className="flex items-center">
-            <input
-              id="default-checkbox"
-              type="checkbox"
-              className="w-4 h-4 text-slate-600 accent-slate-600 bg-gray-100 border-gray-300 rounded focus:ring-slate-500 dark:focus:ring-slate-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-              onChange={(e) => setIncludeSymbology(e.target.checked)}
+                btoa(JSON.stringify(symbologySettings))
+              }
+              title="Copy link that can be used to share the current map and selected data product"
             />
-            <label
-              htmlFor="default-checkbox"
-              className="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-            >
-              Include symbology
-            </label>
+          </div>
+        ) : null}
+        {dataProduct.data_type === 'point_cloud' ? (
+          <div className="col-span-2">
+            <CopyURLButton
+              copyText="Copy Share URL"
+              copiedText="Copied"
+              url={window.origin + `/sharepotree?file_id=${dataProduct.id}`}
+              title="Copy link that can be used to share the point cloud with potree"
+            />
           </div>
         ) : null}
       </div>

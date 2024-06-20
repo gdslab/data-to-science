@@ -35,6 +35,7 @@ import ProjectList, {
 } from './components/pages/projects/ProjectList';
 import RegistrationForm from './components/pages/auth/RegistrationForm';
 import ShareMap from './components/maps/ShareMap';
+import SharePotreeViewer from './components/maps/SharePotreeViewer';
 import Teams, { loader as teamsLoader } from './components/pages/teams/Teams';
 import TeamCreate, {
   loader as teamCreateLoader,
@@ -81,6 +82,11 @@ export const router = createBrowserRouter([
         path: '/sharemap',
         element: <RootProtected />,
         children: [{ path: '/sharemap', element: <ShareMap /> }],
+      },
+      {
+        path: '/sharepotree',
+        element: <RootProtected />,
+        children: [{ path: '/sharepotree', element: <SharePotreeViewer /> }],
       },
     ],
   },
