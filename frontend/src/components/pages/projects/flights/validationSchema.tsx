@@ -1,6 +1,9 @@
 import * as Yup from 'yup';
 
 const validationSchema = Yup.object({
+  name: Yup.string()
+    .min(1, 'Name must have at least one character')
+    .max(255, 'Name cannot exceed 255 characters'),
   acquisitionDate: Yup.date().required('Required'),
   altitude: Yup.number().positive('Must be greater than 0').required('Required'),
   sideOverlap: Yup.number()

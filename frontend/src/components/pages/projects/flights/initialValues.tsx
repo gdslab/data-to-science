@@ -14,6 +14,7 @@ export const SENSOR_OPTIONS = [
 ];
 
 const initialValues = {
+  name: '',
   acquisitionDate: '',
   altitude: 120,
   sideOverlap: 60,
@@ -37,6 +38,7 @@ const getPlatform = (platform: string): string => {
 export function getInitialValues(flight: Flight | null) {
   if (flight) {
     return {
+      name: flight.name ? flight.name : '',
       acquisitionDate: flight.acquisition_date,
       altitude: flight.altitude,
       sideOverlap: flight.side_overlap,

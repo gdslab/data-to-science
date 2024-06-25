@@ -30,6 +30,7 @@ class Flight(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
+    name: Mapped[str] = mapped_column(String(255), nullable=True)
     acquisition_date: Mapped[date] = mapped_column(Date, nullable=False)
     altitude: Mapped[float] = mapped_column(Float, nullable=False)
     side_overlap: Mapped[float] = mapped_column(Float, nullable=False)
@@ -58,7 +59,8 @@ class Flight(Base):
 
     def __repr__(self) -> str:
         return (
-            f"Flight(id={self.id!r}, acquisition_date={self.acquisition_date!r}, "
+            f"Flight(id={self.id!r}, name={self.name!r}, "
+            f"acquisition_date={self.acquisition_date!r}, "
             f"altitude={self.altitude!r}, side_overlap={self.side_overlap!r}, "
             f"forward_overlap={self.forward_overlap!r}, "
             f"sensor={self.sensor!r}, platform={self.platform!r}, "

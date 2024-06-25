@@ -31,6 +31,7 @@ def test_create_flight_with_project_owner_role(
     )
     create_project_member(db, role="viewer", member_id=pilot.id, project_id=project.id)
     data = {
+        "name": "Test Flight",
         "acquisition_date": create_acquisition_date(),
         "altitude": randint(0, 500),
         "side_overlap": randint(40, 80),
@@ -46,6 +47,7 @@ def test_create_flight_with_project_owner_role(
     assert response.status_code == status.HTTP_201_CREATED
     response_data = response.json()
     assert "id" in response_data
+    assert data["name"] == response_data["name"]
     assert data["acquisition_date"] == response_data["acquisition_date"]
     assert data["altitude"] == response_data["altitude"]
     assert data["side_overlap"] == response_data["side_overlap"]

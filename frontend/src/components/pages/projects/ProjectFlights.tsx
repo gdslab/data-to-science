@@ -27,7 +27,14 @@ export default function ProjectFlights() {
     projectRole,
   } = useProjectContext();
 
-  const flightColumns = ['Platform', 'Sensor', 'Acquisition Date', 'Data', 'Actions'];
+  const flightColumns = [
+    'Name',
+    'Platform',
+    'Sensor',
+    'Acquisition Date',
+    'Data',
+    'Actions',
+  ];
 
   function updateFlightsFilter(filterSelections: string[]) {
     flightsFilterSelectionDispatch({ type: 'set', payload: filterSelections });
@@ -96,6 +103,7 @@ export default function ProjectFlights() {
                   .map((flight) => ({
                     key: flight.id,
                     values: [
+                      flight.name ? flight.name : '',
                       flight.platform.replace(/_/g, ' '),
                       flight.sensor,
                       flight.acquisition_date,

@@ -52,6 +52,7 @@ export default function FlightForm({
             onSubmit={async (values, { setSubmitting, setStatus }) => {
               try {
                 const data = {
+                  name: values.name,
                   acquisition_date: values.acquisitionDate,
                   altitude: values.altitude,
                   side_overlap: values.sideOverlap,
@@ -94,6 +95,12 @@ export default function FlightForm({
           >
             {({ isSubmitting, status, values }) => (
               <Form>
+                <TextField
+                  label="Name"
+                  name="name"
+                  placeholder="Enter flight name (e.g., 'My Flight')"
+                  required={false}
+                />
                 <TextField
                   type="date"
                   label="Acquisition date"

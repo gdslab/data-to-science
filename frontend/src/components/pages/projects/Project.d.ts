@@ -117,6 +117,7 @@ export interface DataProduct {
 // flight object returned from api
 export interface Flight {
   id: string;
+  name: string | null;
   acquisition_date: string;
   altitude: number;
   side_overlap: number;
