@@ -1,8 +1,25 @@
 {
-"type": "FeatureCollection",
-"name": "test_bbox",
-"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
-"features": [
-{ "type": "Feature", "properties": { "id": 1 }, "geometry": { "type": "MultiPolygon", "coordinates": [ [ [ [ -86.944512276245263, 41.44403872022454 ], [ -86.94451225033059, 41.444069140193974 ], [ -86.944468146639522, 41.444069118913589 ], [ -86.944468172574773, 41.444038698944183 ], [ -86.944512276245263, 41.44403872022454 ] ] ] ] } }
-]
+  "type": "FeatureCollection",
+  "name": "test_bbox",
+  "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "id": 1 },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [
+            [
+              [-86.944512276245263, 41.44403872022454],
+              [-86.94451225033059, 41.444069140193974],
+              [-86.944468146639522, 41.444069118913589],
+              [-86.944468172574773, 41.444038698944183],
+              [-86.944512276245263, 41.44403872022454]
+            ]
+          ]
+        ]
+      }
+    }
+  ]
 }

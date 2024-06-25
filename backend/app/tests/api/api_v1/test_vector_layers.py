@@ -1,3 +1,5 @@
+import os
+
 from geojson_pydantic import FeatureCollection
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -6,6 +8,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
+from app.schemas.vector_layer import VectorLayerFeatureCollection
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
 from app.tests.utils.vector_layers import (
@@ -29,9 +32,14 @@ def test_create_vector_layer_with_project_owner_role(
     response_feature = FeatureCollection(**response_data)
     assert response_feature.features[0].properties["id"]
     assert response_feature.features[0].properties["project_id"] == str(project.id)
+    assert response_feature.features[0].properties["layer_id"]
+    # check if preview image was made
+    layer_id = response_feature.features[0].properties["layer_id"]
+    preview_path = f"{settings.TEST_STATIC_DIR}/projects/{project.id}/vector/{layer_id}/preview.png"
+    assert os.path.exists(preview_path)
 
 
-def test_create_vector_layer_with_manager_owner_role(
+def test_create_vector_layer_with_manager_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
@@ -49,9 +57,14 @@ def test_create_vector_layer_with_manager_owner_role(
     response_feature = FeatureCollection(**response_data)
     assert response_feature.features[0].properties["id"]
     assert response_feature.features[0].properties["project_id"] == str(project.id)
+    assert response_feature.features[0].properties["layer_id"]
+    # check if preview image was made
+    layer_id = response_feature.features[0].properties["layer_id"]
+    preview_path = f"{settings.TEST_STATIC_DIR}/projects/{project.id}/vector/{layer_id}/preview.png"
+    assert os.path.exists(preview_path)
 
 
-def test_create_vector_layer_with_viewer_owner_role(
+def test_create_vector_layer_with_viewer_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
@@ -92,12 +105,16 @@ def test_read_vector_layer_with_project_owner_role(
     )
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
-    response_feature = FeatureCollection(**response_data)
+    response_feature = VectorLayerFeatureCollection(**response_data)
     assert response_feature.features[0].properties["id"]
     assert response_feature.features[0].properties["project_id"] == str(project.id)
     assert (
         response_feature.features[0].properties["id"]
         == point_feature_collection.features[0].properties["id"]
+    )
+    assert response_feature.metadata.preview_url
+    assert os.path.exists(
+        f"{settings.TEST_STATIC_DIR}/projects/{project.id}/vector/{response_feature.features[0].properties['layer_id']}/preview.png"
     )
 
 
@@ -117,12 +134,16 @@ def test_read_vector_layer_with_manager_owner_role(
     )
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
-    response_feature = FeatureCollection(**response_data)
+    response_feature = VectorLayerFeatureCollection(**response_data)
     assert response_feature.features[0].properties["id"]
     assert response_feature.features[0].properties["project_id"] == str(project.id)
     assert (
         response_feature.features[0].properties["id"]
         == point_feature_collection.features[0].properties["id"]
+    )
+    assert response_feature.metadata.preview_url
+    assert os.path.exists(
+        f"{settings.TEST_STATIC_DIR}/projects/{project.id}/vector/{response_feature.features[0].properties['layer_id']}/preview.png"
     )
 
 
@@ -142,12 +163,16 @@ def test_read_vector_layer_with_project_viewer_role(
     )
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
-    response_feature = FeatureCollection(**response_data)
+    response_feature = VectorLayerFeatureCollection(**response_data)
     assert response_feature.features[0].properties["id"]
     assert response_feature.features[0].properties["project_id"] == str(project.id)
     assert (
         response_feature.features[0].properties["id"]
         == point_feature_collection.features[0].properties["id"]
+    )
+    assert response_feature.metadata.preview_url
+    assert os.path.exists(
+        f"{settings.TEST_STATIC_DIR}/projects/{project.id}/vector/{response_feature.features[0].properties['layer_id']}/preview.png"
     )
 
 
@@ -180,7 +205,7 @@ def test_read_vector_layer_with_multiple_features(
     )
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
-    response_feature_collection = FeatureCollection(**response_data)
+    response_feature_collection = VectorLayerFeatureCollection(**response_data)
     assert len(response_feature_collection.features) == 3
     # check that each feature has the same layer_id
     layer_id = response_feature_collection.features[0].properties["layer_id"]
@@ -203,13 +228,17 @@ def test_read_vector_layers_with_project_owner_role(
     assert isinstance(response_feature_collections, list)
     assert len(response_feature_collections) == 3
     for feature_collection in response_feature_collections:
-        feature_collection = FeatureCollection(**feature_collection)
+        feature_collection = VectorLayerFeatureCollection(**feature_collection)
         for feature in feature_collection.features:
             assert feature.properties["id"] in [
                 fc1.features[0].properties["id"],
                 fc2.features[0].properties["id"],
                 fc3.features[0].properties["id"],
             ]
+        assert feature_collection.metadata.preview_url
+        assert os.path.exists(
+            f"{settings.TEST_STATIC_DIR}/projects/{project.id}/vector/{feature_collection.features[0].properties['layer_id']}/preview.png"
+        )
 
 
 def test_read_vector_layers_with_project_manager_role(
@@ -230,13 +259,17 @@ def test_read_vector_layers_with_project_manager_role(
     assert isinstance(response_feature_collections, list)
     assert len(response_feature_collections) == 3
     for feature_collection in response_feature_collections:
-        feature_collection = FeatureCollection(**feature_collection)
+        feature_collection = VectorLayerFeatureCollection(**feature_collection)
         for feature in feature_collection.features:
             assert feature.properties["id"] in [
                 fc1.features[0].properties["id"],
                 fc2.features[0].properties["id"],
                 fc3.features[0].properties["id"],
             ]
+        assert feature_collection.metadata.preview_url
+        assert os.path.exists(
+            f"{settings.TEST_STATIC_DIR}/projects/{project.id}/vector/{feature_collection.features[0].properties['layer_id']}/preview.png"
+        )
 
 
 def test_read_vector_layers_with_project_viewer_role(
@@ -257,13 +290,17 @@ def test_read_vector_layers_with_project_viewer_role(
     assert isinstance(response_feature_collections, list)
     assert len(response_feature_collections) == 3
     for feature_collection in response_feature_collections:
-        feature_collection = FeatureCollection(**feature_collection)
+        feature_collection = VectorLayerFeatureCollection(**feature_collection)
         for feature in feature_collection.features:
             assert feature.properties["id"] in [
                 fc1.features[0].properties["id"],
                 fc2.features[0].properties["id"],
                 fc3.features[0].properties["id"],
             ]
+        assert feature_collection.metadata.preview_url
+        assert os.path.exists(
+            f"{settings.TEST_STATIC_DIR}/projects/{project.id}/vector/{feature_collection.features[0].properties['layer_id']}/preview.png"
+        )
 
 
 def test_read_vector_layers_without_project_role(
@@ -297,7 +334,10 @@ def test_remove_vector_layer_with_project_owner_role(
         db, project_id=project.id, layer_id=layer_id
     )
     assert FeatureCollection(**vector_layer_removed)
-    assert FeatureCollection(**vector_layer_removed) == feature_collection
+    assert (
+        FeatureCollection(**vector_layer_removed).features
+        == feature_collection.features
+    )
     assert len(removed_vector_layer) == 0
 
 
@@ -323,7 +363,10 @@ def test_remove_vector_layer_with_project_manager_role(
         db, project_id=project.id, layer_id=layer_id
     )
     assert FeatureCollection(**vector_layer_removed)
-    assert FeatureCollection(**vector_layer_removed) == feature_collection
+    assert (
+        FeatureCollection(**vector_layer_removed).features
+        == feature_collection.features
+    )
     assert len(removed_vector_layer) == 0
 
 

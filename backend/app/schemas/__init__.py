@@ -22,4 +22,9 @@ from .tusd import TUSDHook
 from .upload import Upload, UploadCreate, UploadUpdate
 from .user import User, UserCreate, UserInDB, UserUpdate
 from .user_style import UserStyle, UserStyleCreate, UserStyleUpdate
-from .vector_layer import VectorLayer, VectorLayerCreate, VectorLayerUpdate
+from .vector_layer import (
+    VectorLayer,
+    VectorLayerCreate,
+    VectorLayerUpdate,
+    VectorLayerFeatureCollection,
+)

@@ -1,4 +1,5 @@
 import 'leaflet/dist/leaflet.css';
+import { FeatureCollection } from 'geojson';
 import { useEffect, useRef, useState } from 'react';
 import { MapContainer } from 'react-leaflet/MapContainer';
 import { Polygon } from 'react-leaflet/Polygon';
@@ -9,7 +10,6 @@ import { useLeafletContext } from '@react-leaflet/core';
 import GeomanControl from './GeomanControl';
 import MapLayersControl from './MapLayersControl';
 import UploadGeoJSON from './UploadGeoJSON';
-import { FeatureCollection } from '../pages/projects/Project';
 import { useProjectContext } from '../pages/projects/ProjectContext';
 
 // updates map (loads tiles) after container size changes

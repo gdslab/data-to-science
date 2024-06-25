@@ -7,12 +7,17 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
-
+from app.api.utils import create_vector_layer_preview
+from app.core.config import settings
 
 router = APIRouter()
 
 
-@router.post("", response_model=FeatureCollection, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=schemas.vector_layer.VectorLayerFeatureCollection,
+    status_code=status.HTTP_201_CREATED,
+)
 def create_vector_layer(
     vector_layer_in: schemas.VectorLayerCreate,
     current_user: models.User = Depends(deps.get_current_approved_user),
@@ -40,14 +45,32 @@ def create_vector_layer(
     features = crud.vector_layer.create_with_project(
         db, obj_in=vector_layer_in, project_id=project.id
     )
+
+    layer_id = "undefined"
+    if features[0].properties and "layer_id" in features[0].properties.keys():
+        layer_id = features[0].properties["layer_id"]
+        # Create preview image
+        preview_img = create_vector_layer_preview(
+            project_id=project.id,
+            layer_id=layer_id,
+            features=features,
+        )
+
     feature_collection = {
         "type": "FeatureCollection",
         "features": features,
+        "metadata": {
+            "preview_url": f"{settings.API_DOMAIN}{settings.STATIC_DIR}/projects/{project.id}/vector/{layer_id}/preview.png"
+        },
     }
-    return FeatureCollection(**feature_collection)
+
+    return schemas.vector_layer.VectorLayerFeatureCollection(**feature_collection)
 
 
-@router.get("/{vector_layer_id}", response_model=FeatureCollection)
+@router.get(
+    "/{vector_layer_id}",
+    response_model=schemas.vector_layer.VectorLayerFeatureCollection,
+)
 def read_vector_layer(
     vector_layer_id: UUID,
     project: models.Project = Depends(deps.can_read_project),
@@ -67,14 +90,22 @@ def read_vector_layer(
         db, project_id=project.id, layer_id=vector_layer.layer_id
     )
     if len(features) > 0:
+        layer_id = "undefined"
+        if features[0].properties and "layer_id" in features[0].properties.keys():
+            layer_id = features[0].properties["layer_id"]
         feature_collection = {
             "type": "FeatureCollection",
             "features": features,
+            "metadata": {
+                "preview_url": f"{settings.API_DOMAIN}{settings.STATIC_DIR}/projects/{project.id}/vector/{layer_id}/preview.png"
+            },
         }
         return feature_collection
 
 
-@router.get("", response_model=Sequence[FeatureCollection])
+@router.get(
+    "", response_model=Sequence[schemas.vector_layer.VectorLayerFeatureCollection]
+)
 def read_vector_layers(
     project: models.Project = Depends(deps.can_read_project),
     db: Session = Depends(deps.get_db),
@@ -87,13 +118,27 @@ def read_vector_layers(
         db, project_id=project.id
     )
     if len(feature_collections) > 0:
-        final_feature_collections: list[FeatureCollection] = []
+        final_feature_collections: list[
+            schemas.vector_layer.VectorLayerFeatureCollection
+        ] = []
         for features in feature_collections:
+            layer_id = "undefined"
+            if (
+                len(features) > 0
+                and features[0].properties
+                and "layer_id" in features[0].properties.keys()
+            ):
+                layer_id = features[0].properties["layer_id"]
             feature_collection = {
                 "type": "FeatureCollection",
                 "features": features,
+                "metadata": {
+                    "preview_url": f"{settings.API_DOMAIN}{settings.STATIC_DIR}/projects/{project.id}/vector/{layer_id}/preview.png"
+                },
             }
-            final_feature_collections.append(FeatureCollection(**feature_collection))
+            final_feature_collections.append(
+                schemas.vector_layer.VectorLayerFeatureCollection(**feature_collection)
+            )
         return final_feature_collections
     else:
         return []

@@ -1,11 +1,12 @@
 import axios, { AxiosResponse } from 'axios';
 import { FeatureCollection } from 'geojson';
 import shpwrite, { DownloadOptions, ZipOptions } from '@mapbox/shp-write';
+import { MapLayerFeatureCollection } from '../Project';
 
 interface MapboxZipOptions extends ZipOptions, DownloadOptions {}
 
 export type MapLayerTableRow = {
-  featureCollection: FeatureCollection;
+  featureCollection: MapLayerFeatureCollection;
   geomType: string;
   id: string;
   name: string;
@@ -50,7 +51,9 @@ export async function shpToGeoJSON(file: File): Promise<FeatureCollection | null
  * @param {FeatureCollection[]} mapLayers Array of feature collections.
  * @returns  Row data for vector table.
  */
-export function prepMapLayers(mapLayers: FeatureCollection[]): MapLayerTableRow[] {
+export function prepMapLayers(
+  mapLayers: MapLayerFeatureCollection[]
+): MapLayerTableRow[] {
   // each layer is returned as a geojson feature collection from the api
 
   // a single feature collection may have multiple features, but the
@@ -101,11 +104,11 @@ function prepFeatureCollectionForDownload(
 /**
  * Creates blobs for json or zip download of a feature collection and starts download.
  * @param {string} downloadType Default download option is JSON. Zip also supported.
- * @param {FeatureCollection} featureCollection Feature collection to be downloaded.
+ * @param {MapLayerFeatureCollection} featureCollection Feature collection to be downloaded.
  */
 export function download(
   downloadType: string = 'json',
-  featureCollection: FeatureCollection
+  featureCollection: MapLayerFeatureCollection
 ) {
   const filename = featureCollection.features[0].properties?.layer_name;
   const updatedFeatureCollection = prepFeatureCollectionForDownload(

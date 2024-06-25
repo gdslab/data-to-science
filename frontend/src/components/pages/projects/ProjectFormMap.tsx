@@ -1,10 +1,11 @@
 import axios from 'axios';
 import { ErrorMessage, useFormikContext } from 'formik';
+import { FeatureCollection } from 'geojson';
 import { useState } from 'react';
 
 import { Button, OutlineButton } from '../../Buttons';
 import DrawFieldMap from '../../maps/DrawFieldMap';
-import { FeatureCollection, GeoJSONFeature } from './Project';
+import { GeoJSONFeature } from './Project';
 import HintText from '../../HintText';
 import { useProjectContext } from './ProjectContext';
 import ShapefileUpload from './ShapefileUpload';

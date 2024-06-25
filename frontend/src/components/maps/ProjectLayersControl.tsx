@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
-import { Feature, FeatureCollection } from 'geojson';
+import { Feature } from 'geojson';
 import { useEffect, useState } from 'react';
 import {
   Circle,
@@ -15,7 +15,7 @@ import flip from '@turf/flip';
 import LoadingBars from '../LoadingBars';
 import { useMapContext } from './MapContext';
 import { MapLayerTableRow, prepMapLayers } from '../pages/projects/mapLayers/utils';
-import { DataProduct } from '../pages/projects/Project';
+import { DataProduct, MapLayerFeatureCollection } from '../pages/projects/Project';
 import { Project } from '../pages/projects/ProjectList';
 import { LatLngExpression } from 'leaflet';
 
@@ -56,7 +56,7 @@ export default function ProjectLayersControl({ project }: { project: Project }) 
   useEffect(() => {
     async function getProjectLayers(projectId: string) {
       try {
-        const response: AxiosResponse<FeatureCollection[]> = await axios.get(
+        const response: AxiosResponse<MapLayerFeatureCollection[]> = await axios.get(
           `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/vector_layers`
         );
         if (response.status === 200) {

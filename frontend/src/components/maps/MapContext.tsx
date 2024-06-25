@@ -1,10 +1,13 @@
 import axios, { AxiosResponse, isAxiosError } from 'axios';
-import { FeatureCollection } from 'geojson';
 import { createContext, useContext, useEffect, useReducer } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 
-import { DataProduct, Flight } from '../pages/projects/Project';
+import {
+  DataProduct,
+  Flight,
+  MapLayerFeatureCollection,
+} from '../pages/projects/Project';
 import { Project } from '../pages/projects/ProjectList';
 import {
   ActiveDataProductAction,
@@ -106,9 +109,12 @@ function geoRasterIdReducer(state: string, action: GeoRasterIdAction) {
   }
 }
 
-type ProjectLayersAction = { type: string; payload?: FeatureCollection[] };
+type ProjectLayersAction = { type: string; payload?: MapLayerFeatureCollection[] };
 
-function projectLayersReducer(state: FeatureCollection[], action: ProjectLayersAction) {
+function projectLayersReducer(
+  state: MapLayerFeatureCollection[],
+  action: ProjectLayersAction
+) {
   switch (action.type) {
     case 'set': {
       return action.payload ? action.payload : [];
@@ -187,7 +193,7 @@ const context: {
   flights: Flight[];
   geoRasterId: string;
   geoRasterIdDispatch: React.Dispatch<GeoRasterIdAction>;
-  projectLayers: FeatureCollection[];
+  projectLayers: MapLayerFeatureCollection[];
   projectLayersDispatch: React.Dispatch<ProjectLayersAction>;
   projects: Project[] | null;
   projectsDispatch: React.Dispatch<ProjectsAction>;

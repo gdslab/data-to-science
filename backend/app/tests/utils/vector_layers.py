@@ -4,13 +4,14 @@ from geojson_pydantic import FeatureCollection
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
+from app.core.config import settings
 from app.tests.utils.project import create_project
 from app.tests.utils.utils import get_geojson_feature_collection
 
 
 def create_feature_collection(
     db: Session, geom_type: str, project_id: UUID | None = None
-) -> FeatureCollection:
+) -> schemas.VectorLayerFeatureCollection:
     """Creates GeoJSON feature collection with feature of specified geometry type.
 
     Args:
@@ -33,8 +34,11 @@ def create_feature_collection(
     feature_collection = {
         "type": "FeatureCollection",
         "features": features,
+        "metadata": {
+            "preview_url": f"{settings.API_DOMAIN}{settings.TEST_STATIC_DIR}/projects/{project_id}/vector/{features[0].properties['layer_id']}/preview.png"
+        },
     }
-    return FeatureCollection(**feature_collection)
+    return schemas.VectorLayerFeatureCollection(**feature_collection)
 
 
 def create_vector_layer_with_provided_feature_collection(

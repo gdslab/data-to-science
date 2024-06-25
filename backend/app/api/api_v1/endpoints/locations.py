@@ -76,7 +76,6 @@ def read_location(
     response_model=Feature[Polygon, Dict],
 )
 def update_location(
-    request: Request,
     location_id: UUID,
     location_in: schemas.LocationUpdate,
     project_id: UUID,
@@ -95,8 +94,7 @@ def update_location(
             status_code=status.HTTP_404_NOT_FOUND, detail="Location not found"
         )
     # Update project map preview
-    coordinates = location.geometry.coordinates
-    create_project_field_preview(request, project_id, coordinates)
+    create_project_field_preview(features=[location], project_id=project_id)
 
     return location
 
