@@ -20,6 +20,11 @@ export default function FlightCard({ flight }: { flight: Flight }) {
     <div className="flex items-center justify-center min-h-96">
       <Card rounded={true}>
         <div className="grid grid-flow-row auto-rows-max gap-4">
+          <div className="h-8">
+            {flight.name && (
+              <span className="text-lg font-semibold">{flight.name}</span>
+            )}
+          </div>
           {/* preview image */}
           <div className="relative flex items-center justify-center bg-accent3/20">
             {dataProduct && isGeoTIFF(dataProduct.data_type) ? (

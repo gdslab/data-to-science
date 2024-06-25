@@ -25,6 +25,10 @@ def create_flight(
         project_owner = create_user(db)
         project = create_project(db, owner_id=project_owner.id)
         project_id = project.id
+    if "name" not in kwargs:
+        name = "My flight"
+    else:
+        name = kwargs["name"]
     if "acquisition_date" not in kwargs:
         acquisition_date = create_acquisition_date()
     else:
@@ -50,6 +54,7 @@ def create_flight(
     else:
         platform = kwargs["platform"]
     flight_in = FlightCreate(
+        name=name,
         acquisition_date=acquisition_date,
         altitude=altitude,
         side_overlap=side_overlap,

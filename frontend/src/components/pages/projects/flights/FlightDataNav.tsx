@@ -24,13 +24,16 @@ export default function FlightDataNav() {
                 flight.id === flightId
                   ? 'border-accent2 border-4'
                   : 'border-slate-400 border-2',
-                'flex flex-col items-center justify-center h-36 min-h-36 w-36 bg-white hover:border-accent2 rounded-md'
+                'flex flex-col items-center justify-center h-36 min-h-36 w-36 bg-white hover:border-accent2 rounded-md p-1'
               )}
               to={`/projects/${projectId}/flights/${flight.id}/data`}
             >
               <img className="w-8" src={UASIcon} />
               <span className="block text-lg">{flight.sensor}</span>
               {flight.acquisition_date}
+              <span className="w-full text-center text-slate-700 text-sm font-light truncate">
+                {flight.name ? flight.name : ''}
+              </span>
               <HintText>{flight.platform}</HintText>
             </Link>
           ))}

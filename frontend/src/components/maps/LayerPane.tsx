@@ -363,8 +363,9 @@ export default function LayerPane({
                             <img src={UASIcon} width={'50%'} />
                           </div>
                           <div className="col-span-5 flex flex-col items-start gap-2">
-                            <strong className="font-bold text-slate-700">
-                              {formatDate(flight.acquisition_date)}
+                            <strong className="w-full font-bold text-slate-700 truncate">
+                              {formatDate(flight.acquisition_date)}{' '}
+                              {flight.name && `(${flight.name})`}
                             </strong>
                             <div className="grid grid-rows-2 text-slate-700 text-sm gap-1.5">
                               <div className="grid grid-cols-2 gap-4">

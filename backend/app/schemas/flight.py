@@ -8,6 +8,7 @@ from app.schemas.data_product import DataProduct
 
 # shared properties
 class FlightBase(BaseModel):
+    name: str | None = None
     acquisition_date: date | None = None
     altitude: float | None = None
     side_overlap: float | None = None

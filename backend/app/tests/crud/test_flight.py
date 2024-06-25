@@ -18,12 +18,14 @@ def test_create_flight(db: Session) -> None:
     pilot = create_user(db)
     project_owner = create_user(db)
     project = create_project(db, owner_id=project_owner.id)
+    name = "Test Flight"
     acquisition_date = date.today()
     altitude = 100
     side_overlap = 60
     forward_overlap = 75
     flight = create_flight(
         db,
+        name=name,
         acquisition_date=acquisition_date,
         altitude=altitude,
         side_overlap=side_overlap,
@@ -34,6 +36,7 @@ def test_create_flight(db: Session) -> None:
         pilot_id=pilot.id,
     )
     assert flight
+    assert name == flight.name
     assert acquisition_date == flight.acquisition_date
     assert altitude == flight.altitude
     assert side_overlap == flight.side_overlap
@@ -50,6 +53,7 @@ def test_get_flight(db: Session) -> None:
         db, project_id=flight.project_id, flight_id=flight.id
     )
     assert stored_flight and stored_flight["result"]
+    assert flight.name == stored_flight["result"].name
     assert flight.id == stored_flight["result"].id
     assert flight.acquisition_date == stored_flight["result"].acquisition_date
     assert flight.altitude == stored_flight["result"].altitude
