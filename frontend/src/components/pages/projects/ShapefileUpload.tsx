@@ -1,3 +1,4 @@
+import { FeatureCollection } from 'geojson';
 import { useEffect, useState } from 'react';
 import Uppy from '@uppy/core';
 import DashboardModal from '@uppy/react/lib/DashboardModal';
@@ -6,8 +7,6 @@ import XHRUpload from '@uppy/xhr-upload';
 // Don't forget the CSS: core and the UI components + plugins you are using.
 import '@uppy/core/dist/style.min.css';
 import '@uppy/dashboard/dist/style.min.css';
-
-import { FeatureCollection } from './Project';
 
 // Don’t forget to keep the Uppy instance outside of your component.
 function createUppy(endpoint: string) {

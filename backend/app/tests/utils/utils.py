@@ -207,4 +207,4 @@ def get_geojson_feature_collection(
             },
         }
     else:
-        raise ValueError("Unknown geometry type provided")
+        raise ValueError(f"Unknown geometry type provided: {geom_type}")

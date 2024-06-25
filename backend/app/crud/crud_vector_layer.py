@@ -8,6 +8,7 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
+from app.api.utils import create_vector_layer_preview
 from app.crud.base import CRUDBase
 from app.models.vector_layer import VectorLayer
 from app.schemas.vector_layer import VectorLayerCreate, VectorLayerUpdate
@@ -80,8 +81,15 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
         )
         with db as session:
             vector_layers = session.scalars(statement).all()
+            features = [Feature(**json.loads(feature)) for feature in vector_layers]
+            # Create preview image (if one does not exist)
+            preview_img = create_vector_layer_preview(
+                project_id=project_id,
+                layer_id=layer_id,
+                features=features,
+            )
             # Deserialize features and create Feature objects for each feature
-            return [Feature(**json.loads(feature)) for feature in vector_layers]
+            return features
 
     def get_multi_by_project(
         self, db: Session, project_id: UUID
@@ -107,7 +115,13 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
             ):
                 feature = Feature(**json.loads(feature[0]))
                 vector_layers[feature.properties["layer_id"]].append(feature)
-
+        for layer_id in vector_layers.keys():
+            # Create preview image (if one does not exist)
+            preview_img = create_vector_layer_preview(
+                project_id=project_id,
+                layer_id=layer_id,
+                features=vector_layers[layer_id],
+            )
         # Each list element is a list of features from a feature collection
         return list(vector_layers.values())
 

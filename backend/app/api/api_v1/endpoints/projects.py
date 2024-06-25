@@ -2,6 +2,7 @@ import logging
 from typing import Any
 from uuid import UUID
 
+from geojson_pydantic import Feature
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
@@ -17,7 +18,6 @@ router = APIRouter()
 
 @router.post("", response_model=schemas.Project, status_code=status.HTTP_201_CREATED)
 def create_project(
-    request: Request,
     project_in: schemas.ProjectCreate,
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
@@ -49,8 +49,9 @@ def create_project(
     )
     if project_in_db["result"]:
         coordinates = project_in_db["result"].field["geometry"]["coordinates"]
+        features = [Feature(**project_in_db["result"].field)]
         try:
-            create_project_field_preview(request, project["result"].id, coordinates)
+            create_project_field_preview(project["result"].id, features)
         except Exception:
             logger.exception("Unable to create preview map")
     return project["result"]

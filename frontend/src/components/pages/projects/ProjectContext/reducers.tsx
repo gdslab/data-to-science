@@ -1,5 +1,4 @@
-import { FeatureCollection } from 'geojson';
-
+import { MapLayerFeatureCollection } from '../Project';
 import { GeoJSONFeature } from '../Project';
 import { Flight } from '../Project';
 import { Project } from '../ProjectList';
@@ -60,7 +59,7 @@ function flightsFilterSelectionReducer(
   }
 }
 
-function mapLayersReducer(state: FeatureCollection[], action: MapLayersAction) {
+function mapLayersReducer(state: MapLayerFeatureCollection[], action: MapLayersAction) {
   switch (action.type) {
     case 'set': {
       return action.payload ? action.payload : [];

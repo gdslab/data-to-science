@@ -72,11 +72,9 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                 return data_product
             elif data_product and user_id:
                 project_id = data_product.flight.project_id
-                print(project_id)
                 project_member = crud.project_member.get_by_project_and_member_id(
                     db, project_id=project_id, member_id=user_id
                 )
-                print(project_member)
                 if project_member:
                     set_url_attr(data_product, upload_dir)
                     return data_product

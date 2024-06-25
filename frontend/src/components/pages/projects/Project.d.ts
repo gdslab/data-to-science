@@ -1,7 +1,9 @@
+import { Feature, FeatureCollection, Geometry } from 'geojson';
+
 import { FieldCampaignInitialValues } from './fieldCampaigns/FieldCampaign';
 
 // geojson object representing project field boundary
-export type FieldGeoJSONFeature = Omit<GeoJSON.Feature, 'properties'> & {
+export type FieldGeoJSONFeature = Omit<Feature, 'properties'> & {
   properties: {
     [key: string]: string;
   };
@@ -20,24 +22,35 @@ export interface GeoJSONFeature {
   };
 }
 
-type FieldGeoJSONFeature = Omit<GeoJSON.Feature, 'properties'> & {
+type FieldGeoJSONFeature = Omit<Feature, 'properties'> & {
   properties: FieldProperties;
 };
 
-type MapLayerFeature = Omit<GeoJSON.Feature, 'properties'> & {
-  properties: {
-    id: string;
-    layer_id: string;
-    layer_name: string;
-    properties?: { [key: string]: any };
-  };
+type MapLayerProperties = {
+  id: string;
+  layer_id: string;
+  layer_name: string;
+  properties?: { [key: string]: any };
 };
 
-export type MapLayerFeatureCollection = GeoJSON.FeatureCollection<MapLayerFeature>;
+interface MapLayerFeature<G extends Geometry | null = Geometry, P = MapLayerProperties>
+  extends Feature<G, P> {}
 
-export interface FeatureCollection {
-  type: 'FeatureCollection';
-  features: GeoJSON.Feature[];
+// export interface MapLayerFeatureCollection
+//   extends FeatureCollection<MapLayerFeature> {
+//   metadata: {
+//     preview_url: string;
+//   };
+// }
+
+export interface MapLayerFeatureCollection<
+  G extends Geometry | null = Geometry,
+  P = MapLayerProperties
+> extends FeatureCollection<G, P> {
+  features: Array<MapLayerFeature<G, P>>;
+  metadata: {
+    preview_url: string;
+  };
 }
 
 export interface Location {

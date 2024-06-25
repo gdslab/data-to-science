@@ -1,6 +1,9 @@
+import os
+
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
+from app.core.config import settings
 from app.tests.utils.data_product_metadata import create_metadata
 from app.tests.utils.project import create_project
 from app.tests.utils.vector_layers import (
@@ -98,6 +101,11 @@ def test_read_vector_layer(db: Session) -> None:
     assert point_fc.features[0].properties.get("properties") == point_features[
         0
     ].properties.get("properties")
+    project_id = point_fc.features[0].properties["project_id"]
+    layer_id = point_fc.features[0].properties["layer_id"]
+    assert os.path.exists(
+        f"{settings.TEST_STATIC_DIR}/projects/{project_id}/vector/{layer_id}/preview.png"
+    )
 
 
 def test_read_vector_layers(db: Session) -> None:
@@ -125,6 +133,9 @@ def test_read_vector_layers(db: Session) -> None:
             for feature in features:
                 assert feature.properties
                 assert feature.properties.get("layer_id") == layer_id
+            assert os.path.exists(
+                f"{settings.TEST_STATIC_DIR}/projects/{project.id}/vector/{layer_id}/preview.png"
+            )
 
 
 def test_remove_vector_layer(db: Session) -> None:

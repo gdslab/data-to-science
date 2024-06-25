@@ -2,7 +2,7 @@ from typing import Any, TypeVar
 from uuid import UUID
 
 from geojson_pydantic import FeatureCollection
-from pydantic import BaseModel
+from pydantic import AnyHttpUrl, BaseModel
 
 
 Props = TypeVar("Props", bound=dict[str, Any] | BaseModel)
@@ -37,3 +37,11 @@ class VectorLayer(VectorLayerInDBBase):
 
 class VectorLayerInDB(VectorLayerInDBBase):
     pass
+
+
+class Metadata(BaseModel):
+    preview_url: AnyHttpUrl
+
+
+class VectorLayerFeatureCollection(FeatureCollection):
+    metadata: Metadata

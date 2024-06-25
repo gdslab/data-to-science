@@ -1,7 +1,5 @@
-import clsx from 'clsx';
-import { useFormikContext } from 'formik';
 import { FeatureCollection } from 'geojson';
-import { ChangeEvent, useState } from 'react';
+import { ChangeEvent } from 'react';
 
 import { Status } from '../../../Alert';
 import ConnectForm from '../../../ConnectForm';

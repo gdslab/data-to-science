@@ -10,6 +10,7 @@ type ConfirmationModal = {
   btnType?: string;
   confirmText: string;
   content: string;
+  iconSize?: number;
   onConfirm: () => void;
   rejectText: string;
   title: string;
@@ -20,6 +21,7 @@ export default function ConfirmationModal({
   btnType = 'normal',
   confirmText,
   content,
+  iconSize = 16,
   onConfirm,
   rejectText,
   title,
@@ -36,7 +38,7 @@ export default function ConfirmationModal({
       {btnType === 'trashIcon' && (
         <button type="button" onClick={() => setOpen(true)}>
           <span className="sr-only">Remove</span>
-          <TrashIcon className="w-4 h-4" />
+          <TrashIcon height={iconSize} width={iconSize} />
         </button>
       )}
       <Modal open={open} setOpen={setOpen}>

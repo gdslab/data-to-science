@@ -1,8 +1,8 @@
 import axios, { AxiosResponse } from 'axios';
-import { FeatureCollection } from 'geojson';
 import { createContext, useContext, useEffect, useReducer } from 'react';
 import { Params, useParams } from 'react-router-dom';
 
+import { MapLayerFeatureCollection } from '../Project';
 import { GeoJSONFeature } from '../Project';
 import { Project } from '../ProjectList';
 import { ProjectMember } from '../ProjectAccess';
@@ -32,7 +32,7 @@ import { Flight } from '../Project';
 interface Context {
   location: GeoJSONFeature | null;
   locationDispatch: React.Dispatch<LocationAction>;
-  mapLayers: FeatureCollection[];
+  mapLayers: MapLayerFeatureCollection[];
   mapLayersDispatch: React.Dispatch<MapLayersAction>;
   project: Project | null;
   projectDispatch: React.Dispatch<ProjectAction>;
@@ -177,7 +177,7 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
   useEffect(() => {
     async function getMapLayers() {
       try {
-        const response: AxiosResponse<FeatureCollection[]> = await axios.get(
+        const response: AxiosResponse<MapLayerFeatureCollection[]> = await axios.get(
           `${import.meta.env.VITE_API_V1_STR}/projects/${
             params.projectId
           }/vector_layers`

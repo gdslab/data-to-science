@@ -1,9 +1,9 @@
 import { useFormikContext } from 'formik';
+import { FeatureCollection } from 'geojson';
 import { useEffect, useRef } from 'react';
 import { GeoJSON } from 'react-leaflet/GeoJSON';
 import { useLeafletContext } from '@react-leaflet/core';
 
-import { FeatureCollection } from '../pages/projects/Project';
 import { useProjectContext } from '../pages/projects/ProjectContext';
 import { updateLocation } from './GeomanControl';
 

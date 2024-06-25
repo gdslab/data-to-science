@@ -1,5 +1,4 @@
 import axios, { isAxiosError, AxiosResponse } from 'axios';
-import { FeatureCollection } from 'geojson';
 import { useEffect, useState } from 'react';
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { useParams } from 'react-router-dom';
@@ -12,6 +11,7 @@ import MapLayerFileInput from './MapLayerFileInput';
 import Modal from '../../../Modal';
 import { useProjectContext } from '../ProjectContext';
 import { validationSchema } from './validationSchema';
+import { MapLayerFeatureCollection } from '../Project';
 
 export interface MapLayerFormInput {
   layerName: string;
@@ -46,7 +46,7 @@ export default function MapLayerUpload() {
   const onSubmit: SubmitHandler<MapLayerFormInput> = async (values) => {
     setStatus(null);
     try {
-      const response: AxiosResponse<FeatureCollection> = await axios.post(
+      const response: AxiosResponse<MapLayerFeatureCollection> = await axios.post(
         `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/vector_layers`,
         { layer_name: values.layerName, geojson: JSON.parse(values.geojson) }
       );
@@ -90,7 +90,7 @@ export default function MapLayerUpload() {
   }
 
   return (
-    <div>
+    <div className="w-full flex justify-center">
       <Button type="button" size="sm" onClick={handleClick}>
         Add New Map Layer
       </Button>
