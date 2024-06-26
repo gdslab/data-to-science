@@ -1,3 +1,4 @@
+import logging
 import os
 import secrets
 from typing import Any, Annotated
@@ -24,6 +25,32 @@ from app.core.config import settings
 
 
 router = APIRouter()
+
+logger = logging.getLogger("__name__")
+
+
+def str_to_bool(value: str | bool) -> bool:
+    """Converts a boolean str into a boolean object.
+
+    Args:
+        value (str | bool): String value to convert to bool or bool value.
+
+    Raises:
+        ValueError: Raised if string value does not match a boolean value.
+
+    Returns:
+        bool: Returns True if string value matched one of the values in the "True" set.
+    """
+    # If already a bool object, return it
+    if isinstance(value, bool):
+        return value
+
+    if value.lower() in {"1", "true"}:
+        return True
+    elif value.lower() in {"0", "false"}:
+        return False
+    else:
+        raise ValueError(f"Invalid boolean string: {value}")
 
 
 @router.post("/access-token")
@@ -53,8 +80,13 @@ def login_access_token(
 
     # Toggle secure off if running tests
     secure_cookie = True
-    if os.environ.get("RUNNING_TESTS", False):
-        secure_cookie = False
+    try:
+        if str_to_bool(os.environ.get("RUNNING_TESTS", False)) or not str_to_bool(
+            os.environ.get("HTTP_COOKIE_SECURE", True)
+        ):
+            secure_cookie = False
+    except ValueError:
+        logger.exception("Defaulting to secure cookie")
 
     response.set_cookie(
         key="access_token",
