@@ -80,11 +80,13 @@ def login_access_token(
 
     # Toggle secure off if running tests
     secure_cookie = True
+    samesite = "none"
     try:
         if str_to_bool(os.environ.get("RUNNING_TESTS", False)) or not str_to_bool(
             os.environ.get("HTTP_COOKIE_SECURE", True)
         ):
             secure_cookie = False
+            samesite = "lax"
     except ValueError:
         logger.exception("Defaulting to secure cookie")
 
@@ -93,7 +95,7 @@ def login_access_token(
         value=f"Bearer {access_token}",
         httponly=True,
         secure=secure_cookie,
-        samesite="none",
+        samesite=samesite,
     )
     return status.HTTP_200_OK
 
