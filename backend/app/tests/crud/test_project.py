@@ -123,7 +123,7 @@ def test_get_projects_by_owner(db: Session) -> None:
     create_project(db, owner_id=user.id)
     create_project(db, owner_id=user.id)
     create_project(db, owner_id=user.id)
-    projects = crud.project.get_user_project_list(db, user_id=user.id)
+    projects = crud.project.get_user_project_list(db, user=user)
     assert projects
     assert isinstance(projects, list)
     assert len(projects) == 3
@@ -139,7 +139,7 @@ def test_get_projects_by_project_member(db: Session) -> None:
     create_project_member(db, member_id=user.id, project_id=project1.id)
     create_project_member(db, member_id=user.id, project_id=project2.id)
     create_project_member(db, member_id=user.id, project_id=project3.id)
-    projects = crud.project.get_user_project_list(db, user_id=user.id)
+    projects = crud.project.get_user_project_list(db, user=user)
     assert projects
     assert isinstance(projects, list)
     assert len(projects) == 3
@@ -157,7 +157,7 @@ def test_get_projects_with_edit_permission(db: Session) -> None:
     # can edit as manager and owner
     create_project_member(db, role="manager", member_id=user.id, project_id=project2.id)
     create_project_member(db, role="owner", member_id=user.id, project_id=project3.id)
-    projects = crud.project.get_user_project_list(db, user_id=user.id, edit_only=True)
+    projects = crud.project.get_user_project_list(db, user=user, edit_only=True)
     assert projects
     assert isinstance(projects, list)
     assert len(projects) == 2
@@ -197,12 +197,23 @@ def test_get_projects_with_data_products_by_type(db: Session) -> None:
             )
     # get list of projects with raster data products
     projects_with_rasters = crud.project.get_user_project_list(
-        db, user_id=user.id, has_raster=True
+        db, user=user, has_raster=True
     )
     assert projects_with_rasters
     assert isinstance(projects_with_rasters, list)
     assert len(projects_with_rasters) == 1
     assert projects_with_rasters[0].id == project1.id
+
+
+def test_get_all_projects(db: Session) -> None:
+    user = create_user(db, is_superuser=True)
+    project1 = create_project(db, owner_id=user.id)
+    project2 = create_project(db, owner_id=user.id)
+    project3 = create_project(db)
+    projects = crud.project.get_user_project_list(db, user=user, include_all=True)
+    assert len(projects) == 3
+    for project in projects:
+        assert project.id in [project1.id, project2.id, project3.id]
 
 
 def test_update_project(db: Session) -> None:
@@ -307,7 +318,7 @@ def test_get_projects_ignores_deactivated_projects(db: Session) -> None:
     project2 = create_project(db, owner_id=user.id)
     project3 = create_project(db, owner_id=user.id)
     crud.project.deactivate(db, project_id=project3.id)
-    projects = crud.project.get_user_project_list(db, user_id=user.id)
+    projects = crud.project.get_user_project_list(db, user=user)
     assert projects
     assert isinstance(projects, list)
     assert len(projects) == 2

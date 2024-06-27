@@ -27,6 +27,7 @@ class MapMaker:
             basemap = "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}"
 
         headers = {"User-Agent": "StaticMap", "Referer": settings.API_DOMAIN}
+
         self.map = StaticMap(
             width=size[0],
             height=size[1],

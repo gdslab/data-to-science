@@ -2,6 +2,9 @@ import { createBrowserRouter } from 'react-router-dom';
 
 // pages and data loaders
 import Dashboard from './components/pages/admin/Dashboard';
+import DashboardMap, {
+  loader as dashboardMapLoader,
+} from './components/pages/admin/DashboardMap';
 import DashboardSiteStatistics, {
   loader as dashboardSiteStatisticsLoader,
 } from './components/pages/admin/DashboardSiteStatistics';
@@ -111,6 +114,11 @@ export const router = createBrowserRouter([
             path: '/admin/dashboard',
             element: <DashboardSiteStatistics />,
             loader: dashboardSiteStatisticsLoader,
+          },
+          {
+            path: '/admin/dashboard/map',
+            element: <DashboardMap />,
+            loader: dashboardMapLoader,
           },
           {
             path: '/admin/dashboard/users',

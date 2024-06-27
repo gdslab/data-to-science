@@ -77,33 +77,40 @@ export default function SidePanel() {
                 </Link>
               </li>
 
-              {/* <li>
-                <a
-                  href="#"
-                  className="group relative flex justify-center rounded px-2 py-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+              <li>
+                <Link
+                  to="/admin/dashboard/map"
+                  className={clsx(
+                    'group relative flex justify-center rounded px-2 py-1.5',
+                    {
+                      'bg-blue-50 text-blue-700': currentPage === 'map',
+                      'text-gray-500 hover:bg-gray-50 hover:text-gray-700':
+                        currentPage !== 'map',
+                    }
+                  )}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="size-5 opacity-75"
                     fill="none"
                     viewBox="0 0 24 24"
+                    strokeWidth="1.5"
                     stroke="currentColor"
-                    strokeWidth="2"
+                    className="size-6"
                   >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                      d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z"
                     />
                   </svg>
 
                   <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
-                    Billing
+                    Projects Map
                   </span>
-                </a>
+                </Link>
               </li>
 
-              <li>
+              {/* <li>
                 <a
                   href="#"
                   className="group relative flex justify-center rounded px-2 py-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
