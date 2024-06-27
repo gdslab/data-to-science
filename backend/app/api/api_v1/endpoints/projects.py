@@ -70,21 +70,24 @@ def read_project(
 
 @router.get("", response_model=list[schemas.Project])
 def read_projects(
+    request: Request,
     edit_only: bool = False,
     skip: int = 0,
     limit: int = 100,
     has_raster: bool = False,
+    include_all: bool = False,
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Retrieve list of projects current user belongs to."""
     projects = crud.project.get_user_project_list(
         db,
-        user_id=current_user.id,
+        user=current_user,
         edit_only=edit_only,
         skip=skip,
         limit=limit,
         has_raster=has_raster,
+        include_all=include_all,
     )
     return projects
 

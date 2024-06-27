@@ -9,7 +9,7 @@ from sqlalchemy import func, select, update, or_
 from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm import joinedload, Session
 
-from app import crud, models, schemas
+from app import crud
 from app.crud.base import CRUDBase
 from app.models.data_product import DataProduct
 from app.models.flight import Flight
@@ -17,6 +17,7 @@ from app.models.location import Location
 from app.models.project import Project
 from app.models.project_member import ProjectMember
 from app.models.team_member import TeamMember
+from app.models.user import User
 from app.models.utils.user import utcnow
 from app.schemas.project import ProjectCreate, ProjectUpdate
 
@@ -201,16 +202,19 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
     def get_user_project_list(
         self,
         db: Session,
-        user_id: UUID,
+        user: User,
         edit_only: bool = False,
         skip: int = 0,
         limit: int = 100,
         has_raster: bool = False,
+        include_all: bool = False,
     ) -> Sequence[Project]:
         """List of projects the user belongs to."""
+        # get user id and convert to string
+        user_id = str(user.id)
         # project member
         if edit_only:
-            query_by_project_member = (
+            statement = (
                 select(
                     Project,
                     ProjectMember,
@@ -226,8 +230,19 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     or_(ProjectMember.role == "manager", ProjectMember.role == "owner")
                 )
             )
+        elif user.is_superuser and include_all:
+            statement = (
+                select(
+                    Project,
+                    func.ST_AsGeoJSON(Location),
+                    func.ST_X(func.ST_Centroid(Location.geom)).label("center_x"),
+                    func.ST_Y(func.ST_Centroid(Location.geom)).label("center_y"),
+                )
+                .join(Project.location)
+                .where(Project.is_active)
+            )
         else:
-            query_by_project_member = (
+            statement = (
                 select(
                     Project,
                     ProjectMember,
@@ -240,25 +255,41 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 .where(Project.is_active)
                 .where(ProjectMember.member_id == user_id)
             )
+
         with db as session:
-            projects = session.execute(query_by_project_member).all()
+            projects = session.execute(statement).all()
             final_projects = []
             # indicate if project member is also project owner
             for project in projects:
-                setattr(
-                    project[0],
-                    "is_owner",
-                    user_id == project[0].owner_id or project[1].role == "owner",
-                )
-                field_dict = json.loads(project[2])
+                # first element always project instance
+                project_instance = project[0]
+                if user.is_superuser and include_all:
+                    # set field, center x, and center y for superuser
+                    field_dict = json.loads(project[1])
+                    center_x = project[2]
+                    center_y = project[3]
+                else:
+                    # set role, field, center x, and center y for regular user
+                    project_role = project[1].role
+                    field_dict = json.loads(project[2])
+                    center_x = project[3]
+                    center_y = project[4]
+
+                # skip setting member role if this is a superuser
+                if not user.is_superuser:
+                    setattr(
+                        project_instance,
+                        "is_owner",
+                        user_id == project_instance.owner_id or project_role == "owner",
+                    )
                 field_dict["properties"].update(
-                    {"center_x": project[3], "center_y": project[4]}
+                    {"center_x": center_x, "center_y": center_y}
                 )
-                setattr(project[0], "field", field_dict)
+                setattr(project_instance, "field", field_dict)
                 flight_count = 0
                 most_recent_flight = None
                 has_required_data_type = False
-                for flight in project[0].flights:
+                for flight in project_instance.flights:
                     if flight.is_active:
                         if most_recent_flight:
                             if most_recent_flight < flight.acquisition_date:
@@ -275,10 +306,10 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                             ]
                             if len(data_products) > 0:
                                 has_required_data_type = True
-                setattr(project[0], "flight_count", flight_count)
-                setattr(project[0], "most_recent_flight", most_recent_flight)
+                setattr(project_instance, "flight_count", flight_count)
+                setattr(project_instance, "most_recent_flight", most_recent_flight)
                 if not has_raster or (has_raster and has_required_data_type):
-                    final_projects.append(project[0])
+                    final_projects.append(project_instance)
         return final_projects
 
     def update_project(

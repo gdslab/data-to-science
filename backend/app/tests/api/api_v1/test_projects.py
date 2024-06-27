@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.schemas.data_product import DataProductCreate
 from app.schemas.project import ProjectUpdate
 from app.schemas.project_member import ProjectMemberCreate
+from app.schemas.user import UserUpdate
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.flight import create_flight
 from app.tests.utils.location import create_location
@@ -22,7 +23,7 @@ from app.tests.utils.project import (
 from app.tests.utils.project_member import create_project_member
 from app.tests.utils.team import create_team, random_team_name, random_team_description
 from app.tests.utils.team_member import create_team_member
-from app.tests.utils.user import create_user
+from app.tests.utils.user import create_user, update_regular_user_to_superuser
 from app.tests.utils.utils import get_geojson_feature_collection
 
 API_URL = f"{settings.API_V1_STR}/projects"
@@ -204,6 +205,26 @@ def test_get_projects(
             assert project["is_owner"] is True
         if str(project2.id) == project["id"]:
             assert project["is_owner"] is False
+
+
+def test_get_projects_by_superuser(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    updated_user = update_regular_user_to_superuser(db, user_id=current_user.id)
+
+    # create three projects with only two owned by current user
+    project1 = create_project(db, owner_id=current_user.id)
+    project2 = create_project(db, owner_id=current_user.id)
+    project3 = create_project(db)
+    # request projects
+    response = client.get(API_URL, params={"include_all": True})
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert type(response_data) is list
+    assert len(response_data) == 3
+    for project in response_data:
+        assert project["id"] in [str(project1.id), str(project2.id), str(project3.id)]
 
 
 def test_get_projects_with_specific_data_type(
