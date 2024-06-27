@@ -16,7 +16,7 @@ interface AlertProps {
 
 export interface Status {
   type: AlertType;
-  msg: string;
+  msg: string | React.ReactElement;
 }
 
 function getAlertProps(alertType: AlertType) {
@@ -180,7 +180,7 @@ export default function Alert({ alertType, children }: AlertProps) {
       <div className={`${color[1]} flex items-center gap-4`}>
         {Icon}
         <strong className="block font-medium"> {title} </strong>
-        <span className={color[2]}>{children}</span>
+        <div className={color[2]}>{children}</div>
       </div>
     </div>
   );

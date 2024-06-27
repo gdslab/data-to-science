@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
-import { Formik, Form } from 'formik';
+import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { Fragment, useContext, useEffect, useState } from 'react';
 import seedrandom from 'seedrandom';
 import {
@@ -7,15 +7,16 @@ import {
   DocumentDuplicateIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline';
+import { yupResolver } from '@hookform/resolvers/yup';
 
-import Alert, { Status } from '../../Alert';
-import AuthContext, { User } from '../../../AuthContext';
-import { Button, OutlineButton } from '../../Buttons';
-import Card from '../../Card';
-import HintText from '../../HintText';
-import { TextField } from '../../InputFields';
 import ProfilePictureUpload from './ProfilePictureUpload';
 import { passwordHintText } from './RegistrationForm';
+import Alert, { Status } from '../../Alert';
+import { Button, OutlineButton } from '../../Buttons';
+import Card from '../../Card';
+import { InputField } from '../../FormFields';
+import HintText from '../../HintText';
+import AuthContext, { User } from '../../../AuthContext';
 
 import { classNames } from '../../utils';
 import {
@@ -69,65 +70,82 @@ function ChangePasswordForm({
     setStatus(null);
   }, []);
 
-  return (
-    <Formik
-      initialValues={{ passwordCurrent: '', passwordNew: '', passwordNewRetype: '' }}
-      validationSchema={passwordChangeValidationSchema}
-      onSubmit={async (values) => {
-        setStatus(null);
-        try {
-          const data = {
-            current_password: values.passwordCurrent,
-            new_password: values.passwordNew,
-          };
-          const response = await axios.post(
-            `${import.meta.env.VITE_API_V1_STR}/auth/change-password`,
-            data,
-            {
-              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-              withCredentials: true,
-            }
-          );
-          if (response) {
-            if (response.status === 200) {
-              setStatus({ type: 'success', msg: 'Password changed' });
-              setShowChangePasswordForm(false);
-            } else {
-              setStatus({ type: 'error', msg: 'Unable to change password' });
-            }
-          }
-        } catch (err) {
-          if (axios.isAxiosError(err)) {
-            setStatus({ type: 'error', msg: err.response?.data.detail });
-          } else {
-            setStatus({ type: 'error', msg: 'Unable to change password' });
-          }
+  const defaultValues = {
+    passwordCurrent: '',
+    passwordNew: '',
+    passwordNewRetype: '',
+  };
+
+  type ChangePasswordFormData = {
+    passwordCurrent: string;
+    passwordNew: string;
+    passwordNewRetype: string;
+  };
+
+  const methods = useForm<ChangePasswordFormData>({
+    defaultValues,
+    resolver: yupResolver(passwordChangeValidationSchema),
+  });
+  const {
+    formState: { isDirty, isSubmitting },
+    handleSubmit,
+  } = methods;
+
+  const onSubmit: SubmitHandler<ChangePasswordFormData> = async (values) => {
+    setStatus(null);
+    try {
+      const data = {
+        current_password: values.passwordCurrent,
+        new_password: values.passwordNew,
+      };
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_V1_STR}/auth/change-password`,
+        data,
+        {
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          withCredentials: true,
         }
-      }}
-    >
-      {({ dirty, isSubmitting }) => (
-        <Form className="flex flex-col gap-4">
-          <HintText>{passwordHintText}</HintText>
-          <TextField label="Current Password" name="passwordCurrent" type="password" />
-          <TextField label="New Password" name="passwordNew" type="password" />
-          <TextField
-            label="Retype New Password"
-            name="passwordNewRetype"
-            type="password"
-          />
-          <Button type="submit" size="sm" disabled={!dirty}>
-            {isSubmitting ? 'Processing...' : 'Change Password'}
-          </Button>
-          <OutlineButton
-            type="button"
-            size="sm"
-            onClick={() => setShowChangePasswordForm(false)}
-          >
-            Cancel
-          </OutlineButton>
-        </Form>
-      )}
-    </Formik>
+      );
+      if (response) {
+        if (response.status === 200) {
+          setStatus({ type: 'success', msg: 'Password changed' });
+          setShowChangePasswordForm(false);
+        } else {
+          setStatus({ type: 'error', msg: 'Unable to change password' });
+        }
+      }
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        setStatus({ type: 'error', msg: err.response?.data.detail });
+      } else {
+        setStatus({ type: 'error', msg: 'Unable to change password' });
+      }
+    }
+  };
+
+  return (
+    <FormProvider {...methods}>
+      <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
+        <HintText>{passwordHintText}</HintText>
+        <InputField label="Current Password" name="passwordCurrent" type="password" />
+        <InputField label="New Password" name="passwordNew" type="password" />
+        <InputField
+          label="Retype New Password"
+          name="passwordNewRetype"
+          type="password"
+        />
+        <Button type="submit" size="sm" disabled={!isDirty}>
+          {isSubmitting ? 'Processing...' : 'Change Password'}
+        </Button>
+        <OutlineButton
+          type="button"
+          size="sm"
+          onClick={() => setShowChangePasswordForm(false)}
+        >
+          Cancel
+        </OutlineButton>
+      </form>
+    </FormProvider>
   );
 }
 
@@ -137,51 +155,66 @@ interface ProfileProps extends Profile {
 }
 
 function ProfileForm({ setStatus, updateProfile, user }: ProfileProps) {
-  return (
-    <Formik
-      initialValues={{ firstName: user.first_name, lastName: user.last_name }}
-      validationSchema={profileValidationSchema}
-      onSubmit={async (values, { setSubmitting }) => {
-        setStatus(null);
-        try {
-          const data = {
-            first_name: values.firstName,
-            last_name: values.lastName,
-          };
-          const response = await axios.put(
-            `${import.meta.env.VITE_API_V1_STR}/users/${user.id}`,
-            data
-          );
-          if (response) {
-            if (response.status === 200) {
-              updateProfile();
-              setStatus({ type: 'success', msg: 'Profile updated' });
-            } else {
-              setStatus({ type: 'error', msg: 'Unable to update profile' });
-            }
-          }
-        } catch (err) {
-          if (axios.isAxiosError(err)) {
-            setStatus({ type: 'error', msg: err.response?.data.detail });
-          } else {
-            setStatus({ type: 'error', msg: 'Unable to update profile' });
-          }
+  const defaultValues = {
+    firstName: user.first_name,
+    lastName: user.last_name,
+  };
+  type ProfileFormData = {
+    firstName: string;
+    lastName: string;
+  };
+
+  const methods = useForm<ProfileFormData>({
+    defaultValues,
+    resolver: yupResolver(profileValidationSchema),
+  });
+  const {
+    formState: { isDirty, isSubmitting },
+    handleSubmit,
+    reset,
+  } = methods;
+
+  const onSubmit: SubmitHandler<ProfileFormData> = async (values) => {
+    setStatus(null);
+    try {
+      const data = {
+        first_name: values.firstName,
+        last_name: values.lastName,
+      };
+      const response = await axios.put(
+        `${import.meta.env.VITE_API_V1_STR}/users/${user.id}`,
+        data
+      );
+      if (response) {
+        if (response.status === 200) {
+          updateProfile();
+          reset(values);
+          setStatus({ type: 'success', msg: 'Profile updated' });
+        } else {
+          setStatus({ type: 'error', msg: 'Unable to update profile' });
         }
-        setSubmitting(false);
-      }}
-    >
-      {({ dirty, isSubmitting }) => (
-        <Form className="flex flex-col gap-4">
-          <div className="flex flex-row justify-between gap-4">
-            <TextField label="First Name" name="firstName" required={false} />
-            <TextField label="Last Name" name="lastName" required={false} />
-          </div>
-          <Button type="submit" size="sm" disabled={!dirty}>
-            {isSubmitting ? 'Processing...' : 'Update'}
-          </Button>
-        </Form>
-      )}
-    </Formik>
+      }
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        setStatus({ type: 'error', msg: err.response?.data.detail });
+      } else {
+        setStatus({ type: 'error', msg: 'Unable to update profile' });
+      }
+    }
+  };
+
+  return (
+    <FormProvider {...methods}>
+      <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
+        <div className="flex flex-row justify-between gap-4">
+          <InputField label="First Name" name="firstName" required={false} />
+          <InputField label="Last Name" name="lastName" required={false} />
+        </div>
+        <Button type="submit" size="sm" disabled={!isDirty}>
+          {isSubmitting ? 'Processing...' : 'Update'}
+        </Button>
+      </form>
+    </FormProvider>
   );
 }
 
