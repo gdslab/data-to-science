@@ -163,3 +163,17 @@ export type Job = {
   data_product_id: string;
   raw_data_id: string;
 };
+
+export type IForester = {
+  dbh: number;
+  depthFile: string;
+  distance: number;
+  imageFile: string;
+  latitude: number;
+  longitude: number;
+  note: string;
+  phoneDirection: number;
+  phoneID: string;
+  species: string;
+  user: string;
+};

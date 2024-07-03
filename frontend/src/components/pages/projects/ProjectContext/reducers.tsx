@@ -1,10 +1,14 @@
-import { MapLayerFeatureCollection } from '../Project';
-import { GeoJSONFeature } from '../Project';
-import { Flight } from '../Project';
+import {
+  GeoJSONFeature,
+  IForester,
+  Flight,
+  MapLayerFeatureCollection,
+} from '../Project';
 import { Project } from '../ProjectList';
 import { ProjectMember } from '../ProjectAccess';
 
 import {
+  IForesterAction,
   LocationAction,
   FlightsAction,
   FlightsFilterSelectionAction,
@@ -13,6 +17,20 @@ import {
   ProjectMembersAction,
   ProjectRoleAction,
 } from './actions';
+
+function iforesterReducer(state: IForester[] | null, action: IForesterAction) {
+  switch (action.type) {
+    case 'set': {
+      return action.payload;
+    }
+    case 'clear': {
+      return null;
+    }
+    default: {
+      return state;
+    }
+  }
+}
 
 function locationReducer(state: GeoJSONFeature | null, action: LocationAction) {
   switch (action.type) {
@@ -153,6 +171,7 @@ function projectRoleReducer(state: string | undefined, action: ProjectRoleAction
 }
 
 export {
+  iforesterReducer,
   locationReducer,
   flightsReducer,
   flightsFilterSelectionReducer,

@@ -2,13 +2,13 @@ import axios, { AxiosResponse } from 'axios';
 import { createContext, useContext, useEffect, useReducer } from 'react';
 import { Params, useParams } from 'react-router-dom';
 
-import { MapLayerFeatureCollection } from '../Project';
-import { GeoJSONFeature } from '../Project';
+import { GeoJSONFeature, IForester, MapLayerFeatureCollection } from '../Project';
 import { Project } from '../ProjectList';
 import { ProjectMember } from '../ProjectAccess';
 import { User } from '../../../../AuthContext';
 
 import {
+  IForesterAction,
   LocationAction,
   FlightsAction,
   FlightsFilterSelectionAction,
@@ -18,6 +18,7 @@ import {
   ProjectRoleAction,
 } from './actions';
 import {
+  iforesterReducer,
   locationReducer,
   flightsReducer,
   flightsFilterSelectionReducer,
@@ -30,6 +31,8 @@ import {
 import { Flight } from '../Project';
 
 interface Context {
+  iforester: IForester[] | null;
+  iforesterDispatch: React.Dispatch<IForesterAction>;
   location: GeoJSONFeature | null;
   locationDispatch: React.Dispatch<LocationAction>;
   mapLayers: MapLayerFeatureCollection[];
@@ -47,6 +50,8 @@ interface Context {
 }
 
 const context: Context = {
+  iforester: null,
+  iforesterDispatch: () => {},
   location: null,
   locationDispatch: () => {},
   mapLayers: [],
@@ -93,6 +98,7 @@ interface ProjectContextProvider {
 }
 
 export function ProjectContextProvider({ children }: ProjectContextProvider) {
+  const [iforester, iforesterDispatch] = useReducer(iforesterReducer, null);
   const [location, locationDispatch] = useReducer(locationReducer, null);
   const [flights, flightsDispatch] = useReducer(flightsReducer, null);
   const [flightsFilterSelection, flightsFilterSelectionDispatch] = useReducer(
@@ -276,6 +282,8 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
   return (
     <ProjectContext.Provider
       value={{
+        iforester,
+        iforesterDispatch,
         flights,
         flightsDispatch,
         flightsFilterSelection,

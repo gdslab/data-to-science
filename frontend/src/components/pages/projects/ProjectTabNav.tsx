@@ -4,6 +4,7 @@ import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 
 import ProjectCampaigns from './ProjectCampaigns';
 import ProjectFlights from './ProjectFlights';
+import ProjectIForester from './ProjectIForester';
 import ProjectVectorData from './ProjectVectorData';
 
 export default function ProjectTabNav() {
@@ -28,6 +29,9 @@ export default function ProjectTabNav() {
         <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium">
           Field Data
         </Tab>
+        <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium">
+          IForester
+        </Tab>
       </TabList>
       <hr className="my-4 border-gray-700" />
       <TabPanels>
@@ -39,6 +43,9 @@ export default function ProjectTabNav() {
         </TabPanel>
         <TabPanel>
           <ProjectCampaigns />
+        </TabPanel>
+        <TabPanel>
+          <ProjectIForester />
         </TabPanel>
       </TabPanels>
     </TabGroup>
