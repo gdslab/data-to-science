@@ -361,7 +361,7 @@ function APIAccessForm({ setStatus, updateProfile, user }: APIAccessForm) {
 
   const exampleURL = `${
     window.location.origin
-  }/static/projects/1/flights/1/data_products/1/mygeotiff.tif&API_KEY=${
+  }/static/projects/1/flights/1/data_products/1/mygeotiff.tif?API_KEY=${
     user.api_access_token ? user.api_access_token : 'MYKEY'
   }`;
 
