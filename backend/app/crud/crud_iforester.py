@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 
 from fastapi.encoders import jsonable_encoder
 from pydantic import UUID4
@@ -37,6 +37,16 @@ class CRUDIForester(CRUDBase[IForester, IForesterCreate, IForesterUpdate]):
         with db as session:
             iforester = session.scalar(statement)
             return iforester
+
+    def get_multi_iforester_by_project_id(
+        self, db: Session, project_id: UUID4
+    ) -> List[IForester]:
+        # query for selecting multi iforester records from single project
+        statement = select(IForester).where(IForester.project_id == project_id)
+        # execute query
+        with db as session:
+            iforesters = session.scalars(statement).all()
+            return iforesters
 
     def update_iforester_by_id(
         self,

@@ -1,9 +1,11 @@
 from sqlalchemy.orm import Session
+from typing import List
 
 
 from app import crud
 from app.schemas.iforester import IForesterCreate, IForesterUpdate
 from app.tests.utils.iforester import create_iforester, EXAMPLE_DATA
+from app.tests.utils.project import create_project
 
 
 def test_create_iforester_record(db: Session) -> None:
@@ -39,6 +41,20 @@ def test_read_iforester_record(db: Session) -> None:
     assert iforester_in_db.phoneID == EXAMPLE_DATA.get("phoneID")
     assert iforester_in_db.species == EXAMPLE_DATA.get("species")
     assert iforester_in_db.user == EXAMPLE_DATA.get("user")
+
+
+def test_read_iforester_records(db: Session) -> None:
+    project = create_project(db)
+    iforester1 = create_iforester(db, project_id=project.id)
+    iforester2 = create_iforester(db, project_id=project.id)
+    iforester3 = create_iforester(db, project_id=project.id)
+    iforester_in_db = crud.iforester.get_multi_iforester_by_project_id(
+        db, project_id=project.id
+    )
+    assert isinstance(iforester_in_db, List)
+    assert len(iforester_in_db) == 3
+    for iforester in iforester_in_db:
+        assert iforester.id in [iforester1.id, iforester2.id, iforester3.id]
 
 
 def test_update_iforester_record(db: Session) -> None:

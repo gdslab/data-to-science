@@ -12,11 +12,11 @@ export default function ProjectIForester() {
   useEffect(() => {
     async function fetchIForesterData(projectId: string) {
       try {
-        const response: AxiosResponse<IForester> = await axios.get(
+        const response: AxiosResponse<IForester[]> = await axios.get(
           `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/iforester`
         );
         if (response.status === 200) {
-          return response.data;
+          setIForesterData(response.data);
         } else {
           return [];
         }
@@ -34,5 +34,5 @@ export default function ProjectIForester() {
     }
   }, []);
 
-  return <div></div>;
+  return <pre>{JSON.stringify(iforesterData, undefined, 2)}</pre>;
 }

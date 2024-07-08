@@ -4,7 +4,27 @@ from typing import Optional
 from pydantic import BaseModel, UUID4
 
 
-# shared properties
+# properties in POST requests
+class IForesterPost(BaseModel):
+    DBH: Optional[float] = None
+    depthFile: Optional[str] = None
+    depthImageFileName: Optional[str] = None
+    distance: Optional[float] = None
+    image: Optional[str] = None
+    imageFile: Optional[str] = None
+    jsonPost: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    note: Optional[str] = None
+    phoneDirection: Optional[float] = None
+    phoneID: Optional[str] = None
+    png: Optional[str] = None
+    RGB1XImageFileName: Optional[str] = None
+    species: Optional[str] = None
+    user: Optional[str] = None
+
+
+# shared properties stored in db
 class IForesterBase(BaseModel):
     dbh: Optional[float] = None
     depthFile: Optional[str] = None

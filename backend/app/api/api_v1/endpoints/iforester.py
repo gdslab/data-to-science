@@ -1,4 +1,6 @@
-from typing import Any
+import base64
+import os
+from typing import Any, List
 
 from fastapi import APIRouter, Depends, status
 from pydantic import UUID4
@@ -11,21 +13,64 @@ from app.core.config import settings
 router = APIRouter()
 
 
+def get_iforester_static_dir(project_id: UUID4):
+    """Get directory where iforester images are stored.
+
+    Args:
+        project_id (UUID4): Project ID associated with iforester files.
+
+    Returns:
+        str: Path to iforester static directory.
+    """
+    if os.environ.get("RUNNING_TESTS") == "1":
+        iforester_static_dir = (
+            f"{settings.TEST_STATIC_DIR}/projects/{project_id}/iforester"
+        )
+    else:
+        iforester_static_dir = f"{settings.STATIC_DIR}/projects/{project_id}/iforester"
+
+    # create folder if it does not exist
+    if not os.path.exists(iforester_static_dir):
+        os.makedirs(iforester_static_dir)
+
+    return iforester_static_dir
+
+
 @router.post("", response_model=schemas.IForester, status_code=status.HTTP_201_CREATED)
 def create_iforester(
-    iforester_in: schemas.IForesterCreate,
+    iforester_in: schemas.IForesterPost,
     project: models.Project = Depends(deps.can_read_write_project),
     db: Session = Depends(deps.get_db),
 ) -> Any:
+    iforester_dict = iforester_in.dict()
+    iforester_dict["dbh"] = iforester_dict.get("DBH")
+    if "DBH" in iforester_dict:
+        del iforester_dict["DBH"]
+    iforester_in_db = schemas.IForesterCreate(**iforester_dict)
     iforester = crud.iforester.create_iforester(
-        db, iforester_in=iforester_in, project_id=project.id
+        db, iforester_in=iforester_in_db, project_id=project.id
     )
+    # decode and write images to disk
+    static_dir = get_iforester_static_dir(project.id)
+    # rgb1x image
+    if iforester_in.image and iforester_in.RGB1XImageFileName:
+        img_file_in_bytes = str.encode(iforester_in.image)
+        with open(
+            os.path.join(static_dir, iforester_in.RGB1XImageFileName), "wb"
+        ) as img_file:
+            img_file.write(base64.decodebytes(img_file_in_bytes))
+    # depth image
+    if iforester_in.png and iforester_in.depthImageFileName:
+        img_file_in_bytes = str.encode(iforester_in.png)
+        with open(
+            os.path.join(static_dir, iforester_in.depthImageFileName), "wb"
+        ) as img_file:
+            img_file.write(base64.decodebytes(img_file_in_bytes))
+
     return iforester
 
 
-@router.get(
-    "/{iforester_id}", response_model=schemas.IForester, status_code=status.HTTP_200_OK
-)
+@router.get("/{iforester_id}", response_model=schemas.IForester)
 def read_iforester(
     iforester_id: UUID4,
     project: models.Project = Depends(deps.can_read_project),
@@ -37,9 +82,18 @@ def read_iforester(
     return iforester
 
 
-@router.put(
-    "/{iforester_id}", response_model=schemas.IForester, status_code=status.HTTP_200_OK
-)
+@router.get("", response_model=List[schemas.IForester])
+def read_multi_iforester(
+    project: models.Project = Depends(deps.can_read_project),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    iforesters = crud.iforester.get_multi_iforester_by_project_id(
+        db, project_id=project.id
+    )
+    return iforesters
+
+
+@router.put("/{iforester_id}", response_model=schemas.IForester)
 def update_iforester(
     iforester_id: UUID4,
     iforester_in: schemas.IForesterUpdate,
