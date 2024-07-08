@@ -1,3 +1,4 @@
+import os
 import shutil
 
 from sqlalchemy import and_, func, or_, select
@@ -6,6 +7,25 @@ from sqlalchemy.orm import Session
 from app import models
 from app.core.config import settings
 from app.schemas import SiteStatistics
+
+
+def get_static_directory_size(static_directory: str) -> float:
+    """Walk down static directory and calculate total disk usage by static files.
+
+    Args:
+        static_directory (str): Path to static directory.
+
+    Returns:
+        float: Total disk usage in bytes.
+    """
+    total_size = 0
+    for dirpath, dirnames, filenames in os.walk(static_directory):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            # skip if symbolic link
+            if not os.path.islink(fp):
+                total_size += os.path.getsize(fp)
+    return total_size
 
 
 def bytes_to_gigabytes(in_bytes: float) -> float:
@@ -142,10 +162,11 @@ def get_site_statistics(db: Session) -> SiteStatistics:
         "other_count": other_count,
     }
 
+    # "used" in this case is for the entire file sys, not just the provided directory
     total, used, free = shutil.disk_usage(settings.STATIC_DIR)
     storage_availability = {
         "total": bytes_to_gigabytes(total),
-        "used": bytes_to_gigabytes(used),
+        "used": bytes_to_gigabytes(get_static_directory_size(settings.STATIC_DIR)),
         "free": bytes_to_gigabytes(free),
     }
 

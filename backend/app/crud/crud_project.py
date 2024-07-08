@@ -276,7 +276,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     center_y = project[4]
 
                 # skip setting member role if this is a superuser
-                if not user.is_superuser:
+                if not user.is_superuser or (user.is_superuser and not include_all):
                     setattr(
                         project_instance,
                         "is_owner",
