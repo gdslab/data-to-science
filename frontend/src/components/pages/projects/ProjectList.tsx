@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 import { useEffect, useMemo, useState } from 'react';
 import { useLoaderData, Link } from 'react-router-dom';
 
@@ -26,19 +26,26 @@ type FieldGeoJSONFeature = Omit<GeoJSON.Feature, 'properties'> & {
 
 export interface Project {
   id: string;
-  title: string;
+  centroid: {
+    x: number;
+    y: number;
+  };
   description: string;
   field: FieldGeoJSONFeature;
   flight_count: number;
+  is_owner: boolean;
+  location_id: string;
   most_recent_flight: string;
   owner_id: string;
-  is_owner: boolean;
+  role: string;
   team_id: string;
-  location_id: string;
+  title: string;
 }
 
 export async function loader() {
-  const response = await axios.get('/api/v1/projects');
+  const response: AxiosResponse<Project[]> = await axios.get(
+    `${import.meta.env.VITE_API_V1_STR}/projects`
+  );
   if (response) {
     return response.data;
   } else {

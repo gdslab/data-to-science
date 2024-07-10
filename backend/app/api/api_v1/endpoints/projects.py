@@ -1,5 +1,5 @@
 import logging
-from typing import Any
+from typing import Any, List
 from uuid import UUID
 
 from geojson_pydantic import Feature
@@ -68,27 +68,30 @@ def read_project(
     return project
 
 
-@router.get("", response_model=list[schemas.Project])
+@router.get("", response_model=List[schemas.project.Projects])
 def read_projects(
-    request: Request,
     edit_only: bool = False,
-    skip: int = 0,
-    limit: int = 100,
     has_raster: bool = False,
     include_all: bool = False,
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Retrieve list of projects current user belongs to."""
-    projects = crud.project.get_user_project_list(
+    projects = crud.project.get_user_projects(
         db,
         user=current_user,
-        edit_only=edit_only,
-        skip=skip,
-        limit=limit,
         has_raster=has_raster,
         include_all=include_all,
     )
+    return projects
+
+
+@router.get("/landing/", response_model=List[schemas.project.Projects])
+def read_projects2(
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    projects = crud.project.get_user_projects(db, user_id=current_user.id)
     return projects
 
 

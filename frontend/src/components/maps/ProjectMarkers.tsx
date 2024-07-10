@@ -27,10 +27,7 @@ export default function ProjectMarkers({ projects }: ProjectMarkersProps) {
       if (projects.length > 0) {
         // add each project that is contained within current map to visible projects
         projects.forEach((project) => {
-          const projCoordinates = L.latLng([
-            project.field.properties.center_y,
-            project.field.properties.center_x,
-          ]);
+          const projCoordinates = L.latLng([project.centroid.y, project.centroid.x]);
           if (context.map.getBounds().contains(projCoordinates)) {
             visibleProjects.push(project.id);
           }
@@ -43,10 +40,7 @@ export default function ProjectMarkers({ projects }: ProjectMarkersProps) {
   useEffect(() => {
     if (projects.length > 0) {
       const projectMarkers = projects.map((project) => {
-        const marker = L.marker([
-          project.field.properties.center_y,
-          project.field.properties.center_x,
-        ]);
+        const marker = L.marker([project.centroid.y, project.centroid.x]);
         marker.on('click', () => {
           activeDataProductDispatch({ type: 'clear', payload: null });
           activeProjectDispatch({ type: 'set', payload: project });
@@ -70,11 +64,8 @@ export default function ProjectMarkers({ projects }: ProjectMarkersProps) {
         <MarkerClusterGroup>
           {projects.map((project) => (
             <Marker
-              key={project.field.properties.id}
-              position={[
-                project.field.properties.center_y,
-                project.field.properties.center_x,
-              ]}
+              key={project.id}
+              position={[project.centroid.y, project.centroid.x]}
               eventHandlers={{
                 click: () => {
                   activeDataProductDispatch({ type: 'clear', payload: null });

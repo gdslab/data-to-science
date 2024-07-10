@@ -50,7 +50,7 @@ export default function Map({ layerPaneHidden }: { layerPaneHidden: boolean }) {
         worldCopyJump={true}
       >
         {!activeProject && <ProjectMarkers projects={projects ? projects : []} />}
-        {activeProject && <ProjectBoundary project={activeProject} />}
+        {activeProject && <ProjectBoundary projectId={activeProject.id} />}
         {activeProject && <ProjectLayersControl project={activeProject} />}
 
         {activeProject &&

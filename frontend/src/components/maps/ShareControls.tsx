@@ -80,7 +80,7 @@ export default function ShareControls({
             className="peer hidden [&:checked_+_label_svg]:block"
             checked={!accessOption}
             onChange={onChange}
-            disabled={!project.is_owner}
+            disabled={project.role !== 'owner'}
           />
           <label
             htmlFor="accessRestricted"
@@ -108,7 +108,7 @@ export default function ShareControls({
             </p>
           </label>
         </div>
-        {project.is_owner ? (
+        {project.role === 'owner' ? (
           <div className="mt-2">
             <input
               type="radio"
@@ -118,7 +118,7 @@ export default function ShareControls({
               className="peer hidden [&:checked_+_label_svg]:block"
               checked={accessOption}
               onChange={onChange}
-              disabled={!project.is_owner}
+              disabled={project.role !== 'owner'}
             />
             <label
               htmlFor="accessUnrestricted"

@@ -196,15 +196,14 @@ def test_get_projects(
     for project in response_data:
         assert "title" in project
         assert "description" in project
-        assert "planting_date" in project
-        assert "harvest_date" in project
-        assert "location_id" in project
-        assert "is_owner" in project
+        assert "role" in project
+        assert "centroid" in project
+        assert "x" in project["centroid"] and "y" in project["centroid"]
         assert str(project1.id) == project["id"] or str(project2.id) == project["id"]
         if str(project1.id) == project["id"]:
-            assert project["is_owner"] is True
+            assert project["role"] == "owner"
         if str(project2.id) == project["id"]:
-            assert project["is_owner"] is False
+            assert project["role"] != "owner"
 
 
 def test_get_projects_by_superuser(
@@ -225,6 +224,24 @@ def test_get_projects_by_superuser(
     assert len(response_data) == 3
     for project in response_data:
         assert project["id"] in [str(project1.id), str(project2.id), str(project3.id)]
+
+
+def test_get_projects_with_include_all_by_non_superuser(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    # create three projects with only two owned by current user
+    project1 = create_project(db, owner_id=current_user.id)
+    project2 = create_project(db, owner_id=current_user.id)
+    project3 = create_project(db)
+    # request projects
+    response = client.get(API_URL, params={"include_all": True})
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert type(response_data) is list
+    assert len(response_data) == 2
+    for project in response_data:
+        assert project["id"] in [str(project1.id), str(project2.id)]
 
 
 def test_get_projects_with_specific_data_type(
