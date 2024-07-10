@@ -1,11 +1,11 @@
 import logging
 import json
-from typing import Sequence, TypedDict
+from typing import List, Sequence, TypedDict
 from uuid import UUID
 
 from fastapi import status
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import func, select, update, or_
+from sqlalchemy import and_, func, select, update, or_
 from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm import joinedload, Session
 
@@ -199,42 +199,18 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     "result": None,
                 }
 
-    def get_user_project_list(
+    def get_user_projects(
         self,
         db: Session,
         user: User,
-        edit_only: bool = False,
-        skip: int = 0,
-        limit: int = 100,
         has_raster: bool = False,
         include_all: bool = False,
-    ) -> Sequence[Project]:
-        """List of projects the user belongs to."""
-        # get user id and convert to string
-        user_id = str(user.id)
-        # project member
-        if edit_only:
+    ) -> List[Project]:
+        # query to select active projects associated with user
+        if include_all and user.is_superuser:
             statement = (
                 select(
                     Project,
-                    ProjectMember,
-                    func.ST_AsGeoJSON(Location),
-                    func.ST_X(func.ST_Centroid(Location.geom)).label("center_x"),
-                    func.ST_Y(func.ST_Centroid(Location.geom)).label("center_y"),
-                )
-                .join(Project.location)
-                .join(Project.members)
-                .where(Project.is_active)
-                .where(ProjectMember.member_id == user_id)
-                .where(
-                    or_(ProjectMember.role == "manager", ProjectMember.role == "owner")
-                )
-            )
-        elif user.is_superuser and include_all:
-            statement = (
-                select(
-                    Project,
-                    func.ST_AsGeoJSON(Location),
                     func.ST_X(func.ST_Centroid(Location.geom)).label("center_x"),
                     func.ST_Y(func.ST_Centroid(Location.geom)).label("center_y"),
                 )
@@ -246,71 +222,39 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 select(
                     Project,
                     ProjectMember,
-                    func.ST_AsGeoJSON(Location),
                     func.ST_X(func.ST_Centroid(Location.geom)).label("center_x"),
                     func.ST_Y(func.ST_Centroid(Location.geom)).label("center_y"),
                 )
-                .join(Project.location)
                 .join(Project.members)
-                .where(Project.is_active)
-                .where(ProjectMember.member_id == user_id)
+                .join(Project.location)
+                .where(and_(Project.is_active, ProjectMember.member_id == user.id))
             )
-
         with db as session:
-            projects = session.execute(statement).all()
             final_projects = []
-            # indicate if project member is also project owner
-            for project in projects:
-                # first element always project instance
-                project_instance = project[0]
-                if user.is_superuser and include_all:
-                    # set field, center x, and center y for superuser
-                    field_dict = json.loads(project[1])
-                    center_x = project[2]
-                    center_y = project[3]
+            # iterate over each returned project
+            for project in session.execute(statement).all():
+                # unpack project
+                if include_all and user.is_superuser:
+                    project_obj, center_x, center_y = project
                 else:
-                    # set role, field, center x, and center y for regular user
-                    project_role = project[1].role
-                    field_dict = json.loads(project[2])
-                    center_x = project[3]
-                    center_y = project[4]
+                    project_obj, member_obj, center_x, center_y = project
+                # add center x, y attributes to project obj
+                setattr(project_obj, "centroid", {"x": center_x, "y": center_y})
+                # count of project's active flights
+                flight_count = get_flight_count(project_obj)
+                setattr(project_obj, "flight_count", flight_count)
+                # add project member role
+                if include_all and user.is_superuser:
+                    setattr(project_obj, "role", "owner")
+                else:
+                    setattr(project_obj, "role", member_obj.role)
+                # add updated project obj to final list
+                if not has_raster or (
+                    has_raster and has_flight_with_raster_data_project(project_obj)
+                ):
+                    final_projects.append(project_obj)
 
-                # skip setting member role if this is a superuser
-                if not user.is_superuser or (user.is_superuser and not include_all):
-                    setattr(
-                        project_instance,
-                        "is_owner",
-                        user_id == project_instance.owner_id or project_role == "owner",
-                    )
-                field_dict["properties"].update(
-                    {"center_x": center_x, "center_y": center_y}
-                )
-                setattr(project_instance, "field", field_dict)
-                flight_count = 0
-                most_recent_flight = None
-                has_required_data_type = False
-                for flight in project_instance.flights:
-                    if flight.is_active:
-                        if most_recent_flight:
-                            if most_recent_flight < flight.acquisition_date:
-                                most_recent_flight = flight.acquisition_date
-                        else:
-                            most_recent_flight = flight.acquisition_date
-                        flight_count += 1
-
-                        if has_raster:
-                            data_products = [
-                                data_product
-                                for data_product in flight.data_products
-                                if data_product.data_type != "point_cloud"
-                            ]
-                            if len(data_products) > 0:
-                                has_required_data_type = True
-                setattr(project_instance, "flight_count", flight_count)
-                setattr(project_instance, "most_recent_flight", most_recent_flight)
-                if not has_raster or (has_raster and has_required_data_type):
-                    final_projects.append(project_instance)
-        return final_projects
+            return final_projects
 
     def update_project(
         self,
@@ -394,6 +338,44 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     crud.flight.deactivate(db, flight_id=flight.id)
 
         return deactivated_project
+
+
+def get_flight_count(project: Project) -> int:
+    """Calculate total number of active flights in a project.
+
+    Args:
+        project (Project): Project with flights.
+
+    Returns:
+        int: Number of flights in project.
+    """
+    flight_count = 0
+
+    for flight in project.flights:
+        if flight.is_active:
+            flight_count += 1
+
+    return flight_count
+
+
+def has_flight_with_raster_data_project(project: Project) -> bool:
+    """Checks if a project has at least one active flight with one active data product.
+
+    Args:
+        project (Project): Project with flights.
+
+    Returns:
+        bool: True if project has raster data product, False if it doesn't.
+    """
+    has_at_least_one_raster_data_product = False
+
+    for flight in project.flights:
+        if flight.is_active:
+            for data_product in flight.data_products:
+                if data_product.data_type != "point_cloud" and data_product.is_active:
+                    has_at_least_one_raster_data_product = True
+
+    return has_at_least_one_raster_data_product
 
 
 project = CRUDProject(Project)

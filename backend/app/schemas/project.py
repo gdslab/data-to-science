@@ -1,32 +1,27 @@
 from datetime import date, datetime
-from typing import Dict
-from uuid import UUID
+from typing import Dict, Literal, Optional
 
 from geojson_pydantic import Feature, Polygon
-from pydantic import BaseModel
+from pydantic import BaseModel, UUID4
 from app.schemas.location import LocationCreate
 
 
 # shared properties
 class ProjectBase(BaseModel):
-    title: str | None = None
-    description: str | None = None
-    planting_date: date | None = None
-    harvest_date: date | None = None
-    is_active: bool = True
-    location_id: UUID | None = None
-    team_id: UUID | None = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    planting_date: Optional[date] = None
+    harvest_date: Optional[date] = None
+    # relationships
+    location_id: Optional[UUID4] = None
+    team_id: Optional[UUID4] = None
 
 
 # properties to save in DB on creation
 class ProjectCreate(ProjectBase):
     title: str
     description: str
-    planting_date: date | None = None
-    harvest_date: date | None = None
-    location: LocationCreate
-    location_id: UUID | None = None
-    team_id: UUID | None = None
+    location: LocationCreate  # GeoJSON Feature
 
 
 # properties to receive via API on update
@@ -36,25 +31,39 @@ class ProjectUpdate(ProjectBase):
 
 # properties shared by models stored in DB
 class ProjectInDBBase(ProjectBase, from_attributes=True):
-    id: UUID
     title: str
     description: str
-    planting_date: date | None = None
-    harvest_date: date | None = None
+    # internal
+    id: UUID4
     is_active: bool
-    deactivated_at: datetime | None = None
-
-    location_id: UUID
-    team_id: UUID | None = None
-    owner_id: UUID
+    deactivated_at: Optional[datetime] = None
+    owner_id: UUID4
+    # relationships
+    location_id: UUID4
 
 
 # additional properties to return via API
 class Project(ProjectInDBBase):
     is_owner: bool = False
-    field: Feature[Polygon, Dict] | None = None
+    field: Optional[Feature[Polygon, Dict]] = None
     flight_count: int = 0
-    most_recent_flight: date | None = None
+    most_recent_flight: Optional[date] = None
+
+
+# project boundary centroid
+class Centroid(BaseModel):
+    x: float
+    y: float
+
+
+# schema returned when multiple projects requested
+class Projects(BaseModel):
+    id: UUID4
+    centroid: Centroid
+    description: str
+    flight_count: int = 0
+    role: Literal["owner", "manager", "viewer"]
+    title: str
 
 
 # additional properties stored in DB

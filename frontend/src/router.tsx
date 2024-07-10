@@ -48,7 +48,7 @@ import TeamDetail, {
 } from './components/pages/teams/TeamDetail';
 
 import { RootPublic, RootProtected } from './components/layout/Root';
-import { RequireAuth } from './AuthContext';
+import { RequireAdmin, RequireAuth } from './AuthContext';
 import ProjectLayout from './components/pages/projects/ProjectLayout';
 
 export const router = createBrowserRouter([
@@ -107,27 +107,6 @@ export const router = createBrowserRouter([
         element: <MapLayout />,
       },
       {
-        path: '/admin/dashboard',
-        element: <Dashboard />,
-        children: [
-          {
-            path: '/admin/dashboard',
-            element: <DashboardSiteStatistics />,
-            loader: dashboardSiteStatisticsLoader,
-          },
-          {
-            path: '/admin/dashboard/map',
-            element: <DashboardMap />,
-            loader: dashboardMapLoader,
-          },
-          {
-            path: '/admin/dashboard/users',
-            element: <DashboardUsers />,
-            loader: dashboardUsersLoader,
-          },
-        ],
-      },
-      {
         path: '/auth/profile',
         element: <Profile />,
       },
@@ -184,6 +163,38 @@ export const router = createBrowserRouter([
             path: '/projects',
             element: <ProjectList />,
             loader: projectListLoader,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    // admin pages
+    element: (
+      <RequireAdmin>
+        <RootProtected />
+      </RequireAdmin>
+    ),
+    errorElement: <ErrorPage />,
+    children: [
+      {
+        path: '/admin/dashboard',
+        element: <Dashboard />,
+        children: [
+          {
+            path: '/admin/dashboard',
+            element: <DashboardSiteStatistics />,
+            loader: dashboardSiteStatisticsLoader,
+          },
+          {
+            path: '/admin/dashboard/map',
+            element: <DashboardMap />,
+            loader: dashboardMapLoader,
+          },
+          {
+            path: '/admin/dashboard/users',
+            element: <DashboardUsers />,
+            loader: dashboardUsersLoader,
           },
         ],
       },

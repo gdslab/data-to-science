@@ -17,10 +17,10 @@ import validationSchema from './validationSchema';
 
 export async function loader() {
   const response: AxiosResponse<Project[]> = await axios.get(
-    '/api/v1/projects?edit_only=True'
+    `${import.meta.env.VITE_API_V1_STR}/projects`
   );
   if (response) {
-    return response.data;
+    return response.data.filter(({ role }) => role === 'owner' || role === 'manager');
   } else {
     return [];
   }
@@ -31,6 +31,7 @@ export default function TeamCreate() {
   const projects = useLoaderData() as Project[];
   const navigate = useNavigate();
   const revalidator = useRevalidator();
+
   const [teamMembers, setTeamMembers] = useState<UserSearch[]>([]);
   const [searchResults, setSearchResults] = useState<UserSearch[]>([]);
 

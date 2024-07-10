@@ -102,4 +102,15 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
   return children;
 }
 
+export function RequireAdmin({ children }: { children: React.ReactNode }) {
+  const { user } = useContext(AuthContext);
+  const location = useLocation();
+
+  if (!user || (user && !user.is_superuser)) {
+    return <Navigate to="/auth/login" state={{ from: location }} replace />;
+  }
+
+  return children;
+}
+
 export default AuthContext;
