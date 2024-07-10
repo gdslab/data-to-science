@@ -17,16 +17,16 @@ export default function FlightCard({ flight }: { flight: Flight }) {
   const dataProduct = flight.data_products.length > 0 ? flight.data_products[0] : null;
 
   return (
-    <div className="flex items-center justify-center min-h-96">
+    <div className="flex flex-col items-center justify-center">
       <Card rounded={true}>
-        <div className="grid grid-flow-row auto-rows-max gap-4">
+        <div className="w-[264px] grid grid-flow-row auto-rows-max gap-4">
           <div className="h-8">
             {flight.name && (
               <span className="text-lg font-semibold">{flight.name}</span>
             )}
           </div>
           {/* preview image */}
-          <div className="relative flex items-center justify-center bg-accent3/20">
+          <div className="relative flex items-center justify-center bg-accent3/10">
             {dataProduct && isGeoTIFF(dataProduct.data_type) ? (
               <img
                 className="object-scale-down h-40"
@@ -46,8 +46,8 @@ export default function FlightCard({ flight }: { flight: Flight }) {
               />
             ) : (
               <div className="flex items-center justify-center w-full h-40 bg-white">
-                <span className="sr-only">Preview not available</span>
-                <PhotoIcon className="h-full" />
+                <span className="sr-only text-center">Preview not available</span>
+                <PhotoIcon className="h-40" />
               </div>
             )}
             <div className="absolute bottom-0 right-0 p-1.5">
@@ -90,7 +90,7 @@ export default function FlightCard({ flight }: { flight: Flight }) {
         </div>
       </Card>
       {/* positions pagination controls below card */}
-      <div className="h-16"></div>
+      <div className="h-10"></div>
     </div>
   );
 }
