@@ -139,8 +139,10 @@ export default function ProjectDetail() {
           <ProjectDetailEditForm project={project} teams={teams} />
         ) : (
           <div>
-            <span className="text-lg font-bold mb-0">{project.title}</span>
-            <span className="text-gray-600">{project.description}</span>
+            <span className="block text-lg font-bold mb-0">{project.title}</span>
+            <span className="block my-1 mx-0 text-gray-600 text-wrap break-all">
+              {project.description}
+            </span>
           </div>
         )}
         <div className="grow min-h-0">
