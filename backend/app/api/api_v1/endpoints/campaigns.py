@@ -307,8 +307,7 @@ async def create_campaign_template(
                 )
                 samples_per_plot = {"Sample_name": timepoint["sampleNames"]}
                 id_observation = ["Sample_name"]
-                if "PLOT" in [col.upper() for col in treatment_input_data[0].keys()]:
-                    id_observation.append("PLOT")
+                id_observation.extend([key for key in treatment_input_data[0]])
                 id_observation.extend([key for key in new_columns])
                 sample_identifier = {"id_observation": id_observation}
                 template_output = [key for key in new_columns]
