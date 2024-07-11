@@ -262,7 +262,9 @@ def test_get_most_recent_flight(db: Session) -> None:
 
 def test_deactivate_project(db: Session) -> None:
     project = create_project(db)
-    project2 = crud.project.deactivate(db, project_id=project.id)
+    project2 = crud.project.deactivate(
+        db, project_id=project.id, user_id=project.owner_id
+    )
     project3 = crud.project.get(db, id=project.id)
     assert project2 and project3
     assert project3.id == project.id
@@ -275,7 +277,9 @@ def test_deactivate_project_deactivates_flights_and_data_products(db: Session) -
     project = create_project(db)
     flight = create_flight(db, project_id=project.id)
     data_product = SampleDataProduct(db, project=project, flight=flight)
-    project2 = crud.project.deactivate(db, project_id=project.id)
+    project2 = crud.project.deactivate(
+        db, project_id=project.id, user_id=project.owner_id
+    )
     project3 = crud.project.get(db, id=project.id)
     assert project2 and project3
     assert project3.id == project.id
@@ -289,7 +293,7 @@ def test_deactivate_project_deactivates_flights_and_data_products(db: Session) -
 def test_get_deactivated_project_returns_none(db: Session) -> None:
     user = create_user(db)
     project = create_project(db, owner_id=user.id)
-    crud.project.deactivate(db, project_id=project.id)
+    crud.project.deactivate(db, project_id=project.id, user_id=user.id)
     project2 = crud.project.get_user_project(db, project_id=project.id, user_id=user.id)
     assert project2 and project2["result"] is None
 
@@ -299,7 +303,7 @@ def test_get_projects_ignores_deactivated_projects(db: Session) -> None:
     project = create_project(db, owner_id=user.id)
     project2 = create_project(db, owner_id=user.id)
     project3 = create_project(db, owner_id=user.id)
-    crud.project.deactivate(db, project_id=project3.id)
+    crud.project.deactivate(db, project_id=project3.id, user_id=user.id)
     projects = crud.project.get_user_projects(db, user=user)
     assert projects
     assert isinstance(projects, list)

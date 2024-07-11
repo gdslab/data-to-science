@@ -229,7 +229,7 @@ def test_get_flight_for_deactivated_project_returns_none(db: Session) -> None:
     user = create_user(db)
     project = create_project(db, owner_id=user.id)
     flight = create_flight(db, project_id=project.id)
-    crud.project.deactivate(db, project_id=project.id)
+    crud.project.deactivate(db, project_id=project.id, user_id=user.id)
     flight2 = crud.flight.get_flight_by_id(
         db, project_id=project.id, flight_id=flight.id
     )
@@ -242,7 +242,7 @@ def test_get_flights_ignores_deactivated_project(db: Session) -> None:
     create_flight(db, project_id=project.id)
     create_flight(db, project_id=project.id)
     create_flight(db, project_id=project.id)
-    crud.project.deactivate(db, project_id=project.id)
+    crud.project.deactivate(db, project_id=project.id, user_id=user.id)
     upload_dir = settings.TEST_STATIC_DIR
     flights = crud.flight.get_multi_by_project(
         db, project_id=project.id, upload_dir=upload_dir, user_id=user.id

@@ -2,7 +2,7 @@ from datetime import date, datetime
 from typing import Dict, Literal, Optional
 
 from geojson_pydantic import Feature, Polygon
-from pydantic import BaseModel, UUID4
+from pydantic import BaseModel, Field, UUID4
 from app.schemas.location import LocationCreate
 
 
@@ -37,17 +37,18 @@ class ProjectInDBBase(ProjectBase, from_attributes=True):
     id: UUID4
     is_active: bool
     deactivated_at: Optional[datetime] = None
-    owner_id: UUID4
+    owner_id: UUID4 = Field(exclude=True)
     # relationships
     location_id: UUID4
 
 
 # additional properties to return via API
 class Project(ProjectInDBBase):
-    is_owner: bool = False
+    # properties created after queries
     field: Optional[Feature[Polygon, Dict]] = None
     flight_count: int = 0
     most_recent_flight: Optional[date] = None
+    role: Literal["owner", "manager", "viewer"]
 
 
 # project boundary centroid

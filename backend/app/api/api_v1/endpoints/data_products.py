@@ -114,7 +114,7 @@ def deactivate_data_product(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
         )
-    if not project.is_owner:
+    if project.role != "owner":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Access forbidden"
         )

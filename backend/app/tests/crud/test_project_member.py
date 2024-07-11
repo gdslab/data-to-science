@@ -115,7 +115,7 @@ def test_get_list_of_project_members_from_deactivated_project(db: Session) -> No
     project = create_project(db)
     create_project_member(db, project_id=project.id)
     create_project_member(db, project_id=project.id)
-    crud.project.deactivate(db, project_id=project.id)
+    crud.project.deactivate(db, project_id=project.id, user_id=project.owner_id)
     project_members = crud.project_member.get_list_of_project_members(
         db, project_id=project.id
     )

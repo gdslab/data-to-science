@@ -33,10 +33,8 @@ export interface Project {
   description: string;
   field: FieldGeoJSONFeature;
   flight_count: number;
-  is_owner: boolean;
   location_id: string;
   most_recent_flight: string;
-  owner_id: string;
   role: string;
   team_id: string;
   title: string;
