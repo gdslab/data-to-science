@@ -238,9 +238,12 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     project_obj, member_obj, center_x, center_y = project
                 # add center x, y attributes to project obj
                 setattr(project_obj, "centroid", {"x": center_x, "y": center_y})
-                # count of project's active flights
-                flight_count = get_flight_count(project_obj)
+                # count of project's active flights and most recent flight date
+                flight_count, most_recent_flight = (
+                    get_flight_count_and_most_recent_flight(project_obj)
+                )
                 setattr(project_obj, "flight_count", flight_count)
+                setattr(project_obj, "most_recent_flight", most_recent_flight)
                 # add project member role
                 if include_all and user.is_superuser:
                     setattr(project_obj, "role", "owner")
@@ -347,8 +350,9 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             return deactivated_project
 
 
-def get_flight_count(project: Project) -> int:
-    """Calculate total number of active flights in a project.
+def get_flight_count_and_most_recent_flight(project: Project) -> int:
+    """Calculate total number of active flights in a project and
+    find date for most recent flight.
 
     Args:
         project (Project): Project with flights.
@@ -357,12 +361,18 @@ def get_flight_count(project: Project) -> int:
         int: Number of flights in project.
     """
     flight_count = 0
+    most_recent_flight = None
 
     for flight in project.flights:
         if flight.is_active:
+            if most_recent_flight:
+                if most_recent_flight < flight.acquisition_date:
+                    most_recent_flight = flight.acquisition_date
+            else:
+                most_recent_flight = flight.acquisition_date
             flight_count += 1
 
-    return flight_count
+    return flight_count, most_recent_flight
 
 
 def has_flight_with_raster_data_project(project: Project) -> bool:
