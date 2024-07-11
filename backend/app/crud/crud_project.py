@@ -94,6 +94,8 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             session.add(project_db_obj)
             session.commit()
             session.refresh(project_db_obj)
+        # add role attribute
+        setattr(project_db_obj, "role", "owner")
         # add project memebers to db
         member_db_obj = ProjectMember(
             member_id=owner_id, project_id=project_db_obj.id, role="owner"
@@ -165,11 +167,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                         "message": "Permission denied",
                         "result": None,
                     }
-                setattr(
-                    project[0],
-                    "is_owner",
-                    user_id == project[0].owner_id or member_role == "owner",
-                )
+                setattr(project[0], "role", member_role)
                 field_dict = json.loads(project[2])
                 field_dict["properties"].update(
                     {"center_x": project[3], "center_y": project[4]}
@@ -314,30 +312,39 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             "result": updated_project,
         }
 
-    def deactivate(self, db: Session, project_id: UUID) -> Project | None:
+    def deactivate(
+        self, db: Session, project_id: UUID, user_id: UUID
+    ) -> Project | None:
+        # update project's active status
         update_project_sql = (
             update(Project)
-            .where(Project.id == project_id)
+            .where(and_(Project.id == project_id, Project.owner_id == user_id))
             .values(is_active=False, deactivated_at=utcnow())
         )
         with db as session:
             session.execute(update_project_sql)
             session.commit()
 
+        # get deactivated project that will be deactivated
         get_project_sql = (
             select(Project)
             .options(joinedload(Project.flights))
-            .where(Project.id == project_id)
+            .where(Project.id == project_id, Project.owner_id == user_id)
         )
         with db as session:
             deactivated_project = session.execute(get_project_sql).scalar()
 
-        if deactivated_project and len(deactivated_project.flights) > 0:
-            for flight in deactivated_project.flights:
-                with db as session:
-                    crud.flight.deactivate(db, flight_id=flight.id)
+        # deactivate flights associated with project
+        if deactivated_project:
+            if len(deactivated_project.flights) > 0:
+                for flight in deactivated_project.flights:
+                    with db as session:
+                        crud.flight.deactivate(db, flight_id=flight.id)
 
-        return deactivated_project
+            # add owner role to deactivated project
+            setattr(deactivated_project, "role", "owner")
+
+            return deactivated_project
 
 
 def get_flight_count(project: Project) -> int:

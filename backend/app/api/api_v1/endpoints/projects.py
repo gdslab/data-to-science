@@ -122,9 +122,12 @@ def update_project(
 def deactivate_project(
     project_id: UUID,
     project: models.Project = Depends(deps.can_read_write_delete_project),
+    current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    deactivated_project = crud.project.deactivate(db, project_id=project.id)
+    deactivated_project = crud.project.deactivate(
+        db, project_id=project.id, user_id=current_user.id
+    )
     if not deactivated_project:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to deactivate"

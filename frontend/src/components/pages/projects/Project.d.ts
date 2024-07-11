@@ -67,16 +67,15 @@ export type SetLocation = React.Dispatch<React.SetStateAction<Location | null>>;
 // project object returned from api
 export interface Project {
   id: string;
-  title: string;
   description: string;
-  planting_date: string;
+  field: GeoJSONFeature;
+  flight_count: number;
   harvest_date: string;
   location_id: string;
+  planting_date: string;
   team_id: string;
-  flight_count: number;
-  owner_id: string;
-  is_owner: boolean;
-  field: GeoJSONFeature;
+  title: string;
+  role: string;
 }
 
 // raster band info from gdalinfo
