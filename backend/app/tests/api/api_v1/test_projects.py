@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from fastapi import status
 from fastapi.encoders import jsonable_encoder
@@ -204,6 +204,24 @@ def test_get_projects(
             assert project["role"] == "owner"
         if str(project2.id) == project["id"]:
             assert project["role"] != "owner"
+
+
+def test_get_projects_with_flights(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project1 = create_project(db, owner_id=current_user.id)
+    create_flight(db, project_id=project1.id, acquisition_date=date(2022, 6, 15))
+    create_flight(db, project_id=project1.id, acquisition_date=date(2022, 2, 15))
+    create_flight(db, project_id=project1.id, acquisition_date=date(2022, 10, 15))
+    response = client.get(API_URL)
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert type(response_data) is list
+    assert len(response_data) == 1
+    assert response_data[0]["id"] == str(project1.id)
+    assert "most_recent_flight" in response_data[0]
+    assert response_data[0]["most_recent_flight"] == str(date(2022, 10, 15))
 
 
 def test_get_projects_by_superuser(
