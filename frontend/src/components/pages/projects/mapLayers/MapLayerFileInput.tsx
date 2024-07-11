@@ -100,7 +100,10 @@ export default function MapLayerFileInput({
 
   function processFile(file: File, setValue: UseFormSetValue<MapLayerFormInput>) {
     setUploadFile(file);
-    if (file.type === 'application/zip') {
+    if (
+      file.type === 'application/zip' ||
+      file.type === 'application/x-zip-compressed'
+    ) {
       shpToGeoJSON(file)
         .then((data) => {
           if (data) {
