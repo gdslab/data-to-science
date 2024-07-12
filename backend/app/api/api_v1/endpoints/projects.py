@@ -86,15 +86,6 @@ def read_projects(
     return projects
 
 
-@router.get("/landing/", response_model=List[schemas.project.Projects])
-def read_projects2(
-    current_user: models.User = Depends(deps.get_current_approved_user),
-    db: Session = Depends(deps.get_db),
-) -> Any:
-    projects = crud.project.get_user_projects(db, user_id=current_user.id)
-    return projects
-
-
 @router.put("/{project_id}", response_model=schemas.Project)
 def update_project(
     project_id: UUID,
