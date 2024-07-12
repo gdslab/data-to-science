@@ -255,7 +255,11 @@ export default function ProjectLayersControl({ project }: { project: Project }) 
                         // clear out previous statistics
                         setStatistics(null);
                         // check if zonal statistics available in local storage for active data product
-                        if (activeDataProduct && feature.geometry.type === 'Polygon') {
+                        if (
+                          activeDataProduct &&
+                          (feature.geometry.type === 'Polygon' ||
+                            feature.geometry.type === 'MultiPolygon')
+                        ) {
                           const precalculatedStats = localStorage.getItem(
                             `${activeDataProduct.id}::${btoa(
                               feature.geometry.coordinates.join('|')
