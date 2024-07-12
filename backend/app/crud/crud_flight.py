@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import status
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import select, update, and_
+from sqlalchemy import and_, or_, select, update
 from sqlalchemy.orm import joinedload, Session
 
 from app import crud
@@ -99,7 +99,11 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                         job_query = select(Job).where(
                             and_(
                                 Job.data_product_id == data_product.id,
-                                Job.name == "upload-data-product",
+                                or_(
+                                    Job.name == "upload-data-product",
+                                    Job.name == "exg-process",
+                                    Job.name == "ndvi-process",
+                                ),
                             )
                         )
                         job = session.execute(job_query).scalar_one_or_none()
