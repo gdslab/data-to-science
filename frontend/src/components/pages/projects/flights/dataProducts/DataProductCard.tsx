@@ -111,18 +111,20 @@ export default function DataProductCard({
             {/* data product details */}
             <div className="flex items-center justify-between text-lg">
               <span>{dataProduct.data_type.split('_').join(' ').toUpperCase()}</span>
-              {projectRole === 'owner' ? (
-                <div className="flex flex-row gap-4">
-                  <a href={dataProduct.url} target="_blank" download>
-                    <ArrowDownTrayIcon
-                      className="w-5 h-5"
-                      title="Download data product"
-                    />
-                  </a>
-                  <DataProductShareModal dataProduct={dataProduct} />
-                  <DataProductDeleteModal dataProduct={dataProduct} />
-                </div>
-              ) : null}
+              <div className="flex flex-row gap-4">
+                <a href={dataProduct.url} target="_blank" download>
+                  <ArrowDownTrayIcon
+                    className="w-5 h-5"
+                    title="Download data product"
+                  />
+                </a>
+                {projectRole === 'owner' && (
+                  <>
+                    <DataProductShareModal dataProduct={dataProduct} />
+                    <DataProductDeleteModal dataProduct={dataProduct} />
+                  </>
+                )}
+              </div>
             </div>
             {/* action buttons */}
             <div className="flex items-center justify-around gap-4">
