@@ -17,6 +17,7 @@ export interface Team {
   is_owner: boolean;
   title: string;
   description: string;
+  extensions: string[];
 }
 
 export async function loader() {
