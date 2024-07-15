@@ -29,12 +29,12 @@ class CRUDExtension(CRUDBase[Extension, ExtensionCreate, ExtensionUpdate]):
             return extensions
 
     def update_team_extension(
-        self, db: Session, team_extension_in: TeamExtensionCreate
+        self, db: Session, team_extension_in: TeamExtensionUpdate
     ) -> TeamExtension:
         pass
 
     def update_user_extension(
-        self, db: Session, user_extension_in: UserExtensionCreate
+        self, db: Session, user_extension_in: UserExtensionUpdate
     ) -> UserExtension:
         pass
 

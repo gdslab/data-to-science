@@ -3,11 +3,17 @@ from pydantic import BaseModel, UUID4
 
 # shared properties
 class UserExtensionBase(BaseModel):
-    pass
+    extension_id: UUID4 | None = None
+    user_id: UUID4 | None = None
 
 
 # properties required on creation
 class UserExtensionCreate(UserExtensionBase):
+    extension_id: UUID4
+    user_id: UUID4
+
+
+class UserExtensionUpdate(UserExtensionBase):
     extension_id: UUID4
     user_id: UUID4
 
