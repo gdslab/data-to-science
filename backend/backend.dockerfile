@@ -4,6 +4,7 @@ FROM python:3.11-slim as python-base
 # build args
 ARG INSTALL_DEV=false
 ARG NUM_OF_WORKERS=1
+ARG LIMIT_MAX_REQUESTS=10000
 
 # do not buffer log messages and do not write byte code .pyc
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -18,6 +19,9 @@ ENV CONDA_ENV_PATH=/opt/conda/envs/d2s
 
 # set number of workers for uvicorn process
 ENV UVICORN_WORKERS=$NUM_OF_WORKERS
+
+# limit max requests per process
+ENV LIMIT_MAX_REQUESTS=$LIMIT_MAX_REQUESTS
 
 # set path for celery beats schedule
 ENV CELERY_BEAT_SCHEDULE=/var/run/celery/celerybeat-schedule
