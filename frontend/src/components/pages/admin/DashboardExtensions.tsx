@@ -7,36 +7,53 @@ import { Team } from '../teams/Teams';
 import Alert, { Status } from '../../Alert';
 import { User } from '../../../AuthContext';
 
+type Extension = {
+  id: string;
+  description: string;
+  name: string;
+};
+
 export async function loader() {
   try {
+    const extensions: AxiosResponse<Extension[]> = await axios.get(
+      `${import.meta.env.VITE_API_V1_STR}/admin/extensions`
+    );
     const teams: AxiosResponse<Team[]> = await axios.get(
       `${import.meta.env.VITE_API_V1_STR}/teams`
     );
     const users: AxiosResponse<User[]> = await axios.get(
       `${import.meta.env.VITE_API_V1_STR}/users`
     );
-    if (teams && users) {
+    if (extensions && teams && users) {
       return {
+        extensions: extensions.data,
         teams: teams.data.map((team) => ({ ...team, extensions: [] })),
         users: users.data.map((user) => ({ ...user, extensions: [] })),
       };
     } else {
-      return { teams: [], users: [] };
+      return { extensions: [], teams: [], users: [] };
     }
   } catch (err) {
     console.error(err);
-    return { teams: [], users: [] };
+    return { extensions: [], teams: [], users: [] };
   }
 }
 
 type ExtensionList = {
-  extensions: string[];
+  extensions: Extension[];
+  selectedExtensions: string[];
   setStatus: React.Dispatch<React.SetStateAction<Status | null>>;
   teamId?: string;
   userId?: string;
 };
 
-function ExtensionList({ extensions, setStatus, teamId, userId }: ExtensionList) {
+function ExtensionList({
+  extensions,
+  selectedExtensions,
+  setStatus,
+  teamId,
+  userId,
+}: ExtensionList) {
   const revalidator = useRevalidator();
 
   if (!teamId && !userId) {
@@ -50,11 +67,11 @@ function ExtensionList({ extensions, setStatus, teamId, userId }: ExtensionList)
       try {
         const payload = {
           teamId: teamId,
-          extension: e.target.name,
+          extensionId: e.target.value,
           activate: e.target.checked,
         };
         const response = await axios.put(
-          `${import.meta.env.VITE_API_V1_STR}/extensions/team`,
+          `${import.meta.env.VITE_API_V1_STR}/admin/extensions/team`,
           payload
         );
         if (response.status === 200) {
@@ -78,11 +95,11 @@ function ExtensionList({ extensions, setStatus, teamId, userId }: ExtensionList)
       try {
         const payload = {
           userId: userId,
-          extension: e.target.value,
+          extensionId: e.target.value,
           activate: e.target.checked,
         };
         const response = await axios.put(
-          `${import.meta.env.VITE_API_V1_STR}/extensions/user`,
+          `${import.meta.env.VITE_API_V1_STR}/admin/extensions/user`,
           payload
         );
         if (response.status === 200) {
@@ -104,26 +121,33 @@ function ExtensionList({ extensions, setStatus, teamId, userId }: ExtensionList)
   }
 
   return (
-    <div className="flex items-center">
-      <input
-        id="cluster-checkbox"
-        name="cluster"
-        type="checkbox"
-        className="w-4 h-4 text-accent2 accent-slate-600 bg-gray-100 border-gray-300 rounded focus:ring-accent2/70 focus:ring-2"
-        onChange={handleOnChange}
-        checked={extensions.includes('cluster')}
-      />
-      <label
-        htmlFor="cluster-checkbox"
-        className="ms-2 text-sm font-medium text-gray-900"
-      >
-        Cluster Processing
-      </label>
+    <div className="flex gap-4">
+      {extensions.map((extension) => (
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            id={extension.id}
+            name={extension.name}
+            value={extension.id}
+            className="w-4 h-4 text-accent2 accent-slate-600 bg-gray-100 border-gray-300 rounded focus:ring-accent2/70 focus:ring-2"
+            onChange={handleOnChange}
+            checked={selectedExtensions.includes(extension.name)}
+          />
+          <label
+            htmlFor={extension.id}
+            className="ms-2 text-sm font-medium text-gray-900"
+            title={extension.description}
+          >
+            {extension.name}
+          </label>
+        </div>
+      ))}
     </div>
   );
 }
 
 type LoaderData = {
+  extensions: Extension[];
   teams: Team[];
   users: User[];
 };
@@ -132,7 +156,9 @@ export default function DashboardExtensions() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [status, setStatus] = useState<Status | null>(null);
 
-  const { teams, users } = useLoaderData() as LoaderData;
+  const { extensions, teams, users } = useLoaderData() as LoaderData;
+
+  console.log(extensions);
 
   return (
     <section className="w-full bg-white">
@@ -174,7 +200,8 @@ export default function DashboardExtensions() {
                         <td className="p-4 bg-slate-100">{team.title}</td>
                         <td className="p-4 bg-white">
                           <ExtensionList
-                            extensions={team.extensions}
+                            extensions={extensions}
+                            selectedExtensions={team.extensions}
                             setStatus={setStatus}
                             teamId={team.id}
                           />
@@ -205,7 +232,8 @@ export default function DashboardExtensions() {
                         <td className="p-4 bg-white">{user.email}</td>
                         <td className="p-4 bg-white">
                           <ExtensionList
-                            extensions={user.extensions}
+                            extensions={extensions}
+                            selectedExtensions={user.extensions}
                             setStatus={setStatus}
                             userId={user.id}
                           />

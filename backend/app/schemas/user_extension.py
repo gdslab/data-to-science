@@ -8,7 +8,8 @@ class UserExtensionBase(BaseModel):
 
 # properties required on creation
 class UserExtensionCreate(UserExtensionBase):
-    pass
+    extension_id: UUID4
+    user_id: UUID4
 
 
 # properties shared by models in DB

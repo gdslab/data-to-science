@@ -7,7 +7,7 @@ from .data_product_metadata import (
     DataProductMetadataCreate,
     DataProductMetadataUpdate,
 )
-from .extension import Extension, ExtensionCreate
+from .extension import Extension, ExtensionCreate, ExtensionUpdate
 from .file_permission import FilePermission, FilePermissionCreate, FilePermissionUpdate
 from .flight import Flight, FlightCreate, FlightUpdate
 from .job import Job, JobCreate, JobUpdate

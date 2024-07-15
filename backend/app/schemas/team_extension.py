@@ -8,7 +8,8 @@ class TeamExtensionBase(BaseModel):
 
 # properties required on creation
 class TeamExtensionCreate(TeamExtensionBase):
-    pass
+    extension_id: UUID4
+    team_id: UUID4
 
 
 # properties shared by models in DB
