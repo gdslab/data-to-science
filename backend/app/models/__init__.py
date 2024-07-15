@@ -2,6 +2,7 @@ from .api_key import APIKey
 from .campaign import Campaign
 from .data_product import DataProduct
 from .data_product_metadata import DataProductMetadata
+from .extension import Extension
 from .file_permission import FilePermission
 from .flight import Flight
 from .job import Job
@@ -11,8 +12,10 @@ from .project_member import ProjectMember
 from .raw_data import RawData
 from .single_use_token import SingleUseToken
 from .team import Team
+from .team_extension import TeamExtension
 from .team_member import TeamMember
 from .upload import Upload
 from .user import User
+from .user_extension import UserExtension
 from .user_style import UserStyle
 from .vector_layer import VectorLayer
