@@ -209,6 +209,30 @@ services:
     security_opt:
       - no-new-privileges=true
 
+  titiler:
+    image: ghcr.io/developmentseed/titiler:latest
+    volumes:
+      - user-data:/static
+    ports:
+      - ":8888"
+    environment:
+      - PORT=8888
+      - WORKERS_PER_CORE=1
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8888/healthz"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+    security_opt:
+      - no-new-privileges=true
+
   tusd:
     image: tusproject/tusd:latest
     command: -behind-proxy -hooks-http http://proxy/api/v1/tusd -hooks-http-forward-headers Cookie X-Project-ID X-Flight-ID X-Data-Type

@@ -28,8 +28,7 @@ dependencies:
   - types-pyyaml
   - shapely
   - sqlalchemy
-  - titiler-core
-  - uvicorn
+  - 'uvicorn[standard]'
   - black
   - flake8
   - httpx
