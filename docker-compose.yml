@@ -136,6 +136,16 @@ services:
     depends_on:
       - frontend
 
+  titiler:
+    image: ghcr.io/developmentseed/titiler:latest
+    volumes:
+      - user-data:/static
+    ports:
+      - ":8888"
+    environment:
+      - PORT=8888
+      - WORKERS_PER_CORE=1
+
   tusd:
     image: tusproject/tusd:latest
     command: -verbose -behind-proxy -hooks-http http://proxy/api/v1/tusd -hooks-http-forward-headers Cookie X-Project-ID X-Flight-ID X-Data-Type
