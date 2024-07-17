@@ -1,5 +1,5 @@
 # base image
-FROM python:3.11-slim as python-base
+FROM python:3.11-slim AS python-base
 
 # build args
 ARG INSTALL_DEV=false
@@ -30,7 +30,7 @@ ENV CELERY_BEAT_SCHEDULE=/var/run/celery/celerybeat-schedule
 ENV MPLCONFIGDIR=/var/tmp/d2s
 
 # image for building python environment
-FROM condaforge/miniforge3:latest as conda-env-base
+FROM condaforge/miniforge3:latest AS conda-env-base
 
 # do not write byte code .pyc
 ENV PYTHONDONTWRITEBYTECODE=1
