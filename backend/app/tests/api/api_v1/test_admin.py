@@ -1,13 +1,21 @@
+import datetime
+from typing import List
+
 from fastapi import status
+from fastapi.encoders import jsonable_encoder
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
 from app.api.deps import get_current_user
 from app.core.config import settings
-from app.tests.utils.extension import create_extension
+from app.tests.utils.extension import (
+    create_extension,
+    create_team_extension,
+    create_user_extension,
+)
 from app.tests.utils.team import create_team
-from app.tests.utils.user import create_user
+from app.tests.utils.user import create_user, update_regular_user_to_superuser
 
 
 def test_get_site_statistics_with_non_superuser(
@@ -62,11 +70,13 @@ def test_update_team_extension(
     current_user = get_current_user(db, normal_user_access_token)
     superuser = update_regular_user_to_superuser(db, user_id=current_user.id)
     payload = {
-        "teamId": str(team.id),
-        "extensionId": str(extension.id),
-        "activate": True,
+        "team_id": str(team.id),
+        "extension_id": str(extension.id),
+        "is_active": True,
     }
-    response = client.put(f"{settings.API_V1_STR}/admin/extensions/team", payload)
+    response = client.put(
+        f"{settings.API_V1_STR}/admin/extensions/team", json=jsonable_encoder(payload)
+    )
     assert response.status_code == status.HTTP_200_OK
     team_extension = response.json()
     assert team_extension
@@ -80,11 +90,13 @@ def test_update_team_extension_with_non_superuser(
     extension = create_extension(db, name="ext1", description="Extension 1")
     team = create_team(db)
     payload = {
-        "teamId": str(team.id),
-        "extensionId": str(extension.id),
-        "activate": True,
+        "team_id": str(team.id),
+        "extension_id": str(extension.id),
+        "is_active": True,
     }
-    response = client.put(f"{settings.API_V1_STR}/admin/extensions/team", payload)
+    response = client.put(
+        f"{settings.API_V1_STR}/admin/extensions/team", json=jsonable_encoder(payload)
+    )
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
@@ -97,11 +109,13 @@ def test_update_user_extension(
     current_user = get_current_user(db, normal_user_access_token)
     superuser = update_regular_user_to_superuser(db, user_id=current_user.id)
     payload = {
-        "userId": str(user.id),
-        "extensionId": str(extension.id),
-        "activate": True,
+        "user_id": str(user.id),
+        "extension_id": str(extension.id),
+        "is_active": True,
     }
-    response = client.put(f"{settings.API_V1_STR}/admin/extensions/user", payload)
+    response = client.put(
+        f"{settings.API_V1_STR}/admin/extensions/user", json=jsonable_encoder(payload)
+    )
     assert response.status_code == status.HTTP_200_OK
     user_extension = response.json()
     assert user_extension
@@ -115,9 +129,69 @@ def test_update_user_extension_with_non_superuser(
     extension = create_extension(db, name="ext1", description="Extension 1")
     user = create_user(db)
     payload = {
-        "userId": str(user.id),
-        "extensionId": str(extension.id),
-        "activate": True,
+        "user_id": str(user.id),
+        "extension_id": str(extension.id),
+        "is_active": True,
     }
-    response = client.put(f"{settings.API_V1_STR}/admin/extensions/user", payload)
+    response = client.put(
+        f"{settings.API_V1_STR}/admin/extensions/user", json=jsonable_encoder(payload)
+    )
     assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_deactivate_team_extension(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    extension = create_extension(db, name="ext1", description="Extension 1")
+    team = create_team(db)
+    create_team_extension(db, extension_id=extension.id, team_id=team.id)
+    # update to superuser
+    current_user = get_current_user(db, normal_user_access_token)
+    superuser = update_regular_user_to_superuser(db, user_id=current_user.id)
+    payload = {
+        "team_id": str(team.id),
+        "extension_id": str(extension.id),
+        "is_active": False,
+    }
+    response = client.put(
+        f"{settings.API_V1_STR}/admin/extensions/team", json=jsonable_encoder(payload)
+    )
+    assert response.status_code == status.HTTP_200_OK
+    team_extension = response.json()
+    assert team_extension
+    assert team_extension["extension_id"] == str(extension.id)
+    assert team_extension["team_id"] == str(team.id)
+    deactivated_at = datetime.datetime.strptime(
+        team_extension.get("deactivated_at"), "%Y-%m-%dT%H:%M:%S.%f"
+    ).replace(tzinfo=datetime.timezone.utc)
+    assert isinstance(deactivated_at, datetime.datetime)
+    assert deactivated_at < datetime.datetime.now(datetime.UTC)
+
+
+def test_deactivate_user_extension(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    extension = create_extension(db, name="ext1", description="Extension 1")
+    user = create_user(db)
+    create_user_extension(db, extension_id=extension.id, user_id=user.id)
+    # update to superuser
+    current_user = get_current_user(db, normal_user_access_token)
+    superuser = update_regular_user_to_superuser(db, user_id=current_user.id)
+    payload = {
+        "user_id": str(user.id),
+        "extension_id": str(extension.id),
+        "is_active": False,
+    }
+    response = client.put(
+        f"{settings.API_V1_STR}/admin/extensions/user", json=jsonable_encoder(payload)
+    )
+    assert response.status_code == status.HTTP_200_OK
+    user_extension = response.json()
+    assert user_extension
+    assert user_extension["extension_id"] == str(extension.id)
+    assert user_extension["user_id"] == str(user.id)
+    deactivated_at = datetime.datetime.strptime(
+        user_extension.get("deactivated_at"), "%Y-%m-%dT%H:%M:%S.%f"
+    ).replace(tzinfo=datetime.timezone.utc)
+    assert isinstance(deactivated_at, datetime.datetime)
+    assert deactivated_at < datetime.datetime.now(datetime.UTC)

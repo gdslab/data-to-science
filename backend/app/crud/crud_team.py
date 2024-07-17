@@ -3,13 +3,14 @@ from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import joinedload, Session
 
 from app import crud
 from app.crud.base import CRUDBase
 from app.models.project import Project
 from app.models.project_member import ProjectMember
 from app.models.team import Team
+from app.models.team_extension import TeamExtension
 from app.models.team_member import TeamMember
 from app.schemas.project import ProjectUpdate
 from app.schemas.team import TeamCreate, TeamUpdate
@@ -86,11 +87,16 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
                 .where(TeamMember.team_id == team_id)
             )
         with db as session:
-            db_obj = session.scalar(stmt)
-            if db_obj:
-                setattr(db_obj, "is_owner", user_id == db_obj.owner_id)
+            team = session.scalar(stmt)
+            if team:
+                setattr(
+                    team,
+                    "exts",
+                    [item.extension.name for item in team.extensions if item.is_active],
+                )
+                setattr(team, "is_owner", user_id == team.owner_id)
 
-        return db_obj
+        return team
 
     def get_user_team_list(
         self,
@@ -120,11 +126,16 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
                 .limit(limit)
             )
         with db as session:
-            db_obj = session.scalars(statement).all()
+            teams = session.scalars(statement).unique().all()
             # indicate if team member is also team owner
-            for team in db_obj:
+            for team in teams:
+                setattr(
+                    team,
+                    "exts",
+                    [item.extension.name for item in team.extensions if item.is_active],
+                )
                 setattr(team, "is_owner", user_id == team.owner_id)
-        return db_obj
+        return teams
 
     def delete_team(self, db: Session, team_id: UUID) -> Team | None:
         # delete team

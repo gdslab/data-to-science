@@ -1,8 +1,8 @@
-"""add extension tables
+"""add tables for managing extensions
 
-Revision ID: 1dd90e71b448
+Revision ID: e3d2921f3dfc
 Revises: a7e7862fb42f
-Create Date: 2024-07-15 01:29:27.344217
+Create Date: 2024-07-16 17:59:45.682978
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '1dd90e71b448'
+revision = 'e3d2921f3dfc'
 down_revision: str | None = 'a7e7862fb42f'
 branch_labels: str | None = None
 depends_on: str | None = None
@@ -21,10 +21,14 @@ def upgrade() -> None:
     op.create_table('extensions',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('name', sa.String(length=32), nullable=False),
-    sa.PrimaryKeyConstraint('id')
+    sa.Column('description', sa.String(length=128), nullable=True),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('name', name='unique_name')
     )
     op.create_table('user_extensions',
     sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('deactivated_at', sa.DateTime(), nullable=True),
+    sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('extension_id', sa.UUID(), nullable=False),
     sa.Column('user_id', sa.UUID(), nullable=False),
     sa.ForeignKeyConstraint(['extension_id'], ['extensions.id'], ),
@@ -34,6 +38,8 @@ def upgrade() -> None:
     )
     op.create_table('team_extensions',
     sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('deactivated_at', sa.DateTime(), nullable=True),
+    sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('extension_id', sa.UUID(), nullable=False),
     sa.Column('team_id', sa.UUID(), nullable=False),
     sa.ForeignKeyConstraint(['extension_id'], ['extensions.id'], ),

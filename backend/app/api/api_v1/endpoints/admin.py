@@ -30,3 +30,27 @@ def read_extensions(
 ) -> Any:
     extensions = crud.extension.get_extensions(db)
     return extensions
+
+
+@router.put("/extensions/team", response_model=schemas.TeamExtension)
+def update_team_extension(
+    team_extension_in: schemas.team_extension.TeamExtensionUpdate,
+    current_user: models.User = Depends(deps.get_current_admin_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    team_extension = crud.extension.create_or_update_team_extension(
+        db, team_extension_in=team_extension_in
+    )
+    return team_extension
+
+
+@router.put("/extensions/user", response_model=schemas.UserExtension)
+def update_user_extension(
+    user_extension_in: schemas.UserExtensionUpdate,
+    current_user: models.User = Depends(deps.get_current_admin_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    user_extension = crud.extension.create_or_update_user_extension(
+        db, user_extension_in=user_extension_in
+    )
+    return user_extension

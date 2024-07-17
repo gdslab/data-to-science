@@ -1,14 +1,14 @@
-from uuid import UUID
+from typing import List, Optional, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, UUID4
 
 
 # shared properties
 class TeamBase(BaseModel):
-    title: str | None = None
-    description: str | None = None
-    new_members: list[UUID] | None = None
-    project: UUID | str | None = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    new_members: Optional[List[UUID4]] = None
+    project: Optional[Union[UUID4, str]] = None
 
 
 # properties to receive via API on creation
@@ -23,15 +23,16 @@ class TeamUpdate(TeamBase):
 
 # properties shared by models stored in DB
 class TeamInDBBase(TeamBase, from_attributes=True):
-    id: UUID
+    id: UUID4
     title: str
 
 
 # additional properties to return via API
 class Team(TeamInDBBase):
+    exts: List[str] = []
     is_owner: bool = False
 
 
 # additional properties stored in DB
 class TeamInDB(TeamInDBBase):
-    owner_id: UUID
+    owner_id: UUID4

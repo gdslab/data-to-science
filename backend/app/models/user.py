@@ -1,5 +1,5 @@
 import uuid
-from typing import TYPE_CHECKING
+from typing import List, TYPE_CHECKING
 
 from datetime import datetime
 
@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from .project import Project
     from .project_member import ProjectMember
     from .upload import Upload
+    from .user_extension import UserExtension
 
 
 class User(Base):
@@ -49,23 +50,26 @@ class User(Base):
     api_key: Mapped["APIKey"] = relationship(
         back_populates="owner", cascade="all, delete"
     )
-    campaigns: Mapped[list["Campaign"]] = relationship(
+    campaigns: Mapped[List["Campaign"]] = relationship(
         back_populates="lead", cascade="all, delete"
     )
-    flights: Mapped[list["Flight"]] = relationship(
+    extensions: Mapped[List["UserExtension"]] = relationship(
+        back_populates="user", cascade="all, delete"
+    )
+    flights: Mapped[List["Flight"]] = relationship(
         back_populates="pilot", cascade="all, delete"
     )
-    project_memberships: Mapped[list["ProjectMember"]] = relationship(
+    project_memberships: Mapped[List["ProjectMember"]] = relationship(
         back_populates="member"
     )
-    projects: Mapped[list["Project"]] = relationship(
+    projects: Mapped[List["Project"]] = relationship(
         back_populates="owner", cascade="all, delete"
     )
-    team_memberships: Mapped[list["TeamMember"]] = relationship(back_populates="member")
-    teams: Mapped[list["Team"]] = relationship(
+    team_memberships: Mapped[List["TeamMember"]] = relationship(back_populates="member")
+    teams: Mapped[List["Team"]] = relationship(
         back_populates="owner", cascade="all, delete"
     )
-    upload: Mapped[list["Upload"]] = relationship(
+    upload: Mapped[List["Upload"]] = relationship(
         back_populates="uploader", cascade="all, delete"
     )
 

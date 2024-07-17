@@ -1,3 +1,4 @@
+import datetime
 from typing import List
 
 import pytest
@@ -6,10 +7,15 @@ from sqlalchemy.orm import Session
 
 from app import crud
 from app.schemas.extension import ExtensionCreate
-from app.schemas.team_extension import TeamExtensionCreate
-from app.schemas.user_extension import UserExtensionCreate
-from app.tests.utils.extension import create_extension
+from app.schemas.team_extension import TeamExtensionUpdate
+from app.schemas.user_extension import UserExtensionUpdate
+from app.tests.utils.extension import (
+    create_extension,
+    create_team_extension,
+    create_user_extension,
+)
 from app.tests.utils.team import create_team
+from app.tests.utils.user import create_user
 
 
 def test_create_extension(db: Session) -> None:
@@ -53,12 +59,13 @@ def test_read_extensions(db: Session) -> None:
 def test_update_team_extension(db: Session) -> None:
     extension = create_extension(db, name="ext1")
     team = create_team(db)
-    team_extension_in = TeamExtensionCreate(extension_id=extension.id, team_id=team.id)
-    team_extension = crud.extension.update_team_extension(
+    team_extension_in = TeamExtensionUpdate(extension_id=extension.id, team_id=team.id)
+    team_extension = crud.extension.create_or_update_team_extension(
         db, team_extension_in=team_extension_in
     )
     assert team_extension
     assert team_extension.id
+    assert team_extension.is_active
     assert team_extension.extension_id == extension.id
     assert team_extension.team_id == team.id
 
@@ -66,11 +73,54 @@ def test_update_team_extension(db: Session) -> None:
 def test_update_user_extension(db: Session) -> None:
     extension = create_extension(db, name="ext1")
     user = create_user(db)
-    user_extension_in = UserExtensionCreate(extension_id=extension.id, user_id=user.id)
-    user_extension = crud.extension.update_user_extension(
+    user_extension_in = UserExtensionUpdate(extension_id=extension.id, user_id=user.id)
+    user_extension = crud.extension.create_or_update_user_extension(
         db, user_extension_in=user_extension_in
     )
     assert user_extension
     assert user_extension.id
+    assert user_extension.is_active
     assert user_extension.extension_id == extension.id
     assert user_extension.user_id == user.id
+
+
+def test_deactivate_team_extension(db: Session) -> None:
+    extension = create_extension(db, name="ext1")
+    team = create_team(db)
+    create_team_extension(db, extension_id=extension.id, team_id=team.id)
+    team_extension_in = TeamExtensionUpdate(
+        is_active=False, extension_id=extension.id, team_id=team.id
+    )
+    team_extension = crud.extension.create_or_update_team_extension(
+        db, team_extension_in=team_extension_in
+    )
+    assert team_extension
+    assert team_extension.id
+    assert not team_extension.is_active
+    assert team_extension.extension_id == extension.id
+    assert team_extension.team_id == team.id
+    assert isinstance(team_extension.deactivated_at, datetime.datetime)
+    assert team_extension.deactivated_at.replace(
+        tzinfo=datetime.timezone.utc
+    ) < datetime.datetime.now(datetime.UTC)
+
+
+def test_deactivate_user_extension(db: Session) -> None:
+    extension = create_extension(db, name="ext1")
+    user = create_user(db)
+    create_user_extension(db, extension_id=extension.id, user_id=user.id)
+    user_extension_in = UserExtensionUpdate(
+        is_active=False, extension_id=extension.id, user_id=user.id
+    )
+    user_extension = crud.extension.create_or_update_user_extension(
+        db, user_extension_in=user_extension_in
+    )
+    assert user_extension
+    assert user_extension.id
+    assert not user_extension.is_active
+    assert user_extension.extension_id == extension.id
+    assert user_extension.user_id == user.id
+    assert isinstance(user_extension.deactivated_at, datetime.datetime)
+    assert user_extension.deactivated_at.replace(
+        tzinfo=datetime.timezone.utc
+    ) < datetime.datetime.now(datetime.UTC)

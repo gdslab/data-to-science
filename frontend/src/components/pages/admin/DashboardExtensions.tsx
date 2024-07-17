@@ -1,11 +1,13 @@
 import axios, { AxiosResponse } from 'axios';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLoaderData, useRevalidator } from 'react-router-dom';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 
 import { Team } from '../teams/Teams';
 import Alert, { Status } from '../../Alert';
 import { User } from '../../../AuthContext';
+
+import { sorter } from '../../utils';
 
 type Extension = {
   id: string;
@@ -27,8 +29,8 @@ export async function loader() {
     if (extensions && teams && users) {
       return {
         extensions: extensions.data,
-        teams: teams.data.map((team) => ({ ...team, extensions: [] })),
-        users: users.data.map((user) => ({ ...user, extensions: [] })),
+        teams: teams.data.sort((a, b) => sorter(a.title, b.title)),
+        users: users.data.sort((a, b) => sorter(a.first_name, b.first_name)),
       };
     } else {
       return { extensions: [], teams: [], users: [] };
@@ -56,6 +58,10 @@ function ExtensionList({
 }: ExtensionList) {
   const revalidator = useRevalidator();
 
+  useEffect(() => {
+    setStatus(null);
+  }, []);
+
   if (!teamId && !userId) {
     console.error('Must provide team or user id');
     return;
@@ -66,20 +72,15 @@ function ExtensionList({
       // send api request to toggle on extension for team
       try {
         const payload = {
-          teamId: teamId,
-          extensionId: e.target.value,
-          activate: e.target.checked,
+          team_id: teamId,
+          extension_id: e.target.value,
+          is_active: e.target.checked,
         };
         const response = await axios.put(
           `${import.meta.env.VITE_API_V1_STR}/admin/extensions/team`,
           payload
         );
         if (response.status === 200) {
-          // update status
-          setStatus({
-            type: 'success',
-            msg: `Extension ${e.target.checked ? 'activated' : 'deactivated'}`,
-          });
           revalidator.revalidate();
         } else {
           // update status
@@ -94,20 +95,15 @@ function ExtensionList({
       // send api request to toggle on extension for user
       try {
         const payload = {
-          userId: userId,
-          extensionId: e.target.value,
-          activate: e.target.checked,
+          user_id: userId,
+          extension_id: e.target.value,
+          is_active: e.target.checked,
         };
         const response = await axios.put(
           `${import.meta.env.VITE_API_V1_STR}/admin/extensions/user`,
           payload
         );
         if (response.status === 200) {
-          // update status
-          setStatus({
-            type: 'success',
-            msg: `Extension ${e.target.checked ? 'activated' : 'deactivated'}`,
-          });
           revalidator.revalidate();
         } else {
           // update status
@@ -123,7 +119,7 @@ function ExtensionList({
   return (
     <div className="flex gap-4">
       {extensions.map((extension) => (
-        <div className="flex items-center">
+        <div key={extension.id} className="flex items-center">
           <input
             type="checkbox"
             id={extension.id}
@@ -157,8 +153,6 @@ export default function DashboardExtensions() {
   const [status, setStatus] = useState<Status | null>(null);
 
   const { extensions, teams, users } = useLoaderData() as LoaderData;
-
-  console.log(extensions);
 
   return (
     <section className="w-full bg-white">
@@ -201,7 +195,7 @@ export default function DashboardExtensions() {
                         <td className="p-4 bg-white">
                           <ExtensionList
                             extensions={extensions}
-                            selectedExtensions={team.extensions}
+                            selectedExtensions={team.exts}
                             setStatus={setStatus}
                             teamId={team.id}
                           />
@@ -233,7 +227,7 @@ export default function DashboardExtensions() {
                         <td className="p-4 bg-white">
                           <ExtensionList
                             extensions={extensions}
-                            selectedExtensions={user.extensions}
+                            selectedExtensions={user.exts}
                             setStatus={setStatus}
                             userId={user.id}
                           />
@@ -246,9 +240,8 @@ export default function DashboardExtensions() {
             </TabPanel>
           </TabPanels>
         </TabGroup>
+        {status && <Alert alertType={status.type}>{status.msg}</Alert>}
       </div>
-
-      {status && <Alert alertType={status.type}>{status.msg}</Alert>}
     </section>
   );
 }

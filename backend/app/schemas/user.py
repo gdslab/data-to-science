@@ -1,8 +1,7 @@
 from datetime import datetime
-from uuid import UUID
-from typing import TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING
 
-from pydantic import AnyHttpUrl, BaseModel
+from pydantic import AnyHttpUrl, BaseModel, UUID4
 
 
 if TYPE_CHECKING:
@@ -13,9 +12,9 @@ else:
 
 # shared properties
 class UserBase(BaseModel):
-    email: EmailStr | None = None
-    first_name: str | None = None
-    last_name: str | None = None
+    email: Optional[EmailStr] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     is_email_confirmed: bool = False
     is_approved: bool = False
 
@@ -30,20 +29,21 @@ class UserCreate(UserBase):
 
 # properties to receive via API on update
 class UserUpdate(UserBase):
-    password: str | None = None
+    password: Optional[str] = None
 
 
 # properties shared by models stored in DB
 class UserInDBBase(UserBase, from_attributes=True):
-    id: UUID
+    id: UUID4
     created_at: datetime
 
 
 # additional properties to return via API
 class User(UserInDBBase):
-    api_access_token: str | None = None
+    api_access_token: Optional[str] = None
+    exts: List[str] = []
     is_superuser: bool
-    profile_url: AnyHttpUrl | None = None
+    profile_url: Optional[AnyHttpUrl] = None
 
 
 # additional properties stored in DB
