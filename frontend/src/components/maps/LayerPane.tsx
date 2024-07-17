@@ -85,7 +85,7 @@ function MapToolbar() {
           />
           <label
             htmlFor="scale-checkbox"
-            className="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+            className="ms-2 text-sm font-medium text-gray-900"
             title="Increases tile resolution from 512x512 to 1024x1024"
           >
             Increase tile resolution
@@ -130,12 +130,29 @@ export function formatDate(datestring) {
 
 function RasterStats({ stats }: { stats: Band['stats'] }) {
   return (
-    <div className="grid grid-cols-4 gap-1.5">
-      <span>Mean: {stats.mean.toFixed(2)}</span>
-      <span>Min: {stats.minimum.toFixed(2)}</span>
-      <span>Max: {stats.maximum.toFixed(2)}</span>
-      <span>Std. Dev: {stats.stddev.toFixed(2)}</span>
-    </div>
+    <fieldset className="border border-solid border-slate-300 p-2">
+      <legend className="block text-sm text-gray-400 font-semibold pt-1 pb-1">
+        Stats
+      </legend>
+      <div className="flex flex-row flex-wrap justify-between gap-1.5">
+        <div className="flex flex-col">
+          <span className="font-semibold">Mean</span>
+          <span>{stats.mean.toFixed(2)}</span>
+        </div>
+        <div className="flex flex-col">
+          <span className="font-semibold">Min</span>
+          <span>{stats.minimum.toFixed(2)}</span>
+        </div>
+        <div className="flex flex-col">
+          <span className="font-semibold">Max</span>
+          <span>{stats.maximum.toFixed(2)}</span>
+        </div>
+        <div className="flex flex-col">
+          <span className="font-semibold">Std. Dev</span>
+          <span>{stats.stddev.toFixed(2)}</span>
+        </div>
+      </div>
+    </fieldset>
   );
 }
 
@@ -370,13 +387,13 @@ export default function LayerPane({
                             <div className="grid grid-rows-2 text-slate-700 text-sm gap-1.5">
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                  <span className="text-sm text-slate-400 font-semibold">
+                                  <span className="text-sm text-gray-400 font-semibold">
                                     Platform:{' '}
                                   </span>
                                   {flight.platform.replace('_', ' ')}
                                 </div>
                                 <div>
-                                  <span className="text-sm text-slate-400 font-semibold">
+                                  <span className="text-sm text-gray-400 font-semibold">
                                     Sensor:
                                   </span>{' '}
                                   {flight.sensor}
@@ -384,7 +401,7 @@ export default function LayerPane({
                               </div>
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                  <span className="text-sm text-slate-400 font-semibold">
+                                  <span className="text-sm text-gray-400 font-semibold">
                                     Altitude (m):
                                   </span>{' '}
                                   {flight.altitude}
@@ -417,7 +434,7 @@ export default function LayerPane({
                               >
                                 <div className="text-slate-600 text-sm">
                                   <div
-                                    className="grid grid-flow-row auto-rows-max"
+                                    className="flex flex-col gap-1.5"
                                     onClick={() => {
                                       if (
                                         (dataProduct && !activeDataProduct) ||
@@ -445,12 +462,14 @@ export default function LayerPane({
                                       }
                                     }}
                                   >
-                                    <strong>
-                                      {getDataProductName(dataProduct.data_type)}
-                                    </strong>
+                                    <div>
+                                      <span className="font-bold">
+                                        {getDataProductName(dataProduct.data_type)}
+                                      </span>
+                                    </div>
                                     {dataProduct.data_type !== 'point_cloud' ? (
-                                      <fieldset className="border border-solid border-slate-300 p-3">
-                                        <legend className="block text-sm text-gray-400 font-bold pt-2 pb-1">
+                                      <fieldset className="border border-solid border-slate-300 p-2">
+                                        <legend className="block text-sm text-gray-400 font-semibold pt-1 pb-1">
                                           Band Info
                                         </legend>
                                         <div className="flex flex-row flex-wrap justify-start gap-1.5">
@@ -464,19 +483,15 @@ export default function LayerPane({
                                         </div>
                                       </fieldset>
                                     ) : null}
-                                    {dataProduct.data_type !== 'point_cloud' ? (
-                                      <div className="grid grid-flow-col auto-cols-max gap-1.5">
-                                        {dataProduct.stac_properties.raster.length ===
-                                        1 ? (
-                                          <RasterStats
-                                            stats={
-                                              dataProduct.stac_properties.raster[0]
-                                                .stats
-                                            }
-                                          />
-                                        ) : null}
-                                      </div>
-                                    ) : null}
+                                    {dataProduct.data_type !== 'point_cloud' &&
+                                      dataProduct.stac_properties.raster.length ===
+                                        1 && (
+                                        <RasterStats
+                                          stats={
+                                            dataProduct.stac_properties.raster[0].stats
+                                          }
+                                        />
+                                      )}
                                   </div>
                                   {activeDataProduct &&
                                   activeDataProduct.id === dataProduct.id &&

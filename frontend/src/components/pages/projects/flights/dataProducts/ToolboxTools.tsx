@@ -99,7 +99,7 @@ const LidarTools = () => {
             <Field id="chm-checkbox" type="checkbox" name="chm" disabled />
             <label
               htmlFor="chm-checkbox"
-              className="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+              className="ms-2 text-sm font-medium text-gray-900"
             >
               Canopy Height Model (CHM) <span className="italic">Coming soon</span>
             </label>
