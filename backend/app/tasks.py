@@ -400,15 +400,19 @@ def generate_zonal_statistics(
     input_raster: str, zone_feature: str
 ) -> list[ZonalStatistics]:
     with rasterio.open(input_raster) as src:
-        # read first band into array
-        data = src.read(1)
-        # affine transformation
-        affine = src.transform
         # read zone feature geojson and update crs to match src crs
         zone = gpd.read_file(zone_feature, driver="GeoJSON")
         zone = zone.to_crs(src.crs)
+        minx, miny, maxx, maxy = zone.total_bounds
+        # affine transformation
+        affine = src.transform
+        # create window for total bounding box of all zones in zone_feature
+        window = rasterio.windows.from_bounds(minx, miny, maxx, maxy, affine)
+        window_affine = rasterio.windows.transform(window, src.transform)
+        # read first band contained within window into array
+        data = src.read(1, window=window)
         # get stats for zone
-        stats = zonal_stats(zone, data, affine=affine)
+        stats = zonal_stats(zone, data, affine=window_affine)
 
     return stats
 
