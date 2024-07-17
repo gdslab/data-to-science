@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
+import axios, { AxiosResponse, isAxiosError } from 'axios';
 import { FeatureCollection } from 'geojson';
 import shpwrite, { DownloadOptions, ZipOptions } from '@mapbox/shp-write';
 import { MapLayerFeatureCollection } from '../Project';
@@ -39,8 +39,16 @@ export async function shpToGeoJSON(file: File): Promise<FeatureCollection | null
     } else {
       throw new Error('Unable to process zipped shapefile');
     }
-  } catch {
-    throw new Error('Unable to process zipped shapefile');
+  } catch (err) {
+    if (isAxiosError(err)) {
+      if (err.response && err.response.data.detail) {
+        throw new Error(err.response.data.detail);
+      } else {
+        throw new Error('Unable to process zipped shapefile');
+      }
+    } else {
+      throw new Error('Unable to process zipped shapefile');
+    }
   }
 }
 

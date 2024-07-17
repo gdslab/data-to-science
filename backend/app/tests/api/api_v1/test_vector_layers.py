@@ -92,6 +92,20 @@ def test_create_vector_layer_without_project_role(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+def test_create_vector_layer_with_more_than_five_hundred_features_fails(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id)
+    too_many_features = get_geojson_feature_collection("too_many_features")
+
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers",
+        json=too_many_features,
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
 def test_read_vector_layer_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:

@@ -24,6 +24,7 @@ const defaultValues = {
 };
 
 export default function MapLayerUpload() {
+  const [isProcessing, setIsProcessing] = useState(false);
   const [mlFileInputKey, setMLFileInputKey] = useState(Date.now());
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
@@ -37,7 +38,7 @@ export default function MapLayerUpload() {
     resolver: yupResolver(validationSchema),
   });
   const {
-    formState: { errors },
+    formState: { errors, isSubmitting },
     handleSubmit,
     register,
     reset,
@@ -82,6 +83,8 @@ export default function MapLayerUpload() {
   };
 
   useEffect(() => {
+    reset();
+    setUploadFile(null);
     setStatus(null);
   }, [open]);
 
@@ -115,6 +118,7 @@ export default function MapLayerUpload() {
                   <input className="hidden" {...register('geojson')} />
                   <MapLayerFileInput
                     inputKey={mlFileInputKey}
+                    setIsProcessing={setIsProcessing}
                     setStatus={setStatus}
                     uploadFile={uploadFile}
                     setUploadFile={setUploadFile}
@@ -126,12 +130,26 @@ export default function MapLayerUpload() {
                     <Button
                       type="submit"
                       size="sm"
-                      disabled={errors.layerName || errors.geojson ? true : false}
+                      disabled={
+                        isSubmitting ||
+                        isProcessing ||
+                        !uploadFile ||
+                        errors.layerName ||
+                        errors.geojson
+                          ? true
+                          : false
+                      }
                     >
-                      Upload
+                      {isSubmitting ? 'Uploading...' : 'Upload'}
                     </Button>
                   </div>
                 </div>
+                {/* Display processing message while file is read */}
+                {isProcessing && (
+                  <Alert alertType="info">
+                    Please wait for selected file to be processed
+                  </Alert>
+                )}
                 {/* Display any error messages from backend API */}
                 {status && status.type && status.msg && (
                   <Alert alertType={status.type}>{status.msg}</Alert>

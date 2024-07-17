@@ -7,7 +7,7 @@ import { MapLayerFormInput } from './MapLayerUpload';
 import { shpToGeoJSON } from './utils';
 
 import uploadPageIcon from '../../../../assets/upload-page-icon.svg';
-import { UseFormSetValue } from 'react-hook-form';
+import { UseFormSetError, UseFormSetValue } from 'react-hook-form';
 
 function isFeatureGeometryMatching(featureCollection: FeatureCollection): boolean {
   let geometryMatches = true;
@@ -26,11 +26,13 @@ function isFeatureGeometryMatching(featureCollection: FeatureCollection): boolea
 export default function MapLayerFileInput({
   inputKey,
   uploadFile,
+  setIsProcessing,
   setStatus,
   setUploadFile,
 }: {
   inputKey: number;
   uploadFile: File | null;
+  setIsProcessing: React.Dispatch<React.SetStateAction<boolean>>;
   setStatus: React.Dispatch<React.SetStateAction<Status | null>>;
   setUploadFile: React.Dispatch<React.SetStateAction<File | null>>;
 }) {
@@ -43,7 +45,11 @@ export default function MapLayerFileInput({
    * Reads contents of uploaded GeoJSON.
    * @param file GeoJSON file.
    */
-  function handleFileRead(file: File, setValue: UseFormSetValue<MapLayerFormInput>) {
+  function handleFileRead(
+    file: File,
+    setError: UseFormSetError<MapLayerFormInput>,
+    setValue: UseFormSetValue<MapLayerFormInput>
+  ) {
     const fileReader = new FileReader();
     fileReader.onload = () => {
       const result = fileReader.result;
@@ -52,16 +58,22 @@ export default function MapLayerFileInput({
           const parsedGeoJSON: FeatureCollection = JSON.parse(result);
           // display error if no features included in collection
           if (parsedGeoJSON.features.length < 1) {
-            setStatus({
-              type: 'error',
-              msg: 'Feature Collection must have at least one feature',
+            setError('geojson', {
+              type: 'custom',
+              message: 'Feature Collection must have at least one feature',
+            });
+            clearFields(setValue);
+          } else if (parsedGeoJSON.features.length > 500) {
+            setError('geojson', {
+              type: 'custom',
+              message: 'Feature Collection cannot contain more than 500 features',
             });
             clearFields(setValue);
           } else if (!isFeatureGeometryMatching(parsedGeoJSON)) {
             // display error if features in collection do not have same geometry type
-            setStatus({
-              type: 'error',
-              msg: 'Features in Feature Collection must have same geometry type',
+            setError('geojson', {
+              type: 'custom',
+              message: 'Features in Feature Collection must have same geometry type',
             });
             clearFields(setValue);
           } else {
@@ -69,24 +81,38 @@ export default function MapLayerFileInput({
             setValue('geojson', result);
             setValue('layerName', file.name);
           }
+          setIsProcessing(false);
         } catch (err) {
-          setStatus({ type: 'error', msg: 'Unable to parse uploaded GeoJSON' });
+          setError('geojson', {
+            type: 'custom',
+            message: 'Unable to parse uploaded GeoJSON',
+          });
           clearFields(setValue);
+          setIsProcessing(false);
         }
       } else {
-        setStatus({ type: 'error', msg: 'Unable to parse uploaded GeoJSON' });
+        setError('geojson', {
+          type: 'custom',
+          message: 'Unable to parse uploaded GeoJSON',
+        });
         clearFields(setValue);
+        setIsProcessing(false);
       }
     };
     fileReader.onerror = () => {
-      setStatus({ type: 'error', msg: 'Unable to parse uploaded GeoJSON' });
+      setError('geojson', {
+        type: 'custom',
+        message: 'Unable to parse uploaded GeoJSON',
+      });
       clearFields(setValue);
+      setIsProcessing(false);
     };
     fileReader.readAsText(file);
   }
 
   function handleFileChange(
     event: ChangeEvent<HTMLInputElement>,
+    setError: UseFormSetError<MapLayerFormInput>,
     setValue: UseFormSetValue<MapLayerFormInput>
   ) {
     setStatus(null);
@@ -94,11 +120,16 @@ export default function MapLayerFileInput({
     const files = event.target.files;
     if (files && files.length > 0) {
       const file = files[0];
-      processFile(file, setValue);
+      processFile(file, setError, setValue);
     }
   }
 
-  function processFile(file: File, setValue: UseFormSetValue<MapLayerFormInput>) {
+  function processFile(
+    file: File,
+    setError: UseFormSetError<MapLayerFormInput>,
+    setValue: UseFormSetValue<MapLayerFormInput>
+  ) {
+    setIsProcessing(true);
     setUploadFile(file);
     if (
       file.type === 'application/zip' ||
@@ -111,30 +142,33 @@ export default function MapLayerFileInput({
             setValue('geojson', JSON.stringify(data));
             setValue('layerName', file.name);
           } else {
-            setStatus({
-              type: 'error',
-              msg: 'Unable to process uploaded file',
+            setError('geojson', {
+              type: 'custom',
+              message: 'Unable to process uploaded file',
             });
             clearFields(setValue);
           }
+          setIsProcessing(false);
         })
         .catch((err) => {
-          setStatus({
-            type: 'error',
-            msg: err.message ? err.message : 'Unable to process uploaded file',
+          setError('geojson', {
+            type: 'custom',
+            message: err.message ? err.message : 'Unable to process uploaded file',
           });
           clearFields(setValue);
+          setIsProcessing(false);
         });
     } else if (
       file.type === 'application/geo+json' ||
       file.type === 'application/json'
     ) {
-      handleFileRead(file, setValue);
+      handleFileRead(file, setError, setValue);
     }
   }
 
   function dropHandler(
     event: React.DragEvent<HTMLDivElement>,
+    setError: UseFormSetError<MapLayerFormInput>,
     setValue: UseFormSetValue<MapLayerFormInput>
   ) {
     event.preventDefault();
@@ -144,7 +178,7 @@ export default function MapLayerFileInput({
         if (event.dataTransfer.items[itemIdx].kind === 'file') {
           const file = event.dataTransfer.items[itemIdx].getAsFile();
           if (file) {
-            processFile(file, setValue);
+            processFile(file, setError, setValue);
           } else {
             setStatus({ type: 'error', msg: 'Unable to process file' });
           }
@@ -174,13 +208,13 @@ export default function MapLayerFileInput({
 
   return (
     <ConnectForm>
-      {({ clearErrors, setValue }) => (
+      {({ clearErrors, setError, setValue }) => (
         <div
           className="w-96 h-64 flex flex-col items-center justify-center gap-4 rounded-lg bg-gray-50 border-dashed border-2 border-gray-400"
           onDrop={(event) => {
             // clear any form errors before processing new file
             clearErrors();
-            dropHandler(event, setValue);
+            dropHandler(event, setError, setValue);
           }}
           onDragOver={dragOverHandler}
           onDragLeave={dragLeaveHandler}
@@ -205,7 +239,7 @@ export default function MapLayerFileInput({
             onChange={(event) => {
               // clear any form errors before processing new file
               clearErrors();
-              handleFileChange(event, setValue);
+              handleFileChange(event, setError, setValue);
             }}
           />
         </div>
