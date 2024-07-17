@@ -43,7 +43,7 @@ function FieldTimepoints({
               <input
                 name={`treatment.${treatmentIdx}.measurement.${measurementIdx}.timepoint.${timepointIdx}`}
                 type="checkbox"
-                className="w-4 h-4 size-4 rounded text-accent2 bg-gray-100 border-gray-300 rounded focus:ring-slate-500 dark:focus:ring-slate-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                className="w-4 h-4 size-4 rounded text-accent2 bg-gray-100 border-gray-300 rounded focus:ring-slate-500 focus:ring-2"
                 onChange={(e) => {
                   if (e.target.checked) {
                     addSelectedTimepoint(
