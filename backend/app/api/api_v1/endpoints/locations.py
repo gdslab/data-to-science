@@ -28,6 +28,7 @@ router = APIRouter()
 logger = logging.getLogger("__name__")
 
 
+FEATURE_LIMIT = 500
 REQUIRED_SHP_PARTS = [".dbf", ".shp", ".shx"]
 
 
@@ -186,6 +187,11 @@ def shapefile_to_geojson(
     Returns:
         dict: GeoJSON object.
     """
+    if len(src) > FEATURE_LIMIT:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Shapefile cannot contain more than {FEATURE_LIMIT} features",
+        )
     gdf = gpd.GeoDataFrame.from_features(src, crs=src.crs)
     geojson = json.loads(gdf.to_json(to_wgs84=True))
 

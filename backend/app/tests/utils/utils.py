@@ -206,5 +206,25 @@ def get_geojson_feature_collection(
                 ],
             },
         }
+    elif geom_type.lower() == "too_many_features":
+        return {
+            "layer_name": "Point Example",
+            "geojson": {
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "geometry": {
+                            "type": "Point",
+                            "coordinates": [102.0, 0.5],
+                        },
+                        "properties": {
+                            "prop0": "value0",
+                        },
+                    }
+                ]
+                * 501,
+            },
+        }
     else:
         raise ValueError(f"Unknown geometry type provided: {geom_type}")

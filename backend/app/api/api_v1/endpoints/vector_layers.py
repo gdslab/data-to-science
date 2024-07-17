@@ -34,6 +34,13 @@ def create_vector_layer(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="GeoJSON Feature Collection must have at least one Feature",
         )
+    # Raise exception if feature collection contains more than 500 features
+    if len(vector_layer_in.geojson.features) > 500:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="GeoJSON Feature Collection cannot contain more than 500 feautres",
+        )
+
     # Raise exception if features do not have same geometry type
     first_features_geometry_type = vector_layer_in.geojson.features[0].geometry.type
     for feature in vector_layer_in.geojson.features:
