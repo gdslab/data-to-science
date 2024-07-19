@@ -1,5 +1,6 @@
 import logging
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Sequence
 from uuid import UUID
@@ -11,6 +12,7 @@ from sqlalchemy.orm import Session
 from app import crud, models, schemas
 from app.api import deps
 from app.core.config import settings
+from app.tasks import run_raw_data_image_processing
 
 router = APIRouter()
 
@@ -45,6 +47,19 @@ def get_raw_data_dir(project_id: str, flight_id: str, raw_data_id: str) -> Path:
     return raw_data_dir
 
 
+def get_upload_dir() -> str:
+    """Returns static files directory.
+
+    Returns:
+        str: Path to static files directory.
+    """
+    if os.environ.get("RUNNING_TESTS") == "1":
+        upload_dir = settings.TEST_STATIC_DIR
+    else:
+        upload_dir = settings.STATIC_DIR
+    return upload_dir
+
+
 @router.get("/{raw_data_id}", response_model=schemas.RawData)
 def read_raw_data(
     raw_data_id: UUID,
@@ -57,10 +72,7 @@ def read_raw_data(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
-    if os.environ.get("RUNNING_TESTS") == "1":
-        upload_dir = settings.TEST_STATIC_DIR
-    else:
-        upload_dir = settings.STATIC_DIR
+    upload_dir = get_upload_dir()
     raw_data = crud.raw_data.get_single_by_id(
         db, raw_data_id=raw_data_id, upload_dir=upload_dir
     )
@@ -73,10 +85,7 @@ def download_raw_data(
     flight: models.Flight = Depends(deps.can_read_flight),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    if os.environ.get("RUNNING_TESTS") == "1":
-        upload_dir = settings.TEST_STATIC_DIR
-    else:
-        upload_dir = settings.STATIC_DIR
+    upload_dir = get_upload_dir()
     raw_data = crud.raw_data.get_single_by_id(
         db, raw_data_id=raw_data_id, upload_dir=upload_dir
     )
@@ -102,10 +111,7 @@ def read_all_raw_data(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
-    if os.environ.get("RUNNING_TESTS") == "1":
-        upload_dir = settings.TEST_STATIC_DIR
-    else:
-        upload_dir = settings.STATIC_DIR
+    upload_dir = get_upload_dir()
     all_raw_data = crud.raw_data.get_multi_by_flight(
         db, flight_id=flight.id, upload_dir=upload_dir
     )
@@ -137,3 +143,70 @@ def deactivate_raw_data(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to deactivate"
         )
     return deactivated_raw_data
+
+
+@router.get("/{raw_data_id}/process")
+def process_raw_data(
+    raw_data_id: UUID,
+    project: models.Project = Depends(deps.can_read_write_project),
+    flight: models.Flight = Depends(deps.can_read_write_flight),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    # check if user has permission to run this endpoint (by user.extensions or team.extensions)
+    pass
+
+    # get raw data from db
+    raw_data = crud.raw_data.get_single_by_id(
+        db, raw_data_id=raw_data_id, upload_dir=get_upload_dir()
+    )
+    if not raw_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Raw data not found"
+        )
+
+    # create job
+    job_in = schemas.job.JobCreate(
+        name="processing-raw-data",
+        state="PENDING",
+        status="WAITING",
+        start_time=datetime.now(),
+        raw_data_id=raw_data.id,
+    )
+    job = crud.job.create_job(db, obj_in=job_in)
+
+    # get required paths from raw data object and environment variables
+    upload_dir = get_upload_dir()
+    storage_path = raw_data.filepath
+    external_storage_dir = os.environ.get("EXTERNAL_STORAGE")
+    rabbitmq_host = os.environ.get("RABBITMQ_HOST")
+
+    # only start this workflow if external storage and rabbitmq host are provided
+    if external_storage_dir and os.path.isdir(external_storage_dir) and rabbitmq_host:
+        run_raw_data_image_processing.apply_async(
+            args=(
+                external_storage_dir,
+                storage_path,
+                raw_data.original_filename,
+                project.id,
+                raw_data.flight_id,
+                raw_data.id,
+                current_user.id,
+                job.id,
+            )
+        )
+    else:
+        logger.error(
+            "Unable to start raw data processing due to unavailable external storage or RabbitMQ service"
+        )
+        # update job
+        job_update_in = schemas.JobUpdate(
+            state="COMPLETED", status="FAILED", end_time=datetime.now()
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER,
+            detail="Unable to start request",
+        )
+
+    # send response back to client
+    return status.HTTP_200_OK

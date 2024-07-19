@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, ForeignKey, String
-from sqlalchemy.dialects.postgresql import ENUM, UUID
+from sqlalchemy.dialects.postgresql import ENUM, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base_class import Base
 
@@ -22,6 +22,7 @@ class Job(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
+    extra: Mapped[dict] = mapped_column(JSONB, nullable=True)
     name: Mapped[str] = mapped_column(String(30), nullable=False)
     state: Mapped[enumerate] = mapped_column(
         ENUM(*JOB_STATE, name="job_state"), nullable=False
@@ -44,7 +45,7 @@ class Job(Base):
 
     def __repr__(self) -> str:
         return (
-            f"Job(id={self.id!r}, name={self.name!r}, state={self.state!r}, "
-            f"status={self.status!r}, start_time={self.start_time!r}, "
-            f"end_time={self.end_time!r})"
+            f"Job(id={self.id!r}, extra={self.extra!r}, name={self.name!r}, "
+            f"state={self.state!r}, status={self.status!r}, "
+            f"start_time={self.start_time!r}, end_time={self.end_time!r})"
         )

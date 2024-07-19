@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Sequence
 from uuid import UUID, uuid4
@@ -118,39 +119,79 @@ def process_data_product_from_external_storage(
     token_db_obj = crud.user.get_single_use_token(
         db, token_hash=security.get_token_hash(payload.token, salt="rawdata")
     )
+    # find job associated with task
+    job = crud.job.get(db, id=payload.job_id)
     # check if token is valid
     if not token_db_obj:
+        job_update_in = schemas.JobUpdate(
+            state="COMPLETED", status="FAILED", end_time=datetime.now()
+        )
+        crud.job.update(db, db_obj=job, obj_in=job_update_in)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
         )
 
     # check if user has write permission for project
     user = crud.user.get(db, id=token_db_obj.user_id)
+    if not user:
+        job_update_in = schemas.JobUpdate(
+            state="COMPLETED", status="FAILED", end_time=datetime.now()
+        )
+        crud.job.update(db, db_obj=job, obj_in=job_update_in)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
     if not isinstance(
         deps.can_read_write_project(project_id=project_id, db=db, current_user=user),
         models.Project,
     ):
+        job_update_in = schemas.JobUpdate(
+            state="COMPLETED", status="FAILED", end_time=datetime.now()
+        )
+        crud.job.update(db, db_obj=job, obj_in=job_update_in)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not allowed to add data products to project",
         )
 
-    # iterate over each new data product and start post processing celery task
-    for data_product in payload.products:
-        if not os.path.exists(data_product.storage_path):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Unable to locate data product on disk",
-            )
-        process_data_product_uploaded_to_tusd(
-            db=db,
-            user_id=user.id,
-            storage_path=Path(data_product.storage_path),
-            original_filename=Path(data_product.filename),
-            dtype=data_product.data_type,
-            project_id=project_id,
-            flight_id=flight_id,
+    # check if job failed
+    if not payload.status.code:
+        # update job table to show it failed
+        job_update_in = schemas.JobUpdate(
+            state="COMPLETED", status="FAILED", end_time=datetime.now()
         )
+        crud.job.update(db, db_obj=job, obj_in=job_update_in)
+    else:
+        # iterate over each new data product and start post processing celery task
+        for data_product in payload.products:
+            if not os.path.exists(data_product.storage_path):
+                job_update_in = schemas.JobUpdate(
+                    state="COMPLETED", status="FAILED", end_time=datetime.now()
+                )
+                crud.job.update(db, db_obj=job, obj_in=job_update_in)
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Unable to locate data product on disk",
+                )
+
+        # data products successfully derived from raw data
+        job_update_in = schemas.JobUpdate(
+            state="COMPLETED", status="SUCCESS", end_time=datetime.now()
+        )
+        crud.job.update(db, db_obj=job, obj_in=job_update_in)
+
+        # new jobs will be spawned for each data product as its processed further
+        for data_product in payload.products:
+            process_data_product_uploaded_to_tusd(
+                db=db,
+                user_id=user.id,
+                storage_path=Path(data_product.storage_path),
+                original_filename=Path(data_product.filename),
+                dtype=data_product.data_type,
+                project_id=project_id,
+                flight_id=flight_id,
+            )
 
     # remove token from database
     crud.user.remove_single_use_token(db, db_obj=token_db_obj)
