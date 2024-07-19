@@ -1,4 +1,5 @@
-from typing import List
+from typing import List, Optional
+from uuid import UUID
 
 from sqlalchemy import and_, select, update
 from sqlalchemy.orm import Session
@@ -6,7 +7,9 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.crud.base import CRUDBase
 from app.models.extension import Extension
+from app.models.team import Team
 from app.models.team_extension import TeamExtension
+from app.models.team_member import TeamMember
 from app.models.user_extension import UserExtension
 from app.schemas.extension import ExtensionCreate, ExtensionUpdate
 from app.schemas.team_extension import TeamExtensionUpdate
@@ -21,6 +24,15 @@ class CRUDExtension(CRUDBase[Extension, ExtensionCreate, ExtensionUpdate]):
             session.add(extension)
             session.commit()
             session.refresh(extension)
+            return extension
+
+    def get_extension_by_name(
+        self, db: Session, extension_name: str
+    ) -> Optional[Extension]:
+        select_statement = select(Extension).where(Extension.name == extension_name)
+
+        with db as session:
+            extension = session.scalar(select_statement)
             return extension
 
     def get_extensions(self, db: Session) -> List[Extension]:
@@ -91,6 +103,83 @@ class CRUDExtension(CRUDBase[Extension, ExtensionCreate, ExtensionUpdate]):
                     session.refresh(user_extension)
 
             return user_extension
+
+    def get_team_extension(
+        self, db: Session, extension_id: UUID, team_id: UUID
+    ) -> Optional[TeamExtension]:
+        select_statement = select(TeamExtension).where(
+            and_(
+                TeamExtension.extension_id == extension_id,
+                TeamExtension.team_id == team_id,
+                TeamExtension.is_active,
+            )
+        )
+
+        with db as session:
+            team_extension = session.scalar(select_statement)
+            if team_extension:
+                return team_extension
+
+        return None
+
+    def get_team_extension_by_user(
+        self, db: Session, extension_id: UUID, user_id: UUID
+    ) -> Optional[TeamExtension]:
+        select_statement = (
+            select(TeamExtension)
+            .join(Team)
+            .join(TeamMember)
+            .where(
+                and_(
+                    TeamMember.member_id == user_id,
+                    TeamExtension.extension_id == extension_id,
+                    TeamExtension.is_active,
+                )
+            )
+        )
+
+        with db as session:
+            team_extension = session.scalar(select_statement)
+            if team_extension:
+                return team_extension
+
+    def get_user_extension(
+        self, db: Session, extension_id: UUID, user_id: UUID
+    ) -> Optional[UserExtension]:
+        select_statement = select(UserExtension).where(
+            and_(
+                UserExtension.extension_id == extension_id,
+                UserExtension.user_id == user_id,
+                UserExtension.is_active,
+            )
+        )
+
+        with db as session:
+            user_extension = session.scalar(select_statement)
+            if user_extension:
+                return user_extension
+
+        return None
+
+    def get_user_extensions_list(self, db: Session, user_id: UUID) -> List[str]:
+        select_user_extensions_statement = (
+            select(Extension)
+            .join(UserExtension)
+            .where(UserExtension.user_id == user_id, UserExtension.is_active)
+        )
+        select_team_extesnions_statement = (
+            select(Extension)
+            .join(TeamExtension)
+            .join(Team)
+            .join(TeamMember)
+            .where(and_(TeamMember.member_id == user_id, TeamExtension.is_active))
+        )
+        with db as session:
+            user_extensions = session.scalars(select_user_extensions_statement).all()
+            team_extensions = session.scalars(select_team_extesnions_statement).all()
+            user_extensions.extend(team_extensions)
+            extension_names = set([ext.name for ext in user_extensions])
+            return extension_names
 
 
 extension = CRUDExtension(Extension)

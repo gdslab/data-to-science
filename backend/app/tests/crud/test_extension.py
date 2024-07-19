@@ -15,6 +15,7 @@ from app.tests.utils.extension import (
     create_user_extension,
 )
 from app.tests.utils.team import create_team
+from app.tests.utils.team_member import create_team_member
 from app.tests.utils.user import create_user
 
 
@@ -42,6 +43,14 @@ def test_create_duplicate_extension(db: Session) -> None:
         extension_duplicate = create_extension(
             db, name=extension_name, description=extension_description
         )
+
+
+def test_read_extension_by_name(db: Session) -> None:
+    extension_name = "ext1"
+    create_extension(db, name=extension_name)
+    extension = crud.extension.get_extension_by_name(db, extension_name=extension_name)
+    assert extension
+    assert extension.name == extension_name
 
 
 def test_read_extensions(db: Session) -> None:
@@ -124,3 +133,82 @@ def test_deactivate_user_extension(db: Session) -> None:
     assert user_extension.deactivated_at.replace(
         tzinfo=datetime.timezone.utc
     ) < datetime.datetime.now(datetime.UTC)
+
+
+def test_read_team_extension(db: Session) -> None:
+    extension = create_extension(db, name="ext1", description="Extension 1")
+    team = create_team(db)
+    team_extension = create_team_extension(
+        db, extension_id=extension.id, team_id=team.id
+    )
+    team_extension_in_db = crud.extension.get_team_extension(
+        db, extension_id=extension.id, team_id=team.id
+    )
+    assert team_extension_in_db
+    assert team_extension_in_db.id == team_extension.id
+    assert team_extension_in_db.extension_id == extension.id
+    assert team_extension_in_db.team_id == team.id
+
+
+def test_read_user_extension(db: Session) -> None:
+    extension = create_extension(db, name="ext1", description="Extension 1")
+    user = create_user(db)
+    user_extension = create_user_extension(
+        db, extension_id=extension.id, user_id=user.id
+    )
+    user_extension_in_db = crud.extension.get_user_extension(
+        db, extension_id=extension.id, user_id=user.id
+    )
+    assert user_extension_in_db
+    assert user_extension_in_db.id == user_extension.id
+    assert user_extension_in_db.extension_id == extension.id
+    assert user_extension_in_db.user_id == user.id
+
+
+def test_read_team_extension_by_user(db: Session) -> None:
+    extension = create_extension(db, name="ext1")
+    user = create_user(db)
+    team = create_team(db)
+    team_member = create_team_member(db, email=user.email, team_id=team.id)
+    team_extension = create_team_extension(
+        db, extension_id=extension.id, team_id=team.id
+    )
+    team_extension_by_user = crud.extension.get_team_extension_by_user(
+        db, extension_id=extension.id, user_id=user.id
+    )
+    assert team_extension_by_user
+    assert team_extension_by_user.id == team_extension.id
+    assert team_extension_by_user.extension_id == extension.id
+    assert team_extension_by_user.team_id == team.id
+
+
+def test_read_team_extension_does_not_return_inactive_extension(db: Session) -> None:
+    extension = create_extension(db, name="ext1", description="Extension 1")
+    team = create_team(db)
+    create_team_extension(db, extension_id=extension.id, team_id=team.id)
+    team_extension_in = TeamExtensionUpdate(
+        is_active=False, extension_id=extension.id, team_id=team.id
+    )
+    team_extension = crud.extension.create_or_update_team_extension(
+        db, team_extension_in=team_extension_in
+    )
+    team_extension_in_db = crud.extension.get_team_extension(
+        db, extension_id=extension.id, team_id=team.id
+    )
+    assert team_extension_in_db is None
+
+
+def test_read_user_extension_does_not_return_inactive_extension(db: Session) -> None:
+    extension = create_extension(db, name="ext1", description="Extension 1")
+    user = create_user(db)
+    create_user_extension(db, extension_id=extension.id, user_id=user.id)
+    user_extension_in = UserExtensionUpdate(
+        is_active=False, extension_id=extension.id, user_id=user.id
+    )
+    user_extension = crud.extension.create_or_update_user_extension(
+        db, user_extension_in=user_extension_in
+    )
+    user_extension_in_db = crud.extension.get_user_extension(
+        db, extension_id=extension.id, user_id=user.id
+    )
+    assert user_extension_in_db is None

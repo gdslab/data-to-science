@@ -16,6 +16,7 @@ def create_job(
     status: str = "WAITING",
     start_time: datetime = datetime.now(),
     data_product_id: Optional[UUID] = None,
+    raw_data_id: Optional[UUID] = None,
 ) -> models.Job:
     job_in = JobCreate(
         name=name,
@@ -23,6 +24,7 @@ def create_job(
         status=status,
         start_time=start_time,
         data_product_id=data_product_id,
+        raw_data_id=raw_data_id,
     )
     if extra:
         job_in.extra = extra

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, List, Sequence
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.core.config import settings
 from app.crud.base import CRUDBase
+from app.models.job import Job
 from app.models.raw_data import RawData
 from app.schemas.raw_data import RawDataCreate, RawDataUpdate
 from app.models.utils.user import utcnow
@@ -58,10 +59,7 @@ class CRUDRawData(CRUDBase[RawData, RawDataCreate, RawDataUpdate]):
             all_raw_data = session.execute(stmt).scalars().all()
             all_raw_data_with_status = []
             for raw_data in all_raw_data:
-                if raw_data.jobs and raw_data.jobs.status:
-                    set_status_attr(raw_data, raw_data.jobs.status)
-                else:
-                    set_status_attr(raw_data, "SUCCESS")
+                set_status_attr(raw_data, raw_data.jobs)
                 if raw_data.filepath != "null":
                     set_url_attr(raw_data, upload_dir)
                 all_raw_data_with_status.append(raw_data)
@@ -80,7 +78,16 @@ class CRUDRawData(CRUDBase[RawData, RawDataCreate, RawDataUpdate]):
         return crud.raw_data.get(db, id=raw_data_id)
 
 
-def set_status_attr(raw_data_obj: RawData, status: str | Any):
+def set_status_attr(raw_data_obj: RawData, jobs: List[Job]):
+    upload_job_name = "upload-raw-data"
+    status = None
+    for job in jobs:
+        if job.name == upload_job_name:
+            status = job.status
+
+    if not status:
+        status = "SUCCESS"
+
     setattr(raw_data_obj, "status", status)
 
 

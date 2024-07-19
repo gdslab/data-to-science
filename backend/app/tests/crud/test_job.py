@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.schemas.job import JobUpdate
 from app.tests.utils.job import create_job
+from app.tests.utils.raw_data import SampleRawData
 
 
 def test_create_job(db: Session) -> None:
@@ -23,6 +24,14 @@ def test_create_job(db: Session) -> None:
     assert job.state == state
     assert job.status == status
     assert job.start_time == start_time
+
+
+def test_read_by_raw_data_id(db: Session) -> None:
+    raw_data = SampleRawData(db)
+    job = create_job(db, job_name="test-job", raw_data_id=raw_data.obj.id)
+    assert job
+    assert job.raw_data_id == raw_data.obj.id
+    assert job.name == "test-job"
 
 
 def test_update_job(db: Session) -> None:

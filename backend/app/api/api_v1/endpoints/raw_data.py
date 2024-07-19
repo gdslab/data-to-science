@@ -153,8 +153,45 @@ def process_raw_data(
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
+    # check for "cluster" extension
+    required_extension = "cluster"
+    extension = crud.extension.get_extension_by_name(
+        db, extension_name=required_extension
+    )
+    if not extension:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f'Required "{required_extension}" extension not installed',
+        )
     # check if user has permission to run this endpoint (by user.extensions or team.extensions)
-    pass
+    user_has_active_extension = False
+    user_extension = crud.extension.get_user_extension(
+        db, extension_id=extension.id, user_id=current_user.id
+    )
+    if user_extension:
+        user_has_active_extension = True
+    if not user_has_active_extension:
+        team_extension_by_user = crud.extension.get_team_extension_by_user(
+            db, extension_id=extension.id, user_id=current_user.id
+        )
+        if team_extension_by_user:
+            user_has_active_extension = True
+
+    if not user_has_active_extension:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Missing required extension for this operation",
+        )
+
+    # check if a job processing raw data is currently ongoing
+    existing_job = crud.job.get_by_raw_data_id(
+        db, job_name="processing-raw-data", raw_data_id=raw_data_id
+    )
+    if existing_job and existing_job.state != "COMPLETED":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Raw data already being processed",
+        )
 
     # get raw data from db
     raw_data = crud.raw_data.get_single_by_id(

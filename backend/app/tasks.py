@@ -27,6 +27,7 @@ from app.schemas.job import JobUpdate
 from app.utils import gen_preview_from_pointcloud
 from app.utils.ImageProcessor import ImageProcessor
 from app.utils.rabbitmq import get_pika_connection
+from app.utils.RpcClient import RpcClient
 from app.utils.Toolbox import Toolbox
 from app.utils.unique_id import generate_unique_id
 
@@ -484,15 +485,23 @@ def run_raw_data_image_processing(
 
     try:
         # publish message to external server
-        connection = get_pika_connection()
-        # establish channel connection and send raw data identifier
-        channel = connection.channel()
-        channel.queue_declare("raw-data-processing")
-        channel.basic_publish(
-            exchange="", routing_key="raw-data-processing", body=raw_data_identifier
-        )
-        # close connection
-        connection.close()
+        rpc_client = RpcClient(routing_key="raw-data-start-process-queue")
+        batch_id = rpc_client.call(raw_data_identifier)
+        rpc_client.connection.close()
+
+        logger.info(f"Batch_ID: {batch_id}")
+
+        # connection = get_pika_connection()
+        # # establish channel connection and send raw data identifier
+        # channel = connection.channel()
+        # channel.queue_declare("raw-data-start-process-queue")
+        # channel.basic_publish(
+        #     exchange="",
+        #     routing_key="raw-data-start-process-queue",
+        #     body=raw_data_identifier,
+        # )
+        # # close connection
+        # connection.close()
     except Exception:
         logger.exception("Error while publishing to RabbitMQ channel")
         # update job
