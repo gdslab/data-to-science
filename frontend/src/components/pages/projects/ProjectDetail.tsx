@@ -38,7 +38,13 @@ export async function loader({ params }: { params: Params<string> }) {
 
     if (project && project_member && flights && teams) {
       const teamsf = teams.data;
-      teamsf.unshift({ title: 'No team', id: '', is_owner: false, description: '' });
+      teamsf.unshift({
+        title: 'No team',
+        id: '',
+        is_owner: false,
+        description: '',
+        exts: [],
+      });
       return {
         project: project.data,
         role: project_member.data.role,

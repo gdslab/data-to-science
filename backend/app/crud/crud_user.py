@@ -22,6 +22,11 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         with db as session:
             user = session.scalar(stmt)
             if user:
+                setattr(
+                    user,
+                    "exts",
+                    [item.extension.name for item in user.extensions if item.is_active],
+                )
                 set_api_key_attr(db, user)
                 set_url_attr(user)
             return user
@@ -31,6 +36,11 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         with db as session:
             user = session.scalar(stmt)
             if user:
+                setattr(
+                    user,
+                    "exts",
+                    [item.extension.name for item in user.extensions if item.is_active],
+                )
                 set_api_key_attr(db, user)
                 set_url_attr(user)
             return user
@@ -90,6 +100,11 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         with db as session:
             users = session.scalars(statement).all()
             for user in users:
+                setattr(
+                    user,
+                    "exts",
+                    [item.extension.name for item in user.extensions if item.is_active],
+                )
                 set_url_attr(user)
             return users
 

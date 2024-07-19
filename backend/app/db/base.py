@@ -5,6 +5,7 @@ from app.models.api_key import APIKey
 from app.models.campaign import Campaign
 from app.models.data_product_metadata import DataProductMetadata
 from app.models.data_product import DataProduct
+from app.models.extension import Extension
 from app.models.file_permission import FilePermission
 from app.models.flight import Flight
 from app.models.job import Job
@@ -14,8 +15,10 @@ from app.models.project_member import ProjectMember
 from app.models.raw_data import RawData
 from app.models.single_use_token import SingleUseToken
 from app.models.team import Team
+from app.models.team_extension import TeamExtension
 from app.models.team_member import TeamMember
 from app.models.upload import Upload
 from app.models.user import User
+from app.models.user_extension import UserExtension
 from app.models.user_style import UserStyle
 from app.models.vector_layer import VectorLayer

@@ -18,6 +18,7 @@ export interface User {
   profile_url: string | null;
   api_access_token: string | null;
   created_at: string;
+  exts: string[];
 }
 
 const context: {
