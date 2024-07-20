@@ -1,5 +1,6 @@
 import json
 import os
+import secrets
 import shutil
 import subprocess
 from datetime import datetime
@@ -8,6 +9,7 @@ from typing import TypedDict
 from uuid import UUID
 
 import geopandas as gpd
+import pika
 import rasterio
 from celery.utils.log import get_task_logger
 from geojson_pydantic import FeatureCollection
@@ -17,13 +19,17 @@ from sqlalchemy.exc import IntegrityError
 from app import crud, models, schemas
 from app.api.deps import get_db
 from app.core.celery_app import celery_app
+from app.core.config import settings
+from app.core.security import get_token_hash
 from app.schemas.data_product import DataProduct, DataProductUpdate
 from app.schemas.data_product_metadata import ZonalStatistics
 from app.schemas.job import JobUpdate
-
 from app.utils import gen_preview_from_pointcloud
 from app.utils.ImageProcessor import ImageProcessor
+from app.utils.rabbitmq import get_pika_connection
+from app.utils.RpcClient import RpcClient
 from app.utils.Toolbox import Toolbox
+from app.utils.unique_id import generate_unique_id
 
 
 logger = get_task_logger(__name__)
@@ -342,6 +348,8 @@ def process_raw_data(
     storage_path: str,
     destination_filepath: str,
     job_id: UUID,
+    project_id: UUID,
+    user_id: UUID,
 ) -> None:
     """Celery task for copying uploaded raw data (.zip) to static files location.
 
@@ -350,9 +358,8 @@ def process_raw_data(
         storage_path (Path): Location of raw data on tusd server.
         destination_filepath (Path): Destination in static files directory for raw data.
         job_id (UUID): ID for job tracking task progress.
-
-    Raises:
-        HTTPException: Raised if copyfile process fails.
+        project_ID (UUID): ID for project associated with raw data.
+        user_id (UUID): ID for user associated with raw data upload.
     """
     # get database session
     db = next(get_db())
@@ -360,11 +367,15 @@ def process_raw_data(
     job = crud.job.get(db, id=job_id)
     # retrieve raw data associated with this task
     raw_data = crud.raw_data.get(db, id=raw_data_id)
+    if not raw_data:
+        logger.error("Unable to find raw data record")
+        return None
     # update job status to indicate process has started
     update_job_status(job, state="INPROGRESS")
     try:
         # copy uploaded raw data to static files and update record
         shutil.copyfile(storage_path, destination_filepath)
+
         # add filepath to raw data object
         crud.raw_data.update(
             db,
@@ -378,9 +389,7 @@ def process_raw_data(
             os.remove(destination_filepath)
         # remove job
         update_job_status(job, state="ERROR")
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Unable to process upload"
-        )
+        return None
 
     # update job to indicate process finished
     update_job_status(job, state="DONE")
@@ -393,6 +402,103 @@ def process_raw_data(
         os.remove(f"{storage_path}.info")
     except Exception:
         logger.exception("Unable to cleanup upload on tusd server")
+
+
+@celery_app.task(name="raw_data_image_processing_task")
+def run_raw_data_image_processing(
+    external_storage_dir: str,
+    storage_path: str,
+    original_filename: str,
+    project_id: UUID,
+    flight_id: UUID,
+    raw_data_id: UUID,
+    user_id: UUID,
+    job_id: UUID,
+) -> None:
+    """Starts job on external server to process raw data.
+
+    Args:
+        external_storage_dir (str): Root directory of external storage.
+        storage_path (str): Current location of raw data zip file.
+        original_filename (str): Raw data's original filename.
+        project_id (UUID): ID for project associated with raw data.
+        flight_id (UUID): ID for flight associated with raw data.
+        raw_data_id (UUID): ID for raw data.
+        user_id (UUID): ID for user associated with raw data processing request.
+
+    Raises:
+        HTTPException: Raised if copying raw data to external storage fails.
+        HTTPException: Raised if unable to start job on remote server.
+    """
+    # get database session
+    db = next(get_db())
+    # retrieve job associated with this task
+    job = crud.job.get(db, id=job_id)
+    # update job status to indicate process has started
+    update_job_status(job, state="INPROGRESS")
+    try:
+        # destination for raw data zips
+        external_raw_data_dir = os.path.join(external_storage_dir, "raw_data")
+        if not os.path.exists(external_raw_data_dir):
+            os.makedirs(external_raw_data_dir)
+
+        # create unique id for raw data and copy file to external storage
+        raw_data_identifier = generate_unique_id()
+        shutil.copyfile(
+            storage_path,
+            os.path.join(external_raw_data_dir, raw_data_identifier + ".zip"),
+        )
+
+        # create one time token
+        token = secrets.token_urlsafe()
+        crud.user.create_single_use_token(
+            db,
+            obj_in=schemas.SingleUseTokenCreate(
+                token=get_token_hash(token, salt="rawdata")
+            ),
+            user_id=user_id,
+        )
+
+        with open(
+            os.path.join(external_raw_data_dir, raw_data_identifier + ".info"), "w"
+        ) as info_file:
+            raw_data_meta = {
+                "callback_url": f"{settings.API_DOMAIN}{settings.API_V1_STR}/projects/{project_id}/flights/{flight_id}/data_products/create_from_ext_storage",
+                "created_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+                "flight_id": str(flight_id),
+                "original_filename": original_filename,
+                "project_id": str(project_id),
+                "raw_data_id": str(raw_data_id),
+                "root_dir": external_storage_dir,
+                "token": token,
+                "user_id": str(user_id),
+                "job_id": str(job.id),
+            }
+            info_file.write(json.dumps(raw_data_meta))
+    except Exception:
+        logger.exception(
+            "Error while moving raw data to external storage and creating metadata"
+        )
+        # update job
+        update_job_status(job, state="ERROR")
+        return None
+
+    try:
+        # publish message to external server
+        rpc_client = RpcClient(routing_key="raw-data-start-process-queue")
+        batch_id = rpc_client.call(raw_data_identifier)
+        rpc_client.connection.close()
+
+        logger.info(f"Batch_ID: {batch_id.decode('utf-8')}")
+
+        update_job_status(
+            job, state="INPROGRESS", extra={"batch_id": batch_id.decode("utf-8")}
+        )
+    except Exception:
+        logger.exception("Error while publishing to RabbitMQ channel")
+        # update job
+        update_job_status(job, state="ERROR")
+        return None
 
 
 @celery_app.task(name="zonal_statistics_task")
@@ -490,7 +596,9 @@ def update_job_status(
     job: models.Job | None,
     state: str,
     data_product_id: UUID | None = None,
+    raw_data_id: UUID | None = None,
     name: str = "unknown",
+    extra: dict | None = None,
 ) -> models.Job | None:
     """Update job table with changes to a task's status.
 
@@ -516,9 +624,16 @@ def update_job_status(
         job = crud.job.create_job(db, job_in)
 
     if state == "INPROGRESS" and job:
-        crud.job.update(
-            db, db_obj=job, obj_in=JobUpdate(state="STARTED", status="INPROGRESS")
-        )
+        if extra:
+            crud.job.update(
+                db,
+                db_obj=job,
+                obj_in=JobUpdate(state="STARTED", status="INPROGRESS", extra=extra),
+            )
+        else:
+            crud.job.update(
+                db, db_obj=job, obj_in=JobUpdate(state="STARTED", status="INPROGRESS")
+            )
 
     if state == "ERROR" and job:
         crud.job.update(

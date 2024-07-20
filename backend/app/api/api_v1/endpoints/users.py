@@ -187,3 +187,15 @@ def delete_user_profile(
         upload_dir = f"{settings.STATIC_DIR}/users/{current_user.id}"
     if os.path.exists(upload_dir):
         shutil.rmtree(upload_dir)
+
+
+@router.get("/extensions", status_code=status.HTTP_200_OK)
+def get_user_extensions(
+    request: Request,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    user_extensions = crud.extension.get_user_extensions_list(
+        db, user_id=current_user.id
+    )
+    return user_extensions

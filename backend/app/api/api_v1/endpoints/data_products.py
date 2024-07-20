@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Sequence
 from uuid import UUID, uuid4
@@ -13,44 +14,20 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps, utils
+from app.core import security
+from app.core.config import settings
 from app.tasks import (
     generate_zonal_statistics,
     generate_zonal_statistics_bulk,
     run_toolbox_process,
 )
-from app.core.config import settings
+from app.utils.tusd.post_processing import process_data_product_uploaded_to_tusd
+
 
 router = APIRouter()
 
 
 logger = logging.getLogger("__name__")
-
-
-def get_data_product_dir(project_id: str, flight_id: str, data_product_id: str) -> Path:
-    """Construct path to directory that will store uploaded data product.
-
-    Args:
-        project_id (str): Project ID associated with data product.
-        flight_id (str): Flight ID associated with data product.
-        data_product_id (str): ID for data product.
-
-    Returns:
-        Path: Full path to data product directory.
-    """
-    # get root static path
-    if os.environ.get("RUNNING_TESTS") == "1":
-        data_product_dir = Path(settings.TEST_STATIC_DIR)
-    else:
-        data_product_dir = Path(settings.STATIC_DIR)
-    # construct path to project/flight/dataproduct
-    data_product_dir = data_product_dir / "projects" / project_id
-    data_product_dir = data_product_dir / "flights" / flight_id
-    data_product_dir = data_product_dir / "data_products" / data_product_id
-    # create folder for data product
-    if not os.path.exists(data_product_dir):
-        os.makedirs(data_product_dir)
-
-    return data_product_dir
 
 
 @router.get("/{data_product_id}", response_model=schemas.DataProduct)
@@ -132,6 +109,94 @@ def deactivate_data_product(
     return deactivated_data_product
 
 
+@router.post("/create_from_ext_storage", status_code=status.HTTP_202_ACCEPTED)
+def process_data_product_from_external_storage(
+    payload: schemas.RawDataMetadata,
+    project_id: UUID,
+    flight_id: UUID,
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    token_db_obj = crud.user.get_single_use_token(
+        db, token_hash=security.get_token_hash(payload.token, salt="rawdata")
+    )
+    # find job associated with task
+    job = crud.job.get(db, id=payload.job_id)
+    # check if token is valid
+    if not token_db_obj:
+        job_update_in = schemas.JobUpdate(
+            state="COMPLETED", status="FAILED", end_time=datetime.now()
+        )
+        crud.job.update(db, db_obj=job, obj_in=job_update_in)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+        )
+
+    # check if user has write permission for project
+    user = crud.user.get(db, id=token_db_obj.user_id)
+    if not user:
+        job_update_in = schemas.JobUpdate(
+            state="COMPLETED", status="FAILED", end_time=datetime.now()
+        )
+        crud.job.update(db, db_obj=job, obj_in=job_update_in)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
+    if not isinstance(
+        deps.can_read_write_project(project_id=project_id, db=db, current_user=user),
+        models.Project,
+    ):
+        job_update_in = schemas.JobUpdate(
+            state="COMPLETED", status="FAILED", end_time=datetime.now()
+        )
+        crud.job.update(db, db_obj=job, obj_in=job_update_in)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not allowed to add data products to project",
+        )
+
+    # check if job failed
+    if not payload.status.code:
+        # update job table to show it failed
+        job_update_in = schemas.JobUpdate(
+            state="COMPLETED", status="FAILED", end_time=datetime.now()
+        )
+        crud.job.update(db, db_obj=job, obj_in=job_update_in)
+    else:
+        # iterate over each new data product and start post processing celery task
+        for data_product in payload.products:
+            if not os.path.exists(data_product.storage_path):
+                job_update_in = schemas.JobUpdate(
+                    state="COMPLETED", status="FAILED", end_time=datetime.now()
+                )
+                crud.job.update(db, db_obj=job, obj_in=job_update_in)
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Unable to locate data product on disk",
+                )
+
+        # data products successfully derived from raw data
+        job_update_in = schemas.JobUpdate(
+            state="COMPLETED", status="SUCCESS", end_time=datetime.now()
+        )
+        crud.job.update(db, db_obj=job, obj_in=job_update_in)
+
+        # new jobs will be spawned for each data product as its processed further
+        for data_product in payload.products:
+            process_data_product_uploaded_to_tusd(
+                db=db,
+                user_id=user.id,
+                storage_path=Path(data_product.storage_path),
+                original_filename=Path(data_product.filename),
+                dtype=data_product.data_type,
+                project_id=project_id,
+                flight_id=flight_id,
+            )
+
+    # remove token from database
+    crud.user.remove_single_use_token(db, db_obj=token_db_obj)
+
+
 class ProcessingRequest(BaseModel):
     chm: bool
     exg: bool
@@ -199,7 +264,7 @@ async def run_processing_tool(
             flight_id=flight.id,
         )
         # get path for ndvi tool output raster
-        data_product_dir: Path = get_data_product_dir(
+        data_product_dir: Path = utils.get_data_product_dir(
             str(project.id), str(flight.id), str(ndvi_data_product.id)
         )
         ndvi_filename: str = str(uuid4()) + ".tif"
@@ -233,7 +298,7 @@ async def run_processing_tool(
             flight_id=flight.id,
         )
         # get path for exg tool output raster
-        data_product_dir = get_data_product_dir(
+        data_product_dir = utils.get_data_product_dir(
             str(project.id), str(flight.id), str(exg_data_product.id)
         )
         exg_filename: str = str(uuid4()) + ".tif"

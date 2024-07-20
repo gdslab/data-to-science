@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import List, TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
@@ -29,7 +29,9 @@ class RawData(Base):
     deactivated_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 
     flight: Mapped["Flight"] = relationship(back_populates="raw_data")
-    jobs: Mapped["Job"] = relationship(back_populates="raw_data")
+    jobs: Mapped[List["Job"]] = relationship(
+        back_populates="raw_data", cascade="all, delete"
+    )
 
     def __repr__(self) -> str:
         return (

@@ -1,5 +1,5 @@
 import uuid
-from typing import TYPE_CHECKING
+from typing import List, TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
@@ -10,6 +10,7 @@ from app.db.base_class import Base
 
 if TYPE_CHECKING:
     from .project import Project
+    from .team_extension import TeamExtension
     from .team_member import TeamMember
     from .user import User
 
@@ -24,11 +25,14 @@ class Team(Base):
     description: Mapped[str] = mapped_column(String(300), nullable=False)
     owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
 
-    members: Mapped[list["TeamMember"]] = relationship(
+    extensions: Mapped[List["TeamExtension"]] = relationship(
+        back_populates="team", cascade="all, delete", lazy="joined"
+    )
+    members: Mapped[List["TeamMember"]] = relationship(
         back_populates="team", cascade="all, delete"
     )
     owner: Mapped["User"] = relationship(back_populates="teams")
-    projects: Mapped[list["Project"]] = relationship(back_populates="team")
+    projects: Mapped[List["Project"]] = relationship(back_populates="team")
 
     def __repr__(self) -> str:
         return (

@@ -125,7 +125,7 @@ def handle_tusd_http_hooks(
                 if data_type != "raw":
                     process_data_product_uploaded_to_tusd(
                         db,
-                        current_user=current_user,
+                        user_id=current_user.id,
                         storage_path=Path(storage.Path),
                         original_filename=Path(payload.Event.Upload.MetaData.filename),
                         dtype=data_type,
@@ -135,7 +135,7 @@ def handle_tusd_http_hooks(
                 else:
                     process_raw_data_uploaded_to_tusd(
                         db,
-                        current_user=current_user,
+                        user_id=current_user.id,
                         storage_path=Path(storage.Path),
                         original_filename=Path(payload.Event.Upload.MetaData.filename),
                         dtype=data_type,

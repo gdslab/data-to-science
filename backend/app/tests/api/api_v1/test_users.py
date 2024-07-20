@@ -9,6 +9,13 @@ from app.api.deps import get_current_user
 from app.core.config import settings
 from app.core.mail import fm
 from app.schemas.user import UserUpdate
+from app.tests.utils.extension import (
+    create_extension,
+    create_team_extension,
+    create_user_extension,
+)
+from app.tests.utils.team import create_team
+from app.tests.utils.team_member import create_team_member
 from app.tests.utils.user import create_user
 from app.tests.utils.utils import random_email, random_full_name, random_password
 
@@ -183,3 +190,21 @@ def test_update_user(
     assert str(current_user.id) == updated_user["id"]
     assert full_name["first"] == updated_user["first_name"]
     assert full_name["last"] == updated_user["last_name"]
+
+
+def test_read_user_extensions(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    team = create_team(db)
+    create_team_member(db, email=current_user.email, team_id=team.id)
+    extension1 = create_extension(db, name="ext1")
+    extension2 = create_extension(db, name="ext2")
+    create_user_extension(db, extension_id=extension1.id, user_id=current_user.id)
+    create_team_extension(db, extension_id=extension2.id, team_id=team.id)
+    response = client.get(f"{settings.API_V1_STR}/users/extensions")
+    assert response.status_code == status.HTTP_200_OK
+    extensions = response.json()
+    assert isinstance(extensions, List)
+    assert len(extensions) == 2
+    assert "ext1" in extensions and "ext2" in extensions

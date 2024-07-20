@@ -149,7 +149,7 @@ export default function DataProductCard({
             </div>
           </div>
         </Card>
-        {dataProduct.status === 'INPROGRESS' ? (
+        {dataProduct.status === 'INPROGRESS' || dataProduct.status === 'WAITING' ? (
           <div className="w-full absolute bottom-0">
             <ProgressBar />
           </div>

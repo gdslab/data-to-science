@@ -180,7 +180,7 @@ export default function DataProductsTable({ data }: { data: DataProductStatus[] 
                 key={`row-${dataset.id}-file`}
                 className="h-full flex items-center justify-center"
               >
-                {dataset.status === 'INPROGRESS' ? (
+                {dataset.status === 'INPROGRESS' || dataset.status === 'WAITING' ? (
                   <Fragment>
                     <CogIcon className="h-8 w-8 mr-4 animate-spin" aria-hidden="true" />
                     {isGeoTIFF(dataset.data_type)
