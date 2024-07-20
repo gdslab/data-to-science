@@ -2,7 +2,7 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Dict, Sequence
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -13,6 +13,7 @@ from app import crud, models, schemas
 from app.api import deps
 from app.core.config import settings
 from app.tasks import run_raw_data_image_processing
+from app.utils.RpcClient import RpcClient
 
 router = APIRouter()
 
@@ -153,8 +154,8 @@ def process_raw_data(
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    # check for "cluster" extension
-    required_extension = "cluster"
+    # check for "image_processing" extension
+    required_extension = "image_processing"
     extension = crud.extension.get_extension_by_name(
         db, extension_name=required_extension
     )
@@ -184,10 +185,14 @@ def process_raw_data(
         )
 
     # check if a job processing raw data is currently ongoing
-    existing_job = crud.job.get_by_raw_data_id(
+    existing_jobs = crud.job.get_by_raw_data_id(
         db, job_name="processing-raw-data", raw_data_id=raw_data_id
     )
-    if existing_job and existing_job.state != "COMPLETED":
+    existing_job_still_working = False
+    for job in existing_jobs:
+        if job.state != "COMPLETED":
+            existing_job_still_working = True
+    if existing_job_still_working:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Raw data already being processed",
@@ -246,4 +251,43 @@ def process_raw_data(
         )
 
     # send response back to client
-    return status.HTTP_200_OK
+    return {"job_id": job.id}
+
+
+@router.get("/{raw_data_id}/check_progress/{job_id}")
+def check_raw_data_processing_progress(
+    raw_data_id: UUID,
+    job_id: UUID,
+    project: models.Project = Depends(deps.can_read_write_project),
+    flight: models.Flight = Depends(deps.can_read_write_flight),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    # find job with name "processing-raw-data" for raw_data_id
+    job = crud.job.get(db, id=job_id)
+    if not job or job.name != "processing-raw-data" or job.status != "INPROGRESS":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No active job found for processing this raw data",
+        )
+
+    # if job exists, check "extra" for key "batch_id"
+    if (
+        not job.extra
+        or not isinstance(job.extra, Dict)
+        or not "batch_id" in job.extra.keys()
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Job does not have required Batch ID",
+        )
+
+    # if batch_id exists, use rpcclient to check for progress %
+    batch_id = job.extra["batch_id"]
+    logger.info(f"Requesting progress for Batch ID: {batch_id}")
+    rpc_client = RpcClient(routing_key="raw-data-check-progress-queue")
+    progress = rpc_client.call(batch_id)
+    rpc_client.connection.close()
+
+    # report back {"progress": float}
+    return {"progress": progress}

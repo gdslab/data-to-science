@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List
 
 from sqlalchemy.orm import Session
 
@@ -28,10 +29,15 @@ def test_create_job(db: Session) -> None:
 
 def test_read_by_raw_data_id(db: Session) -> None:
     raw_data = SampleRawData(db)
-    job = create_job(db, job_name="test-job", raw_data_id=raw_data.obj.id)
-    assert job
-    assert job.raw_data_id == raw_data.obj.id
-    assert job.name == "test-job"
+    create_job(db, name="test-job", raw_data_id=raw_data.obj.id)
+    jobs = crud.job.get_by_raw_data_id(
+        db, job_name="test-job", raw_data_id=raw_data.obj.id
+    )
+    assert jobs
+    assert isinstance(jobs, List)
+    assert len(jobs) == 1
+    assert jobs[0].name == "test-job"
+    assert jobs[0].raw_data_id == raw_data.obj.id
 
 
 def test_update_job(db: Session) -> None:

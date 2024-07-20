@@ -489,19 +489,11 @@ def run_raw_data_image_processing(
         batch_id = rpc_client.call(raw_data_identifier)
         rpc_client.connection.close()
 
-        logger.info(f"Batch_ID: {batch_id}")
+        logger.info(f"Batch_ID: {batch_id.decode('utf-8')}")
 
-        # connection = get_pika_connection()
-        # # establish channel connection and send raw data identifier
-        # channel = connection.channel()
-        # channel.queue_declare("raw-data-start-process-queue")
-        # channel.basic_publish(
-        #     exchange="",
-        #     routing_key="raw-data-start-process-queue",
-        #     body=raw_data_identifier,
-        # )
-        # # close connection
-        # connection.close()
+        update_job_status(
+            job, state="INPROGRESS", extra={"batch_id": batch_id.decode("utf-8")}
+        )
     except Exception:
         logger.exception("Error while publishing to RabbitMQ channel")
         # update job
@@ -606,6 +598,7 @@ def update_job_status(
     data_product_id: UUID | None = None,
     raw_data_id: UUID | None = None,
     name: str = "unknown",
+    extra: dict | None = None,
 ) -> models.Job | None:
     """Update job table with changes to a task's status.
 
@@ -631,9 +624,16 @@ def update_job_status(
         job = crud.job.create_job(db, job_in)
 
     if state == "INPROGRESS" and job:
-        crud.job.update(
-            db, db_obj=job, obj_in=JobUpdate(state="STARTED", status="INPROGRESS")
-        )
+        if extra:
+            crud.job.update(
+                db,
+                db_obj=job,
+                obj_in=JobUpdate(state="STARTED", status="INPROGRESS", extra=extra),
+            )
+        else:
+            crud.job.update(
+                db, db_obj=job, obj_in=JobUpdate(state="STARTED", status="INPROGRESS")
+            )
 
     if state == "ERROR" and job:
         crud.job.update(
