@@ -41,6 +41,8 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
             properties = jsonable_encoder(feature.properties)
             # Serialize geometry for ST_GeomFromGeoJSON function
             geom = func.ST_GeomFromGeoJSON(json.dumps(geometry))
+            # Serialize geometry for ST_GeomFromGeoJSON function
+            geom = func.ST_Force2D(func.ST_GeomFromGeoJSON(json.dumps(geometry)))
             # Layer ID will be same for each feature from the feature collection
             vector_layer = VectorLayer(
                 layer_name=obj_in.layer_name,
