@@ -246,7 +246,7 @@ def process_raw_data(
             state="COMPLETED", status="FAILED", end_time=datetime.now()
         )
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to start request",
         )
 
