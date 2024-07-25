@@ -156,7 +156,7 @@ export default function DashboardExtensions() {
 
   return (
     <section className="w-full bg-white">
-      <div className="mx-auto max-w-screen-xl px-4 py-12 sm:px-6 md:py-16 lg:px-8">
+      <div className="h-full mx-auto max-w-screen-xl px-4 py-12 sm:px-6 md:py-16 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
             Manage Extensions
@@ -167,79 +167,86 @@ export default function DashboardExtensions() {
           </p>
         </div>
 
-        <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-          <TabList>
-            <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium">
-              Teams
-            </Tab>
-            <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium">
-              Users
-            </Tab>
-          </TabList>
-          <hr className="my-4 border-gray-300" />
-          <TabPanels>
-            <TabPanel>
-              <div className="mt-8 sm:mt-12">
-                <h3>Teams</h3>
-                <table className="relative border-separate border-spacing-y-1 border-spacing-x-1">
-                  <thead>
-                    <tr className="h-12 sticky top-0 text-slate-700 bg-slate-300">
-                      <th>Name</th>
-                      <th>Extensions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="max-h-96 overflow-y-auto">
-                    {teams.map((team) => (
-                      <tr key={team.id} className="text-center">
-                        <td className="p-4 bg-slate-100">{team.title}</td>
-                        <td className="p-4 bg-white">
-                          <ExtensionList
-                            extensions={extensions}
-                            selectedExtensions={team.exts}
-                            setStatus={setStatus}
-                            teamId={team.id}
-                          />
-                        </td>
+        {extensions.length > 0 && (
+          <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
+            <TabList>
+              <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium">
+                Teams
+              </Tab>
+              <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium">
+                Users
+              </Tab>
+            </TabList>
+            <hr className="my-4 border-gray-300" />
+            <TabPanels>
+              <TabPanel>
+                <div className="mt-8 sm:mt-12">
+                  <h3>Teams</h3>
+                  <table className="relative border-separate border-spacing-y-1 border-spacing-x-1">
+                    <thead>
+                      <tr className="h-12 sticky top-0 text-slate-700 bg-slate-300">
+                        <th>Name</th>
+                        <th>Extensions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </TabPanel>
-            <TabPanel>
-              <div className="mt-8 sm:mt-12">
-                <h3>Users</h3>
-                <table className="relative border-separate border-spacing-y-1 border-spacing-x-1">
-                  <thead>
-                    <tr className="h-12 sticky top-0 text-slate-700 bg-slate-300">
-                      <th>Name</th>
-                      <th>Email</th>
-                      <th>Extensions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="max-h-96 overflow-y-auto">
-                    {users.map((user) => (
-                      <tr key={user.id} className="text-center">
-                        <td className="p-4 bg-white">
-                          {user.first_name} {user.last_name}
-                        </td>
-                        <td className="p-4 bg-white">{user.email}</td>
-                        <td className="p-4 bg-white">
-                          <ExtensionList
-                            extensions={extensions}
-                            selectedExtensions={user.exts}
-                            setStatus={setStatus}
-                            userId={user.id}
-                          />
-                        </td>
+                    </thead>
+                    <tbody className="max-h-96 overflow-y-auto">
+                      {teams.map((team) => (
+                        <tr key={team.id} className="text-center">
+                          <td className="p-4 bg-slate-100">{team.title}</td>
+                          <td className="p-4 bg-white">
+                            <ExtensionList
+                              extensions={extensions}
+                              selectedExtensions={team.exts}
+                              setStatus={setStatus}
+                              teamId={team.id}
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </TabPanel>
+              <TabPanel>
+                <div className="mt-8 sm:mt-12">
+                  <h3>Users</h3>
+                  <table className="relative border-separate border-spacing-y-1 border-spacing-x-1">
+                    <thead>
+                      <tr className="h-12 sticky top-0 text-slate-700 bg-slate-300">
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Extensions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </TabPanel>
-          </TabPanels>
-        </TabGroup>
+                    </thead>
+                    <tbody className="max-h-96 overflow-y-auto">
+                      {users.map((user) => (
+                        <tr key={user.id} className="text-center">
+                          <td className="p-4 bg-white">
+                            {user.first_name} {user.last_name}
+                          </td>
+                          <td className="p-4 bg-white">{user.email}</td>
+                          <td className="p-4 bg-white">
+                            <ExtensionList
+                              extensions={extensions}
+                              selectedExtensions={user.exts}
+                              setStatus={setStatus}
+                              userId={user.id}
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </TabPanel>
+            </TabPanels>
+          </TabGroup>
+        )}
+        {extensions.length < 1 && (
+          <div className="my-24 flex items-center justify-center">
+            <span className="text-lg font-semibold">No extensions to manage</span>
+          </div>
+        )}
         {status && <Alert alertType={status.type}>{status.msg}</Alert>}
       </div>
     </section>

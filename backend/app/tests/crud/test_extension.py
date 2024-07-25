@@ -212,3 +212,28 @@ def test_read_user_extension_does_not_return_inactive_extension(db: Session) -> 
         db, extension_id=extension.id, user_id=user.id
     )
     assert user_extension_in_db is None
+
+
+def test_removing_extension_removes_related_team_and_user_extensions(
+    db: Session,
+) -> None:
+    extension = create_extension(db, name="ext1", description="Extension 1")
+    team = create_team(db)
+    team_extension = create_team_extension(
+        db, extension_id=extension.id, team_id=team.id
+    )
+    user = create_user(db)
+    user_extension = create_user_extension(
+        db, extension_id=extension.id, user_id=user.id
+    )
+    extension_removed = crud.extension.remove(db, id=extension.id)
+    team_extension_after_remove = crud.extension.get_team_extension(
+        db, extension_id=extension.id, team_id=team.id
+    )
+    user_extension_after_remove = crud.extension.get_user_extension(
+        db, extension_id=extension.id, user_id=user.id
+    )
+    assert team_extension
+    assert team_extension_after_remove is None
+    assert user_extension
+    assert user_extension_after_remove is None

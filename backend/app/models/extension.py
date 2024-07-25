@@ -1,5 +1,5 @@
 import uuid
-from typing import TYPE_CHECKING
+from typing import List, TYPE_CHECKING
 
 from sqlalchemy import String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
@@ -22,10 +22,10 @@ class Extension(Base):
     name: Mapped[str] = mapped_column(String(32), nullable=False)
     description: Mapped[str] = mapped_column(String(128), nullable=True)
     # relationships
-    team_extensions: Mapped["TeamExtension"] = relationship(
+    team_extensions: Mapped[List["TeamExtension"]] = relationship(
         back_populates="extension", cascade="all, delete"
     )
-    user_extensions: Mapped["UserExtension"] = relationship(
+    user_extensions: Mapped[List["UserExtension"]] = relationship(
         back_populates="extension", cascade="all, delete"
     )
     # unique constraint
