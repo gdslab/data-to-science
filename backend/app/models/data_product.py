@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import List, TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -38,20 +38,20 @@ class DataProduct(Base):
         ForeignKey("flights.id"), nullable=False
     )
     # relationships
-    data_product_metadata: Mapped["DataProductMetadata"] = relationship(
+    data_product_metadata: Mapped[List["DataProductMetadata"]] = relationship(
         back_populates="data_product", cascade="all, delete"
     )
     file_permission: Mapped["FilePermission"] = relationship(
         back_populates="file", cascade="all, delete"
     )
     flight: Mapped["Flight"] = relationship(back_populates="data_products")
-    jobs: Mapped[list["Job"]] = relationship(
+    jobs: Mapped[List["Job"]] = relationship(
         back_populates="data_product", cascade="all, delete"
     )
     style: Mapped["UserStyle"] = relationship(
         back_populates="data_product", cascade="all, delete"
     )
-    vector_layer: Mapped[list["VectorLayer"]] = relationship(
+    vector_layer: Mapped[List["VectorLayer"]] = relationship(
         back_populates="data_product", cascade="all, delete"
     )
 

@@ -48,6 +48,7 @@ class DataProductMetadata(Base):
     def __repr__(self) -> str:
         return (
             f"DataProductMetadata(id={self.id!r}, category={self.category!r}, "
-            f"properties={self.properties!r}, data_product_id={self.data_product_id!r}, "
+            f"properties={self.properties!r}, "
+            f"data_product_id={self.data_product_id!r}, "
             f"vector_layer_id={self.vector_layer_id!r})"
         )
