@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from .file_permission import FilePermission
     from .flight import Flight
     from .job import Job
+    from .user_style import UserStyle
     from .vector_layer import VectorLayer
 
 
@@ -38,11 +39,18 @@ class DataProduct(Base):
     )
     # relationships
     data_product_metadata: Mapped["DataProductMetadata"] = relationship(
-        back_populates="data_product"
+        back_populates="data_product", cascade="all, delete"
     )
-    file_permission: Mapped["FilePermission"] = relationship(back_populates="file")
+    file_permission: Mapped["FilePermission"] = relationship(
+        back_populates="file", cascade="all, delete"
+    )
     flight: Mapped["Flight"] = relationship(back_populates="data_products")
-    jobs: Mapped["Job"] = relationship(back_populates="data_product")
+    jobs: Mapped[list["Job"]] = relationship(
+        back_populates="data_product", cascade="all, delete"
+    )
+    style: Mapped["UserStyle"] = relationship(
+        back_populates="data_product", cascade="all, delete"
+    )
     vector_layer: Mapped[list["VectorLayer"]] = relationship(
         back_populates="data_product", cascade="all, delete"
     )

@@ -6,7 +6,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import crud
-from app.db.base import *
 from app.db.session import SessionLocal
 from app.models.extension import Extension
 

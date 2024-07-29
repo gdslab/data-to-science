@@ -1,10 +1,15 @@
 import uuid
+from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base
+
+
+if TYPE_CHECKING:
+    from .user_style import UserStyle
 
 
 class UserStyle(Base):
@@ -19,6 +24,8 @@ class UserStyle(Base):
         ForeignKey("data_products.id"), nullable=False
     )
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
+    # relationships
+    data_product: Mapped["DataProduct"] = relationship(back_populates="style")
     # unique constraint
     __table_args__ = (
         UniqueConstraint(
