@@ -16,8 +16,12 @@ logger = logging.getLogger("__name__")
 
 def remove_flight_dir(project_id: str, flight_id: str, check_only: bool) -> int:
     # path to flight's static file directory
+    if os.environ.get("RUNNING_TESTS") == "1":
+        root_static_dir = settings.TEST_STATIC_DIR
+    else:
+        root_static_dir = settings.STATIC_DIR
     static_dir = os.path.join(
-        settings.STATIC_DIR, "projects", project_id, "flights", flight_id
+        root_static_dir, "projects", project_id, "flights", flight_id
     )
     # remove flight directory and all sub-directories
     if os.path.isdir(static_dir):

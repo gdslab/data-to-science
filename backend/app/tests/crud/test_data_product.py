@@ -16,7 +16,7 @@ def test_create_data_product(db: Session) -> None:
     assert data_product.obj
     assert data_product.obj.flight_id == data_product.flight.id
     assert data_product.obj.data_type == "ortho"
-    assert data_product.obj.original_filename == "test.tif"
+    assert data_product.obj.original_filename == "myfile.tif"
     assert data_product.obj.stac_properties == test_stac_props_dsm
     assert os.path.exists(data_product.obj.filepath)
 
@@ -65,7 +65,7 @@ def test_read_restricted_data_product_with_public_get_by_id(db: Session) -> None
     )
     assert file_permission
     file_permission_in_update = FilePermissionUpdate(is_public=False)
-    file_permission_update = crud.file_permission.update(
+    crud.file_permission.update(
         db, db_obj=file_permission, obj_in=file_permission_in_update
     )
     stored_data_product = crud.data_product.get_public_data_product_by_id(

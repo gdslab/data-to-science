@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app import crud, models
 from app.core.config import settings
-from app.schemas.raw_data import RawDataCreate
+from app.schemas.raw_data import RawDataCreate, RawDataUpdate
 from app.tests.utils.flight import create_flight
 from app.tests.utils.project import create_project
 from app.tests.utils.user import create_user
@@ -39,11 +39,14 @@ class SampleRawData:
         else:
             self.flight = flight
 
-        # Copy raw data to test directory
-        filename, filepath = self.copy_test_raw_data_to_test_directory()
-
         # Create raw data record in database
-        self.obj = self.create_raw_data_in_database(db, filename, filepath)
+        self.obj = self.create_raw_data_in_database(db, "myrawdata.zip", "null")
+
+        # Copy raw data to test directory
+        filepath = self.copy_test_raw_data_to_test_directory()
+
+        # Add filepath to database record
+        self.update_raw_data_filepath_in_database(db, filepath)
 
     def copy_test_raw_data_to_test_directory(self) -> tuple[str, str]:
         src_filepath = os.path.join(
@@ -51,12 +54,12 @@ class SampleRawData:
         )
         dest_filepath = os.path.join(
             f"{settings.TEST_STATIC_DIR}/projects/{self.project.id}"
-            f"/flights/{self.flight.id}/myrawdata.zip"
+            f"/flights/{self.flight.id}/raw_data/{self.obj.id}/myrawdata.zip"
         )
         if not os.path.exists(os.path.dirname(dest_filepath)):
             os.makedirs(os.path.dirname(dest_filepath))
         shutil.copyfile(src_filepath, dest_filepath)
-        return os.path.basename(src_filepath), dest_filepath
+        return dest_filepath
 
     def create_raw_data_in_database(self, db: Session, filename: str, filepath: str):
         raw_data_in = RawDataCreate(
@@ -67,3 +70,7 @@ class SampleRawData:
             db, obj_in=raw_data_in, flight_id=self.flight.id
         )
         return raw_data_in_db
+
+    def update_raw_data_filepath_in_database(self, db: Session, filepath: str):
+        raw_data_in = RawDataUpdate(filepath=filepath)
+        return crud.raw_data.update(db, db_obj=self.obj, obj_in=raw_data_in)

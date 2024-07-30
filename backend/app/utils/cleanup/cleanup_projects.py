@@ -25,7 +25,11 @@ def remove_project_dir(project_id: str, check_only: bool) -> int:
         int: Size of directory to be removed.
     """
     # path to project's static file directory
-    static_dir = os.path.join(settings.STATIC_DIR, "projects", project_id)
+    if os.environ.get("RUNNING_TESTS") == "1":
+        root_static_dir = settings.TEST_STATIC_DIR
+    else:
+        root_static_dir = settings.STATIC_DIR
+    static_dir = os.path.join(root_static_dir, "projects", project_id)
     # remove project directory and all sub-directories
     if os.path.isdir(static_dir):
         dir_size = get_static_directory_size(static_dir)

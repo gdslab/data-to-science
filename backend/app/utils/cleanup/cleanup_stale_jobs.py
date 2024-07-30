@@ -7,6 +7,7 @@ from sqlalchemy import and_, or_, select, text
 from sqlalchemy.orm import Session
 
 from app import crud
+from app.core.config import settings
 from app.models import DataProduct, Job, RawData
 from app.crud.crud_admin import get_static_directory_size
 
@@ -26,12 +27,16 @@ def remove_static_data_dir(
     Returns:
         int: Size of folder removed in bytes.
     """
+    if os.environ.get("RUNNING_TESTS") == "1":
+        root_static_dir = settings.TEST_STATIC_DIR
+    else:
+        root_static_dir = settings.STATIC_DIR
     # construct path to data product or raw data
     project_id = str(data.flight.project_id)
     flight_id = str(data.flight.id)
     data_id = str(data.id)
     static_dir = os.path.join(
-        "/static/projects", project_id, "flights", flight_id, data_dir, data_id
+        root_static_dir, "projects", project_id, "flights", flight_id, data_dir, data_id
     )
     # remove data product or raw data from static files
     if os.path.isdir(static_dir):

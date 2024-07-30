@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 
 from app import crud
 from app.core.config import settings
-from app.schemas.file_permission import FilePermissionUpdate
 from app.tests.utils.flight import create_flight
 from app.tests.utils.raw_data import SampleRawData
 from app.tests.utils.user import create_user
@@ -14,7 +13,7 @@ from app.tests.utils.user import create_user
 def test_create_raw_data(db: Session) -> None:
     raw_data = SampleRawData(db)
     assert raw_data.obj
-    assert raw_data.obj.original_filename == "test_raw_data.zip"
+    assert raw_data.obj.original_filename == "myrawdata.zip"
     assert os.path.exists(raw_data.obj.filepath)
 
 
