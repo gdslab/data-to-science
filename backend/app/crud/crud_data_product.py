@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, List, Sequence
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
@@ -12,6 +12,7 @@ from app.core.config import settings
 from app.crud.base import CRUDBase
 from app.models.data_product import DataProduct
 from app.models.file_permission import FilePermission
+from app.models.job import Job
 from app.schemas.data_product import DataProductCreate, DataProductUpdate
 from app.models.user_style import UserStyle
 from app.models.utils.user import utcnow
@@ -48,7 +49,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             user_style = session.execute(user_style_query).scalar_one_or_none()
             if data_product:
                 set_url_attr(data_product, upload_dir)
-                set_status_attr(data_product, data_product.jobs.status)
+                set_status_attr(data_product, data_product.jobs)
                 if user_style:
                     set_user_style_attr(data_product, user_style.settings)
             return data_product
@@ -115,8 +116,8 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                         set_user_style_attr(data_product, user_style.settings)
                 set_public_attr(data_product, data_product.file_permission.is_public)
                 set_url_attr(data_product, upload_dir)
-                if data_product.jobs and data_product.jobs.status:
-                    set_status_attr(data_product, data_product.jobs.status)
+                if data_product.jobs:
+                    set_status_attr(data_product, data_product.jobs)
                 else:
                     skip_data_product = True
                 if not skip_data_product:
@@ -137,7 +138,16 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
         return crud.data_product.get(db, id=data_product_id)
 
 
-def set_status_attr(data_product_obj: DataProduct, status: str | Any):
+def set_status_attr(data_product_obj: DataProduct, jobs: List[Job]):
+    upload_job_name = "upload-data-product"
+    status = None
+    for job in jobs:
+        if job.name == upload_job_name:
+            status = job.status
+
+    if not status:
+        status = "SUCCESS"
+
     setattr(data_product_obj, "status", status)
 
 

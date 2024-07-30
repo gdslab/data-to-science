@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app import crud, models
 from app.core.config import settings
-from app.schemas.data_product import DataProductCreate
+from app.schemas.data_product import DataProductCreate, DataProductUpdate
 from app.tests.utils.flight import create_flight
 from app.tests.utils.job import create_job
 from app.tests.utils.project import create_project
@@ -55,11 +55,14 @@ class SampleDataProduct:
                 os.sep, "app", "app", "tests", "data", "test.tif"
             )
 
-        # Copy data product to test directory
-        filename, filepath = self.copy_test_data_product_to_test_directory()
-
         # Create data product record database
-        self.obj = self.create_data_product_in_database(db, filename, filepath)
+        self.obj = self.create_data_product_in_database(db, "myfile.tif", "null")
+
+        # Copy data product to test directory
+        filepath = self.copy_test_data_product_to_test_directory()
+
+        # Add filepath to database record
+        self.update_data_product_filepath_in_database(db, filepath)
 
         # Create default style setting for the data product
         if create_style:
@@ -75,12 +78,12 @@ class SampleDataProduct:
         src_filepath = self.test_data_product
         dest_filepath = os.path.join(
             f"{settings.TEST_STATIC_DIR}/projects/{self.project.id}"
-            f"/flights/{self.flight.id}/myfile.tif"
+            f"/flights/{self.flight.id}/data_products/{self.obj.id}/myfile.tif"
         )
         if not os.path.exists(os.path.dirname(dest_filepath)):
             os.makedirs(os.path.dirname(dest_filepath))
         shutil.copyfile(src_filepath, dest_filepath)
-        return os.path.basename(src_filepath), dest_filepath
+        return dest_filepath
 
     def create_data_product_in_database(
         self, db: Session, filename: str, filepath: str
@@ -95,6 +98,10 @@ class SampleDataProduct:
             db, obj_in=data_product_in, flight_id=self.flight.id
         )
         return data_product_in_db
+
+    def update_data_product_filepath_in_database(self, db: Session, filepath: str):
+        data_product_in = DataProductUpdate(filepath=filepath)
+        return crud.data_product.update(db, db_obj=self.obj, obj_in=data_product_in)
 
 
 test_stac_props_dsm = {
