@@ -40,11 +40,11 @@ function AccessRoleRadioGroup({
   const params = useParams();
 
   return (
-    <div key={uniqueID} className="flex items-center justify-between gap-4">
+    <div key={uniqueID} className="flex items-center justify-between gap-6">
       <fieldset className="flex flex-wrap gap-3">
         <legend className="sr-only">Role Level</legend>
         <select
-          className="h-10 p-1.5 font-semibold text-zinc-600 text-center border-2 border-zinc-300 rounded-md bg-white disabled:opacity-50"
+          className="h-10 w-40 p-1.5 font-semibold text-zinc-600 text-center border-2 border-zinc-300 rounded-md bg-white disabled:opacity-50"
           aria-label="Select flight date"
           name={`roleChange-${uniqueID}`}
           value={role}
