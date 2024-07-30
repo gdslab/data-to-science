@@ -3,12 +3,8 @@ export default function TableCardRadioInput({
   toggleTableView,
 }: {
   tableView: 'table' | 'carousel';
-  toggleTableView: React.Dispatch<React.SetStateAction<'table' | 'carousel'>>;
+  toggleTableView: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
-  function onChange(e) {
-    toggleTableView(e.target.value);
-  }
-
   return (
     <fieldset className="flex flex-wrap justify-end">
       <legend className="sr-only">Toggle Table View</legend>
@@ -21,7 +17,7 @@ export default function TableCardRadioInput({
           id="tableInput"
           className="peer hidden"
           checked={tableView === 'table'}
-          onChange={onChange}
+          onChange={toggleTableView}
         />
 
         <label
@@ -52,7 +48,7 @@ export default function TableCardRadioInput({
           id="carouselInput"
           className="peer hidden"
           checked={tableView === 'carousel'}
-          onChange={onChange}
+          onChange={toggleTableView}
         />
 
         <label

@@ -10,6 +10,16 @@ import DataProductCard from './DataProductCard';
 import DataProductsTable from './DataProductsTable';
 import { useProjectContext } from '../../ProjectContext';
 
+function getDataProductsDisplayModeFromLS(): 'table' | 'carousel' {
+  const dataProductsDisplayMode = localStorage.getItem('dataProductsDisplayMode');
+  if (dataProductsDisplayMode === 'table' || dataProductsDisplayMode === 'carousel') {
+    return dataProductsDisplayMode;
+  } else {
+    localStorage.setItem('dataProductsDisplayMode', 'carousel');
+    return 'carousel';
+  }
+}
+
 export default function DataProducts({
   data,
   open,
@@ -20,7 +30,9 @@ export default function DataProducts({
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const { flightId, projectId } = useParams();
-  const [tableView, toggleTableView] = useState<'table' | 'carousel'>('carousel');
+  const [tableView, toggleTableView] = useState<'table' | 'carousel'>(
+    getDataProductsDisplayModeFromLS()
+  );
   const revalidator = useRevalidator();
   const { projectRole } = useProjectContext();
 
@@ -39,11 +51,21 @@ export default function DataProducts({
       : null
   );
 
+  function onTableViewChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.value === 'carousel' || e.target.value === 'table') {
+      localStorage.setItem('dataProductsDisplayMode', e.target.value);
+      toggleTableView(e.target.value);
+    }
+  }
+
   return (
     <div className="h-full flex flex-col">
       <div className="h-24">
         <h2>Data Products</h2>
-        <TableCardRadioInput tableView={tableView} toggleTableView={toggleTableView} />
+        <TableCardRadioInput
+          tableView={tableView}
+          toggleTableView={onTableViewChange}
+        />
       </div>
       {data.length > 0 ? (
         tableView === 'table' ? (
