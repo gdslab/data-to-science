@@ -14,21 +14,7 @@ import RawDataDeleteModal from './RawDataDeleteModal';
 import { useInterval } from '../../../../hooks';
 import axios, { AxiosResponse, isAxiosError } from 'axios';
 import { AlertBar, Status } from '../../../../Alert';
-
-function ProgressBar({ progress }: { progress: number }) {
-  return (
-    <div className="w-60">
-      <div className="w-full bg-gray-400 rounded-full">
-        <div
-          className="bg-blue-600 text-xs font-medium text-blue-100 text-center p-0.5 leading-none rounded-full"
-          style={{ width: progress === 0 ? undefined : `${Math.ceil(progress)}%` }}
-        >
-          {progress === 0 ? 'PENDING' : `${Math.ceil(progress)}%`}
-        </div>
-      </div>
-    </div>
-  );
-}
+import ProgressBar from '../../../../ProgressBar';
 
 export default function RawData({
   data,
@@ -80,9 +66,10 @@ export default function RawData({
     },
     data &&
       data.length > 0 &&
-      data.filter(({ status }) => status === 'INPROGRESS').length > 0
-      ? 30000 // 30 seconds
-      : null
+      data.filter(({ status }) => status === 'INPROGRESS' || status === 'WAITING')
+        .length > 0
+      ? 5000 // check every 5 seconds while processing job is active
+      : 30000 // check every 30 seconds when no known jobs are active
   );
 
   // check for raw data processing progress
@@ -231,15 +218,11 @@ export default function RawData({
                 dataset.status === 'FAILED' ? (
                   <RawDataDeleteModal rawData={dataset} iconOnly={true} />
                 ) : null}
-                {jobProgress.findIndex(
-                  (job) => job.rawDataId === dataset.id && job.progress < 100
-                ) > -1 && (
+                {jobIds.findIndex((job) => job.rawDataId === dataset.id) > -1 && (
                   <ProgressBar
                     progress={
                       jobProgress[
-                        jobProgress.findIndex(
-                          (job) => job.rawDataId === dataset.id && job.progress < 100
-                        )
+                        jobProgress.findIndex((job) => job.rawDataId === dataset.id)
                       ].progress
                     }
                   />
