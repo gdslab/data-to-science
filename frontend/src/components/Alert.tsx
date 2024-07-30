@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   CheckCircleIcon,
   ExclamationCircleIcon,
@@ -187,10 +187,18 @@ export default function Alert({ alertType, children }: AlertProps) {
 }
 
 export function AlertBar({ alertType, children }: AlertProps) {
-  const [hide, toggleHide] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   const { color, Icon } = getAlertBarProps(alertType);
 
-  if (hide) {
+  useEffect(() => {
+    setIsVisible(true);
+  }, [children]);
+
+  function handleClose() {
+    setIsVisible(false);
+  }
+
+  if (!isVisible) {
     return null;
   } else {
     return (
@@ -201,7 +209,7 @@ export function AlertBar({ alertType, children }: AlertProps) {
             <span>{children}</span>
           </div>
           <div className="flex">
-            <button className="transition" onClick={() => toggleHide(true)}>
+            <button className="transition" onClick={handleClose}>
               <span className="sr-only">Dismiss popup</span>
 
               <svg
