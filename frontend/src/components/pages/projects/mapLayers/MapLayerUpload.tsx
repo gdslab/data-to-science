@@ -107,8 +107,9 @@ export default function MapLayerUpload() {
           </div>
           <div className="p-4">
             <p className="mb-4">
-              Shapefile and GeoJSON datasets{' '}
-              <strong>must be in the WGS84 coordinate system.</strong>
+              Shapefile and GeoJSON datasets must be in a{' '}
+              <strong>geographic coordinate system</strong> that uses the{' '}
+              <strong>WGS84 datum</strong> (e.g., EPSG:4326).
             </p>
             {/* form */}
             <FormProvider {...methods}>

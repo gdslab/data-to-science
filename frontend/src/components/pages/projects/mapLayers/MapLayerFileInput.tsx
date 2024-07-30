@@ -63,10 +63,10 @@ export default function MapLayerFileInput({
               message: 'Feature Collection must have at least one feature',
             });
             clearFields(setValue);
-          } else if (parsedGeoJSON.features.length > 500) {
+          } else if (parsedGeoJSON.features.length > 2000) {
             setError('geojson', {
               type: 'custom',
-              message: 'Feature Collection cannot contain more than 500 features',
+              message: 'Feature Collection cannot contain more than 2000 features',
             });
             clearFields(setValue);
           } else if (!isFeatureGeometryMatching(parsedGeoJSON)) {
