@@ -14,10 +14,22 @@ import { useProjectContext } from './ProjectContext';
 
 import { getUnique, sorter } from '../../utils';
 
+function getFlightsDisplayModeFromLS(): 'table' | 'carousel' {
+  const flightsDisplayMode = localStorage.getItem('flightsDisplayMode');
+  if (flightsDisplayMode === 'table' || flightsDisplayMode === 'carousel') {
+    return flightsDisplayMode;
+  } else {
+    localStorage.setItem('flightsDisplayMode', 'carousel');
+    return 'carousel';
+  }
+}
+
 export default function ProjectFlights() {
   const [flightSortOrder, setFlightSortOrder] = useState('asc');
   const [open, setOpen] = useState(false);
-  const [tableView, toggleTableView] = useState<'table' | 'carousel'>('carousel');
+  const [tableView, toggleTableView] = useState<'table' | 'carousel'>(
+    getFlightsDisplayModeFromLS()
+  );
 
   const {
     flights,
@@ -38,6 +50,13 @@ export default function ProjectFlights() {
 
   function updateFlightsFilter(filterSelections: string[]) {
     flightsFilterSelectionDispatch({ type: 'set', payload: filterSelections });
+  }
+
+  function onTableViewChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.value === 'carousel' || e.target.value === 'table') {
+      localStorage.setItem('flightsDisplayMode', e.target.value);
+      toggleTableView(e.target.value);
+    }
   }
 
   return (
@@ -76,7 +95,7 @@ export default function ProjectFlights() {
             </div>
             <TableCardRadioInput
               tableView={tableView}
-              toggleTableView={toggleTableView}
+              toggleTableView={onTableViewChange}
             />
           </div>
         </div>
@@ -118,24 +137,36 @@ export default function ProjectFlights() {
                 actions={
                   projectRole === 'viewer'
                     ? undefined
-                    : flights.map((flight, i) => {
-                        const editAction = {
-                          key: `action-edit-${i}`,
-                          icon: <PencilIcon className="h-4 w-4" />,
-                          label: 'Edit',
-                          url: `/projects/${project.id}/flights/${flight.id}/edit`,
-                        };
-                        const deleteAction = {
-                          key: `action-delete-${i}`,
-                          type: 'component',
-                          component: (
-                            <FlightDeleteModal flight={flight} tableView={true} />
-                          ),
-                          label: 'Delete',
-                        };
-                        if (projectRole === 'owner') return [editAction, deleteAction];
-                        return [editAction];
-                      })
+                    : flights
+                        .filter(
+                          ({ sensor }) => flightsFilterSelection.indexOf(sensor) > -1
+                        )
+                        .sort((a, b) =>
+                          sorter(
+                            new Date(a.acquisition_date),
+                            new Date(b.acquisition_date),
+                            flightSortOrder
+                          )
+                        )
+                        .map((flight) => {
+                          const editAction = {
+                            key: `action-edit-${flight.id}`,
+                            icon: <PencilIcon className="h-4 w-4" />,
+                            label: 'Edit',
+                            url: `/projects/${project.id}/flights/${flight.id}/edit`,
+                          };
+                          const deleteAction = {
+                            key: `action-delete-${flight.id}`,
+                            type: 'component',
+                            component: (
+                              <FlightDeleteModal flight={flight} tableView={true} />
+                            ),
+                            label: 'Delete',
+                          };
+                          if (projectRole === 'owner')
+                            return [editAction, deleteAction];
+                          return [editAction];
+                        })
                 }
               />
             </Table>
