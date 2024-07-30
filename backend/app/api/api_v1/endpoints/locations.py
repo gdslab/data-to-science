@@ -28,7 +28,7 @@ router = APIRouter()
 logger = logging.getLogger("__name__")
 
 
-FEATURE_LIMIT = 500
+FEATURE_LIMIT = 2000
 REQUIRED_SHP_PARTS = [".dbf", ".shp", ".shx"]
 
 
