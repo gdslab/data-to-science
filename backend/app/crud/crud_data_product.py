@@ -139,10 +139,10 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
 
 
 def set_status_attr(data_product_obj: DataProduct, jobs: List[Job]):
-    upload_job_name = "upload-data-product"
+    accepted_job_names = ["upload-data-product", "exg-process", "nvdi-process"]
     status = None
     for job in jobs:
-        if job.name == upload_job_name:
+        if job.name in accepted_job_names:
             status = job.status
 
     if not status:

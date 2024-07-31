@@ -92,7 +92,7 @@ def test_create_vector_layer_without_project_role(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_create_vector_layer_with_more_than_five_hundred_features_fails(
+def test_create_vector_layer_with_too_many_features_features_fails(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
