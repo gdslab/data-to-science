@@ -223,7 +223,7 @@ def get_geojson_feature_collection(
                         },
                     }
                 ]
-                * 501,
+                * 2500,
             },
         }
     else:
