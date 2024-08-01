@@ -53,11 +53,22 @@ def test_get_users(db: Session) -> None:
     user1 = create_user(db)
     user2 = create_user(db)
     user3 = create_user(db)
+    # create user without approval
+    create_user(db, is_approved=False)
+    # create user and update email confirmation field to false
+    user_without_confirmed_email = create_user(db)
+    crud.user.update(
+        db,
+        db_obj=user_without_confirmed_email,
+        obj_in=UserUpdate(is_email_confirmed=False),
+    )
     users = crud.user.get_multi_by_query(db)
     assert users
     assert isinstance(users, List)
-    assert len(users) == 3
+    assert len(users) == 3  # users without approval and email confirmation excluded
     for user in users:
+        assert user.is_approved
+        assert user.is_email_confirmed
         assert user.id in [user1.id, user2.id, user3.id]
 
 

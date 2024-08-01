@@ -3,7 +3,7 @@ import os
 from typing import Any, Sequence
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
 from app import crud
@@ -83,19 +83,15 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             session.commit()
             return db_obj
 
-    def get_multi_by_query(
-        self,
-        db: Session,
-        q: str | None = "",
-        skip: int = 0,
-        limit: int = 100,
-    ) -> Sequence[User]:
+    def get_multi_by_query(self, db: Session, q: str | None = "") -> Sequence[User]:
         if not q:
             q = ""
-        statement = (
-            select(User)
-            .where(User.is_approved)
-            .where(func.lower(User.full_name).contains(func.lower(q)))
+        statement = select(User).where(
+            and_(
+                User.is_approved,
+                User.is_email_confirmed,
+                func.lower(User.full_name).contains(func.lower(q)),
+            )
         )
         with db as session:
             users = session.scalars(statement).all()

@@ -139,6 +139,8 @@ def test_read_users_without_query(
     assert isinstance(users, List)
     assert len(users) == 4  # three users created here plus user making request
     for user in users:
+        assert user["is_approved"]
+        assert user["is_email_confirmed"]
         assert user["id"] in [
             str(user1.id),
             str(user2.id),
