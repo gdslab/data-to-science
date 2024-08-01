@@ -145,8 +145,22 @@ services:
     ports:
       - ":8888"
     environment:
+      # uvicorn/gunicorn settings
       - PORT=8888
-      - WORKERS_PER_CORE=1
+      - WORKERS_PER_CORE=0.5
+      - WEB_CONCURRENCY=2
+      - ACCESS_LOG=/var/log/titiler-access.log
+      - ERROR_LOG=/var/log/titiler-error.log
+      # titiler/gdal settings
+      - GDAL_CACHEMAX=200
+      - GDAL_DISABLE_READDIR_ON_OPEN=EMPTY_DIR
+      - GDAL_HTTP_MERGE_CONSECUTIVE_RANGES=YES
+      - GDAL_HTTP_MULTIPLEX=YES
+      - GDAL_HTTP_VERSION=2
+      - CPL_VSIL_CURL_ALLOWED_EXTENSIONS=.tif,.TIF,.tiff
+      - CPL_VSIL_CURL_CACHE_SIZE=200000000
+      - VSI_CACHE=TRUE
+      - VSI_CACHE_SIZE=5000000
 
   tusd:
     image: tusproject/tusd:latest
