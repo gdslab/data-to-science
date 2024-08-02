@@ -1,7 +1,7 @@
 """add table for iforester records
 
 Revision ID: f91e984cffea
-Revises: a7e7862fb42f
+Revises: 331ef9521713
 Create Date: 2024-07-08 13:12:14.277277
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'f91e984cffea'
-down_revision: str | None = 'a7e7862fb42f'
+down_revision: str | None = '331ef9521713'
 branch_labels: str | None = None
 depends_on: str | None = None
 
@@ -21,9 +21,9 @@ def upgrade() -> None:
     op.create_table('iforester',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('dbh', sa.Float(), nullable=True),
-    sa.Column('depthFile', sa.String(length=63), nullable=True),
+    sa.Column('depthFile', sa.String(length=255), nullable=True),
     sa.Column('distance', sa.Float(), nullable=True),
-    sa.Column('imageFile', sa.String(length=63), nullable=True),
+    sa.Column('imageFile', sa.String(length=255), nullable=True),
     sa.Column('jsonPost', sa.String(length=1023), nullable=True),
     sa.Column('latitude', sa.Float(), nullable=True),
     sa.Column('longitude', sa.Float(), nullable=True),

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { IForester } from './Project';
+import IForesterList from './iForester/IForesterList';
 
 export default function ProjectIForester() {
   const [iforesterData, setIForesterData] = useState<IForester[] | null>(null);
@@ -34,5 +35,6 @@ export default function ProjectIForester() {
     }
   }, []);
 
-  return <pre>{JSON.stringify(iforesterData, undefined, 2)}</pre>;
+  if (!iforesterData) return <span className="text-lg font-semibold">No data</span>;
+  if (iforesterData) return <IForesterList data={iforesterData} />;
 }

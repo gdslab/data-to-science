@@ -22,9 +22,9 @@ class IForester(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     dbh: Mapped[float] = mapped_column(Float, nullable=True, default=None)
-    depthFile: Mapped[str] = mapped_column(String(63), nullable=True, default=None)
+    depthFile: Mapped[str] = mapped_column(String(255), nullable=True, default=None)
     distance: Mapped[float] = mapped_column(Float, nullable=True, default=None)
-    imageFile: Mapped[str] = mapped_column(String(63), nullable=True, default=None)
+    imageFile: Mapped[str] = mapped_column(String(255), nullable=True, default=None)
     jsonPost: Mapped[str] = mapped_column(String(1023), nullable=True, default=None)
     latitude: Mapped[float] = mapped_column(Float, nullable=True, default=None)
     longitude: Mapped[float] = mapped_column(Float, nullable=True, default=None)

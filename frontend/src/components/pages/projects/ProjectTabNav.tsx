@@ -7,6 +7,8 @@ import ProjectFlights from './ProjectFlights';
 import ProjectIForester from './ProjectIForester';
 import ProjectVectorData from './ProjectVectorData';
 
+import iForesterLogo from '../../../assets/iForester-logo.png';
+
 export default function ProjectTabNav() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const location = useLocation();
@@ -30,7 +32,10 @@ export default function ProjectTabNav() {
           Field Data
         </Tab>
         <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium">
-          IForester
+          <div className="flex items-center justify-center gap-2">
+            <img src={iForesterLogo} className="h-4 w-4" />
+            iForester
+          </div>
         </Tab>
       </TabList>
       <hr className="my-4 border-gray-700" />

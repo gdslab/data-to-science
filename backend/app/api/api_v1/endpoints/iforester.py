@@ -13,21 +13,22 @@ from app.core.config import settings
 router = APIRouter()
 
 
-def get_iforester_static_dir(project_id: UUID4):
+def get_iforester_static_dir(project_id: UUID4, iforester_id: UUID4):
     """Get directory where iforester images are stored.
 
     Args:
         project_id (UUID4): Project ID associated with iforester files.
+        iforester_id (UUID4): IForester ID associated with iforester db record.
 
     Returns:
         str: Path to iforester static directory.
     """
     if os.environ.get("RUNNING_TESTS") == "1":
         iforester_static_dir = (
-            f"{settings.TEST_STATIC_DIR}/projects/{project_id}/iforester"
+            f"{settings.TEST_STATIC_DIR}/projects/{project_id}/iforester/{iforester_id}"
         )
     else:
-        iforester_static_dir = f"{settings.STATIC_DIR}/projects/{project_id}/iforester"
+        iforester_static_dir = f"{settings.STATIC_DIR}/projects/{project_id}/iforester/{iforester_id}"
 
     # create folder if it does not exist
     if not os.path.exists(iforester_static_dir):
@@ -51,7 +52,7 @@ def create_iforester(
         db, iforester_in=iforester_in_db, project_id=project.id
     )
     # decode and write images to disk
-    static_dir = get_iforester_static_dir(project.id)
+    static_dir = get_iforester_static_dir(project.id, iforester.id)
     # rgb1x image
     if iforester_in.image and iforester_in.RGB1XImageFileName:
         img_file_in_bytes = str.encode(iforester_in.image)
@@ -67,7 +68,14 @@ def create_iforester(
         ) as img_file:
             img_file.write(base64.decodebytes(img_file_in_bytes))
 
-    return iforester
+    # add images to newly created record
+    iforester_update_in = schemas.IForesterUpdate(
+        imageFile=os.path.join(static_dir, iforester_in.RGB1XImageFileName),
+        depthFile=os.path.join(static_dir, iforester_in.depthImageFileName)
+    )
+    updated_iforester = crud.iforester.update(db, db_obj=iforester, obj_in=iforester_update_in)
+
+    return updated_iforester
 
 
 @router.get("/{iforester_id}", response_model=schemas.IForester)

@@ -165,6 +165,7 @@ export type Job = {
 };
 
 export type IForester = {
+  id: string;
   dbh: number;
   depthFile: string;
   distance: number;
@@ -176,4 +177,5 @@ export type IForester = {
   phoneID: string;
   species: string;
   user: string;
+  timeStamp: Date;
 };
