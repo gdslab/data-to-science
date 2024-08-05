@@ -28,7 +28,9 @@ def get_iforester_static_dir(project_id: UUID4, iforester_id: UUID4):
             f"{settings.TEST_STATIC_DIR}/projects/{project_id}/iforester/{iforester_id}"
         )
     else:
-        iforester_static_dir = f"{settings.STATIC_DIR}/projects/{project_id}/iforester/{iforester_id}"
+        iforester_static_dir = (
+            f"{settings.STATIC_DIR}/projects/{project_id}/iforester/{iforester_id}"
+        )
 
     # create folder if it does not exist
     if not os.path.exists(iforester_static_dir):
@@ -71,9 +73,11 @@ def create_iforester(
     # add images to newly created record
     iforester_update_in = schemas.IForesterUpdate(
         imageFile=os.path.join(static_dir, iforester_in.RGB1XImageFileName),
-        depthFile=os.path.join(static_dir, iforester_in.depthImageFileName)
+        depthFile=os.path.join(static_dir, iforester_in.depthImageFileName),
     )
-    updated_iforester = crud.iforester.update(db, db_obj=iforester, obj_in=iforester_update_in)
+    updated_iforester = crud.iforester.update(
+        db, db_obj=iforester, obj_in=iforester_update_in
+    )
 
     return updated_iforester
 

@@ -1,3 +1,4 @@
+import os
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -11,10 +12,10 @@ from app.tests.utils.project import create_project
 def test_create_iforester_record(db: Session) -> None:
     iforester = create_iforester(db)
     assert iforester
-    assert iforester.dbh == EXAMPLE_DATA.get("dbh")
-    assert iforester.depthFile == EXAMPLE_DATA.get("depthFile")
+    assert iforester.dbh == EXAMPLE_DATA.get("DBH")
+    assert os.path.exists(iforester.depthFile)
     assert iforester.distance == EXAMPLE_DATA.get("distance")
-    assert iforester.imageFile == EXAMPLE_DATA.get("imageFile")
+    assert os.path.exists(iforester.imageFile)
     assert iforester.latitude == EXAMPLE_DATA.get("latitude")
     assert iforester.longitude == EXAMPLE_DATA.get("longitude")
     assert iforester.note == EXAMPLE_DATA.get("note")
@@ -30,10 +31,10 @@ def test_read_iforester_record(db: Session) -> None:
         db, iforester_id=iforester.id, project_id=iforester.project_id
     )
     assert iforester_in_db
-    assert iforester_in_db.dbh == EXAMPLE_DATA.get("dbh")
-    assert iforester_in_db.depthFile == EXAMPLE_DATA.get("depthFile")
+    assert iforester_in_db.dbh == EXAMPLE_DATA.get("DBH")
+    assert os.path.exists(iforester.depthFile)
     assert iforester_in_db.distance == EXAMPLE_DATA.get("distance")
-    assert iforester_in_db.imageFile == EXAMPLE_DATA.get("imageFile")
+    assert os.path.exists(iforester.imageFile)
     assert iforester_in_db.latitude == EXAMPLE_DATA.get("latitude")
     assert iforester_in_db.longitude == EXAMPLE_DATA.get("longitude")
     assert iforester_in_db.note == EXAMPLE_DATA.get("note")
