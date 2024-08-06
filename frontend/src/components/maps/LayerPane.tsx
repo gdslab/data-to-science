@@ -10,7 +10,7 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 
-import { Button } from '../Buttons';
+import { Button, LinkOutlineButton } from '../Buttons';
 import { getDataProductName } from '../pages/projects/flights/dataProducts/DataProductsTable';
 import HintText from '../HintText';
 import { useMapContext } from './MapContext';
@@ -509,6 +509,16 @@ export default function LayerPane({
                                 </div>
                               </LayerCard>
                             ))}
+                            <div className="my-2">
+                              <LinkOutlineButton
+                                size="sm"
+                                target="_blank"
+                                title="Open data management page for this flight in a new tab"
+                                url={`/projects/${flight.project_id}/flights/${flight.id}/data`}
+                              >
+                                Manage Data
+                              </LinkOutlineButton>
+                            </div>
                           </details>
                         ) : null}
                       </LayerCard>
