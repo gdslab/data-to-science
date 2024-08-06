@@ -8,6 +8,7 @@ import RawData from './rawData/RawData';
 import { useProjectContext } from '../ProjectContext';
 
 import { DataProduct } from '../Project';
+import FlightDataTabNav from './FlightDataTabNav';
 
 export async function loader({ params }: { params: Params<string> }) {
   try {
@@ -53,18 +54,14 @@ interface FlightData {
 
 export default function FlightData() {
   const { dataProducts, rawData } = useLoaderData() as FlightData;
-  const [open, setOpen] = useState(false);
   const { flights } = useProjectContext();
 
   return (
     <div className="flex flex-row h-full">
       {flights && flights.length > 0 ? <FlightDataNav /> : null}
       <div className="flex flex-col h-full w-full gap-4 p-4">
-        <div className="max-h-32">
-          <RawData data={rawData} open={open} />
-        </div>
         <div className="grow min-h-0">
-          <DataProducts data={dataProducts} open={open} setOpen={setOpen} />
+          <FlightDataTabNav dataProducts={dataProducts} rawData={rawData} />
         </div>
       </div>
     </div>

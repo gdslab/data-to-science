@@ -1,19 +1,16 @@
 import axios, { AxiosResponse } from 'axios';
-import { useEffect, useState } from 'react';
-import { Params, useLoaderData, useLocation, useParams } from 'react-router-dom';
-import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
+import { useEffect } from 'react';
+import { Params, useLoaderData, useParams } from 'react-router-dom';
 
 import { User } from '../../../AuthContext';
 import { useProjectContext } from './ProjectContext';
-
 import { Flight, Project, ProjectLoaderData } from './Project';
 import { ProjectMember } from './ProjectAccess';
-import ProjectCampaigns from './ProjectCampaigns';
 import ProjectDetailEditForm from './ProjectDetailEditForm';
+import ProjectTabNav from './ProjectTabNav';
 import { Team } from '../teams/Teams';
-import ProjectFlights from './ProjectFlights';
+
 import { getProjectMembers } from './ProjectContext/ProjectContext';
-import ProjectVectorData from './ProjectVectorData';
 
 export async function loader({ params }: { params: Params<string> }) {
   const profile = localStorage.getItem('userProfile');
@@ -70,10 +67,8 @@ export async function loader({ params }: { params: Params<string> }) {
 }
 
 export default function ProjectDetail() {
-  const [selectedIndex, setSelectedIndex] = useState(0);
-
   const { project, role, flights, teams } = useLoaderData() as ProjectLoaderData;
-  const location = useLocation();
+
   const params = useParams();
 
   const {
@@ -86,12 +81,6 @@ export default function ProjectDetail() {
     projectMembersDispatch,
     projectRoleDispatch,
   } = useProjectContext();
-
-  useEffect(() => {
-    if (location.state && location.state.selectedIndex) {
-      setSelectedIndex(location.state.selectedIndex);
-    }
-  }, [location.state]);
 
   useEffect(() => {
     if (role) projectRoleDispatch({ type: 'set', payload: role });
@@ -152,31 +141,7 @@ export default function ProjectDetail() {
           </div>
         )}
         <div className="grow min-h-0">
-          <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-            <TabList>
-              <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium">
-                Flights
-              </Tab>
-              <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium">
-                Map Layers
-              </Tab>
-              <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium">
-                Field Data
-              </Tab>
-            </TabList>
-            <hr className="my-4 border-gray-700" />
-            <TabPanels>
-              <TabPanel>
-                <ProjectFlights />
-              </TabPanel>
-              <TabPanel>
-                <ProjectVectorData />
-              </TabPanel>
-              <TabPanel>
-                <ProjectCampaigns />
-              </TabPanel>
-            </TabPanels>
-          </TabGroup>
+          <ProjectTabNav />
         </div>
       </div>
     );
