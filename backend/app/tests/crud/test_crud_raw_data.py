@@ -14,6 +14,7 @@ def test_create_raw_data(db: Session) -> None:
     raw_data = SampleRawData(db)
     assert raw_data.obj
     assert raw_data.obj.original_filename == "myrawdata.zip"
+    assert raw_data.obj.is_initial_processing_completed is True
     assert os.path.exists(raw_data.obj.filepath)
 
 
@@ -29,6 +30,10 @@ def test_read_raw_data(db: Session) -> None:
     assert stored_raw_data.flight_id == raw_data.flight.id
     assert stored_raw_data.filepath == raw_data.obj.filepath
     assert stored_raw_data.original_filename == raw_data.obj.original_filename
+    assert (
+        stored_raw_data.is_initial_processing_completed
+        == raw_data.obj.is_initial_processing_completed
+    )
 
 
 def test_read_multi_raw_data(db: Session) -> None:

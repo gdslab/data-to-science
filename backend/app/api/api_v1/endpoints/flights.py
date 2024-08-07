@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, List, Sequence
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -101,3 +101,15 @@ def deactivate_flight(
     if not deactivated_flight:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
     return deactivated_flight
+
+
+@router.get("/{flight_id}/check_progress", response_model=List[schemas.Job])
+def check_for_raw_data_jobs_in_progress(
+    flight_id: UUID,
+    flight: models.Flight = Depends(deps.can_read_write_flight),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    jobs = crud.job.get_raw_data_jobs_by_flight_id(
+        db, job_name="processing-raw-data", flight_id=flight_id, processing=True
+    )
+    return jobs

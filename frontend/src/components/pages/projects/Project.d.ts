@@ -110,6 +110,7 @@ export interface DataProduct {
     raster: Band[];
     eo: EO[];
   };
+  initial_processing_status: string;
   user_style: SymbologySettings;
 }
 
@@ -149,4 +150,16 @@ export type FieldCampaign = {
   title: string;
   lead_id: string;
   form_data: FieldCampaignInitialValues;
+};
+
+export type Job = {
+  id: string;
+  name: string;
+  extra: { [key: string]: any };
+  state: string;
+  status: string;
+  start_time: string;
+  end_time: string;
+  data_product_id: string;
+  raw_data_id: string;
 };

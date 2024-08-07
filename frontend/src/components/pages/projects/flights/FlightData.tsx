@@ -1,14 +1,12 @@
 import axios from 'axios';
-import { useState } from 'react';
 import { Params, useLoaderData } from 'react-router-dom';
 
-import DataProducts from './dataProducts/DataProducts';
 import FlightDataNav from './FlightDataNav';
-import RawData from './rawData/RawData';
 import { useProjectContext } from '../ProjectContext';
-
 import { DataProduct } from '../Project';
 import FlightDataTabNav from './FlightDataTabNav';
+
+import { RawDataProps } from './RawData/RawData.types';
 
 export async function loader({ params }: { params: Params<string> }) {
   try {
@@ -28,29 +26,18 @@ export async function loader({ params }: { params: Params<string> }) {
         rawData: rawData.data,
       };
     } else {
-      return { dataProducts: [], rawData: [], role: 'viewer' };
+      return { dataProducts: [], rawData: [] };
     }
   } catch (err) {
     console.error('Unable to retrieve raw data and data products');
-    return { dataProducts: [], rawData: [], role: 'viewer' };
+    return { dataProducts: [], rawData: [] };
   }
 }
 
-export interface DataProductStatus extends DataProduct {
-  status: string;
-}
-
-export interface RawData {
-  id: string;
-  original_filename: string;
-  status: string;
-  url: string;
-}
-
-interface FlightData {
-  dataProducts: DataProductStatus[];
-  rawData: RawData[];
-}
+export type FlightData = {
+  dataProducts: DataProduct[];
+  rawData: RawDataProps[];
+};
 
 export default function FlightData() {
   const { dataProducts, rawData } = useLoaderData() as FlightData;

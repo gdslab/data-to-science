@@ -11,7 +11,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 import { Button, LinkOutlineButton } from '../Buttons';
-import { getDataProductName } from '../pages/projects/flights/dataProducts/DataProductsTable';
+import { getDataProductName } from '../pages/projects/flights/DataProducts/DataProductsTable';
 import HintText from '../HintText';
 import { useMapContext } from './MapContext';
 import Pagination, { getPaginationResults } from '../Pagination';

@@ -31,7 +31,7 @@ def test_read_raw_data_with_project_owner_role(
     assert str(raw_data.obj.id) == response_raw_data["id"]
     assert "flight_id" in response_raw_data
     assert "original_filename" in response_raw_data
-    assert "status" in response_raw_data
+    assert "initial_processing_status" in response_raw_data
 
 
 def test_read_raw_data_with_project_manager_role(

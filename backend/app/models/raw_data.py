@@ -26,6 +26,9 @@ class RawData(Base):
         ForeignKey("flights.id"), nullable=False
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_initial_processing_completed: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
     deactivated_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 
     flight: Mapped["Flight"] = relationship(back_populates="raw_data")

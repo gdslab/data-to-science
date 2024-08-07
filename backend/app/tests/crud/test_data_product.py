@@ -18,6 +18,7 @@ def test_create_data_product(db: Session) -> None:
     assert data_product.obj.data_type == "ortho"
     assert data_product.obj.original_filename == "myfile.tif"
     assert data_product.obj.stac_properties == test_stac_props_dsm
+    assert data_product.obj.is_initial_processing_completed is True
     assert os.path.exists(data_product.obj.filepath)
 
 
@@ -36,6 +37,10 @@ def test_read_data_product(db: Session) -> None:
     assert stored_data_product.data_type == data_product.obj.data_type
     assert stored_data_product.filepath == data_product.obj.filepath
     assert stored_data_product.original_filename == data_product.obj.original_filename
+    assert (
+        stored_data_product.is_initial_processing_completed
+        == data_product.obj.is_initial_processing_completed
+    )
     assert stored_data_product.url
     assert stored_data_product.user_style
 

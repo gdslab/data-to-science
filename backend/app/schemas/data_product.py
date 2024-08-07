@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 from uuid import UUID
 
 from pydantic import AnyHttpUrl, BaseModel
@@ -8,11 +9,12 @@ from app.utils.ImageProcessor import STACProperties
 
 # shared properties
 class DataProductBase(BaseModel):
-    data_type: str | None = None
-    filepath: str | None = None
-    original_filename: str | None = None
-    stac_properties: STACProperties | None = None
+    data_type: Optional[str] = None
+    filepath: Optional[str] = None
+    original_filename: Optional[str] = None
+    stac_properties: Optional[STACProperties] = None
     is_active: bool = True
+    is_initial_processing_completed: bool = False
 
 
 # properties to receive via API on creation
@@ -20,7 +22,7 @@ class DataProductCreate(DataProductBase):
     data_type: str
     filepath: str
     original_filename: str
-    stac_properties: STACProperties | None = None
+    stac_properties: Optional[STACProperties] = None
 
 
 # properties to receive via API on update
@@ -35,17 +37,18 @@ class DataProductInDBBase(DataProductBase, from_attributes=True):
     filepath: str
     flight_id: UUID
     original_filename: str
-    stac_properties: STACProperties | None = None
-    user_style: dict | None = None
+    stac_properties: Optional[STACProperties] = None
+    user_style: Optional[dict] = None
     is_active: bool
-    deactivated_at: datetime | None = None
+    is_initial_processing_completed: bool
+    deactivated_at: Optional[datetime] = None
 
 
 # additional properties to return via API
 class DataProduct(DataProductInDBBase):
-    public: bool | None = None
-    status: str | None = None
-    url: AnyHttpUrl | None = None
+    public: bool = False
+    initial_processing_status: Optional[str] = None
+    url: Optional[AnyHttpUrl] = None
 
 
 # additional properties stored in DB

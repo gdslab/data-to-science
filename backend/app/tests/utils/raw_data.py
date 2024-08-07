@@ -72,5 +72,7 @@ class SampleRawData:
         return raw_data_in_db
 
     def update_raw_data_filepath_in_database(self, db: Session, filepath: str):
-        raw_data_in = RawDataUpdate(filepath=filepath)
+        raw_data_in = RawDataUpdate(
+            filepath=filepath, is_initial_processing_completed=True
+        )
         return crud.raw_data.update(db, db_obj=self.obj, obj_in=raw_data_in)

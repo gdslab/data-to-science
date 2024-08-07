@@ -12,12 +12,13 @@ import {
 
 import { CopyURLButton } from '../../../../Buttons';
 import DataProductDeleteModal from './DataProductDeleteModal';
-import { DataProductStatus } from '../FlightData';
 import { useProjectContext } from '../../ProjectContext';
 import { Project } from '../../ProjectList';
 import Table, { TableBody, TableHead } from '../../../../Table';
 import ToolboxModal from './ToolboxModal';
 import DataProductShareModal from './DataProductShareModal';
+
+import { DataProduct } from '../../Project';
 
 export function isGeoTIFF(dataType: string): boolean {
   return dataType !== 'point_cloud';
@@ -38,25 +39,25 @@ export function getDataProductName(dataType: string): string {
 
 function getDataProductActions(
   role: string | undefined,
-  data: DataProductStatus[],
+  data: DataProduct[],
   navigate: NavigateFunction,
   project: Project | null
 ) {
-  const getDeleteAction = (dataProduct: DataProductStatus) => ({
+  const getDeleteAction = (dataProduct: DataProduct) => ({
     key: `action-delete-${dataProduct.id}`,
     type: 'component',
     component: <DataProductDeleteModal dataProduct={dataProduct} tableView={true} />,
     label: 'Delete',
   });
 
-  const getToolboxAction = (dataProduct: DataProductStatus) => ({
+  const getToolboxAction = (dataProduct: DataProduct) => ({
     key: `action-toolbox-${dataProduct.id}`,
     type: 'component',
     component: <ToolboxModal dataProduct={dataProduct} tableView={true} />,
     label: 'Toolbox',
   });
 
-  const getDownloadAction = (dataProduct: DataProductStatus) => ({
+  const getDownloadAction = (dataProduct: DataProduct) => ({
     key: `action-download-${dataProduct.id}`,
     type: 'component',
     component: (
@@ -73,14 +74,14 @@ function getDataProductActions(
     label: 'Download',
   });
 
-  const getShareAction = (dataProduct: DataProductStatus) => ({
+  const getShareAction = (dataProduct: DataProduct) => ({
     key: `action-share-${dataProduct.id}`,
     type: 'component',
     component: <DataProductShareModal dataProduct={dataProduct} tableView={true} />,
     label: 'Share',
   });
 
-  const getViewAction = (dataProduct: DataProductStatus) => ({
+  const getViewAction = (dataProduct: DataProduct) => ({
     key: `action-view-${dataProduct.id}`,
     type: 'component',
     component: (
@@ -118,7 +119,7 @@ function getDataProductActions(
   }
 }
 
-export default function DataProductsTable({ data }: { data: DataProductStatus[] }) {
+export default function DataProductsTable({ data }: { data: DataProduct[] }) {
   const navigate = useNavigate();
   const { project, projectRole } = useProjectContext();
 
@@ -147,7 +148,8 @@ export default function DataProductsTable({ data }: { data: DataProductStatus[] 
               key={`row-${dataset.id}-preview`}
               className="h-full flex items-center justify-center"
             >
-              {dataset.status === 'SUCCESS' && isGeoTIFF(dataset.data_type) ? (
+              {dataset.initial_processing_status === 'SUCCESS' &&
+              isGeoTIFF(dataset.data_type) ? (
                 <div className="h-full">
                   <img
                     className="w-full max-h-28"
@@ -164,7 +166,7 @@ export default function DataProductsTable({ data }: { data: DataProductStatus[] 
                 <div>No preview</div>
               )}
             </div>,
-            dataset.status === 'SUCCESS' ? (
+            dataset.initial_processing_status === 'SUCCESS' ? (
               <div
                 key={`row-${dataset.id}-file`}
                 className="h-full flex items-center justify-center"
@@ -180,19 +182,20 @@ export default function DataProductsTable({ data }: { data: DataProductStatus[] 
                 key={`row-${dataset.id}-file`}
                 className="h-full flex items-center justify-center"
               >
-                {dataset.status === 'INPROGRESS' || dataset.status === 'WAITING' ? (
+                {dataset.initial_processing_status === 'INPROGRESS' ||
+                dataset.initial_processing_status === 'WAITING' ? (
                   <Fragment>
                     <CogIcon className="h-8 w-8 mr-4 animate-spin" aria-hidden="true" />
                     {isGeoTIFF(dataset.data_type)
                       ? 'Generating COG'
                       : 'Generating EPT & COPC'}
                   </Fragment>
-                ) : dataset.status === 'FAILED' ? (
+                ) : dataset.initial_processing_status === 'FAILED' ? (
                   <Fragment>
                     <XCircleIcon className="h-8 h-8 mr-4 text-red-500" />
                     Failed
                   </Fragment>
-                ) : dataset.status === 'SUCCESS' ? (
+                ) : dataset.initial_processing_status === 'SUCCESS' ? (
                   <Fragment>
                     <CheckCircleIcon className="h-8 w-8 mr-4 text-green-500" /> Success
                   </Fragment>

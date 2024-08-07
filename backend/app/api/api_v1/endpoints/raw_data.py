@@ -2,7 +2,7 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Sequence
+from typing import Any, Dict, List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -101,7 +101,7 @@ def download_raw_data(
     )
 
 
-@router.get("", response_model=Sequence[schemas.RawData])
+@router.get("", response_model=List[schemas.RawData])
 def read_all_raw_data(
     flight_id: UUID,
     flight: models.Flight = Depends(deps.can_read_flight),
