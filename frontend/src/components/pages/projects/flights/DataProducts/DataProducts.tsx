@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRevalidator } from 'react-router-dom';
 
+import { DataProduct } from '../../Project';
 import { Button } from '../../../../Buttons';
 import TableCardRadioInput from '../../../../TableCardRadioInput';
 import DataProductUploadModal from './DataProductUploadModal';
@@ -9,7 +10,7 @@ import DataProductCard from './DataProductCard';
 import DataProductsTable from './DataProductsTable';
 import { useProjectContext } from '../../ProjectContext';
 
-import { DataProduct } from '../../Project';
+import { sorter } from '../../../../utils';
 
 function getDataProductsDisplayModeFromLS(): 'table' | 'carousel' {
   const dataProductsDisplayMode = localStorage.getItem('dataProductsDisplayMode');
@@ -72,7 +73,10 @@ export default function DataProducts({ data }: { data: DataProduct[] }) {
           <DataProductsTable data={data} />
         ) : (
           <div className="grow flex flex-cols flex-wrap justify-start gap-4 min-h-96 overflow-auto">
-            {data.map((dataProduct) => (
+            {useMemo(
+              () => data.sort((a, b) => sorter(a.data_type, b.data_type)),
+              [data]
+            ).map((dataProduct) => (
               <DataProductCard key={dataProduct.id} dataProduct={dataProduct} />
             ))}
           </div>
