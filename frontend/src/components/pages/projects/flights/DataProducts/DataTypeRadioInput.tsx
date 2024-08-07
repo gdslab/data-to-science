@@ -5,8 +5,6 @@ export function getAllowedFileTypes(dtype: string): string[] {
     return ['.tif'];
   } else if (dtype === 'point_cloud') {
     return ['.las', '.laz'];
-  } else if (dtype === 'raw') {
-    return ['.zip'];
   } else {
     return ['.tif'];
   }
@@ -120,32 +118,6 @@ export default function DataTypeRadioInput({
               )}
             >
               <p className="text-sm font-medium">Ortho</p>
-            </label>
-          </div>
-
-          <div>
-            <input
-              type="radio"
-              name="dtypeOption"
-              value="raw"
-              id="dtypeRaw"
-              className="peer hidden"
-              checked={dtype === 'raw'}
-              onChange={changeDtype}
-              disabled={disabled}
-            />
-
-            <label
-              htmlFor="dtypeRaw"
-              className={clsx(
-                'flex items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white',
-                {
-                  'bg-gray-500 opacity-50 cursor-not-allowed': disabled,
-                  'cursor-pointer': !disabled,
-                }
-              )}
-            >
-              <p className="text-sm font-medium">Raw Data</p>
             </label>
           </div>
 

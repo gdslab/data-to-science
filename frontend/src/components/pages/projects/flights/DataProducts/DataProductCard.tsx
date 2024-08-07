@@ -8,12 +8,13 @@ import {
 } from '@heroicons/react/24/outline';
 
 import Card from '../../../../Card';
-import { DataProductStatus } from '../FlightData';
 import { isGeoTIFF } from './DataProductsTable';
 import DataProductDeleteModal from './DataProductDeleteModal';
 import ToolboxModal from './ToolboxModal';
 import { useProjectContext } from '../../ProjectContext';
 import DataProductShareModal from './DataProductShareModal';
+
+import { DataProduct } from '../../Project';
 
 function ProgressBar() {
   return (
@@ -25,11 +26,7 @@ function ProgressBar() {
   );
 }
 
-export default function DataProductCard({
-  dataProduct,
-}: {
-  dataProduct: DataProductStatus;
-}) {
+export default function DataProductCard({ dataProduct }: { dataProduct: DataProduct }) {
   const [invalidPreviews, setInvalidPreviews] = useState<string[]>([]);
   const [isCopied, setIsCopied] = useState(false);
   const { project, projectRole } = useProjectContext();
@@ -42,7 +39,8 @@ export default function DataProductCard({
           <div className="grid grid-flow-row auto-rows-max gap-2">
             {/* preview image */}
             <div className="relative flex items-center justify-center bg-accent3/20">
-              {dataProduct.status === 'SUCCESS' && isGeoTIFF(dataProduct.data_type) ? (
+              {dataProduct.initial_processing_status === 'SUCCESS' &&
+              isGeoTIFF(dataProduct.data_type) ? (
                 <div className="flex items-center justify-center w-full h-48">
                   <img
                     className="object-scale-down h-full"
@@ -62,7 +60,7 @@ export default function DataProductCard({
                     {isCopied ? 'Copied to clipboard' : 'Click to Copy URL'}
                   </div>
                 </div>
-              ) : dataProduct.status === 'SUCCESS' &&
+              ) : dataProduct.initial_processing_status === 'SUCCESS' &&
                 dataProduct.data_type === 'point_cloud' ? (
                 <div className="flex items-center justify-center w-full h-48">
                   {invalidPreviews.indexOf(dataProduct.id) < 0 ? (
@@ -93,7 +91,7 @@ export default function DataProductCard({
                     {isCopied ? 'Copied to clipboard' : 'Click to Copy URL'}
                   </div>
                 </div>
-              ) : dataProduct.status === 'FAILED' ? (
+              ) : dataProduct.initial_processing_status === 'FAILED' ? (
                 <div className="flex items-center justify-center w-full h-48">
                   <span className="sr-only">Process failed</span>
                   <ExclamationCircleIcon className="h-full text-accent2" />
@@ -149,7 +147,8 @@ export default function DataProductCard({
             </div>
           </div>
         </Card>
-        {dataProduct.status === 'INPROGRESS' || dataProduct.status === 'WAITING' ? (
+        {dataProduct.initial_processing_status === 'INPROGRESS' ||
+        dataProduct.initial_processing_status === 'WAITING' ? (
           <div className="w-full absolute bottom-0">
             <ProgressBar />
           </div>

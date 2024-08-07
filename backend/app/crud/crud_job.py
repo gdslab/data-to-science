@@ -2,11 +2,12 @@ from typing import List, Optional
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import and_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
 from app.models.job import Job
+from app.models.raw_data import RawData
 from app.schemas.job import JobCreate, JobUpdate
 
 
@@ -38,6 +39,47 @@ class CRUDJob(CRUDBase[Job, JobCreate, JobUpdate]):
         else:
             select_statement = select(Job).where(
                 and_(Job.raw_data_id == raw_data_id, Job.name == job_name)
+            )
+
+        with db as session:
+            jobs = session.scalars(select_statement).all()
+            return jobs
+
+    def get_raw_data_jobs_by_flight_id(
+        self,
+        db: Session,
+        job_name: str,
+        flight_id: UUID,
+        processing: Optional[bool] = False,
+    ) -> List[Job]:
+        """Returns raw data jobs that match job name, flight ID, and processing status.
+
+        Args:
+            db (Session): Database session.
+            job_name (str): Name of job.
+            flight_id (UUID): ID of flight associated with raw data.
+            processing (Optional[bool], optional): True if only waiting/inprogress jobs should be returned. Defaults to False.
+
+        Returns:
+            List[Job]: Raw data jobs matching provided conditions.
+        """
+        if processing:
+            select_statement = (
+                select(Job)
+                .join(Job.raw_data)
+                .where(
+                    and_(
+                        Job.name == job_name,
+                        or_(Job.status == "WAITING", Job.status == "INPROGRESS"),
+                        RawData.flight_id == flight_id,
+                    )
+                )
+            )
+        else:
+            select_statement = (
+                select(Job)
+                .join(Job.raw_data)
+                .where(and_(Job.name == job_name, RawData.flight_id == flight_id))
             )
 
         with db as session:

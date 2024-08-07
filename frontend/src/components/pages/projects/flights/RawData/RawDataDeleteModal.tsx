@@ -7,14 +7,15 @@ import { AlertBar, Status } from '../../../../Alert';
 import { Button } from '../../../../Buttons';
 import { ConfirmationPopup } from '../../../../ConfirmationPopup';
 import Modal from '../../../../Modal';
-import { RawData } from '../FlightData';
+
+import { RawDataProps } from './RawData.types';
 
 export default function RawDataDeleteModal({
   rawData,
   iconOnly = true,
   tableView = false,
 }: {
-  rawData: RawData;
+  rawData: RawDataProps;
   iconOnly?: boolean;
   tableView?: boolean;
 }) {

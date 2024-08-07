@@ -1,14 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRevalidator } from 'react-router-dom';
 
+import { DataProduct } from '../../Project';
 import { Button } from '../../../../Buttons';
 import TableCardRadioInput from '../../../../TableCardRadioInput';
 import DataProductUploadModal from './DataProductUploadModal';
 import { useInterval } from '../../../../hooks';
-import { DataProductStatus } from '../FlightData';
 import DataProductCard from './DataProductCard';
 import DataProductsTable from './DataProductsTable';
 import { useProjectContext } from '../../ProjectContext';
+
+import { sorter } from '../../../../utils';
 
 function getDataProductsDisplayModeFromLS(): 'table' | 'carousel' {
   const dataProductsDisplayMode = localStorage.getItem('dataProductsDisplayMode');
@@ -20,20 +22,15 @@ function getDataProductsDisplayModeFromLS(): 'table' | 'carousel' {
   }
 }
 
-export default function DataProducts({
-  data,
-  open,
-  setOpen,
-}: {
-  data: DataProductStatus[];
-  open: boolean;
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-}) {
-  const { flightId, projectId } = useParams();
+export default function DataProducts({ data }: { data: DataProduct[] }) {
+  const [open, setOpen] = useState(false);
   const [tableView, toggleTableView] = useState<'table' | 'carousel'>(
     getDataProductsDisplayModeFromLS()
   );
+
+  const { flightId, projectId } = useParams();
   const revalidator = useRevalidator();
+
   const { projectRole } = useProjectContext();
 
   useEffect(() => {
@@ -46,8 +43,11 @@ export default function DataProducts({
     },
     data &&
       data.length > 0 &&
-      data.filter(({ status }) => status === 'INPROGRESS' || status === 'WAITING')
-        .length > 0
+      data.filter(
+        ({ initial_processing_status }) =>
+          initial_processing_status === 'INPROGRESS' ||
+          initial_processing_status === 'WAITING'
+      ).length > 0
       ? 5000 // check every 5 seconds while processing job is active
       : 30000 // check every 30 seconds when no known jobs are active
   );
@@ -73,7 +73,10 @@ export default function DataProducts({
           <DataProductsTable data={data} />
         ) : (
           <div className="grow flex flex-cols flex-wrap justify-start gap-4 min-h-96 overflow-auto">
-            {data.map((dataProduct) => (
+            {useMemo(
+              () => data.sort((a, b) => sorter(a.data_type, b.data_type)),
+              [data]
+            ).map((dataProduct) => (
               <DataProductCard key={dataProduct.id} dataProduct={dataProduct} />
             ))}
           </div>
@@ -88,7 +91,7 @@ export default function DataProducts({
             setOpen={setOpen}
           />
           <Button size="sm" onClick={() => setOpen(true)}>
-            Upload Data
+            Upload Data Product
           </Button>
         </div>
       ) : null}

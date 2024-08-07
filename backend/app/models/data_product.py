@@ -32,6 +32,9 @@ class DataProduct(Base):
     original_filename: Mapped[str] = mapped_column(String, nullable=False)
     stac_properties: Mapped[dict] = mapped_column(JSONB, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_initial_processing_completed: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
     deactivated_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     # foreign keys
     flight_id: Mapped[uuid.UUID] = mapped_column(

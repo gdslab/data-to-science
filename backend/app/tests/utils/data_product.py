@@ -100,7 +100,9 @@ class SampleDataProduct:
         return data_product_in_db
 
     def update_data_product_filepath_in_database(self, db: Session, filepath: str):
-        data_product_in = DataProductUpdate(filepath=filepath)
+        data_product_in = DataProductUpdate(
+            filepath=filepath, is_initial_processing_completed=True
+        )
         return crud.data_product.update(db, db_obj=self.obj, obj_in=data_product_in)
 
 

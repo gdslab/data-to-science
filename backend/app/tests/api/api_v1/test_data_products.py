@@ -35,7 +35,7 @@ def test_read_data_product_with_project_owner_role(
     assert "original_filename" in response_data_product
     assert "stac_properties" in response_data_product
     assert "url" in response_data_product
-    assert "status" in response_data_product
+    assert "initial_processing_status" in response_data_product
     assert "user_style" in response_data_product
 
 

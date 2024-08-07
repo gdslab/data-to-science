@@ -36,8 +36,8 @@ class JobInDBBase(JobBase, from_attributes=True):
     state: str
     status: str
     start_time: datetime
-    data_product_id: UUID4
-    raw_data_id: UUID4
+    data_product_id: Optional[UUID4] = None
+    raw_data_id: Optional[UUID4] = None
 
 
 class Job(JobInDBBase):

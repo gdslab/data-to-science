@@ -4,7 +4,7 @@ from typing import Any, List, Sequence
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import func, select, update
+from sqlalchemy import and_, func, select, update
 from sqlalchemy.orm import joinedload, Session
 
 from app import crud
@@ -34,25 +34,29 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
     def get_single_by_id(
         self, db: Session, data_product_id: UUID, user_id: UUID, upload_dir: str
     ) -> DataProduct | None:
-        data_product_query = (
-            select(DataProduct)
-            .where(DataProduct.id == data_product_id)
-            .where(DataProduct.is_active)
+        data_product_query = select(DataProduct).where(
+            and_(DataProduct.id == data_product_id, DataProduct.is_active)
         )
-        user_style_query = (
-            select(UserStyle)
-            .where(UserStyle.data_product_id == data_product_id)
-            .where(UserStyle.user_id == user_id)
+        user_style_query = select(UserStyle).where(
+            and_(
+                UserStyle.data_product_id == data_product_id,
+                UserStyle.user_id == user_id,
+            )
         )
         with db as session:
             data_product = session.execute(data_product_query).scalar_one_or_none()
             user_style = session.execute(user_style_query).scalar_one_or_none()
             if data_product:
                 set_url_attr(data_product, upload_dir)
-                set_status_attr(data_product, data_product.jobs)
+                is_status_set = set_status_attr(data_product, data_product.jobs)
                 if user_style:
                     set_user_style_attr(data_product, user_style.settings)
-            return data_product
+                # do not return if record shows initial processing incomplete, and
+                # there is not a job for the initial processing
+                if is_status_set:
+                    return data_product
+
+        return None
 
     def get_public_data_product_by_id(
         self, db: Session, file_id: UUID, upload_dir: str, user_id: UUID | None = None
@@ -63,8 +67,13 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             .join(DataProduct.flight)
             .options(joinedload(DataProduct.file_permission))
             .options(joinedload(DataProduct.flight))
-            .where(DataProduct.is_active)
-            .where(DataProduct.id == file_id)
+            .where(
+                and_(
+                    DataProduct.is_active,
+                    DataProduct.id == file_id,
+                    DataProduct.is_initial_processing_completed,
+                )
+            )
         )
         with db as session:
             data_product = session.scalar(data_product_query)
@@ -96,31 +105,27 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
         data_products_query = (
             select(DataProduct)
             .join(DataProduct.file_permission)
-            .where(DataProduct.flight_id == flight_id)
-            .where(DataProduct.is_active)
+            .where(and_(DataProduct.flight_id == flight_id, DataProduct.is_active))
         )
         with db as session:
             data_products = session.execute(data_products_query).scalars().all()
             updated_data_products = []
             for data_product in data_products:
-                skip_data_product = False
                 # if not a point cloud, find user style settings for data product
                 if data_product.data_type != "point_cloud":
-                    user_style_query = (
-                        select(UserStyle)
-                        .where(UserStyle.data_product_id == data_product.id)
-                        .where(UserStyle.user_id == user_id)
+                    user_style_query = select(UserStyle).where(
+                        and_(
+                            UserStyle.data_product_id == data_product.id,
+                            UserStyle.user_id == user_id,
+                        )
                     )
                     user_style = session.execute(user_style_query).scalar_one_or_none()
                     if user_style:
                         set_user_style_attr(data_product, user_style.settings)
                 set_public_attr(data_product, data_product.file_permission.is_public)
                 set_url_attr(data_product, upload_dir)
-                if data_product.jobs:
-                    set_status_attr(data_product, data_product.jobs)
-                else:
-                    skip_data_product = True
-                if not skip_data_product:
+                is_status_set = set_status_attr(data_product, data_product.jobs)
+                if is_status_set:
                     updated_data_products.append(data_product)
 
             return updated_data_products
@@ -138,17 +143,32 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
         return crud.data_product.get(db, id=data_product_id)
 
 
-def set_status_attr(data_product_obj: DataProduct, jobs: List[Job]):
-    accepted_job_names = ["upload-data-product", "exg-process", "nvdi-process"]
+def set_status_attr(data_product_obj: DataProduct, jobs: List[Job]) -> bool:
+    """Sets current status of the upload process to the "status" attribute.
+
+    Args:
+        data_product_obj (RawData): Data product object.
+        jobs (List[Job]): Jobs associated with data product object.
+
+    Returns:
+        bool: Return True if able to set a status, return False if not status set.
+    """
     status = None
-    for job in jobs:
-        if job.name in accepted_job_names:
-            status = job.status
-
-    if not status:
+    if data_product_obj.is_initial_processing_completed:
         status = "SUCCESS"
+    else:
+        accepted_job_names = ["upload-data-product", "exg-process", "nvdi-process"]
+        for job in jobs:
+            if job.name in accepted_job_names:
+                status = job.status
 
-    setattr(data_product_obj, "status", status)
+    if status is None:
+        # Data product record indicates initial processing is not completed, and
+        # no upload job can be found for the data product record
+        return False
+    else:
+        setattr(data_product_obj, "initial_processing_status", status)
+        return True
 
 
 def set_public_attr(data_product_obj: DataProduct, is_public: bool):

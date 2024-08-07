@@ -95,7 +95,9 @@ def run_toolbox_process(
                 db,
                 db_obj=new_data_product,
                 obj_in=DataProductUpdate(
-                    filepath=out_raster, stac_properties=ip.stac_properties
+                    filepath=out_raster,
+                    stac_properties=ip.stac_properties,
+                    is_initial_processing_completed=True,
                 ),
             )
             # create user style record with default symbology settings
@@ -183,7 +185,9 @@ def process_geotiff(
         db,
         db_obj=data_product,
         obj_in=DataProductUpdate(
-            filepath=str(out_raster), stac_properties=ip.stac_properties
+            filepath=str(out_raster),
+            stac_properties=ip.stac_properties,
+            is_initial_processing_completed=True,
         ),
     )
 
@@ -322,7 +326,9 @@ def convert_las_to_copc(
     crud.data_product.update(
         db,
         db_obj=data_product,
-        obj_in=DataProductUpdate(filepath=str(copc_laz_filepath)),
+        obj_in=DataProductUpdate(
+            filepath=str(copc_laz_filepath), is_initial_processing_completed=True
+        ),
     )
 
     # update job to indicate process finished
@@ -380,7 +386,9 @@ def process_raw_data(
         crud.raw_data.update(
             db,
             db_obj=raw_data,
-            obj_in=schemas.RawDataUpdate(filepath=str(destination_filepath)),
+            obj_in=schemas.RawDataUpdate(
+                filepath=str(destination_filepath), is_initial_processing_completed=True
+            ),
         )
     except Exception:
         logger.exception("Failed to process uploaded raw data")

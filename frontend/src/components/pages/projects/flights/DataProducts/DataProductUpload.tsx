@@ -111,7 +111,12 @@ export default function DataProductUpload({
       uppy={uppy}
       height="240px"
       locale={{
-        strings: { dropPasteFiles: 'Drop data product here or %{browseFiles}' },
+        strings: {
+          dropPasteFiles:
+            uploadType === 'rawData'
+              ? 'Drop zipped raw data here or %{browseFiles}'
+              : 'Drop data product here or %{browseFiles}',
+        },
       }}
       proudlyDisplayPoweredByUppy={false}
       disableThumbnailGenerator={uploadType !== 'img'}
