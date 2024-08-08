@@ -190,7 +190,7 @@ export default function ProjectAccess() {
           <div className="grow min-h-0 min-w-[1000px]">
             <Table>
               <TableHead align="left" columns={['Name', 'Email', 'Role', 'Actions']} />
-              <div className="overflow-y-auto min-h-96 max-h-96 xl:max-h-[420px] 2xl:max-h-[512px]">
+              <div className="overflow-y-auto max-h-96 xl:max-h-[420px] 2xl:max-h-[512px]">
                 <TableBody
                   align="left"
                   rows={projectMembers
