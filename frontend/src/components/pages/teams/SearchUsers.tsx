@@ -106,84 +106,90 @@ function SearchUsersResults({
     return (
       <div className="grid grid-flow-row gap-4">
         <span className="text-slate-600 font-bold">Search Results</span>
-        <table className="min-w-full divide-y-2 divide-gray-200 bg-white text-sm">
-          <thead className="text-left">
-            <tr>
-              <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
-                Name
-              </th>
-              <th className="text-center">
-                <span
-                  className="text-sky-600 cursor-pointer"
-                  onClick={() => {
-                    const updatedSearchResults = searchResults.map((user) => {
-                      return { ...user, checked: true };
-                    });
-                    setSearchResults(updatedSearchResults);
-                  }}
-                >
-                  Select All
-                </span>
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {searchResults
-              .sort((a, b) => sorter(a.first_name, b.first_name))
-              .map((user) => (
-                <tr key={user.id} className="odd:bg-gray-50">
-                  <td className="flex items-center justify-start gap-4 whitespace-nowrap px-4 py-2 font-medium text-gray-900">
-                    {user.profile_url ? (
-                      <img
-                        key={user.profile_url.split('/').slice(-1)[0].slice(0, -4)}
-                        className="h-8 w-8 rounded-full"
-                        src={user.profile_url}
-                      />
-                    ) : (
-                      <div
-                        className="flex items-center justify-center h-8 w-8 gap-1 text-white text-sm rounded-full"
-                        style={generateRandomProfileColor(
-                          user.first_name + ' ' + user.last_name
-                        )}
-                      >
-                        <span className="indent-[0.1em] tracking-widest">
-                          {user.first_name[0] + user.last_name[0]}
-                        </span>
-                      </div>
-                    )}
-                    <span>{`${user.first_name} ${user.last_name}`}</span>
-                  </td>
-                  <td className="text-center">
-                    {currentMembers.filter(({ email }) => email === user.email).length >
-                    0 ? (
-                      <span className="italic text-slate-700">Already member</span>
-                    ) : (
-                      <label
-                        htmlFor="AcceptConditions"
-                        className="relative h-8 w-14 cursor-pointer"
-                      >
-                        <input
-                          id={`${user.id}-search-checkbox`}
-                          type="checkbox"
-                          value={user.id}
-                          checked={user.checked}
-                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                          onChange={(e) => {
-                            const updatedSearchResults = searchResults.map((user) => {
-                              if (user.id === e.target.value)
-                                return { ...user, checked: !user.checked };
-                              return user;
-                            });
-                            setSearchResults(updatedSearchResults);
-                          }}
-                        />
-                      </label>
-                    )}
-                  </td>
+        <div className="overflow-y-auto">
+          <div className="max-h-[25vh]">
+            <table className="min-w-full divide-y-2 divide-gray-200 bg-white text-sm">
+              <thead className="text-left sticky top-0 z-10 bg-white">
+                <tr>
+                  <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
+                    Name
+                  </th>
+                  <th className="text-center">
+                    <span
+                      className="text-sky-600 cursor-pointer"
+                      onClick={() => {
+                        const updatedSearchResults = searchResults.map((user) => {
+                          return { ...user, checked: true };
+                        });
+                        setSearchResults(updatedSearchResults);
+                      }}
+                    >
+                      Select All
+                    </span>
+                  </th>
                 </tr>
-              ))}
-          </tbody>
-        </table>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {searchResults
+                  .sort((a, b) => sorter(a.first_name, b.first_name))
+                  .map((user) => (
+                    <tr key={user.id} className="odd:bg-gray-50">
+                      <td className="flex items-center justify-start gap-4 whitespace-nowrap px-4 py-2 font-medium text-gray-900">
+                        {user.profile_url ? (
+                          <img
+                            key={user.profile_url.split('/').slice(-1)[0].slice(0, -4)}
+                            className="h-8 w-8 rounded-full"
+                            src={user.profile_url}
+                          />
+                        ) : (
+                          <div
+                            className="flex items-center justify-center h-8 w-8 gap-1 text-white text-sm rounded-full"
+                            style={generateRandomProfileColor(
+                              user.first_name + ' ' + user.last_name
+                            )}
+                          >
+                            <span className="indent-[0.1em] tracking-widest">
+                              {user.first_name[0] + user.last_name[0]}
+                            </span>
+                          </div>
+                        )}
+                        <span>{`${user.first_name} ${user.last_name}`}</span>
+                      </td>
+                      <td className="text-center">
+                        {currentMembers.filter(({ email }) => email === user.email)
+                          .length > 0 ? (
+                          <span className="italic text-slate-700">Already member</span>
+                        ) : (
+                          <label
+                            htmlFor="AcceptConditions"
+                            className="relative h-8 w-14 cursor-pointer"
+                          >
+                            <input
+                              id={`${user.id}-search-checkbox`}
+                              type="checkbox"
+                              value={user.id}
+                              checked={user.checked}
+                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                              onChange={(e) => {
+                                const updatedSearchResults = searchResults.map(
+                                  (user) => {
+                                    if (user.id === e.target.value)
+                                      return { ...user, checked: !user.checked };
+                                    return user;
+                                  }
+                                );
+                                setSearchResults(updatedSearchResults);
+                              }}
+                            />
+                          </label>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     );
   } else {

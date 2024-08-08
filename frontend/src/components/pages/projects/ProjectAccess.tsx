@@ -186,57 +186,61 @@ export default function ProjectAccess() {
             </div>
           </div>
         </div>
-        <div className="grow min-h-0">
-          <Table>
-            <TableHead align="left" columns={['Name', 'Email', 'Role', 'Actions']} />
-            <TableBody
-              align="left"
-              rows={projectMembers
-                .sort((a, b) => sorter(a.full_name, b.full_name))
-                .map(({ id, full_name, email, profile_url, role }) => ({
-                  key: id,
-                  values: [
-                    profile_url ? (
-                      <div className="flex items-center justify-start gap-4 whitespace-nowrap">
-                        <img
-                          key={profile_url.split('/').slice(-1)[0].slice(0, -4)}
-                          className="h-8 w-8 rounded-full"
-                          src={profile_url}
-                        />
-                        <span>{full_name}</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-start gap-4 whitespace-nowrap">
-                        <div
-                          className="flex items-center justify-center h-8 w-8 text-white text-sm rounded-full"
-                          style={generateRandomProfileColor(full_name)}
+        <div className="overflow-x-auto">
+          <div className="grow min-h-0 min-w-[1000px]">
+            <Table>
+              <TableHead align="left" columns={['Name', 'Email', 'Role', 'Actions']} />
+              <div className="overflow-y-auto min-h-96 max-h-96 xl:max-h-[420px] 2xl:max-h-[512px]">
+                <TableBody
+                  align="left"
+                  rows={projectMembers
+                    .sort((a, b) => sorter(a.full_name, b.full_name))
+                    .map(({ id, full_name, email, profile_url, role }) => ({
+                      key: id,
+                      values: [
+                        profile_url ? (
+                          <div className="flex items-center justify-start gap-4 whitespace-nowrap">
+                            <img
+                              key={profile_url.split('/').slice(-1)[0].slice(0, -4)}
+                              className="h-8 w-8 rounded-full"
+                              src={profile_url}
+                            />
+                            <span>{full_name}</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-start gap-4 whitespace-nowrap">
+                            <div
+                              className="flex items-center justify-center h-8 w-8 text-white text-sm rounded-full"
+                              style={generateRandomProfileColor(full_name)}
+                            >
+                              <span className="indent-[0.1em] tracking-widest">
+                                {full_name[0]}
+                                {full_name.split(' ').slice(-1)[0][0]}
+                              </span>
+                            </div>
+                            <span>{full_name}</span>
+                          </div>
+                        ),
+                        <span>{email}</span>,
+                        <AccessRoleRadioGroup
+                          currentRole={role}
+                          memberId={id}
+                          uniqueID={btoa(full_name)}
+                          updateProjectMemberRole={updateProjectMemberRole}
+                        />,
+                        <button
+                          className="text-sky-600"
+                          type="button"
+                          onClick={() => removeProjectMember(id, projectMembers)}
                         >
-                          <span className="indent-[0.1em] tracking-widest">
-                            {full_name[0]}
-                            {full_name.split(' ').slice(-1)[0][0]}
-                          </span>
-                        </div>
-                        <span>{full_name}</span>
-                      </div>
-                    ),
-                    <span>{email}</span>,
-                    <AccessRoleRadioGroup
-                      currentRole={role}
-                      memberId={id}
-                      uniqueID={btoa(full_name)}
-                      updateProjectMemberRole={updateProjectMemberRole}
-                    />,
-                    <button
-                      className="text-sky-600"
-                      type="button"
-                      onClick={() => removeProjectMember(id, projectMembers)}
-                    >
-                      Remove
-                    </button>,
-                  ],
-                }))}
-            />
-          </Table>
+                          Remove
+                        </button>,
+                      ],
+                    }))}
+                />
+              </div>
+            </Table>
+          </div>
         </div>
         <div className="mt-4">
           <h3>Find new project members</h3>

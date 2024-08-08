@@ -101,43 +101,19 @@ export default function ProjectFlights() {
         </div>
         {project && flights && flights.length > 0 ? (
           tableView === 'table' ? (
-            <Table>
-              <TableHead
-                columns={
-                  projectRole === 'viewer'
-                    ? flightColumns.slice(0, flightColumns.length - 1)
-                    : flightColumns
-                }
-              />
-              <TableBody
-                rows={flights
-                  .filter(({ sensor }) => flightsFilterSelection.indexOf(sensor) > -1)
-                  .sort((a, b) =>
-                    sorter(
-                      new Date(a.acquisition_date),
-                      new Date(b.acquisition_date),
-                      flightSortOrder
-                    )
-                  )
-                  .map((flight) => ({
-                    key: flight.id,
-                    values: [
-                      flight.name ? flight.name : '',
-                      flight.platform.replace(/_/g, ' '),
-                      flight.sensor,
-                      flight.acquisition_date,
-                      <Link
-                        className="!text-sky-600 visited:text-sky-600"
-                        to={`/projects/${project.id}/flights/${flight.id}/data`}
-                      >
-                        Manage
-                      </Link>,
-                    ],
-                  }))}
-                actions={
-                  projectRole === 'viewer'
-                    ? undefined
-                    : flights
+            <div className="overflow-x-auto">
+              <div className="min-w-[1000px]">
+                <Table>
+                  <TableHead
+                    columns={
+                      projectRole === 'viewer'
+                        ? flightColumns.slice(0, flightColumns.length - 1)
+                        : flightColumns
+                    }
+                  />
+                  <div className="overflow-y-auto min-h-96 max-h-96 xl:max-h-[420px] 2xl:max-h-[512px]">
+                    <TableBody
+                      rows={flights
                         .filter(
                           ({ sensor }) => flightsFilterSelection.indexOf(sensor) > -1
                         )
@@ -148,28 +124,64 @@ export default function ProjectFlights() {
                             flightSortOrder
                           )
                         )
-                        .map((flight) => {
-                          const editAction = {
-                            key: `action-edit-${flight.id}`,
-                            icon: <PencilIcon className="h-4 w-4" />,
-                            label: 'Edit',
-                            url: `/projects/${project.id}/flights/${flight.id}/edit`,
-                          };
-                          const deleteAction = {
-                            key: `action-delete-${flight.id}`,
-                            type: 'component',
-                            component: (
-                              <FlightDeleteModal flight={flight} tableView={true} />
-                            ),
-                            label: 'Delete',
-                          };
-                          if (projectRole === 'owner')
-                            return [editAction, deleteAction];
-                          return [editAction];
-                        })
-                }
-              />
-            </Table>
+                        .map((flight) => ({
+                          key: flight.id,
+                          values: [
+                            flight.name ? flight.name : '',
+                            flight.platform.replace(/_/g, ' '),
+                            flight.sensor,
+                            flight.acquisition_date,
+                            <Link
+                              className="!text-sky-600 visited:text-sky-600"
+                              to={`/projects/${project.id}/flights/${flight.id}/data`}
+                            >
+                              Manage
+                            </Link>,
+                          ],
+                        }))}
+                      actions={
+                        projectRole === 'viewer'
+                          ? undefined
+                          : flights
+                              .filter(
+                                ({ sensor }) =>
+                                  flightsFilterSelection.indexOf(sensor) > -1
+                              )
+                              .sort((a, b) =>
+                                sorter(
+                                  new Date(a.acquisition_date),
+                                  new Date(b.acquisition_date),
+                                  flightSortOrder
+                                )
+                              )
+                              .map((flight) => {
+                                const editAction = {
+                                  key: `action-edit-${flight.id}`,
+                                  icon: <PencilIcon className="h-4 w-4" />,
+                                  label: 'Edit',
+                                  url: `/projects/${project.id}/flights/${flight.id}/edit`,
+                                };
+                                const deleteAction = {
+                                  key: `action-delete-${flight.id}`,
+                                  type: 'component',
+                                  component: (
+                                    <FlightDeleteModal
+                                      flight={flight}
+                                      tableView={true}
+                                    />
+                                  ),
+                                  label: 'Delete',
+                                };
+                                if (projectRole === 'owner')
+                                  return [editAction, deleteAction];
+                                return [editAction];
+                              })
+                      }
+                    />
+                  </div>
+                </Table>
+              </div>
+            </div>
           ) : (
             <div className="h-full min-h-96 mx-4">
               <FlightCarousel
