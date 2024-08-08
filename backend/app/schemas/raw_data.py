@@ -37,7 +37,7 @@ class RawDataInDBBase(RawDataBase, from_attributes=True):
 # additional properties to return via API
 class RawData(RawDataInDBBase):
     has_active_job: bool = False
-    initial_processing_status: Optional[str] = None
+    status: Optional[str] = None
     url: Optional[AnyHttpUrl] = None
 
 

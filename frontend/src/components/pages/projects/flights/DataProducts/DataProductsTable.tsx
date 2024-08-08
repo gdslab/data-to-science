@@ -148,8 +148,7 @@ export default function DataProductsTable({ data }: { data: DataProduct[] }) {
               key={`row-${dataset.id}-preview`}
               className="h-full flex items-center justify-center"
             >
-              {dataset.initial_processing_status === 'SUCCESS' &&
-              isGeoTIFF(dataset.data_type) ? (
+              {dataset.status === 'SUCCESS' && isGeoTIFF(dataset.data_type) ? (
                 <div className="h-full">
                   <img
                     className="w-full max-h-28"
@@ -166,7 +165,7 @@ export default function DataProductsTable({ data }: { data: DataProduct[] }) {
                 <div>No preview</div>
               )}
             </div>,
-            dataset.initial_processing_status === 'SUCCESS' ? (
+            dataset.status === 'SUCCESS' ? (
               <div
                 key={`row-${dataset.id}-file`}
                 className="h-full flex items-center justify-center"
@@ -182,20 +181,19 @@ export default function DataProductsTable({ data }: { data: DataProduct[] }) {
                 key={`row-${dataset.id}-file`}
                 className="h-full flex items-center justify-center"
               >
-                {dataset.initial_processing_status === 'INPROGRESS' ||
-                dataset.initial_processing_status === 'WAITING' ? (
+                {dataset.status === 'INPROGRESS' || dataset.status === 'WAITING' ? (
                   <Fragment>
                     <CogIcon className="h-8 w-8 mr-4 animate-spin" aria-hidden="true" />
                     {isGeoTIFF(dataset.data_type)
                       ? 'Generating COG'
                       : 'Generating EPT & COPC'}
                   </Fragment>
-                ) : dataset.initial_processing_status === 'FAILED' ? (
+                ) : dataset.status === 'FAILED' ? (
                   <Fragment>
                     <XCircleIcon className="h-8 h-8 mr-4 text-red-500" />
                     Failed
                   </Fragment>
-                ) : dataset.initial_processing_status === 'SUCCESS' ? (
+                ) : dataset.status === 'SUCCESS' ? (
                   <Fragment>
                     <CheckCircleIcon className="h-8 w-8 mr-4 text-green-500" /> Success
                   </Fragment>

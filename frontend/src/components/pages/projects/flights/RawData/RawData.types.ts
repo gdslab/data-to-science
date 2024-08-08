@@ -7,7 +7,7 @@ export type ImageProcessingJobProps = {
 
 export type RawDataProps = {
   id: string;
-  initial_processing_status: string;
+  status: string;
   original_filename: string;
   url: string;
 };
