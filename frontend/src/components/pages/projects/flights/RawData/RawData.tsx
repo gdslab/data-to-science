@@ -69,11 +69,8 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
       revalidator.revalidate();
     },
     rawData.length > 0 &&
-      rawData.filter(
-        ({ initial_processing_status }) =>
-          initial_processing_status === 'INPROGRESS' ||
-          initial_processing_status === 'WAITING'
-      ).length > 0
+      rawData.filter(({ status }) => status === 'INPROGRESS' || status === 'WAITING')
+        .length > 0
       ? 5000 // check every 5 seconds while initial processing in progress
       : 30000 // check every 30 seconds for new raw data
   );
@@ -168,9 +165,9 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
               </div>
               <div className="flex items-center justify-between gap-4">
                 {/* display icon for in progress or failed status */}
-                {dataset.initial_processing_status === 'INPROGRESS' && <ProgressIcon />}
-                {dataset.initial_processing_status === 'WAITING' && <PendingIcon />}
-                {dataset.initial_processing_status === 'FAILED' && <ErrorIcon />}
+                {dataset.status === 'INPROGRESS' && <ProgressIcon />}
+                {dataset.status === 'WAITING' && <PendingIcon />}
+                {dataset.status === 'FAILED' && <ErrorIcon />}
                 {/* display button for image processing if user has extension */}
                 {hasImageProcessingExt && (
                   <button
@@ -185,13 +182,12 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
                   </button>
                 )}
                 {/* display button for downloading processed raw data zip file */}
-                {dataset.initial_processing_status === 'SUCCESS' && (
+                {dataset.status === 'SUCCESS' && (
                   <RawDataDownloadLink rawDataId={dataset.id} />
                 )}
                 {/* display button for removing processed raw data zip file */}
                 {projectRole === 'owner' &&
-                  (dataset.initial_processing_status === 'SUCCESS' ||
-                    dataset.initial_processing_status === 'FAILED') && (
+                  (dataset.status === 'SUCCESS' || dataset.status === 'FAILED') && (
                     <RawDataDeleteModal rawData={dataset} iconOnly={true} />
                   )}
                 {/* display progress for ongoing image processing jobs */}

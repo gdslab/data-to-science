@@ -104,7 +104,7 @@ def set_status_attr(raw_data_obj: RawData, jobs: List[Job]) -> bool:
         # no upload job can be found for the raw data record
         return False
     else:
-        setattr(raw_data_obj, "initial_processing_status", status)
+        setattr(raw_data_obj, "status", status)
         return True
 
 

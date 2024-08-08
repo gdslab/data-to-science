@@ -43,11 +43,8 @@ export default function DataProducts({ data }: { data: DataProduct[] }) {
     },
     data &&
       data.length > 0 &&
-      data.filter(
-        ({ initial_processing_status }) =>
-          initial_processing_status === 'INPROGRESS' ||
-          initial_processing_status === 'WAITING'
-      ).length > 0
+      data.filter(({ status }) => status === 'INPROGRESS' || status === 'WAITING')
+        .length > 0
       ? 5000 // check every 5 seconds while processing job is active
       : 30000 // check every 30 seconds when no known jobs are active
   );
