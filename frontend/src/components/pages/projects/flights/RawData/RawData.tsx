@@ -43,7 +43,7 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
 
   useEffect(() => {
     // check for any outstanding image processing jobs on initial render
-    if (flightId && projectId) {
+    if (flightId && projectId && projectRole && projectRole !== 'viewer') {
       checkForExistingJobs(flightId, projectId)
         .then((jobs) => {
           const jobProgress: ImageProcessingJobProps[] = jobs.map((job) => ({
@@ -56,7 +56,7 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
         })
         .catch((err) => setStatus({ type: 'error', msg: err.message }));
     }
-  }, []);
+  }, [projectRole]);
 
   useEffect(() => {
     // check for new raw data when upload modal closes

@@ -12,7 +12,6 @@ import { Pagination, Navigation } from 'swiper/modules';
 import FlightCard from './FlightCard';
 import { Flight } from '../../Project';
 
-import { sorter } from '../../../../utils';
 import useWindowDimensions from '../../../../hooks/useWindowDimensions';
 
 function getSlidesPerView(width: number): number {
@@ -31,29 +30,19 @@ function getSlidesPerView(width: number): number {
   }
 }
 
-export default function FlightCarousel({
-  flights,
-  sortOrder,
-}: {
-  flights: Flight[];
-  sortOrder: string;
-}) {
+export default function FlightCarousel({ flights }: { flights: Flight[] }) {
   const { width } = useWindowDimensions();
-
-  const sortedFlights = flights.sort((a, b) =>
-    sorter(new Date(a.acquisition_date), new Date(b.acquisition_date), sortOrder)
-  );
 
   return (
     <Swiper
       slidesPerView={getSlidesPerView(width)}
-      initialSlide={sortedFlights.length - 1}
+      initialSlide={flights.length - 1}
       spaceBetween={30}
       navigation={true}
       pagination={{ clickable: true }}
       modules={[Pagination, Navigation]}
     >
-      {sortedFlights.map((flight) => (
+      {flights.map((flight) => (
         <SwiperSlide key={flight.id}>
           <FlightCard flight={flight} />
         </SwiperSlide>

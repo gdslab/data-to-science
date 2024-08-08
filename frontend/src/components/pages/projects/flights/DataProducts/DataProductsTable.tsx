@@ -125,90 +125,105 @@ export default function DataProductsTable({ data }: { data: DataProduct[] }) {
 
   const dataProductColumns = ['Data Type', 'Preview', 'File', 'Action'];
 
-  return (
-    <Table>
-      <TableHead
-        columns={
-          projectRole === 'viewer'
-            ? dataProductColumns.slice(0, dataProductColumns.length - 1)
-            : dataProductColumns
-        }
-      />
-      <TableBody
-        rows={data.map((dataset) => ({
-          key: dataset.id,
-          values: [
-            <div
-              key={`row-${dataset.id}-datatype`}
-              className="h-full flex items-center justify-center"
-            >
-              {getDataProductName(dataset.data_type)}
-            </div>,
-            <div
-              key={`row-${dataset.id}-preview`}
-              className="h-full flex items-center justify-center"
-            >
-              {dataset.status === 'SUCCESS' && isGeoTIFF(dataset.data_type) ? (
-                <div className="h-full">
-                  <img
-                    className="w-full max-h-28"
-                    src={dataset.url.replace('tif', 'jpg')}
-                    alt="Preview of data product"
-                  />
-                </div>
-              ) : isGeoTIFF(dataset.data_type) ? (
-                <div>
-                  <span className="sr-only">Preview photo not ready</span>
-                  <PhotoIcon className="h-24 w-24" />
-                </div>
-              ) : (
-                <div>No preview</div>
-              )}
-            </div>,
-            dataset.status === 'SUCCESS' ? (
-              <div
-                key={`row-${dataset.id}-file`}
-                className="h-full flex items-center justify-center"
-              >
-                <CopyURLButton
-                  copyText="Copy File URL"
-                  copiedText="Copied"
-                  url={dataset.url}
-                />
-              </div>
-            ) : (
-              <div
-                key={`row-${dataset.id}-file`}
-                className="h-full flex items-center justify-center"
-              >
-                {dataset.status === 'INPROGRESS' || dataset.status === 'WAITING' ? (
-                  <Fragment>
-                    <CogIcon className="h-8 w-8 mr-4 animate-spin" aria-hidden="true" />
-                    {isGeoTIFF(dataset.data_type)
-                      ? 'Generating COG'
-                      : 'Generating EPT & COPC'}
-                  </Fragment>
-                ) : dataset.status === 'FAILED' ? (
-                  <Fragment>
-                    <XCircleIcon className="h-8 h-8 mr-4 text-red-500" />
-                    Failed
-                  </Fragment>
-                ) : dataset.status === 'SUCCESS' ? (
-                  <Fragment>
-                    <CheckCircleIcon className="h-8 w-8 mr-4 text-green-500" /> Success
-                  </Fragment>
-                ) : (
-                  <Fragment>
-                    <QuestionMarkCircleIcon className="h-8 w-8 mr-4" />
-                    Unknown
-                  </Fragment>
-                )}
-              </div>
-            ),
-          ],
-        }))}
-        actions={getDataProductActions(projectRole, data, navigate, project)}
-      />
-    </Table>
-  );
+  if (data.length > 0) {
+    return (
+      <div className="overflow-x-auto">
+        <div className="min-w-[1000px]">
+          <Table>
+            <TableHead
+              columns={
+                projectRole === 'viewer'
+                  ? dataProductColumns.slice(0, dataProductColumns.length - 1)
+                  : dataProductColumns
+              }
+            />
+            <div className="overflow-y-auto min-h-96 max-h-96 xl:max-h-[420px] 2xl:max-h-[512px]">
+              <TableBody
+                rows={data.map((dataset) => ({
+                  key: dataset.id,
+                  values: [
+                    <div
+                      key={`row-${dataset.id}-datatype`}
+                      className="h-full flex items-center justify-center"
+                    >
+                      {getDataProductName(dataset.data_type)}
+                    </div>,
+                    <div
+                      key={`row-${dataset.id}-preview`}
+                      className="h-full flex items-center justify-center"
+                    >
+                      {dataset.status === 'SUCCESS' && isGeoTIFF(dataset.data_type) ? (
+                        <div className="h-full">
+                          <img
+                            className="w-full max-h-28"
+                            src={dataset.url.replace('tif', 'jpg')}
+                            alt="Preview of data product"
+                          />
+                        </div>
+                      ) : isGeoTIFF(dataset.data_type) ? (
+                        <div>
+                          <span className="sr-only">Preview photo not ready</span>
+                          <PhotoIcon className="h-24 w-24" />
+                        </div>
+                      ) : (
+                        <div>No preview</div>
+                      )}
+                    </div>,
+                    dataset.status === 'SUCCESS' ? (
+                      <div
+                        key={`row-${dataset.id}-file`}
+                        className="h-full flex items-center justify-center"
+                      >
+                        <CopyURLButton
+                          copyText="Copy File URL"
+                          copiedText="Copied"
+                          url={dataset.url}
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        key={`row-${dataset.id}-file`}
+                        className="h-full flex items-center justify-center"
+                      >
+                        {dataset.status === 'INPROGRESS' ||
+                        dataset.status === 'WAITING' ? (
+                          <Fragment>
+                            <CogIcon
+                              className="h-8 w-8 mr-4 animate-spin"
+                              aria-hidden="true"
+                            />
+                            {isGeoTIFF(dataset.data_type)
+                              ? 'Generating COG'
+                              : 'Generating EPT & COPC'}
+                          </Fragment>
+                        ) : dataset.status === 'FAILED' ? (
+                          <Fragment>
+                            <XCircleIcon className="h-8 h-8 mr-4 text-red-500" />
+                            Failed
+                          </Fragment>
+                        ) : dataset.status === 'SUCCESS' ? (
+                          <Fragment>
+                            <CheckCircleIcon className="h-8 w-8 mr-4 text-green-500" />{' '}
+                            Success
+                          </Fragment>
+                        ) : (
+                          <Fragment>
+                            <QuestionMarkCircleIcon className="h-8 w-8 mr-4" />
+                            Unknown
+                          </Fragment>
+                        )}
+                      </div>
+                    ),
+                  ],
+                }))}
+                actions={getDataProductActions(projectRole, data, navigate, project)}
+              />
+            </div>
+          </Table>
+        </div>
+      </div>
+    );
+  } else {
+    return null;
+  }
 }

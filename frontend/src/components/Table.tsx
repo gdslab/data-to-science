@@ -50,7 +50,7 @@ export function TableBody({
   rows: TableRow[];
 }) {
   return (
-    <div className="overflow-y-scroll">
+    <div>
       {rows.map(({ key, values }, i) => (
         <TableRow key={key}>
           {values.map((value, j) => (
@@ -159,7 +159,7 @@ export default function Table({
     <div
       className={classNames(
         height ? `h-${height}` : '',
-        'flex flex-col w-full overflow-y-auto border-separate border-spacing-1'
+        'flex flex-col w-full border-separate border-spacing-1'
       )}
     >
       {children}

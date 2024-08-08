@@ -32,23 +32,23 @@ FEATURE_LIMIT = 2000
 REQUIRED_SHP_PARTS = [".dbf", ".shp", ".shx"]
 
 
-@router.post(
-    "",
-    response_model=Feature[Polygon, Dict],
-    status_code=status.HTTP_201_CREATED,
-)
-def create_location(
-    location_in: schemas.LocationCreate,
-    current_user: models.User = Depends(deps.get_current_approved_user),
-    db: Session = Depends(deps.get_db),
-) -> Any:
-    """Create new location."""
-    location = crud.location.create_with_geojson(db, obj_in=location_in)
-    if not location:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Location not created"
-        )
-    return location
+# @router.post(
+#     "",
+#     response_model=Feature[Polygon, Dict],
+#     status_code=status.HTTP_201_CREATED,
+# )
+# def create_location(
+#     location_in: schemas.LocationCreate,
+#     current_user: models.User = Depends(deps.get_current_approved_user),
+#     db: Session = Depends(deps.get_db),
+# ) -> Any:
+#     """Create new location."""
+#     location = crud.location.create_with_geojson(db, obj_in=location_in)
+#     if not location:
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST, detail="Location not created"
+#         )
+#     return location
 
 
 @router.get("/{project_id}/{location_id}", response_model=Feature[Polygon, Dict])
@@ -56,7 +56,7 @@ def read_location(
     request: Request,
     location_id: UUID,
     project_id: UUID,
-    project: models.Project = Depends(deps.can_read_write_project),
+    project: models.Project = Depends(deps.can_read_project),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     if not project:

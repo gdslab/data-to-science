@@ -137,7 +137,16 @@ export default function TeamDetail() {
                 size="sm"
                 onClick={(e) => {
                   e.preventDefault();
-                  const selectedMembers = searchResults.filter((u) => u.checked);
+                  // filter out unselected members and already existing members
+                  let selectedMembers = searchResults
+                    .filter((u) => u.checked)
+                    .filter(
+                      (newMember) =>
+                        teamData.members
+                          .map((currentMember) => currentMember.email)
+                          .indexOf(newMember.email) < 0
+                    );
+
                   if (selectedMembers.length > 0) {
                     axios
                       .post(
