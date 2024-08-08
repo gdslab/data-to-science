@@ -68,20 +68,22 @@ export default function DataProducts({ data }: { data: DataProduct[] }) {
           toggleTableView={onTableViewChange}
         />
       </div>
-      {data.length > 0 ? (
-        tableView === 'table' ? (
-          <DataProductsTable data={data} />
-        ) : (
-          <div className="grow flex flex-cols flex-wrap justify-start gap-4 min-h-96 overflow-auto">
-            {useMemo(
-              () => data.sort((a, b) => sorter(a.data_type, b.data_type)),
-              [data]
-            ).map((dataProduct) => (
-              <DataProductCard key={dataProduct.id} dataProduct={dataProduct} />
-            ))}
-          </div>
-        )
-      ) : null}
+
+      {tableView === 'table' && (
+        <DataProductsTable data={useMemo(() => data, [data])} />
+      )}
+
+      {tableView === 'carousel' && (
+        <div className="h-full grow flex flex-cols flex-wrap justify-start gap-4 min-h-96 max-h-96 lg:max-h-[448px] xl:max-h-[512px] 2xl:max-h-[576px] overflow-y-auto">
+          {useMemo(
+            () => data.sort((a, b) => sorter(a.data_type, b.data_type)),
+            [data]
+          ).map((dataProduct) => (
+            <DataProductCard key={dataProduct.id} dataProduct={dataProduct} />
+          ))}
+        </div>
+      )}
+
       {projectRole !== 'viewer' && projectId && flightId ? (
         <div className="my-4 flex justify-center">
           <DataProductUploadModal
