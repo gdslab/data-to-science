@@ -119,7 +119,13 @@ function SearchUsersResults({
                       className="text-sky-600 cursor-pointer"
                       onClick={() => {
                         const updatedSearchResults = searchResults.map((user) => {
-                          return { ...user, checked: true };
+                          return {
+                            ...user,
+                            checked:
+                              currentMembers
+                                .map((currentMember) => currentMember.email)
+                                .indexOf(user.email) < 0,
+                          };
                         });
                         setSearchResults(updatedSearchResults);
                       }}
