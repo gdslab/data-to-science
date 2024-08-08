@@ -39,8 +39,7 @@ export default function DataProductCard({ dataProduct }: { dataProduct: DataProd
           <div className="grid grid-flow-row auto-rows-max gap-2">
             {/* preview image */}
             <div className="relative flex items-center justify-center bg-accent3/20">
-              {dataProduct.initial_processing_status === 'SUCCESS' &&
-              isGeoTIFF(dataProduct.data_type) ? (
+              {dataProduct.status === 'SUCCESS' && isGeoTIFF(dataProduct.data_type) ? (
                 <div className="flex items-center justify-center w-full h-48">
                   <img
                     className="object-scale-down h-full"
@@ -60,7 +59,7 @@ export default function DataProductCard({ dataProduct }: { dataProduct: DataProd
                     {isCopied ? 'Copied to clipboard' : 'Click to Copy URL'}
                   </div>
                 </div>
-              ) : dataProduct.initial_processing_status === 'SUCCESS' &&
+              ) : dataProduct.status === 'SUCCESS' &&
                 dataProduct.data_type === 'point_cloud' ? (
                 <div className="flex items-center justify-center w-full h-48">
                   {invalidPreviews.indexOf(dataProduct.id) < 0 ? (
@@ -91,7 +90,7 @@ export default function DataProductCard({ dataProduct }: { dataProduct: DataProd
                     {isCopied ? 'Copied to clipboard' : 'Click to Copy URL'}
                   </div>
                 </div>
-              ) : dataProduct.initial_processing_status === 'FAILED' ? (
+              ) : dataProduct.status === 'FAILED' ? (
                 <div className="flex items-center justify-center w-full h-48">
                   <span className="sr-only">Process failed</span>
                   <ExclamationCircleIcon className="h-full text-accent2" />
@@ -147,8 +146,7 @@ export default function DataProductCard({ dataProduct }: { dataProduct: DataProd
             </div>
           </div>
         </Card>
-        {dataProduct.initial_processing_status === 'INPROGRESS' ||
-        dataProduct.initial_processing_status === 'WAITING' ? (
+        {dataProduct.status === 'INPROGRESS' || dataProduct.status === 'WAITING' ? (
           <div className="w-full absolute bottom-0">
             <ProgressBar />
           </div>

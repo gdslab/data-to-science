@@ -110,7 +110,7 @@ export interface DataProduct {
     raster: Band[];
     eo: EO[];
   };
-  initial_processing_status: string;
+  status: string;
   user_style: SymbologySettings;
 }
 

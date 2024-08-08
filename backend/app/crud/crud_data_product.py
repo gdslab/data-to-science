@@ -167,7 +167,7 @@ def set_status_attr(data_product_obj: DataProduct, jobs: List[Job]) -> bool:
         # no upload job can be found for the data product record
         return False
     else:
-        setattr(data_product_obj, "initial_processing_status", status)
+        setattr(data_product_obj, "status", status)
         return True
 
 
