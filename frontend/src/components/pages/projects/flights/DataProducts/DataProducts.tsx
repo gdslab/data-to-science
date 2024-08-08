@@ -56,6 +56,11 @@ export default function DataProducts({ data }: { data: DataProduct[] }) {
     }
   }
 
+  const sortedDataProducts = useMemo(
+    () => data.sort((a, b) => sorter(a.data_type, b.data_type)),
+    [data]
+  );
+
   return (
     <div className="h-full flex flex-col">
       <div className="h-24">
@@ -66,16 +71,11 @@ export default function DataProducts({ data }: { data: DataProduct[] }) {
         />
       </div>
 
-      {tableView === 'table' && (
-        <DataProductsTable data={useMemo(() => data, [data])} />
-      )}
+      {tableView === 'table' && <DataProductsTable data={sortedDataProducts} />}
 
       {tableView === 'carousel' && (
         <div className="h-full grow flex flex-cols flex-wrap justify-start gap-4 min-h-96 max-h-96 lg:max-h-[448px] xl:max-h-[512px] 2xl:max-h-[576px] overflow-y-auto">
-          {useMemo(
-            () => data.sort((a, b) => sorter(a.data_type, b.data_type)),
-            [data]
-          ).map((dataProduct) => (
+          {sortedDataProducts.map((dataProduct) => (
             <DataProductCard key={dataProduct.id} dataProduct={dataProduct} />
           ))}
         </div>

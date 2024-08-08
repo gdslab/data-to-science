@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PencilIcon } from '@heroicons/react/24/outline';
 
@@ -59,6 +59,21 @@ export default function ProjectFlights() {
     }
   }
 
+  const sortedFlights = useMemo(
+    () =>
+      flights &&
+      flights
+        .filter(({ sensor }) => flightsFilterSelection.indexOf(sensor) > -1)
+        .sort((a, b) =>
+          sorter(
+            new Date(a.acquisition_date),
+            new Date(b.acquisition_date),
+            flightSortOrder
+          )
+        ),
+    [flights, flightsFilterSelection, flightSortOrder]
+  );
+
   return (
     <div className="grow min-h-0">
       <div className="h-full flex flex-col gap-4">
@@ -83,7 +98,7 @@ export default function ProjectFlights() {
                   <option value="desc">Date (descending)</option>
                 </select>
               </div>
-              {flights && flights.length > 0 ? (
+              {flights && flights.length > 0 && (
                 <div className="flex flex-row items-center gap-2">
                   <Filter
                     categories={getUnique(flights, 'sensor')}
@@ -91,7 +106,7 @@ export default function ProjectFlights() {
                     setSelectedCategory={updateFlightsFilter}
                   />
                 </div>
-              ) : null}
+              )}
             </div>
             <TableCardRadioInput
               tableView={tableView}
@@ -99,100 +114,71 @@ export default function ProjectFlights() {
             />
           </div>
         </div>
-        {project && flights && flights.length > 0 ? (
-          tableView === 'table' ? (
-            <div className="overflow-x-auto">
-              <div className="min-w-[1000px]">
-                <Table>
-                  <TableHead
-                    columns={
+
+        {project && flights && flights.length > 0 && tableView === 'table' && (
+          <div className="overflow-x-auto">
+            <div className="min-w-[1000px]">
+              <Table>
+                <TableHead
+                  columns={
+                    projectRole === 'viewer'
+                      ? flightColumns.slice(0, flightColumns.length - 1)
+                      : flightColumns
+                  }
+                />
+                <div className="overflow-y-auto min-h-96 max-h-96 xl:max-h-[420px] 2xl:max-h-[512px]">
+                  <TableBody
+                    rows={(sortedFlights || []).map((flight) => ({
+                      key: flight.id,
+                      values: [
+                        flight.name ? flight.name : '',
+                        flight.platform.replace(/_/g, ' '),
+                        flight.sensor,
+                        flight.acquisition_date,
+                        <Link
+                          className="!text-sky-600 visited:text-sky-600"
+                          to={`/projects/${project.id}/flights/${flight.id}/data`}
+                        >
+                          Manage
+                        </Link>,
+                      ],
+                    }))}
+                    actions={
                       projectRole === 'viewer'
-                        ? flightColumns.slice(0, flightColumns.length - 1)
-                        : flightColumns
+                        ? undefined
+                        : (sortedFlights || []).map((flight) => {
+                            const editAction = {
+                              key: `action-edit-${flight.id}`,
+                              icon: <PencilIcon className="h-4 w-4" />,
+                              label: 'Edit',
+                              url: `/projects/${project.id}/flights/${flight.id}/edit`,
+                            };
+                            const deleteAction = {
+                              key: `action-delete-${flight.id}`,
+                              type: 'component',
+                              component: (
+                                <FlightDeleteModal flight={flight} tableView={true} />
+                              ),
+                              label: 'Delete',
+                            };
+                            if (projectRole === 'owner')
+                              return [editAction, deleteAction];
+                            return [editAction];
+                          })
                     }
                   />
-                  <div className="overflow-y-auto min-h-96 max-h-96 xl:max-h-[420px] 2xl:max-h-[512px]">
-                    <TableBody
-                      rows={flights
-                        .filter(
-                          ({ sensor }) => flightsFilterSelection.indexOf(sensor) > -1
-                        )
-                        .sort((a, b) =>
-                          sorter(
-                            new Date(a.acquisition_date),
-                            new Date(b.acquisition_date),
-                            flightSortOrder
-                          )
-                        )
-                        .map((flight) => ({
-                          key: flight.id,
-                          values: [
-                            flight.name ? flight.name : '',
-                            flight.platform.replace(/_/g, ' '),
-                            flight.sensor,
-                            flight.acquisition_date,
-                            <Link
-                              className="!text-sky-600 visited:text-sky-600"
-                              to={`/projects/${project.id}/flights/${flight.id}/data`}
-                            >
-                              Manage
-                            </Link>,
-                          ],
-                        }))}
-                      actions={
-                        projectRole === 'viewer'
-                          ? undefined
-                          : flights
-                              .filter(
-                                ({ sensor }) =>
-                                  flightsFilterSelection.indexOf(sensor) > -1
-                              )
-                              .sort((a, b) =>
-                                sorter(
-                                  new Date(a.acquisition_date),
-                                  new Date(b.acquisition_date),
-                                  flightSortOrder
-                                )
-                              )
-                              .map((flight) => {
-                                const editAction = {
-                                  key: `action-edit-${flight.id}`,
-                                  icon: <PencilIcon className="h-4 w-4" />,
-                                  label: 'Edit',
-                                  url: `/projects/${project.id}/flights/${flight.id}/edit`,
-                                };
-                                const deleteAction = {
-                                  key: `action-delete-${flight.id}`,
-                                  type: 'component',
-                                  component: (
-                                    <FlightDeleteModal
-                                      flight={flight}
-                                      tableView={true}
-                                    />
-                                  ),
-                                  label: 'Delete',
-                                };
-                                if (projectRole === 'owner')
-                                  return [editAction, deleteAction];
-                                return [editAction];
-                              })
-                      }
-                    />
-                  </div>
-                </Table>
-              </div>
+                </div>
+              </Table>
             </div>
-          ) : (
-            <div className="h-full min-h-96 mx-4">
-              <FlightCarousel
-                flights={flights.filter(
-                  ({ sensor }) => flightsFilterSelection.indexOf(sensor) > -1
-                )}
-                sortOrder={flightSortOrder}
-              />
-            </div>
-          )
-        ) : null}
+          </div>
+        )}
+
+        {project && flights && flights.length > 0 && tableView === 'carousel' && (
+          <div className="h-full min-h-96 mx-4">
+            <FlightCarousel flights={sortedFlights || []} />
+          </div>
+        )}
+
         {projectRole !== 'viewer' ? (
           <div className="my-4 flex justify-center">
             <Modal open={open} setOpen={setOpen}>
