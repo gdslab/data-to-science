@@ -6,6 +6,8 @@ from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
+from app.models.data_product import DataProduct
+from app.models.flight import Flight
 from app.models.job import Job
 from app.models.raw_data import RawData
 from app.schemas.job import JobCreate, JobUpdate
@@ -20,6 +22,42 @@ class CRUDJob(CRUDBase[Job, JobCreate, JobUpdate]):
             session.commit()
             session.refresh(job)
         return job
+
+    def get_multi_by_flight(
+        self, db: Session, flight_id: UUID, incomplete: bool = False
+    ) -> List[Job]:
+        if incomplete:
+            select_statement = (
+                select(Job)
+                .join(Job.data_product)
+                .join(DataProduct.flight)
+                .where(and_(Flight.id == flight_id, Job.state != "COMPLETED"))
+                .union(
+                    select(Job)
+                    .join(Job.raw_data)
+                    .join(RawData.flight)
+                    .where(and_(Flight.id == flight_id, Job.state != "COMPLETED"))
+                )
+            )
+        else:
+            select_statement = (
+                select(Job)
+                .join(Job.data_product)
+                .join(DataProduct.flight)
+                .where(Flight.id == flight_id)
+                .union(
+                    select(Job)
+                    .join(Job.raw_data)
+                    .join(RawData.flight)
+                    .where(Flight.id == flight_id)
+                )
+            )
+        with db as session:
+            jobs = session.scalars(select_statement).all()
+            jobs2 = session.scalars(select(Job)).all()
+            dp = session.scalars(select(DataProduct)).all()
+            rd = session.scalars(select(RawData)).all()
+            return jobs
 
     def get_by_raw_data_id(
         self,

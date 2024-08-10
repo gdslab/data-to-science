@@ -39,6 +39,7 @@ class Flight(Base):
         ENUM(*SENSORS, name="sensor_type"), nullable=False
     )
     platform: Mapped[str] = mapped_column(String(64), nullable=False)
+    read_only: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     deactivated_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     project_id: Mapped[uuid.UUID] = mapped_column(

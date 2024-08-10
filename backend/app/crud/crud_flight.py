@@ -1,3 +1,5 @@
+import os
+from pathlib import Path
 from typing import Sequence, TypedDict
 from uuid import UUID
 
@@ -19,6 +21,7 @@ from app.models.job import Job
 from app.models.project import Project
 from app.models.user_style import UserStyle
 from app.models.utils.user import utcnow
+from app.models.vector_layer import VectorLayer
 from app.schemas.flight import FlightCreate, FlightUpdate
 
 
@@ -145,6 +148,55 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                     final_flights.append(flight)
 
             return final_flights
+
+    def change_flight_project(
+        self, db: Session, flight_id: UUID, dst_project_id: UUID
+    ) -> Flight:
+        update_flight_statement = (
+            update(Flight)
+            .values(project_id=dst_project_id)
+            .where(Flight.id == flight_id)
+        )
+        with db as session:
+            session.execute(update_flight_statement)
+            session.commit()
+
+        # move any vector layer records associated with this flight
+        update_vector_layers_statement = (
+            update(VectorLayer)
+            .values(project_id=dst_project_id)
+            .where(VectorLayer.flight_id == flight_id)
+        )
+        with db as session:
+            session.execute(update_vector_layers_statement)
+            session.commit()
+
+        with db as session:
+            select_flight_statement = select(Flight).where(Flight.id == flight_id)
+            updated_flight = session.scalar(select_flight_statement)
+
+            # update filepath for any data products associated with flight
+            if updated_flight and len(updated_flight.data_products) > 0:
+                for data_product in updated_flight.data_products:
+                    if data_product.filepath:
+                        if os.environ.get("RUNNING_TESTS") == "1":
+                            project_uuid_index = 4
+                        else:
+                            project_uuid_index = 3
+                        # construct new filepath for data product
+                        parts = list(Path(data_product.filepath).parts)
+                        parts[project_uuid_index] = str(dst_project_id)
+                        new_filepath = str(Path(*parts))
+                        update_data_product_statement = (
+                            update(DataProduct)
+                            .values(filepath=new_filepath)
+                            .where(DataProduct.id == data_product.id)
+                        )
+                        session.execute(update_data_product_statement)
+                session.commit()
+                session.refresh(updated_flight)
+
+            return updated_flight
 
     def deactivate(self, db: Session, flight_id: UUID) -> Flight | None:
         update_flight_sql = (

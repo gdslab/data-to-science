@@ -47,5 +47,7 @@ class Job(Base):
         return (
             f"Job(id={self.id!r}, extra={self.extra!r}, name={self.name!r}, "
             f"state={self.state!r}, status={self.status!r}, "
-            f"start_time={self.start_time!r}, end_time={self.end_time!r})"
+            f"start_time={self.start_time!r}, end_time={self.end_time!r}, "
+            f"data_product_id={self.data_product_id!r}, "
+            f"raw_data_id={self.raw_data_id!r})"
         )

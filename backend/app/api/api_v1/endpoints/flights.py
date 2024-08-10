@@ -1,9 +1,11 @@
 import os
+import shutil
 from pathlib import Path
 from typing import Any, List, Sequence
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
@@ -88,6 +90,88 @@ def update_flight(
     """Update flight if current user has access to it."""
     flight = crud.flight.update(db, db_obj=flight, obj_in=flight_in)
     return flight
+
+
+@router.put(
+    "/{flight_id}/modify_project/{destination_project_id}",
+    response_model=schemas.Flight,
+)
+def update_flight_project(
+    flight_id: UUID,
+    destination_project_id: UUID,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    flight: models.Flight = Depends(deps.can_read_write_flight),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    # check if user has permission to read/write to destination project
+    project_membership = crud.project_member.get_by_project_and_member_id(
+        db, project_id=destination_project_id, member_id=current_user.id
+    )
+    # raise exception if not project member or member without owner/manager role
+    if not project_membership or (
+        project_membership.role != "owner" and project_membership.role != "manager"
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Must be an owner or manager of destination project",
+        )
+
+    # lock flight record if no active jobs, raise exception if active jobs
+    jobs = crud.job.get_multi_by_flight(db, flight_id=flight_id, incomplete=True)
+    if len(jobs) > 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Must wait for outstanding jobs to finish",
+        )
+    with db as session:
+        statement = (
+            update(models.Flight)
+            .values(read_only=True)
+            .where(models.Flight.id == flight.id)
+        )
+        session.execute(statement)
+        session.commit()
+
+    # move flight static file directory (if exists) to destination project
+    if os.environ.get("RUNNING_TESTS") == "1":
+        static_dir = Path(settings.TEST_STATIC_DIR)
+    else:
+        static_dir = Path(settings.STATIC_DIR)
+
+    src_directory = Path(
+        static_dir / "projects" / str(flight.project_id) / "flights" / str(flight_id)
+    )
+    dst_directory = Path(
+        static_dir
+        / "projects"
+        / str(destination_project_id)
+        / "flights"
+        / str(flight_id)
+    )
+
+    if os.path.exists(src_directory):
+        # create "flights" directory in destination project directory if needed
+        if not os.path.exists(dst_directory.parent):
+            os.makedirs(dst_directory.parent)
+        # copy flight directory to new destination
+        shutil.move(src_directory, dst_directory)
+
+    # unlock flight record
+    with db as session:
+        statement = (
+            update(models.Flight)
+            .values(read_only=False)
+            .where(models.Flight.id == flight.id)
+        )
+        session.execute(statement)
+        session.commit()
+
+    # get updated flight
+    updated_flight = crud.flight.change_flight_project(
+        db, flight_id=flight_id, dst_project_id=destination_project_id
+    )
+
+    return updated_flight
 
 
 @router.delete("/{flight_id}", response_model=schemas.Flight)
