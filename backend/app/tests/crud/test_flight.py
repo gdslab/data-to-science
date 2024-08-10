@@ -1,17 +1,22 @@
+import os
 from datetime import date, datetime
 
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app import crud
 from app.core.config import settings
 from app.models.flight import PLATFORMS, SENSORS
+from app.models.vector_layer import VectorLayer
 from app.schemas.data_product import DataProductCreate
 from app.schemas.flight import FlightUpdate
+from app.schemas.vector_layer import VectorLayerCreate
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.flight import create_flight
 from app.tests.utils.job import create_job
 from app.tests.utils.project import create_project
 from app.tests.utils.user import create_user
+from app.tests.utils.vector_layers import get_geojson_feature_collection
 
 
 def test_create_flight(db: Session) -> None:
@@ -302,3 +307,65 @@ def test_get_flights_ignores_deactivated_data_products(db: Session) -> None:
     )
     for flight in flights2:
         assert len(flight.data_products) == 1
+
+
+def test_update_flight_project(db: Session) -> None:
+    user = create_user(db)
+    # source and destination projects
+    src_project = create_project(db, owner_id=user.id)
+    dst_project = create_project(db, owner_id=user.id)
+    # create flight associated with source project
+    flight = create_flight(db, project_id=src_project.id)
+    flight2 = create_flight(db, project_id=src_project.id)
+    flight3 = create_flight(db, project_id=src_project.id)
+    # add data product to flight
+    data_product = SampleDataProduct(db, flight=flight)
+    # create vector layer and associate it with flight
+    fc = get_geojson_feature_collection("Point")
+    vector_layer_in = VectorLayerCreate(
+        layer_name=fc["layer_name"], geojson=fc["geojson"]
+    )
+    point_feature = crud.vector_layer.create_with_project(
+        db, obj_in=vector_layer_in, project_id=src_project.id
+    )
+    update_query = (
+        update(VectorLayer)
+        .values(flight_id=flight.id)
+        .where(VectorLayer.layer_id == point_feature[0].properties["layer_id"])
+    )
+    with db as session:
+        session.execute(update_query)
+        session.commit()
+    # move flight from source project to destination project
+    moved_flight = crud.flight.change_flight_project(
+        db, flight_id=flight.id, dst_project_id=dst_project.id
+    )
+    vector_layer_after_move = crud.vector_layer.get_vector_layer_by_id(
+        db, project_id=dst_project.id, layer_id=point_feature[0].properties["layer_id"]
+    )
+    new_data_product_location = os.path.join(
+        settings.TEST_STATIC_DIR,
+        "projects",
+        str(dst_project.id),
+        "flights",
+        str(flight.id),
+        "data_products",
+        str(data_product.obj.id),
+        os.path.basename(data_product.obj.filepath),
+    )
+    upload_dir = settings.TEST_STATIC_DIR
+    src_flights = crud.flight.get_multi_by_project(
+        db, project_id=src_project.id, upload_dir=upload_dir, user_id=user.id
+    )
+    upload_dir = settings.TEST_STATIC_DIR
+    dst_flights = crud.flight.get_multi_by_project(
+        db, project_id=dst_project.id, upload_dir=upload_dir, user_id=user.id
+    )
+    assert moved_flight.id == flight.id
+    assert moved_flight.project_id == dst_project.id
+    assert len(moved_flight.data_products) == 1
+    assert moved_flight.data_products[0].filepath == new_data_product_location
+    assert len(vector_layer_after_move) > 0
+    assert vector_layer_after_move[0].properties["project_id"] == str(dst_project.id)
+    assert len(src_flights) == 2
+    assert len(dst_flights) == 1

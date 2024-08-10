@@ -46,6 +46,7 @@ class FlightInDBBase(FlightBase, from_attributes=True):
     platform: str
     is_active: bool
     deactivated_at: datetime | None = None
+    read_only: bool
 
     project_id: UUID
     pilot_id: UUID | None = None

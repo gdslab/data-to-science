@@ -83,15 +83,18 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
         )
         with db as session:
             vector_layers = session.scalars(statement).all()
-            features = [Feature(**json.loads(feature)) for feature in vector_layers]
-            # Create preview image (if one does not exist)
-            preview_img = create_vector_layer_preview(
-                project_id=project_id,
-                layer_id=layer_id,
-                features=features,
-            )
-            # Deserialize features and create Feature objects for each feature
-            return features
+            if len(vector_layers) > 0:
+                features = [Feature(**json.loads(feature)) for feature in vector_layers]
+                # Create preview image (if one does not exist)
+                preview_img = create_vector_layer_preview(
+                    project_id=project_id,
+                    layer_id=layer_id,
+                    features=features,
+                )
+                # Deserialize features and create Feature objects for each feature
+                return features
+            else:
+                return []
 
     def get_multi_by_project(
         self, db: Session, project_id: UUID

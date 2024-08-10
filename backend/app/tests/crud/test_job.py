@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 
 from app import crud
 from app.schemas.job import JobUpdate
+from app.tests.utils.data_product import SampleDataProduct
+from app.tests.utils.flight import create_flight
 from app.tests.utils.job import create_job
 from app.tests.utils.raw_data import SampleRawData
 
@@ -38,6 +40,18 @@ def test_read_by_raw_data_id(db: Session) -> None:
     assert len(jobs) == 1
     assert jobs[0].name == "test-job"
     assert jobs[0].raw_data_id == raw_data.obj.id
+
+
+def test_read_multi_by_flight_id(db: Session) -> None:
+    flight = create_flight(db)
+    data_product = SampleDataProduct(db, flight=flight, skip_job=True)
+    raw_data = SampleRawData(db, flight=flight)
+    create_job(db, name="test-job", data_product_id=data_product.obj.id)
+    create_job(db, name="test-job", raw_data_id=raw_data.obj.id)
+    jobs = crud.job.get_multi_by_flight(db, flight_id=flight.id)
+    assert jobs
+    assert isinstance(jobs, List)
+    assert len(jobs) == 2
 
 
 def test_update_job(db: Session) -> None:

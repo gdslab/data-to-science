@@ -1,15 +1,17 @@
+import os
 from datetime import datetime
 from random import randint
 
 from fastapi import status
 from fastapi.encoders import jsonable_encoder
 from fastapi.testclient import TestClient
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
-from app.models.flight import SENSORS, PLATFORMS
+from app.models.flight import Flight, SENSORS, PLATFORMS
 from app.schemas.data_product import DataProductCreate
 from app.schemas.flight import FlightUpdate
 from app.schemas.project_member import ProjectMemberCreate
@@ -435,6 +437,181 @@ def test_update_flight_with_non_project_member(
         json=jsonable_encoder(flight_in),
     )
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_update_flight_project_with_read_write_access_to_both_projects(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # create source project with a flight and add current user as manager (read/write)
+    src_project = create_project(db)
+    flight = create_flight(db, altitude=50, project_id=src_project.id)
+    current_user = get_current_user(db, normal_user_access_token)
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="manager")
+    crud.project_member.create_with_project(
+        db,
+        obj_in=project_member_in,
+        project_id=src_project.id,
+    )
+    # add data product to flight
+    data_product = SampleDataProduct(
+        db, project=src_project, flight=flight, skip_job=True
+    )
+    # create destination project add current user as manager (read/write)
+    dst_project = create_project(db)
+    current_user = get_current_user(db, normal_user_access_token)
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="manager")
+    crud.project_member.create_with_project(
+        db,
+        obj_in=project_member_in,
+        project_id=dst_project.id,
+    )
+    # request to move flight from source project to destination project
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{src_project.id}/flights/{flight.id}/modify_project/{dst_project.id}",
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["id"] == str(flight.id)
+    assert response_data["project_id"] == str(dst_project.id)
+    assert response_data["read_only"] is False
+    # confirm data product moved to new static file location
+    updated_data_product = crud.data_product.get(db, id=data_product.obj.id)
+    new_static_location = os.path.join(
+        settings.TEST_STATIC_DIR,
+        "projects",
+        str(dst_project.id),
+        "flights",
+        str(flight.id),
+        "data_products",
+        str(updated_data_product.id),
+        os.path.basename(data_product.obj.filepath),
+    )
+    assert not os.path.exists(data_product.obj.filepath)  # old location
+    assert os.path.exists(new_static_location)
+    assert updated_data_product.filepath == new_static_location
+
+
+def test_update_flight_project_with_read_write_access_to_src_project_and_read_only_access_to_dst_project(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # create source project with a flight and add current user as manager (read/write)
+    src_project = create_project(db)
+    flight = create_flight(db, altitude=50, project_id=src_project.id)
+    current_user = get_current_user(db, normal_user_access_token)
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="manager")
+    crud.project_member.create_with_project(
+        db,
+        obj_in=project_member_in,
+        project_id=src_project.id,
+    )
+    # create destination project add current user as viewer (read only)
+    dst_project = create_project(db)
+    current_user = get_current_user(db, normal_user_access_token)
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="viewer")
+    crud.project_member.create_with_project(
+        db,
+        obj_in=project_member_in,
+        project_id=dst_project.id,
+    )
+    # request to move flight from source project to destination project
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{src_project.id}/flights/{flight.id}/modify_project/{dst_project.id}",
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_update_flight_project_with_read_only_access_to_src_project_and_read_write_access_to_dst_project(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # create source project with a flight and add current user as viewer (read only)
+    src_project = create_project(db)
+    flight = create_flight(db, altitude=50, project_id=src_project.id)
+    current_user = get_current_user(db, normal_user_access_token)
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="viewer")
+    crud.project_member.create_with_project(
+        db,
+        obj_in=project_member_in,
+        project_id=src_project.id,
+    )
+    # create destination project add current user as manager (read/write)
+    dst_project = create_project(db)
+    current_user = get_current_user(db, normal_user_access_token)
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="manager")
+    crud.project_member.create_with_project(
+        db,
+        obj_in=project_member_in,
+        project_id=dst_project.id,
+    )
+    # request to move flight from source project to destination project
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{src_project.id}/flights/{flight.id}/modify_project/{dst_project.id}",
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_update_flight_project_with_read_only_access_to_src_and_dst_projects(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # create source project with a flight and add current user as viewer (read only)
+    src_project = create_project(db)
+    flight = create_flight(db, altitude=50, project_id=src_project.id)
+    current_user = get_current_user(db, normal_user_access_token)
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="viewer")
+    crud.project_member.create_with_project(
+        db,
+        obj_in=project_member_in,
+        project_id=src_project.id,
+    )
+    # create destination project add current user as viewer (read only)
+    dst_project = create_project(db)
+    current_user = get_current_user(db, normal_user_access_token)
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="viewer")
+    crud.project_member.create_with_project(
+        db,
+        obj_in=project_member_in,
+        project_id=dst_project.id,
+    )
+    # request to move flight from source project to destination project
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{src_project.id}/flights/{flight.id}/modify_project/{dst_project.id}",
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_update_flight_project_with_read_only_set_on_flight(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # create source project with a flight and add current user as manager (read/write)
+    src_project = create_project(db)
+    flight = create_flight(db, altitude=50, project_id=src_project.id)
+    current_user = get_current_user(db, normal_user_access_token)
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="manager")
+    crud.project_member.create_with_project(
+        db,
+        obj_in=project_member_in,
+        project_id=src_project.id,
+    )
+    # add data product to flight
+    data_product = SampleDataProduct(db, project=src_project, flight=flight)
+    # create destination project add current user as manager (read/write)
+    dst_project = create_project(db)
+    current_user = get_current_user(db, normal_user_access_token)
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="manager")
+    crud.project_member.create_with_project(
+        db,
+        obj_in=project_member_in,
+        project_id=dst_project.id,
+    )
+    # set flight to "read_only"
+    with db as session:
+        statement = update(Flight).values(read_only=True).where(Flight.id == flight.id)
+        session.execute(statement)
+        session.commit()
+    # request to move flight from source project to destination project
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{src_project.id}/flights/{flight.id}/modify_project/{dst_project.id}",
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
 def test_deactivate_flight_with_project_owner_role(
