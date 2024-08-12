@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app import crud
 from app.core.config import settings
+from app.schemas.data_product import DataProductUpdate
 from app.schemas.file_permission import FilePermissionUpdate
 from app.tests.utils.flight import create_flight
 from app.tests.utils.data_product import SampleDataProduct, test_stac_props_dsm
@@ -94,6 +95,18 @@ def test_read_data_products(db: Session) -> None:
     for data_product in data_products:
         assert data_product.flight_id == flight.id
         assert data_product.public is False
+
+
+def test_update_data_product(db: Session) -> None:
+    old_data_type = "dsm"
+    new_data_type = "dtm"
+    data_product = SampleDataProduct(db, data_type=old_data_type)
+    updated_data_product = crud.data_product.update_data_type(
+        db, data_product_id=data_product.obj.id, new_data_type=new_data_type
+    )
+    assert updated_data_product
+    assert updated_data_product.id == data_product.obj.id
+    assert updated_data_product.data_type == new_data_type
 
 
 def test_deactivate_data_product(db: Session) -> None:
