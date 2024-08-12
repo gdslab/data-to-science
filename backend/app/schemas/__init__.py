@@ -1,7 +1,12 @@
 from .admin import SiteStatistics
 from .api_key import APIKey, APIKeyCreate, APIKeyUpdate
 from .campaign import Campaign, CampaignCreate, CampaignUpdate, CampaignTemplateCreate
-from .data_product import DataProduct, DataProductCreate, DataProductUpdate
+from .data_product import (
+    DataProduct,
+    DataProductCreate,
+    DataProductUpdate,
+    DataProductUpdateDataType,
+)
 from .data_product_metadata import (
     DataProductMetadata,
     DataProductMetadataCreate,
