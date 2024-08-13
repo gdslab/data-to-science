@@ -11,6 +11,7 @@ import DataProductsTable from './DataProductsTable';
 import { useProjectContext } from '../../ProjectContext';
 
 import { sorter } from '../../../../utils';
+import { AlertBar, Status } from '../../../../Alert';
 
 function getDataProductsDisplayModeFromLS(): 'table' | 'carousel' {
   const dataProductsDisplayMode = localStorage.getItem('dataProductsDisplayMode');
@@ -24,6 +25,7 @@ function getDataProductsDisplayModeFromLS(): 'table' | 'carousel' {
 
 export default function DataProducts({ data }: { data: DataProduct[] }) {
   const [open, setOpen] = useState(false);
+  const [status, setStatus] = useState<Status | null>(null);
   const [tableView, toggleTableView] = useState<'table' | 'carousel'>(
     getDataProductsDisplayModeFromLS()
   );
@@ -71,12 +73,18 @@ export default function DataProducts({ data }: { data: DataProduct[] }) {
         />
       </div>
 
-      {tableView === 'table' && <DataProductsTable data={sortedDataProducts} />}
+      {tableView === 'table' && (
+        <DataProductsTable data={sortedDataProducts} setStatus={setStatus} />
+      )}
 
       {tableView === 'carousel' && (
-        <div className="h-full grow flex flex-cols flex-wrap justify-start gap-4 min-h-96 max-h-96 lg:max-h-[448px] xl:max-h-[512px] 2xl:max-h-[576px] overflow-y-auto">
+        <div className="h-full grow flex flex-cols flex-wrap justify-start gap-4 min-h-[424px] max-h-[424px] lg:max-h-[448px] xl:max-h-[512px] 2xl:max-h-[576px] overflow-y-auto">
           {sortedDataProducts.map((dataProduct) => (
-            <DataProductCard key={dataProduct.id} dataProduct={dataProduct} />
+            <DataProductCard
+              key={dataProduct.id}
+              dataProduct={dataProduct}
+              setStatus={setStatus}
+            />
           ))}
         </div>
       )}
@@ -94,6 +102,7 @@ export default function DataProducts({ data }: { data: DataProduct[] }) {
           </Button>
         </div>
       ) : null}
+      {status && <AlertBar alertType={status.type}>{status.msg}</AlertBar>}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
 import { NavigateFunction, useNavigate } from 'react-router-dom';
 import {
   ArrowDownTrayIcon,
@@ -10,6 +10,7 @@ import {
   QuestionMarkCircleIcon,
 } from '@heroicons/react/24/outline';
 
+import { Status } from '../../../../Alert';
 import { CopyURLButton } from '../../../../Buttons';
 import DataProductDeleteModal from './DataProductDeleteModal';
 import { useProjectContext } from '../../ProjectContext';
@@ -19,6 +20,7 @@ import ToolboxModal from './ToolboxModal';
 import DataProductShareModal from './DataProductShareModal';
 
 import { DataProduct } from '../../Project';
+import EditableDataType from './EditableDataType';
 
 export function isGeoTIFF(dataType: string): boolean {
   return dataType !== 'point_cloud';
@@ -119,7 +121,32 @@ function getDataProductActions(
   }
 }
 
-export default function DataProductsTable({ data }: { data: DataProduct[] }) {
+function DataType({
+  dataProduct,
+  setStatus,
+}: {
+  dataProduct: DataProduct;
+  setStatus: React.Dispatch<React.SetStateAction<Status | null>>;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+
+  return (
+    <EditableDataType
+      dataProduct={dataProduct}
+      isEditing={isEditing}
+      setIsEditing={setIsEditing}
+      setStatus={setStatus}
+    />
+  );
+}
+
+export default function DataProductsTable({
+  data,
+  setStatus,
+}: {
+  data: DataProduct[];
+  setStatus: React.Dispatch<React.SetStateAction<Status | null>>;
+}) {
   const navigate = useNavigate();
   const { project, projectRole } = useProjectContext();
 
@@ -144,9 +171,10 @@ export default function DataProductsTable({ data }: { data: DataProduct[] }) {
                   values: [
                     <div
                       key={`row-${dataset.id}-datatype`}
-                      className="h-full flex items-center justify-center"
+                      className="h-full w-full flex items-center justify-center"
                     >
-                      {getDataProductName(dataset.data_type)}
+                      {/* {getDataProductName(dataset.data_type)} */}
+                      <DataType dataProduct={dataset} setStatus={setStatus} />
                     </div>,
                     <div
                       key={`row-${dataset.id}-preview`}
