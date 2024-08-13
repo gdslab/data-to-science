@@ -93,14 +93,14 @@ def update_flight(
 
 
 @router.put(
-    "/{flight_id}/modify_project/{destination_project_id}",
+    "/{flight_id}/move_to_project/{destination_project_id}",
     response_model=schemas.Flight,
 )
 def update_flight_project(
     flight_id: UUID,
     destination_project_id: UUID,
     current_user: models.User = Depends(deps.get_current_approved_user),
-    flight: models.Flight = Depends(deps.can_read_write_flight),
+    flight: models.Flight = Depends(deps.can_read_write_delete_flight),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     # check if user has permission to read/write to destination project
