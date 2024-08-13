@@ -27,26 +27,40 @@ export default function StatCards({ stats }: { stats: SiteStatistics }) {
         </div>
 
         {/* data product by data type counts */}
-        <div className="mt-8 sm:mt-12">
-          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-            <StatCard
-              title="Total DSM"
-              value={stats.data_product_dtype_count.dsm_count}
-            />
-            <StatCard
-              title="Total Ortho"
-              value={stats.data_product_dtype_count.ortho_count}
-            />
-            <StatCard
-              title="Total Point Cloud"
-              value={stats.data_product_dtype_count.point_cloud_count}
-            />
-            <StatCard
-              title="Total Other"
-              value={stats.data_product_dtype_count.other_count}
-            />
-          </dl>
-        </div>
+        {stats.data_product_dtype_count.first && (
+          <div className="mt-8 sm:mt-12">
+            <span className="text-xl text-gray-500 text-center font-semibold">
+              Top Three Data Product Data Types
+            </span>
+            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+              {stats.data_product_dtype_count.first && (
+                <StatCard
+                  title={`Total ${stats.data_product_dtype_count.first.name.toUpperCase()}`}
+                  value={stats.data_product_dtype_count.first.count}
+                />
+              )}
+              {stats.data_product_dtype_count.second && (
+                <StatCard
+                  title={`Total ${stats.data_product_dtype_count.second.name.toUpperCase()}`}
+                  value={stats.data_product_dtype_count.second.count}
+                />
+              )}
+              {stats.data_product_dtype_count.third && (
+                <StatCard
+                  title={`Total ${stats.data_product_dtype_count.third.name.toUpperCase()}`}
+                  value={stats.data_product_dtype_count.third.count}
+                />
+              )}
+              {stats.data_product_dtype_count.other &&
+                stats.data_product_dtype_count.other.count > 0 && (
+                  <StatCard
+                    title="All Others"
+                    value={stats.data_product_dtype_count.other.count}
+                  />
+                )}
+            </dl>
+          </div>
+        )}
 
         <div className="mt-8 sm:mt-12">
           <dl className="grid grid-cols-1 gap-4 sm:grid-cols-4">

@@ -141,7 +141,11 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             update(DataProduct)
             .values(data_type=new_data_type)
             .where(
-                and_(DataProduct.id == data_product_id, DataProduct.is_active == True)
+                and_(
+                    DataProduct.id == data_product_id,
+                    func.lower(DataProduct.data_type) != "point_cloud",
+                    DataProduct.is_active == True,
+                )
             )
         )
         with db as session:

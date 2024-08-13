@@ -18,6 +18,8 @@ import {
 
 import { DataProduct } from '../../Project';
 
+import { isSingleBand } from '../../../../maps/utils';
+
 export interface ToolboxFields {
   chm: boolean;
   exg: boolean;
@@ -137,7 +139,7 @@ export default function ToolboxModal({
                 {/* lidar tools */}
                 {flight &&
                   flight.sensor.toLowerCase() === 'lidar' &&
-                  dataProduct.data_type === 'dsm' && <LidarTools />}
+                  isSingleBand(dataProduct) && <LidarTools />}
                 {flight && getNumOfBands(dataProduct) === 1 && <ZonalStatisticTools />}
                 <Button
                   type="submit"

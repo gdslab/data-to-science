@@ -7,7 +7,7 @@ import {
   SymbologySettings,
 } from './Maps';
 import { DataProduct } from '../pages/projects/Project';
-import { getDefaultStyle } from './utils';
+import { getDefaultStyle, isSingleBand } from './utils';
 
 /**
  * Constructs URL for requesting tiles from TiTiler service.
@@ -55,10 +55,7 @@ export function getDataProductTileLayer(
   tileLayerRef?: undefined | React.MutableRefObject<L.TileLayer | null>,
   scale: number = 2
 ) {
-  if (
-    dataProduct.data_type === 'dsm' ||
-    (dataProduct.stac_properties && dataProduct.stac_properties.raster.length === 1)
-  ) {
+  if (isSingleBand(dataProduct)) {
     const stats = dataProduct.stac_properties.raster[0].stats;
     const symbology = symbologySettings as DSMSymbologySettings | undefined;
     const savedStyle = dataProduct.user_style

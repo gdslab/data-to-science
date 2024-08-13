@@ -6,6 +6,7 @@ import { ScaleControl } from 'react-leaflet';
 import { ZoomControl } from 'react-leaflet/ZoomControl';
 
 import ColorBarControl from './ColorBarControl';
+import CompareTool, { CompareToolAlert, getFlightsWithGTIFF } from './CompareTool';
 import DataProductTileLayer from './DataProductTileLayer';
 import MapLayersControl from './MapLayersControl';
 import ProjectBoundary from './ProjectBoundary';
@@ -18,7 +19,7 @@ import icon from './icons/marker-icon.png';
 import shadow from './icons/marker-shadow.png';
 import PotreeViewer from './PotreeViewer';
 
-import CompareTool, { CompareToolAlert, getFlightsWithGTIFF } from './CompareTool';
+import { isSingleBand } from './utils';
 
 export default function Map({ layerPaneHidden }: { layerPaneHidden: boolean }) {
   const { activeDataProduct, activeMapTool, activeProject, flights, projects } =
@@ -64,9 +65,7 @@ export default function Map({ layerPaneHidden }: { layerPaneHidden: boolean }) {
         {activeProject &&
         flights &&
         activeDataProduct &&
-        (activeDataProduct.data_type === 'dsm' ||
-          (activeDataProduct.stac_properties &&
-            activeDataProduct.stac_properties.raster.length === 1)) &&
+        isSingleBand(activeDataProduct) &&
         activeMapTool === 'map' ? (
           <ColorBarControl
             projectId={activeProject.id}

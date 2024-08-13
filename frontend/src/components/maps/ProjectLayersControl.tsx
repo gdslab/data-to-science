@@ -19,21 +19,14 @@ import { DataProduct, MapLayerFeatureCollection } from '../pages/projects/Projec
 import { Project } from '../pages/projects/ProjectList';
 import { LatLngExpression } from 'leaflet';
 
+import { isSingleBand } from './utils';
+
 type ZonalStatistics = {
   min: number;
   max: number;
   mean: number;
   count: number;
 };
-
-/**
- * Returns true if data product has a single band.
- * @param dataProduct Active data product.
- * @returns True if single band, otherwise False.
- */
-function isSingleBand(dataProduct: DataProduct): boolean {
-  return dataProduct.stac_properties && dataProduct.stac_properties.raster.length === 1;
-}
 
 /**
  * Flips GeoJSON coordinates from long/lat to lat/long.

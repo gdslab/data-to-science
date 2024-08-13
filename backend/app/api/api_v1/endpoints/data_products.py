@@ -30,6 +30,13 @@ router = APIRouter()
 logger = logging.getLogger("__name__")
 
 
+def get_static_dir() -> str:
+    if os.environ.get("RUNNING_TESTS") == "1":
+        return settings.TEST_STATIC_DIR
+    else:
+        return settings.STATIC_DIR
+
+
 @router.get("/{data_product_id}", response_model=schemas.DataProduct)
 def read_data_product(
     data_product_id: UUID,
@@ -43,10 +50,7 @@ def read_data_product(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
-    if os.environ.get("RUNNING_TESTS") == "1":
-        upload_dir = settings.TEST_STATIC_DIR
-    else:
-        upload_dir = settings.STATIC_DIR
+    upload_dir = get_static_dir()
     data_product = crud.data_product.get_single_by_id(
         db,
         data_product_id=data_product_id,
@@ -68,10 +72,7 @@ def read_all_data_product(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
-    if os.environ.get("RUNNING_TESTS") == "1":
-        upload_dir = settings.TEST_STATIC_DIR
-    else:
-        upload_dir = settings.STATIC_DIR
+    upload_dir = get_static_dir()
     all_data_product = crud.data_product.get_multi_by_flight(
         db, flight_id=flight.id, upload_dir=upload_dir, user_id=current_user.id
     )
@@ -82,9 +83,23 @@ def read_all_data_product(
 def update_data_product_data_type(
     data_product_id: UUID,
     data_type_in: schemas.DataProductUpdateDataType,
+    current_user: models.User = Depends(deps.get_current_approved_user),
     flight: schemas.Flight = Depends(deps.can_read_write_flight),
     db: Session = Depends(deps.get_db),
 ) -> Any:
+    upload_dir = get_static_dir()
+    data_product = crud.data_product.get_single_by_id(
+        db,
+        data_product_id=data_product_id,
+        upload_dir=upload_dir,
+        user_id=current_user.id,
+    )
+    # reject request if point cloud
+    if data_product.data_type.lower() == "point_cloud":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot change point cloud data type",
+        )
     updated_data_product = crud.data_product.update_data_type(
         db, data_product_id=data_product_id, new_data_type=data_type_in.data_type
     )

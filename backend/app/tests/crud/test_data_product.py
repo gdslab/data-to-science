@@ -109,6 +109,17 @@ def test_update_data_product(db: Session) -> None:
     assert updated_data_product.data_type == new_data_type
 
 
+def test_update_point_cloud_data_product(db: Session) -> None:
+    old_data_type = "point_cloud"
+    new_data_type = "ortho"
+    data_product = SampleDataProduct(db, data_type=old_data_type)
+    update_data_product = crud.data_product.update_data_type(
+        db, data_product_id=data_product.obj.id, new_data_type=new_data_type
+    )
+    assert update_data_product
+    assert update_data_product.data_type == old_data_type
+
+
 def test_deactivate_data_product(db: Session) -> None:
     user = create_user(db)
     data_product = SampleDataProduct(db, user=user)
