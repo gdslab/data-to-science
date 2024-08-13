@@ -295,6 +295,104 @@ def test_read_data_products_without_project_access(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+def test_update_data_product_data_type_with_project_owner_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+):
+    old_data_type = "dsm"
+    new_data_type = "dtm"
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id)
+    data_product = SampleDataProduct(db, data_type=old_data_type, project=project)
+    payload = {"data_type": new_data_type}
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}",
+        json=payload,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_data_product = response.json()
+    assert response_data_product["id"] == str(data_product.obj.id)
+    assert response_data_product["data_type"] == new_data_type
+
+
+def test_update_data_product_data_type_with_project_manager_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+):
+    old_data_type = "dsm"
+    new_data_type = "dtm"
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db)
+    data_product = SampleDataProduct(db, data_type=old_data_type, project=project)
+    # add current user as a manager to the data product's project
+    create_project_member(
+        db, role="manager", member_id=current_user.id, project_id=project.id
+    )
+    payload = {"data_type": new_data_type}
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}",
+        json=payload,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_data_product = response.json()
+    assert response_data_product["id"] == str(data_product.obj.id)
+    assert response_data_product["data_type"] == new_data_type
+
+
+def test_update_data_product_data_type_with_project_viewer_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+):
+    old_data_type = "dsm"
+    new_data_type = "dtm"
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db)
+    data_product = SampleDataProduct(db, data_type=old_data_type, project=project)
+    # add current user as a viewer to the data product's project
+    create_project_member(
+        db, role="viewer", member_id=current_user.id, project_id=project.id
+    )
+    payload = {"data_type": new_data_type}
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}",
+        json=payload,
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_update_data_product_data_type_without_project_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+):
+    old_data_type = "dsm"
+    new_data_type = "dtm"
+    project = create_project(db)
+    data_product = SampleDataProduct(db, data_type=old_data_type, project=project)
+    payload = {"data_type": new_data_type}
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}",
+        json=payload,
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_update_data_product_with_point_cloud_data_type(
+    client: TestClient, db: Session, normal_user_access_token: str
+):
+    old_data_type = "point_cloud"
+    new_data_type = "dtm"
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id)
+    data_product = SampleDataProduct(db, data_type=old_data_type, project=project)
+    payload = {"data_type": new_data_type}
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}",
+        json=payload,
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
 def test_deactivate_data_product_with_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ):

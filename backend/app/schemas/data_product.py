@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from pydantic import AnyHttpUrl, BaseModel
+from pydantic import AnyHttpUrl, BaseModel, Field
 
 from app.utils.ImageProcessor import STACProperties
 
@@ -28,6 +28,10 @@ class DataProductCreate(DataProductBase):
 # properties to receive via API on update
 class DataProductUpdate(DataProductBase):
     pass
+
+
+class DataProductUpdateDataType(BaseModel):
+    data_type: str = Field(title="Name of data product's new data type", max_length=16)
 
 
 # properties shared by models stored in DB

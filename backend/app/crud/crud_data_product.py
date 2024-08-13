@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Any, List, Sequence
+from typing import Any, List, Optional, Sequence
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
@@ -33,7 +33,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
 
     def get_single_by_id(
         self, db: Session, data_product_id: UUID, user_id: UUID, upload_dir: str
-    ) -> DataProduct | None:
+    ) -> Optional[DataProduct]:
         data_product_query = select(DataProduct).where(
             and_(DataProduct.id == data_product_id, DataProduct.is_active)
         )
@@ -59,8 +59,12 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
         return None
 
     def get_public_data_product_by_id(
-        self, db: Session, file_id: UUID, upload_dir: str, user_id: UUID | None = None
-    ) -> DataProduct | None:
+        self,
+        db: Session,
+        file_id: UUID,
+        upload_dir: str,
+        user_id: Optional[UUID] = None,
+    ) -> Optional[DataProduct]:
         data_product_query = (
             select(DataProduct)
             .join(DataProduct.file_permission)
@@ -130,11 +134,31 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
 
             return updated_data_products
 
-    def deactivate(self, db: Session, data_product_id: UUID) -> DataProduct | None:
+    def update_data_type(
+        self, db: Session, data_product_id: UUID, new_data_type: str
+    ) -> Optional[DataProduct]:
         update_data_product_sql = (
             update(DataProduct)
-            .where(DataProduct.id == data_product_id)
+            .values(data_type=new_data_type)
+            .where(
+                and_(
+                    DataProduct.id == data_product_id,
+                    func.lower(DataProduct.data_type) != "point_cloud",
+                    DataProduct.is_active == True,
+                )
+            )
+        )
+        with db as session:
+            session.execute(update_data_product_sql)
+            session.commit()
+
+        return crud.data_product.get(db, id=data_product_id)
+
+    def deactivate(self, db: Session, data_product_id: UUID) -> Optional[DataProduct]:
+        update_data_product_sql = (
+            update(DataProduct)
             .values(is_active=False, deactivated_at=utcnow())
+            .where(DataProduct.id == data_product_id)
         )
         with db as session:
             session.execute(update_data_product_sql)

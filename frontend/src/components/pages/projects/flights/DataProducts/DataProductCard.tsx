@@ -7,9 +7,11 @@ import {
   PhotoIcon,
 } from '@heroicons/react/24/outline';
 
+import { Status } from '../../../../Alert';
 import Card from '../../../../Card';
 import { isGeoTIFF } from './DataProductsTable';
 import DataProductDeleteModal from './DataProductDeleteModal';
+import EditableDataType from './EditableDataType';
 import ToolboxModal from './ToolboxModal';
 import { useProjectContext } from '../../ProjectContext';
 import DataProductShareModal from './DataProductShareModal';
@@ -26,9 +28,16 @@ function ProgressBar() {
   );
 }
 
-export default function DataProductCard({ dataProduct }: { dataProduct: DataProduct }) {
+export default function DataProductCard({
+  dataProduct,
+  setStatus,
+}: {
+  dataProduct: DataProduct;
+  setStatus: React.Dispatch<React.SetStateAction<Status | null>>;
+}) {
   const [invalidPreviews, setInvalidPreviews] = useState<string[]>([]);
   const [isCopied, setIsCopied] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const { project, projectRole } = useProjectContext();
   const navigate = useNavigate();
 
@@ -106,22 +115,29 @@ export default function DataProductCard({ dataProduct }: { dataProduct: DataProd
               )}
             </div>
             {/* data product details */}
-            <div className="flex items-center justify-between text-lg">
-              <span>{dataProduct.data_type.split('_').join(' ').toUpperCase()}</span>
-              <div className="flex flex-row gap-4">
-                <a href={dataProduct.url} target="_blank" download>
-                  <ArrowDownTrayIcon
-                    className="w-5 h-5"
-                    title="Download data product"
-                  />
-                </a>
-                {projectRole === 'owner' && (
-                  <>
-                    <DataProductShareModal dataProduct={dataProduct} />
-                    <DataProductDeleteModal dataProduct={dataProduct} />
-                  </>
-                )}
-              </div>
+            <div className="h-10 flex items-center justify-between text-lg">
+              <EditableDataType
+                dataProduct={dataProduct}
+                isEditing={isEditing}
+                setIsEditing={setIsEditing}
+                setStatus={setStatus}
+              />
+              {!isEditing && (
+                <div className="flex flex-row gap-4">
+                  <a href={dataProduct.url} target="_blank" download>
+                    <ArrowDownTrayIcon
+                      className="w-5 h-5"
+                      title="Download data product"
+                    />
+                  </a>
+                  {projectRole === 'owner' && (
+                    <>
+                      <DataProductShareModal dataProduct={dataProduct} />
+                      <DataProductDeleteModal dataProduct={dataProduct} />
+                    </>
+                  )}
+                </div>
+              )}
             </div>
             {/* action buttons */}
             <div className="flex items-center justify-around gap-4">

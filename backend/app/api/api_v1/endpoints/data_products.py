@@ -3,13 +3,13 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Annotated, Any, Sequence
 from uuid import UUID, uuid4
 
 from geojson_pydantic import Feature, FeatureCollection
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Body, Depends, HTTPException, status
 from fastapi.encoders import jsonable_encoder
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
@@ -30,9 +30,15 @@ router = APIRouter()
 logger = logging.getLogger("__name__")
 
 
+def get_static_dir() -> str:
+    if os.environ.get("RUNNING_TESTS") == "1":
+        return settings.TEST_STATIC_DIR
+    else:
+        return settings.STATIC_DIR
+
+
 @router.get("/{data_product_id}", response_model=schemas.DataProduct)
 def read_data_product(
-    request: Request,
     data_product_id: UUID,
     flight_id: UUID,
     current_user: models.User = Depends(deps.get_current_approved_user),
@@ -44,10 +50,7 @@ def read_data_product(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
-    if os.environ.get("RUNNING_TESTS") == "1":
-        upload_dir = settings.TEST_STATIC_DIR
-    else:
-        upload_dir = settings.STATIC_DIR
+    upload_dir = get_static_dir()
     data_product = crud.data_product.get_single_by_id(
         db,
         data_product_id=data_product_id,
@@ -59,7 +62,6 @@ def read_data_product(
 
 @router.get("", response_model=Sequence[schemas.DataProduct])
 def read_all_data_product(
-    request: Request,
     flight_id: UUID,
     current_user: models.User = Depends(deps.get_current_approved_user),
     flight: models.Flight = Depends(deps.can_read_flight),
@@ -70,14 +72,38 @@ def read_all_data_product(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
-    if os.environ.get("RUNNING_TESTS") == "1":
-        upload_dir = settings.TEST_STATIC_DIR
-    else:
-        upload_dir = settings.STATIC_DIR
+    upload_dir = get_static_dir()
     all_data_product = crud.data_product.get_multi_by_flight(
         db, flight_id=flight.id, upload_dir=upload_dir, user_id=current_user.id
     )
     return all_data_product
+
+
+@router.put("/{data_product_id}", response_model=schemas.DataProduct)
+def update_data_product_data_type(
+    data_product_id: UUID,
+    data_type_in: schemas.DataProductUpdateDataType,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    flight: schemas.Flight = Depends(deps.can_read_write_flight),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    upload_dir = get_static_dir()
+    data_product = crud.data_product.get_single_by_id(
+        db,
+        data_product_id=data_product_id,
+        upload_dir=upload_dir,
+        user_id=current_user.id,
+    )
+    # reject request if point cloud
+    if data_product.data_type.lower() == "point_cloud":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot change point cloud data type",
+        )
+    updated_data_product = crud.data_product.update_data_type(
+        db, data_product_id=data_product_id, new_data_type=data_type_in.data_type
+    )
+    return updated_data_product
 
 
 @router.delete("/{data_product_id}", response_model=schemas.DataProduct)
@@ -212,7 +238,6 @@ class ProcessingRequest(BaseModel):
 
 @router.post("/{data_product_id}/tools", status_code=status.HTTP_202_ACCEPTED)
 async def run_processing_tool(
-    request: Request,
     data_product_id: UUID,
     toolbox_in: ProcessingRequest,
     current_user: models.User = Depends(deps.get_current_approved_user),

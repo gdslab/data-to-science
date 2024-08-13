@@ -7,6 +7,8 @@ import CompareToolSelector from './CompareToolSelector';
 import { getDataProductTileLayer } from './DataProductTileLayer';
 import { Flight } from '../pages/projects/Project';
 
+import { isSingleBand } from './utils';
+
 interface SideBySideControl extends L.Control {
   _leftLayer: L.TileLayer;
   _leftLayers: L.TileLayer[];
@@ -74,8 +76,8 @@ const getDataProductByFlight = (flightID: string, flights: Flight[]): string => 
     );
     if (dataProductsGTIFF.length > 0) {
       // give preference to ortho over dsm
-      const ortho = dataProductsGTIFF.filter(({ data_type }) => data_type === 'ortho');
-      return ortho.length > 0 ? ortho[0].id : dataProductsGTIFF[0].id;
+      const rgb = dataProductsGTIFF.filter((dataProduct) => !isSingleBand(dataProduct));
+      return rgb.length > 0 ? rgb[0].id : dataProductsGTIFF[0].id;
     } else {
       return '';
     }

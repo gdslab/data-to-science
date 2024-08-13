@@ -12,6 +12,8 @@ import MapLayersControl from './MapLayersControl';
 import { DataProduct } from '../pages/projects/Project';
 import { DSMSymbologySettings, OrthoSymbologySettings } from './Maps';
 
+import { isSingleBand } from './utils';
+
 function useQuery() {
   const { search } = useLocation();
 
@@ -111,10 +113,7 @@ export default function ShareMap() {
           tileLayerRef={tileLayerRef}
         />
       ) : null}
-      {dataProduct &&
-      (dataProduct.data_type === 'dsm' ||
-        (dataProduct.stac_properties &&
-          dataProduct.stac_properties.raster.length === 1)) ? (
+      {dataProduct && isSingleBand(dataProduct) ? (
         <ColorBarControl
           dataProduct={dataProduct}
           symbology={symbology as DSMSymbologySettings}

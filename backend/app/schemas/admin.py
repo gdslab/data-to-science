@@ -1,11 +1,18 @@
+from typing import Optional
+
 from pydantic import BaseModel
 
 
+class DataProductDtypeCount(BaseModel):
+    name: str
+    count: int
+
+
 class DataProductDtypeCounts(BaseModel):
-    dsm_count: int
-    ortho_count: int
-    point_cloud_count: int
-    other_count: int
+    first: Optional[DataProductDtypeCount] = None
+    second: Optional[DataProductDtypeCount] = None
+    third: Optional[DataProductDtypeCount] = None
+    other: Optional[DataProductDtypeCount] = None
 
 
 class StorageAvailability(BaseModel):

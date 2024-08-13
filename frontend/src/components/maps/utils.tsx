@@ -2,10 +2,7 @@ import { DataProduct } from '../pages/projects/Project';
 import { SymbologySettings } from './Maps';
 
 function getDefaultStyle(dataProduct: DataProduct): SymbologySettings {
-  if (
-    dataProduct.data_type === 'dsm' ||
-    (dataProduct.stac_properties && dataProduct.stac_properties.raster.length === 1)
-  ) {
+  if (isSingleBand(dataProduct)) {
     const stats = dataProduct.stac_properties.raster[0].stats;
     return {
       colorRamp: 'rainbow',
@@ -46,4 +43,13 @@ function getDefaultStyle(dataProduct: DataProduct): SymbologySettings {
   }
 }
 
-export { getDefaultStyle };
+/**
+ * Returns true if data product has a single band.
+ * @param dataProduct Active data product.
+ * @returns True if single band, otherwise False.
+ */
+function isSingleBand(dataProduct: DataProduct): boolean {
+  return dataProduct.stac_properties && dataProduct.stac_properties.raster.length === 1;
+}
+
+export { getDefaultStyle, isSingleBand };

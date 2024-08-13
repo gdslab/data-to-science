@@ -1,11 +1,11 @@
 import os
 import shutil
 
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, desc, func, or_, select
 from sqlalchemy.orm import Session
 
-from app import models
 from app.core.config import settings
+from app.models import DataProduct, Flight, Project, User
 from app.schemas import SiteStatistics
 
 
@@ -45,8 +45,8 @@ def get_site_statistics(db: Session) -> SiteStatistics:
     user_count = 0
     user_count_query = (
         select(func.count("*"))
-        .select_from(models.User)
-        .where(and_(models.User.is_approved, models.User.is_email_confirmed))
+        .select_from(User)
+        .where(and_(User.is_approved, User.is_email_confirmed))
     )
     with db as session:
         user_count = session.scalar(user_count_query)
@@ -54,9 +54,7 @@ def get_site_statistics(db: Session) -> SiteStatistics:
     # get total count of active projects
     project_count = 0
     project_count_query = (
-        select(func.count("*"))
-        .select_from(models.Project)
-        .where(models.Project.is_active)
+        select(func.count("*")).select_from(Project).where(Project.is_active)
     )
     with db as session:
         project_count = session.scalar(project_count_query)
@@ -64,9 +62,7 @@ def get_site_statistics(db: Session) -> SiteStatistics:
     # get total count of active flights
     flight_count = 0
     flight_count_query = (
-        select(func.count("*"))
-        .select_from(models.Flight)
-        .where(models.Flight.is_active)
+        select(func.count("*")).select_from(Flight).where(Flight.is_active)
     )
     with db as session:
         flight_count = session.scalar(flight_count_query)
@@ -74,93 +70,55 @@ def get_site_statistics(db: Session) -> SiteStatistics:
     # get total count of active data prodcuts
     data_product_count = 0
     data_product_count_query = (
-        select(func.count("*"))
-        .select_from(models.DataProduct)
-        .where(models.DataProduct.is_active)
+        select(func.count("*")).select_from(DataProduct).where(DataProduct.is_active)
     )
     with db as session:
         data_product_count = session.scalar(data_product_count_query)
 
-    # get total count of active raw data and add to data product count
-    # raw_data_count = 0
-    # raw_data_count_query = (
-    #     select(func.count("*"))
-    #     .select_from(models.RawData)
-    #     .where(models.RawData.is_active)
-    # )
-    # with db as session:
-    #     raw_data_count = session.scalar(raw_data_count_query)
-
-    # data_product_count += raw_data_count
-
-    # count of data products by data type
-    # DATA_TYPES = ["dsm", "point_cloud", "ortho", "other"]
-    dsm_count = 0
-    ortho_count = 0
-    point_cloud_count = 0
-    other_count = 0
-
-    # get total count of dsm data products
-    dsm_count_query = (
-        select(func.count("*"))
-        .select_from(models.DataProduct)
-        .where(
-            and_(models.DataProduct.is_active, models.DataProduct.data_type == "dsm")
-        )
+    # count of top five data product data types
+    top_three_data_types_query = (
+        select(DataProduct.data_type, func.count(DataProduct.data_type).label("count"))
+        .group_by(DataProduct.data_type)
+        .where(DataProduct.is_active)
+        .order_by(desc("count"))
+        .limit(3)
     )
     with db as session:
-        dsm_count = session.scalar(dsm_count_query)
+        top_three_data_types = session.execute(top_three_data_types_query).all()
+        top_three_count = 0
+        if len(top_three_data_types) > 0:
+            first_count = {
+                "name": top_three_data_types[0][0],
+                "count": top_three_data_types[0][1],
+            }
+            top_three_count += top_three_data_types[0][1]
+        else:
+            first_count = None
 
-    # get total count of ortho data products
-    ortho_count_query = (
-        select(func.count("*"))
-        .select_from(models.DataProduct)
-        .where(
-            and_(
-                models.DataProduct.is_active,
-                models.DataProduct.data_type == "ortho",
-            )
-        )
-    )
-    with db as session:
-        ortho_count = session.scalar(ortho_count_query)
+        if len(top_three_data_types) > 1:
+            second_count = {
+                "name": top_three_data_types[1][0],
+                "count": top_three_data_types[1][1],
+            }
+            top_three_count += top_three_data_types[1][1]
+        else:
+            second_count = None
 
-    # get total count of point cloud data products
-    point_cloud_count_query = (
-        select(func.count("*"))
-        .select_from(models.DataProduct)
-        .where(
-            and_(
-                models.DataProduct.is_active,
-                models.DataProduct.data_type == "point_cloud",
-            )
-        )
-    )
-    with db as session:
-        point_cloud_count = session.scalar(point_cloud_count_query)
+        if len(top_three_data_types) > 2:
+            third_count = {
+                "name": top_three_data_types[2][0],
+                "count": top_three_data_types[2][1],
+            }
+            top_three_count += top_three_data_types[2][1]
+        else:
+            third_count = None
 
-    # get total count of other data products
-    other_count_query = (
-        select(func.count("*"))
-        .select_from(models.DataProduct)
-        .where(
-            and_(
-                models.DataProduct.is_active,
-                models.DataProduct.data_type != "dsm",
-                models.DataProduct.data_type != "ortho",
-                models.DataProduct.data_type != "point_cloud",
-            )
-        )
-    )
-    with db as session:
-        other_count = session.scalar(other_count_query)
-
-    data_products_dtype_count = {
-        "dsm_count": dsm_count,
-        "ortho_count": ortho_count,
-        "point_cloud_count": point_cloud_count,
-        "other_count": other_count,
-    }
+        data_products_dtype_count = {
+            "first": first_count,
+            "second": second_count,
+            "third": third_count,
+            "other": {"name": "other", "count": data_product_count - top_three_count},
+        }
 
     # "used" in this case is for the entire file sys, not just the provided directory
     total, used, free = shutil.disk_usage(settings.STATIC_DIR)
