@@ -13,6 +13,7 @@ import TableCardRadioInput from '../../TableCardRadioInput';
 import { useProjectContext } from './ProjectContext';
 
 import { getUnique, sorter } from '../../utils';
+import MoveFlightModal from './flights/MoveFlightModal';
 
 function getFlightsDisplayModeFromLS(): 'table' | 'carousel' {
   const flightsDisplayMode = localStorage.getItem('flightsDisplayMode');
@@ -153,6 +154,18 @@ export default function ProjectFlights() {
                               label: 'Edit',
                               url: `/projects/${project.id}/flights/${flight.id}/edit`,
                             };
+                            const moveAction = {
+                              key: `action-move-${flight.id}`,
+                              type: 'component',
+                              component: (
+                                <MoveFlightModal
+                                  flightId={flight.id}
+                                  srcProjectId={flight.project_id}
+                                  tableView={true}
+                                />
+                              ),
+                              label: 'Move',
+                            };
                             const deleteAction = {
                               key: `action-delete-${flight.id}`,
                               type: 'component',
@@ -161,9 +174,11 @@ export default function ProjectFlights() {
                               ),
                               label: 'Delete',
                             };
-                            if (projectRole === 'owner')
-                              return [editAction, deleteAction];
-                            return [editAction];
+                            if (projectRole === 'owner') {
+                              return [editAction, moveAction, deleteAction];
+                            } else {
+                              return [editAction];
+                            }
                           })
                     }
                   />

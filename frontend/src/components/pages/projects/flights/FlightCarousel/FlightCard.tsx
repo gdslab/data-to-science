@@ -9,6 +9,7 @@ import { Flight } from '../../Project';
 import { isGeoTIFF } from '../DataProducts/DataProductsTable';
 import { useProjectContext } from '../../ProjectContext';
 import FlightDeleteModal from '../FlightDeleteModal';
+import MoveFlightModal from '../MoveFlightModal';
 
 export default function FlightCard({ flight }: { flight: Flight }) {
   const [invalidPreviews, setInvalidPreviews] = useState<string[]>([]);
@@ -62,9 +63,15 @@ export default function FlightCard({ flight }: { flight: Flight }) {
               <span className="block text-lg">Sensor: {flight.sensor}</span>
               <HintText>On: {flight.acquisition_date}</HintText>
             </div>
-            {projectRole === 'owner' ? (
-              <FlightDeleteModal flight={flight} iconOnly={true} />
-            ) : null}
+            {projectRole === 'owner' && (
+              <div className="flex gap-4">
+                <MoveFlightModal
+                  flightId={flight.id}
+                  srcProjectId={flight.project_id}
+                />
+                <FlightDeleteModal flight={flight} iconOnly={true} />
+              </div>
+            )}
           </div>
           {/* action buttons */}
           <div className="flex items-center justify-between gap-2">
