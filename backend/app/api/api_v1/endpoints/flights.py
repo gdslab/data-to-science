@@ -108,12 +108,10 @@ def update_flight_project(
         db, project_id=destination_project_id, member_id=current_user.id
     )
     # raise exception if not project member or member without owner/manager role
-    if not project_membership or (
-        project_membership.role != "owner" and project_membership.role != "manager"
-    ):
+    if not project_membership or project_membership.role != "owner":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Must be an owner or manager of destination project",
+            detail="Must be an owner of destination project",
         )
 
     # lock flight record if no active jobs, raise exception if active jobs

@@ -496,7 +496,7 @@ def test_update_flight_project_with_manager_role_for_both_projects(
         db, project=src_project, flight=flight, skip_job=True
     )
     # create destination project add current user as manager (read/write)
-    dst_project = create_project(db, owner_id=current_user.id)
+    dst_project = create_project(db)
     project_member_in = ProjectMemberCreate(member_id=current_user.id, role="manager")
     crud.project_member.create_with_project(
         db,
@@ -586,26 +586,13 @@ def test_update_flight_project_with_read_only_set_on_flight(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     # create source project with a flight and add current user as manager (read/write)
-    src_project = create_project(db)
-    flight = create_flight(db, altitude=50, project_id=src_project.id)
     current_user = get_current_user(db, normal_user_access_token)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="manager")
-    crud.project_member.create_with_project(
-        db,
-        obj_in=project_member_in,
-        project_id=src_project.id,
-    )
+    src_project = create_project(db, owner_id=current_user.id)
+    flight = create_flight(db, altitude=50, project_id=src_project.id)
     # add data product to flight
     data_product = SampleDataProduct(db, project=src_project, flight=flight)
     # create destination project add current user as manager (read/write)
-    dst_project = create_project(db)
-    current_user = get_current_user(db, normal_user_access_token)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="manager")
-    crud.project_member.create_with_project(
-        db,
-        obj_in=project_member_in,
-        project_id=dst_project.id,
-    )
+    dst_project = create_project(db, owner_id=current_user.id)
     # set flight to "read_only"
     with db as session:
         statement = update(Flight).values(read_only=True).where(Flight.id == flight.id)
