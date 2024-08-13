@@ -63,11 +63,12 @@ export default function EditableDataType({
     return (
       <div className="flex items-center justify-center gap-2">
         <span>{dataProduct.data_type.split('_').join(' ').toUpperCase()}</span>
-        {(projectRole === 'owner' || projectRole === 'manager') && (
-          <button onClick={toggleIsEditing}>
-            <PencilIcon className="h-3 w-3" />
-          </button>
-        )}
+        {(projectRole === 'owner' || projectRole === 'manager') &&
+          dataProduct.data_type.toLowerCase() !== 'point_cloud' && (
+            <button onClick={toggleIsEditing}>
+              <PencilIcon className="h-3 w-3" />
+            </button>
+          )}
       </div>
     );
   }
