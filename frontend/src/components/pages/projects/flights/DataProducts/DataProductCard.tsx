@@ -119,6 +119,7 @@ export default function DataProductCard({
               <EditableDataType
                 dataProduct={dataProduct}
                 isEditing={isEditing}
+                menuPlacement="top"
                 setIsEditing={setIsEditing}
                 setStatus={setStatus}
               />
