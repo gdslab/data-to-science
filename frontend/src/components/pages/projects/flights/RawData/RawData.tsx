@@ -10,7 +10,11 @@ import { useProjectContext } from '../../ProjectContext';
 import { AlertBar, Status } from '../../../../Alert';
 import { Button } from '../../../../Buttons';
 
-import { ImageProcessingJobProps, RawDataProps } from './RawData.types';
+import {
+  ImageProcessingJobProps,
+  ImageProcessingSettings,
+  RawDataProps,
+} from './RawData.types';
 
 import {
   checkForExistingJobs,
@@ -20,6 +24,8 @@ import {
 } from './utils';
 import { useInterval } from '../../../../hooks';
 import ProgressBar from '../../../../ProgressBar';
+import RawDataImageProcessingForm from './RawDataImageProcessingForm';
+import RawDataImageProcessingModal from './RawDataImageProcessingModal';
 
 export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
   const [hasImageProcessingExt, setHasImageProcessingExt] = useState(false);
@@ -116,9 +122,12 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
     imageProcessingJobStatus.length > 0 ? 5000 : null
   );
 
-  function onImageProcessingClick(rawDataId: string) {
+  function onImageProcessingClick(
+    rawDataId: string,
+    settings: ImageProcessingSettings
+  ) {
     if (flightId && projectId) {
-      startImageProcessingJob(flightId, projectId, rawDataId)
+      startImageProcessingJob(flightId, projectId, rawDataId, settings)
         .then((job_id) => {
           if (job_id) {
             setImageProcessingJobStatus([
@@ -170,16 +179,22 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
                 {dataset.status === 'FAILED' && <ErrorIcon />}
                 {/* display button for image processing if user has extension */}
                 {hasImageProcessingExt && (
-                  <button
-                    className="w-32 bg-accent2/90 text-white font-semibold py-1 rounded enabled:hover:bg-accent2 disabled:opacity-75 disabled:cursor-not-allowed"
-                    type="button"
-                    name="processRawDataBtn"
-                    title="Generate DEM, orthomosaic, and point cloud data products from zipped raw data"
-                    onClick={() => onImageProcessingClick(dataset.id)}
-                    disabled={isProcessing(dataset.id)}
-                  >
-                    {isProcessing(dataset.id) ? 'Processing' : 'Process'}
-                  </button>
+                  // <button
+                  //   className="w-32 bg-accent2/90 text-white font-semibold py-1 rounded enabled:hover:bg-accent2 disabled:opacity-75 disabled:cursor-not-allowed"
+                  //   type="button"
+                  //   name="processRawDataBtn"
+                  //   title="Generate DEM, orthomosaic, and point cloud data products from zipped raw data"
+                  //   onClick={() => onImageProcessingClick(dataset.id)}
+                  //   disabled={isProcessing(dataset.id)}
+                  // >
+                  //   {isProcessing(dataset.id) ? 'Processing' : 'Process'}
+                  // </button>
+                  <RawDataImageProcessingModal
+                    isProcessing={isProcessing(dataset.id)}
+                    onSubmitJob={(settings: ImageProcessingSettings) =>
+                      onImageProcessingClick(dataset.id, settings)
+                    }
+                  />
                 )}
                 {/* display button for downloading processed raw data zip file */}
                 {dataset.status === 'SUCCESS' && (

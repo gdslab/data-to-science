@@ -1,6 +1,7 @@
 import axios, { AxiosResponse, isAxiosError } from 'axios';
 
 import { Job } from '../../Project';
+import { ImageProcessingSettings } from './RawData.types';
 
 const checkForExistingJobs = async (
   flightId: string,
@@ -75,13 +76,24 @@ const fetchUserExtensions = async (): Promise<boolean> => {
 const startImageProcessingJob = async (
   flightId: string,
   projectId: string,
-  rawDataId: string
+  rawDataId: string,
+  settings: ImageProcessingSettings
 ): Promise<string> => {
   try {
+    // convert number and boolean objects to string before creating query params
+    const settingsStringParams: Record<string, string> = Object.keys(settings).reduce(
+      (acc, key) => {
+        acc[key] = String(settings[key]);
+        return acc;
+      },
+      {} as Record<string, string>
+    );
+    const settingsQueryString = new URLSearchParams(settingsStringParams).toString();
+    // send request to start job with user defined settings
     const response: AxiosResponse<{ job_id: string }> = await axios.get(
       `${
         import.meta.env.VITE_API_V1_STR
-      }/projects/${projectId}/flights/${flightId}/raw_data/${rawDataId}/process`
+      }/projects/${projectId}/flights/${flightId}/raw_data/${rawDataId}/process?${settingsQueryString}`
     );
     if (response.status === 200) {
       return response.data.job_id;
