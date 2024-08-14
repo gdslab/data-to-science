@@ -38,11 +38,13 @@ function getDataTypeOptions(dataProduct: DataProduct): DataTypeOption[] {
 export default function EditableDataType({
   dataProduct,
   isEditing,
+  menuPlacement = 'auto',
   setIsEditing,
   setStatus,
 }: {
   dataProduct: DataProduct;
   isEditing: boolean;
+  menuPlacement?: 'bottom' | 'auto' | 'top';
   setIsEditing: React.Dispatch<React.SetStateAction<boolean>>;
   setStatus: React.Dispatch<React.SetStateAction<Status | null>>;
 }) {
@@ -121,7 +123,8 @@ export default function EditableDataType({
                 primary25: '#e2e8f0',
               },
             })}
-            maxMenuHeight={96}
+            maxMenuHeight={140}
+            menuPlacement={menuPlacement}
             isSearchable
             options={getDataTypeOptions(dataProduct)}
             onChange={(newDataType) => {

@@ -121,11 +121,13 @@ function getDataProductActions(
   }
 }
 
-function DataType({
+function DataTypeSelect({
   dataProduct,
+  isLastRow,
   setStatus,
 }: {
   dataProduct: DataProduct;
+  isLastRow: boolean;
   setStatus: React.Dispatch<React.SetStateAction<Status | null>>;
 }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -134,6 +136,7 @@ function DataType({
     <EditableDataType
       dataProduct={dataProduct}
       isEditing={isEditing}
+      menuPlacement={isLastRow ? 'top' : 'bottom'}
       setIsEditing={setIsEditing}
       setStatus={setStatus}
     />
@@ -166,15 +169,18 @@ export default function DataProductsTable({
             />
             <div className="overflow-y-auto min-h-96 max-h-96 xl:max-h-[420px] 2xl:max-h-[512px]">
               <TableBody
-                rows={data.map((dataset) => ({
+                rows={data.map((dataset, index) => ({
                   key: dataset.id,
                   values: [
                     <div
                       key={`row-${dataset.id}-datatype`}
                       className="h-full w-full flex items-center justify-center"
                     >
-                      {/* {getDataProductName(dataset.data_type)} */}
-                      <DataType dataProduct={dataset} setStatus={setStatus} />
+                      <DataTypeSelect
+                        dataProduct={dataset}
+                        isLastRow={index === data.length - 1}
+                        setStatus={setStatus}
+                      />
                     </div>,
                     <div
                       key={`row-${dataset.id}-preview`}

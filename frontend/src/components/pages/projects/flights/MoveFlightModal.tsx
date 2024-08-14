@@ -24,6 +24,7 @@ export default function MoveFlightModal({
   tableView?: boolean;
 }) {
   const [dstProjectId, setDstProjectId] = useState('');
+  const [isMoving, setIsMoving] = useState(false);
   const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([]);
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
@@ -31,6 +32,7 @@ export default function MoveFlightModal({
   const revalidator = useRevalidator();
 
   useEffect(() => {
+    setIsMoving(false);
     setStatus(null);
   }, [open]);
 
@@ -54,6 +56,7 @@ export default function MoveFlightModal({
 
   async function moveProject() {
     try {
+      setIsMoving(true);
       const response: AxiosResponse<Flight> = await axios.put(
         `${
           import.meta.env.VITE_API_V1_STR
@@ -61,11 +64,14 @@ export default function MoveFlightModal({
       );
       if (response.status === 200) {
         revalidator.revalidate();
+        setIsMoving(false);
         setOpen(false);
       } else {
+        setIsMoving(false);
         setStatus({ type: 'error', msg: 'Unable to move flight at this time' });
       }
     } catch (err) {
+      setIsMoving(false);
       if (isAxiosError(err) && err.response && err.response.data.detail) {
         if (typeof err.response.data.detail === 'string') {
           setStatus({ type: 'error', msg: err.response.data.detail });
@@ -136,7 +142,7 @@ export default function MoveFlightModal({
             disabled={dstProjectId.length === 0}
             onClick={() => moveProject()}
           >
-            Update
+            {isMoving ? 'Moving...' : 'Move'}
           </Button>
           {status && <AlertBar alertType={status.type}>{status.msg}</AlertBar>}
         </div>
