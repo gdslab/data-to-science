@@ -101,6 +101,9 @@ export default function RawDataImageProcessingForm({
                   value="multi"
                 />
               </div>
+              {errors && errors.camera && typeof errors.camera.message === 'string' && (
+                <p className="text-sm text-red-500">{errors.camera.message}</p>
+              )}
             </fieldset>
             {/* Align Photos */}
             <fieldset className="border border-solid border-slate-300 p-3">
@@ -134,6 +137,13 @@ export default function RawDataImageProcessingForm({
                     value="high"
                   />
                 </div>
+                {errors &&
+                  errors.alignQuality &&
+                  typeof errors.alignQuality.message === 'string' && (
+                    <p className="text-sm text-red-500">
+                      {errors.alignQuality.message}
+                    </p>
+                  )}
               </div>
               {/* Key point and tie point limits */}
               <div className="flex flex-col gap-4 justify-start">
@@ -183,6 +193,13 @@ export default function RawDataImageProcessingForm({
                     value="high"
                   />
                 </div>
+                {errors &&
+                  errors.buildDepthQuality &&
+                  typeof errors.buildDepthQuality.message === 'string' && (
+                    <p className="text-sm text-red-500">
+                      {errors.buildDepthQuality.message}
+                    </p>
+                  )}
               </div>
             </fieldset>
           </div>
