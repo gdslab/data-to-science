@@ -7,10 +7,18 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app import crud
-from app.api.deps import get_current_user
+from app.api.deps import (
+    get_current_user,
+    get_current_approved_user_by_jwt_or_api_key,
+)
 from app.core.config import settings
 from app.schemas.iforester import IForesterCreate, IForesterUpdate
-from app.tests.utils.iforester import create_iforester, EXAMPLE_DATA, EXAMPLE_IMAGE, EXAMPLE_PNG
+from app.tests.utils.iforester import (
+    create_iforester,
+    EXAMPLE_DATA,
+    EXAMPLE_IMAGE,
+    EXAMPLE_PNG,
+)
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
 from app.tests.utils.user import create_user
@@ -19,7 +27,9 @@ from app.tests.utils.user import create_user
 def test_create_iforester_record_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
-    current_user = get_current_user(db, normal_user_access_token)
+    current_user = get_current_approved_user_by_jwt_or_api_key(
+        db, token=normal_user_access_token
+    )
     project = create_project(db, owner_id=current_user.id)
     payload = EXAMPLE_DATA
     payload["image"] = EXAMPLE_IMAGE
@@ -41,6 +51,27 @@ def test_create_iforester_record_with_project_owner_role(
     assert response_data["phoneID"] == EXAMPLE_DATA.get("phoneID")
     assert response_data["species"] == EXAMPLE_DATA.get("species")
     assert response_data["user"] == EXAMPLE_DATA.get("user")
+
+
+def test_create_iforester_record_with_project_owner_role_and_api_key(
+    client: TestClient, db: Session, normal_user_api_key: str
+) -> None:
+    current_user = get_current_approved_user_by_jwt_or_api_key(
+        db, api_key=normal_user_api_key
+    )
+    project = create_project(db, owner_id=current_user.id)
+    payload = EXAMPLE_DATA
+    payload["image"] = EXAMPLE_IMAGE
+    payload["png"] = EXAMPLE_PNG
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/iforester",
+        json=payload,
+        headers={"X-API-KEY": normal_user_api_key},
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    response_data = response.json()
+    print(response.request.headers)
+    assert response_data
 
 
 def test_create_iforester_record_with_project_manager_role(

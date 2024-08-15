@@ -1,6 +1,4 @@
-import axios, { AxiosResponse, isAxiosError } from 'axios';
-import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useMemo, useState } from 'react';
 
 import { IForester } from './Project';
 import IForesterList from './iForester/IForesterList';
@@ -19,39 +17,15 @@ function getIForesterDisplayModeFromLS(): 'table' | 'carousel' {
   }
 }
 
-export default function ProjectIForester() {
-  const [iforesterData, setIForesterData] = useState<IForester[]>([]);
+export default function ProjectIForester({
+  iforesterData,
+}: {
+  iforesterData: IForester[];
+}) {
   const [iForesterSortOrder, setIForesterSortOrder] = useState('asc');
   const [tableView, toggleTableView] = useState<'table' | 'carousel'>(
     getIForesterDisplayModeFromLS()
   );
-
-  const params = useParams();
-
-  useEffect(() => {
-    async function fetchIForesterData(projectId: string) {
-      try {
-        const response: AxiosResponse<IForester[]> = await axios.get(
-          `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/iforester`
-        );
-        if (response.status === 200) {
-          setIForesterData(response.data);
-        } else {
-          return [];
-        }
-      } catch (err) {
-        if (isAxiosError(err) && err.response) {
-          console.error(err.response.data);
-        } else {
-          console.error(err);
-        }
-        return [];
-      }
-    }
-    if (params.projectId) {
-      fetchIForesterData(params.projectId);
-    }
-  }, []);
 
   function onTableViewChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.value === 'carousel' || e.target.value === 'table') {

@@ -42,10 +42,10 @@ def get_iforester_static_dir(project_id: UUID4, iforester_id: UUID4):
 @router.post("", response_model=schemas.IForester, status_code=status.HTTP_201_CREATED)
 def create_iforester(
     iforester_in: schemas.IForesterPost,
-    project: models.Project = Depends(deps.can_read_write_project),
+    project: models.Project = Depends(deps.can_read_write_project_with_jwt_or_api_key),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    iforester_dict = iforester_in.dict()
+    iforester_dict = iforester_in.model_dump()
     iforester_dict["dbh"] = iforester_dict.get("DBH")
     if "DBH" in iforester_dict:
         del iforester_dict["DBH"]
@@ -71,15 +71,16 @@ def create_iforester(
             img_file.write(base64.decodebytes(img_file_in_bytes))
 
     # add images to newly created record
-    iforester_update_in = schemas.IForesterUpdate(
-        imageFile=os.path.join(static_dir, iforester_in.RGB1XImageFileName),
-        depthFile=os.path.join(static_dir, iforester_in.depthImageFileName),
-    )
-    updated_iforester = crud.iforester.update(
-        db, db_obj=iforester, obj_in=iforester_update_in
-    )
+    if iforester_in.RGB1XImageFileName and iforester_in.depthImageFileName:
+        iforester_update_in = schemas.IForesterUpdate(
+            imageFile=os.path.join(static_dir, iforester_in.RGB1XImageFileName),
+            depthFile=os.path.join(static_dir, iforester_in.depthImageFileName),
+        )
+        iforester = crud.iforester.update(
+            db, db_obj=iforester, obj_in=iforester_update_in
+        )
 
-    return updated_iforester
+    return iforester
 
 
 @router.get("/{iforester_id}", response_model=schemas.IForester)
