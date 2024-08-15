@@ -3,6 +3,7 @@ import { ChangeEvent, useState } from 'react';
 import { IForester } from '../Project';
 import Card from '../../../Card';
 import IForesterMiniMap from './IForesterMiniMap';
+import IForesterDeleteModal from './IForesterDeleteModal';
 
 export default function IForesterCard({ submission }: { submission: IForester }) {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -59,6 +60,9 @@ export default function IForesterCard({ submission }: { submission: IForester })
           </div>
         </article>
       </details>
+      <div className="flex justify-end">
+        <IForesterDeleteModal iforester={submission} />
+      </div>
     </Card>
   );
 }

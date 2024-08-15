@@ -1,4 +1,5 @@
 import { IForester } from '../Project';
+import IForesterDeleteModal from './IForesterDeleteModal';
 
 const HeaderCell = ({ children }: { children: React.ReactNode }) => <th>{children}</th>;
 
@@ -26,6 +27,7 @@ export default function IForesterTable({ data }: { data: IForester[] }) {
           <HeaderCell>Phone ID</HeaderCell>
           <HeaderCell>Species</HeaderCell>
           <HeaderCell>User</HeaderCell>
+          <HeaderCell>Actions</HeaderCell>
         </tr>
       </thead>
       <tbody>
@@ -43,6 +45,9 @@ export default function IForesterTable({ data }: { data: IForester[] }) {
             <Cell>{submission.phoneID}</Cell>
             <Cell>{submission.species}</Cell>
             <Cell>{submission.user}</Cell>
+            <Cell>
+              <IForesterDeleteModal iforester={submission} tableView={true} />
+            </Cell>
           </tr>
         ))}
       </tbody>
