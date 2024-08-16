@@ -23,3 +23,8 @@ export type RawDataProps = {
   original_filename: string;
   url: string;
 };
+
+export type RawDataImageProcessingFormProps = {
+  onSubmitJob: (settings: ImageProcessingSettings) => void;
+  toggleModal: () => void;
+};

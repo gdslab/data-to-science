@@ -1,65 +1,24 @@
 import { useForm, FormProvider, SubmitHandler } from 'react-hook-form';
-import * as yup from 'yup';
+
 import { yupResolver } from '@hookform/resolvers/yup';
 
-import { CheckboxInput, NumberInput, RadioInput } from './RHFInputs';
+import { CheckboxInput, NumberInput, RadioInput } from '../../../../../RHFInputs';
 
-import { ImageProcessingSettings } from './RawData.types';
+import {
+  ImageProcessingSettings,
+  RawDataImageProcessingFormProps,
+} from '../RawData.types';
 
-const defaultValues: ImageProcessingSettings = {
-  alignQuality: 'medium',
-  buildDepthQuality: 'medium',
-  camera: 'single',
-  disclaimer: false,
-  keyPoint: 40000,
-  tiePoint: 4000,
-};
-
-const schema = yup.object({
-  alignQuality: yup
-    .string()
-    .oneOf(
-      ['low', 'medium', 'high'],
-      'Alignment accuracy must be "low", "medium", or "high"'
-    )
-    .required('Alignment accuracy is required'),
-  buildDepthQuality: yup
-    .string()
-    .oneOf(
-      ['low', 'medium', 'high'],
-      'Build depth quality must be "low", "medium", or "high"'
-    )
-    .required('Build depth quality is required'),
-  camera: yup
-    .string()
-    .oneOf(['single', 'multi'], 'Camera sensors must be single or multi')
-    .required('Camera sensors is required'),
-  disclaimer: yup
-    .boolean()
-    .oneOf([true], 'You must accept these terms before proceeding')
-    .required('Accepting terms is required'),
-  keyPoint: yup
-    .number()
-    .positive('Key point limit must be greater than 0')
-    .required('Key point limit is required'),
-  tiePoint: yup
-    .number()
-    .positive('Tie point limit must be greater than 0')
-    .required('Tie point limit is required'),
-});
-
-type RawDataImageProcessingForm = {
-  onSubmitJob: (settings: ImageProcessingSettings) => void;
-  toggleModal: () => void;
-};
+import defaultValues from './defaultValues';
+import validationSchema from './validationSchema';
 
 export default function RawDataImageProcessingForm({
   onSubmitJob,
   toggleModal,
-}: RawDataImageProcessingForm) {
+}: RawDataImageProcessingFormProps) {
   const methods = useForm<ImageProcessingSettings>({
     defaultValues,
-    resolver: yupResolver(schema),
+    resolver: yupResolver(validationSchema),
   });
   const {
     handleSubmit,
@@ -147,18 +106,8 @@ export default function RawDataImageProcessingForm({
               </div>
               {/* Key point and tie point limits */}
               <div className="flex flex-col gap-4 justify-start">
-                <NumberInput
-                  fieldName="keyPoint"
-                  inputId="keyPointLimit"
-                  label="Key point limit"
-                  step={1000}
-                />
-                <NumberInput
-                  fieldName="tiePoint"
-                  inputId="tiePointLimit"
-                  label="Tie point limit"
-                  step={100}
-                />
+                <NumberInput fieldName="keyPoint" label="Key point limit" step={1000} />
+                <NumberInput fieldName="tiePoint" label="Tie point limit" step={100} />
               </div>
             </fieldset>
             {/* Build Point Cloud */}
@@ -204,11 +153,7 @@ export default function RawDataImageProcessingForm({
             </fieldset>
           </div>
           <div className="mt-4">
-            <CheckboxInput
-              fieldName="disclaimer"
-              inputId="disclaimer"
-              label="Check to proceed"
-            />
+            <CheckboxInput fieldName="disclaimer" label="Check to proceed" />
             <div className="mt-4">
               <button
                 className="w-32 bg-accent2/90 text-white font-semibold py-1 rounded enabled:hover:bg-accent2 disabled:opacity-75 disabled:cursor-not-allowed"

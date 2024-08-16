@@ -2,7 +2,6 @@ import { useFormContext } from 'react-hook-form';
 
 interface Input extends React.InputHTMLAttributes<HTMLInputElement> {
   fieldName: string;
-  inputId: string;
   label: string;
 }
 
@@ -11,43 +10,46 @@ interface NumberInput extends Input {
 }
 
 interface RadioInput extends Input {
+  inputId: string;
   value: string;
 }
 
-function CheckboxInput({ fieldName, inputId, label, ...props }: Input) {
+function CheckboxInput({ fieldName, label, ...props }: Input) {
   const {
     register,
     formState: { errors },
   } = useFormContext();
+
+  const error = errors && errors[fieldName];
+
   return (
-    <label htmlFor={inputId}>
-      <input id={inputId} type="checkbox" {...register(fieldName)} {...props} />
+    <label htmlFor={fieldName}>
+      <input id={fieldName} type="checkbox" {...register(fieldName)} {...props} />
       <span className="text-sm ml-2">{label}</span>
-      {errors && errors[fieldName] && typeof errors[fieldName].message === 'string' && (
-        <p className="text-sm text-red-500">{errors[fieldName].message}</p>
-      )}
+      {error && <p className="text-sm text-red-500">{`${error.message}`}</p>}
     </label>
   );
 }
 
-function NumberInput({ fieldName, inputId, label, step, ...props }: NumberInput) {
+function NumberInput({ fieldName, label, step, ...props }: NumberInput) {
   const {
     register,
     formState: { errors },
   } = useFormContext();
+
+  const error = errors && errors[fieldName];
+
   return (
-    <label htmlFor={inputId}>
+    <label htmlFor={fieldName}>
       <span className="text-sm font-medium inline-block mr-2 w-24">{label}:</span>
       <input
-        id={inputId}
+        id={fieldName}
         type="number"
         step={step}
         {...register(fieldName)}
         {...props}
       />
-      {errors && errors[fieldName] && typeof errors[fieldName].message === 'string' && (
-        <p className="text-sm text-red-500">{errors[fieldName].message}</p>
-      )}
+      {error && <p className="text-sm text-red-500">{`${error.message}`}</p>}
     </label>
   );
 }

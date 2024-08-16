@@ -24,7 +24,6 @@ import {
 } from './utils';
 import { useInterval } from '../../../../hooks';
 import ProgressBar from '../../../../ProgressBar';
-import RawDataImageProcessingForm from './RawDataImageProcessingForm';
 import RawDataImageProcessingModal from './RawDataImageProcessingModal';
 
 export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
@@ -179,16 +178,6 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
                 {dataset.status === 'FAILED' && <ErrorIcon />}
                 {/* display button for image processing if user has extension */}
                 {hasImageProcessingExt && (
-                  // <button
-                  //   className="w-32 bg-accent2/90 text-white font-semibold py-1 rounded enabled:hover:bg-accent2 disabled:opacity-75 disabled:cursor-not-allowed"
-                  //   type="button"
-                  //   name="processRawDataBtn"
-                  //   title="Generate DEM, orthomosaic, and point cloud data products from zipped raw data"
-                  //   onClick={() => onImageProcessingClick(dataset.id)}
-                  //   disabled={isProcessing(dataset.id)}
-                  // >
-                  //   {isProcessing(dataset.id) ? 'Processing' : 'Process'}
-                  // </button>
                   <RawDataImageProcessingModal
                     isProcessing={isProcessing(dataset.id)}
                     onSubmitJob={(settings: ImageProcessingSettings) =>
