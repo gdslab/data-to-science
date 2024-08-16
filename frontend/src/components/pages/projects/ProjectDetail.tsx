@@ -9,7 +9,6 @@ import { ProjectMember } from './ProjectAccess';
 import ProjectDetailEditForm from './ProjectDetailEditForm';
 import ProjectTabNav from './ProjectTabNav';
 import { Team } from '../teams/Teams';
-
 import { getProjectMembers } from './ProjectContext/ProjectContext';
 
 export async function loader({ params }: { params: Params<string> }) {

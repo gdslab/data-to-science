@@ -5,6 +5,7 @@ from .crud_data_product_metadata import data_product_metadata
 from .crud_extension import extension
 from .crud_file_permission import file_permission
 from .crud_flight import flight
+from .crud_iforester import iforester
 from .crud_job import job
 from .crud_location import location
 from .crud_project import project

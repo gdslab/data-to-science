@@ -15,6 +15,7 @@ from .data_product_metadata import (
 from .extension import Extension, ExtensionCreate, ExtensionUpdate
 from .file_permission import FilePermission, FilePermissionCreate, FilePermissionUpdate
 from .flight import Flight, FlightCreate, FlightUpdate
+from .iforester import IForester, IForesterCreate, IForesterPost, IForesterUpdate
 from .job import Job, JobCreate, JobUpdate
 from .location import Location, LocationCreate, LocationUpdate
 from .project import Project, ProjectCreate, ProjectUpdate

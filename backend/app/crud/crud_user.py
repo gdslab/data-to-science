@@ -1,6 +1,6 @@
 import glob
 import os
-from typing import Any, Sequence
+from typing import Any, Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy import and_, func, select
@@ -10,6 +10,7 @@ from app import crud
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.crud.base import CRUDBase
+from app.models.api_key import APIKey
 from app.models.single_use_token import SingleUseToken
 from app.models.user import User
 from app.schemas.single_use_token import SingleUseTokenCreate
@@ -17,7 +18,7 @@ from app.schemas.user import UserCreate, UserUpdate
 
 
 class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
-    def get_by_id(self, db: Session, *, user_id: UUID) -> User | None:
+    def get_by_id(self, db: Session, *, user_id: UUID) -> Optional[User]:
         stmt = select(User).where(User.id == user_id)
         with db as session:
             user = session.scalar(stmt)
@@ -31,7 +32,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
                 set_url_attr(user)
             return user
 
-    def get_by_email(self, db: Session, *, email: str) -> User | None:
+    def get_by_email(self, db: Session, *, email: str) -> Optional[User]:
         stmt = select(User).where(User.email == email)
         with db as session:
             user = session.scalar(stmt)
@@ -43,6 +44,16 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
                 )
                 set_api_key_attr(db, user)
                 set_url_attr(user)
+            return user
+
+    def get_by_api_key(self, db: Session, api_key: str) -> Optional[User]:
+        user_query = (
+            select(User)
+            .join(User.api_key)
+            .where(and_(APIKey.api_key == api_key, APIKey.is_active))
+        )
+        with db as session:
+            user = session.scalar(user_query)
             return user
 
     def create(self, db: Session, *, obj_in: UserCreate) -> User:
@@ -70,7 +81,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
 
     def get_single_use_token(
         self, db: Session, token_hash: str
-    ) -> SingleUseToken | None:
+    ) -> Optional[SingleUseToken]:
         stmt = select(SingleUseToken).where(SingleUseToken.token == token_hash)
         with db as session:
             return session.scalar(stmt)
@@ -117,7 +128,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             update_data["hashed_password"] = hashed_password
         return super().update(db, db_obj=db_obj, obj_in=update_data)
 
-    def authenticate(self, db: Session, *, email: str, password: str) -> User | None:
+    def authenticate(self, db: Session, *, email: str, password: str) -> Optional[User]:
         user = self.get_by_email(db, email=email)
         if not user:
             return None
@@ -135,7 +146,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         return user.is_superuser
 
 
-def find_profile_img(user_id: str) -> str | None:
+def find_profile_img(user_id: str) -> Optional[str]:
     user_static_dir = os.path.join(settings.STATIC_DIR, "users", user_id)
     profile_img = glob.glob(os.path.join(user_static_dir, "*.png")) + glob.glob(
         os.path.join(user_static_dir, "*.jpg")

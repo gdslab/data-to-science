@@ -1,3 +1,4 @@
+from secrets import token_urlsafe
 from typing import List
 
 import pytest
@@ -46,6 +47,27 @@ def test_get_user_by_email(db: Session) -> None:
     assert retrieved_user
     assert user.email == retrieved_user.email
     assert user.id == retrieved_user.id
+
+
+def test_get_user_by_api_key(db: Session) -> None:
+    """Verify retrieving user by api key."""
+    user = create_user(db)
+    api_key = crud.api_key.create_with_user(db, user_id=user.id)
+    retrieved_user = crud.user.get_by_api_key(db, api_key=api_key.api_key)
+    assert retrieved_user
+    assert retrieved_user.id == user.id
+
+
+def test_get_user_by_invalid_api_key(db: Session) -> None:
+    """Verify retrieving user by invalid api key fails."""
+    user = create_user(db)
+    api_key = crud.api_key.create_with_user(db, user_id=user.id)
+    invalid_api_key1 = api_key.api_key[:-4]  # drop last four characters
+    invalid_api_key2 = token_urlsafe()  # valid format, but not associated with user
+    retrieved_user1 = crud.user.get_by_api_key(db, api_key=invalid_api_key1)
+    retrieved_user2 = crud.user.get_by_api_key(db, api_key=invalid_api_key2)
+    assert retrieved_user1 is None
+    assert retrieved_user2 is None
 
 
 def test_get_users(db: Session) -> None:

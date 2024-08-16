@@ -14,7 +14,10 @@ from app.core.config import settings
 from app.db.base import Base
 from app.main import app
 from app.tests.utils.utils import build_sqlalchemy_uri, create_test_db
-from app.tests.utils.user import authentication_token_from_email
+from app.tests.utils.user import (
+    authentication_api_key_from_email,
+    authentication_token_from_email,
+)
 
 
 TEST_DB_PATH = f"{settings.POSTGRES_DB or ''}_test"
@@ -71,9 +74,17 @@ def client_fixture(db: Session) -> Generator:
 
 
 @pytest.fixture(name="normal_user_access_token")
-def normal_user_access_token(client: TestClient, db: Session) -> dict[str, str]:
+def normal_user_access_token(client: TestClient, db: Session) -> str:
     """Retrieve access token header for normal (non-superuser) user."""
     return authentication_token_from_email(
+        client=client, email=settings.EMAIL_TEST_USER, db=db
+    )
+
+
+@pytest.fixture(name="normal_user_api_key")
+def normal_user_api_key(client: TestClient, db: Session) -> str:
+    """Retrieve api key header for normal (non-superuser) user."""
+    return authentication_api_key_from_email(
         client=client, email=settings.EMAIL_TEST_USER, db=db
     )
 

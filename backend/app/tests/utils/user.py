@@ -24,6 +24,18 @@ def login_and_get_access_token(*, client: TestClient, email: str, password: str)
         raise Exception("Unable to find access token")
 
 
+def login_and_get_api_key(*, client: TestClient, email: str, password: str) -> str:
+    """Generate authorization header for provided user credentials."""
+    data = {"username": email, "password": password}
+
+    r = client.post(f"{settings.API_V1_STR}/auth/access-token", data=data)
+    api_key = r.headers.get("X-API-KEY")
+    if api_key:
+        return api_key
+    else:
+        raise Exception("Unable to find access token")
+
+
 def create_user_in(
     email: str | None = None,
     password: str | None = None,
@@ -141,3 +153,23 @@ def authentication_token_from_email(
     user_in_update = UserUpdate(is_approved=True)
     user = crud.user.update(db, db_obj=user, obj_in=user_in_update)
     return login_and_get_access_token(client=client, email=email, password=password)
+
+
+def authentication_api_key_from_email(
+    *, client: TestClient, email: str, db: Session
+) -> str:
+    """
+    Return a valid token for the user with given email.
+
+    If the user doesn't exist it is created first.
+    """
+    password = "testuserpassword"
+    user = crud.user.get_by_email(db, email=email)
+    if not user:
+        user = create_user(db, email, password=password)
+
+    user_in_update = UserUpdate(is_approved=True)
+    user = crud.user.update(db, db_obj=user, obj_in=user_in_update)
+    # create api key for user
+    api_key = crud.api_key.create_with_user(db, user_id=user.id)
+    return api_key.api_key
