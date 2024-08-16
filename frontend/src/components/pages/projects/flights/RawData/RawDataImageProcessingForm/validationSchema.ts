@@ -25,10 +25,14 @@ const schema = yup.object({
     .required('Accepting terms is required'),
   keyPoint: yup
     .number()
+    .typeError('Must be a number')
+    .integer('Only whole numbers are allowed')
     .positive('Key point limit must be greater than 0')
     .required('Key point limit is required'),
   tiePoint: yup
     .number()
+    .typeError('Must be a number')
+    .integer('Only whole numbers are allowed')
     .positive('Tie point limit must be greater than 0')
     .required('Tie point limit is required'),
 });
