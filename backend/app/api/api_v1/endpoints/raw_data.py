@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app import crud, models, schemas
 from app.api import deps
 from app.core.config import settings
+from app.schemas.raw_data import ImageProcessingQueryParams
 from app.tasks import run_raw_data_image_processing
 from app.utils.RpcClient import RpcClient
 
@@ -149,11 +150,19 @@ def deactivate_raw_data(
 @router.get("/{raw_data_id}/process")
 def process_raw_data(
     raw_data_id: UUID,
+    ip_settings: ImageProcessingQueryParams = Depends(),
     project: models.Project = Depends(deps.can_read_write_project),
     flight: models.Flight = Depends(deps.can_read_write_flight),
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
+    # must accept disclaimer
+    if ip_settings.disclaimer is False:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Must accept conditions to use this feature",
+        )
+
     # check for "image_processing" extension
     required_extension = "image_processing"
     extension = crud.extension.get_extension_by_name(
@@ -235,6 +244,7 @@ def process_raw_data(
                 raw_data.id,
                 current_user.id,
                 job.id,
+                ip_settings.model_dump(),
             )
         )
     else:

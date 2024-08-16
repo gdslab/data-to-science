@@ -5,7 +5,7 @@ import shutil
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import TypedDict
+from typing import Dict, TypedDict
 from uuid import UUID
 
 import geopandas as gpd
@@ -24,6 +24,7 @@ from app.core.security import get_token_hash
 from app.schemas.data_product import DataProduct, DataProductUpdate
 from app.schemas.data_product_metadata import ZonalStatistics
 from app.schemas.job import JobUpdate
+from app.schemas.raw_data import ImageProcessingQueryParams
 from app.utils import gen_preview_from_pointcloud
 from app.utils.ImageProcessor import ImageProcessor
 from app.utils.rabbitmq import get_pika_connection
@@ -204,8 +205,10 @@ def process_geotiff(
 
     # remove the uploaded geotiff from tusd
     try:
-        os.remove(storage_path)
-        os.remove(f"{storage_path}.info")
+        if os.path.exists(storage_path):
+            os.remove(storage_path)
+        if os.path.exists(f"{storage_path}.info"):
+            os.remove(f"{storage_path}.info")
     except Exception:
         logger.exception("Unable to cleanup upload on tusd server")
 
@@ -340,8 +343,10 @@ def convert_las_to_copc(
 
     # remove the uploaded point cloud from tusd
     try:
-        os.remove(storage_path)
-        os.remove(f"{storage_path}.info")
+        if os.path.exists(storage_path):
+            os.remove(storage_path)
+        if os.path.exists(f"{storage_path}.info"):
+            os.remove(f"{storage_path}.info")
     except Exception:
         logger.exception("Unable to cleanup upload on tusd server")
 
@@ -404,10 +409,10 @@ def process_raw_data(
 
     # remove raw data from tusd
     try:
-        # remove zip file
-        os.remove(storage_path)
-        # remove zip file metadata
-        os.remove(f"{storage_path}.info")
+        if os.path.exists(storage_path):
+            os.remove(storage_path)
+        if os.path.exists(f"{storage_path}.info"):
+            os.remove(f"{storage_path}.info")
     except Exception:
         logger.exception("Unable to cleanup upload on tusd server")
 
@@ -422,6 +427,7 @@ def run_raw_data_image_processing(
     raw_data_id: UUID,
     user_id: UUID,
     job_id: UUID,
+    ip_settings: Dict,
 ) -> None:
     """Starts job on external server to process raw data.
 
@@ -433,6 +439,7 @@ def run_raw_data_image_processing(
         flight_id (UUID): ID for flight associated with raw data.
         raw_data_id (UUID): ID for raw data.
         user_id (UUID): ID for user associated with raw data processing request.
+        ip_settings (ImageProcessingQueryParams): User defined processing settings.
 
     Raises:
         HTTPException: Raised if copying raw data to external storage fails.
@@ -481,6 +488,7 @@ def run_raw_data_image_processing(
                 "token": token,
                 "user_id": str(user_id),
                 "job_id": str(job.id),
+                "settings": ip_settings,
             }
             info_file.write(json.dumps(raw_data_meta))
     except Exception:

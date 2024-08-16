@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from pydantic import AnyHttpUrl, BaseModel, UUID4
 
@@ -62,3 +62,12 @@ class RawDataMetadata(BaseModel):
     job_id: UUID4
     status: Status
     products: List[Product]
+
+
+class ImageProcessingQueryParams(BaseModel):
+    alignQuality: Literal["low", "medium", "high"]
+    buildDepthQuality: Literal["low", "medium", "high"]
+    camera: Literal["single", "multi"]
+    disclaimer: bool
+    keyPoint: int
+    tiePoint: int
