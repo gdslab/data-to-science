@@ -1,4 +1,4 @@
-import { DataProduct } from '../pages/projects/Project';
+import { DataProduct, Flight } from '../pages/projects/Project';
 import { SymbologySettings } from './Maps';
 
 function getDefaultStyle(dataProduct: DataProduct): SymbologySettings {
@@ -12,6 +12,7 @@ function getDefaultStyle(dataProduct: DataProduct): SymbologySettings {
       mode: 'minMax',
       userMin: stats.minimum,
       userMax: stats.maximum,
+      opacity: 100,
     };
   } else {
     const raster = dataProduct.stac_properties.raster;
@@ -39,7 +40,29 @@ function getDefaultStyle(dataProduct: DataProduct): SymbologySettings {
         userMin: raster[2].stats.minimum,
         userMax: raster[2].stats.maximum,
       },
+      opacity: 100,
     };
+  }
+}
+
+function getHillshade(
+  activeDataProduct: DataProduct,
+  flights: Flight[]
+): DataProduct | null {
+  const dataProductName = activeDataProduct.data_type.toLowerCase();
+  const filteredFlights = flights.filter(
+    ({ id }) => id === activeDataProduct.flight_id
+  );
+  if (filteredFlights.length > 0 && filteredFlights[0].data_products.length > 1) {
+    const dataProducts = filteredFlights[0].data_products;
+    const dataProductHillshade = dataProducts.filter(
+      (dataProduct) =>
+        dataProduct.data_type.toLowerCase().split(' hs')[0] === dataProductName &&
+        dataProduct.data_type.toLowerCase().split(' hs').length > 1
+    );
+    return dataProductHillshade.length > 0 ? dataProductHillshade[0] : null;
+  } else {
+    return null;
   }
 }
 
@@ -52,4 +75,4 @@ function isSingleBand(dataProduct: DataProduct): boolean {
   return dataProduct.stac_properties && dataProduct.stac_properties.raster.length === 1;
 }
 
-export { getDefaultStyle, isSingleBand };
+export { getDefaultStyle, getHillshade, isSingleBand };

@@ -7,7 +7,7 @@ import { ZoomControl } from 'react-leaflet/ZoomControl';
 
 import ColorBarControl from './ColorBarControl';
 import CompareTool, { CompareToolAlert, getFlightsWithGTIFF } from './CompareTool';
-import DataProductTileLayer from './DataProductTileLayer';
+import DataProductTileLayer, { HillshadeTileLayer } from './DataProductTileLayer';
 import MapLayersControl from './MapLayersControl';
 import ProjectBoundary from './ProjectBoundary';
 import ProjectLayersControl from './ProjectLayersControl';
@@ -19,7 +19,7 @@ import icon from './icons/marker-icon.png';
 import shadow from './icons/marker-shadow.png';
 import PotreeViewer from './PotreeViewer';
 
-import { isSingleBand } from './utils';
+import { getHillshade, isSingleBand } from './utils';
 
 export default function Map({ layerPaneHidden }: { layerPaneHidden: boolean }) {
   const { activeDataProduct, activeMapTool, activeProject, flights, projects } =
@@ -53,6 +53,14 @@ export default function Map({ layerPaneHidden }: { layerPaneHidden: boolean }) {
         {!activeProject && <ProjectMarkers projects={projects ? projects : []} />}
         {activeProject && <ProjectBoundary projectId={activeProject.id} />}
         {activeProject && <ProjectLayersControl project={activeProject} />}
+
+        {activeProject &&
+        flights &&
+        activeDataProduct &&
+        activeDataProduct.data_type !== 'point_cloud' &&
+        activeMapTool === 'map' ? (
+          <HillshadeTileLayer dataProduct={getHillshade(activeDataProduct, flights)} />
+        ) : null}
 
         {activeProject &&
         flights &&
