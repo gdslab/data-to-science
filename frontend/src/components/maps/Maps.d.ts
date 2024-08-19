@@ -9,6 +9,7 @@ export interface DSMSymbologySettings {
   mode: string;
   userMin: number;
   userMax: number;
+  opacity: number;
 }
 
 export interface OrthoSymbologySettings {
@@ -35,6 +36,7 @@ export interface OrthoSymbologySettings {
     userMin: number;
     userMax: number;
   };
+  opacity: number;
 }
 
 export type MapTool = 'map' | 'compare' | 'timeline';

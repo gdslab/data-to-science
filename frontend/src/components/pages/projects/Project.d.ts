@@ -1,6 +1,7 @@
 import { Feature, FeatureCollection, Geometry } from 'geojson';
 
 import { FieldCampaignInitialValues } from './fieldCampaigns/FieldCampaign';
+import { SymbologySettings } from '../../maps/Maps';
 
 // geojson object representing project field boundary
 export type FieldGeoJSONFeature = Omit<Feature, 'properties'> & {

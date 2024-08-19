@@ -13,6 +13,7 @@ import { getIcon } from './utils';
 const styles = {
   textField:
     'focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none border border-gray-400 rounded py-1 px-4 block w-full appearance-none',
+  rangeField: 'w-full m-0 accent-accent2',
   selectField:
     'focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none border border-gray-400 rounded py-1 px-4 block w-full',
   disabled:
@@ -38,6 +39,13 @@ interface NumberField extends InputField {
   max?: number;
   min?: number;
   step?: number;
+}
+
+interface RangeField extends InputField {
+  max?: number;
+  min?: number;
+  step?: number;
+  list?: string;
 }
 
 interface TextField extends InputField {
@@ -107,6 +115,44 @@ export function NumberField({
   );
 }
 
+export function RangeField({
+  altLabel = false,
+  disabled = false,
+  label,
+  max = undefined,
+  min = undefined,
+  name,
+  required = true,
+  showError = true,
+  step = 1,
+  list,
+  onChange = undefined,
+}: RangeField) {
+  const { handleChange } = useFormikContext();
+
+  return (
+    <InputField
+      altLabel={altLabel}
+      label={label}
+      name={name}
+      required={required}
+      showError={showError}
+    >
+      <Field
+        className={disabled ? styles.disabled : styles.rangeField}
+        id={name}
+        name={name}
+        type="range"
+        disabled={disabled}
+        min={min}
+        max={max}
+        step={step}
+        list={list}
+        onChange={onChange ? onChange : handleChange}
+      />
+    </InputField>
+  );
+}
 export function TextField({
   altLabel = false,
   disabled = false,

@@ -101,6 +101,13 @@ export function getDataProductTileLayer(
         zIndex={500}
         maxNativeZoom={24}
         maxZoom={26}
+        opacity={
+          symbology && symbology.opacity
+            ? symbology.opacity / 100
+            : savedStyle.opacity
+            ? savedStyle.opacity
+            : 1
+        }
       />
     );
   } else {
@@ -170,6 +177,13 @@ export function getDataProductTileLayer(
         zIndex={500}
         maxNativeZoom={24}
         maxZoom={26}
+        opacity={
+          symbology && symbology.opacity
+            ? symbology.opacity / 100
+            : savedStyle.opacity
+            ? savedStyle.opacity
+            : 1
+        }
       />
     );
   }
@@ -193,5 +207,33 @@ export default function DataProductTileLayer({
     symbology ? symbology : symbologySettings,
     tileLayerRef,
     tileScale
+  );
+}
+
+export function HillshadeTileLayer({
+  dataProduct,
+}: {
+  dataProduct: DataProduct | null;
+}) {
+  if (!dataProduct) return null;
+
+  if (!isSingleBand(dataProduct)) {
+    return null;
+  }
+
+  const max = dataProduct.stac_properties.raster[0].stats.maximum;
+  const min = dataProduct.stac_properties.raster[0].stats.minimum;
+
+  return (
+    <TileLayer
+      url={getTileURL(dataProduct.url.replace(window.origin, ''), undefined, [
+        min,
+        max,
+      ])}
+      zIndex={100}
+      maxNativeZoom={24}
+      maxZoom={26}
+      opacity={1}
+    />
   );
 }

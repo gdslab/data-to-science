@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { cmaps } from './cmaps';
 import { Button } from '../Buttons';
 import { DataProduct } from '../pages/projects/Project';
-import { NumberField, SelectField } from '../InputFields';
+import { NumberField, RangeField, SelectField } from '../InputFields';
 import { useMapContext } from './MapContext';
 import {
   DSMSymbologySettings,
@@ -48,6 +48,33 @@ const saveSymbology = async (
     console.error(err);
   }
 };
+
+function OpacitySlider({
+  onChange,
+}: {
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+  return (
+    <div>
+      <RangeField
+        name="opacity"
+        label="Opacity"
+        min={0}
+        max={100}
+        step={1}
+        list="opacity-markers"
+        onChange={onChange}
+      />
+      <datalist className="flex justify-between w-full" id="opacity-markers">
+        <option className="w-8 p-0 text-left" value="0" label="0%"></option>
+        <option className="w-8 p-0 text-center" value="25" label="25%"></option>
+        <option className="w-8 p-0 text-center" value="50" label="50%"></option>
+        <option className="w-8 p-0 text-center" value="75" label="75%"></option>
+        <option className="w-8 p-0 text-right" value="100" label="100%"></option>
+      </datalist>
+    </div>
+  );
+}
 
 function ShareDataProduct({
   dataProduct,
@@ -111,6 +138,13 @@ function DSMSymbologyControls() {
                   onChange={(e) => {
                     setFieldValue('colorRamp', e.target.value);
                     setFieldTouched('colorRamp', true);
+                    submitForm();
+                  }}
+                />
+                <OpacitySlider
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setFieldValue('opacity', e.target.value);
+                    setFieldTouched('opacity', true);
                     submitForm();
                   }}
                 />
@@ -263,7 +297,7 @@ function OrthoSymbologyControls() {
           });
         }}
       >
-        {({ values }) => (
+        {({ values, setFieldTouched, setFieldValue, submitForm }) => (
           <Form>
             <fieldset className="border border-solid border-slate-300 p-3">
               <legend className="block text-sm text-gray-400 font-bold pt-2 pb-1">
@@ -396,6 +430,13 @@ function OrthoSymbologyControls() {
                   </div>
                 </div>
               </div>
+              <OpacitySlider
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setFieldValue('opacity', e.target.value);
+                  setFieldTouched('opacity', true);
+                  submitForm();
+                }}
+              />
               <div className="w-full flex justify-end mt-4">
                 <Button type="submit" size="xs">
                   Apply Changes

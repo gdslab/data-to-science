@@ -31,6 +31,7 @@ const defaultSymbologySettings = {
   mode: 'minMax',
   userMin: 0,
   userMax: 255,
+  opacity: 100,
 };
 
 function activeDataProductReducer(
@@ -162,7 +163,10 @@ function symbologySettingsReducer(
 ) {
   switch (action.type) {
     case 'update': {
-      return action.payload;
+      return {
+        ...action.payload,
+        opacity: action.payload.opacity ? action.payload.opacity : 100,
+      };
     }
     default:
       return state;
