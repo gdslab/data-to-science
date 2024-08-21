@@ -239,7 +239,6 @@ def can_read_write_project_with_jwt_or_api_key(
     current_user: models.User = Depends(get_current_approved_user_by_jwt_or_api_key),
 ) -> Optional[models.Project]:
     """Return project if current user is project owner or manager."""
-    print("current_user", current_user)
     project = crud.project.get_user_project(
         db, user_id=current_user.id, project_id=project_id, permission="rw"
     )

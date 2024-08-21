@@ -3,11 +3,11 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Annotated, Any, Sequence
+from typing import Annotated, Any, List, Sequence
 from uuid import UUID, uuid4
 
 from geojson_pydantic import Feature, FeatureCollection
-from fastapi import APIRouter, Body, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -356,7 +356,7 @@ async def run_processing_tool(
             args=(
                 data_product.filepath,
                 data_product_id,
-                json.dumps(jsonable_encoder(feature_collection.__dict__)),
+                jsonable_encoder(feature_collection.__dict__),
             )
         )
 
@@ -365,7 +365,7 @@ async def run_processing_tool(
     "/{data_product_id}/zonal_statistics",
     response_model=list[schemas.data_product_metadata.ZonalStatistics],
 )
-async def get_zonal_statistics(
+async def create_zonal_statistics(
     data_product_id: UUID,
     zone_in: Feature,
     current_user: models.User = Depends(deps.get_current_approved_user),
@@ -405,7 +405,6 @@ async def get_zonal_statistics(
     result = generate_zonal_statistics.apply_async(
         args=(data_product.filepath, feature_string)
     )
-
     # get zonal statistics from celery task once it finishes
     zonal_stats = result.get()
 
@@ -428,4 +427,21 @@ async def get_zonal_statistics(
             db, obj_in=metadata_in, data_product_id=data_product.id
         )
 
+    return zonal_stats
+
+
+@router.get(
+    "/{data_product_id}/zonal_statistics",
+    response_model=List[schemas.data_product_metadata.ZonalStatisticsWithProps],
+)
+async def read_zonal_statistics(
+    data_product_id: UUID,
+    layer_id: Annotated[str, Query(max_length=12)],
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    flight: models.Flight = Depends(deps.can_read_flight),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    zonal_stats = crud.data_product_metadata.get_zonal_statistics_by_layer_id(
+        db, data_product_id=data_product_id, layer_id=layer_id
+    )
     return zonal_stats

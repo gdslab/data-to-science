@@ -519,13 +519,15 @@ def run_raw_data_image_processing(
 
 @celery_app.task(name="zonal_statistics_task")
 def generate_zonal_statistics(
-    input_raster: str, zone_feature: str
+    input_raster: str, feature_collection: dict
 ) -> list[ZonalStatistics]:
     with rasterio.open(input_raster) as src:
-        # read zone feature geojson and update crs to match src crs
-        zone = gpd.read_file(zone_feature, driver="GeoJSON")
-        zone = zone.to_crs(src.crs)
-        minx, miny, maxx, maxy = zone.total_bounds
+        # convert feature collection to dataframe and update crs to match src crs
+        zones = gpd.GeoDataFrame.from_features(
+            feature_collection["features"], crs="EPSG:4326"
+        )
+        zones = zones.to_crs(src.crs)
+        minx, miny, maxx, maxy = zones.total_bounds
         # affine transformation
         affine = src.transform
         # create window for total bounding box of all zones in zone_feature
@@ -534,14 +536,14 @@ def generate_zonal_statistics(
         # read first band contained within window into array
         data = src.read(1, window=window)
         # get stats for zone
-        stats = zonal_stats(zone, data, affine=window_affine)
+        stats = zonal_stats(zones, data, affine=window_affine)
 
     return stats
 
 
 @celery_app.task(name="zonal_statistics_bulk_task")
 def generate_zonal_statistics_bulk(
-    input_raster: str, data_product_id: UUID, feature_collection: str
+    input_raster: str, data_product_id: UUID, feature_collection: dict
 ) -> list[ZonalStatistics]:
     # database session for updating data product and job tables
     db = next(get_db())

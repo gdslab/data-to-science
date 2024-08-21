@@ -1,8 +1,11 @@
+import json
 import os
 import shutil
 from datetime import datetime
+from unittest.mock import patch, MagicMock
 
 from fastapi import status
+from fastapi.encoders import jsonable_encoder
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -11,6 +14,10 @@ from app.api.deps import get_current_user
 from app.core.config import settings
 from app.schemas.file_permission import FilePermissionUpdate
 from app.tests.utils.data_product import SampleDataProduct
+from app.tests.utils.data_product_metadata import (
+    create_metadata,
+    get_zonal_feature_collection,
+)
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
 from app.tests.utils.flight import create_flight
@@ -487,3 +494,82 @@ def test_running_tool_on_data_product(
         json=processing_request,
     )
     assert response.status_code == status.HTTP_202_ACCEPTED
+
+
+def test_get_zonal_statistics(
+    client: TestClient, db: Session, normal_user_access_token: str
+):
+    # create project, add current user as viewer in project, and add data product
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db)
+    create_project_member(
+        db, role="viewer", member_id=current_user.id, project_id=project.id
+    )
+    data_product = SampleDataProduct(db, data_type="dsm", project=project)
+    # get single polygon feature inside the sample data product
+    zone_feature = get_zonal_feature_collection(single_feature=True)
+    # mock the celery task initiated by the endpoint
+    with patch("app.tasks.generate_zonal_statistics.apply_async") as mock_apply_async:
+        mock_task = MagicMock()
+        mock_task.id = "mock_task_id"
+        mock_task.get.return_value = [
+            {"min": 100, "max": 100, "mean": 100, "count": 100}
+        ]
+        mock_apply_async.return_value = mock_task
+        # request zonal statistics for zone and sample data product
+        response = client.post(
+            f"{settings.API_V1_STR}/projects/{project.id}/flights/{data_product.flight.id}"
+            f"/data_products/{data_product.obj.id}/zonal_statistics",
+            json=zone_feature.model_dump(),
+        )
+        mock_apply_async.assert_called_once_with(
+            args=(
+                data_product.obj.filepath,
+                json.dumps(jsonable_encoder(zone_feature.__dict__)),
+            )
+        )
+        assert response.status_code == status.HTTP_200_OK
+        response_data = response.json()
+        assert isinstance(response_data, list)
+        assert len(response_data) == 1
+        assert (
+            response_data[0].get("min")
+            and response_data[0].get("max")
+            and response_data[0].get("mean")
+            and response_data[0].get("count")
+        )
+
+
+def test_get_zonal_statistics_by_layer_id(
+    client: TestClient, db: Session, normal_user_access_token: str
+):
+    # create project, add current user as viewer in project, and add data product
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db)
+    create_project_member(
+        db, role="viewer", member_id=current_user.id, project_id=project.id
+    )
+    data_product = SampleDataProduct(db, data_type="dsm", project=project)
+    # create zonal statistics metadata for data product
+    zonal_metadata, layer_id, properties = create_metadata(
+        db, data_product_id=data_product.obj.id, project_id=project.id
+    )
+    # request zonal statistics by layer id for a data product
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{project.id}/flights/{data_product.flight.id}"
+        f"/data_products/{data_product.obj.id}/zonal_statistics?layer_id={layer_id}"
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert isinstance(response_data, list)
+    assert len(response_data) == len(zonal_metadata)
+    # check that zonal stats are present for first feature in list
+    assert (
+        response_data[0].get("min")
+        and response_data[0].get("max")
+        and response_data[0].get("mean")
+        and response_data[0].get("count")
+    )
+    # check that original feature collection properties are present
+    for key in properties:
+        assert key in response_data[0]
