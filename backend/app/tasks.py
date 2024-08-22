@@ -520,7 +520,7 @@ def run_raw_data_image_processing(
 @celery_app.task(name="zonal_statistics_task")
 def generate_zonal_statistics(
     input_raster: str, feature_collection: dict
-) -> List[Feature[Polygon, ZonalStatisticsProps]]:
+) -> List[ZonalStatisticsProps]:
     with rasterio.open(input_raster) as src:
         # convert feature collection to dataframe and update crs to match src crs
         zones = gpd.GeoDataFrame.from_features(
@@ -538,15 +538,7 @@ def generate_zonal_statistics(
         # required zonal statistics
         required_stats = "count min max mean median std"
         # get stats for zone
-        stats = zonal_stats(
-            zones, data, affine=window_affine, stats=required_stats, geojson_out=True
-        )
-        # reproject stat zones back to EPSG:4326
-        if str(src.crs) != "EPSG:4326":
-            stats_gdf = gpd.GeoDataFrame.from_features(stats, crs=src.crs)
-            stats_gdf = stats_gdf.to_crs("EPSG:4326")
-            stats_geojson = stats_gdf.to_geo_dict()
-            stats = stats_geojson["features"]
+        stats = zonal_stats(zones, data, affine=window_affine, stats=required_stats)
 
     return stats
 
@@ -554,7 +546,7 @@ def generate_zonal_statistics(
 @celery_app.task(name="zonal_statistics_bulk_task")
 def generate_zonal_statistics_bulk(
     input_raster: str, data_product_id: UUID, feature_collection: dict
-) -> List[Feature[Polygon, ZonalStatisticsProps]]:
+) -> List[ZonalStatisticsProps]:
     # database session for updating data product and job tables
     db = next(get_db())
 
@@ -582,7 +574,7 @@ def generate_zonal_statistics_bulk(
         for index, zonal_stats in enumerate(all_zonal_stats):
             metadata_in = schemas.DataProductMetadataCreate(
                 category="zonal",
-                properties={"geojson": zonal_stats},
+                properties={"stats": zonal_stats},
                 vector_layer_id=features[index].properties["id"],
             )
             try:
@@ -602,7 +594,7 @@ def generate_zonal_statistics_bulk(
                         db,
                         db_obj=existing_metadata[0],
                         obj_in=schemas.DataProductMetadataUpdate(
-                            properties={"geojson": zonal_stats}
+                            properties={"stats": zonal_stats}
                         ),
                     )
                 else:

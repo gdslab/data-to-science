@@ -23,6 +23,9 @@ from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
 from app.tests.utils.flight import create_flight
 from app.tests.utils.user import create_user
+from app.tests.utils.vector_layers import (
+    create_vector_layer_with_provided_feature_collection,
+)
 from app.utils.ColorBar import create_outfilename
 
 
@@ -509,44 +512,25 @@ def test_get_zonal_statistics(
     data_product = SampleDataProduct(db, data_type="dsm", project=project)
     # get single polygon feature inside the sample data product
     zone_feature = get_zonal_feature_collection(single_feature=True)
+    vector_layer = create_vector_layer_with_provided_feature_collection(
+        db,
+        feature_collection=FeatureCollection(
+            **{"type": "FeatureCollection", "features": [zone_feature]}
+        ),
+        project_id=project.id,
+    )
     # mock the celery task initiated by the endpoint
     with patch("app.tasks.generate_zonal_statistics.apply_async") as mock_apply_async:
         mock_task = MagicMock()
         mock_task.id = "mock_task_id"
         mock_task.get.return_value = [
             {
-                "id": "0",
-                "type": "Feature",
-                "properties": {
-                    "min": 187.37115478515625,
-                    "max": 187.4439239501953,
-                    "mean": 187.40421549479166,
-                    "count": 576,
-                    "std": 0.013546454430626641,
-                    "median": 187.4020233154297,
-                    "properties": {
-                        "row": 1,
-                        "col": 1,
-                    },
-                },
-                "geometry": {
-                    "type": "Polygon",
-                    "coordinates": (
-                        (
-                            (504634.7058309699, 4588057.3063149825, 0.0),
-                            (504635.7058309703, 4588057.3063149825, 0.0),
-                            (504635.7058309695, 4588056.306314982, 0.0),
-                            (504634.7058309701, 4588056.306314982, 0.0),
-                            (504634.7058309699, 4588057.3063149825, 0.0),
-                        ),
-                    ),
-                },
-                "bbox": (
-                    504634.7058309699,
-                    4588056.306314982,
-                    504635.7058309703,
-                    4588057.3063149825,
-                ),
+                "min": 187.37115478515625,
+                "max": 187.4439239501953,
+                "mean": 187.40421549479166,
+                "count": 576,
+                "std": 0.013546454430626641,
+                "median": 187.4020233154297,
             }
         ]
 
@@ -555,12 +539,12 @@ def test_get_zonal_statistics(
         response = client.post(
             f"{settings.API_V1_STR}/projects/{project.id}/flights/{data_product.flight.id}"
             f"/data_products/{data_product.obj.id}/zonal_statistics",
-            json=zone_feature.model_dump(),
+            json=vector_layer.features[0].model_dump(),
         )
         mock_apply_async.assert_called_once_with(
             args=(
                 data_product.obj.filepath,
-                {"features": [zone_feature.model_dump()]},
+                {"features": [vector_layer.features[0].model_dump()]},
             )
         )
         assert response.status_code == status.HTTP_200_OK

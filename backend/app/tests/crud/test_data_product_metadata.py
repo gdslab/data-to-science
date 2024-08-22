@@ -38,7 +38,7 @@ def test_create_data_product_metadata(db: Session) -> None:
     stats = get_zonal_statistics(data_product.obj.filepath, bbox_feature_collection)
     metadata_in = DataProductMetadataCreate(
         category="zonal",
-        properties={"geojson": stats[0]},
+        properties={"stats": stats[0]},
         vector_layer_id=bbox_vector_layer.features[0].properties["id"],
     )
     metadata = crud.data_product_metadata.create_with_data_product(
@@ -46,7 +46,7 @@ def test_create_data_product_metadata(db: Session) -> None:
     )
     assert metadata
     assert metadata.category == "zonal"
-    assert metadata.properties["geojson"]["properties"] == stats[0]["properties"]
+    assert metadata.properties["stats"] == stats[0]
     assert metadata.data_product_id == data_product.obj.id
     assert (
         str(metadata.vector_layer_id) == bbox_vector_layer.features[0].properties["id"]
@@ -74,7 +74,7 @@ def test_create_data_product_metadata_for_multiple_zones(db: Session) -> None:
     for index, feature in enumerate(bbox_vector_layer.features):
         metadata_in = DataProductMetadataCreate(
             category="zonal",
-            properties={"geojson": stats[index]},
+            properties={"stats": stats[index]},
             vector_layer_id=feature.properties["id"],
         )
         metadata = crud.data_product_metadata.create_with_data_product(
@@ -113,19 +113,19 @@ def test_create_zonal_metadata_with_zone_outside_raster(db: Session) -> None:
     stats = get_zonal_statistics(data_product.obj.filepath, bbox_feature_collection)
     metadata_in = DataProductMetadataCreate(
         category="zonal",
-        properties={"geojson": stats[0]},
+        properties={"stats": stats[0]},
         vector_layer_id=bbox_vector_layer.features[0].properties["id"],
     )
     metadata = crud.data_product_metadata.create_with_data_product(
         db, obj_in=metadata_in, data_product_id=data_product.obj.id
     )
     assert metadata
-    assert metadata.properties["geojson"]["properties"]["max"] is None
-    assert metadata.properties["geojson"]["properties"]["min"] is None
-    assert metadata.properties["geojson"]["properties"]["mean"] is None
-    assert metadata.properties["geojson"]["properties"]["median"] is None
-    assert metadata.properties["geojson"]["properties"]["std"] is None
-    assert metadata.properties["geojson"]["properties"]["count"] == 0
+    assert metadata.properties["stats"]["max"] is None
+    assert metadata.properties["stats"]["min"] is None
+    assert metadata.properties["stats"]["mean"] is None
+    assert metadata.properties["stats"]["median"] is None
+    assert metadata.properties["stats"]["std"] is None
+    assert metadata.properties["stats"]["count"] == 0
 
 
 def test_read_data_product_metadata(db: Session) -> None:
@@ -153,11 +153,8 @@ def test_get_zonal_statistics_by_layer_id(db: Session) -> None:
         db, data_product_id=metadata[0].data_product_id, layer_id=layer_id
     )
     assert len(metadata) == len(zonal_statistics)
-    assert Feature(**zonal_statistics[0].properties["geojson"])
     for stat_key in ["max", "min", "mean", "count", "median", "std"]:
-        assert stat_key in zonal_statistics[0].properties["geojson"]["properties"]
-    for original_prop in original_props.keys():
-        assert original_prop in zonal_statistics[0].properties["geojson"]["properties"]
+        assert stat_key in zonal_statistics[0].properties["stats"]
 
 
 def test_get_zonal_statistics_by_layer_id_with_no_original_props(db: Session) -> None:
@@ -167,11 +164,8 @@ def test_get_zonal_statistics_by_layer_id_with_no_original_props(db: Session) ->
         db, data_product_id=metadata[0].data_product_id, layer_id=layer_id
     )
     assert len(metadata) == len(zonal_statistics)
-    assert Feature(**zonal_statistics[0].properties["geojson"])
     for stat_key in ["max", "min", "mean", "count", "median", "std"]:
-        assert stat_key in zonal_statistics[0].properties["geojson"]["properties"]
-    for original_prop in original_props.keys():
-        assert original_prop in zonal_statistics[0].properties["geojson"]["properties"]
+        assert stat_key in zonal_statistics[0].properties["stats"]
 
 
 def test_update_data_product_metadata(db: Session) -> None:
