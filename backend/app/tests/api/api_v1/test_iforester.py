@@ -70,7 +70,6 @@ def test_create_iforester_record_with_project_owner_role_and_api_key(
     )
     assert response.status_code == status.HTTP_201_CREATED
     response_data = response.json()
-    print(response.request.headers)
     assert response_data
 
 

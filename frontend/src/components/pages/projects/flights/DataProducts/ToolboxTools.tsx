@@ -1,13 +1,20 @@
+import axios, { AxiosResponse } from 'axios';
 import { Field, useFormikContext } from 'formik';
+import Papa from 'papaparse';
+import { useEffect, useState } from 'react';
 
 import HintText from '../../../../HintText';
 import { SelectField } from '../../../../InputFields';
 
-import { DataProduct } from '../../Project';
-import { useProjectContext } from '../../ProjectContext';
+import { DataProduct, ZonalFeatureCollection } from '../../Project';
 import { ToolboxFields } from './ToolboxModal';
+import { removeKeysFromFeatureProperties } from '../../mapLayers/utils';
 
+import { useProjectContext } from '../../ProjectContext';
 import { prepMapLayers } from '../../mapLayers/utils';
+import { useParams } from 'react-router-dom';
+import { downloadFile as downloadCSV } from '../../fieldCampaigns/utils';
+import { download as downloadGeoJSON } from '../../mapLayers/utils';
 
 const EXGBandSelection = ({ dataProduct }: { dataProduct: DataProduct }) => {
   const bandOptions = dataProduct.stac_properties.eo.map((band, idx) => ({
@@ -110,7 +117,95 @@ const LidarTools = () => {
   );
 };
 
-const ZonalStatisticTools = () => {
+const DownloadZonalStatistics = ({
+  dataProductId,
+  layerId,
+}: {
+  dataProductId: string;
+  layerId: string;
+}) => {
+  const [zonalFeatureCollection, setZonalFeatureCollection] =
+    useState<ZonalFeatureCollection | null>(null);
+
+  const { projectId, flightId } = useParams();
+
+  const keysToSkip = [
+    'id',
+    'layer_id',
+    'is_active',
+    'project_id',
+    'flight_id',
+    'data_product_id',
+  ];
+
+  useEffect(() => {
+    async function fetchZonalStats() {
+      try {
+        const response: AxiosResponse<ZonalFeatureCollection> = await axios.get(
+          `${
+            import.meta.env.VITE_API_V1_STR
+          }/projects/${projectId}/flights/${flightId}/data_products/${dataProductId}/zonal_statistics?layer_id=${layerId}`
+        );
+        if (response.status === 200) {
+          setZonalFeatureCollection(response.data);
+        } else {
+          console.log('Unable to check for previously calculated zonal statistics');
+        }
+      } catch (_err) {
+        console.log('Unable to check for previously calculated zonal statistics');
+      }
+    }
+
+    if (projectId && flightId && dataProductId) {
+      fetchZonalStats();
+    }
+  }, []);
+
+  if (
+    !zonalFeatureCollection ||
+    (zonalFeatureCollection && zonalFeatureCollection.features.length === 0)
+  )
+    return null;
+
+  return (
+    <div className="inline">
+      <button
+        className="ml-2 text-sky-600"
+        type="button"
+        onClick={() => {
+          const csvData = Papa.unparse(
+            zonalFeatureCollection.features.map((feature) =>
+              Object.fromEntries(
+                Object.entries(feature.properties).filter(
+                  ([key]) => !keysToSkip.includes(key)
+                )
+              )
+            )
+          );
+          const csvFile = new Blob([csvData], { type: 'text/csv' });
+          downloadCSV(csvFile, 'zonal_statistics.csv');
+        }}
+      >
+        Download CSV
+      </button>
+      <button
+        className="ml-2 text-sky-600"
+        type="button"
+        onClick={() => {
+          downloadGeoJSON(
+            'json',
+            removeKeysFromFeatureProperties(zonalFeatureCollection, keysToSkip),
+            'zonal_statistics.geojson'
+          );
+        }}
+      >
+        Download GeoJSON
+      </button>
+    </div>
+  );
+};
+
+const ZonalStatisticTools = ({ dataProductId }: { dataProductId: string }) => {
   const { values } = useFormikContext<ToolboxFields>();
   const { mapLayers } = useProjectContext();
 
@@ -141,6 +236,10 @@ const ZonalStatisticTools = () => {
                     >
                       <Field type="radio" name="zonal_layer_id" value={layer.id} />
                       <span className="ml-2">{layer.name}</span>
+                      <DownloadZonalStatistics
+                        dataProductId={dataProductId}
+                        layerId={layer.id}
+                      />
                     </label>
                   ))}
             </div>

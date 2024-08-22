@@ -5,14 +5,14 @@ import shutil
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, TypedDict
+from typing import Dict, List, TypedDict
 from uuid import UUID
 
 import geopandas as gpd
 import pika
 import rasterio
 from celery.utils.log import get_task_logger
-from geojson_pydantic import FeatureCollection
+from geojson_pydantic import Feature, FeatureCollection, Polygon
 from rasterstats import zonal_stats
 from sqlalchemy.exc import IntegrityError
 
@@ -22,7 +22,7 @@ from app.core.celery_app import celery_app
 from app.core.config import settings
 from app.core.security import get_token_hash
 from app.schemas.data_product import DataProduct, DataProductUpdate
-from app.schemas.data_product_metadata import ZonalStatistics
+from app.schemas.data_product_metadata import ZonalStatistics, ZonalStatisticsProps
 from app.schemas.job import JobUpdate
 from app.schemas.raw_data import ImageProcessingQueryParams
 from app.utils import gen_preview_from_pointcloud
@@ -519,13 +519,15 @@ def run_raw_data_image_processing(
 
 @celery_app.task(name="zonal_statistics_task")
 def generate_zonal_statistics(
-    input_raster: str, zone_feature: str
-) -> list[ZonalStatistics]:
+    input_raster: str, feature_collection: dict
+) -> List[Feature[Polygon, ZonalStatisticsProps]]:
     with rasterio.open(input_raster) as src:
-        # read zone feature geojson and update crs to match src crs
-        zone = gpd.read_file(zone_feature, driver="GeoJSON")
-        zone = zone.to_crs(src.crs)
-        minx, miny, maxx, maxy = zone.total_bounds
+        # convert feature collection to dataframe and update crs to match src crs
+        zones = gpd.GeoDataFrame.from_features(
+            feature_collection["features"], crs="EPSG:4326"
+        )
+        zones = zones.to_crs(src.crs)
+        minx, miny, maxx, maxy = zones.total_bounds
         # affine transformation
         affine = src.transform
         # create window for total bounding box of all zones in zone_feature
@@ -533,16 +535,26 @@ def generate_zonal_statistics(
         window_affine = rasterio.windows.transform(window, src.transform)
         # read first band contained within window into array
         data = src.read(1, window=window)
+        # required zonal statistics
+        required_stats = "count min max mean median std"
         # get stats for zone
-        stats = zonal_stats(zone, data, affine=window_affine)
+        stats = zonal_stats(
+            zones, data, affine=window_affine, stats=required_stats, geojson_out=True
+        )
+        # reproject stat zones back to EPSG:4326
+        if str(src.crs) != "EPSG:4326":
+            stats_gdf = gpd.GeoDataFrame.from_features(stats, crs=src.crs)
+            stats_gdf = stats_gdf.to_crs("EPSG:4326")
+            stats_geojson = stats_gdf.to_geo_dict()
+            stats = stats_geojson["features"]
 
     return stats
 
 
 @celery_app.task(name="zonal_statistics_bulk_task")
 def generate_zonal_statistics_bulk(
-    input_raster: str, data_product_id: UUID, feature_collection: str
-) -> list[ZonalStatistics]:
+    input_raster: str, data_product_id: UUID, feature_collection: dict
+) -> List[Feature[Polygon, ZonalStatisticsProps]]:
     # database session for updating data product and job tables
     db = next(get_db())
 
@@ -564,13 +576,13 @@ def generate_zonal_statistics_bulk(
 
     try:
         # deserialize feature collection
-        feature_collection = FeatureCollection(**json.loads(feature_collection))
+        feature_collection = FeatureCollection(**feature_collection)
         features = feature_collection.features
         # create metadata record for each zone
         for index, zonal_stats in enumerate(all_zonal_stats):
             metadata_in = schemas.DataProductMetadataCreate(
                 category="zonal",
-                properties={"stats": zonal_stats},
+                properties={"geojson": zonal_stats},
                 vector_layer_id=features[index].properties["id"],
             )
             try:
@@ -590,7 +602,7 @@ def generate_zonal_statistics_bulk(
                         db,
                         db_obj=existing_metadata[0],
                         obj_in=schemas.DataProductMetadataUpdate(
-                            properties={"stats": zonal_stats}
+                            properties={"geojson": zonal_stats}
                         ),
                     )
                 else:

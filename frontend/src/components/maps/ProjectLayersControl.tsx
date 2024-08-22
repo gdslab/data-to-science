@@ -1,5 +1,7 @@
 import axios, { AxiosResponse } from 'axios';
 import { Feature } from 'geojson';
+import { LatLngExpression } from 'leaflet';
+import Papa from 'papaparse';
 import { useEffect, useState } from 'react';
 import {
   Circle,
@@ -15,17 +17,25 @@ import flip from '@turf/flip';
 import LoadingBars from '../LoadingBars';
 import { useMapContext } from './MapContext';
 import { MapLayerTableRow, prepMapLayers } from '../pages/projects/mapLayers/utils';
-import { DataProduct, MapLayerFeatureCollection } from '../pages/projects/Project';
+import {
+  DataProduct,
+  MapLayerFeatureCollection,
+  ZonalFeature,
+} from '../pages/projects/Project';
 import { Project } from '../pages/projects/ProjectList';
-import { LatLngExpression } from 'leaflet';
+import StripedTable from '../StripedTable';
 
 import { isSingleBand } from './utils';
+import { removeKeysFromFeatureProperties } from '../pages/projects/mapLayers/utils';
+import { download as downloadGeoJSON } from '../pages/projects/mapLayers/utils';
+import { downloadFile as downloadCSV } from '../pages/projects/fieldCampaigns/utils';
 
-type ZonalStatistics = {
+export type ZonalStatistics = {
   min: number;
   max: number;
   mean: number;
   count: number;
+  [key: string]: string | number;
 };
 
 /**
@@ -41,8 +51,134 @@ function flipCoordinates(layers: MapLayerTableRow[]): MapLayerTableRow[] {
   return layers;
 }
 
+const FeatureAttributes = ({ feature }: { feature: Feature }) => (
+  <div>
+    <span className="text-base font-semibold">Attributes</span>
+    <div className="overflow-x-auto rounded-lg border border-gray-200">
+      <StripedTable
+        headers={['Name', 'Value']}
+        values={Object.keys(feature.properties?.properties).map((key) => ({
+          label: key,
+          value: feature.properties?.properties[key],
+        }))}
+      />
+    </div>
+  </div>
+);
+
+const FeatureTitle = ({ feature }: { feature: Feature }) => (
+  <div className="flex flex-col">
+    <span className="text-lg font-bold">{feature.properties?.layer_name}</span>
+    {feature.geometry.type === 'Polygon' ? (
+      <span className="text-md text-slate-600">
+        Area: {area(feature).toFixed(2)} m&sup2;
+      </span>
+    ) : null}
+  </div>
+);
+
+const ZonalStatistics = ({
+  dataProduct,
+  zonalFeature,
+}: {
+  dataProduct: DataProduct | null;
+  zonalFeature: ZonalFeature | null;
+}) =>
+  dataProduct && isSingleBand(dataProduct) && zonalFeature ? (
+    <div className="grid grid-flow-row auto-rows-max">
+      <span className="text-base font-semibold">Zonal Statistics Result</span>
+      <div className="overflow-x-auto rounded-lg border border-gray-200">
+        <StripedTable
+          headers={['Statistic', 'Value']}
+          values={[
+            { label: 'Min', value: zonalFeature.properties.min.toFixed(2) },
+            { label: 'Max', value: zonalFeature.properties.max.toFixed(2) },
+            { label: 'Mean', value: zonalFeature.properties.mean.toFixed(2) },
+            { label: 'Median', value: zonalFeature.properties.median.toFixed(2) },
+            { label: 'StDev', value: zonalFeature.properties.std.toFixed(2) },
+            { label: 'Count', value: zonalFeature.properties.count.toString() },
+          ]}
+        />
+      </div>
+    </div>
+  ) : null;
+
+const ZonalStatisticsLoading = ({
+  dataProduct,
+  zonalFeature,
+}: {
+  dataProduct: DataProduct | null;
+  zonalFeature: ZonalFeature | null;
+}) =>
+  dataProduct && isSingleBand(dataProduct) && !zonalFeature ? (
+    <div className="h-full flex flex-col items-center justify-center gap-2 text-lg">
+      <span>Loading Zonal Statistics...</span>
+      <LoadingBars />
+    </div>
+  ) : null;
+
+const DownloadZonalStatistic = ({ zonalFeature }: { zonalFeature: ZonalFeature }) => (
+  <div>
+    <span className="text-base font-semibold">Download Zonal Statistic Result</span>
+    <div>
+      <button
+        type="button"
+        onClick={() => {
+          const csvData = Papa.unparse([
+            Object.fromEntries(
+              Object.entries(zonalFeature.properties).filter(
+                ([key]) =>
+                  ![
+                    'id',
+                    'layer_id',
+                    'is_active',
+                    'project_id',
+                    'flight_id',
+                    'data_product_id',
+                  ].includes(key)
+              )
+            ),
+          ]);
+          const csvFile = new Blob([csvData], { type: 'text/csv' });
+          downloadCSV(csvFile, 'zonal_statistics.csv');
+        }}
+      >
+        <span className="text-sky-600">Download CSV</span>
+      </button>
+    </div>
+    <div>
+      <button
+        type="button"
+        onClick={() => {
+          downloadGeoJSON(
+            'json',
+            removeKeysFromFeatureProperties(
+              {
+                type: 'FeatureCollection',
+                features: [zonalFeature],
+              },
+              [
+                'id',
+                'layer_id',
+                'is_active',
+                'project_id',
+                'flight_id',
+                'data_product_id',
+              ]
+            ),
+            'zonal_statistics.geojson'
+          );
+        }}
+      >
+        <span className="text-sky-600">Download GeoJSON</span>
+      </button>
+    </div>
+  </div>
+);
+
 export default function ProjectLayersControl({ project }: { project: Project }) {
-  const [statistics, setStatistics] = useState<ZonalStatistics[] | null>(null);
+  const [isCalculatingZonalStats, setIsCalculatingZonalStats] = useState(false);
+  const [statistics, setStatistics] = useState<ZonalFeature | null>(null);
 
   const { activeDataProduct, projectLayers, projectLayersDispatch } = useMapContext();
 
@@ -71,8 +207,9 @@ export default function ProjectLayersControl({ project }: { project: Project }) 
     flightId: string,
     zoneFeature: Feature
   ) {
+    setIsCalculatingZonalStats(true);
     try {
-      const response: AxiosResponse<ZonalStatistics[]> = await axios.post(
+      const response: AxiosResponse<ZonalFeature> = await axios.post(
         `${import.meta.env.VITE_API_V1_STR}/projects/${
           project.id
         }/flights/${flightId}/data_products/${dataProductId}/zonal_statistics`,
@@ -80,90 +217,17 @@ export default function ProjectLayersControl({ project }: { project: Project }) 
       );
       if (response.status === 200) {
         setStatistics(response.data);
+        setIsCalculatingZonalStats(false);
       } else {
         setStatistics(null);
+        setIsCalculatingZonalStats(false);
       }
-    } catch (err) {
-      console.error(err);
+    } catch (_err) {
+      console.log('Unable to fetch zonal statistics');
       setStatistics(null);
+      setIsCalculatingZonalStats(false);
     }
   }
-
-  const FeatureAttributes = ({ feature }: { feature: Feature }) => (
-    <div>
-      <span className="text-md font-semibold">Attributes</span>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y-2 divide-gray-200 bg-white text-sm">
-          <thead>
-            <tr>
-              {Object.keys(feature.properties?.properties).map((key, index) => (
-                <th
-                  key={`${key}::${index}`}
-                  className="whitespace-nowrap px-4 py-2 font-medium text-gray-900"
-                >
-                  {key}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            <tr>
-              {Object.keys(feature.properties?.properties).map((key, index) => (
-                <td
-                  key={`${key}::${index}`}
-                  className="whitespace-nowrap px-4 py-2 text-gray-700"
-                >
-                  {feature.properties?.properties[key]}
-                </td>
-              ))}
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-
-  const FeatureTitle = ({ feature }: { feature: Feature }) => (
-    <div className="flex flex-col">
-      <span className="text-lg font-bold">{feature.properties?.layer_name}</span>
-      {feature.geometry.type === 'Polygon' ? (
-        <span className="text-md text-slate-600">
-          Area: {area(feature).toFixed(2)} m&sup2;
-        </span>
-      ) : null}
-    </div>
-  );
-
-  const ZonalStatistics = ({
-    dataProduct,
-    stats,
-  }: {
-    dataProduct: DataProduct | null;
-    stats: ZonalStatistics[] | null;
-  }) =>
-    dataProduct && isSingleBand(dataProduct) && stats && stats.length > 0 ? (
-      <div className="grid grid-flow-row auto-rows-max">
-        <span className="text-md font-semibold">Zonal Stats</span>
-        <span>Min: {stats[0].min.toFixed(2)}</span>
-        <span>Max: {stats[0].max.toFixed(2)}</span>
-        <span>Mean: {stats[0].mean.toFixed(2)}</span>
-        <span>Count: {stats[0].count}</span>
-      </div>
-    ) : null;
-
-  const ZonalStatisticsLoading = ({
-    dataProduct,
-    stats,
-  }: {
-    dataProduct: DataProduct | null;
-    stats: ZonalStatistics[] | null;
-  }) =>
-    dataProduct && isSingleBand(dataProduct) && !stats ? (
-      <div className="h-full flex flex-col items-center justify-center gap-2 text-lg">
-        <span>Loading Zonal Statistics...</span>
-        <LoadingBars />
-      </div>
-    ) : null;
 
   return projectLayers.length > 0 ? (
     <LayersControl position="topright" collapsed={false} sortLayers={true}>
@@ -272,7 +336,7 @@ export default function ProjectLayersControl({ project }: { project: Project }) 
                       },
                     }}
                   >
-                    <Popup>
+                    <Popup maxHeight={450} minWidth={300}>
                       <section className="p-2">
                         <div className="flex flex-col gap-4">
                           <FeatureTitle feature={feature} />
@@ -283,14 +347,19 @@ export default function ProjectLayersControl({ project }: { project: Project }) 
                               this zone.
                             </div>
                           ) : null}
-                          <ZonalStatisticsLoading
-                            dataProduct={activeDataProduct}
-                            stats={statistics}
-                          />
+                          {isCalculatingZonalStats && (
+                            <ZonalStatisticsLoading
+                              dataProduct={activeDataProduct}
+                              zonalFeature={statistics}
+                            />
+                          )}
                           <ZonalStatistics
                             dataProduct={activeDataProduct}
-                            stats={statistics}
+                            zonalFeature={statistics}
                           />
+                          {statistics && (
+                            <DownloadZonalStatistic zonalFeature={statistics} />
+                          )}
                         </div>
                       </section>
                     </Popup>

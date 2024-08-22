@@ -1,7 +1,12 @@
 import axios, { AxiosResponse, isAxiosError } from 'axios';
 import { FeatureCollection } from 'geojson';
 import shpwrite, { DownloadOptions, ZipOptions } from '@mapbox/shp-write';
-import { MapLayerFeatureCollection } from '../Project';
+import {
+  MapLayerFeatureCollection,
+  ZonalFeature,
+  ZonalFeatureCollection,
+  ZonalFeatureProperties,
+} from '../Project';
 
 interface MapboxZipOptions extends ZipOptions, DownloadOptions {}
 
@@ -116,9 +121,15 @@ function prepFeatureCollectionForDownload(
  */
 export function download(
   downloadType: string = 'json',
-  featureCollection: MapLayerFeatureCollection
+  featureCollection: MapLayerFeatureCollection | ZonalFeatureCollection,
+  newFilename?: string
 ) {
-  const filename = featureCollection.features[0].properties?.layer_name;
+  let filename = 'myfile';
+  if (newFilename) {
+    filename = newFilename;
+  } else {
+    filename = featureCollection.features[0].properties?.layer_name;
+  }
   const updatedFeatureCollection = prepFeatureCollectionForDownload(
     JSON.parse(JSON.stringify(featureCollection))
   );
@@ -147,7 +158,10 @@ export function download(
   } else {
     const json = JSON.stringify(updatedFeatureCollection, null, 2);
     const blob = new Blob([json], { type: 'application/geo+json' });
-    const downloadName = `${filename ? filename : 'feature_collection'}.geojson`;
+    let downloadName = `${filename ? filename : 'feature_collection'}`;
+    if (downloadName.slice(-8) !== '.geojson') {
+      downloadName += '.geojson';
+    }
     createAndClickDownloadLink(blob, downloadName);
   }
 }
@@ -170,4 +184,24 @@ function createAndClickDownloadLink(blob: Blob, filename: string) {
   // clean up
   document.body.removeChild(link);
   URL.revokeObjectURL(href);
+}
+
+/**
+ * Removes provided array of key names from feature properties.
+ * @param {ZonalFeatureCollection} featureCollection Feature collection with features.
+ * @param {string[]} unwantedKeys Array of unwanted keys in feature properties.
+ * @returns {ZonalFeatureCollection} Feature collection with updated feature properties.
+ */
+export function removeKeysFromFeatureProperties(
+  featureCollection: ZonalFeatureCollection,
+  unwantedKeys: string[]
+): ZonalFeatureCollection {
+  const updatedFeatures: ZonalFeature[] = featureCollection.features.map((feature) => ({
+    ...feature,
+    properties: Object.fromEntries(
+      Object.entries(feature.properties).filter(([key]) => !unwantedKeys.includes(key))
+    ) as ZonalFeatureProperties,
+  }));
+  featureCollection.features = updatedFeatures;
+  return featureCollection;
 }

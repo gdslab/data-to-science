@@ -1,6 +1,6 @@
 import json
 import os
-from typing import TypedDict
+from typing import Dict, List, Tuple, TypedDict, Union
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
@@ -19,24 +19,6 @@ from app.tests.utils.vector_layers import (
 
 
 def get_zonal_statistics(
-    in_raster: str, bbox_feature: Feature
-) -> list[ZonalStatistics]:
-    """Returns zonal statistics for polygon overlaying a single-band raster.
-
-    Args:
-        in_raster (str): Path to single-band raster.
-        bbox_feature (str): GeoJSON Feature for polygon.
-
-    Returns:
-        list[ZonalStats]: List of zonal statistic dictionaries for each zone.
-    """
-    bbox_json_string = json.dumps(jsonable_encoder(bbox_feature.__dict__))
-    stats = generate_zonal_statistics(in_raster, bbox_json_string)
-
-    return stats
-
-
-def get_zonal_statistics_bulk(
     in_raster: str, feature_collection: FeatureCollection
 ) -> list[ZonalStatistics]:
     """Returns zonal statistics for multiple polygons in a Feature Collection
@@ -49,13 +31,40 @@ def get_zonal_statistics_bulk(
     Returns:
         list[ZonalStatistics]: List of zonal statistic dictionaries for each zone.
     """
-
-    feature_collection_string = json.dumps(
-        jsonable_encoder(feature_collection.__dict__)
-    )
-    stats = generate_zonal_statistics(in_raster, feature_collection_string)
+    stats = generate_zonal_statistics(in_raster, feature_collection.__dict__)
 
     return stats
+
+
+def get_zonal_feature_collection(
+    single_feature: bool = False,
+) -> Union[FeatureCollection, Feature]:
+    """Returns either single Feature or FeatureCollection for polygon(s) inside the
+    test.tif single-band dataset.
+
+    Args:
+        single_feature (bool, optional): Return single Feature if True. Defaults to False.
+
+    Returns:
+        Union[FeatureCollection, Feature]: FeatureCollection of zones or single Feature.
+    """
+    zones_filepath = os.path.join(
+        os.sep,
+        "app",
+        "app",
+        "tests",
+        "data",
+        "zones_inside_test_tif.geojson",
+    )
+    with open(zones_filepath) as zones_file:
+        # create vector layer record for bbox
+        zones_feature_collection_dict = json.loads(zones_file.read())
+
+    zones_feature_collection = FeatureCollection(**zones_feature_collection_dict)
+    if single_feature:
+        return zones_feature_collection.features[0]
+    else:
+        return zones_feature_collection
 
 
 def create_metadata(
@@ -63,7 +72,9 @@ def create_metadata(
     data_product_id: UUID | None = None,
     vector_layer_id: UUID | None = None,
     project_id: UUID | None = None,
-) -> DataProductMetadata:
+    single_feature: bool = False,
+    no_props: bool = False,
+) -> Tuple[List[DataProductMetadata], str, Dict]:
     """Create DataProductMetadata record with zonal statistics.
 
     Args:
@@ -73,21 +84,37 @@ def create_metadata(
         project_id (UUID | None, optional): Project ID. Defaults to None.
 
     Returns:
-        DataProductMetadata: Instance of DataProductMetadata.
+        Tuple[List[DataProductMetadata], str, Dict]: Instance of DataProductMetadata and layer_id.
     """
     if not project_id:
         project = create_project(db)
     else:
         project = crud.project.get(db, id=project_id)
     if not data_product_id:
-        data_product = SampleDataProduct(db, data_type="ortho", project=project)
+        data_product = SampleDataProduct(db, data_type="dsm", project=project)
         data_product = data_product.obj
     else:
         data_product = crud.data_product.get(db, id=data_product_id)
 
-    bbox_filepath = os.path.join(
-        os.sep, "app", "app", "tests", "data", "test_bbox.geojson"
-    )
+    if not single_feature:
+        if not no_props:
+            bbox_filepath = os.path.join(
+                os.sep, "app", "app", "tests", "data", "zones_inside_test_tif.geojson"
+            )
+        else:
+            bbox_filepath = os.path.join(
+                os.sep,
+                "app",
+                "app",
+                "tests",
+                "data",
+                "zones_inside_test_tif_no_props.geojson",
+            )
+    else:
+        bbox_filepath = os.path.join(
+            os.sep, "app", "app", "tests", "data", "test_bbox.geojson"
+        )
+
     with open(bbox_filepath) as bbox_file:
         # create vector layer record for bbox
         bbox_dict = json.loads(bbox_file.read())
@@ -98,16 +125,30 @@ def create_metadata(
         db, feature_collection=bbox_feature_collection, project_id=project.id
     )
 
-    if not vector_layer_id:
-        vector_layer_id = bbox_vector_layer.features[0].properties["id"]
+    all_zonal_stats = get_zonal_statistics(
+        data_product.filepath, bbox_feature_collection
+    )
+    all_metadata = []
+    original_props = bbox_vector_layer.features[0].properties["properties"]
 
-    stats = get_zonal_statistics(data_product.filepath, bbox_feature)
-    metadata_in = DataProductMetadataCreate(
-        category="zonal",
-        properties={"stats": stats[0]},
-        vector_layer_id=vector_layer_id,
+    for index, feature in enumerate(bbox_vector_layer.features):
+        if not vector_layer_id:
+            vid = feature.properties["id"]
+        else:
+            vid = vector_layer_id
+        zonal_stats = all_zonal_stats[index]
+        metadata_in = DataProductMetadataCreate(
+            category="zonal",
+            properties={"geojson": zonal_stats},
+            vector_layer_id=vid,
+        )
+        metadata = crud.data_product_metadata.create_with_data_product(
+            db, obj_in=metadata_in, data_product_id=data_product.id
+        )
+        all_metadata.append(metadata)
+
+    return (
+        all_metadata,
+        bbox_vector_layer.features[0].properties["layer_id"],
+        original_props,
     )
-    metadata = crud.data_product_metadata.create_with_data_product(
-        db, obj_in=metadata_in, data_product_id=data_product.id
-    )
-    return metadata

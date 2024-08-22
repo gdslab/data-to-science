@@ -1,6 +1,7 @@
+from typing import Dict, Union
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 # shared properties
@@ -45,4 +46,10 @@ class ZonalStatistics(BaseModel):
     min: float
     max: float
     mean: float
+    median: float
+    std: float
     count: int
+
+
+class ZonalStatisticsProps(ZonalStatistics):
+    model_config = ConfigDict(extra="allow")
