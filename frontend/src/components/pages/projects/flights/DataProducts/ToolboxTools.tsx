@@ -6,14 +6,15 @@ import { useEffect, useState } from 'react';
 import HintText from '../../../../HintText';
 import { SelectField } from '../../../../InputFields';
 
-import { DataProduct } from '../../Project';
+import { DataProduct, ZonalFeatureCollection } from '../../Project';
 import { ToolboxFields } from './ToolboxModal';
-import { ZonalStatistics } from '../../../../maps/ProjectLayersControl';
+import { removeKeysFromFeatureProperties } from '../../mapLayers/utils';
 
 import { useProjectContext } from '../../ProjectContext';
 import { prepMapLayers } from '../../mapLayers/utils';
 import { useParams } from 'react-router-dom';
-import { downloadFile } from '../../fieldCampaigns/utils';
+import { downloadFile as downloadCSV } from '../../fieldCampaigns/utils';
+import { download as downloadGeoJSON } from '../../mapLayers/utils';
 
 const EXGBandSelection = ({ dataProduct }: { dataProduct: DataProduct }) => {
   const bandOptions = dataProduct.stac_properties.eo.map((band, idx) => ({
@@ -123,20 +124,30 @@ const DownloadZonalStatistics = ({
   dataProductId: string;
   layerId: string;
 }) => {
-  const [zonalStats, setZonalStats] = useState<ZonalStatistics[]>([]);
+  const [zonalFeatureCollection, setZonalFeatureCollection] =
+    useState<ZonalFeatureCollection | null>(null);
 
   const { projectId, flightId } = useParams();
+
+  const keysToSkip = [
+    'id',
+    'layer_id',
+    'is_active',
+    'project_id',
+    'flight_id',
+    'data_product_id',
+  ];
 
   useEffect(() => {
     async function fetchZonalStats() {
       try {
-        const response: AxiosResponse<ZonalStatistics[]> = await axios.get(
+        const response: AxiosResponse<ZonalFeatureCollection> = await axios.get(
           `${
             import.meta.env.VITE_API_V1_STR
           }/projects/${projectId}/flights/${flightId}/data_products/${dataProductId}/zonal_statistics?layer_id=${layerId}`
         );
         if (response.status === 200) {
-          setZonalStats(response.data);
+          setZonalFeatureCollection(response.data);
         } else {
           console.log('Unable to check for previously calculated zonal statistics');
         }
@@ -150,20 +161,47 @@ const DownloadZonalStatistics = ({
     }
   }, []);
 
-  if (zonalStats.length === 0) return null;
+  if (
+    !zonalFeatureCollection ||
+    (zonalFeatureCollection && zonalFeatureCollection.features.length === 0)
+  )
+    return null;
 
   return (
-    <button
-      className="ml-2 text-sky-600"
-      type="button"
-      onClick={() => {
-        const csvData = Papa.unparse(zonalStats);
-        const csvFile = new Blob([csvData], { type: 'text/csv' });
-        downloadFile(csvFile, 'zonal_statistics.csv');
-      }}
-    >
-      Download (.csv)
-    </button>
+    <div className="inline">
+      <button
+        className="ml-2 text-sky-600"
+        type="button"
+        onClick={() => {
+          const csvData = Papa.unparse(
+            zonalFeatureCollection.features.map((feature) =>
+              Object.fromEntries(
+                Object.entries(feature.properties).filter(
+                  ([key]) => !keysToSkip.includes(key)
+                )
+              )
+            )
+          );
+          const csvFile = new Blob([csvData], { type: 'text/csv' });
+          downloadCSV(csvFile, 'zonal_statistics.csv');
+        }}
+      >
+        Download CSV
+      </button>
+      <button
+        className="ml-2 text-sky-600"
+        type="button"
+        onClick={() => {
+          downloadGeoJSON(
+            'json',
+            removeKeysFromFeatureProperties(zonalFeatureCollection, keysToSkip),
+            'zonal_statistics.geojson'
+          );
+        }}
+      >
+        Download GeoJSON
+      </button>
+    </div>
   );
 };
 

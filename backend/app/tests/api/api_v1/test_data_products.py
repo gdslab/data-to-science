@@ -518,14 +518,16 @@ def test_get_zonal_statistics(
                 "id": "0",
                 "type": "Feature",
                 "properties": {
-                    "row": 1,
-                    "col": 1,
                     "min": 187.37115478515625,
                     "max": 187.4439239501953,
                     "mean": 187.40421549479166,
                     "count": 576,
                     "std": 0.013546454430626641,
                     "median": 187.4020233154297,
+                    "properties": {
+                        "row": 1,
+                        "col": 1,
+                    },
                 },
                 "geometry": {
                     "type": "Polygon",
@@ -563,18 +565,20 @@ def test_get_zonal_statistics(
         )
         assert response.status_code == status.HTTP_200_OK
         response_data = response.json()
-        assert FeatureCollection(**response_data)
-        response_feature_collection = FeatureCollection(**response_data)
-        assert len(response_feature_collection.features) == 1
-        response_first_feature = response_feature_collection.features[0]
+        assert Feature(**response_data)
+        response_feature = Feature(**response_data)
         assert (
-            response_first_feature.properties["min"]
-            and response_first_feature.properties["max"]
-            and response_first_feature.properties["mean"]
-            and response_first_feature.properties["count"]
-            and response_first_feature.properties["median"]
-            and response_first_feature.properties["std"]
+            response_feature.properties["min"]
+            and response_feature.properties["max"]
+            and response_feature.properties["mean"]
+            and response_feature.properties["count"]
+            and response_feature.properties["median"]
+            and response_feature.properties["std"]
         )
+        # check that original feature collection properties are present
+        properties = ["row", "col"]
+        for key in properties:
+            assert key in response_feature.properties
 
 
 def test_get_zonal_statistics_by_layer_id(
@@ -598,19 +602,19 @@ def test_get_zonal_statistics_by_layer_id(
     )
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
-    assert isinstance(response_data, list)
-    assert len(response_data) == len(zonal_metadata)
+    assert FeatureCollection(**response_data)
+    response_feature_collection = FeatureCollection(**response_data)
+    assert len(response_feature_collection.features) == len(zonal_metadata)
     # check that zonal stats are present for first feature in list
-    assert Feature(**response_data[0])
-    response_first_feature = Feature(**response_data[0])
+    response_first_feature = response_feature_collection.features[0]
     assert (
-            response_first_feature.properties["min"]
-            and response_first_feature.properties["max"]
-            and response_first_feature.properties["mean"]
-            and response_first_feature.properties["count"]
-            and response_first_feature.properties["median"]
-            and response_first_feature.properties["std"]
-        )
+        response_first_feature.properties["min"]
+        and response_first_feature.properties["max"]
+        and response_first_feature.properties["mean"]
+        and response_first_feature.properties["count"]
+        and response_first_feature.properties["median"]
+        and response_first_feature.properties["std"]
+    )
     # check that original feature collection properties are present
     for key in properties:
         assert key in response_first_feature.properties

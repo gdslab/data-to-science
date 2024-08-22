@@ -37,13 +37,6 @@ type MapLayerProperties = {
 interface MapLayerFeature<G extends Geometry | null = Geometry, P = MapLayerProperties>
   extends Feature<G, P> {}
 
-// export interface MapLayerFeatureCollection
-//   extends FeatureCollection<MapLayerFeature> {
-//   metadata: {
-//     preview_url: string;
-//   };
-// }
-
 export interface MapLayerFeatureCollection<
   G extends Geometry | null = Geometry,
   P = MapLayerProperties
@@ -52,6 +45,29 @@ export interface MapLayerFeatureCollection<
   metadata: {
     preview_url: string;
   };
+}
+
+type ZonalFeatureProperties = {
+  id: string;
+  count: number;
+  max: number;
+  mean: number;
+  median: number;
+  min: number;
+  std: number;
+  [key: string]: any;
+};
+
+export interface ZonalFeature<
+  G extends Geometry | null = Geometry,
+  P = ZonalFeatureProperties
+> extends Feature<G, P> {}
+
+export interface ZonalFeatureCollection<
+  G extends Geometry | null = Geometry,
+  P = ZonalFeatureProperties
+> extends FeatureCollection<G, P> {
+  features: Array<ZonalFeature<G, P>>;
 }
 
 export interface Location {

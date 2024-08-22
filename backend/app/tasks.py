@@ -541,6 +541,12 @@ def generate_zonal_statistics(
         stats = zonal_stats(
             zones, data, affine=window_affine, stats=required_stats, geojson_out=True
         )
+        # reproject stat zones back to EPSG:4326
+        if str(src.crs) != "EPSG:4326":
+            stats_gdf = gpd.GeoDataFrame.from_features(stats, crs=src.crs)
+            stats_gdf = stats_gdf.to_crs("EPSG:4326")
+            stats_geojson = stats_gdf.to_geo_dict()
+            stats = stats_geojson["features"]
 
     return stats
 
