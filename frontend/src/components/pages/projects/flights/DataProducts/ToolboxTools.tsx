@@ -1,13 +1,19 @@
+import axios, { AxiosResponse } from 'axios';
 import { Field, useFormikContext } from 'formik';
+import Papa from 'papaparse';
+import { useEffect, useState } from 'react';
 
 import HintText from '../../../../HintText';
 import { SelectField } from '../../../../InputFields';
 
 import { DataProduct } from '../../Project';
-import { useProjectContext } from '../../ProjectContext';
 import { ToolboxFields } from './ToolboxModal';
+import { ZonalStatistics } from '../../../../maps/ProjectLayersControl';
 
+import { useProjectContext } from '../../ProjectContext';
 import { prepMapLayers } from '../../mapLayers/utils';
+import { useParams } from 'react-router-dom';
+import { downloadFile } from '../../fieldCampaigns/utils';
 
 const EXGBandSelection = ({ dataProduct }: { dataProduct: DataProduct }) => {
   const bandOptions = dataProduct.stac_properties.eo.map((band, idx) => ({
@@ -110,7 +116,58 @@ const LidarTools = () => {
   );
 };
 
-const ZonalStatisticTools = () => {
+const DownloadZonalStatistics = ({
+  dataProductId,
+  layerId,
+}: {
+  dataProductId: string;
+  layerId: string;
+}) => {
+  const [zonalStats, setZonalStats] = useState<ZonalStatistics[]>([]);
+
+  const { projectId, flightId } = useParams();
+
+  useEffect(() => {
+    async function fetchZonalStats() {
+      try {
+        const response: AxiosResponse<ZonalStatistics[]> = await axios.get(
+          `${
+            import.meta.env.VITE_API_V1_STR
+          }/projects/${projectId}/flights/${flightId}/data_products/${dataProductId}/zonal_statistics?layer_id=${layerId}`
+        );
+        if (response.status === 200) {
+          setZonalStats(response.data);
+        } else {
+          console.log('Unable to check for previously calculated zonal statistics');
+        }
+      } catch (_err) {
+        console.log('Unable to check for previously calculated zonal statistics');
+      }
+    }
+
+    if (projectId && flightId && dataProductId) {
+      fetchZonalStats();
+    }
+  }, []);
+
+  if (zonalStats.length === 0) return null;
+
+  return (
+    <button
+      className="ml-2 text-sky-600"
+      type="button"
+      onClick={() => {
+        const csvData = Papa.unparse(zonalStats);
+        const csvFile = new Blob([csvData], { type: 'text/csv' });
+        downloadFile(csvFile, 'zonal_statistics.csv');
+      }}
+    >
+      Download (.csv)
+    </button>
+  );
+};
+
+const ZonalStatisticTools = ({ dataProductId }: { dataProductId: string }) => {
   const { values } = useFormikContext<ToolboxFields>();
   const { mapLayers } = useProjectContext();
 
@@ -141,6 +198,10 @@ const ZonalStatisticTools = () => {
                     >
                       <Field type="radio" name="zonal_layer_id" value={layer.id} />
                       <span className="ml-2">{layer.name}</span>
+                      <DownloadZonalStatistics
+                        dataProductId={dataProductId}
+                        layerId={layer.id}
+                      />
                     </label>
                   ))}
             </div>

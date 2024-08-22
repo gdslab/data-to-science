@@ -140,7 +140,9 @@ export default function ToolboxModal({
                 {flight &&
                   flight.sensor.toLowerCase() === 'lidar' &&
                   isSingleBand(dataProduct) && <LidarTools />}
-                {flight && getNumOfBands(dataProduct) === 1 && <ZonalStatisticTools />}
+                {flight && getNumOfBands(dataProduct) === 1 && (
+                  <ZonalStatisticTools dataProductId={dataProduct.id} />
+                )}
                 <Button
                   type="submit"
                   disabled={

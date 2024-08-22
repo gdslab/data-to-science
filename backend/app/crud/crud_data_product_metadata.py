@@ -71,16 +71,8 @@ class CRUDDataProductMetadata(
         )
         zonal_statistics_and_props = []
         with db as session:
-            all_metadata = session.scalars(zonal_statistics_query).all()
-            if len(all_metadata) > 0:
-                for metadata in all_metadata:
-                    vector_layer_props = metadata.vector_layer.properties
-                    zonal_stats = metadata.properties["stats"]
-                    zonal_statistics_and_props.append(
-                        {**vector_layer_props, **zonal_stats}
-                    )
-
-            return zonal_statistics_and_props
+            metadata = session.scalars(zonal_statistics_query).all()
+            return metadata
 
 
 data_product_metadata = CRUDDataProductMetadata(DataProductMetadata)

@@ -46,8 +46,10 @@ class ZonalStatistics(BaseModel):
     min: float
     max: float
     mean: float
+    median: float
+    std: float
     count: int
 
 
-class ZonalStatisticsWithProps(ZonalStatistics):
+class ZonalStatisticsProps(ZonalStatistics):
     model_config = ConfigDict(extra="allow")

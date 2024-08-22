@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Annotated, Any, List, Sequence
 from uuid import UUID, uuid4
 
-from geojson_pydantic import Feature, FeatureCollection
+from geojson_pydantic import Feature, FeatureCollection, Polygon
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
@@ -363,7 +363,9 @@ async def run_processing_tool(
 
 @router.post(
     "/{data_product_id}/zonal_statistics",
-    response_model=list[schemas.data_product_metadata.ZonalStatistics],
+    response_model=FeatureCollection[
+        Feature[Polygon, schemas.data_product_metadata.ZonalStatisticsProps]
+    ],
 )
 async def create_zonal_statistics(
     data_product_id: UUID,
@@ -398,12 +400,9 @@ async def create_zonal_statistics(
             if "stats" in metadata[0].properties:
                 return [metadata[0].properties["stats"]]
 
-    # serialize GeoJSON feature before passing to celery task
-    feature_string = json.dumps(jsonable_encoder(zone_in.__dict__))
-
     # send request to celery task queue
     result = generate_zonal_statistics.apply_async(
-        args=(data_product.filepath, feature_string)
+        args=(data_product.filepath, {"features": [zone_in.model_dump()]})
     )
     # get zonal statistics from celery task once it finishes
     zonal_stats = result.get()
@@ -427,12 +426,17 @@ async def create_zonal_statistics(
             db, obj_in=metadata_in, data_product_id=data_product.id
         )
 
-    return zonal_stats
+    return FeatureCollection(
+        type="FeatureCollection",
+        features=[Feature(**zonal_stat) for zonal_stat in zonal_stats],
+    )
 
 
 @router.get(
     "/{data_product_id}/zonal_statistics",
-    response_model=List[schemas.data_product_metadata.ZonalStatisticsWithProps],
+    response_model=List[
+        Feature[Polygon, schemas.data_product_metadata.ZonalStatisticsProps]
+    ],
 )
 async def read_zonal_statistics(
     data_product_id: UUID,
@@ -444,4 +448,5 @@ async def read_zonal_statistics(
     zonal_stats = crud.data_product_metadata.get_zonal_statistics_by_layer_id(
         db, data_product_id=data_product_id, layer_id=layer_id
     )
-    return zonal_stats
+
+    return [Feature(**zonal_stat.properties["geojson"]) for zonal_stat in zonal_stats]

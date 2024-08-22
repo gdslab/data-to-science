@@ -139,7 +139,7 @@ def create_metadata(
         zonal_stats = all_zonal_stats[index]
         metadata_in = DataProductMetadataCreate(
             category="zonal",
-            properties={"stats": zonal_stats},
+            properties={"geojson": zonal_stats},
             vector_layer_id=vid,
         )
         metadata = crud.data_product_metadata.create_with_data_product(

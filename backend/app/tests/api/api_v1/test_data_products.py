@@ -4,6 +4,7 @@ import shutil
 from datetime import datetime
 from unittest.mock import patch, MagicMock
 
+from geojson_pydantic import Feature, FeatureCollection
 from fastapi import status
 from fastapi.encoders import jsonable_encoder
 from fastapi.testclient import TestClient
@@ -513,8 +514,40 @@ def test_get_zonal_statistics(
         mock_task = MagicMock()
         mock_task.id = "mock_task_id"
         mock_task.get.return_value = [
-            {"min": 100, "max": 100, "mean": 100, "count": 100}
+            {
+                "id": "0",
+                "type": "Feature",
+                "properties": {
+                    "row": 1,
+                    "col": 1,
+                    "min": 187.37115478515625,
+                    "max": 187.4439239501953,
+                    "mean": 187.40421549479166,
+                    "count": 576,
+                    "std": 0.013546454430626641,
+                    "median": 187.4020233154297,
+                },
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": (
+                        (
+                            (504634.7058309699, 4588057.3063149825, 0.0),
+                            (504635.7058309703, 4588057.3063149825, 0.0),
+                            (504635.7058309695, 4588056.306314982, 0.0),
+                            (504634.7058309701, 4588056.306314982, 0.0),
+                            (504634.7058309699, 4588057.3063149825, 0.0),
+                        ),
+                    ),
+                },
+                "bbox": (
+                    504634.7058309699,
+                    4588056.306314982,
+                    504635.7058309703,
+                    4588057.3063149825,
+                ),
+            }
         ]
+
         mock_apply_async.return_value = mock_task
         # request zonal statistics for zone and sample data product
         response = client.post(
@@ -525,18 +558,22 @@ def test_get_zonal_statistics(
         mock_apply_async.assert_called_once_with(
             args=(
                 data_product.obj.filepath,
-                json.dumps(jsonable_encoder(zone_feature.__dict__)),
+                {"features": [zone_feature.model_dump()]},
             )
         )
         assert response.status_code == status.HTTP_200_OK
         response_data = response.json()
-        assert isinstance(response_data, list)
-        assert len(response_data) == 1
+        assert FeatureCollection(**response_data)
+        response_feature_collection = FeatureCollection(**response_data)
+        assert len(response_feature_collection.features) == 1
+        response_first_feature = response_feature_collection.features[0]
         assert (
-            response_data[0].get("min")
-            and response_data[0].get("max")
-            and response_data[0].get("mean")
-            and response_data[0].get("count")
+            response_first_feature.properties["min"]
+            and response_first_feature.properties["max"]
+            and response_first_feature.properties["mean"]
+            and response_first_feature.properties["count"]
+            and response_first_feature.properties["median"]
+            and response_first_feature.properties["std"]
         )
 
 
@@ -564,12 +601,16 @@ def test_get_zonal_statistics_by_layer_id(
     assert isinstance(response_data, list)
     assert len(response_data) == len(zonal_metadata)
     # check that zonal stats are present for first feature in list
+    assert Feature(**response_data[0])
+    response_first_feature = Feature(**response_data[0])
     assert (
-        response_data[0].get("min")
-        and response_data[0].get("max")
-        and response_data[0].get("mean")
-        and response_data[0].get("count")
-    )
+            response_first_feature.properties["min"]
+            and response_first_feature.properties["max"]
+            and response_first_feature.properties["mean"]
+            and response_first_feature.properties["count"]
+            and response_first_feature.properties["median"]
+            and response_first_feature.properties["std"]
+        )
     # check that original feature collection properties are present
     for key in properties:
-        assert key in response_data[0]
+        assert key in response_first_feature.properties

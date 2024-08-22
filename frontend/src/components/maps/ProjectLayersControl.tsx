@@ -21,11 +21,12 @@ import { LatLngExpression } from 'leaflet';
 
 import { isSingleBand } from './utils';
 
-type ZonalStatistics = {
+export type ZonalStatistics = {
   min: number;
   max: number;
   mean: number;
   count: number;
+  [key: string]: string | number;
 };
 
 /**
