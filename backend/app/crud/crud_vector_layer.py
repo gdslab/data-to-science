@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.api.utils import create_vector_layer_preview
 from app.crud.base import CRUDBase
+from app.models.data_product_metadata import DataProductMetadata
 from app.models.vector_layer import VectorLayer
 from app.schemas.vector_layer import VectorLayerCreate, VectorLayerUpdate
 from app.utils.unique_id import generate_unique_id
@@ -95,6 +96,55 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
                 return features
             else:
                 return []
+
+    def get_vector_layer_by_id_with_metadata(
+        self, db: Session, project_id: UUID, layer_id: str, metadata_category: str
+    ) -> List[Feature]:
+        """Fetches vector layers from feature collection associated with layer ID and
+        adds any metadata matching the specified category to the vector
+        layer properties.
+
+        Args:
+            db (Session): Database session.
+            project_id (UUID): Project ID for feature collection.
+            layer_id (str): Layer ID for feature collection.
+            metadata_category (str): Metadata category (e.g. "zonal")
+
+        Returns:
+            List[Feature]: Vector layer features with metadata in properties.
+        """
+        statement = (
+            select(func.ST_AsGeoJSON(VectorLayer), DataProductMetadata)
+            .join(VectorLayer.data_product_metadata)
+            .where(
+                and_(
+                    DataProductMetadata.category == metadata_category,
+                    VectorLayer.layer_id == layer_id,
+                    VectorLayer.project_id == project_id,
+                    VectorLayer.is_active,
+                )
+            )
+        )
+
+        with db as session:
+            vector_layers = session.execute(statement).all()
+            vector_layers_with_metadata_props = []
+            for vector_layer in vector_layers:
+                vector_layer_geojson_dict = json.loads(vector_layer[0])
+                if metadata_category == "zonal":
+                    metadata_properties = vector_layer[1].properties["stats"]
+                else:
+                    metadata_properties = vector_layer[1].properties
+                vector_layer_geojson_dict["properties"] = {
+                    **vector_layer_geojson_dict["properties"],
+                    **metadata_properties,
+                }
+                vector_layers_with_metadata_props.append(vector_layer_geojson_dict)
+
+            return [
+                Feature(**vector_layer)
+                for vector_layer in vector_layers_with_metadata_props
+            ]
 
     def get_multi_by_project(
         self, db: Session, project_id: UUID

@@ -10,12 +10,14 @@ from geojson_pydantic import Feature, FeatureCollection, Polygon
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps, utils
 from app.core import security
 from app.core.config import settings
+from app.models.vector_layer import VectorLayer
 from app.schemas.data_product_metadata import ZonalStatisticsProps
 from app.tasks import (
     generate_zonal_statistics,
@@ -427,10 +429,10 @@ async def create_zonal_statistics(
             vector_layer_id=vector_layer_id,
         )
         if len(metadata) == 1:
-            # return previously generated GeoJSON feature with zonal stats
-            if "geojson" in metadata[0].properties:
+            # return previously generated zonal stats
+            if "stats" in metadata[0].properties:
                 return update_feature_properties(
-                    Feature(**metadata[0].properties["geojson"])
+                    Feature(**metadata[0].properties["stats"])
                 )
 
     # send request to celery task queue
@@ -438,26 +440,39 @@ async def create_zonal_statistics(
         args=(data_product.filepath, {"features": [zone_in.model_dump()]})
     )
 
-    # task returns list of GeoJSON features with zonal stats in the properties attribute
-    zonal_features = result.get()
+    # task returns list of zonal stats
+    zonal_stats = result.get()
 
-    if len(zonal_features) != 1:
+    if len(zonal_stats) != 1:
         # result either has no features or too many features
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Unable to calculate zonal statistics",
         )
+    print("Vector layer id", vector_layer_id)
     if vector_layer_id and utils.is_valid_uuid(vector_layer_id):
         metadata_in = schemas.DataProductMetadataCreate(
             category="zonal",
-            properties={"geojson": zonal_features[0]},
+            properties={"stats": zonal_stats[0]},
             vector_layer_id=vector_layer_id,
         )
         crud.data_product_metadata.create_with_data_product(
             db, obj_in=metadata_in, data_product_id=data_product.id
         )
+        # query vector layer as GeoJSON feature
+        vector_layer_query = select(func.ST_AsGeoJSON(VectorLayer)).where(
+            VectorLayer.id == vector_layer_id
+        )
+        with db as session:
+            vector_layer = session.execute(vector_layer_query).scalar_one_or_none()
+            vector_layer_geojson_dict = json.loads(vector_layer)
+            # add zonal stats to geojson properties
+            vector_layer_geojson_dict["properties"] = {
+                **vector_layer_geojson_dict["properties"],
+                **zonal_stats[0],
+            }
 
-    return update_feature_properties(Feature(**zonal_features[0]))
+    return update_feature_properties(Feature(**vector_layer_geojson_dict))
 
 
 @router.get(
@@ -465,6 +480,7 @@ async def create_zonal_statistics(
     response_model=FeatureCollection[Feature[Polygon, ZonalStatisticsProps]],
 )
 async def read_zonal_statistics(
+    project_id: UUID,
     data_product_id: UUID,
     layer_id: Annotated[str, Query(max_length=12)],
     current_user: models.User = Depends(deps.get_current_approved_user),
@@ -475,10 +491,16 @@ async def read_zonal_statistics(
         db, data_product_id=data_product_id, layer_id=layer_id
     )
 
+    # query vector layers as GeoJSON feature with zonal metadata in properties
+    vector_layer_features = crud.vector_layer.get_vector_layer_by_id_with_metadata(
+        db, project_id=project_id, layer_id=layer_id, metadata_category="zonal"
+    )
+
+    print(vector_layer_features)
+
     return FeatureCollection(
         type="FeatureCollection",
         features=[
-            update_feature_properties(Feature(**zonal_stat.properties["geojson"]))
-            for zonal_stat in zonal_stats
+            update_feature_properties(feature) for feature in vector_layer_features
         ],
     )
