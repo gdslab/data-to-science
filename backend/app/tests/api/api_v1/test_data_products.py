@@ -16,7 +16,7 @@ from app.core.config import settings
 from app.schemas.file_permission import FilePermissionUpdate
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.data_product_metadata import (
-    create_metadata,
+    create_zonal_metadata,
     get_zonal_feature_collection,
 )
 from app.tests.utils.project import create_project
@@ -576,7 +576,7 @@ def test_get_zonal_statistics_by_layer_id(
     )
     data_product = SampleDataProduct(db, data_type="dsm", project=project)
     # create zonal statistics metadata for data product
-    zonal_metadata, layer_id, properties = create_metadata(
+    zonal_metadata, layer_id, properties = create_zonal_metadata(
         db, data_product_id=data_product.obj.id, project_id=project.id
     )
     # request zonal statistics by layer id for a data product

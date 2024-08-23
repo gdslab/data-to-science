@@ -1,13 +1,19 @@
 import os
+from typing import List
 
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
 from app.core.config import settings
-from app.tests.utils.data_product_metadata import create_metadata
+from app.tests.utils.data_product import SampleDataProduct
+from app.tests.utils.data_product_metadata import (
+    create_zonal_metadata,
+    get_zonal_feature_collection,
+)
 from app.tests.utils.project import create_project
 from app.tests.utils.vector_layers import (
     create_feature_collection,
+    create_vector_layer_with_provided_feature_collection,
     get_geojson_feature_collection,
 )
 
@@ -138,6 +144,43 @@ def test_read_vector_layers(db: Session) -> None:
             )
 
 
+def test_read_vector_layer_by_id_with_metadata(db: Session) -> None:
+    # create a project with a single band data product and vector layer
+    project = create_project(db)
+    data_product = SampleDataProduct(db, data_type="dsm", project=project)
+    feature_collection = create_vector_layer_with_provided_feature_collection(
+        db, feature_collection=get_zonal_feature_collection(), project_id=project.id
+    )
+    # generate zonal statistics metadata using data product and vector layer
+    for feature in feature_collection.features:
+        vector_layer_id = feature.properties["id"]
+        create_zonal_metadata(
+            db,
+            data_product_id=data_product.obj.id,
+            project_id=project.id,
+            vector_layer_id=vector_layer_id,
+        )
+    # get layer_id from first feature
+    layer_id = feature_collection.features[0].properties["layer_id"]
+    # retrieve vector layers as features with zonal metadata in properties
+    vector_layers_with_zonal_metadata = (
+        crud.vector_layer.get_vector_layer_by_id_with_metadata(
+            db,
+            project_id=project.id,
+            data_product_id=data_product.obj.id,
+            layer_id=layer_id,
+            metadata_category="zonal",
+        )
+    )
+    assert vector_layers_with_zonal_metadata
+    assert isinstance(vector_layers_with_zonal_metadata, List)
+    assert len(vector_layers_with_zonal_metadata) == len(feature_collection.features)
+    # confirm first feature has expected zonal statistics in its properties
+    expected_zonal_stats = ["min", "max", "mean", "median", "std", "count"]
+    for expected_zonal_stat in expected_zonal_stats:
+        assert expected_zonal_stat in vector_layers_with_zonal_metadata[0].properties
+
+
 def test_remove_vector_layer(db: Session) -> None:
     project = create_project(db)
     # point feature collection with three points (features)
@@ -159,7 +202,7 @@ def test_remove_vector_layer_removes_metadata_associated_with_layer(
     db: Session,
 ) -> None:
     project = create_project(db)
-    metadata = create_metadata(db, project_id=project.id)[0]
+    metadata = create_zonal_metadata(db, project_id=project.id)[0]
     # get metadata associated with vector layer id and data product id
     metadata_in_db = crud.data_product_metadata.get_by_data_product(
         db,
@@ -171,7 +214,7 @@ def test_remove_vector_layer_removes_metadata_associated_with_layer(
         metadata_in_db and isinstance(metadata_in_db, list) and len(metadata_in_db) > 0
     )
     # create metadata for a different vector layer and data product
-    metadata_other = create_metadata(db, project_id=project.id)[0]
+    metadata_other = create_zonal_metadata(db, project_id=project.id)[0]
     # get metadata associated with vector layer id and data product id
     metadata_other_in_db = crud.data_product_metadata.get_by_data_product(
         db,

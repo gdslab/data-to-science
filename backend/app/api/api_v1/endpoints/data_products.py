@@ -3,10 +3,10 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Annotated, Any, List, Sequence
+from typing import Annotated, Any, List, Sequence, Union
 from uuid import UUID, uuid4
 
-from geojson_pydantic import Feature, FeatureCollection, Polygon
+from geojson_pydantic import Feature, FeatureCollection, Polygon, MultiPolygon
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
@@ -57,9 +57,9 @@ def update_feature_properties(
         Feature[Polygon, ZonalStatisticsProps]: Feature with updated properties.
     """
     current_properties = zonal_feature.properties
-
     if "properties" in current_properties:
         original_properties = current_properties.pop("properties")
+        id_prop = original_properties.get("id")
         # if one of the required properties exists in the original properties
         # of the vector layer, its value will be overwritten with by the
         # zonal statistic value calculated on D2S
@@ -67,6 +67,9 @@ def update_feature_properties(
             **original_properties,
             **current_properties,
         }
+        # if original props had an "id" property, rename it to "fid" for feature id
+        if id_prop:
+            zonal_feature.properties = {**zonal_feature.properties, "fid": id_prop}
 
     return zonal_feature
 
@@ -397,7 +400,7 @@ async def run_processing_tool(
 
 @router.post(
     "/{data_product_id}/zonal_statistics",
-    response_model=Feature[Polygon, ZonalStatisticsProps],
+    response_model=Feature[Union[Polygon, MultiPolygon], ZonalStatisticsProps],
 )
 async def create_zonal_statistics(
     data_product_id: UUID,
@@ -430,10 +433,28 @@ async def create_zonal_statistics(
         )
         if len(metadata) == 1:
             # return previously generated zonal stats
-            if "stats" in metadata[0].properties:
-                return update_feature_properties(
-                    Feature(**metadata[0].properties["stats"])
+            if (
+                "stats" in metadata[0].properties
+                and vector_layer_id
+                and utils.is_valid_uuid(vector_layer_id)
+            ):
+                # query vector layer as GeoJSON feature
+                vector_layer_query = select(func.ST_AsGeoJSON(VectorLayer)).where(
+                    VectorLayer.id == vector_layer_id
                 )
+                with db as session:
+                    vector_layer = session.execute(
+                        vector_layer_query
+                    ).scalar_one_or_none()
+                    vector_layer_geojson_dict = json.loads(vector_layer)
+                    # add zonal stats to geojson properties
+                    vector_layer_geojson_dict["properties"] = {
+                        **vector_layer_geojson_dict["properties"],
+                        **metadata[0].properties["stats"],
+                    }
+                    return update_feature_properties(
+                        Feature(**vector_layer_geojson_dict)
+                    )
 
     # send request to celery task queue
     result = generate_zonal_statistics.apply_async(
@@ -449,7 +470,7 @@ async def create_zonal_statistics(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Unable to calculate zonal statistics",
         )
-    print("Vector layer id", vector_layer_id)
+
     if vector_layer_id and utils.is_valid_uuid(vector_layer_id):
         metadata_in = schemas.DataProductMetadataCreate(
             category="zonal",
@@ -477,7 +498,9 @@ async def create_zonal_statistics(
 
 @router.get(
     "/{data_product_id}/zonal_statistics",
-    response_model=FeatureCollection[Feature[Polygon, ZonalStatisticsProps]],
+    response_model=FeatureCollection[
+        Feature[Union[Polygon, MultiPolygon], ZonalStatisticsProps]
+    ],
 )
 async def read_zonal_statistics(
     project_id: UUID,
@@ -493,10 +516,12 @@ async def read_zonal_statistics(
 
     # query vector layers as GeoJSON feature with zonal metadata in properties
     vector_layer_features = crud.vector_layer.get_vector_layer_by_id_with_metadata(
-        db, project_id=project_id, layer_id=layer_id, metadata_category="zonal"
+        db,
+        project_id=project_id,
+        layer_id=layer_id,
+        data_product_id=data_product_id,
+        metadata_category="zonal",
     )
-
-    print(vector_layer_features)
 
     return FeatureCollection(
         type="FeatureCollection",

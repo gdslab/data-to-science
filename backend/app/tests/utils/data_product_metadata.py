@@ -5,10 +5,12 @@ from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
 from geojson_pydantic import Feature, FeatureCollection
+from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
 from app import crud
 from app.models.data_product_metadata import DataProductMetadata
+from app.models.vector_layer import VectorLayer
 from app.schemas.data_product_metadata import DataProductMetadataCreate, ZonalStatistics
 from app.tasks import generate_zonal_statistics
 from app.tests.utils.data_product import SampleDataProduct
@@ -67,7 +69,7 @@ def get_zonal_feature_collection(
         return zones_feature_collection
 
 
-def create_metadata(
+def create_zonal_metadata(
     db: Session,
     data_product_id: UUID | None = None,
     vector_layer_id: UUID | None = None,
@@ -86,56 +88,86 @@ def create_metadata(
     Returns:
         Tuple[List[DataProductMetadata], str, Dict]: Instance of DataProductMetadata and layer_id.
     """
+    # create project if one is not provided
     if not project_id:
         project = create_project(db)
     else:
         project = crud.project.get(db, id=project_id)
+    # create data product if ID for one is not provided
     if not data_product_id:
         data_product = SampleDataProduct(db, data_type="dsm", project=project)
         data_product = data_product.obj
     else:
         data_product = crud.data_product.get(db, id=data_product_id)
-
-    if not single_feature:
+    # if vector layer is not provided, create vector layers from test data
+    if not vector_layer_id:
+        test_data_dir = os.path.join(os.sep, "app", "app", "tests", "data")
         if not no_props:
-            bbox_filepath = os.path.join(
-                os.sep, "app", "app", "tests", "data", "zones_inside_test_tif.geojson"
+            zones_test_data_filepath = os.path.join(
+                test_data_dir,
+                "zones_inside_test_tif.geojson",
             )
         else:
-            bbox_filepath = os.path.join(
-                os.sep,
-                "app",
-                "app",
-                "tests",
-                "data",
+            # empty properties attribute for geojson features
+            zones_test_data_filepath = os.path.join(
+                test_data_dir,
                 "zones_inside_test_tif_no_props.geojson",
             )
-    else:
-        bbox_filepath = os.path.join(
-            os.sep, "app", "app", "tests", "data", "test_bbox.geojson"
+
+        with open(zones_test_data_filepath) as zones_file:
+            # create vector layer record for bbox
+            zones_geojson_dict = json.loads(zones_file.read())
+
+        # create feature collection from geojson data
+        zones_feature_collection = FeatureCollection(**zones_geojson_dict)
+        # create vector layer records for each zone feature
+        vector_layers_feature_collection = (
+            create_vector_layer_with_provided_feature_collection(
+                db, feature_collection=zones_feature_collection, project_id=project.id
+            )
         )
+    else:
+        # query vector layer using vector layer id and project id
+        statement = select(func.ST_AsGeoJSON(VectorLayer)).where(
+            and_(
+                VectorLayer.id == vector_layer_id, VectorLayer.project_id == project_id
+            )
+        )
+        with db as session:
+            # existing vector layer in database as geojson feature string
+            vector_layer = session.execute(statement).scalar_one_or_none()
+            assert vector_layer
+            # create feature collection for vector layer
+            vector_layers_feature_collection = FeatureCollection(
+                **{
+                    "type": "FeatureCollection",
+                    "features": [Feature(**json.loads(vector_layer))],
+                }
+            )
 
-    with open(bbox_filepath) as bbox_file:
-        # create vector layer record for bbox
-        bbox_dict = json.loads(bbox_file.read())
-
-    bbox_feature_collection = FeatureCollection(**bbox_dict)
-    bbox_feature = bbox_feature_collection.features[0]
-    bbox_vector_layer = create_vector_layer_with_provided_feature_collection(
-        db, feature_collection=bbox_feature_collection, project_id=project.id
-    )
-
+    # fetch zonal statistics for data product and zonal feature collection
     all_zonal_stats = get_zonal_statistics(
-        data_product.filepath, bbox_feature_collection
+        data_product.filepath, vector_layers_feature_collection
     )
     all_metadata = []
-    original_props = bbox_vector_layer.features[0].properties["properties"]
+    # get original properties from first feature
+    original_props = vector_layers_feature_collection.features[0].properties.get(
+        "properties"
+    )
 
-    for index, feature in enumerate(bbox_vector_layer.features):
+    # only include first zone feature if single feature is True
+    if single_feature:
+        zone_features = [vector_layers_feature_collection.features[0]]
+    else:
+        zone_features = vector_layers_feature_collection.features
+
+    # iterate over each zone feature
+    for index, feature in enumerate(zone_features):
         if not vector_layer_id:
             vid = feature.properties["id"]
         else:
             vid = vector_layer_id
+        # create data product metadata record for current feature and zone stats
         zonal_stats = all_zonal_stats[index]
         metadata_in = DataProductMetadataCreate(
             category="zonal",
@@ -149,6 +181,6 @@ def create_metadata(
 
     return (
         all_metadata,
-        bbox_vector_layer.features[0].properties["layer_id"],
+        vector_layers_feature_collection.features[0].properties["layer_id"],
         original_props,
     )
