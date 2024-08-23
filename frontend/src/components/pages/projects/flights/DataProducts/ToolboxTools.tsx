@@ -155,7 +155,6 @@ const DownloadZonalStatistics = ({
         console.log('Unable to check for previously calculated zonal statistics');
       }
     }
-
     if (projectId && flightId && dataProductId) {
       fetchZonalStats();
     }
@@ -227,7 +226,7 @@ const ZonalStatisticTools = ({ dataProductId }: { dataProductId: string }) => {
                   .filter(
                     ({ geomType }) =>
                       geomType.toLowerCase() === 'polygon' ||
-                      geomType.toLowerCase() === 'multipolyon'
+                      geomType.toLowerCase() === 'multipolygon'
                   )
                   .map((layer) => (
                     <label

@@ -98,7 +98,12 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
                 return []
 
     def get_vector_layer_by_id_with_metadata(
-        self, db: Session, project_id: UUID, layer_id: str, metadata_category: str
+        self,
+        db: Session,
+        project_id: UUID,
+        data_product_id: UUID,
+        layer_id: str,
+        metadata_category: str,
     ) -> List[Feature]:
         """Fetches vector layers from feature collection associated with layer ID and
         adds any metadata matching the specified category to the vector
@@ -107,6 +112,7 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
         Args:
             db (Session): Database session.
             project_id (UUID): Project ID for feature collection.
+            data_product_id (UUID): Data product ID for metadata.
             layer_id (str): Layer ID for feature collection.
             metadata_category (str): Metadata category (e.g. "zonal")
 
@@ -118,6 +124,7 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
             .join(VectorLayer.data_product_metadata)
             .where(
                 and_(
+                    DataProductMetadata.data_product_id == data_product_id,
                     DataProductMetadata.category == metadata_category,
                     VectorLayer.layer_id == layer_id,
                     VectorLayer.project_id == project_id,

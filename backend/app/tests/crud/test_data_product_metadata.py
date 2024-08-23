@@ -14,7 +14,10 @@ from app.schemas.data_product_metadata import (
     DataProductMetadataUpdate,
 )
 from app.tests.utils.data_product import SampleDataProduct
-from app.tests.utils.data_product_metadata import create_metadata, get_zonal_statistics
+from app.tests.utils.data_product_metadata import (
+    create_zonal_metadata,
+    get_zonal_statistics,
+)
 from app.tests.utils.project import create_project
 from app.tests.utils.vector_layers import (
     create_vector_layer_with_provided_feature_collection,
@@ -85,11 +88,15 @@ def test_create_data_product_metadata_for_multiple_zones(db: Session) -> None:
 
 
 def test_create_duplicate_zonal_metadata(db: Session) -> None:
-    metadata = create_metadata(db, single_feature=True)[0][0]
+    project = create_project(db)
+    metadata = create_zonal_metadata(db, project_id=project.id, single_feature=True)[0][
+        0
+    ]
     # unique constraint should cause integrity error
     with pytest.raises(IntegrityError):
-        metadata_duplicate = create_metadata(
+        metadata_duplicate = create_zonal_metadata(
             db,
+            project_id=project.id,
             data_product_id=metadata.data_product_id,
             vector_layer_id=metadata.vector_layer_id,
             single_feature=True,
@@ -129,7 +136,7 @@ def test_create_zonal_metadata_with_zone_outside_raster(db: Session) -> None:
 
 
 def test_read_data_product_metadata(db: Session) -> None:
-    metadata = create_metadata(db)[0][0]
+    metadata = create_zonal_metadata(db)[0][0]
     metadata_in_db = crud.data_product_metadata.get_by_data_product(
         db,
         category="zonal",
@@ -147,8 +154,8 @@ def test_read_data_product_metadata(db: Session) -> None:
 
 
 def test_get_zonal_statistics_by_layer_id(db: Session) -> None:
-    metadata, layer_id, original_props = create_metadata(db)
-    create_metadata(db)
+    metadata, layer_id, original_props = create_zonal_metadata(db)
+    create_zonal_metadata(db)
     zonal_statistics = crud.data_product_metadata.get_zonal_statistics_by_layer_id(
         db, data_product_id=metadata[0].data_product_id, layer_id=layer_id
     )
@@ -158,8 +165,8 @@ def test_get_zonal_statistics_by_layer_id(db: Session) -> None:
 
 
 def test_get_zonal_statistics_by_layer_id_with_no_original_props(db: Session) -> None:
-    metadata, layer_id, original_props = create_metadata(db, no_props=True)
-    create_metadata(db)
+    metadata, layer_id, original_props = create_zonal_metadata(db, no_props=True)
+    create_zonal_metadata(db)
     zonal_statistics = crud.data_product_metadata.get_zonal_statistics_by_layer_id(
         db, data_product_id=metadata[0].data_product_id, layer_id=layer_id
     )
@@ -169,7 +176,7 @@ def test_get_zonal_statistics_by_layer_id_with_no_original_props(db: Session) ->
 
 
 def test_update_data_product_metadata(db: Session) -> None:
-    metadata = create_metadata(db)[0][0]
+    metadata = create_zonal_metadata(db)[0][0]
     metadata_in_db = crud.data_product_metadata.get_by_data_product(
         db,
         category="zonal",
@@ -200,7 +207,7 @@ def test_update_data_product_metadata(db: Session) -> None:
 
 
 def test_delete_data_product_metadata(db: Session) -> None:
-    metadata = create_metadata(db)[0][0]
+    metadata = create_zonal_metadata(db)[0][0]
     metadata_removed = crud.data_product_metadata.remove(db, id=metadata.id)
     metadata_get_after_removed = crud.data_product_metadata.get(db, id=metadata.id)
     assert metadata_get_after_removed is None
