@@ -24,6 +24,19 @@ def test_login_with_valid_credentials(client: TestClient, db: Session) -> None:
     assert r.cookies.get("access_token")
 
 
+def test_login_with_email_in_different_case(client: TestClient, db: Session) -> None:
+    user = create_user(db, password="mysecretpassword")
+    data = {"username": user.email.upper(), "password": "mysecretpassword"}
+    assert user.email != user.email.upper()
+    r = client.post(
+        f"{settings.API_V1_STR}/auth/access-token",
+        data=data,
+        headers={"content_type": "application/x-www-form-urlencoded"},
+    )
+    assert r.status_code == 200
+    assert r.cookies.get("access_token")
+
+
 def test_login_with_invalid_credentials(client: TestClient, db: Session) -> None:
     user = create_user(db, password="mysecretpassword")
     data = {"username": user.email, "password": "mywrongpassword"}

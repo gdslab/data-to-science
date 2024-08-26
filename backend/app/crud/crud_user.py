@@ -33,7 +33,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             return user
 
     def get_by_email(self, db: Session, *, email: str) -> Optional[User]:
-        stmt = select(User).where(User.email == email)
+        stmt = select(User).where(func.lower(User.email) == email.lower())
         with db as session:
             user = session.scalar(stmt)
             if user:
