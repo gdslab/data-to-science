@@ -77,11 +77,12 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
             # add as project members if team is associated with project
             project_query = select(Project).where(Project.team_id == team_id)
             with db as session:
-                project = session.scalar(project_query)
-                if project:
-                    crud.project_member.create_multi_with_project(
-                        db, member_ids=team_members, project_id=project.id
-                    )
+                projects = session.scalars(project_query).all()
+                if len(projects) > 0:
+                    for project in projects:
+                        crud.project_member.create_multi_with_project(
+                            db, member_ids=team_members, project_id=project.id
+                        )
 
         return self.get_list_of_team_members(db, team_id=team_id)
 
