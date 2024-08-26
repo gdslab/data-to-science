@@ -63,7 +63,8 @@ def test_create_multi_team_members_adds_project_members(db: Session) -> None:
     team_owner = create_user(db)
     team = create_team(db, owner_id=team_owner.id)
     # create project and assign team to it
-    project = create_project(db, owner_id=team_owner.id, team_id=team.id)
+    project1 = create_project(db, owner_id=team_owner.id, team_id=team.id)
+    project2 = create_project(db, owner_id=team_owner.id, team_id=team.id)
     # create three new team members
     user1 = create_user(db)
     user2 = create_user(db)
@@ -75,15 +76,23 @@ def test_create_multi_team_members_adds_project_members(db: Session) -> None:
         team_id=team.id,
     )
     # fetch project members
-    project_members = crud.project_member.get_list_of_project_members(
-        db, project_id=project.id
+    project_members1 = crud.project_member.get_list_of_project_members(
+        db, project_id=project1.id
+    )
+    project_members2 = crud.project_member.get_list_of_project_members(
+        db, project_id=project2.id
     )
     assert new_team_members
     assert len(new_team_members) == 4  # three new team members plus owner
-    assert project_members
-    assert len(project_members) == len(new_team_members)
-    for project_member in project_members:
+    assert project_members1 and project_members2
+    # four team members * two projects
+    assert len(project_members1) + len(project_members2) == len(new_team_members) * 2
+    for project_member in project_members1:
         assert project_member.member_id in [team_owner.id, user1.id, user2.id, user3.id]
+        assert project_member.project_id == project1.id
+    for project_member in project_members2:
+        assert project_member.member_id in [team_owner.id, user1.id, user2.id, user3.id]
+        assert project_member.project_id == project2.id
 
 
 def test_no_duplicate_project_members_when_multiple_teams_assigned(db: Session) -> None:
