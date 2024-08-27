@@ -12,6 +12,7 @@ import geopandas as gpd
 import pika
 import rasterio
 from celery.utils.log import get_task_logger
+from fastapi.encoders import jsonable_encoder
 from geojson_pydantic import Feature, FeatureCollection, Polygon
 from rasterstats import zonal_stats
 from sqlalchemy.exc import IntegrityError
@@ -182,14 +183,27 @@ def process_geotiff(
         return None
 
     # update data product with STAC properties
+    try:
+        crud.data_product.update(
+            db,
+            db_obj=data_product,
+            obj_in=DataProductUpdate(
+                filepath=str(out_raster),
+                stac_properties=jsonable_encoder(ip.stac_properties),
+            ),
+        )
+    except Exception as e:
+        if os.path.exists(in_raster.parents[1]):
+            shutil.rmtree(in_raster.parents[1])
+        update_job_status(job, state="ERROR")
+        logger.exception("Failed to update data product in db")
+        return None
+
+    # indicate initial processing finished without errors
     crud.data_product.update(
         db,
         db_obj=data_product,
-        obj_in=DataProductUpdate(
-            filepath=str(out_raster),
-            stac_properties=ip.stac_properties,
-            is_initial_processing_completed=True,
-        ),
+        obj_in=DataProductUpdate(is_initial_processing_completed=True),
     )
 
     # create user style record for data product and user

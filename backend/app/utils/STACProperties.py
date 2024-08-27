@@ -1,5 +1,6 @@
-from typing_extensions import NotRequired, TypedDict
+from typing_extensions import NotRequired, TypedDict, Union
 
+import numpy as np
 from pydantic import BaseModel, TypeAdapter
 
 
@@ -24,11 +25,20 @@ class Stats(TypedDict):
     stddev: float
 
 
-class STACRasterProperties(TypedDict):
+class STACRasterPropertiesBase(TypedDict):
     data_type: str
     stats: Stats
-    nodata: NotRequired[int | float | None]
-    unit: NotRequired[str | None]
+    nodata: NotRequired[Union[int, float, str, None]]
+    unit: NotRequired[Union[str, None]]
+
+
+class STACRasterProperties(STACRasterPropertiesBase):
+    @staticmethod
+    def validate_nodata(properties: "STACRasterProperties") -> "STACRasterProperties":
+        # convert numpy nan to string before storing in database
+        if "nodata" in properties and np.isnan(properties["nodata"]):
+            properties["nodata"] = "nan"
+        return properties
 
 
 class STACEOProperties(TypedDict):
