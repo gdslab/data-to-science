@@ -87,4 +87,21 @@ export const cmaps: CMaps = [
       'gist_ncar',
     ],
   ],
+  [
+    'Qualitative colormaps',
+    [
+      'pastel1',
+      'pastel2',
+      'paired',
+      'accent',
+      'dark2',
+      'set1',
+      'set2',
+      'set3',
+      'tab10',
+      'tab20',
+      'tab20b',
+      'tab20c',
+    ],
+  ],
 ];
