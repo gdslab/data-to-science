@@ -125,6 +125,24 @@ def test_create_project_with_team_without_team_role(
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
+def test_create_project_with_demo_user(
+    client: TestClient, normal_user_access_token: str, db: Session
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
+    crud.user.update(db, db_obj=current_user, obj_in=UserUpdate(is_demo=True))
+    project_data = {
+        "title": random_team_name(),
+        "description": random_team_description(),
+        "planting_date": random_planting_date(),
+        "harvest_date": random_harvest_date(),
+        "location": get_geojson_feature_collection("polygon")["geojson"]["features"][0],
+    }
+    response = client.post(API_URL, json=jsonable_encoder(project_data))
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
 def test_get_project_with_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:

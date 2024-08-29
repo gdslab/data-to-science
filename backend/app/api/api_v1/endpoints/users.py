@@ -123,6 +123,11 @@ def update_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Permission denied"
         )
+    if user.is_demo:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Demo user cannot update profile",
+        )
     user_in = schemas.UserUpdate(**user.__dict__)
     if password is not None:
         user_in.password = password
@@ -150,6 +155,11 @@ def upload_user_profile(
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
+    if current_user.is_demo:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Demo user cannot change profile image",
+        )
     if os.environ.get("RUNNING_TESTS") == "1":
         upload_dir = f"{settings.TEST_STATIC_DIR}/users/{current_user.id}"
     else:

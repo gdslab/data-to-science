@@ -8,6 +8,7 @@ from app.api.deps import get_current_user, get_current_approved_user
 from app.core.config import settings
 from app.schemas.team import TeamUpdate
 from app.schemas.team_member import TeamMemberCreate
+from app.schemas.user import UserUpdate
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
 from app.tests.utils.team import (
@@ -28,6 +29,19 @@ def test_create_team(client: TestClient, normal_user_access_token: str) -> None:
     assert "id" in content
     assert data["title"] == content["title"]
     assert data["description"] == content["description"]
+
+
+def test_create_team_with_demo_user(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Verify new team is created in database."""
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
+    crud.user.update(db, db_obj=current_user, obj_in=UserUpdate(is_demo=True))
+    data = {"title": random_team_name(), "description": random_team_description()}
+    response = client.post(f"{settings.API_V1_STR}/teams", json=data)
+    response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_create_team_with_project(

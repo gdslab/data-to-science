@@ -39,6 +39,7 @@ class User(Base):
     last_name: Mapped[str] = mapped_column(String(64), nullable=False)
     full_name: Mapped[str] = column_property(first_name + " " + last_name)
     is_approved: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_demo: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_email_confirmed: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False
     )
@@ -77,7 +78,7 @@ class User(Base):
         return (
             f"User(id={self.id!r}, email={self.email!r}, "
             f"first_name={self.first_name!r}, last_name={self.last_name!r}, "
-            f"is_approved={self.is_approved!r}, "
+            f"is_approved={self.is_approved!r}, is_demo={self.is_demo!r}, "
             f"is_email_confirmed={self.is_email_confirmed!r}, "
             f"is_superuser={self.is_superuser!r}, created_at={self.created_at!r})"
         )

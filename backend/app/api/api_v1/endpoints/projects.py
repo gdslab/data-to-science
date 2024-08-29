@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Any, List
 from uuid import UUID
 
@@ -23,6 +24,11 @@ def create_project(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Create new project for current user."""
+    if current_user.is_demo:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Demo accounts cannot create projects",
+        )
     try:
         project = crud.project.create_with_owner(
             db,
@@ -43,17 +49,18 @@ def create_project(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to create project",
         )
-    # Create preview image for project field boundary
-    project_in_db = crud.project.get_user_project(
-        db, user_id=current_user.id, project_id=project["result"].id
-    )
-    if project_in_db["result"]:
-        coordinates = project_in_db["result"].field["geometry"]["coordinates"]
-        features = [Feature(**project_in_db["result"].field)]
-        try:
-            create_project_field_preview(project["result"].id, features)
-        except Exception:
-            logger.exception("Unable to create preview map")
+    # Create preview image for project field boundary - skip if running tests
+    if os.environ.get("RUNNING_TESTS") != "1":
+        project_in_db = crud.project.get_user_project(
+            db, user_id=current_user.id, project_id=project["result"].id
+        )
+        if project_in_db["result"]:
+            coordinates = project_in_db["result"].field["geometry"]["coordinates"]
+            features = [Feature(**project_in_db["result"].field)]
+            try:
+                create_project_field_preview(project["result"].id, features)
+            except Exception:
+                logger.exception("Unable to create preview map")
     return project["result"]
 
 

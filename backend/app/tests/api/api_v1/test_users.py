@@ -1,3 +1,4 @@
+import os
 from typing import List
 
 from fastapi import Request, status
@@ -8,6 +9,7 @@ from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
 from app.core.mail import fm
+from app.crud.crud_user import find_profile_img
 from app.schemas.user import UserUpdate
 from app.tests.utils.extension import (
     create_extension,
@@ -192,6 +194,63 @@ def test_update_user(
     assert str(current_user.id) == updated_user["id"]
     assert full_name["first"] == updated_user["first_name"]
     assert full_name["last"] == updated_user["last_name"]
+
+
+def test_update_demo_user(
+    request: Request,
+    client: TestClient,
+    db: Session,
+    normal_user_access_token: str,
+) -> None:
+    """Verify update changes user attributes in database."""
+    current_user = get_current_user(db, normal_user_access_token)
+    crud.user.update(db, db_obj=current_user, obj_in=UserUpdate(is_demo=True))
+    full_name = random_full_name()
+    user_in = UserUpdate(
+        first_name=full_name["first"],
+        last_name=full_name["last"],
+    )
+    response = client.put(
+        f"{settings.API_V1_STR}/users/{current_user.id}",
+        json=user_in.model_dump(),
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_update_profile(
+    request: Request, client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    profile_img_path = os.path.join(
+        os.sep, "app", "app", "tests", "data", "profile.png"
+    )
+    with open(profile_img_path, "rb") as profile_img_file:
+        response = client.post(
+            f"{settings.API_V1_STR}/users/profile", files={"files": profile_img_file}
+        )
+        assert response.status_code == status.HTTP_200_OK
+        profile_img_filename = find_profile_img(str(current_user.id))
+        assert profile_img_filename
+        profile_img_static_filepath = os.path.join(
+            settings.TEST_STATIC_DIR,
+            f"users/{current_user.id}/{profile_img_filename}",
+        )
+        assert os.path.exists(profile_img_static_filepath)
+
+
+def test_update_demo_user_profile(
+    request: Request, client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    crud.user.update(db, db_obj=current_user, obj_in=UserUpdate(is_demo=True))
+    profile_img_path = os.path.join(
+        os.sep, "app", "app", "tests", "data", "profile.png"
+    )
+    with open(profile_img_path, "rb") as profile_img_file:
+        response = client.post(
+            f"{settings.API_V1_STR}/users/profile", files={"files": profile_img_file}
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_read_user_extensions(

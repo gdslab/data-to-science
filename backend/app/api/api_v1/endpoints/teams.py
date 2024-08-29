@@ -18,6 +18,11 @@ def create_team(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Create new team."""
+    if current_user.is_demo:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Demo accounts cannot create teams",
+        )
     team = crud.team.create_with_owner(db, obj_in=team_in, owner_id=current_user.id)
     return team
 

@@ -191,6 +191,10 @@ def can_read_write_delete_team(
     current_user: models.User = Depends(get_current_approved_user),
 ) -> Optional[models.Team]:
     """Return team only if current user is owner of the team."""
+    if current_user.is_demo:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+        )
     team = crud.team.get_team(
         db, user_id=current_user.id, team_id=team_id, permission="readwrite"
     )
@@ -223,6 +227,10 @@ def can_read_write_project(
     current_user: models.User = Depends(get_current_approved_user),
 ) -> Optional[models.Project]:
     """Return project if current user is project owner or manager."""
+    if current_user.is_demo:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+        )
     project = crud.project.get_user_project(
         db, user_id=current_user.id, project_id=project_id, permission="rw"
     )
@@ -239,6 +247,10 @@ def can_read_write_project_with_jwt_or_api_key(
     current_user: models.User = Depends(get_current_approved_user_by_jwt_or_api_key),
 ) -> Optional[models.Project]:
     """Return project if current user is project owner or manager."""
+    if current_user.is_demo:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+        )
     project = crud.project.get_user_project(
         db, user_id=current_user.id, project_id=project_id, permission="rw"
     )
@@ -255,6 +267,10 @@ def can_read_write_delete_project(
     current_user: models.User = Depends(get_current_approved_user),
 ) -> Optional[models.Project]:
     """Return project if current user is project owner."""
+    if current_user.is_demo:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+        )
     project = crud.project.get_user_project(
         db, user_id=current_user.id, project_id=project_id, permission="rwd"
     )
@@ -289,6 +305,10 @@ def can_read_write_flight(
     project: models.Project = Depends(can_read_write_project),
 ) -> Optional[models.Flight]:
     """Return flight if current user is project owner or manager."""
+    if current_user.is_demo:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+        )
     flight = crud.flight.get_flight_by_id(
         db, project_id=project.id, flight_id=flight_id
     )
@@ -311,6 +331,10 @@ def can_read_write_delete_flight(
     project: models.Project = Depends(can_read_write_delete_project),
 ) -> Optional[models.Flight]:
     """Return flight if current user is project owner."""
+    if current_user.is_demo:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+        )
     flight = crud.flight.get_flight_by_id(
         db, project_id=project.id, flight_id=flight_id
     )

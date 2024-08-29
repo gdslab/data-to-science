@@ -147,7 +147,11 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
 
 
 def find_profile_img(user_id: str) -> Optional[str]:
-    user_static_dir = os.path.join(settings.STATIC_DIR, "users", user_id)
+    if os.environ.get("RUNNING_TESTS") == "1":
+        static_dir = settings.TEST_STATIC_DIR
+    else:
+        static_dir = settings.STATIC_DIR
+    user_static_dir = os.path.join(static_dir, "users", user_id)
     profile_img = glob.glob(os.path.join(user_static_dir, "*.png")) + glob.glob(
         os.path.join(user_static_dir, "*.jpg")
     )

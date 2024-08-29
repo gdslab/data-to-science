@@ -193,6 +193,11 @@ def change_password(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Provided current password is incorrect",
         )
+    if user.is_demo:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Demo accounts cannot change password",
+        )
     user_in = schemas.user.UserUpdate(password=new_password)
     user_updated = crud.user.update(db, db_obj=user, obj_in=user_in)
     return user_updated
@@ -318,6 +323,11 @@ def get_api_key(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Returns user obj with api key."""
+    if current_user.is_demo:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Demo user cannot request api key",
+        )
     api_key = crud.api_key.create_with_user(db, user_id=current_user.id)
     if not api_key:
         raise HTTPException(
@@ -333,6 +343,11 @@ def deactivate_api_key(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Deactivates user's api key."""
+    if current_user.is_demo:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Demo accounts cannot create teams",
+        )
     api_key = crud.api_key.deactivate(db, user_id=current_user.id)
     if not api_key:
         raise HTTPException(
