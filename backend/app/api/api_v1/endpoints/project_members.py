@@ -90,6 +90,12 @@ def update_project_member(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Project member not found"
         )
+    project_member_user_obj = crud.user.get(db, id=project_member_db.member_id)
+    if not project_member_user_obj or (
+        project_member_user_obj and project_member_user_obj.is_demo
+    ):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Permission denied")
+
     updated_project_member = crud.project_member.update_project_member(
         db, project_member_obj=project_member_db, project_member_in=project_member_in
     )

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional, TYPE_CHECKING
 
-from pydantic import AnyHttpUrl, BaseModel, UUID4
+from pydantic import AnyHttpUrl, BaseModel, Field, UUID4
 
 
 if TYPE_CHECKING:
@@ -15,8 +15,9 @@ class UserBase(BaseModel):
     email: Optional[EmailStr] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
-    is_email_confirmed: bool = False
     is_approved: bool = False
+    is_demo: bool = False
+    is_email_confirmed: bool = False
 
 
 # properties to receive via API on creation
@@ -44,6 +45,8 @@ class User(UserInDBBase):
     exts: List[str] = []
     is_superuser: bool
     profile_url: Optional[AnyHttpUrl] = None
+    # exclude from api responses
+    is_demo: bool = Field(exclude=True)
 
 
 # additional properties stored in DB

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import axios, { isAxiosError } from 'axios';
 import { Formik, Form } from 'formik';
 import { useNavigate } from 'react-router-dom';
 
@@ -74,10 +74,10 @@ export default function ProjectForm({
               // do something
             }
           } catch (err) {
-            if (axios.isAxiosError(err)) {
+            if (isAxiosError(err) && err.response && err.response.data.detail) {
               setStatus({
                 type: 'error',
-                msg: 'Unexpected error occurred. Unable to save project.',
+                msg: err.response.data.detail,
               });
             } else {
               setStatus({

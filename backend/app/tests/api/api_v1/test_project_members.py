@@ -9,6 +9,7 @@ from app import crud
 from app.api.deps import get_current_user, get_current_approved_user
 from app.core.config import settings
 from app.schemas.project_member import ProjectMemberUpdate
+from app.schemas.user import UserUpdate
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
 from app.tests.utils.team import create_team
@@ -277,6 +278,23 @@ def test_update_project_member_with_project_owner_role(
     updated_project_member = response.json()
     assert updated_project_member["id"] == str(project_member.id)
     assert updated_project_member["role"] == "manager"
+
+
+def test_update_demo_project_member_with_project_owner_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
+    project = create_project(db, owner_id=current_user.id)
+    project_member = create_project_member(db, role="viewer")
+    demo_user = crud.user.get(db, id=project_member.member_id)
+    crud.user.update(db, db_obj=demo_user, obj_in=UserUpdate(is_demo=True))
+    project_member_in = {"role": "manager"}
+    response = client.put(
+        f"{API_URL}/{project.id}/members/{project_member.id}", json=project_member_in
+    )
+    assert response.status_code == 403
 
 
 def test_update_project_member_with_project_manager_role(
