@@ -5,17 +5,23 @@ import { Button, LinkButton } from '../../Buttons';
 import { useFieldCampaignContext } from './fieldCampaigns/FieldCampaignContext';
 import FieldCampaignTable from './fieldCampaigns/FieldCampaignTable';
 import { FieldCampaign } from './Project';
+import { useProjectContext } from './ProjectContext';
 
 export default function ProjectCampaigns() {
   const navigate = useNavigate();
   const { projectId } = useParams();
 
+  const { projectRole } = useProjectContext();
   const { fieldCampaign, updateFieldCampaign } = useFieldCampaignContext();
 
   return (
     <div className="flex flex-col gap-4 pb-4">
       <h2>Field Data</h2>
-      {fieldCampaign && fieldCampaign.form_data ? <FieldCampaignTable /> : null}
+      {fieldCampaign && fieldCampaign.form_data ? (
+        <FieldCampaignTable />
+      ) : (
+        'No field data has been added.'
+      )}
       {fieldCampaign ? (
         <div className="flex justify-center">
           <LinkButton
@@ -26,7 +32,7 @@ export default function ProjectCampaigns() {
           </LinkButton>
         </div>
       ) : null}
-      {!fieldCampaign ? (
+      {!fieldCampaign && projectRole !== 'viewer' ? (
         <div className="flex justify-center">
           <Button
             type="button"

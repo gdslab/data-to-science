@@ -56,7 +56,7 @@ function getGeomTypeIcon(geomType: string): string {
 }
 
 export default function ProjectLayersTable() {
-  const { mapLayers, mapLayersDispatch } = useProjectContext();
+  const { mapLayers, mapLayersDispatch, projectRole } = useProjectContext();
   const { projectId } = useParams();
 
   const [status, setStatus] = useState<Status | null>(null);
@@ -70,7 +70,7 @@ export default function ProjectLayersTable() {
             <th>Name</th>
             <th>Type</th>
             <th>Download</th>
-            <th>Remove</th>
+            {projectRole !== 'viewer' && <th>Remove</th>}
           </tr>
         </thead>
         <tbody className="max-h-96 overflow-y-auto">
@@ -117,42 +117,30 @@ export default function ProjectLayersTable() {
                     </div>
                   </div>
                 </td>
-                <td className="p-4 bg-white">
-                  <ConfirmationModal
-                    btnName="Remove map layer"
-                    btnType="trashIcon"
-                    iconSize={22}
-                    title="Are you sure you want to remove this map layer?"
-                    content="You will not be able to recover this map layer after removing it. You can always re-upload the map layer at a later time."
-                    rejectText="Keep map layer"
-                    confirmText="Remove map layer"
-                    onConfirm={async () => {
-                      if (projectId) {
-                        try {
-                          const response: AxiosResponse<MapLayerFeatureCollection> =
-                            await axios.delete(
-                              `${
-                                import.meta.env.VITE_API_V1_STR
-                              }/projects/${projectId}/vector_layers/${layer.id}`
-                            );
-                          if (response.status === 200) {
-                            // update map layer context with new map layer
-                            mapLayersDispatch({
-                              type: 'remove',
-                              payload: [response.data],
-                            });
-                          } else {
-                            setStatus({
-                              type: 'error',
-                              msg: 'Unable to remove layer',
-                            });
-                          }
-                        } catch (err) {
-                          if (isAxiosError(err)) {
-                            if (isAxiosError(err)) {
-                              setStatus({
-                                type: 'error',
-                                msg: err.response?.data.detail,
+                {projectRole !== 'viewer' && (
+                  <td className="p-4 bg-white">
+                    <ConfirmationModal
+                      btnName="Remove map layer"
+                      btnType="trashIcon"
+                      iconSize={22}
+                      title="Are you sure you want to remove this map layer?"
+                      content="You will not be able to recover this map layer after removing it. You can always re-upload the map layer at a later time."
+                      rejectText="Keep map layer"
+                      confirmText="Remove map layer"
+                      onConfirm={async () => {
+                        if (projectId) {
+                          try {
+                            const response: AxiosResponse<MapLayerFeatureCollection> =
+                              await axios.delete(
+                                `${
+                                  import.meta.env.VITE_API_V1_STR
+                                }/projects/${projectId}/vector_layers/${layer.id}`
+                              );
+                            if (response.status === 200) {
+                              // update map layer context with new map layer
+                              mapLayersDispatch({
+                                type: 'remove',
+                                payload: [response.data],
                               });
                             } else {
                               setStatus({
@@ -160,12 +148,26 @@ export default function ProjectLayersTable() {
                                 msg: 'Unable to remove layer',
                               });
                             }
+                          } catch (err) {
+                            if (isAxiosError(err)) {
+                              if (isAxiosError(err)) {
+                                setStatus({
+                                  type: 'error',
+                                  msg: err.response?.data.detail,
+                                });
+                              } else {
+                                setStatus({
+                                  type: 'error',
+                                  msg: 'Unable to remove layer',
+                                });
+                              }
+                            }
                           }
                         }
-                      }
-                    }}
-                  />
-                </td>
+                      }}
+                    />
+                  </td>
+                )}
               </tr>
             ))}
         </tbody>
