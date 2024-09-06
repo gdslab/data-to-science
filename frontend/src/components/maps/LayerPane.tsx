@@ -4,9 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   ArrowUturnLeftIcon,
   Bars3Icon,
-  MapIcon,
   PaperAirplaneIcon,
-  ScaleIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 
@@ -14,6 +12,7 @@ import { Button, LinkOutlineButton } from '../Buttons';
 import { getDataProductName } from '../pages/projects/flights/DataProducts/DataProductsTable';
 import HintText from '../HintText';
 import { useMapContext } from './MapContext';
+import MapToolbar from './MapToolbar';
 import Pagination, { getPaginationResults } from '../Pagination';
 import { Band } from '../pages/projects/Project';
 import { Project } from '../pages/projects/ProjectList';
@@ -31,69 +30,6 @@ import UASIcon from '../../assets/uas-icon.svg';
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
-}
-
-function MapToolbar() {
-  const {
-    activeMapTool,
-    activeDataProductDispatch,
-    activeMapToolDispatch,
-    tileScaleDispatch,
-  } = useMapContext();
-  return (
-    <fieldset className="border border-solid border-slate-300 p-1.5">
-      <legend>Map Tools</legend>
-      <div className="flex items-end justify-start gap-1.5">
-        <div
-          className={classNames(
-            activeMapTool === 'map' ? 'bg-accent2' : '',
-            'h-8 w-8 cursor-pointer shadow-sm hover:shadow-xl rounded border-2 border-solid border-slate-500 p-1.5'
-          )}
-          onClick={() => {
-            activeDataProductDispatch({ type: 'clear', payload: null });
-            activeMapToolDispatch({ type: 'set', payload: 'map' });
-          }}
-        >
-          <MapIcon className="h-4 w-4" />
-          <span className="sr-only">Map Tool</span>
-        </div>
-        <div
-          className={classNames(
-            activeMapTool === 'compare' ? 'bg-accent2' : '',
-            'h-8 w-8 cursor-pointer shadow-sm hover:shadow-xl rounded border-2 border-solid border-slate-500 p-1.5'
-          )}
-          onClick={() => {
-            activeDataProductDispatch({ type: 'clear', payload: null });
-            activeMapToolDispatch({ type: 'set', payload: 'compare' });
-          }}
-        >
-          <ScaleIcon className="h-4 w-4" />
-          <span className="sr-only">Compare Tool</span>
-        </div>
-        <div className="mt-4">
-          <input
-            id="scale-checkbox"
-            type="checkbox"
-            name="scale"
-            className="size-4 rounded text-accent2 border-gray-300"
-            onChange={(e) => {
-              tileScaleDispatch({
-                type: 'set',
-                payload: e.currentTarget.checked ? 4 : 2,
-              });
-            }}
-          />
-          <label
-            htmlFor="scale-checkbox"
-            className="ms-2 text-sm font-medium text-gray-900"
-            title="Increases tile resolution from 512x512 to 1024x1024"
-          >
-            Increase tile resolution
-          </label>
-        </div>
-      </div>
-    </fieldset>
-  );
 }
 
 function LayerCard({
@@ -341,9 +277,9 @@ export default function LayerPane({
     );
   } else {
     return (
-      <div className="flex flex-col h-full">
-        <div className="flex-1 flex flex-col pb-12 text-slate-700 overflow-y-auto">
-          <div className="flex items-center justify-between p-2.5">
+      <div className="h-full flex flex-col">
+        <div className="h-full text-slate-700">
+          <div className="h-11 flex items-center justify-between p-2.5">
             {activeProject ? (
               <button
                 type="button"
@@ -363,11 +299,13 @@ export default function LayerPane({
             />
           </div>
           {activeProject ? (
-            <article className="p-4 overflow-y-auto">
-              <h1>{activeProject.title}</h1>
-              <HintText>{activeProject.description}</HintText>
-              <MapToolbar />
-              <ul className="mt-4 space-y-2">
+            <article className="h-[calc(100%_-_44px)] p-4">
+              <div className="h-40">
+                <h1>{activeProject.title}</h1>
+                <HintText>{activeProject.description}</HintText>
+                <MapToolbar />
+              </div>
+              <ul className="h-[calc(100%_-_160px)] space-y-2 overflow-y-auto pb-16">
                 {flights
                   .sort((a, b) =>
                     new Date(a.acquisition_date) < new Date(b.acquisition_date) ? 1 : -1
@@ -527,30 +465,32 @@ export default function LayerPane({
               </ul>
             </article>
           ) : (
-            <article className="flex flex-col p-4 overflow-y-auto overflow-x-hidden">
-              <h1>Projects</h1>
-              {mapProjects && mapProjects.length > 0 ? (
-                <div className="flex flex-col gap-2 my-2">
-                  <ProjectSearch
-                    searchText={searchText}
-                    updateSearchText={updateSearchText}
-                  />
-                  <div className="flex justify-between">
-                    {getPaginationResults(
-                      currentPage,
-                      MAX_ITEMS,
-                      filterAndSlice(mapProjects).length,
-                      filterByVisibilityAndSearch(mapProjects).length
-                    )}
-                    <Sort
-                      sortSelection={sortSelection}
-                      setSortSelection={setSortSelection}
+            <article className="h-[calc(100%_-_44px)] p-4">
+              <div className="h-36">
+                <h1>Projects</h1>
+                {mapProjects && mapProjects.length > 0 ? (
+                  <div className="flex flex-col gap-2 my-2">
+                    <ProjectSearch
+                      searchText={searchText}
+                      updateSearchText={updateSearchText}
                     />
+                    <div className="flex justify-between">
+                      {getPaginationResults(
+                        currentPage,
+                        MAX_ITEMS,
+                        filterAndSlice(mapProjects).length,
+                        filterByVisibilityAndSearch(mapProjects).length
+                      )}
+                      <Sort
+                        sortSelection={sortSelection}
+                        setSortSelection={setSortSelection}
+                      />
+                    </div>
                   </div>
-                </div>
-              ) : null}
+                ) : null}
+              </div>
               {mapProjects && mapProjects.length > 0 ? (
-                <ul className="space-y-2 overflow-y-auto">
+                <ul className="h-[calc(100%_-_144px)] space-y-2 overflow-y-auto pb-16">
                   {getAvailableProjects(mapProjects).map((project) => (
                     <li key={project.id}>
                       <LayerCard hover={true}>
