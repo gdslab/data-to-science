@@ -8,6 +8,7 @@ import { ZoomControl } from 'react-leaflet/ZoomControl';
 import ColorBarControl from './ColorBarControl';
 import CompareTool, { CompareToolAlert, getFlightsWithGTIFF } from './CompareTool';
 import DataProductTileLayer, { HillshadeTileLayer } from './DataProductTileLayer';
+import GeocoderControl from './GeocoderControl';
 import MapLayersControl from './MapLayersControl';
 import ProjectBoundary from './ProjectBoundary';
 import ProjectLayersControl from './ProjectLayersControl';
@@ -93,9 +94,9 @@ export default function Map({ layerPaneHidden }: { layerPaneHidden: boolean }) {
         ) : activeMapTool === 'compare' && getFlightsWithGTIFF(flights).length === 0 ? (
           <CompareToolAlert />
         ) : null}
-
         <MapLayersControl />
         <ZoomControl position="topleft" />
+        <GeocoderControl position="topleft" />
         <ScaleControl position="bottomright" />
       </MapContainer>
     );

@@ -31,6 +31,7 @@
     "clsx": "^2.1.0",
     "formik": "^2.4.2",
     "leaflet": "^1.9.4",
+    "leaflet-control-geocoder": "^2.4.0",
     "leaflet-side-by-side": "^2.2.0",
     "leaflet.markercluster": "^1.5.3",
     "localforage": "^1.10.0",
