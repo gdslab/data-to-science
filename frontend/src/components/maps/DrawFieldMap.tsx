@@ -7,6 +7,7 @@ import { ScaleControl } from 'react-leaflet';
 import { ZoomControl } from 'react-leaflet/ZoomControl';
 import { useLeafletContext } from '@react-leaflet/core';
 
+import GeocoderControl from './GeocoderControl';
 import GeomanControl from './GeomanControl';
 import MapLayersControl from './MapLayersControl';
 import UploadGeoJSON from './UploadGeoJSON';
@@ -97,6 +98,7 @@ export default function DrawFieldMap({
         key={getGCKey(location, featureCollection) + 'zc'}
         position="topleft"
       />
+      <GeocoderControl position="topleft" showMarker={true} />
       <ScaleControl position="bottomright" />
     </MapContainer>
   );
