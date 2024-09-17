@@ -7,11 +7,13 @@ import AuthContext from '../../AuthContext';
 import { generateRandomProfileColor } from '../pages/auth/Profile';
 
 import brandLogo from '../../assets/d2s-logo-white-horizontal.png';
+import ContactFormModal from '../ContactForm';
 
 const navigation = [
   { name: 'HOMEPAGE', href: '/home' },
   { name: 'WORKSPACE', href: '/projects' },
   { name: 'MY TEAMS', href: '/teams' },
+  { name: 'CONTACT US', component: <ContactFormModal /> },
 ];
 
 function classNames(...classes: [string, string]) {
@@ -50,23 +52,29 @@ export default function Navbar() {
                 {user ? (
                   <div className="hidden sm:ml-6 sm:block">
                     <div className="flex space-x-4">
-                      {navigation.map((item) => (
-                        <a
-                          key={item.name}
-                          href={item.href}
-                          className={classNames(
-                            location.pathname === item.href
-                              ? 'font-semibold'
-                              : 'hover:[text-shadow:_0px_8px_16px_rgb(0_0_0_/_70%)]',
-                            'rounded-md px-3 py-2 text-md text-white visited:text-white'
-                          )}
-                          aria-current={
-                            location.pathname === item.href ? 'page' : undefined
-                          }
-                        >
-                          {item.name}
-                        </a>
-                      ))}
+                      {navigation.map((item) => {
+                        if (item.href) {
+                          return (
+                            <a
+                              key={item.name}
+                              href={item.href}
+                              className={classNames(
+                                location.pathname === item.href
+                                  ? 'font-semibold'
+                                  : 'hover:[text-shadow:_0px_8px_16px_rgb(0_0_0_/_70%)]',
+                                'rounded-md px-3 py-2 text-md text-white visited:text-white'
+                              )}
+                              aria-current={
+                                location.pathname === item.href ? 'page' : undefined
+                              }
+                            >
+                              {item.name}
+                            </a>
+                          );
+                        } else {
+                          return <div key={item.name}>{item.component}</div>;
+                        }
+                      })}
                     </div>
                   </div>
                 ) : null}
