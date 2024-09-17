@@ -8,7 +8,6 @@ import FlightCarousel from './flights/FlightCarousel';
 import FlightDeleteModal from './flights/FlightDeleteModal';
 import FlightForm from './flights/FlightForm';
 import Modal from '../../Modal';
-import Table, { TableBody, TableHead } from '../../Table';
 import TableCardRadioInput from '../../TableCardRadioInput';
 import { useProjectContext } from './ProjectContext';
 
@@ -39,15 +38,6 @@ export default function ProjectFlights() {
     project,
     projectRole,
   } = useProjectContext();
-
-  const flightColumns = [
-    'Name',
-    'Platform',
-    'Sensor',
-    'Acquisition Date',
-    'Data',
-    'Actions',
-  ];
 
   function updateFlightsFilter(filterSelections: string[]) {
     flightsFilterSelectionDispatch({ type: 'set', payload: filterSelections });
@@ -117,73 +107,94 @@ export default function ProjectFlights() {
         </div>
 
         {project && flights && flights.length > 0 && tableView === 'table' && (
-          <div className="overflow-x-auto">
-            <div className="min-w-[1000px]">
-              <Table>
-                <TableHead
-                  columns={
-                    projectRole === 'viewer'
-                      ? flightColumns.slice(0, flightColumns.length - 1)
-                      : flightColumns
-                  }
-                />
-                <div className="overflow-y-auto min-h-96 max-h-96 xl:max-h-[420px] 2xl:max-h-[512px]">
-                  <TableBody
-                    rows={(sortedFlights || []).map((flight) => ({
-                      key: flight.id,
-                      values: [
-                        flight.name ? flight.name : '',
-                        flight.platform.replace(/_/g, ' '),
-                        flight.sensor,
-                        flight.acquisition_date,
-                        <Link
-                          className="!text-sky-600 visited:text-sky-600"
-                          to={`/projects/${project.id}/flights/${flight.id}/data`}
-                        >
-                          Manage
-                        </Link>,
-                      ],
-                    }))}
-                    actions={
-                      projectRole === 'viewer'
-                        ? undefined
-                        : (sortedFlights || []).map((flight) => {
-                            const editAction = {
-                              key: `action-edit-${flight.id}`,
-                              icon: <PencilIcon className="h-4 w-4" />,
-                              label: 'Edit',
-                              url: `/projects/${project.id}/flights/${flight.id}/edit`,
-                            };
-                            const moveAction = {
-                              key: `action-move-${flight.id}`,
-                              type: 'component',
-                              component: (
-                                <MoveFlightModal
-                                  flightId={flight.id}
-                                  srcProjectId={flight.project_id}
-                                  tableView={true}
-                                />
-                              ),
-                              label: 'Move',
-                            };
-                            const deleteAction = {
-                              key: `action-delete-${flight.id}`,
-                              type: 'component',
-                              component: (
-                                <FlightDeleteModal flight={flight} tableView={true} />
-                              ),
-                              label: 'Delete',
-                            };
-                            if (projectRole === 'owner') {
-                              return [editAction, moveAction, deleteAction];
-                            } else {
-                              return [editAction];
-                            }
-                          })
-                    }
-                  />
-                </div>
-              </Table>
+          <div className="min-w-[1000px] overflow-x-auto">
+            <div className="overflow-y-auto min-h-96 max-h-96 xl:max-h-[420px] 2xl:max-h-[512px]">
+              <table className="w-full table-auto border-collapse">
+                <thead className="h-full sticky top-0 bg-[#e2e8f0]">
+                  <tr className="whitespace-nowrap font-semibold text-slate-600">
+                    <th scope="col" className="px-4 py-2">
+                      Name
+                    </th>
+                    <th scope="col" className="px-4 py-2">
+                      Platform
+                    </th>
+                    <th scope="col" className="px-4 py-2 w-40">
+                      Sensor
+                    </th>
+                    <th scope="col" className="px-4 py-2 w-48">
+                      Acquisition Date
+                    </th>
+                    <th scope="col" className="px-4 py-2 w-24">
+                      Data
+                    </th>
+                    {projectRole !== 'viewer' && (
+                      <th scope="col" className="px-4 py-2 w-64">
+                        Actions
+                      </th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {(sortedFlights || []).map((flight, index) => (
+                    <tr
+                      key={`tablerow::${index}`}
+                      className="text-center whitespace-nowrap"
+                    >
+                      <td className="p-1 max-w-96">
+                        <div className="bg-white p-4 text-ellipsis overflow-hidden ...">
+                          {flight.name || 'No name'}
+                        </div>
+                      </td>
+                      <td className="p-1 max-w-80">
+                        <div className="bg-white p-4 text-ellipsis overflow-hidden ...">
+                          {flight.platform.replace(/_/g, ' ')}
+                        </div>
+                      </td>
+                      <td className="p-1">
+                        <div className="bg-white p-4">{flight.sensor}</div>
+                      </td>
+                      <td className="p-1">
+                        <div className="bg-white p-4">{flight.acquisition_date}</div>
+                      </td>
+                      <td className="p-1">
+                        <div className="bg-white p-4">
+                          <Link
+                            className="!text-sky-600 visited:text-sky-600"
+                            to={`/projects/${project.id}/flights/${flight.id}/data`}
+                          >
+                            Manage
+                          </Link>
+                        </div>
+                      </td>
+                      {projectRole !== 'viewer' && (
+                        <td className="p-1">
+                          <div className="flex items-center justify-between gap-4 p-4 bg-white">
+                            <Link
+                              className="!text-sky-600 visited:text-sky-600"
+                              to={`/projects/${project.id}/flights/${flight.id}/edit`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <PencilIcon className="h-4 w-4" />
+                                <span>Edit</span>
+                              </div>
+                            </Link>
+                            {projectRole === 'owner' && (
+                              <MoveFlightModal
+                                flightId={flight.id}
+                                srcProjectId={flight.project_id}
+                                tableView={true}
+                              />
+                            )}
+                            {projectRole === 'owner' && (
+                              <FlightDeleteModal flight={flight} tableView={true} />
+                            )}
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}

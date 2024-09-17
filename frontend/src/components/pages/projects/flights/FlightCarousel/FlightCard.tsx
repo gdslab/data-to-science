@@ -21,7 +21,7 @@ export default function FlightCard({ flight }: { flight: Flight }) {
     <div className="flex flex-col items-center justify-center">
       <Card rounded={true}>
         <div className="w-[264px] grid grid-flow-row auto-rows-max gap-4">
-          <div className="h-8">
+          <div className="h-8 text-ellipsis overflow-hidden ...">
             {flight.name && (
               <span className="text-lg font-semibold">{flight.name}</span>
             )}

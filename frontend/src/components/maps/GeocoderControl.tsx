@@ -32,17 +32,26 @@ export default function GeocoderControl({
           map.removeLayer(bboxPolyRef.current);
         }
         // Create new bounding box polygon and add to map
-        let bbox = e.geocode.bbox;
-        let poly = L.polygon([
-          bbox.getSouthEast(),
-          bbox.getNorthEast(),
-          bbox.getNorthWest(),
-          bbox.getSouthWest(),
-        ]).addTo(map);
+        const bbox = e.geocode.bbox;
+        const poly = L.polygon(
+          [
+            bbox.getSouthEast(),
+            bbox.getNorthEast(),
+            bbox.getNorthWest(),
+            bbox.getSouthWest(),
+          ],
+          { fill: false, color: '#f9ff33' }
+        ).addTo(map);
         // Update state with new bounding box polygon
         bboxPolyRef.current = poly;
         // Zoom map to extent of bounding box polygon
         map.fitBounds(poly.getBounds());
+        // Add event to remove polygon when clicked
+        // poly.addEventListener('click', () => {
+        //   if (confirm('Remove boundary?') && bboxPolyRef.current) {
+        //     map.removeLayer(bboxPolyRef.current);
+        //   }
+        // });
       });
     }
 

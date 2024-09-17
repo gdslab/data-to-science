@@ -28,10 +28,10 @@ export default function FlightDeleteModal({
       <div>
         {tableView ? (
           <div
-            className="flex items-center text-sky-600 text-sm cursor-pointer"
+            className="flex items-center text-sky-600 cursor-pointer"
             onClick={() => setOpenConfirmationPopup(true)}
           >
-            <div className="relative rounded-full accent3 p-1 focus:outline-none">
+            <div className="rounded-full accent3 p-1 focus:outline-none">
               <TrashIcon className="w-4 h-4" />
             </div>
             <span>Delete</span>
