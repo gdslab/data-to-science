@@ -164,7 +164,7 @@ def send_contact_email(
     content += "<br /><br /><p>-D2S Support</p>"
 
     send_email(
-        subject=subject,
+        subject="D2S Contact Form Submission",
         recipients=[settings.MAIL_FROM],
         body=content,
         background_tasks=background_tasks,
