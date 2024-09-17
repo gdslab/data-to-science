@@ -138,15 +138,27 @@ services:
     depends_on:
       - frontend
 
+  varnish:
+    image: varnish:latest
+    volumes:
+      - ./default.vcl:/etc/varnish/default.vcl:ro
+    ports:
+      - "8888:80"
+    tmpfs:
+      - /var/lib/varnish/varnishd:exec
+    environment:
+      - VARNISH_SIZE=2G
+    command: "-p default_keep=300"
+    depends_on:
+      - titiler
+
   titiler:
     image: ghcr.io/developmentseed/titiler:latest
     volumes:
       - user-data:/static
-    ports:
-      - ":8888"
     environment:
       # uvicorn/gunicorn settings
-      - PORT=8888
+      - PORT=8000
       - WORKERS_PER_CORE=0.5
       - WEB_CONCURRENCY=2
       - ACCESS_LOG=/var/log/titiler-access.log

@@ -2,13 +2,16 @@ import json
 import logging
 import os
 from datetime import datetime
+from io import BytesIO
 from pathlib import Path
-from typing import Annotated, Any, List, Sequence, Union
+from typing import Annotated, Any, List, Optional, Sequence, Union
 from uuid import UUID, uuid4
 
+import httpx
 from geojson_pydantic import Feature, FeatureCollection, Polygon, MultiPolygon
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -114,6 +117,49 @@ def read_all_data_product(
         db, flight_id=flight.id, upload_dir=upload_dir, user_id=current_user.id
     )
     return all_data_product
+
+
+@router.get("/{data_product_id}/maptiles")
+async def get_map_tiles_for_data_product(
+    x: float,
+    y: float,
+    z: int,
+    data_product_id: UUID,
+    scale: int,
+    bidx: Annotated[Optional[List[int]], Query()] = None,
+    rescale: Annotated[Optional[List[str]], Query()] = None,
+    colormap_name: Annotated[Optional[str], Query()] = None,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    flight: schemas.Flight = Depends(deps.can_read_flight),
+    db: Session = Depends(deps.get_db),
+):
+    query_params = ""
+    if bidx and len(bidx) > 0:
+        for band_index in bidx:
+            query_params += f"&bidx={band_index}"
+    if rescale and len(rescale) > 0:
+        for rescale_range in rescale:
+            query_params += f"&rescale={rescale_range}"
+    if colormap_name:
+        query_params += f"&colormap_name={colormap_name}"
+    upload_dir = get_static_dir()
+    data_product = crud.data_product.get_single_by_id(
+        db,
+        data_product_id=data_product_id,
+        upload_dir=upload_dir,
+        user_id=current_user.id,
+    )
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"http://varnish/cog/tiles/WebMercatorQuad/{z}/{x}/{y}@{scale}x"
+            f"?url={data_product.filepath}{query_params}"
+        )
+    if response.status_code == 200:
+        return StreamingResponse(BytesIO(response.content), media_type="image/png")
+    else:
+        raise HTTPException(
+            status_code=response.status_code, detail=f"Error: {response.text}"
+        )
 
 
 @router.put("/{data_product_id}", response_model=schemas.DataProduct)
