@@ -2,9 +2,9 @@ import { useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { useProjectContext } from '../ProjectContext';
-import UASIcon from '../../../../assets/uas-icon.svg';
-import HintText from '../../../HintText';
 import { classNames, sorter } from '../../../utils';
+
+import UASIcon from '../../../../assets/uas-icon.svg';
 
 export default function FlightDataNav() {
   const { flightId, projectId } = useParams();
@@ -42,7 +42,9 @@ export default function FlightDataNav() {
             <span className="w-full text-center text-slate-700 text-sm font-light truncate">
               {flight.name ? flight.name : ''}
             </span>
-            <HintText>{flight.platform}</HintText>
+            <span className="w-full text-center text-slate-700 text-sm font-light truncate">
+              {flight.platform}
+            </span>
           </Link>
         ))}
       </nav>

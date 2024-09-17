@@ -90,10 +90,10 @@ export default function MoveFlightModal({
     <div>
       {tableView ? (
         <div
-          className="flex items-center text-sky-600 text-sm cursor-pointer"
+          className="flex items-center text-sky-600 cursor-pointer"
           onClick={() => setOpen(true)}
         >
-          <div className="relative rounded-full accent3 p-1 focus:outline-none">
+          <div className="rounded-full accent3 p-1 focus:outline-none">
             <FolderIcon className="w-4 h-4" />
           </div>
           <span>Move</span>
