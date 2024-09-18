@@ -6,10 +6,6 @@ upstream backend {
     server  backend:5000;
 }
 
-upstream titiler {
-    server titiler:8888;
-}
-
 upstream tusd {
     server tusd:8080;
 }
@@ -109,11 +105,5 @@ server {
         proxy_set_header Host $host;
 
         proxy_pass http://backend;
-    }
-
-    location /cog {
-        proxy_set_header Host $host;
-
-        proxy_pass http://titiler/cog;
     }
 }

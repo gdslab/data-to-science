@@ -6,6 +6,8 @@ import {
   OrthoSymbologySettings,
   SymbologySettings,
 } from './Maps';
+
+import { Project } from '../pages/projects/ProjectList';
 import { DataProduct } from '../pages/projects/Project';
 import { getDefaultStyle, isSingleBand } from './utils';
 
@@ -23,13 +25,17 @@ function getTileURL(
   cmap: string | undefined = undefined,
   rescale: number[] | undefined = undefined,
   bidxs: number[] | undefined = undefined,
-  scale: number = 2
+  scale: number = 2,
+  projectId: string,
+  flightId: string,
+  dataProductId: string
 ): string {
   // URL for TiTIler service
   let titilerURL = `/cog/tiles/WebMercatorQuad/{z}/{x}/{y}@${scale}x?url=${url}`;
+  let queryParams = '';
   // Add band ids, color map, and rescale parameters to URL (if necessary)
-  if (bidxs) titilerURL += `&bidx=${bidxs[0]}&bidx=${bidxs[1]}&bidx=${bidxs[2]}`;
-  if (cmap) titilerURL += `&colormap_name=${cmap}`;
+  if (bidxs) queryParams += `&bidx=${bidxs[0]}&bidx=${bidxs[1]}&bidx=${bidxs[2]}`;
+  if (cmap) queryParams += `&colormap_name=${cmap}`;
   if (rescale)
     rescale
       .reduce(
@@ -38,9 +44,11 @@ function getTileURL(
         []
       )
       .map((x) => `&rescale=${x}`)
-      .forEach((rescaleValue) => (titilerURL += rescaleValue));
-
-  return titilerURL;
+      .forEach((rescaleValue) => (queryParams += rescaleValue));
+  titilerURL += queryParams;
+  return `${
+    import.meta.env.VITE_API_V1_STR
+  }/projects/${projectId}/flights/${flightId}/data_products/${dataProductId}/maptiles?scale=${scale}${queryParams}&x={x}&y={y}&z={z}`;
 }
 
 /**
@@ -50,6 +58,7 @@ function getTileURL(
  * @returns {TileLayer} TileLayer for a data product.
  */
 export function getDataProductTileLayer(
+  project: Project,
   dataProduct: DataProduct,
   symbologySettings?: SymbologySettings | undefined,
   tileLayerRef?: undefined | React.MutableRefObject<L.TileLayer | null>,
@@ -96,7 +105,10 @@ export function getDataProductTileLayer(
           colorRamp,
           rescale,
           undefined,
-          scale
+          scale,
+          project.id,
+          dataProduct.flight_id,
+          dataProduct.id
         )}
         zIndex={500}
         maxNativeZoom={24}
@@ -172,7 +184,10 @@ export function getDataProductTileLayer(
           undefined,
           rescale,
           bidxs,
-          scale
+          scale,
+          project.id,
+          dataProduct.flight_id,
+          dataProduct.id
         )}
         zIndex={500}
         maxNativeZoom={24}
@@ -198,11 +213,12 @@ export default function DataProductTileLayer({
   symbology?: OrthoSymbologySettings | DSMSymbologySettings | undefined;
   tileLayerRef?: undefined | React.MutableRefObject<L.TileLayer | null>;
 }) {
-  const { symbologySettings, tileScale } = useMapContext();
+  const { activeProject, symbologySettings, tileScale } = useMapContext();
 
-  if (!activeDataProduct) throw Error('No active data product');
+  if (!activeDataProduct || !activeProject) throw Error('No active data product');
 
   return getDataProductTileLayer(
+    activeProject,
     activeDataProduct,
     symbology ? symbology : symbologySettings,
     tileLayerRef,
@@ -215,7 +231,9 @@ export function HillshadeTileLayer({
 }: {
   dataProduct: DataProduct | null;
 }) {
-  if (!dataProduct) return null;
+  const { activeProject } = useMapContext();
+
+  if (!dataProduct || !activeProject) return null;
 
   if (!isSingleBand(dataProduct)) {
     return null;
@@ -226,10 +244,16 @@ export function HillshadeTileLayer({
 
   return (
     <TileLayer
-      url={getTileURL(dataProduct.url.replace(window.origin, ''), undefined, [
-        min,
-        max,
-      ])}
+      url={getTileURL(
+        dataProduct.url.replace(window.origin, ''),
+        undefined,
+        [min, max],
+        undefined,
+        undefined,
+        activeProject.id,
+        dataProduct.flight_id,
+        dataProduct.id
+      )}
       zIndex={100}
       maxNativeZoom={24}
       maxZoom={26}

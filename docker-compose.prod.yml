@@ -211,12 +211,24 @@ services:
     security_opt:
       - no-new-privileges=true
 
+  varnish:
+    image: varnish:latest
+    volumes:
+      - ./default.vcl:/etc/varnish/default.vcl:ro
+    ports:
+      - "8888:80"
+    tmpfs:
+      - /var/lib/varnish/varnishd:exec
+    environment:
+      - VARNISH_SIZE=2G
+    command: "-p default_keep=300"
+    depends_on:
+      - titiler
+
   titiler:
     image: ghcr.io/developmentseed/titiler:latest
     volumes:
       - user-data:/static
-    ports:
-      - ":8888"
     environment:
       # uvicorn/gunicorn settings
       - PORT=8888
