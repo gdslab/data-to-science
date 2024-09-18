@@ -74,6 +74,7 @@ export default function PotreeViewer({ copcPath }: { copcPath: string }) {
         viewer.setPointBudget(2_000_000);
         viewer.loadSettingsFromURL();
         viewer.useHQ = true;
+        viewer.setControls(viewer.earthControls);
 
         // viewer.setDescription('Loading Entwine-generated EPT format');
 
