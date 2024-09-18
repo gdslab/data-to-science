@@ -149,6 +149,11 @@ async def get_map_tiles_for_data_product(
         upload_dir=upload_dir,
         user_id=current_user.id,
     )
+    if not data_product:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unable to find data product",
+        )
     async with httpx.AsyncClient() as client:
         response = await client.get(
             f"http://varnish/cog/tiles/WebMercatorQuad/{z}/{x}/{y}@{scale}x"
