@@ -158,7 +158,7 @@ services:
       - user-data:/static
     environment:
       # uvicorn/gunicorn settings
-      - PORT=8000
+      - PORT=8888
       - WORKERS_PER_CORE=0.5
       - WEB_CONCURRENCY=2
       - ACCESS_LOG=/var/log/titiler-access.log

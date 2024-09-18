@@ -4,11 +4,11 @@ import std;
 
 backend default {
     .host = "titiler";
-    .port = "8000";
+    .port = "8888";
     .max_connections = 100;
     .probe = {
         .request =
-            "HEAD / HTTP/1.1"
+            "GET / HTTP/1.1"
             "Host: titiler"
             "Connection: close"
             "User-Agent: Varnish Health Probe";

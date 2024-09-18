@@ -10,14 +10,6 @@ upstream tusd {
     server tusd:8080;
 }
 
-upstream titiler {
-    server titiler:8000;
-}
-
-upstream varnish {
-    server varnish:8888;
-}
-
 server {
     listen 80;
     server_name localhost;
