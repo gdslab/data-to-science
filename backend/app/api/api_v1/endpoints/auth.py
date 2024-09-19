@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps, mail
+from app.api.utils import str_to_bool
 from app.core import security
 from app.core.config import settings
 
@@ -27,30 +28,6 @@ from app.core.config import settings
 router = APIRouter()
 
 logger = logging.getLogger("__name__")
-
-
-def str_to_bool(value: str | bool) -> bool:
-    """Converts a boolean str into a boolean object.
-
-    Args:
-        value (str | bool): String value to convert to bool or bool value.
-
-    Raises:
-        ValueError: Raised if string value does not match a boolean value.
-
-    Returns:
-        bool: Returns True if string value matched one of the values in the "True" set.
-    """
-    # If already a bool object, return it
-    if isinstance(value, bool):
-        return value
-
-    if value.lower() in {"1", "true"}:
-        return True
-    elif value.lower() in {"0", "false"}:
-        return False
-    else:
-        raise ValueError(f"Invalid boolean string: {value}")
 
 
 @router.post("/access-token")
