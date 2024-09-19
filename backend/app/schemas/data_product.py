@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 
 from pydantic import AnyHttpUrl, BaseModel, Field
@@ -58,3 +58,7 @@ class DataProduct(DataProductInDBBase):
 # additional properties stored in DB
 class DataProductInDB(DataProductInDBBase):
     pass
+
+
+class DataProductBoundingBox(BaseModel):
+    bounds: List[float]

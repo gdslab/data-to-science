@@ -24,7 +24,7 @@ def test_create_team(client: TestClient, normal_user_access_token: str) -> None:
     """Verify new team is created in database."""
     data = {"title": random_team_name(), "description": random_team_description()}
     response = client.post(f"{settings.API_V1_STR}/teams", json=data)
-    response.status_code == status.HTTP_200_OK
+    assert response.status_code == status.HTTP_201_CREATED
     content = response.json()
     assert "id" in content
     assert data["title"] == content["title"]
@@ -41,7 +41,7 @@ def test_create_team_with_demo_user(
     crud.user.update(db, db_obj=current_user, obj_in=UserUpdate(is_demo=True))
     data = {"title": random_team_name(), "description": random_team_description()}
     response = client.post(f"{settings.API_V1_STR}/teams", json=data)
-    response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_create_team_with_project(

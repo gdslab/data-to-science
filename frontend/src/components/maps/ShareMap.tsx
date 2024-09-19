@@ -1,5 +1,5 @@
 import 'leaflet/dist/leaflet.css';
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer } from 'react-leaflet/MapContainer';
 import { ZoomControl } from 'react-leaflet/ZoomControl';
@@ -78,9 +78,14 @@ export default function ShareMap() {
   }, [bounds]);
 
   useEffect(() => {
-    async function getBounds(filepath) {
+    async function getBounds(dataProductId) {
       try {
-        const response = await axios.get(`${window.origin}/cog/info?url=${filepath}`);
+        const response: AxiosResponse<{ bounds: [number, number, number, number] }> =
+          await axios.get(
+            `${
+              import.meta.env.VITE_API_V1_STR
+            }/public/bounds?data_product_id=${dataProductId}`
+          );
         if (response) {
           setBounds(response.data.bounds);
         } else {
@@ -91,7 +96,7 @@ export default function ShareMap() {
       }
     }
     if (dataProduct) {
-      getBounds(dataProduct.filepath);
+      getBounds(dataProduct.id);
     }
   }, [dataProduct]);
 

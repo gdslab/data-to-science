@@ -7,31 +7,25 @@ import {
   SymbologySettings,
 } from './Maps';
 
-import { Project } from '../pages/projects/ProjectList';
 import { DataProduct } from '../pages/projects/Project';
 import { getDefaultStyle, isSingleBand } from './utils';
 
 /**
  * Constructs URL for requesting tiles from TiTiler service.
- * @param {string} url URL for Cloud Optimized GeoTIFF.
  * @param {string} cmap Color map name.
  * @param {number[]} rescale Array of min/max rescale values for one or more bands.
  * @param {number[]} bidxs Array of band IDs.
  * @param {number} scale Tile size scale.
+ * @param {string} dataProductId ID for data product that will be source of map tiles.
  * @returns {string} URL for requesting dynamic tiles from TiTiler service.
  */
 function getTileURL(
-  url: string,
   cmap: string | undefined = undefined,
   rescale: number[] | undefined = undefined,
   bidxs: number[] | undefined = undefined,
   scale: number = 2,
-  projectId: string,
-  flightId: string,
   dataProductId: string
 ): string {
-  // URL for TiTIler service
-  let titilerURL = `/cog/tiles/WebMercatorQuad/{z}/{x}/{y}@${scale}x?url=${url}`;
   let queryParams = '';
   // Add band ids, color map, and rescale parameters to URL (if necessary)
   if (bidxs) queryParams += `&bidx=${bidxs[0]}&bidx=${bidxs[1]}&bidx=${bidxs[2]}`;
@@ -45,10 +39,10 @@ function getTileURL(
       )
       .map((x) => `&rescale=${x}`)
       .forEach((rescaleValue) => (queryParams += rescaleValue));
-  titilerURL += queryParams;
+
   return `${
     import.meta.env.VITE_API_V1_STR
-  }/projects/${projectId}/flights/${flightId}/data_products/${dataProductId}/maptiles?scale=${scale}${queryParams}&x={x}&y={y}&z={z}`;
+  }/public/maptiles?data_product_id=${dataProductId}&scale=${scale}${queryParams}&x={x}&y={y}&z={z}`;
 }
 
 /**
@@ -58,7 +52,6 @@ function getTileURL(
  * @returns {TileLayer} TileLayer for a data product.
  */
 export function getDataProductTileLayer(
-  project: Project,
   dataProduct: DataProduct,
   symbologySettings?: SymbologySettings | undefined,
   tileLayerRef?: undefined | React.MutableRefObject<L.TileLayer | null>,
@@ -100,16 +93,7 @@ export function getDataProductTileLayer(
     return (
       <TileLayer
         ref={tileLayerRef}
-        url={getTileURL(
-          dataProduct.url.replace(window.origin, ''),
-          colorRamp,
-          rescale,
-          undefined,
-          scale,
-          project.id,
-          dataProduct.flight_id,
-          dataProduct.id
-        )}
+        url={getTileURL(colorRamp, rescale, undefined, scale, dataProduct.id)}
         zIndex={500}
         maxNativeZoom={24}
         maxZoom={26}
@@ -179,16 +163,7 @@ export function getDataProductTileLayer(
 
     return (
       <TileLayer
-        url={getTileURL(
-          dataProduct.url.replace(window.origin, ''),
-          undefined,
-          rescale,
-          bidxs,
-          scale,
-          project.id,
-          dataProduct.flight_id,
-          dataProduct.id
-        )}
+        url={getTileURL(undefined, rescale, bidxs, scale, dataProduct.id)}
         zIndex={500}
         maxNativeZoom={24}
         maxZoom={26}
@@ -213,12 +188,11 @@ export default function DataProductTileLayer({
   symbology?: OrthoSymbologySettings | DSMSymbologySettings | undefined;
   tileLayerRef?: undefined | React.MutableRefObject<L.TileLayer | null>;
 }) {
-  const { activeProject, symbologySettings, tileScale } = useMapContext();
+  const { symbologySettings, tileScale } = useMapContext();
 
-  if (!activeDataProduct || !activeProject) throw Error('No active data product');
+  if (!activeDataProduct) throw Error('No active data product');
 
   return getDataProductTileLayer(
-    activeProject,
     activeDataProduct,
     symbology ? symbology : symbologySettings,
     tileLayerRef,
@@ -231,9 +205,7 @@ export function HillshadeTileLayer({
 }: {
   dataProduct: DataProduct | null;
 }) {
-  const { activeProject } = useMapContext();
-
-  if (!dataProduct || !activeProject) return null;
+  if (!dataProduct) return null;
 
   if (!isSingleBand(dataProduct)) {
     return null;
@@ -244,16 +216,7 @@ export function HillshadeTileLayer({
 
   return (
     <TileLayer
-      url={getTileURL(
-        dataProduct.url.replace(window.origin, ''),
-        undefined,
-        [min, max],
-        undefined,
-        undefined,
-        activeProject.id,
-        dataProduct.flight_id,
-        dataProduct.id
-      )}
+      url={getTileURL(undefined, [min, max], undefined, undefined, dataProduct.id)}
       zIndex={100}
       maxNativeZoom={24}
       maxZoom={26}
