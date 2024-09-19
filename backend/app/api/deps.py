@@ -85,7 +85,7 @@ def send_email(
         background_tasks.add_task(fm.send_message, message)
 
 
-def verify_user_account(current_user: models.User):
+def verify_user_account(current_user: Optional[models.User]) -> models.User:
     if not current_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Account not found"
@@ -151,10 +151,50 @@ def get_current_approved_user_by_jwt_or_api_key(
                 detail="Invalid API key provided",
             )
         user = crud.user.get_by_api_key(db, api_key=api_key)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            )
 
     # verify user exists, email is confirmed, and account is approved
     # raises appropriate http exceptions when checks fail
     approved_user = verify_user_account(user)
+
+    return approved_user
+
+
+def get_optional_current_user(
+    db: Session = Depends(get_db),
+    api_key: str = Depends(header_scheme),
+    token: str = Depends(reusable_oauth2_optional),
+) -> Optional[models.User]:
+    user = None
+
+    # find user with jwt token
+    if token and isinstance(token, str):
+        token_data = decode_jwt(token)
+        if token_data.sub:
+            user = crud.user.get_by_id(db, user_id=token_data.sub)
+
+    # if user not found with jwt token, try api key
+    if not user and api_key and isinstance(api_key, str):
+        if not is_valid_api_key(api_key):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid API key provided",
+            )
+        user = crud.user.get_by_api_key(db, api_key=api_key)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            )
+
+    # verify user exists, email is confirmed, and account is approved
+    # returns None if checks fail
+    try:
+        approved_user = verify_user_account(user)
+    except HTTPException:
+        approved_user = None
 
     return approved_user
 

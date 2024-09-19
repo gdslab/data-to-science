@@ -6,10 +6,8 @@ import 'leaflet-side-by-side';
 import CompareToolSelector from './CompareToolSelector';
 import { getDataProductTileLayer } from './DataProductTileLayer';
 import { Flight } from '../pages/projects/Project';
-import { useMapContext } from './MapContext';
 
 import { isSingleBand } from './utils';
-import { Project } from '../pages/projects/ProjectList';
 
 interface SideBySideControl extends L.Control {
   _leftLayer: L.TileLayer;
@@ -35,14 +33,13 @@ export const getFlightsWithGTIFF = (flights: Flight[]): Flight[] => {
 const getLayerFromProps = (
   flights: Flight[],
   flightID: string,
-  dataProductID: string,
-  project: Project
+  dataProductID: string
 ) => {
   const dataProduct = flights
     .filter(({ id }) => id === flightID)[0]
     .data_products.filter(({ id }) => id === dataProductID)[0];
 
-  const tileLayer = getDataProductTileLayer(project, dataProduct);
+  const tileLayer = getDataProductTileLayer(dataProduct);
   return L.tileLayer(tileLayer.props.url, {
     className: 'compare-tl',
     maxZoom: tileLayer.props.maxZoom,
@@ -96,7 +93,6 @@ export default function CompareTool({
   flights: Flight[];
   layerPaneHidden: boolean;
 }) {
-  const { activeProject } = useMapContext();
   const map = useMap();
   const [dividerPosition, setDividerPosition] = useState<{
     divider: number;
@@ -130,12 +126,12 @@ export default function CompareTool({
     }
 
     // must have two data products to compare
-    if (!dataProduct1 || !dataProduct2 || !activeProject) return;
+    if (!dataProduct1 || !dataProduct2) return;
 
     // create tile layers for left/right data products
     // TODO: needs improvement
-    const layer1 = getLayerFromProps(flights, flight1, dataProduct1, activeProject);
-    const layer2 = getLayerFromProps(flights, flight2, dataProduct2, activeProject);
+    const layer1 = getLayerFromProps(flights, flight1, dataProduct1);
+    const layer2 = getLayerFromProps(flights, flight2, dataProduct2);
 
     // add layers to map if not already present on it
     if (!map.hasLayer(layer1)) layer1.addTo(map);
