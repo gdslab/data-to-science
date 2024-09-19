@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Optional
 from uuid import UUID
 
@@ -15,7 +16,7 @@ from app.core import security
 from app.core.config import settings
 from app.core.mail import fm
 from app.db.session import SessionLocal
-from app.api.utils import is_valid_api_key
+from app.api.utils import is_valid_api_key, str_to_bool
 
 logger = logging.getLogger("__name__")
 
@@ -81,7 +82,9 @@ def send_email(
     message = MessageSchema(
         subject=subject, recipients=recipients, body=body, subtype=MessageType.html
     )
-    if settings.MAIL_ENABLED:
+    if settings.MAIL_ENABLED and not str_to_bool(
+        os.environ.get("RUNNING_TESTS", False)
+    ):
         background_tasks.add_task(fm.send_message, message)
 
 

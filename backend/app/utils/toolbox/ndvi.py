@@ -29,7 +29,9 @@ def run(in_raster: str, out_raster: str, params: dict) -> str:
 
         # update source raster profile to single band and float32
         profile = src.profile
-        profile.update(dtype=rasterio.float32, count=1, compress="deflate")
+        profile.update(
+            dtype=rasterio.float32, count=1, compress="deflate", BIGTIFF="YES"
+        )
 
         # use block windows to calculate exg and write to new file
         with rasterio.open(out_raster, "w", **profile) as dst:

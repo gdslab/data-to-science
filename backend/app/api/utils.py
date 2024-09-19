@@ -133,3 +133,27 @@ def get_data_product_dir(project_id: str, flight_id: str, data_product_id: str) 
         os.makedirs(data_product_dir)
 
     return data_product_dir
+
+
+def str_to_bool(value: str | bool) -> bool:
+    """Converts a boolean str into a boolean object.
+
+    Args:
+        value (str | bool): String value to convert to bool or bool value.
+
+    Raises:
+        ValueError: Raised if string value does not match a boolean value.
+
+    Returns:
+        bool: Returns True if string value matched one of the values in the "True" set.
+    """
+    # If already a bool object, return it
+    if isinstance(value, bool):
+        return value
+
+    if value.lower() in {"1", "true"}:
+        return True
+    elif value.lower() in {"0", "false"}:
+        return False
+    else:
+        raise ValueError(f"Invalid boolean string: {value}")
