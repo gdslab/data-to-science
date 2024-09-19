@@ -1,3 +1,5 @@
+from typing import Any, Dict, Optional
+
 from fastapi import BackgroundTasks
 from pydantic import EmailStr
 
@@ -138,6 +140,32 @@ def send_account_approved(
     send_email(
         subject="D2S Account Approved",
         recipients=[email],
+        body=content,
+        background_tasks=background_tasks,
+    )
+
+
+def send_contact_email(
+    background_tasks: BackgroundTasks,
+    subject: str,
+    message: str,
+    sender: Optional[Dict[str, Any]] = None,
+):
+    if sender:
+        content = (
+            f"<p>Message sent from D2S user {sender['name']} ({sender['email']}):</p>"
+        )
+    else:
+        content = f"<p>Message from anonymous D2S user:</p>"
+
+    content += f"<p>Subject:</p><blockquote>{subject}</blockquote>"
+    content += f"<p>Message:</p><blockquote>{message}</blockquote>"
+
+    content += "<br /><br /><p>-D2S Support</p>"
+
+    send_email(
+        subject="D2S Contact Form Submission",
+        recipients=[settings.MAIL_FROM],
         body=content,
         background_tasks=background_tasks,
     )
