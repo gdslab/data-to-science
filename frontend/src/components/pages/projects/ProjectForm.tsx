@@ -109,13 +109,13 @@ export default function ProjectForm({
                 <div className="grid grid-cols-2 gap-4">
                   <TextField
                     type="date"
-                    label="Planting date"
+                    label="Start of project"
                     name="plantingDate"
                     required={false}
                   />
                   <TextField
                     type="date"
-                    label="Harvest date"
+                    label="End of project"
                     name="harvestDate"
                     required={false}
                   />

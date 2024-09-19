@@ -98,7 +98,7 @@ export default function ProjectDetailEditForm({
           </div>
           <Table>
             <TableHead
-              columns={['Planting Date', 'Harvest Date', 'Team', 'Location']}
+              columns={['Start of project', 'End of project', 'Team', 'Location']}
             />
             <TableBody
               rows={[
