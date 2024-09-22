@@ -1,6 +1,7 @@
 import logging
 import os
-from typing import Any, List
+from datetime import date
+from typing import Any, List, Optional
 from uuid import UUID
 
 from geojson_pydantic import Feature
@@ -17,6 +18,22 @@ logger = logging.getLogger("__name__")
 router = APIRouter()
 
 
+def valid_end_date(start_date: Optional[date], end_date: Optional[date]) -> bool:
+    """Returns False if the end date is before the start date and returns True
+    if the end date is on and after the start date.
+
+    Args:
+        start_date (Optional[date]): Start date of project or None.
+        end_date (Optional[date]): End date of project or None.
+
+    Returns:
+        bool: True if valid end date and False if not.
+    """
+    if start_date and end_date and end_date <= start_date:
+        return False
+    return True
+
+
 @router.post("", response_model=schemas.Project, status_code=status.HTTP_201_CREATED)
 def create_project(
     project_in: schemas.ProjectCreate,
@@ -29,6 +46,19 @@ def create_project(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Demo accounts cannot create projects",
         )
+
+    if not valid_end_date(project_in.planting_date, project_in.harvest_date):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=[
+                {
+                    "loc": ["body", "harvest_date"],
+                    "msg": "End date must be after start date.",
+                    "type": "value_error",
+                }
+            ],
+        )
+
     try:
         project = crud.project.create_with_owner(
             db,
@@ -102,6 +132,22 @@ def update_project(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Update project if current user is project owner or member."""
+
+    if not valid_end_date(
+        project_in.planting_date or project.planting_date,
+        project_in.harvest_date or project.harvest_date,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=[
+                {
+                    "loc": ["body", "harvest_date"],
+                    "msg": "End date must be after start date.",
+                    "type": "value_error",
+                }
+            ],
+        )
+
     project = crud.project.update_project(
         db,
         project_id=project_id,

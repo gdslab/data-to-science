@@ -45,7 +45,7 @@ def test_create_project(
         }
     )
     response = client.post(API_URL, json=data)
-    response.status_code == status.HTTP_201_CREATED
+    assert response.status_code == status.HTTP_201_CREATED
     response_data = response.json()
     assert "id" in response_data
     assert data["title"] == response_data["title"]
@@ -141,6 +141,97 @@ def test_create_project_with_demo_user(
     }
     response = client.post(API_URL, json=jsonable_encoder(project_data))
     assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_create_project_date_validation(
+    client: TestClient, normal_user_access_token: str, db: Session
+) -> None:
+    location = create_location(db)
+    # invalid - harvest_date before planting_date
+    data = jsonable_encoder(
+        {
+            "title": random_team_name(),
+            "description": random_team_description(),
+            "planting_date": date(2024, 6, 1),
+            "harvest_date": date(2024, 5, 1),
+            "location": get_geojson_feature_collection("polygon")["geojson"][
+                "features"
+            ][0],
+        }
+    )
+    response = client.post(API_URL, json=data)
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    # valid - only planting_date
+    data = jsonable_encoder(
+        {
+            "title": random_team_name(),
+            "description": random_team_description(),
+            "planting_date": date(2024, 6, 1),
+            "location": get_geojson_feature_collection("polygon")["geojson"][
+                "features"
+            ][0],
+        }
+    )
+    response = client.post(API_URL, json=data)
+    assert response.status_code == status.HTTP_201_CREATED
+
+    # valid - only harvest_date
+    data = jsonable_encoder(
+        {
+            "title": random_team_name(),
+            "description": random_team_description(),
+            "harvest_date": date(2024, 6, 1),
+            "location": get_geojson_feature_collection("polygon")["geojson"][
+                "features"
+            ][0],
+        }
+    )
+    response = client.post(API_URL, json=data)
+    assert response.status_code == status.HTTP_201_CREATED
+
+    # valid - harvest_date on planting date
+    data = jsonable_encoder(
+        {
+            "title": random_team_name(),
+            "description": random_team_description(),
+            "planting_date": date(2024, 6, 1),
+            "harvest_date": date(2024, 6, 1),
+            "location": get_geojson_feature_collection("polygon")["geojson"][
+                "features"
+            ][0],
+        }
+    )
+    response = client.post(API_URL, json=data)
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    # valid - harvest_date after planting date
+    data = jsonable_encoder(
+        {
+            "title": random_team_name(),
+            "description": random_team_description(),
+            "planting_date": date(2024, 6, 1),
+            "harvest_date": date(2024, 6, 2),
+            "location": get_geojson_feature_collection("polygon")["geojson"][
+                "features"
+            ][0],
+        }
+    )
+    response = client.post(API_URL, json=data)
+    assert response.status_code == status.HTTP_201_CREATED
+
+    # valid - no planting_date and no harvest_date
+    data = jsonable_encoder(
+        {
+            "title": random_team_name(),
+            "description": random_team_description(),
+            "location": get_geojson_feature_collection("polygon")["geojson"][
+                "features"
+            ][0],
+        }
+    )
+    response = client.post(API_URL, json=data)
+    assert response.status_code == status.HTTP_201_CREATED
 
 
 def test_get_project_with_owner_role(
@@ -484,6 +575,51 @@ def test_update_project_with_new_team_replacing_old_team(
                 or project_member.member_id in current_team_member_ids
                 or project_member.id == current_user.id
             )
+
+
+def test_update_project_date_validation(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # valid - harvest_date when no planting_date set
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(
+        db, owner_id=current_user.id, planting_date=None, harvest_date=None
+    )
+    update_data = jsonable_encoder({"harvest_date": random_harvest_date()})
+    response = client.put(f"{API_URL}/{project.id}", json=update_data)
+    assert response.status_code == status.HTTP_200_OK
+
+    # valid - harvest_date after planting_date
+    project = create_project(
+        db, owner_id=current_user.id, planting_date=date(2024, 6, 1), harvest_date=None
+    )
+    update_data = jsonable_encoder({"harvest_date": date(2024, 6, 2)})
+    response = client.put(f"{API_URL}/{project.id}", json=update_data)
+    assert response.status_code == status.HTTP_200_OK
+
+    # valid - planting_date when no harvest_date set
+    project = create_project(
+        db, owner_id=current_user.id, planting_date=None, harvest_date=None
+    )
+    update_data = jsonable_encoder({"planting_date": date(2024, 6, 2)})
+    response = client.put(f"{API_URL}/{project.id}", json=update_data)
+    assert response.status_code == status.HTTP_200_OK
+
+    # invalid - harvest_date before planting_date
+    project = create_project(
+        db, owner_id=current_user.id, planting_date=date(2024, 6, 1), harvest_date=None
+    )
+    update_data = jsonable_encoder({"harvest_date": date(2024, 5, 1)})
+    response = client.put(f"{API_URL}/{project.id}", json=update_data)
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    # invalid - harvest_date before planting_date
+    project = create_project(
+        db, owner_id=current_user.id, planting_date=None, harvest_date=date(2024, 6, 5)
+    )
+    update_data = jsonable_encoder({"planting_date": date(2024, 6, 7)})
+    response = client.put(f"{API_URL}/{project.id}", json=update_data)
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 def test_dropping_team_from_project(
