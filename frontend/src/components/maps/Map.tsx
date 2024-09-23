@@ -9,6 +9,7 @@ import ColorBarControl from './ColorBarControl';
 import CompareTool, { CompareToolAlert, getFlightsWithGTIFF } from './CompareTool';
 import DataProductTileLayer, { HillshadeTileLayer } from './DataProductTileLayer';
 import GeocoderControl from './GeocoderControl';
+import LeafletMeasureControl from './LeafletMeasureControl';
 import MapLayersControl from './MapLayersControl';
 import ProjectBoundary from './ProjectBoundary';
 import ProjectLayersControl from './ProjectLayersControl';
@@ -98,6 +99,7 @@ export default function Map({ layerPaneHidden }: { layerPaneHidden: boolean }) {
         <ZoomControl position="topleft" />
         <GeocoderControl position="topleft" />
         <ScaleControl position="bottomright" />
+        <LeafletMeasureControl />
       </MapContainer>
     );
   } else {
