@@ -1,4 +1,4 @@
-from typing import Any, TypeVar
+from typing import Any, Optional, TypeVar
 from uuid import UUID
 
 from geojson_pydantic import FeatureCollection
@@ -40,7 +40,7 @@ class VectorLayerInDB(VectorLayerInDBBase):
 
 
 class Metadata(BaseModel):
-    preview_url: AnyHttpUrl
+    preview_url: Optional[AnyHttpUrl]
 
 
 class VectorLayerFeatureCollection(FeatureCollection):
