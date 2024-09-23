@@ -59,7 +59,7 @@ class MapMaker:
                         create_polygon(feature.geometry.coordinates[0][0])
                     )
                 elif (
-                    len(feature.geometry.coordinates) == 1
+                    len(feature.geometry.coordinates) >= 1
                     and len(feature.geometry.coordinates[0]) > 1
                 ):
                     self.map.add_polygon(

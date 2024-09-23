@@ -41,8 +41,6 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
             geometry = feature.geometry.__dict__
             properties = jsonable_encoder(feature.properties)
             # Serialize geometry for ST_GeomFromGeoJSON function
-            geom = func.ST_GeomFromGeoJSON(json.dumps(geometry))
-            # Serialize geometry for ST_GeomFromGeoJSON function
             geom = func.ST_Force2D(func.ST_GeomFromGeoJSON(json.dumps(geometry)))
             # Layer ID will be same for each feature from the feature collection
             vector_layer = VectorLayer(
@@ -85,7 +83,9 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
         with db as session:
             vector_layers = session.scalars(statement).all()
             if len(vector_layers) > 0:
-                features = [Feature(**json.loads(feature)) for feature in vector_layers]
+                features: List[Feature] = [
+                    Feature(**json.loads(feature)) for feature in vector_layers
+                ]
                 # Create preview image (if one does not exist)
                 preview_img = create_vector_layer_preview(
                     project_id=project_id,

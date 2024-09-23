@@ -82,9 +82,7 @@ def send_email(
     message = MessageSchema(
         subject=subject, recipients=recipients, body=body, subtype=MessageType.html
     )
-    if settings.MAIL_ENABLED and not str_to_bool(
-        os.environ.get("RUNNING_TESTS", False)
-    ):
+    if settings.MAIL_ENABLED:
         background_tasks.add_task(fm.send_message, message)
 
 

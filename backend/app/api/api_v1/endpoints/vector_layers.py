@@ -1,3 +1,4 @@
+import os
 from typing import Any, Sequence
 from uuid import UUID
 
@@ -53,22 +54,22 @@ def create_vector_layer(
         db, obj_in=vector_layer_in, project_id=project.id
     )
 
-    layer_id = "undefined"
+    preview_url = None
     if features[0].properties and "layer_id" in features[0].properties.keys():
         layer_id = features[0].properties["layer_id"]
-        # Create preview image
-        preview_img = create_vector_layer_preview(
-            project_id=project.id,
-            layer_id=layer_id,
-            features=features,
-        )
+        if os.environ.get("RUNNING_TESTS") == "1":
+            static_dir = settings.TEST_STATIC_DIR
+        else:
+            static_dir = settings.STATIC_DIR
+        if os.path.exists(
+            f"{static_dir}/projects/{project.id}/vector/{layer_id}/preview.png"
+        ):
+            preview_url = f"{settings.API_DOMAIN}{static_dir}/projects/{project.id}/vector/{layer_id}/preview.png"
 
     feature_collection = {
         "type": "FeatureCollection",
         "features": features,
-        "metadata": {
-            "preview_url": f"{settings.API_DOMAIN}{settings.STATIC_DIR}/projects/{project.id}/vector/{layer_id}/preview.png"
-        },
+        "metadata": {"preview_url": preview_url},
     }
 
     return schemas.vector_layer.VectorLayerFeatureCollection(**feature_collection)

@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.mail import fm
 
 
 def test_email_contact_message_to_support(
@@ -17,8 +18,19 @@ def test_email_contact_message_to_support(
     porta convallis eleifend; quisque sociosqu."""
 
     payload = {"subject": subject, "message": message}
-    response = client.post(f"{settings.API_V1_STR}/contact", json=payload)
-    assert response.status_code == status.HTTP_202_ACCEPTED
+    if fm:
+        fm.config.SUPPRESS_SEND = 1
+        with fm.record_messages() as outbox:
+            response = client.post(f"{settings.API_V1_STR}/contact", json=payload)
+
+        assert response.status_code == status.HTTP_202_ACCEPTED
+        assert len(outbox) == 1
+        assert (
+            outbox[0]["from"]
+            == settings.MAIL_FROM_NAME + " <" + settings.MAIL_FROM + ">"
+        )
+        assert outbox[0]["To"] == settings.MAIL_FROM
+        assert outbox[0]["Subject"] == "D2S Contact Form Submission"
 
 
 def test_email_contact_message_with_too_few_characters(
