@@ -139,7 +139,7 @@ def handle_zipped_shapefile(files: UploadFile, required_geom_type: str | None = 
             with zmf.open() as src:
                 geojson = shapefile_to_geojson(src, required_geom_type)
     except DriverError as e:
-        logger.error(e)
+        logger.exception("DriverError")
         try:
             # attempt temporarily writing zip to disk and accessing shapefile
             with tempfile.TemporaryDirectory() as tmpdirname:
@@ -159,10 +159,12 @@ def handle_zipped_shapefile(files: UploadFile, required_geom_type: str | None = 
                         else:
                             raise ValueError("Missing required shapefile parts in zip")
         except ValueError as e:
-            logger.error(e)
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e),
+            )
         except Exception as e:
-            logger.error(e)
+            logger.exception("Exception")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Unable process shapefile",
@@ -202,7 +204,8 @@ def shapefile_to_geojson(
         try:
             for feature in fc.features:
                 assert isinstance(feature.geometry, Polygon)
-        except:
+        except Exception as e:
+            logger.exception("Exception")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Shapefile must contain polygon features",

@@ -1,8 +1,9 @@
 import logging
 import time
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.background import BackgroundTask
 
@@ -27,6 +28,13 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 
 app.mount("/static", ProtectedStaticFiles(directory=settings.STATIC_DIR), name="static")
 app.mount("/potree", StaticFiles(directory=settings.POTREE_DIR), name="potree")
+
+
+@app.exception_handler(HTTPException)
+def http_exception_handler(request: Request, exc: HTTPException):
+    logger.error(f"HTTPException", exc_info=exc)
+
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 
 def write_access_log(request: Request, response: Response, process_time: float):

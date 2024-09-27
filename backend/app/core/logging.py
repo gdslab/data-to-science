@@ -40,20 +40,26 @@ def get_app_json_log(record: logging.LogRecord):
     }
 
     if record.exc_info:
-        record_format["exc_info"] = repr(record.exc_info)
+        record_format["exc_info"] = repr(record.exc_info[:2])
 
     return record_format
 
 
 def get_access_json_log(record: logging.LogRecord):
+    req = ""
+    res = ""
+    if hasattr(record, "extra_info"):
+        req = record.extra_info.get("req", "")
+        res = record.extra_info.get("res", "")
+
     record_format = {
         "levelname": record.levelname,
         "type": "access",
         "module": record.module,
         "lineno": record.lineno,
         "message": record.message,
-        "req": record.extra_info["req"],
-        "res": record.extra_info["res"],
+        "req": req,
+        "res": res,
     }
 
     if record.exc_info:
