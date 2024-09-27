@@ -230,7 +230,6 @@ services:
     environment:
       # uvicorn/gunicorn settings
       - PORT=8888
-      - WORKERS_PER_CORE=0.5
       - WEB_CONCURRENCY=2
       - ACCESS_LOG=/var/log/titiler-access.log
       - ERROR_LOG=/var/log/titiler-error.log
@@ -252,6 +251,13 @@ services:
       retries: 5
       start_period: 30s
     deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
       restart_policy:
         condition: on-failure
         delay: 5s

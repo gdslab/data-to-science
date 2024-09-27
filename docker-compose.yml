@@ -174,12 +174,10 @@ services:
       resources:
         limits:
           cpus: '2'
-          memory: '4G'
+          memory: 4G
         reservations:
           cpus: '1'
-          memory: '2G'
-      restart_policy:
-        condition: on-failure
+          memory: 2G
 
   tusd:
     image: tusproject/tusd:latest
