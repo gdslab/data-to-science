@@ -37,7 +37,6 @@ def get_db():
     try:
         yield db
     except Exception as exception:
-        logger.exception("Session raised exception - issuing rollback")
         db.rollback()
         exception_name = exception.__class__.__name__
         if exception_name == "JWTError" or exception_name == "JWSSignatureError":
@@ -47,6 +46,7 @@ def get_db():
             )
         else:
             if exception_name != "HTTPException":
+                logger.exception("Uncaught error")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Unexpected error has occurred",

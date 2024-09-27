@@ -157,8 +157,7 @@ services:
     environment:
       # uvicorn/gunicorn settings
       - PORT=8888
-      - WORKERS_PER_CORE=0.5
-      - WEB_CONCURRENCY=2
+      - WEB_CONCURRENCY=4
       - ACCESS_LOG=/var/log/titiler-access.log
       - ERROR_LOG=/var/log/titiler-error.log
       # titiler/gdal settings
@@ -171,6 +170,14 @@ services:
       - CPL_VSIL_CURL_CACHE_SIZE=200000000
       - VSI_CACHE=TRUE
       - VSI_CACHE_SIZE=5000000
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
 
   tusd:
     image: tusproject/tusd:latest
