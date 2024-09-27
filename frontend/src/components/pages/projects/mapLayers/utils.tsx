@@ -115,6 +115,21 @@ function prepFeatureCollectionForDownload(
 }
 
 /**
+ * Checks if filename has a .geojson or .zip extension and drops it.
+ * @param filename Original filename with extension.
+ * @returns Original filename without extension.
+ */
+function dropFileExtension(filename: string): string {
+  if (filename.endsWith('.zip')) {
+    return filename.slice(0, -'.zip'.length);
+  }
+  if (filename.endsWith('.geojson')) {
+    return filename.slice(0, -'.geojson'.length);
+  }
+  return filename;
+}
+
+/**
  * Creates blobs for json or zip download of a feature collection and starts download.
  * @param {string} downloadType Default download option is JSON. Zip also supported.
  * @param {MapLayerFeatureCollection} featureCollection Feature collection to be downloaded.
@@ -130,6 +145,7 @@ export function download(
   } else {
     filename = featureCollection.features[0].properties?.layer_name;
   }
+  filename = dropFileExtension(filename);
   const updatedFeatureCollection = prepFeatureCollectionForDownload(
     JSON.parse(JSON.stringify(featureCollection))
   );
@@ -158,10 +174,9 @@ export function download(
   } else {
     const json = JSON.stringify(updatedFeatureCollection, null, 2);
     const blob = new Blob([json], { type: 'application/geo+json' });
-    let downloadName = `${filename ? filename : 'feature_collection'}`;
-    if (downloadName.slice(-8) !== '.geojson') {
-      downloadName += '.geojson';
-    }
+    let downloadName = `${
+      filename ? filename + '.geojson' : 'feature_collection.geojson'
+    }`;
     createAndClickDownloadLink(blob, downloadName);
   }
 }
