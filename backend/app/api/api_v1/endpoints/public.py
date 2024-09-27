@@ -105,10 +105,12 @@ async def get_map_tiles_for_data_product(
 
     # request map tile from titiler
     async with httpx.AsyncClient() as client:
-        response = await client.get(
+        tile_url = (
             f"http://varnish/cog/tiles/WebMercatorQuad/{z}/{x}/{y}@{scale}x"
             f"?url={data_product.filepath}{query_params}"
         )
+        # timeout request after 30 seconds
+        response = await client.get(tile_url, timeout=30.0)
     if response.status_code == 200:
         return StreamingResponse(BytesIO(response.content), media_type="image/png")
     else:
