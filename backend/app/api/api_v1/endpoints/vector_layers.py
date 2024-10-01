@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Any, Sequence
 from uuid import UUID
@@ -12,6 +13,9 @@ from app.api.utils import create_vector_layer_preview
 from app.core.config import settings
 
 router = APIRouter()
+
+
+logger = logging.getLogger("__name__")
 
 
 @router.post(
@@ -41,18 +45,28 @@ def create_vector_layer(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="GeoJSON Feature Collection cannot contain more than 2000 feautres",
         )
-
     # Raise exception if features do not have same geometry type
     first_features_geometry_type = vector_layer_in.geojson.features[0].geometry.type
     for feature in vector_layer_in.geojson.features:
-        if feature.geometry.type != first_features_geometry_type:
+        if not is_geometry_match(
+            expected_geometry=first_features_geometry_type,
+            actual_geometry=feature.geometry.type,
+        ):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Features in GeoJSON Feature Collection must have same geometry type",
             )
-    features = crud.vector_layer.create_with_project(
-        db, obj_in=vector_layer_in, project_id=project.id
-    )
+
+    try:
+        features = crud.vector_layer.create_with_project(
+            db, obj_in=vector_layer_in, project_id=project.id
+        )
+    except Exception:
+        logger.exception("Failed while creating vector layer records")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to process map layer",
+        )
 
     preview_url = None
     if features[0].properties and "layer_id" in features[0].properties.keys():
@@ -166,3 +180,50 @@ def delete_vector_layer(
             status_code=status.HTTP_404_NOT_FOUND, detail="Vector layer not found"
         )
     return {"type": "FeatureCollection", "features": removed_vector_layer}
+
+
+def is_geometry_match(expected_geometry: str, actual_geometry: str) -> bool:
+    """Return True if expected geometry and actual geometry match or if they match
+    when multi and non-multi types are considered matches.
+
+    Args:
+        expected_geometry (str): Expected geometry type.
+        actual_geometry (str): Actual geometry type.
+
+    Returns:
+        bool: True if expected and actual geometry match.
+    """
+    if expected_geometry.lower() == actual_geometry.lower():
+        return True
+
+    if (
+        expected_geometry.lower() == "point"
+        or expected_geometry.lower() == "multipoint"
+    ):
+        if (
+            actual_geometry.lower() == "point"
+            or actual_geometry.lower() == "multipoint"
+        ):
+            return True
+
+    if (
+        expected_geometry.lower() == "linestring"
+        or expected_geometry.lower() == "multilinestring"
+    ):
+        if (
+            actual_geometry.lower() == "linestring"
+            or actual_geometry.lower() == "multilinestring"
+        ):
+            return True
+
+    if (
+        expected_geometry.lower() == "polygon"
+        or expected_geometry.lower() == "multipolygon"
+    ):
+        if (
+            actual_geometry.lower() == "polygon"
+            or actual_geometry.lower() == "multipolygon"
+        ):
+            return True
+
+    return False

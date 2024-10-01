@@ -224,7 +224,7 @@ export default function MapLayerFileInput({
           {uploadFile && <span className="text-gray-600">{uploadFile.name}</span>}
           <label
             htmlFor="uploadMapLayer"
-            className="px-4 py-2 text-white font-semibold rounded-md bg-blue-500/90 hover:bg-blue-500"
+            className="px-4 py-2 text-white font-semibold rounded-md bg-blue-500/90 hover:bg-blue-500 cursor-pointer"
           >
             Browse
           </label>
