@@ -222,6 +222,14 @@ services:
     command: "-p default_keep=300"
     depends_on:
       - titiler
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+    security_opt:
+      - no-new-privileges=true
 
   titiler:
     image: ghcr.io/developmentseed/titiler:latest
@@ -230,7 +238,7 @@ services:
     environment:
       # uvicorn/gunicorn settings
       - PORT=8888
-      - WEB_CONCURRENCY=2
+      - WORKERS_PER_CORE=1.0
       - ACCESS_LOG=/var/log/titiler-access.log
       - ERROR_LOG=/var/log/titiler-error.log
       # titiler/gdal settings
@@ -243,7 +251,6 @@ services:
       - CPL_VSIL_CURL_CACHE_SIZE=200000000
       - VSI_CACHE=TRUE
       - VSI_CACHE_SIZE=5000000
-
     healthcheck:
       test: ["CMD", "curl", "-s", "-o", "/dev/null", "http://localhost:8888/healthzs"]
       interval: 1m30s
@@ -272,7 +279,6 @@ services:
     volumes:
       - tusd-data:/srv/tusd-data/data
       - user-data:/static
-    restart: always
     depends_on:
       - frontend
       - backend
