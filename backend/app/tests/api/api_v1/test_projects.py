@@ -203,7 +203,7 @@ def test_create_project_date_validation(
         }
     )
     response = client.post(API_URL, json=data)
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_201_CREATED
 
     # valid - harvest_date after planting date
     data = jsonable_encoder(
@@ -602,6 +602,14 @@ def test_update_project_date_validation(
         db, owner_id=current_user.id, planting_date=None, harvest_date=None
     )
     update_data = jsonable_encoder({"planting_date": date(2024, 6, 2)})
+    response = client.put(f"{API_URL}/{project.id}", json=update_data)
+    assert response.status_code == status.HTTP_200_OK
+
+    # valid - update harvest date to same date as planting date
+    project = create_project(
+        db, owner_id=current_user.id, planting_date=date(2024, 6, 1), harvest_date=None
+    )
+    update_data = jsonable_encoder({"harvest_date": date(2024, 6, 1)})
     response = client.put(f"{API_URL}/{project.id}", json=update_data)
     assert response.status_code == status.HTTP_200_OK
 

@@ -2,7 +2,8 @@ from datetime import date, datetime
 from typing import Dict, Literal, Optional
 
 from geojson_pydantic import Feature, Polygon
-from pydantic import BaseModel, Field, UUID4
+from pydantic import BaseModel, Field, field_validator, ValidationInfo, UUID4
+
 from app.schemas.location import LocationCreate
 
 
@@ -15,6 +16,20 @@ class ProjectBase(BaseModel):
     # relationships
     location_id: Optional[UUID4] = None
     team_id: Optional[UUID4] = None
+
+    @field_validator("harvest_date")
+    @classmethod
+    def end_date_after_or_on_start_date(
+        cls, v: Optional[date], info: ValidationInfo
+    ) -> Optional[date]:
+        if (
+            "planting_date" in info.data
+            and v is not None
+            and info.data["planting_date"] is not None
+            and v < info.data["planting_date"]
+        ):
+            raise ValueError("harvest_date cannot be before planting_date")
+        return v
 
 
 # properties to save in DB on creation

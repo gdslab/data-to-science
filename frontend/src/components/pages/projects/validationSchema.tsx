@@ -8,7 +8,10 @@ const baseProjectRules = Yup.object({
     .max(300, 'Must be 300 characters or less')
     .required('Must enter project description'),
   plantingDate: Yup.date(),
-  harvestDate: Yup.date().min(Yup.ref('plantingDate'), 'Must be after planting date'),
+  harvestDate: Yup.date().min(
+    Yup.ref('plantingDate'),
+    'Must be after start of project'
+  ),
   teamID: Yup.string(),
 });
 
