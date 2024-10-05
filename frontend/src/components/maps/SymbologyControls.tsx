@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useMapContext } from './MapContext';
 
 import { Button } from '../Buttons';
-import { DataProduct } from '../pages/projects/Project';
+import { DataProduct } from '../pages/workspace/projects/Project';
 import { NumberField, SelectField } from '../InputFields';
 import {
   DSMSymbologySettings,
@@ -15,7 +15,7 @@ import {
 } from './Maps';
 import Modal from '../Modal';
 import OpacitySlider from './OpacitySlider';
-import { Project } from '../pages/projects/ProjectList';
+import { Project } from '../pages/workspace/ProjectList';
 import ShareControls from './ShareControls';
 
 import { cmaps } from './cmaps';

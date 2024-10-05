@@ -5,7 +5,7 @@ import 'leaflet-side-by-side';
 
 import CompareToolSelector from './CompareToolSelector';
 import { getDataProductTileLayer } from './DataProductTileLayer';
-import { Flight } from '../pages/projects/Project';
+import { Flight } from '../pages/workspace/projects/Project';
 
 import { isSingleBand } from './utils';
 

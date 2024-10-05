@@ -2,7 +2,7 @@ import axios, { AxiosResponse } from 'axios';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
-import { DataProduct } from '../pages/projects/Project';
+import { DataProduct } from '../pages/workspace/projects/Project';
 import { AlertBar, Status } from '../Alert';
 
 function useQuery() {

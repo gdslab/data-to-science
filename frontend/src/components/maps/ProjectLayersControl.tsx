@@ -16,19 +16,22 @@ import flip from '@turf/flip';
 
 import LoadingBars from '../LoadingBars';
 import { useMapContext } from './MapContext';
-import { MapLayerTableRow, prepMapLayers } from '../pages/projects/mapLayers/utils';
+import {
+  MapLayerTableRow,
+  prepMapLayers,
+} from '../pages/workspace/projects/mapLayers/utils';
 import {
   DataProduct,
   MapLayerFeatureCollection,
   ZonalFeature,
-} from '../pages/projects/Project';
-import { Project } from '../pages/projects/ProjectList';
+} from '../pages/workspace/projects/Project';
+import { Project } from '../pages/workspace/ProjectList';
 import StripedTable from '../StripedTable';
 
 import { isSingleBand } from './utils';
-import { removeKeysFromFeatureProperties } from '../pages/projects/mapLayers/utils';
-import { download as downloadGeoJSON } from '../pages/projects/mapLayers/utils';
-import { downloadFile as downloadCSV } from '../pages/projects/fieldCampaigns/utils';
+import { removeKeysFromFeatureProperties } from '../pages/workspace/projects/mapLayers/utils';
+import { download as downloadGeoJSON } from '../pages/workspace/projects/mapLayers/utils';
+import { downloadFile as downloadCSV } from '../pages/workspace/projects/fieldCampaigns/utils';
 
 export type ZonalStatistics = {
   min: number;

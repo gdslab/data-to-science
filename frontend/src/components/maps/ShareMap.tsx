@@ -9,7 +9,7 @@ import { AlertBar, Status } from '../Alert';
 import ColorBarControl from './ColorBarControl';
 import DataProductTileLayer from './DataProductTileLayer';
 import MapLayersControl from './MapLayersControl';
-import { DataProduct } from '../pages/projects/Project';
+import { DataProduct } from '../pages/workspace/projects/Project';
 import { DSMSymbologySettings, OrthoSymbologySettings } from './Maps';
 
 import { isSingleBand } from './utils';

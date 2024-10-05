@@ -2,7 +2,7 @@ import axios, { AxiosResponse } from 'axios';
 import { useEffect, useRef, useState } from 'react';
 import { GeoJSON } from 'react-leaflet/GeoJSON';
 import { useMap } from 'react-leaflet';
-import { Project } from '../pages/projects/ProjectList';
+import { Project } from '../pages/workspace/ProjectList';
 
 export default function ProjectBoundary({ projectId }: { projectId: string }) {
   const [project, setProject] = useState<Project | null>(null);

@@ -11,7 +11,7 @@ import GeocoderControl from './GeocoderControl';
 import GeomanControl from './GeomanControl';
 import MapLayersControl from './MapLayersControl';
 import UploadGeoJSON from './UploadGeoJSON';
-import { useProjectContext } from '../pages/projects/ProjectContext';
+import { useProjectContext } from '../pages/workspace/projects/ProjectContext';
 
 // updates map (loads tiles) after container size changes
 const InvalidateSize = () => {

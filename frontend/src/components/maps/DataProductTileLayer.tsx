@@ -7,7 +7,7 @@ import {
   SymbologySettings,
 } from './Maps';
 
-import { DataProduct } from '../pages/projects/Project';
+import { DataProduct } from '../pages/workspace/projects/Project';
 import { getDefaultStyle, isSingleBand } from './utils';
 
 /**

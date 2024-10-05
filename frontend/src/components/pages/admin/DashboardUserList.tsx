@@ -6,7 +6,7 @@ import { Button } from '../../Buttons';
 import Pagination from '../../Pagination';
 import { User } from '../../../AuthContext';
 
-import { downloadFile as downloadCSV } from '../projects/fieldCampaigns/utils';
+import { downloadFile as downloadCSV } from '../workspace/projects/fieldCampaigns/utils';
 
 const HeaderRow = ({ children }: { children?: ReactNode }) => (
   <th className="whitespace-nowrap px-4 py-2 font-medium text-sm text-gray-900">

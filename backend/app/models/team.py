@@ -9,6 +9,7 @@ from app.db.base_class import Base
 
 
 if TYPE_CHECKING:
+    from .indoor_project import IndoorProject
     from .project import Project
     from .team_extension import TeamExtension
     from .team_member import TeamMember
@@ -33,6 +34,7 @@ class Team(Base):
     )
     owner: Mapped["User"] = relationship(back_populates="teams")
     projects: Mapped[List["Project"]] = relationship(back_populates="team")
+    indoor_projects: Mapped[List["IndoorProject"]] = relationship(back_populates="team")
 
     def __repr__(self) -> str:
         return (

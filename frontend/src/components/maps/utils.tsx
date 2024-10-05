@@ -1,4 +1,4 @@
-import { DataProduct, Flight } from '../pages/projects/Project';
+import { DataProduct, Flight } from '../pages/workspace/projects/Project';
 import { SymbologySettings } from './Maps';
 
 function getDefaultStyle(dataProduct: DataProduct): SymbologySettings {

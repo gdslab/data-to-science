@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 
-import { Flight } from '../pages/projects/Project';
+import { Flight } from '../pages/workspace/projects/Project';
+
 import { formatDate } from './LayerPane/utils';
 
 const POSITION_CLASSES = {

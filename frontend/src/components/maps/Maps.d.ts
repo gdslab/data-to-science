@@ -1,5 +1,5 @@
-import { DataProduct, Flight } from '../pages/projects/Project';
-import { Project } from '../pages/projects/ProjectList';
+import { DataProduct, Flight } from '../pages/workspace/projects/Project';
+import { Project } from '../pages/workspace/ProjectList';
 
 export interface DSMSymbologySettings {
   colorRamp: string;

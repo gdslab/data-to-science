@@ -5,7 +5,7 @@ import { ZoomControl } from 'react-leaflet/ZoomControl';
 import { useLoaderData } from 'react-router-dom';
 
 import ProjectMarkers from '../../maps/ProjectMarkers';
-import { Project } from '../projects/ProjectList';
+import { Project } from '../workspace/ProjectList';
 import MapLayersControl from '../../maps/MapLayersControl';
 
 export async function loader() {

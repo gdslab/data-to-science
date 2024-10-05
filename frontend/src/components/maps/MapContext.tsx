@@ -7,8 +7,8 @@ import {
   DataProduct,
   Flight,
   MapLayerFeatureCollection,
-} from '../pages/projects/Project';
-import { Project } from '../pages/projects/ProjectList';
+} from '../pages/workspace/projects/Project';
+import { Project } from '../pages/workspace/ProjectList';
 import {
   ActiveDataProductAction,
   ActiveMapToolAction,

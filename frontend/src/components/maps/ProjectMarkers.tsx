@@ -5,7 +5,7 @@ import { Marker } from 'react-leaflet/Marker';
 import { useLeafletContext } from '@react-leaflet/core';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 
-import { Project } from '../pages/projects/ProjectList';
+import { Project } from '../pages/workspace/ProjectList';
 import { FeatureGroup as FG } from 'leaflet';
 import { useMapContext } from './MapContext';
 

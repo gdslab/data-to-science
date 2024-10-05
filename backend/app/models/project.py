@@ -1,8 +1,6 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import TYPE_CHECKING
-
-from datetime import date
 
 from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
@@ -29,7 +27,7 @@ class Project(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[str] = mapped_column(String(300))
+    description: Mapped[str] = mapped_column(String(300), nullable=False)
     planting_date: Mapped[date] = mapped_column(Date, nullable=True)
     harvest_date: Mapped[date] = mapped_column(Date, nullable=True)
     location_id: Mapped[uuid.UUID] = mapped_column(
@@ -66,7 +64,7 @@ class Project(Base):
     def __repr__(self) -> str:
         return (
             f"Project(id={self.id!r}, title={self.title!r}, "
-            f"description={self.description!r} "
+            f"description={self.description!r}, "
             f"planting_date={self.planting_date!r}, "
             f"harvest_date={self.harvest_date!r}, owner_id={self.owner_id!r}, "
             f"team_id={self.team_id!r})"

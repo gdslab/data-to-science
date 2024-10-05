@@ -4,10 +4,10 @@ import { useNavigate } from 'react-router-dom';
 
 import Alert, { Status } from '../Alert';
 import { CopyURLButton } from '../Buttons';
-import { DataProduct } from '../pages/projects/Project';
+import { DataProduct } from '../pages/workspace/projects/Project';
 import { useMapContext } from './MapContext';
 import { SymbologySettings } from './Maps';
-import { Project } from '../pages/projects/ProjectList';
+import { Project } from '../pages/workspace/ProjectList';
 
 export default function ShareControls({
   dataProduct,

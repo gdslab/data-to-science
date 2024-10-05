@@ -8,7 +8,7 @@ import Alert from '../../Alert';
 import AuthContext from '../../../AuthContext';
 import { Button, OutlineButton } from '../../Buttons';
 import Card from '../../Card';
-import { Project } from '../projects/ProjectList';
+import { Project } from '../workspace/ProjectList';
 import { SelectField, TextField } from '../../InputFields';
 import SearchUsers, { UserSearch } from './SearchUsers';
 

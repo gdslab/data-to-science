@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { GeoJSON } from 'react-leaflet/GeoJSON';
 import { useLeafletContext } from '@react-leaflet/core';
 
-import { useProjectContext } from '../pages/projects/ProjectContext';
+import { useProjectContext } from '../pages/workspace/projects/ProjectContext';
 import { updateLocation } from './GeomanControl';
 
 interface Props {

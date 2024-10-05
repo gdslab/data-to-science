@@ -5,8 +5,8 @@ import { useLeafletContext } from '@react-leaflet/core';
 import '@geoman-io/leaflet-geoman-free';
 import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
 
-import { LocationAction } from '../pages/projects/ProjectContext/actions';
-import { useProjectContext } from '../pages/projects/ProjectContext';
+import { LocationAction } from '../pages/workspace/projects/ProjectContext/actions';
+import { useProjectContext } from '../pages/workspace/projects/ProjectContext';
 
 interface GeomanOptions extends L.ControlOptions {
   position: L.ControlPosition;

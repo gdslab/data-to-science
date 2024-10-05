@@ -21,16 +21,19 @@ import DashboardUsers, {
   loader as dashboardUsersLoader,
 } from './components/pages/admin/DashboardUsers';
 import ErrorPage from './components/ErrorPage';
-import FieldCampaignCreate from './components/pages/projects/fieldCampaigns/FieldCampaignCreate';
+import FieldCampaignCreate from './components/pages/workspace/projects/fieldCampaigns/FieldCampaignCreate';
 import FieldCampaignForm, {
   loader as fieldCampaignLoader,
-} from './components/pages/projects/fieldCampaigns/FieldCampaignForm';
+} from './components/pages/workspace/projects/fieldCampaigns/FieldCampaignForm';
 import FlightData, {
   loader as flightDataLoader,
-} from './components/pages/projects/flights/FlightData';
+} from './components/pages/workspace/projects/flights/FlightData';
 import FlightForm, {
   loader as flightFormLoader,
-} from './components/pages/projects/flights/FlightForm';
+} from './components/pages/workspace/projects/flights/FlightForm';
+import IndoorProjectDetail, {
+  loader as indoorProjectDetailLoader,
+} from './components/pages/workspace/indoorProjects/IndoorProjectDetail';
 import Landing from './components/Landing';
 import LoginForm from './components/pages/auth/LoginForm';
 import Logout from './components/pages/auth/Logout';
@@ -38,13 +41,13 @@ import MapLayout from './components/maps/MapLayout';
 import PasswordRecovery from './components/pages/auth/PasswordRecovery';
 import PasswordResetForm from './components/pages/auth/PasswordResetForm';
 import Profile from './components/pages/auth/Profile';
-import ProjectAccess from './components/pages/projects/ProjectAccess';
+import ProjectAccess from './components/pages/workspace/projects/ProjectAccess';
 import ProjectDetail, {
   loader as projectDetailLoader,
-} from './components/pages/projects/ProjectDetail';
+} from './components/pages/workspace/projects/ProjectDetail';
 import ProjectList, {
   loader as projectListLoader,
-} from './components/pages/projects/ProjectList';
+} from './components/pages/workspace/ProjectList';
 import RegistrationForm from './components/pages/auth/RegistrationForm';
 import ShareMap from './components/maps/ShareMap';
 import SharePotreeViewer from './components/maps/SharePotreeViewer';
@@ -58,7 +61,7 @@ import TeamDetail, {
 
 import { RootPublic, RootProtected } from './components/layout/Root';
 import { RequireAdmin, RequireAuth } from './AuthContext';
-import ProjectLayout from './components/pages/projects/ProjectLayout';
+import ProjectLayout from './components/pages/workspace/projects/ProjectLayout';
 
 export const router = createBrowserRouter([
   {
@@ -174,6 +177,11 @@ export const router = createBrowserRouter([
             loader: projectListLoader,
           },
         ],
+      },
+      {
+        path: '/indoor_projects/:indoorProjectId',
+        element: <IndoorProjectDetail />,
+        loader: indoorProjectDetailLoader,
       },
     ],
   },

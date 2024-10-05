@@ -9,6 +9,7 @@ from app.api.api_v1.endpoints import (
     flights,
     health,
     iforester,
+    indoor_projects,
     locations,
     public,
     projects,
@@ -31,6 +32,9 @@ api_router.include_router(contact.router, prefix="/contact", tags=["contact"])
 api_router.include_router(health.router, prefix="/health", tags=["health"])
 api_router.include_router(locations.router, prefix="/locations", tags=["locations"])
 api_router.include_router(public.router, prefix="/public", tags=["public"])
+api_router.include_router(
+    indoor_projects.router, prefix="/indoor_projects", tags=["indoor_projects"]
+)
 api_router.include_router(projects.router, prefix="/projects", tags=["projects"])
 api_router.include_router(
     campaigns.router, prefix="/projects/{project_id}/campaigns", tags=["campaigns"]
