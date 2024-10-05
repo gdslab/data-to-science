@@ -67,11 +67,14 @@ export default function ProjectForm({
               ...(values.harvestDate && { harvest_date: values.harvestDate }),
             };
             const response = await axios.post('/api/v1/projects', data);
-            if (response) {
+            if (response && response.status === 201) {
               navigate('/projects');
               setModalOpen(false);
             } else {
-              // do something
+              setStatus({
+                type: 'error',
+                msg: 'Unexpected error occurred. Unable to create project.',
+              });
             }
           } catch (err) {
             if (isAxiosError(err) && err.response && err.response.data.detail) {
@@ -82,7 +85,7 @@ export default function ProjectForm({
             } else {
               setStatus({
                 type: 'error',
-                msg: 'Unexpected error occurred. Unable to save project.',
+                msg: 'Unexpected error occurred. Unable to create project.',
               });
             }
           }
