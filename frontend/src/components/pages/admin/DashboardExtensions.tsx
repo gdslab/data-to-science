@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useLoaderData, useRevalidator } from 'react-router-dom';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 
+import Pagination from '../../Pagination';
 import { Team } from '../teams/Teams';
 import Alert, { Status } from '../../Alert';
 import { User } from '../../../AuthContext';
@@ -149,10 +150,48 @@ type LoaderData = {
 };
 
 export default function DashboardExtensions() {
+  const [currentPage, setCurrentPage] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [status, setStatus] = useState<Status | null>(null);
 
   const { extensions, teams, users } = useLoaderData() as LoaderData;
+
+  const MAX_ITEMS = 5; // max number of users per page
+  const TOTAL_PAGES = Math.ceil(users.length / MAX_ITEMS);
+
+  /**
+   * Updates the current selected pagination page.
+   * @param newPage Index of new page.
+   */
+  function updateCurrentPage(newPage: number): void {
+    const total_pages = Math.ceil(users ? users.length : 0 / MAX_ITEMS);
+
+    if (newPage + 1 > total_pages) {
+      setCurrentPage(total_pages - 1);
+    } else if (newPage < 0) {
+      setCurrentPage(0);
+    } else {
+      setCurrentPage(newPage);
+    }
+  }
+
+  /**
+   * Filters users or teams by search text and limits to current page.
+   * @param items Users or teams to filter.
+   * @returns
+   */
+  function filterAndSlice(items: Team[] | User[]) {
+    return items.slice(currentPage * MAX_ITEMS, MAX_ITEMS + currentPage * MAX_ITEMS);
+  }
+
+  /**
+   * Returns available users or teams on page limitations.
+   * @param items Users or teams to filter, limit, and sort.
+   * @returns Array of filtered users or teams.
+   */
+  function getAvailableUsers(items: Team[] | User[]): Team[] | User[] {
+    return filterAndSlice(items);
+  }
 
   return (
     <section className="w-full bg-white">
@@ -190,7 +229,7 @@ export default function DashboardExtensions() {
                       </tr>
                     </thead>
                     <tbody className="max-h-96 overflow-y-auto">
-                      {teams.map((team) => (
+                      {getAvailableUsers(teams).map((team) => (
                         <tr key={team.id} className="text-center">
                           <td className="p-4 bg-slate-100">{team.title}</td>
                           <td className="p-4 bg-white">
@@ -205,6 +244,11 @@ export default function DashboardExtensions() {
                       ))}
                     </tbody>
                   </table>
+                  <Pagination
+                    currentPage={currentPage}
+                    updateCurrentPage={updateCurrentPage}
+                    totalPages={TOTAL_PAGES}
+                  />
                 </div>
               </TabPanel>
               <TabPanel>
@@ -219,7 +263,7 @@ export default function DashboardExtensions() {
                       </tr>
                     </thead>
                     <tbody className="max-h-96 overflow-y-auto">
-                      {users.map((user) => (
+                      {getAvailableUsers(users).map((user) => (
                         <tr key={user.id} className="text-center">
                           <td className="p-4 bg-white">
                             {user.first_name} {user.last_name}
@@ -237,6 +281,11 @@ export default function DashboardExtensions() {
                       ))}
                     </tbody>
                   </table>
+                  <Pagination
+                    currentPage={currentPage}
+                    updateCurrentPage={updateCurrentPage}
+                    totalPages={TOTAL_PAGES}
+                  />
                 </div>
               </TabPanel>
             </TabPanels>

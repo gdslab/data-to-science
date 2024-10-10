@@ -1,15 +1,23 @@
+import Papa from 'papaparse';
 import { ReactNode, useState } from 'react';
 
 import { generateRandomProfileColor } from '../auth/Profile';
+import { Button } from '../../Buttons';
 import Pagination from '../../Pagination';
 import { User } from '../../../AuthContext';
 
+import { downloadFile as downloadCSV } from '../projects/fieldCampaigns/utils';
+
 const HeaderRow = ({ children }: { children?: ReactNode }) => (
-  <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">{children}</th>
+  <th className="whitespace-nowrap px-4 py-2 font-medium text-sm text-gray-900">
+    {children}
+  </th>
 );
 
 const BodyRow = ({ children }: { children: ReactNode }) => (
-  <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-700">{children}</th>
+  <th className="whitespace-nowrap px-4 py-2 font-medium text-sm text-gray-700">
+    {children}
+  </th>
 );
 
 const UserProfilePicture = ({ user }: { user: User }) =>
@@ -32,6 +40,16 @@ const UserProfilePicture = ({ user }: { user: User }) =>
 
 export default function DashboardUserList({ users }: { users: User[] }) {
   const [currentPage, setCurrentPage] = useState(0);
+
+  const keysToSkip = [
+    'id',
+    'api_access_token',
+    'exts',
+    'is_approved',
+    'is_email_confirmed',
+    'is_superuser',
+    'profile_url',
+  ];
 
   const MAX_ITEMS = 5; // max number of users per page
   const TOTAL_PAGES = Math.ceil(users.length / MAX_ITEMS);
@@ -96,11 +114,32 @@ export default function DashboardUserList({ users }: { users: User[] }) {
           ))}
         </tbody>
       </table>
-      <Pagination
-        currentPage={currentPage}
-        updateCurrentPage={updateCurrentPage}
-        totalPages={TOTAL_PAGES}
-      />
+      <div className="flex flex-cols justify-between gap-4">
+        <div></div>
+        <Pagination
+          currentPage={currentPage}
+          updateCurrentPage={updateCurrentPage}
+          totalPages={TOTAL_PAGES}
+        />
+
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => {
+            const csvData = Papa.unparse(
+              users.map((user) =>
+                Object.fromEntries(
+                  Object.entries(user).filter(([key]) => !keysToSkip.includes(key))
+                )
+              )
+            );
+            const csvFile = new Blob([csvData], { type: 'text/csv' });
+            downloadCSV(csvFile, 'users.csv');
+          }}
+        >
+          Export CSV
+        </Button>
+      </div>
     </div>
   );
 }

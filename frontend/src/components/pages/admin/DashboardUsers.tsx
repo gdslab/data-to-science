@@ -1,13 +1,10 @@
 import axios, { AxiosResponse } from 'axios';
-import Papa from 'papaparse';
 import { useLoaderData } from 'react-router-dom';
 
 import DashboardUserList from './DashboardUserList';
 import StatCard from './StatCard';
-import { Button } from '../../Buttons';
 import { User } from '../../../AuthContext';
 
-import { downloadFile as downloadCSV } from '../projects/fieldCampaigns/utils';
 import { sorter } from '../../utils';
 
 export async function loader() {
@@ -40,19 +37,9 @@ function joinedInLastNDays(users: User[], nDays: number): number {
 export default function DashboardUsers() {
   const users = useLoaderData() as User[];
 
-  const keysToSkip = [
-    'id',
-    'api_access_token',
-    'exts',
-    'is_approved',
-    'is_email_confirmed',
-    'is_superuser',
-    'profile_url',
-  ];
-
   return (
     <section className="w-full bg-white">
-      <div className="mx-auto max-w-screen-xl px-4 py-12 sm:px-6 md:py-16 lg:px-8">
+      <div className="mx-auto max-w-screen-xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">Users</h2>
 
@@ -71,25 +58,6 @@ export default function DashboardUsers() {
         <DashboardUserList
           users={users.sort((a, b) => sorter(a.last_name, b.last_name))}
         />
-        <div className="mt-4 w-36">
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => {
-              const csvData = Papa.unparse(
-                users.map((user) =>
-                  Object.fromEntries(
-                    Object.entries(user).filter(([key]) => !keysToSkip.includes(key))
-                  )
-                )
-              );
-              const csvFile = new Blob([csvData], { type: 'text/csv' });
-              downloadCSV(csvFile, 'users.csv');
-            }}
-          >
-            Export CSV
-          </Button>
-        </div>
       </div>
     </section>
   );
