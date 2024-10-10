@@ -1,3 +1,5 @@
+import clsx from 'clsx';
+
 import { Flight } from '../pages/projects/Project';
 
 const POSITION_CLASSES = {
@@ -34,9 +36,14 @@ export default function CompareToolSelector({
   };
 
   return (
-    <div className={POSITION_CLASSES[position]}>
-      <div className="leaflet-control leaflet-bar mb-4 w-64">
-        <div className="grid grid-rows-2 gap-2 p-4 bg-zinc-200 shadow-md">
+    <div
+      className={clsx(POSITION_CLASSES[position], {
+        'left-10': position === 'topleft',
+        'right-14': position === 'topright',
+      })}
+    >
+      <div className="leaflet-control leaflet-bar mb-4 w-72">
+        <div className="grid grid-rows-2 gap-2 p-4 bg-zinc-200 rounded-sm shadow-md">
           <select
             className="h-10 p-1.5 font-semibold text-zinc-600 text-center border-2 border-zinc-300 rounded-md bg-white"
             aria-label="Select flight date"
