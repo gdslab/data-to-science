@@ -2,6 +2,9 @@ import { createBrowserRouter } from 'react-router-dom';
 
 // pages and data loaders
 import Dashboard from './components/pages/admin/Dashboard';
+import DashboardCharts, {
+  loader as dashboardChartsLoader,
+} from './components/pages/admin/DashboardCharts';
 import DashboardExtensions, {
   loader as dashboardExtensionsLoader,
 } from './components/pages/admin/DashboardExtensions';
@@ -203,6 +206,11 @@ export const router = createBrowserRouter([
             path: '/admin/dashboard/users',
             element: <DashboardUsers />,
             loader: dashboardUsersLoader,
+          },
+          {
+            path: '/admin/dashboard/charts',
+            element: <DashboardCharts />,
+            loader: dashboardChartsLoader,
           },
         ],
       },

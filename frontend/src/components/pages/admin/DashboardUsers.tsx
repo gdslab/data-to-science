@@ -1,13 +1,10 @@
 import axios, { AxiosResponse } from 'axios';
-import Papa from 'papaparse';
 import { useLoaderData } from 'react-router-dom';
 
 import DashboardUserList from './DashboardUserList';
 import StatCard from './StatCard';
-import { Button } from '../../Buttons';
 import { User } from '../../../AuthContext';
 
-import { downloadFile as downloadCSV } from '../projects/fieldCampaigns/utils';
 import { sorter } from '../../utils';
 
 export async function loader() {
@@ -39,16 +36,6 @@ function joinedInLastNDays(users: User[], nDays: number): number {
 
 export default function DashboardUsers() {
   const users = useLoaderData() as User[];
-
-  const keysToSkip = [
-    'id',
-    'api_access_token',
-    'exts',
-    'is_approved',
-    'is_email_confirmed',
-    'is_superuser',
-    'profile_url',
-  ];
 
   return (
     <section className="w-full bg-white">
