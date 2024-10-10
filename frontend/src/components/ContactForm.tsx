@@ -1,6 +1,6 @@
 import axios, { isAxiosError } from 'axios';
 import clsx from 'clsx';
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import * as Yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -8,20 +8,24 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import Alert, { Status } from './Alert';
 import { Button } from './Buttons';
 import Card from './Card';
-import { InputField, TextAreaField } from './FormFields';
+import { InputField, SelectField, styles, TextAreaField } from './FormFields';
 import Modal from './Modal';
+import AuthContext from '../AuthContext';
 
 type ContactFormData = {
+  topic: string;
   subject: string;
   message: string;
 };
 
 const defaultValues = {
+  topic: '',
   subject: '',
   message: '',
 };
 
 const validationSchema = Yup.object({
+  topic: Yup.string().required('Select a topic'),
   subject: Yup.string()
     .min(5, 'Subject must have at least 5 characters')
     .max(60, 'Subject cannot be more than 60 characters')
@@ -32,8 +36,18 @@ const validationSchema = Yup.object({
     .required('Enter a message'),
 });
 
+const TOPIC_OPTIONS = [
+  { label: 'Select a topic', value: '' },
+  { label: 'Bug Report', value: 'bug' },
+  { label: 'Feature Request', value: 'feature' },
+  { label: 'General Feedback', value: 'feedback' },
+  { label: 'Other', value: 'other' },
+];
+
 function ContactForm() {
   const [status, setStatus] = useState<Status | null>(null);
+
+  const { user } = useContext(AuthContext);
 
   const methods = useForm<ContactFormData>({
     defaultValues,
@@ -78,7 +92,20 @@ function ContactForm() {
       <FormProvider {...methods}>
         <form className="grid grid-flow-row gap-4" onSubmit={handleSubmit(onSubmit)}>
           <div>
-            <InputField label="Subject" name="subject" />
+            <SelectField label="Topic" name="topic" options={TOPIC_OPTIONS} />
+          </div>
+          <div className="border-b-2 border-slate-200"></div>
+          <div>
+            {user && (
+              <span
+                className={styles.label}
+              >{`From: ${user.first_name} <${user.email}>`}</span>
+            )}
+            <InputField
+              label="Subject"
+              name="subject"
+              placeholder="Briefly describe your inquiry"
+            />
             <span
               className={clsx('text-sm text-gray-400', {
                 'text-red-500': currentSubject.length > 60,
@@ -88,7 +115,12 @@ function ContactForm() {
             </span>
           </div>
           <div>
-            <TextAreaField label="Message" name="message" />
+            <span className={styles.label}>{`To: D2S Support <support@d2s.org>`}</span>
+            <TextAreaField
+              label="Message"
+              name="message"
+              placeholder="Tell us more about your inquiry..."
+            />
             <span
               className={clsx('text-sm text-gray-400', {
                 'text-red-500': currentMessage.length > 1000,
