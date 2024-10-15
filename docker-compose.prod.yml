@@ -263,7 +263,7 @@ services:
       - CPL_VSIL_CURL_ALLOWED_EXTENSIONS=.tif,.TIF,.tiff
       - CPL_VSIL_CURL_CACHE_SIZE=200000000
     healthcheck:
-      test: ["CMD", "curl", "-s", "-o", "/dev/null", "http://localhost:8888/healthzs"]
+      test: ["CMD", "curl", "-s", "-o", "/dev/null", "http://localhost:8888/healthz"]
       interval: 1m30s
       timeout: 30s
       retries: 5
