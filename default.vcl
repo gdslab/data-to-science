@@ -8,7 +8,7 @@ backend default {
     .max_connections = 100;
     .probe = {
         .request =
-            "GET / HTTP/1.1"
+            "GET /healthz HTTP/1.1"
             "Host: titiler"
             "Connection: close"
             "User-Agent: Varnish Health Probe";
