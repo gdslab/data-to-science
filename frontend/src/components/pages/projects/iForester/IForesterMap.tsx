@@ -74,11 +74,12 @@ export default function IForesterMap() {
   }, [dbhMin, dbhMax, iforester, speciesSelection]);
 
   useEffect(() => {
-    if (mapRef.current) {
+    if (mapRef.current && activeMarkerZoom) {
       const zoomMarker = filteredLocations.filter(({ id }) => id === activeMarkerZoom);
       if (zoomMarker.length > 0) {
         const coords = L.latLng([zoomMarker[0].latitude, zoomMarker[0].longitude]);
         mapRef.current.flyTo(coords, 18);
+        dispatch({ type: 'SET_ACTIVE_MARKER_ZOOM', payload: '' });
       }
     }
   }, [activeMarkerZoom]);

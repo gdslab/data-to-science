@@ -20,7 +20,6 @@
     "@nivo/bar": "^0.87.0",
     "@nivo/calendar": "^0.87.0",
     "@nivo/line": "^0.87.0",
-    "@mui/material": "^6.1.2",
     "@turf/area": "^6.5.0",
     "@turf/flip": "^6.5.0",
     "@types/react-frame-component": "^4.1.6",

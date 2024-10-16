@@ -24,25 +24,30 @@ export default function ClusterMarkers({
 
   const fgRef = useRef<L.FeatureGroup>(null);
 
+  const _updateVisibleMarkers = () => {
+    let visibleMarkers: string[] = [];
+    if (markers.length > 0) {
+      markers.forEach((marker) => {
+        const coords = L.latLng([marker.latitude, marker.longitude]);
+        if (map.getBounds().contains(coords)) {
+          visibleMarkers.push(marker.id);
+        }
+      });
+      updateVisibleMarkers(visibleMarkers);
+    }
+  };
+
   // zoom to extent of markers
   useEffect(() => {
     if (fgRef.current) {
       map.fitBounds(fgRef.current.getBounds(), { maxZoom: 16 });
+      _updateVisibleMarkers();
     }
   }, [markers]);
 
   useMapEvents({
     moveend(_e) {
-      let visibleMarkers: string[] = [];
-      if (markers.length > 0) {
-        markers.forEach((marker) => {
-          const coords = L.latLng([marker.latitude, marker.longitude]);
-          if (map.getBounds().contains(coords)) {
-            visibleMarkers.push(marker.id);
-          }
-        });
-        updateVisibleMarkers(visibleMarkers);
-      }
+      _updateVisibleMarkers();
     },
   });
 
