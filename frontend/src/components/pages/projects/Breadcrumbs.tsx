@@ -76,7 +76,7 @@ export default function ProjectBreadcrumbs() {
                   to={`/projects/${projectId}`}
                   className={classNames(
                     !flightCrumb && slug !== 'access' ? 'font-semibold' : '',
-                    'block transition hover:text-gray-700'
+                    'block transition hover:text-gray-700 max-w-60 truncate'
                   )}
                 >
                   {projectCrumb}
