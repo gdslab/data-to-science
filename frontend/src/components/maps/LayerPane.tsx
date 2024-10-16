@@ -10,7 +10,6 @@ import {
 
 import { Button, LinkOutlineButton } from '../Buttons';
 import { getDataProductName } from '../pages/projects/flights/DataProducts/DataProductsTable';
-import HintText from '../HintText';
 import { useMapContext } from './MapContext';
 import MapToolbar from './MapToolbar';
 import Pagination, { getPaginationResults } from '../Pagination';
@@ -300,9 +299,11 @@ export default function LayerPane({
           </div>
           {activeProject ? (
             <article className="h-[calc(100%_-_44px)] p-4">
-              <div className="h-40">
-                <h1>{activeProject.title}</h1>
-                <HintText>{activeProject.description}</HintText>
+              <div className="h-44">
+                <h1 className="truncate">{activeProject.title}</h1>
+                <p className="text-slate-700 text-sm font-light line-clamp-2">
+                  {activeProject.description}
+                </p>
                 <MapToolbar />
               </div>
               <ul className="h-[calc(100%_-_160px)] space-y-2 overflow-y-auto pb-16">
