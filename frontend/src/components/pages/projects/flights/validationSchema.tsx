@@ -5,12 +5,17 @@ const validationSchema = Yup.object({
     .min(1, 'Name must have at least one character')
     .max(255, 'Name cannot exceed 255 characters'),
   acquisitionDate: Yup.date().required('Required'),
-  altitude: Yup.number().positive('Must be greater than 0').required('Required'),
+  altitude: Yup.number()
+    .typeError('Enter a number using only digits (0-9)')
+    .positive('Must be greater than 0')
+    .required('Required'),
   sideOverlap: Yup.number()
+    .typeError('Enter a number using only digits (0-9)')
     .min(0, 'Cannot be lower than 0%')
     .max(100, 'Cannot be higher than 100%')
     .required('Required'),
   forwardOverlap: Yup.number()
+    .typeError('Enter a number using only digits (0-9)')
     .min(0, 'Cannot be lower than 0%')
     .max(100, 'Cannot be higher than 100%')
     .required('Required'),
