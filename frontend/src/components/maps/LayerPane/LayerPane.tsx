@@ -8,106 +8,23 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 
-import { Button, LinkOutlineButton } from '../Buttons';
-import { getDataProductName } from '../pages/projects/flights/DataProducts/DataProductsTable';
-import { useMapContext } from './MapContext';
-import MapToolbar from './MapToolbar';
-import Pagination, { getPaginationResults } from '../Pagination';
-import { Band } from '../pages/projects/Project';
-import { Project } from '../pages/projects/ProjectList';
-import ProjectSearch from '../pages/projects/ProjectSearch';
+import { useMapContext } from '../MapContext';
+
+import { Button } from '../../Buttons';
+import FlightCard from './FlightCard';
+import LayerCard from './LayerCard';
+import MapToolbar from '../MapToolbar';
+import Pagination, { getPaginationResults } from '../../Pagination';
+import { Project } from '../../pages/projects/ProjectList';
+import ProjectSearch from '../../pages/projects/ProjectSearch';
 import Sort, {
   getSortPreferenceFromLocalStorage,
   SortSelection,
   sortProjects,
-} from '../Sort';
-import SymbologyControls from './SymbologyControls';
+} from '../../Sort';
 
-import { getDefaultStyle } from './utils';
-
-import UASIcon from '../../assets/uas-icon.svg';
-
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(' ');
-}
-
-function LayerCard({
-  active = false,
-  children,
-  hover = false,
-}: {
-  active?: boolean;
-  children: React.ReactNode;
-  hover?: boolean;
-}) {
-  return (
-    <div
-      className={classNames(
-        active ? 'border-slate-400' : 'border-slate-200',
-        hover && !active ? 'cursor-pointer hover:border-2 hover:shadow-md' : '',
-        'p-2 rounded-sm shadow-sm bg-white border-solid border-2'
-      )}
-    >
-      {children}
-    </div>
-  );
-}
-
-export function formatDate(datestring) {
-  return new Date(datestring).toLocaleDateString('en-us', {
-    timeZone: 'UTC',
-    weekday: 'long',
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-function RasterStats({ stats }: { stats: Band['stats'] }) {
-  return (
-    <fieldset className="border border-solid border-slate-300 p-2">
-      <legend className="block text-sm text-gray-400 font-semibold pt-1 pb-1">
-        Stats
-      </legend>
-      <div className="flex flex-row flex-wrap justify-between gap-1.5">
-        <div className="flex flex-col">
-          <span className="font-semibold">Mean</span>
-          <span>{stats.mean.toFixed(2)}</span>
-        </div>
-        <div className="flex flex-col">
-          <span className="font-semibold">Min</span>
-          <span>{stats.minimum.toFixed(2)}</span>
-        </div>
-        <div className="flex flex-col">
-          <span className="font-semibold">Max</span>
-          <span>{stats.maximum.toFixed(2)}</span>
-        </div>
-        <div className="flex flex-col">
-          <span className="font-semibold">Std. Dev</span>
-          <span>{stats.stddev.toFixed(2)}</span>
-        </div>
-      </div>
-    </fieldset>
-  );
-}
-
-/**
- * Checks local storage for previously stored projects.
- * @returns Array of projects retrieved from local storage.
- */
-function getLocalStorageProjects(): Project[] | null {
-  if ('projects' in localStorage) {
-    const lsProjectsString = localStorage.getItem('projects');
-    if (lsProjectsString) {
-      const lsProjects: Project[] = JSON.parse(lsProjectsString);
-      if (lsProjects && lsProjects.length > 0) {
-        return lsProjects;
-      }
-    }
-  }
-
-  return null;
-}
+import { getLocalStorageProjects } from './utils';
+import { getDefaultStyle } from '../utils';
 
 export default function LayerPane({
   hidePane,
@@ -313,154 +230,7 @@ export default function LayerPane({
                   )
                   .map((flight) => (
                     <li key={flight.id}>
-                      <LayerCard>
-                        <div className="grid grid-cols-6">
-                          <div className="col-span-1 flex items-center justify-center">
-                            <img src={UASIcon} width={'50%'} />
-                          </div>
-                          <div className="col-span-5 flex flex-col items-start gap-2">
-                            <strong className="w-full font-bold text-slate-700 truncate">
-                              {formatDate(flight.acquisition_date)}{' '}
-                              {flight.name && `(${flight.name})`}
-                            </strong>
-                            <div className="grid grid-rows-2 text-slate-700 text-sm gap-1.5">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <span className="text-sm text-gray-400 font-semibold">
-                                    Platform:{' '}
-                                  </span>
-                                  {flight.platform.replace('_', ' ')}
-                                </div>
-                                <div>
-                                  <span className="text-sm text-gray-400 font-semibold">
-                                    Sensor:
-                                  </span>{' '}
-                                  {flight.sensor}
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <span className="text-sm text-gray-400 font-semibold">
-                                    Altitude (m):
-                                  </span>{' '}
-                                  {flight.altitude}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        {flight.data_products.length > 0 ? (
-                          <details
-                            className="group space-y-2 [&_summary::-webkit-details-marker]:hidden text-slate-600 overflow-visible"
-                            open={
-                              activeDataProduct &&
-                              activeDataProduct.flight_id === flight.id
-                                ? true
-                                : false
-                            }
-                          >
-                            <summary className="text-sm cursor-pointer">{`${flight.data_products.length} Data Products`}</summary>
-                            {flight.data_products.map((dataProduct) => (
-                              <LayerCard
-                                key={dataProduct.id}
-                                hover={true}
-                                active={
-                                  activeDataProduct &&
-                                  dataProduct.id === activeDataProduct.id
-                                    ? true
-                                    : false
-                                }
-                              >
-                                <div className="text-slate-600 text-sm">
-                                  <div
-                                    className="flex flex-col gap-1.5"
-                                    onClick={() => {
-                                      if (
-                                        (dataProduct && !activeDataProduct) ||
-                                        (dataProduct &&
-                                          activeDataProduct &&
-                                          dataProduct.id !== activeDataProduct.id)
-                                      ) {
-                                        activeDataProductDispatch({
-                                          type: 'set',
-                                          payload: dataProduct,
-                                        });
-                                        if (dataProduct.user_style) {
-                                          symbologySettingsDispatch({
-                                            type: 'update',
-                                            payload: dataProduct.user_style,
-                                          });
-                                        } else if (
-                                          dataProduct.data_type !== 'point_cloud'
-                                        ) {
-                                          symbologySettingsDispatch({
-                                            type: 'update',
-                                            payload: getDefaultStyle(dataProduct),
-                                          });
-                                        }
-                                      }
-                                    }}
-                                  >
-                                    <div>
-                                      <span className="font-bold">
-                                        {getDataProductName(dataProduct.data_type)}
-                                      </span>
-                                    </div>
-                                    {dataProduct.data_type !== 'point_cloud' ? (
-                                      <fieldset className="border border-solid border-slate-300 p-2">
-                                        <legend className="block text-sm text-gray-400 font-semibold pt-1 pb-1">
-                                          Band Info
-                                        </legend>
-                                        <div className="flex flex-row flex-wrap justify-start gap-1.5">
-                                          {dataProduct.stac_properties.eo.map((b) => {
-                                            return (
-                                              <span key={b.name} className="mr-2">
-                                                {b.name} ({b.description})
-                                              </span>
-                                            );
-                                          })}
-                                        </div>
-                                      </fieldset>
-                                    ) : null}
-                                    {dataProduct.data_type !== 'point_cloud' &&
-                                      dataProduct.stac_properties.raster.length ===
-                                        1 && (
-                                        <RasterStats
-                                          stats={
-                                            dataProduct.stac_properties.raster[0].stats
-                                          }
-                                        />
-                                      )}
-                                  </div>
-                                  {activeDataProduct &&
-                                  activeDataProduct.id === dataProduct.id &&
-                                  dataProduct.data_type !== 'point_cloud' ? (
-                                    <div className="mt-2">
-                                      <SymbologyControls
-                                        numOfBands={
-                                          dataProduct.stac_properties
-                                            ? dataProduct.stac_properties.raster.length
-                                            : 1 // default to single band
-                                        }
-                                      />{' '}
-                                    </div>
-                                  ) : null}
-                                </div>
-                              </LayerCard>
-                            ))}
-                            <div className="my-2">
-                              <LinkOutlineButton
-                                size="sm"
-                                target="_blank"
-                                title="Open data management page for this flight in a new tab"
-                                url={`/projects/${flight.project_id}/flights/${flight.id}/data`}
-                              >
-                                Manage Data
-                              </LinkOutlineButton>
-                            </div>
-                          </details>
-                        ) : null}
-                      </LayerCard>
+                      <FlightCard flight={flight} />
                     </li>
                   ))}
               </ul>

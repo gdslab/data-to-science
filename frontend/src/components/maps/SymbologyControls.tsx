@@ -2,11 +2,11 @@ import axios from 'axios';
 import { Field, Formik, Form } from 'formik';
 import { useState } from 'react';
 
-import { cmaps } from './cmaps';
+import { useMapContext } from './MapContext';
+
 import { Button } from '../Buttons';
 import { DataProduct } from '../pages/projects/Project';
-import { NumberField, RangeField, SelectField } from '../InputFields';
-import { useMapContext } from './MapContext';
+import { NumberField, SelectField } from '../InputFields';
 import {
   DSMSymbologySettings,
   OrthoSymbologySettings,
@@ -14,8 +14,11 @@ import {
   SymbologySettingsAction,
 } from './Maps';
 import Modal from '../Modal';
+import OpacitySlider from './OpacitySlider';
 import { Project } from '../pages/projects/ProjectList';
 import ShareControls from './ShareControls';
+
+import { cmaps } from './cmaps';
 
 const saveSymbology = async (
   symbologyValues: SymbologySettings,
@@ -48,33 +51,6 @@ const saveSymbology = async (
     console.error(err);
   }
 };
-
-function OpacitySlider({
-  onChange,
-}: {
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-}) {
-  return (
-    <div>
-      <RangeField
-        name="opacity"
-        label="Opacity"
-        min={0}
-        max={100}
-        step={1}
-        list="opacity-markers"
-        onChange={onChange}
-      />
-      <datalist className="flex justify-between w-full" id="opacity-markers">
-        <option className="w-8 p-0 text-left" value="0" label="0%"></option>
-        <option className="w-8 p-0 text-center" value="25" label="25%"></option>
-        <option className="w-8 p-0 text-center" value="50" label="50%"></option>
-        <option className="w-8 p-0 text-center" value="75" label="75%"></option>
-        <option className="w-8 p-0 text-right" value="100" label="100%"></option>
-      </datalist>
-    </div>
-  );
-}
 
 function ShareDataProduct({
   dataProduct,
@@ -127,7 +103,7 @@ function DSMSymbologyControls() {
         {({ values, setFieldTouched, setFieldValue, submitForm }) => (
           <Form>
             <div className="w-full mb-4">
-              <fieldset className="border border-solid border-slate-300 p-3">
+              <fieldset className=" flex flex-col gap-4 border border-solid border-slate-300 p-3">
                 <legend className="block text-sm text-gray-400 font-bold pt-2 pb-1">
                   Color Properties
                 </legend>
@@ -142,8 +118,9 @@ function DSMSymbologyControls() {
                   }}
                 />
                 <OpacitySlider
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    setFieldValue('opacity', e.target.value);
+                  currentValue={values.opacity}
+                  onChange={(_: Event, newValue: number | number[]) => {
+                    setFieldValue('opacity', newValue);
                     setFieldTouched('opacity', true);
                     submitForm();
                   }}
@@ -429,14 +406,15 @@ function OrthoSymbologyControls() {
                     />
                   </div>
                 </div>
+                <OpacitySlider
+                  currentValue={values.opacity}
+                  onChange={(_: Event, newValue: number | number[]) => {
+                    setFieldValue('opacity', newValue);
+                    setFieldTouched('opacity', true);
+                    submitForm();
+                  }}
+                />
               </div>
-              <OpacitySlider
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setFieldValue('opacity', e.target.value);
-                  setFieldTouched('opacity', true);
-                  submitForm();
-                }}
-              />
               <div className="w-full flex justify-end mt-4">
                 <Button type="submit" size="xs">
                   Apply Changes

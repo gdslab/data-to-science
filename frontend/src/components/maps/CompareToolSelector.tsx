@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 
 import { Flight } from '../pages/projects/Project';
+import { formatDate } from './LayerPane/utils';
 
 const POSITION_CLASSES = {
   bottomleft: 'leaflet-bottom leaflet-left',
@@ -18,8 +19,6 @@ interface Props {
   setFlight: React.Dispatch<React.SetStateAction<string>>;
   setDataProduct: React.Dispatch<React.SetStateAction<string>>;
 }
-
-import { formatDate } from './LayerPane';
 
 export default function CompareToolSelector({
   side,
