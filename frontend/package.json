@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
     "@geoman-io/leaflet-geoman-free": "^2.14.2",
     "@headlessui/react": "latest",
