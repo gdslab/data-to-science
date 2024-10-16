@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   ArrowUturnLeftIcon,
@@ -104,6 +104,21 @@ export default function LayerPane({
       }
     }
   }, [state]);
+
+  // sort flights by date, followed by id if the dates are a match
+  const sortedFlights = useMemo(() => {
+    const sorted = [...flights];
+    sorted.sort((a, b) => {
+      const dateA = new Date(a.acquisition_date);
+      const dateB = new Date(b.acquisition_date);
+      if (dateA < dateB) return -1;
+      if (dateA > dateB) return 1;
+      if (a.id < b.id) return -1;
+      if (a.id > b.id) return 1;
+      return 0;
+    });
+    return sorted;
+  }, [flights]);
 
   /**
    * Updates the current search text.
@@ -224,15 +239,11 @@ export default function LayerPane({
                 <MapToolbar />
               </div>
               <ul className="h-[calc(100%_-_160px)] space-y-2 overflow-y-auto pb-16">
-                {flights
-                  .sort((a, b) =>
-                    new Date(a.acquisition_date) < new Date(b.acquisition_date) ? 1 : -1
-                  )
-                  .map((flight) => (
-                    <li key={flight.id}>
-                      <FlightCard flight={flight} />
-                    </li>
-                  ))}
+                {sortedFlights.map((flight) => (
+                  <li key={flight.id}>
+                    <FlightCard flight={flight} />
+                  </li>
+                ))}
               </ul>
             </article>
           ) : (
