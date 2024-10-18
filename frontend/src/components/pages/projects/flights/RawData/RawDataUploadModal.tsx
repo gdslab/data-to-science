@@ -69,7 +69,7 @@ export default function RawDataUploadModal({
                       flightID: flightID,
                       projectID: projectID,
                     }}
-                    fileType={['application/zip']}
+                    fileType={['application/zip', 'application/x-zip-compressed']}
                     uploadType="rawData"
                     updateSetDisabled={() => {}}
                     updateUploadHistory={updateUploadHistory}
