@@ -3,11 +3,6 @@ services:
     build:
       context: ./frontend
       dockerfile: frontend.prod.dockerfile
-      args:
-      - VITE_API_V1_STR=/api/v1
-      - VITE_BRAND_FULL=Data to Science
-      - VITE_BRAND_SHORT=D2S
-      - VITE_BRAND_SLOGAN=A Data-driven Open Science Community for Sustained Innovation
     image: d2s-app:latest
     platform: linux/x86_64
     depends_on:

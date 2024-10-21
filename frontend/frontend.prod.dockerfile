@@ -2,12 +2,6 @@ FROM node:18-bullseye-slim AS build-stage
 
 WORKDIR /app/
 
-ARG VITE_API_V1_STR
-ARG VITE_BRAND_FULL
-ARG VITE_BRAND_SHORT
-ARG VITE_BRAND_SLOGAN
-ARG VITE_DOMAIN
-
 COPY ./package.json ./yarn.lock ./
 
 RUN yarn install
