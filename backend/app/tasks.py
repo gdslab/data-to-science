@@ -513,22 +513,28 @@ def run_raw_data_image_processing(
         update_job_status(job, state="ERROR")
         return None
 
+    rpc_client = None
     try:
         # publish message to external server
         rpc_client = RpcClient(routing_key="raw-data-start-process-queue")
         batch_id = rpc_client.call(raw_data_identifier)
-        rpc_client.connection.close()
 
-        logger.info(f"Batch_ID: {batch_id.decode('utf-8')}")
+        # if no batch id returned, update job state as failed
+        if not batch_id:
+            raise ValueError("Missing batch ID")
 
-        update_job_status(
-            job, state="INPROGRESS", extra={"batch_id": batch_id.decode("utf-8")}
-        )
+        logger.info(f"Batch_ID: {batch_id}")
+
+        update_job_status(job, state="INPROGRESS", extra={"batch_id": batch_id})
     except Exception:
         logger.exception("Error while publishing to RabbitMQ channel")
         # update job
         update_job_status(job, state="ERROR")
-        return None
+    finally:
+        if isinstance(rpc_client, RpcClient):
+            rpc_client.connection.close()
+
+    return None
 
 
 @celery_app.task(name="zonal_statistics_task")

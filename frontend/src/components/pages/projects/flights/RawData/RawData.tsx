@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRevalidator } from 'react-router-dom';
 
 import RawDataDeleteModal from './RawDataDeleteModal';
-import RawDataDownloadLink from './RawDataDownloadLink';
+import RawDataDownloadLink, { RawDataReportDownloadLink } from './RawDataDownloadLink';
 import RawDataUploadModal from './RawDataUploadModal';
 import { ErrorIcon, PendingIcon, ProgressIcon } from './RawDataStatusIcons';
 import { useProjectContext } from '../../ProjectContext';
@@ -97,12 +97,17 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
                 (job) => job.rawDataId === status.rawDataId
               );
               if (jobIndex > -1) {
-                updatedJobProgress[jobIndex] = {
-                  initialCheck: false,
-                  jobId: status.jobId,
-                  progress: progress || 0,
-                  rawDataId: status.rawDataId,
-                };
+                if (progress === -9999) {
+                  // job aborted or failed, remove job
+                  updatedJobProgress.splice(jobIndex, 1);
+                } else {
+                  updatedJobProgress[jobIndex] = {
+                    initialCheck: false,
+                    jobId: status.jobId,
+                    progress: progress || 0,
+                    rawDataId: status.rawDataId,
+                  };
+                }
                 setImageProcessingJobStatus(updatedJobProgress);
               }
             })
@@ -189,6 +194,7 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
                 {dataset.status === 'SUCCESS' && (
                   <RawDataDownloadLink rawDataId={dataset.id} />
                 )}
+                {dataset.report && <RawDataReportDownloadLink url={dataset.report} />}
                 {/* display button for removing processed raw data zip file */}
                 {projectRole === 'owner' &&
                   (dataset.status === 'SUCCESS' || dataset.status === 'FAILED') && (
