@@ -255,6 +255,7 @@ def process_raw_data(
         job_update_in = schemas.JobUpdate(
             state="COMPLETED", status="FAILED", end_time=datetime.now()
         )
+        crud.job.update(db, db_obj=job, obj_in=job_update_in)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to start request",
@@ -299,5 +300,15 @@ def check_raw_data_processing_progress(
     progress = rpc_client.call(batch_id)
     rpc_client.connection.close()
 
-    # report back {"progress": float}
+    if not progress or float(progress) == -9999:
+        job_update_in = schemas.JobUpdate(
+            state="COMPLETED", status="FAILED", end_time=datetime.now()
+        )
+        crud.job.update(db, db_obj=job, obj_in=job_update_in)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error occurred while running job",
+        )
+
+    # report back {"progress": str}
     return {"progress": progress}

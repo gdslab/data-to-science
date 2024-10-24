@@ -34,13 +34,13 @@ const checkImageProcessingJobProgress = async (
   rawDataId: string
 ): Promise<number | null> => {
   try {
-    const response: AxiosResponse<{ progress: number }> = await axios.get(
+    const response: AxiosResponse<{ progress: string }> = await axios.get(
       `${
         import.meta.env.VITE_API_V1_STR
       }/projects/${projectId}/flights/${flightId}/raw_data/${rawDataId}/check_progress/${jobId}`
     );
     if (response.status === 200) {
-      return response.data.progress;
+      return parseFloat(response.data.progress);
     } else {
       return null;
     }

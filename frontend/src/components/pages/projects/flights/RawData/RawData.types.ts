@@ -21,6 +21,7 @@ export type RawDataProps = {
   id: string;
   status: string;
   original_filename: string;
+  report?: string;
   url: string;
 };
 
