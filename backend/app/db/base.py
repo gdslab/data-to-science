@@ -10,6 +10,7 @@ from app.models.file_permission import FilePermission
 from app.models.flight import Flight
 from app.models.iforester import IForester
 from app.models.indoor_project import IndoorProject
+from app.models.indoor_project_data import IndoorProjectData
 from app.models.job import Job
 from app.models.location import Location
 from app.models.project import Project

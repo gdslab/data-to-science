@@ -1,5 +1,6 @@
 import json
 import os
+import tarfile
 import secrets
 import shutil
 import subprocess
@@ -23,13 +24,19 @@ from app.core.celery_app import celery_app
 from app.core.config import settings
 from app.core.security import get_token_hash
 from app.schemas.data_product import DataProduct, DataProductUpdate
-from app.schemas.data_product_metadata import ZonalStatistics, ZonalStatisticsProps
+from app.schemas.data_product_metadata import (
+    ZonalFeature,
+    ZonalFeatureCollection,
+    ZonalStatistics,
+    ZonalStatisticsProps,
+)
 from app.schemas.job import JobUpdate
 from app.schemas.raw_data import ImageProcessingQueryParams
 from app.utils import gen_preview_from_pointcloud
 from app.utils.ImageProcessor import ImageProcessor
 from app.utils.rabbitmq import get_pika_connection
 from app.utils.RpcClient import RpcClient
+from app.utils.TarProcessor import TarProcessor
 from app.utils.Toolbox import Toolbox
 from app.utils.unique_id import generate_unique_id
 
@@ -224,9 +231,11 @@ def process_geotiff(
         if os.path.exists(f"{storage_path}.info"):
             os.remove(f"{storage_path}.info")
     except Exception:
-        logger.exception("Unable to cleanup upload on tusd server")
-
-    return None
+        logger.exception(
+            f"Unable to cleanup data product upload on tusd server: {data_product_id}"
+        )
+    finally:
+        return None
 
 
 @celery_app.task(name="point_cloud_preview_image_task")
@@ -238,21 +247,23 @@ def create_point_cloud_preview_image(in_las: str) -> None:
     """
     # create preview image with uploaded point cloud
     try:
-        in_las = Path(in_las)
-        if in_las.name.endswith(".copc.laz"):
-            preview_out_path = in_las.parents[0] / in_las.name.replace(
+        in_las_pth = Path(in_las)
+        if in_las_pth.name.endswith(".copc.laz"):
+            preview_out_path = in_las_pth.parents[0] / in_las_pth.name.replace(
                 ".copc.laz", ".png"
             )
         else:
-            preview_out_path = in_las.parents[0] / in_las.with_suffix(".png").name
+            preview_out_path = (
+                in_las_pth.parents[0] / in_las_pth.with_suffix(".png").name
+            )
         gen_preview_from_pointcloud.create_preview_image(
-            input_las_path=in_las,
+            input_las_path=in_las_pth,
             preview_out_path=preview_out_path,
         )
     except Exception as e:
         logger.exception("Unable to generate preview image for uploaded point cloud")
         # if this file is present the preview image generation will be skipped next time
-        with open(Path(in_las).parent / "preview_failed", "w") as preview:
+        with open(Path(in_las_pth).parent / "preview_failed", "w") as preview:
             pass
 
 
@@ -390,12 +401,15 @@ def process_raw_data(
     db = next(get_db())
     # retrieve job associated with this task
     job = crud.job.get(db, id=job_id)
+    if not job:
+        logger.error(f"Unable to find job for processing raw data: {raw_data_id}")
+        return None
     # retrieve raw data associated with this task
     raw_data = crud.raw_data.get(db, id=raw_data_id)
     if not raw_data:
-        logger.error("Unable to find raw data record")
+        logger.error(f"Unable to find raw data record: {raw_data_id}")
+        update_job_status(job, state="ERROR")
         return None
-    # update job status to indicate process has started
     update_job_status(job, state="INPROGRESS")
     try:
         # copy uploaded raw data to static files and update record
@@ -410,15 +424,13 @@ def process_raw_data(
             ),
         )
     except Exception:
-        logger.exception("Failed to process uploaded raw data")
+        logger.exception(f"Failed to process uploaded raw data: {raw_data_id}")
         # clean up any files
         if os.path.exists(destination_filepath):
             os.remove(destination_filepath)
-        # remove job
         update_job_status(job, state="ERROR")
         return None
 
-    # update job to indicate process finished
     update_job_status(job, state="DONE")
 
     # remove raw data from tusd
@@ -428,7 +440,11 @@ def process_raw_data(
         if os.path.exists(f"{storage_path}.info"):
             os.remove(f"{storage_path}.info")
     except Exception:
-        logger.exception("Unable to cleanup upload on tusd server")
+        logger.exception(
+            f"Unable to cleanup raw data upload on tusd server: {raw_data_id}"
+        )
+    finally:
+        return None
 
 
 @celery_app.task(name="raw_data_image_processing_task")
@@ -464,7 +480,7 @@ def run_raw_data_image_processing(
     # retrieve job associated with this task
     job = crud.job.get(db, id=job_id)
     if not job:
-        raise ValueError("Missing job for task")
+        logger.error(f"Unable to find job for processing raw data: {raw_data_id}")
         return None
     # update job status to indicate process has started
     update_job_status(job, state="INPROGRESS")
@@ -540,6 +556,117 @@ def run_raw_data_image_processing(
     return None
 
 
+@celery_app.task(name="indoor_project_data_upload_task")
+def process_indoor_project_data(
+    indoor_project_data_id: UUID,
+    storage_path: str,
+    destination_filepath: str,
+    job_id: UUID,
+    indoor_project_id: UUID,
+    uploader_id: UUID,
+) -> None:
+    """Celery task for copying uploaded indoor project data (.xls, .xlsx, or .tar)
+    to static files location.
+
+    Args:
+        indoor_project_data_id (UUID): ID for indoor project data record.
+        storage_path (Path): Location of indoor project data on tusd server.
+        destination_filepath (Path): Destination in static files directory for data.
+        job_id (UUID): ID for job tracking task progress.
+        indoor_project_id (UUID): ID for indoor project associated with indoor project data.
+        uploader_id (UUID): ID for user associated with indoor project data upload.
+    """
+    # get database session
+    db = next(get_db())
+    # retrieve job associated with this task
+    job = crud.job.get(db, id=job_id)
+    if not job:
+        logger.error(
+            f"Unable to find job for processing indoor project data: {indoor_project_data_id}"
+        )
+        return None
+
+    logger.info(f"Running indoor project data processing task - JOB_ID: {job.id}")
+
+    # retrieve indoor project data associated with this task
+    indoor_project_data = crud.indoor_project_data.get(db, id=indoor_project_data_id)
+    if not indoor_project_data:
+        logger.error(f"Unable to find indoor project data: {indoor_project_data_id}")
+        update_job_status(job, state="ERROR")
+        return None
+    update_job_status(job, state="INPROGRESS")
+    try:
+        logger.info("Copying uploaded indoor project data from tusd to user volume...")
+
+        # copy uploaded indoor project data to static files and update filepath
+        shutil.copyfile(storage_path, destination_filepath)
+
+        logger.info(
+            "Copying uploaded indoor project data from tusd to user volume...Done!"
+        )
+
+        # add filepath to indoor project data
+        indoor_project_data_update_in = (
+            schemas.indoor_project_data.IndoorProjectDataUpdate(
+                filepath=str(destination_filepath), is_initial_processing_completed=True
+            )
+        )
+        indoor_project_data_updated = crud.indoor_project_data.update(
+            db, db_obj=indoor_project_data, obj_in=indoor_project_data_update_in
+        )
+    except Exception:
+        logger.exception(
+            f"Failed to process uploaded indoor data: {indoor_project_data_id}"
+        )
+        # clean up any files
+        if os.path.exists(destination_filepath):
+            os.remove(destination_filepath)
+        update_job_status(job, state="ERROR")
+        return None
+
+    # extract contents if this is a tar archive
+    if tarfile.is_tarfile(destination_filepath):
+        logger.info("Extracting indoor project data tar archive contents...")
+        try:
+            tar_processor = TarProcessor(tar_file_path=destination_filepath)
+            tar_processor.extract()
+            tar_dir_structure = tar_processor.get_directory_structure()
+            # update indoor project data with tar directory structure
+            indoor_project_data_update_in = (
+                schemas.indoor_project_data.IndoorProjectDataUpdate(
+                    directory_structure=tar_dir_structure
+                )
+            )
+            crud.indoor_project_data.update(
+                db,
+                db_obj=indoor_project_data_updated,
+                obj_in=indoor_project_data_update_in,
+            )
+        except Exception as e:
+            logger.exception(f"Failed to extract tar archive at {destination_filepath}")
+            # clean up any files
+            # if os.path.exists(destination_filepath):
+            #     os.remove(destination_filepath)
+            update_job_status(job, state="ERROR")
+            return None
+        logger.info("Extracting indoor project data tar archive contents...Done!")
+
+    update_job_status(job, state="DONE")
+
+    # remove indoor project data from tusd
+    try:
+        if os.path.exists(storage_path):
+            os.remove(storage_path)
+        if os.path.exists(f"{storage_path}.info"):
+            os.remove(f"{storage_path}.info")
+    except Exception:
+        logger.exception(
+            f"Unable to cleanup indoor project data upload on tusd server: {indoor_project_data_id}"
+        )
+    finally:
+        return None
+
+
 @celery_app.task(name="zonal_statistics_task")
 def generate_zonal_statistics(
     input_raster: str, feature_collection: dict
@@ -591,8 +718,7 @@ def generate_zonal_statistics_bulk(
 
     try:
         # deserialize feature collection
-        feature_collection = FeatureCollection(**feature_collection)
-        features = feature_collection.features
+        features = ZonalFeatureCollection(**feature_collection).features
         # create metadata record for each zone
         for index, zonal_stats in enumerate(all_zonal_stats):
             metadata_in = schemas.DataProductMetadataCreate(

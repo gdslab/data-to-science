@@ -15,8 +15,8 @@ import FlightCard from './FlightCard';
 import LayerCard from './LayerCard';
 import MapToolbar from '../MapToolbar';
 import Pagination, { getPaginationResults } from '../../Pagination';
-import { Project } from '../../pages/projects/ProjectList';
-import ProjectSearch from '../../pages/projects/ProjectSearch';
+import { Project } from '../../pages/workspace/ProjectList';
+import ProjectSearch from '../../pages/workspace/projects/ProjectSearch';
 import Sort, {
   getSortPreferenceFromLocalStorage,
   SortSelection,

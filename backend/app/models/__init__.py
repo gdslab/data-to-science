@@ -7,6 +7,7 @@ from .file_permission import FilePermission
 from .flight import Flight
 from .iforester import IForester
 from .indoor_project import IndoorProject
+from .indoor_project_data import IndoorProjectData
 from .job import Job
 from .location import Location
 from .project import Project

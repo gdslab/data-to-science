@@ -2,7 +2,7 @@ import axios, { AxiosResponse } from 'axios';
 import { Params, useLoaderData } from 'react-router-dom';
 
 import { IndoorProjectAPIResponse } from './IndoorProject';
-import { Button } from '../../../Buttons';
+import IndoorProjectUploadModal from './IndoorProjectUploadModal';
 import { Project } from '../ProjectList';
 
 export async function loader({ params }: { params: Params<string> }) {
@@ -52,12 +52,7 @@ export default function IndoorProjectDetail() {
       <pre className="whitespace-pre-wrap p-10 border-2 border-slate-600">
         {JSON.stringify(indoorProject, null, 2)}
       </pre>
-      <div className="mt-4 w-96 flex flex-col gap-4">
-        <Button>Add Experiment</Button>
-        <Button>Add Plant</Button>
-        <Button>Add Scanning</Button>
-        <Button>Add Photos</Button>
-      </div>
+      <IndoorProjectUploadModal indoorProjectId={indoorProject.id} />
       {projects.length > 0 && (
         <div>
           <label className="block" htmlFor="projectSelect">

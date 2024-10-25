@@ -99,7 +99,9 @@ class CRUDIndoorProject(
         Returns:
             Optional[IndoorProject]: Updated indoor project.
         """
-        statement = select(IndoorProject).where(IndoorProject.id == indoor_project_id)
+        statement = select(IndoorProject).where(
+            and_(IndoorProject.id == indoor_project_id, IndoorProject.is_active)
+        )
 
         with db as session:
             indoor_project = session.scalar(statement)

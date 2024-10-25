@@ -7,6 +7,7 @@ from .crud_file_permission import file_permission
 from .crud_flight import flight
 from .crud_iforester import iforester
 from .crud_indoor_project import indoor_project
+from .crud_indoor_project_data import indoor_project_data
 from .crud_job import job
 from .crud_location import location
 from .crud_project import project

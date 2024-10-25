@@ -1,7 +1,7 @@
 import { useMapContext } from '../MapContext';
 
 import DataProductCard from './DataProductCard';
-import { Flight } from '../../pages/projects/Project';
+import { Flight } from '../../pages/workspace/projects/Project';
 import LayerCard from './LayerCard';
 import { LinkOutlineButton } from '../../Buttons';
 

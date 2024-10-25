@@ -3,9 +3,9 @@ import { useMapContext } from '../MapContext';
 import LayerCard from './LayerCard';
 import RasterStats from './RasterStats';
 import SymbologyControls from '../SymbologyControls';
-import { DataProduct } from '../../pages/projects/Project';
+import { DataProduct } from '../../pages/workspace/projects/Project';
 
-import { getDataProductName } from '../../pages/projects/flights/DataProducts/DataProductsTable';
+import { getDataProductName } from '../../pages/workspace/projects/flights/DataProducts/DataProductsTable';
 import { getDefaultStyle } from '../utils';
 
 export default function DataProductCard({ dataProduct }: { dataProduct: DataProduct }) {

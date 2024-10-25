@@ -5,3 +5,7 @@ export type IndoorProjectAPIResponse = {
   start_date?: Date;
   end_date?: Date;
 };
+
+export type IndoorProjectUploadInputProps = {
+  indoorProjectId: string;
+};

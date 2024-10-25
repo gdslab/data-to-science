@@ -17,6 +17,11 @@ from .file_permission import FilePermission, FilePermissionCreate, FilePermissio
 from .flight import Flight, FlightCreate, FlightUpdate
 from .iforester import IForester, IForesterCreate, IForesterPost, IForesterUpdate
 from .indoor_project import IndoorProject, IndoorProjectCreate, IndoorProjectUpdate
+from .indoor_project_data import (
+    IndoorProjectData,
+    IndoorProjectDataCreate,
+    IndoorProjectDataUpdate,
+)
 from .job import Job, JobCreate, JobUpdate
 from .location import Location, LocationCreate, LocationUpdate
 from .project import Project, ProjectCreate, ProjectUpdate
