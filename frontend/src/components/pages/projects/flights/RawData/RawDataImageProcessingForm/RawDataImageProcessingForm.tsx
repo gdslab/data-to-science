@@ -42,21 +42,19 @@ export default function RawDataImageProcessingForm({
               <legend className="block text-gray-600 font-bold pt-2 pb-1">
                 Camera Options
               </legend>
-              <span className="text-sm font-medium">Camera Sensors</span>
               <div>
                 <RadioInput
                   fieldName="camera"
                   inputId="cameraSingle"
-                  label="Single-sensor"
+                  label="Single-camera"
                   value="single"
                 />
               </div>
               <div>
                 <RadioInput
-                  disabled
                   fieldName="camera"
                   inputId="cameraMulti"
-                  label="Multi-sensor"
+                  label="Multi-camera"
                   value="multi"
                 />
               </div>
