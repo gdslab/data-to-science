@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import shutil
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
@@ -187,6 +188,11 @@ def process_data_product_from_external_storage(
     )
     # find job associated with task
     job = crud.job.get(db, id=payload.job_id)
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Unable to find processing job",
+        )
     # check if token is valid
     if not token_db_obj:
         job_update_in = schemas.JobUpdate(
@@ -240,6 +246,39 @@ def process_data_product_from_external_storage(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Unable to locate data product on disk",
                 )
+
+        # copy report
+        try:
+            if os.path.exists(payload.report.storage_path) and os.path.join(
+                get_static_dir(),
+                "projects",
+                str(project_id),
+                "flights",
+                str(flight_id),
+                "raw_data",
+                str(payload.report.raw_data_id),
+            ):
+                shutil.copyfile(
+                    payload.report.storage_path,
+                    os.path.join(
+                        get_static_dir(),
+                        "projects",
+                        str(project_id),
+                        "flights",
+                        str(flight_id),
+                        "raw_data",
+                        str(payload.report.raw_data_id),
+                        os.path.basename(payload.report.storage_path),
+                    ),
+                )
+                # remove from network storage
+                os.remove(payload.report.storage_path)
+            else:
+                logger.error(
+                    "Report does not exist on network storage or raw data directory does not exist"
+                )
+        except Exception as e:
+            logger.exception(f"Unable to copy report to raw data directory: {e}")
 
         # data products successfully derived from raw data
         job_update_in = schemas.JobUpdate(

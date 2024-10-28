@@ -37,6 +37,7 @@ class RawDataInDBBase(RawDataBase, from_attributes=True):
 # additional properties to return via API
 class RawData(RawDataInDBBase):
     has_active_job: bool = False
+    report: Optional[str] = None
     status: Optional[str] = None
     url: Optional[AnyHttpUrl] = None
 
@@ -52,6 +53,12 @@ class Product(BaseModel):
     storage_path: str
 
 
+class Report(BaseModel):
+    filename: str
+    storage_path: str
+    raw_data_id: UUID4
+
+
 class Status(BaseModel):
     code: int
     message: str
@@ -62,6 +69,7 @@ class RawDataMetadata(BaseModel):
     job_id: UUID4
     status: Status
     products: List[Product]
+    report: Optional[Report]
 
 
 class ImageProcessingQueryParams(BaseModel):

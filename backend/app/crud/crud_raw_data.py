@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Any, List, Sequence
 from uuid import UUID
@@ -61,6 +62,7 @@ class CRUDRawData(CRUDBase[RawData, RawDataCreate, RawDataUpdate]):
                 is_status_set = set_status_attr(raw_data, raw_data.jobs)
                 if raw_data.filepath != "null":
                     set_url_attr(raw_data, upload_dir)
+                    set_report_attr(raw_data)
                 # skip raw data records that did not finish initial processing, and
                 # do not have a job for the initial processing
                 if is_status_set:
@@ -106,6 +108,19 @@ def set_status_attr(raw_data_obj: RawData, jobs: List[Job]) -> bool:
     else:
         setattr(raw_data_obj, "status", status)
         return True
+
+
+def set_report_attr(raw_data_obj: RawData) -> None:
+    """Adds "report" attribute with URL to image processing report if available.
+
+    Args:
+        raw_data_obj (RawData): RawData object.
+    """
+    if os.path.exists(raw_data_obj.filepath):
+        report_path = os.path.join(Path(raw_data_obj.filepath).parents[0], "report.pdf")
+        if os.path.exists(report_path):
+            static_url = f"{settings.API_DOMAIN}{report_path}"
+            setattr(raw_data_obj, "report", static_url)
 
 
 def set_url_attr(raw_data_obj: RawData, upload_dir: str):
