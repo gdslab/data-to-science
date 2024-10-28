@@ -463,6 +463,9 @@ def run_raw_data_image_processing(
     db = next(get_db())
     # retrieve job associated with this task
     job = crud.job.get(db, id=job_id)
+    if not job:
+        raise ValueError("Missing job for task")
+        return None
     # update job status to indicate process has started
     update_job_status(job, state="INPROGRESS")
     try:
