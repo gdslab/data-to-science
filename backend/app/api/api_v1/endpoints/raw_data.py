@@ -131,7 +131,7 @@ def deactivate_raw_data(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
         )
-    if project.role != "owner":
+    if not hasattr(project, "role") or project.role != "owner":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Access forbidden"
         )
