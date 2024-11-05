@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import { Link, useLocation } from 'react-router-dom';
 import {
+  CircleStackIcon,
   HomeIcon,
   MapIcon,
   PuzzlePieceIcon,
@@ -13,7 +14,7 @@ export default function SidePanel() {
   const currentPage = pathname.split('/').slice(-1)[0];
 
   return (
-    <div className="flex h-full w-16 flex-col justify-between border-e bg-white">
+    <div className="flex h-full w-16 flex-col justify-between border-e bg-white z-1000">
       <div>
         <div className="border-t border-gray-100">
           <div className="px-2">
@@ -100,13 +101,33 @@ export default function SidePanel() {
 
               <li>
                 <Link
+                  to="/admin/dashboard/storage"
+                  className={clsx(
+                    'group relative flex justify-center rounded px-2 py-1.5',
+                    {
+                      'bg-blue-50 text-blue-700': currentPage === 'storage',
+                      'text-gray-500 hover:bg-gray-50 hover:text-gray-700':
+                        currentPage !== 'storage',
+                    }
+                  )}
+                >
+                  <CircleStackIcon className="h-5 w-5 opacity-75" strokeWidth={2} />
+
+                  <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
+                    Project Storage
+                  </span>
+                </Link>
+              </li>
+
+              <li>
+                <Link
                   to="/admin/dashboard/charts"
                   className={clsx(
                     'group relative flex justify-center rounded px-2 py-1.5',
                     {
-                      'bg-blue-50 text-blue-700': currentPage === 'map',
+                      'bg-blue-50 text-blue-700': currentPage === 'charts',
                       'text-gray-500 hover:bg-gray-50 hover:text-gray-700':
-                        currentPage !== 'map',
+                        currentPage !== 'charts',
                     }
                   )}
                 >

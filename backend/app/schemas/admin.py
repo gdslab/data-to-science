@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, UUID4
 
 
 class DataProductDtypeCount(BaseModel):
@@ -28,3 +28,10 @@ class SiteStatistics(BaseModel):
     project_count: int
     storage_availability: StorageAvailability
     user_count: int
+
+
+class UserProjectStatistics(BaseModel):
+    id: UUID4
+    user: str
+    total_projects: int
+    total_storage: int

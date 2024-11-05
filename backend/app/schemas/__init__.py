@@ -1,4 +1,4 @@
-from .admin import SiteStatistics
+from .admin import SiteStatistics, UserProjectStatistics
 from .api_key import APIKey, APIKeyCreate, APIKeyUpdate
 from .campaign import Campaign, CampaignCreate, CampaignUpdate, CampaignTemplateCreate
 from .data_product import (
