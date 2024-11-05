@@ -11,6 +11,9 @@ import DashboardExtensions, {
 import DashboardMap, {
   loader as dashboardMapLoader,
 } from './components/pages/admin/DashboardMap';
+import DashboardProjectStorage, {
+  loader as dashboardProjectStorageLoader,
+} from './components/pages/admin/DashboardProjectStorage';
 import DashboardSiteStatistics, {
   loader as dashboardSiteStatisticsLoader,
 } from './components/pages/admin/DashboardSiteStatistics';
@@ -201,6 +204,11 @@ export const router = createBrowserRouter([
             path: '/admin/dashboard/map',
             element: <DashboardMap />,
             loader: dashboardMapLoader,
+          },
+          {
+            path: '/admin/dashboard/storage',
+            element: <DashboardProjectStorage />,
+            loader: dashboardProjectStorageLoader,
           },
           {
             path: '/admin/dashboard/users',

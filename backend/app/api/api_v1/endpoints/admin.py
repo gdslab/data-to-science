@@ -1,5 +1,7 @@
 import logging
-from typing import Any, List
+import os
+from typing import Any, cast, Dict, List, Union
+from uuid import UUID
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -7,7 +9,8 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
-from app.crud.crud_admin import get_site_statistics
+from app.api.utils import get_static_dir, get_user_name_and_email
+from app.crud.crud_admin import get_site_statistics, get_static_directory_size
 
 router = APIRouter()
 
@@ -21,6 +24,50 @@ def read_site_statistics(
 ) -> Any:
     stats = get_site_statistics(db)
     return stats
+
+
+@router.get("/project_statistics", response_model=List[schemas.UserProjectStatistics])
+def read_project_data_usage(
+    current_user: models.User = Depends(deps.get_current_admin_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """
+    Summarize user data usage by project ownership.
+    """
+    projects = crud.project.get_multi(db, limit=10000)
+
+    static_dir = get_static_dir()
+
+    result: Dict[str, Dict[str, Union[int, str]]] = {}
+
+    for project in projects:
+        user_id = str(project.owner_id)
+        if user_id in result:
+            if isinstance(result[user_id]["total_projects"], int):
+                result[user_id]["total_projects"] = (
+                    cast(int, result[user_id]["total_projects"]) + 1
+                )
+
+            if isinstance(result[user_id]["total_storage"], int):
+                result[user_id]["total_storage"] = cast(
+                    int, result[user_id]["total_storage"]
+                ) + get_static_directory_size(
+                    os.path.join(static_dir, "projects", str(project.id))
+                )
+        else:
+            result[user_id] = {
+                "user": get_user_name_and_email(db, project.owner_id),
+                "total_projects": 1,
+                "total_storage": get_static_directory_size(
+                    os.path.join(static_dir, "projects", str(project.id))
+                ),
+            }
+
+    project_statistics = [
+        {"id": user_id, **details} for user_id, details in result.items()
+    ]
+
+    return project_statistics
 
 
 @router.get("/extensions", response_model=List[schemas.Extension])

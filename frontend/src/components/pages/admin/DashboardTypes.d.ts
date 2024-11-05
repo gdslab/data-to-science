@@ -22,3 +22,10 @@ export type SiteStatistics = {
   storage_availability: StorageAvailability;
   user_count: number;
 };
+
+export type ProjectStatistics = {
+  id: string;
+  user: string;
+  total_projects: number;
+  total_storage: number;
+};

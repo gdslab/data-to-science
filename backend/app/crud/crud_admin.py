@@ -9,14 +9,14 @@ from app.models import DataProduct, Flight, Project, User
 from app.schemas import SiteStatistics
 
 
-def get_static_directory_size(static_directory: str) -> float:
+def get_static_directory_size(static_directory: str) -> int:
     """Walk down static directory and calculate total disk usage by static files.
 
     Args:
         static_directory (str): Path to static directory.
 
     Returns:
-        float: Total disk usage in bytes.
+        int: Total disk usage in bytes.
     """
     total_size = 0
     for dirpath, dirnames, filenames in os.walk(static_directory):
@@ -28,7 +28,7 @@ def get_static_directory_size(static_directory: str) -> float:
     return total_size
 
 
-def bytes_to_gigabytes(in_bytes: float) -> float:
+def bytes_to_gigabytes(in_bytes: int) -> float:
     return round(in_bytes / (1024 * 1024 * 1024), 1)
 
 

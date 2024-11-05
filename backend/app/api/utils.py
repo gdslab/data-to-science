@@ -5,7 +5,9 @@ import uuid
 from pathlib import Path
 
 from geojson_pydantic import Feature
+from sqlalchemy.orm import Session
 
+from app import crud
 from app.core.config import settings
 from app.utils.MapMaker import MapMaker
 
@@ -157,3 +159,32 @@ def str_to_bool(value: str | bool) -> bool:
         return False
     else:
         raise ValueError(f"Invalid boolean string: {value}")
+
+
+def get_static_dir() -> str:
+    """Returns path to static directory.
+
+    Returns:
+        str: Static directory path.
+    """
+    if os.environ.get("RUNNING_TESTS") == "1":
+        return settings.TEST_STATIC_DIR
+    else:
+        return settings.STATIC_DIR
+
+
+def get_user_name_and_email(db: Session, user_id: uuid.UUID) -> str:
+    """Return name and email associated with user id.
+
+    Args:
+        db (Session): Database session.
+        user_id (UUID): User id.
+
+    Returns:
+        str: Name and email of user or 'Unknown.'
+    """
+    user = crud.user.get(db, id=user_id)
+    if user:
+        return f"{user.first_name} {user.last_name} <{user.email}>"
+    else:
+        return "Unknown"
