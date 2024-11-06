@@ -38,9 +38,9 @@ const validationSchema = Yup.object({
 
 const TOPIC_OPTIONS = [
   { label: 'Select a topic', value: '' },
-  { label: 'Bug Report', value: 'bug' },
-  { label: 'Feature Request', value: 'feature' },
-  { label: 'General Feedback', value: 'feedback' },
+  { label: 'Bug Report', value: 'bug_report' },
+  { label: 'Feature Request', value: 'feature_request' },
+  { label: 'General Feedback', value: 'general_feedback' },
   { label: 'Other', value: 'other' },
 ];
 
