@@ -42,25 +42,43 @@ def read_project_data_usage(
 
     for project in projects:
         user_id = str(project.owner_id)
+        project_storage = get_static_directory_size(
+            os.path.join(static_dir, "projects", str(project.id))
+        )
         if user_id in result:
             if isinstance(result[user_id]["total_projects"], int):
                 result[user_id]["total_projects"] = (
                     cast(int, result[user_id]["total_projects"]) + 1
                 )
 
+            if isinstance(result[user_id]["total_active_projects"], int):
+                result[user_id]["total_active_projects"] = (
+                    (cast(int, result[user_id]["total_active_projects"]) + 1)
+                    if project.is_active
+                    else cast(int, result[user_id]["total_active_projects"])
+                )
+
             if isinstance(result[user_id]["total_storage"], int):
-                result[user_id]["total_storage"] = cast(
-                    int, result[user_id]["total_storage"]
-                ) + get_static_directory_size(
-                    os.path.join(static_dir, "projects", str(project.id))
+                result[user_id]["total_storage"] = (
+                    cast(int, result[user_id]["total_storage"]) + project_storage
+                )
+
+            if isinstance(result[user_id]["total_active_storage"], int):
+                result[user_id]["total_active_storage"] = (
+                    (
+                        cast(int, result[user_id]["total_active_storage"])
+                        + project_storage
+                    )
+                    if project.is_active
+                    else cast(int, result[user_id]["total_active_storage"])
                 )
         else:
             result[user_id] = {
                 "user": get_user_name_and_email(db, project.owner_id),
                 "total_projects": 1,
-                "total_storage": get_static_directory_size(
-                    os.path.join(static_dir, "projects", str(project.id))
-                ),
+                "total_active_projects": 1 if project.is_active else 0,
+                "total_storage": project_storage,
+                "total_active_storage": project_storage if project.is_active else 0,
             }
 
     project_statistics = [
