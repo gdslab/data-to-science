@@ -34,4 +34,6 @@ class UserProjectStatistics(BaseModel):
     id: UUID4
     user: str
     total_projects: int
+    total_active_projects: int
     total_storage: int
+    total_active_storage: int

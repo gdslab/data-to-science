@@ -50,10 +50,8 @@ export default function DashboardProjectStorageTable({
   }
 
   const userProjectStatsSorted = useMemo(() => {
-    return [...getAvailableUsers(userProjectStats)].sort(
-      (a, b) => b.total_storage - a.total_storage
-    );
-  }, [userProjectStats]);
+    return [...userProjectStats].sort((a, b) => b.total_storage - a.total_storage);
+  }, [currentPage, userProjectStats]);
 
   if (userProjectStats.length === 0) {
     return <section className="w-full bg-white">No data</section>;
@@ -64,18 +62,21 @@ export default function DashboardProjectStorageTable({
       <table className="relative w-full border-separate border-spacing-y-1 border-spacing-x-1">
         <thead>
           <tr className="h-12 sticky top-0 text-slate-700 bg-slate-300">
-            <th className="p-4">Name</th>
-            <th className="p-4">Total projects</th>
-            <th className="p-4">Total storage (GB)</th>
+            <th className="p-2">Name</th>
+            <th className="p-2">Projects*</th>
+            <th className="p-2">Total storage GB**</th>
           </tr>
         </thead>
         <tbody className="max-h-96 overflow-y-auto">
-          {userProjectStatsSorted.map((stats) => (
+          {getAvailableUsers(userProjectStatsSorted).map((stats) => (
             <tr key={stats.id} className="text-center">
-              <td className="p-4 bg-slate-100 w-96">{stats.user}</td>
-              <td className="p-4 bg-slate-50 w-40">{stats.total_projects}</td>
-              <td className="p-4 bg-slate-50 w-40">
-                {(stats.total_storage / 1024 ** 3).toFixed(3)}
+              <td className="p-2 bg-slate-100 w-96 max-w-96 truncate">{stats.user}</td>
+              <td className="p-2 bg-slate-50 w-44">
+                {stats.total_projects} ({stats.total_active_projects})
+              </td>
+              <td className="p-2 bg-slate-50 w-48">
+                {(stats.total_storage / 1024 ** 3).toFixed(3)} (
+                {(stats.total_active_storage / 1024 ** 3).toFixed(3)})
               </td>
             </tr>
           ))}
@@ -86,6 +87,12 @@ export default function DashboardProjectStorageTable({
         updateCurrentPage={updateCurrentPage}
         totalPages={TOTAL_PAGES}
       />
+      <div className="mt-4 text-left">
+        <div className="relative">* Total projects (total active projects)</div>
+        <div className="relative">
+          ** Total storage (total storage from active projects)
+        </div>
+      </div>
     </div>
   );
 }

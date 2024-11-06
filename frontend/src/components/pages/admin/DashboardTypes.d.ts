@@ -27,5 +27,7 @@ export type ProjectStatistics = {
   id: string;
   user: string;
   total_projects: number;
+  total_active_projects: number;
   total_storage: number;
+  total_active_storage: number;
 };
