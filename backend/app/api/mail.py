@@ -12,7 +12,7 @@ def send_email_confirmation(
     first_name: str,
     email: EmailStr,
     confirmation_token: str,
-):
+) -> None:
     confirmation_url = (
         settings.API_DOMAIN + settings.API_V1_STR + "/auth/confirm-email?"
     )
@@ -51,7 +51,7 @@ def send_password_recovery(
     first_name: str,
     email: EmailStr,
     recovery_token: str,
-):
+) -> None:
     recover_url = settings.API_DOMAIN + "/auth/resetpassword?"
     recover_url += f"token={recovery_token}"
 
@@ -90,7 +90,7 @@ def send_admins_new_registree_notification(
     email: EmailStr,
     first_name: str,
     approve_token: str,
-):
+) -> None:
     admin_emails = settings.MAIL_ADMINS.split(",")
 
     approve_url = settings.API_DOMAIN + settings.API_V1_STR + "/auth/approve-account?"
@@ -122,7 +122,7 @@ def send_admins_new_registree_notification(
 
 def send_account_approved(
     background_tasks: BackgroundTasks, first_name: str, email: EmailStr, confirmed: bool
-):
+) -> None:
     content = f"<p>Hi {first_name},</p>" "<p>Your D2S account has been approved. "
     if confirmed:
         content += "You may now log in and start using D2S. "
@@ -147,10 +147,11 @@ def send_account_approved(
 
 def send_contact_email(
     background_tasks: BackgroundTasks,
+    topic: str,
     subject: str,
     message: str,
     sender: Optional[Dict[str, Any]] = None,
-):
+) -> None:
     if sender:
         content = (
             f"<p>Message sent from D2S user {sender['name']} ({sender['email']}):</p>"
@@ -158,13 +159,14 @@ def send_contact_email(
     else:
         content = f"<p>Message from anonymous D2S user:</p>"
 
+    content += f"<p>Topic:</p><blockquote>{topic}</blockquote>"
     content += f"<p>Subject:</p><blockquote>{subject}</blockquote>"
     content += f"<p>Message:</p><blockquote>{message}</blockquote>"
 
     content += "<br /><br /><p>-D2S Support</p>"
 
     send_email(
-        subject="D2S Contact Form Submission",
+        subject=f"{topic}: D2S Contact Form Submission",
         recipients=[settings.MAIL_FROM],
         body=content,
         background_tasks=background_tasks,
