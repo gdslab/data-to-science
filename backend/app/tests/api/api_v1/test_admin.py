@@ -26,6 +26,14 @@ def test_get_site_statistics_with_non_superuser(
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
+def test_get_project_statistics_with_non_superuser(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    response = client.get(f"{settings.API_V1_STR}/admin/project_statistics")
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
 def test_get_extensions(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
