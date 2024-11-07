@@ -1,12 +1,11 @@
 import os
-
 from logging.config import fileConfig
-
-from geoalchemy2 import alembic_helpers  # type: ignore
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from typing import Literal, Optional
 
 from alembic import context
+from geoalchemy2 import alembic_helpers  # type: ignore
+from sqlalchemy import engine_from_config, pool
+from sqlalchemy.schema import SchemaItem
 
 from app.db.base import Base
 
@@ -32,12 +31,37 @@ target_metadata = Base.metadata
 # ... etc.
 
 
-def get_url():
+def get_url() -> str:
     user = os.getenv("POSTGRES_USER", "postgres")
     password = os.getenv("POSTGRES_PASSWORD", "")
     server = os.getenv("POSTGRES_HOST", "db")
     db = os.getenv("POSTGRES_DB", "app")
     return f"postgresql://{user}:{password}@{server}/{db}"
+
+
+def custom_include_object(
+    object: SchemaItem,
+    name: Optional[str],
+    obj_type: Literal[
+        "schema",
+        "table",
+        "column",
+        "index",
+        "unique_constraint",
+        "foreign_key_constraint",
+    ],
+    reflected: bool,
+    compare_to: Optional[SchemaItem],
+) -> bool:
+    # use the default include_object from geoalchemy2 helpers first
+    if not alembic_helpers.include_object(
+        object, name, obj_type, reflected, compare_to
+    ):
+        return False
+    # add specific exclusions for 'layer' and 'topology' tables
+    if obj_type == "table" and (name in ["topology"] or name in ["layer"]):
+        return False
+    return True
 
 
 def run_migrations_offline() -> None:
@@ -59,7 +83,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        include_object=alembic_helpers.include_object,
+        include_object=custom_include_object,
         process_revision_directives=alembic_helpers.writer,
         render_item=alembic_helpers.render_item,
     )
@@ -87,7 +111,7 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
-            include_object=alembic_helpers.include_object,
+            include_object=custom_include_object,
             process_revision_directives=alembic_helpers.writer,
             render_item=alembic_helpers.render_item,
         )
