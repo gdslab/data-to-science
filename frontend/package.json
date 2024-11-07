@@ -22,6 +22,7 @@
     "@nivo/line": "^0.87.0",
     "@turf/area": "^6.5.0",
     "@turf/flip": "^6.5.0",
+    "@types/leaflet.markercluster": "^1.5.5",
     "@types/react-frame-component": "^4.1.6",
     "@uppy/core": "^3.11.1",
     "@uppy/dashboard": "^3.5.0",
