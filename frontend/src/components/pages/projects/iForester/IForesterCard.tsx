@@ -17,7 +17,7 @@ const PropertyValue = ({ children }) => <span className="text-xs">{children}</sp
 export default function IForesterCard({ submission }: { submission: IForester }) {
   const [depthViewVisible, setDepthViewVisible] = useState(false);
 
-  const { dispatch } = useIForesterControlContext();
+  const { dispatch, state } = useIForesterControlContext();
 
   function flipImage() {
     setDepthViewVisible(!depthViewVisible);
@@ -29,7 +29,13 @@ export default function IForesterCard({ submission }: { submission: IForester })
 
   return (
     <div
-      className="p-1.5 h-[292px] w-44 flex flex-col gap-1.5 rounded-md bg-white drop-shadow-md border-2 border-white/0 hover:border-2 hover:border-[#6381C7]"
+      className={clsx(
+        'p-1.5 h-[292px] w-44 flex flex-col gap-1.5 rounded-md drop-shadow-md border-2',
+        {
+          'bg-white/90 border-white/0': state.activeMarker !== submission.id,
+          'bg-white border-[#6381C7]': state.activeMarker === submission.id,
+        }
+      )}
       onMouseEnter={() =>
         dispatch({ type: 'SET_ACTIVE_MARKER', payload: submission.id })
       }
