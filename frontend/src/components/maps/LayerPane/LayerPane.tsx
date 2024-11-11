@@ -345,13 +345,15 @@ export default function LayerPane({
           )}
         </div>
 
-        <div className="w-[450px] bg-slate-100 fixed bottom-0 p-2.5">
-          <Pagination
-            currentPage={currentPage}
-            totalPages={TOTAL_PAGES}
-            updateCurrentPage={updateCurrentPage}
-          />
-        </div>
+        {!activeProject && (
+          <div className="w-[450px] bg-slate-100 fixed bottom-0 p-2.5">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={TOTAL_PAGES}
+              updateCurrentPage={updateCurrentPage}
+            />
+          </div>
+        )}
       </div>
     );
   }
