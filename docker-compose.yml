@@ -146,9 +146,7 @@ services:
       - titiler
 
   titiler:
-    build:
-      context: ./titiler
-      dockerfile: titiler.dockerfile
+    image: ghcr.io/developmentseed/titiler:0.19.0
     volumes:
       - user-data:/static
     environment:
@@ -195,6 +193,11 @@ volumes:
   log-data:
   user-data:
   tusd-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${TUSD_STORAGE}
+      o: bind
   external-data:
     driver: local
     driver_opts:
