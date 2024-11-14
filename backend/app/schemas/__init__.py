@@ -21,6 +21,9 @@ from .indoor_project_data import (
     IndoorProjectData,
     IndoorProjectDataCreate,
     IndoorProjectDataUpdate,
+    IndoorProjectDataPlant,
+    IndoorProjectDataSpreadsheet,
+    IndoorProjectDataSpreadsheetPlantData,
 )
 from .job import Job, JobCreate, JobUpdate
 from .location import Location, LocationCreate, LocationUpdate

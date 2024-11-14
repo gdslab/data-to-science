@@ -52,7 +52,7 @@ def create_indoor_project_data(
             db,
             obj_in=indoor_data_in,
             indoor_project_id=indoor_project_id,
-            uploader_id=uploader.id,
+            uploader_id=uploader_id,
         )
 
         return indoor_data

@@ -39,8 +39,8 @@ dependencies:
   - black=24.10.0=py311h38be061_0
   - blinker=1.8.2=pyhd8ed1ab_0
   - blosc=1.21.6=hef167b5_0
-  - boto3=1.35.49=pyhd8ed1ab_0
-  - botocore=1.35.49=pyge310_1234567_0
+  - boto3=1.35.51=pyhd8ed1ab_0
+  - botocore=1.35.51=pyge310_1234567_0
   - branca=0.7.2=pyhd8ed1ab_0
   - brotli=1.1.0=hb9d3cd8_2
   - brotli-bin=1.1.0=hb9d3cd8_2
@@ -75,8 +75,8 @@ dependencies:
   - email-validator=2.2.0=pyhd8ed1ab_0
   - email_validator=2.2.0=hd8ed1ab_0
   - entwine=2.2.0=hb071377_4
+  - et_xmlfile=2.0.0=pyhd8ed1ab_0
   - exceptiongroup=1.2.2=pyhd8ed1ab_0
-  - expat=2.6.3=h5888daf_0
   - faker=30.8.1=pyhd8ed1ab_0
   - fastapi=0.115.4=pyhd8ed1ab_0
   - fastapi-cli=0.0.5=pyhd8ed1ab_1
@@ -91,13 +91,13 @@ dependencies:
   - font-ttf-inconsolata=3.000=h77eed37_0
   - font-ttf-source-code-pro=2.038=h77eed37_0
   - font-ttf-ubuntu=0.83=h77eed37_3
-  - fontconfig=2.14.2=h14ed4e7_0
+  - fontconfig=2.15.0=h7e30c49_1
   - fonts-conda-ecosystem=1=0
   - fonts-conda-forge=1=0
   - fonttools=4.54.1=py311h2dc5d0c_1
   - freetype=2.12.1=h267a509_2
   - freexl=2.0.0=h743c826_0
-  - gdal=3.9.3=py311h5159542_0
+  - gdal=3.9.3=py311h5159542_2
   - geoalchemy2=0.15.2=pyhd8ed1ab_0
   - geojson-pydantic=1.1.2=pyh3cfb1c2_0
   - geopandas=1.0.1=pyhd8ed1ab_1
@@ -161,21 +161,21 @@ dependencies:
   - libffi=3.4.2=h7f98852_5
   - libgcc=14.2.0=h77fa898_1
   - libgcc-ng=14.2.0=h69a702a_1
-  - libgdal=3.9.3=ha770c72_0
-  - libgdal-arrow-parquet=3.9.3=h7a91b6f_0
-  - libgdal-core=3.9.3=hd5b9bfb_0
-  - libgdal-fits=3.9.3=h2db6552_0
-  - libgdal-grib=3.9.3=hc3b29a1_0
-  - libgdal-hdf4=3.9.3=hd5ecb85_0
-  - libgdal-hdf5=3.9.3=h6283f77_0
-  - libgdal-jp2openjpeg=3.9.3=h1b2c38e_0
-  - libgdal-kea=3.9.3=h1df15e4_0
-  - libgdal-netcdf=3.9.3=hf2d2f32_0
-  - libgdal-pdf=3.9.3=h600f43f_0
-  - libgdal-pg=3.9.3=h5e77dd0_0
-  - libgdal-postgisraster=3.9.3=h5e77dd0_0
-  - libgdal-tiledb=3.9.3=h4a3bace_0
-  - libgdal-xls=3.9.3=h03c987c_0
+  - libgdal=3.9.3=ha770c72_2
+  - libgdal-arrow-parquet=3.9.3=h7a91b6f_2
+  - libgdal-core=3.9.3=hd5b9bfb_2
+  - libgdal-fits=3.9.3=h2db6552_2
+  - libgdal-grib=3.9.3=hc3b29a1_2
+  - libgdal-hdf4=3.9.3=hd5ecb85_2
+  - libgdal-hdf5=3.9.3=h6283f77_2
+  - libgdal-jp2openjpeg=3.9.3=h1b2c38e_2
+  - libgdal-kea=3.9.3=h1df15e4_2
+  - libgdal-netcdf=3.9.3=hf2d2f32_2
+  - libgdal-pdf=3.9.3=h600f43f_2
+  - libgdal-pg=3.9.3=h5e77dd0_2
+  - libgdal-postgisraster=3.9.3=h5e77dd0_2
+  - libgdal-tiledb=3.9.3=h4a3bace_2
+  - libgdal-xls=3.9.3=h03c987c_2
   - libgfortran=14.2.0=h69a702a_1
   - libgfortran-ng=14.2.0=h69a702a_1
   - libgfortran5=14.2.0=hd5240d6_1
@@ -214,7 +214,7 @@ dependencies:
   - libre2-11=2024.07.02=hbbce691_1
   - librttopo=1.1.0=h97f6797_17
   - libspatialite=5.1.0=h1b4f908_11
-  - libsqlite=3.47.0=hadc24fc_0
+  - libsqlite=3.47.0=hadc24fc_1
   - libssh2=1.11.0=h0841786_0
   - libstdcxx=14.2.0=hc0a3c3a_1
   - libstdcxx-ng=14.2.0=h4852527_1
@@ -226,7 +226,7 @@ dependencies:
   - libwebp-base=1.4.0=hd590300_0
   - libxcb=1.17.0=h8a09558_0
   - libxcrypt=4.4.36=hd590300_1
-  - libxml2=2.12.7=he7c6b58_4
+  - libxml2=2.13.4=hb346dea_0
   - libxslt=1.1.39=h76b75d6_0
   - libzip=1.11.1=hf83b1b0_0
   - libzlib=1.3.1=hb9d3cd8_2
@@ -256,6 +256,7 @@ dependencies:
   - openjpeg=2.5.2=h488ebb8_0
   - openldap=2.6.8=hedd0468_0
   - openmpi=5.0.5=h9a79eee_101
+  - openpyxl=3.1.5=py311h50c5138_1
   - openssl=3.3.2=hb9d3cd8_0
   - orc=2.0.2=h690cf93_1
   - packaging=24.1=pyhd8ed1ab_0
@@ -266,7 +267,7 @@ dependencies:
   - pdal=2.8.1=hd8ed1ab_0
   - pika=1.3.1=pyhd8ed1ab_0
   - pillow=11.0.0=py311h49e9ac3_0
-  - pip=24.2=pyh8b19718_1
+  - pip=24.3.1=pyh8b19718_0
   - pixman=0.43.2=h59595ed_0
   - platformdirs=4.3.6=pyhd8ed1ab_0
   - pluggy=1.5.0=pyhd8ed1ab_0
@@ -293,7 +294,7 @@ dependencies:
   - pyproj=3.7.0=py311h0f98d5a_0
   - pysocks=1.7.1=pyha2e5f31_6
   - pytest=8.3.3=pyhd8ed1ab_0
-  - pytest-cov=5.0.0=pyhd8ed1ab_0
+  - pytest-cov=6.0.0=pyhd8ed1ab_0
   - python=3.11.10=hc5c86c4_3_cpython
   - python-dateutil=2.9.0=pyhd8ed1ab_0
   - python-dotenv=1.0.1=pyhd8ed1ab_0
@@ -326,8 +327,8 @@ dependencies:
   - snuggs=1.4.7=pyhd8ed1ab_1
   - spdlog=1.14.1=hed91bc2_1
   - sqlalchemy=2.0.36=py311h9ecbd09_0
-  - sqlite=3.47.0=h9eae976_0
-  - starlette=0.41.0=pyhd8ed1ab_0
+  - sqlite=3.47.0=h9eae976_1
+  - starlette=0.41.2=pyhd8ed1ab_0
   - suitesparse=7.8.2=hb42a789_0
   - tbb=2021.13.0=h84d6215_0
   - threadpoolctl=3.5.0=pyhc1e730c_0
@@ -336,7 +337,7 @@ dependencies:
   - toml=0.10.2=pyhd8ed1ab_0
   - tomli=2.0.2=pyhd8ed1ab_0
   - tornado=6.4.1=py311h9ecbd09_1
-  - tqdm=4.66.5=pyhd8ed1ab_0
+  - tqdm=4.66.6=pyhd8ed1ab_0
   - typer=0.12.5=pyhd8ed1ab_0
   - typer-slim=0.12.5=pyhd8ed1ab_0
   - typer-slim-standard=0.12.5=hd8ed1ab_0
@@ -351,9 +352,9 @@ dependencies:
   - untwine=1.3.2=hefcc2fe_2
   - uriparser=0.9.8=hac33072_0
   - urllib3=2.2.3=pyhd8ed1ab_0
-  - uvicorn=0.32.0=py311h38be061_0
-  - uvicorn-standard=0.32.0=h38be061_0
-  - uvloop=0.21.0=py311h9ecbd09_0
+  - uvicorn=0.32.0=pyh31011fe_1
+  - uvicorn-standard=0.32.0=h31011fe_1
+  - uvloop=0.21.0=py311h9ecbd09_1
   - vine=5.1.0=pyhd8ed1ab_0
   - watchfiles=0.24.0=py311h9e33e62_1
   - wcwidth=0.2.13=pyhd8ed1ab_0
@@ -377,4 +378,4 @@ dependencies:
   - zstd=1.5.6=ha6fb4c9_0
   - pip:
       - pdal-plugins==1.6.2
-prefix: /home/benh/miniforge3/envs/d2s
+prefix: /opt/conda/envs/d2s

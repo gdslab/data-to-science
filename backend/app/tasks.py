@@ -601,18 +601,19 @@ def process_indoor_project_data(
         # copy uploaded indoor project data to static files and update filepath
         shutil.copyfile(storage_path, destination_filepath)
 
-        logger.info(
-            "Copying uploaded indoor project data from tusd to user volume...Done!"
-        )
-
         # add filepath to indoor project data
         indoor_project_data_update_in = (
             schemas.indoor_project_data.IndoorProjectDataUpdate(
-                filepath=str(destination_filepath), is_initial_processing_completed=True
+                file_path=str(destination_filepath)
             )
         )
         indoor_project_data_updated = crud.indoor_project_data.update(
             db, db_obj=indoor_project_data, obj_in=indoor_project_data_update_in
+        )
+        logger.info(indoor_project_data_updated)
+
+        logger.info(
+            "Copying uploaded indoor project data from tusd to user volume...Done!"
         )
     except Exception:
         logger.exception(
@@ -645,10 +646,14 @@ def process_indoor_project_data(
         except Exception as e:
             logger.exception(f"Failed to extract tar archive at {destination_filepath}")
             # clean up any files
-            # if os.path.exists(destination_filepath):
-            #     os.remove(destination_filepath)
+            if os.path.exists(destination_filepath):
+                os.remove(destination_filepath)
             update_job_status(job, state="ERROR")
             return None
+
+        # remove tar after extraction finishes
+        tar_processor.remove()
+
         logger.info("Extracting indoor project data tar archive contents...Done!")
 
     update_job_status(job, state="DONE")

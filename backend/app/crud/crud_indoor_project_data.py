@@ -2,7 +2,7 @@ import logging
 from typing import Optional, Sequence
 from uuid import UUID
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
 from app import crud
@@ -79,23 +79,27 @@ class CRUDIndoorProjectData(
             return indoor_project_data
 
     def read_multi_by_id(
-        self, db: Session, indoor_project_id: UUID
+        self, db: Session, indoor_project_id: UUID, file_type: Optional[str] = None
     ) -> Sequence[IndoorProjectData]:
         """Read all existing indoor project data belonging to indoor project.
 
         Args:
             db (Session): Database session.
             indoor_project_id (UUID): ID of indoor project.
+            file_type (Optional[str]): Type of file (e.g., .tar or .xlsx).
 
         Returns:
             Sequence[IndoorProjectData]: List of indoor project data.
         """
-        statement = select(IndoorProjectData).where(
-            and_(
-                IndoorProjectData.indoor_project_id == indoor_project_id,
-                IndoorProjectData.is_active,
-            )
-        )
+        conditions = [
+            IndoorProjectData.indoor_project_id == indoor_project_id,
+            IndoorProjectData.is_active,
+        ]
+
+        if file_type:
+            conditions.append(IndoorProjectData.file_type == file_type)
+
+        statement = select(IndoorProjectData).where(and_(*conditions))
 
         with db as session:
             indoor_project_data = session.scalars(statement).all()

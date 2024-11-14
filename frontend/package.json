@@ -19,6 +19,7 @@
     "@mui/material": "^6.1.4",
     "@nivo/bar": "^0.87.0",
     "@nivo/calendar": "^0.87.0",
+    "@nivo/funnel": "^0.87.0",
     "@nivo/line": "^0.87.0",
     "@turf/area": "^6.5.0",
     "@turf/flip": "^6.5.0",

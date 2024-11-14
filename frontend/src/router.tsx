@@ -34,6 +34,9 @@ import FlightForm, {
 import IndoorProjectDetail, {
   loader as indoorProjectDetailLoader,
 } from './components/pages/workspace/indoorProjects/IndoorProjectDetail';
+import IndoorProjectPlant, {
+  loader as indoorProjectPlantLoader,
+} from './components/pages/workspace/indoorProjects/IndoorProjectPlant';
 import Landing from './components/Landing';
 import LoginForm from './components/pages/auth/LoginForm';
 import Logout from './components/pages/auth/Logout';
@@ -182,6 +185,11 @@ export const router = createBrowserRouter([
         path: '/indoor_projects/:indoorProjectId',
         element: <IndoorProjectDetail />,
         loader: indoorProjectDetailLoader,
+      },
+      {
+        path: '/indoor_projects/:indoorProjectId/uploaded/:indoorProjectDataId/plants/:indoorProjectPlantId',
+        element: <IndoorProjectPlant />,
+        loader: indoorProjectPlantLoader,
       },
     ],
   },

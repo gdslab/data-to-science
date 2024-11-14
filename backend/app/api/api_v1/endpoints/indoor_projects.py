@@ -34,22 +34,17 @@ def create_indoor_project(
 @router.get("/{indoor_project_id}", response_model=schemas.IndoorProject)
 def read_indoor_project(
     indoor_project_id: UUID4,
+    indoor_project: models.IndoorProject = Depends(
+        deps.can_read_write_delete_indoor_project
+    ),
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """
-    Fetch existing indoor project owned by current user.
+    Fetch indoor project owned by current user.
     """
-    existing_indoor_project = crud.indoor_project.read_by_user_id(
-        db, indoor_project_id=indoor_project_id, user_id=current_user.id
-    )
 
-    if not existing_indoor_project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Indoor project not found"
-        )
-
-    return existing_indoor_project
+    return indoor_project
 
 
 @router.get("", response_model=Sequence[schemas.IndoorProject])
@@ -58,10 +53,10 @@ def read_indoor_projects(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """
-    Fetch all existing indoor projects owned by current user.
+    Fetch all indoor projects owned by current user.
     """
-    existing_indoor_projects = crud.indoor_project.read_multi_by_user_id(
+    indoor_projects = crud.indoor_project.read_multi_by_user_id(
         db, user_id=current_user.id
     )
 
-    return existing_indoor_projects
+    return indoor_projects

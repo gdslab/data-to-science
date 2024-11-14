@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Optional
+from typing import Generator, Optional
 from uuid import UUID
 
 from fastapi import BackgroundTasks, Depends, HTTPException, status
@@ -31,7 +31,7 @@ reusable_oauth2_optional = security.OAuth2PasswordBearerWithCookie(
 )
 
 
-def get_db():
+def get_db() -> Generator:
     """Create database session with lifespan of a single request."""
     db = SessionLocal()
     try:
@@ -78,7 +78,7 @@ def send_email(
     recipients: list[EmailStr],
     body: str,
     background_tasks: BackgroundTasks,
-):
+) -> None:
     message = MessageSchema(
         subject=subject, recipients=recipients, body=body, subtype=MessageType.html
     )
@@ -246,12 +246,35 @@ def can_read_write_delete_team(
     return team
 
 
+def can_read_write_delete_indoor_project(
+    indoor_project_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_approved_user),
+) -> models.IndoorProject:
+    """
+    Return indoor project if current user has permission to read it.
+    """
+    indoor_project = crud.indoor_project.get(db, id=indoor_project_id)
+    if not indoor_project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="The requested indoor project could not be found",
+        )
+    if current_user.id != indoor_project.owner_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to access this indoor project",
+        )
+
+    return indoor_project
+
+
 def can_read_project(
     project_id: UUID,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_approved_user),
 ) -> Optional[models.Project]:
-    """Return project is current user is project owner, manager, or viewer."""
+    """Return project if current user is project owner, manager, or viewer."""
     project = crud.project.get_user_project(
         db, user_id=current_user.id, project_id=project_id, permission="r"
     )
@@ -357,7 +380,7 @@ def can_read_write_flight(
         raise HTTPException(
             status_code=flight["response_code"], detail=flight["message"]
         )
-    if flight["result"].read_only:
+    if flight["result"] and flight["result"].read_only:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Flight currently locked. Please try again later.",

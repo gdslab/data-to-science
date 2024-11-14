@@ -15,6 +15,10 @@ class TarProcessor:
         Args:
             tar_file_path (str): Tar file path.
         """
+        # confirm file exists
+        if not os.path.exists(tar_file_path):
+            raise FileNotFoundError(f"Unable to locate .tar at: {tar_file_path}")
+
         self.tar_file_path = tar_file_path
 
     def extract(self) -> None:
@@ -32,6 +36,13 @@ class TarProcessor:
             dict: Dict representation of tar file's directory structure.
         """
         return generate_tar_structure_json(self.tar_file_path)
+
+    def remove(self) -> None:
+        """
+        Remove .tar file from file system.
+        """
+        if os.path.exists(self.tar_file_path):
+            os.remove(self.tar_file_path)
 
 
 def generate_tar_structure_json(tar_file_path: str) -> Dict[str, Any]:

@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import List
+from uuid import uuid4
 
 from fastapi import status
 from fastapi.encoders import jsonable_encoder
@@ -16,6 +17,9 @@ API_URL = f"{settings.API_V1_STR}/indoor_projects"
 def test_create_indoor_project(
     client: TestClient, normal_user_access_token: str, db: Session
 ) -> None:
+    """
+    Test creating an indoor project with required and optional fields.
+    """
     # indoor project form submission
     title = "Test Indoor Project"
     description = "Test indoor phenotyping project"
@@ -48,6 +52,9 @@ def test_create_indoor_project(
 def test_create_indoor_project_with_invalid_date(
     client: TestClient, normal_user_access_token: str, db: Session
 ) -> None:
+    """
+    Test creating an indoor project with invalid date value.
+    """
     payload = {
         "title": "Invalid Date Test",
         "description": "This test should fail due to an invalid date",
@@ -64,6 +71,9 @@ def test_create_indoor_project_with_invalid_date(
 def test_create_indoor_project_with_invalid_end_date(
     client: TestClient, normal_user_access_token: str, db: Session
 ) -> None:
+    """
+    Test creating an indoor project with end date that comes before the start date.
+    """
     payload = {
         "title": "Invalid end_date Test",
         "description": "This test should fail due to end_date being before start_date",
@@ -80,6 +90,9 @@ def test_create_indoor_project_with_invalid_end_date(
 def test_read_indoor_project(
     client: TestClient, normal_user_access_token: str, db: Session
 ) -> None:
+    """
+    Test reading an existing indoor project.
+    """
     # create indoor project in database owned by current user
     current_user = get_current_user(db, normal_user_access_token)
     existing_indoor_project = create_indoor_project(db, owner_id=current_user.id)
@@ -99,9 +112,46 @@ def test_read_indoor_project(
     assert not hasattr(response_data, "owner_id")
 
 
+def test_read_indoor_project_without_permission(
+    client: TestClient, normal_user_access_token: str, db: Session
+) -> None:
+    """
+    Test reading an existing indoor project without permission to access it.
+    """
+    # create indoor project in database owned by someone other than current user
+    existing_indoor_project = create_indoor_project(db)
+
+    # get indoor project data
+    response = client.get(f"{API_URL}/{existing_indoor_project.id}")
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    response_data = response.json()
+    assert response_data["detail"]
+
+
+def test_read_indoor_project_that_does_not_exist(
+    client: TestClient, normal_user_access_token: str, db: Session
+) -> None:
+    """
+    Test reading an indoor project that does not exist.
+    """
+    # generate random UUID4
+    missing_indoor_project_id = str(uuid4())
+
+    # get indoor project data
+    response = client.get(f"{API_URL}/{missing_indoor_project_id}")
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    response_data = response.json()
+    assert response_data["detail"]
+
+
 def test_read_indoor_projects(
     client: TestClient, normal_user_access_token: str, db: Session
 ) -> None:
+    """
+    Test reading multiple existing indoor projects.
+    """
     # create multiple indoor projects in database owned by current user
     current_user = get_current_user(db, normal_user_access_token)
     existing_indoor_project1 = create_indoor_project(db, owner_id=current_user.id)

@@ -1,9 +1,14 @@
 import axios, { AxiosResponse } from 'axios';
-import { Params, useLoaderData } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, Params, useLoaderData } from 'react-router-dom';
 
-import { IndoorProjectAPIResponse } from './IndoorProject';
+import {
+  IndoorProjectAPIResponse,
+  IndoorProjectDataAPIResponse,
+  IndoorProjectDataSpreadsheetAPIResponse,
+} from './IndoorProject';
 import IndoorProjectUploadModal from './IndoorProjectUploadModal';
-import { Project } from '../ProjectList';
+import IndoorProjectPageLayout from './IndoorProjectPageLayout';
 
 export async function loader({ params }: { params: Params<string> }) {
   try {
@@ -11,21 +16,10 @@ export async function loader({ params }: { params: Params<string> }) {
       await axios.get(
         `${import.meta.env.VITE_API_V1_STR}/indoor_projects/${params.indoorProjectId}`
       );
-    const projectsResponse: AxiosResponse<Project[]> = await axios.get(
-      `${import.meta.env.VITE_API_V1_STR}/projects`
-    );
     if (indoorProjectResponse && indoorProjectResponse.status == 200) {
-      if (projectsResponse && projectsResponse.status == 200) {
-        return {
-          indoorProject: indoorProjectResponse.data,
-          projects: projectsResponse.data,
-        };
-      } else {
-        return {
-          indoorProject: indoorProjectResponse.data,
-          projects: [],
-        };
-      }
+      return {
+        indoorProject: indoorProjectResponse.data,
+      };
     } else {
       throw new Response('Indoor project not found', { status: 404 });
     }
@@ -35,10 +29,86 @@ export async function loader({ params }: { params: Params<string> }) {
 }
 
 export default function IndoorProjectDetail() {
-  const { indoorProject, projects } = useLoaderData() as {
+  const [indoorProjectData, setIndoorProjectData] = useState<
+    IndoorProjectDataAPIResponse[]
+  >([]);
+  const [indoorProjectDataSpreadsheet, setIndoorProjectDataSpreadsheet] =
+    useState<IndoorProjectDataSpreadsheetAPIResponse | null>(null);
+  const { indoorProject } = useLoaderData() as {
     indoorProject: IndoorProjectAPIResponse;
-    projects: Project[];
   };
+
+  useEffect(() => {
+    const fetchIndoorProjectData = async (indoorProjectId: string) => {
+      try {
+        const response: AxiosResponse<IndoorProjectDataAPIResponse[]> = await axios.get(
+          `${
+            import.meta.env.VITE_API_V1_STR
+          }/indoor_projects/${indoorProjectId}/uploaded`
+        );
+        if (response.status === 200) {
+          setIndoorProjectData(response.data);
+        } else {
+          // log error
+        }
+      } catch (err) {
+        // log error
+      }
+    };
+
+    if (indoorProject) {
+      fetchIndoorProjectData(indoorProject.id);
+    }
+  }, [indoorProject]);
+
+  useEffect(() => {
+    const fetchIndoorProjectSpreadsheet = async (
+      indoorProjectId: string,
+      indoorProjectDataId: string
+    ) => {
+      try {
+        const response: AxiosResponse<IndoorProjectDataSpreadsheetAPIResponse> =
+          await axios.get(
+            `${
+              import.meta.env.VITE_API_V1_STR
+            }/indoor_projects/${indoorProjectId}/uploaded/${indoorProjectDataId}`
+          );
+        if (response.status === 200) {
+          setIndoorProjectDataSpreadsheet({
+            records: response.data.records,
+            summary: { id: indoorProjectDataId, ...response.data.summary },
+          });
+        } else {
+          // log error
+        }
+      } catch (err) {
+        // log error
+      }
+    };
+
+    if (indoorProject && indoorProjectData.length > 0) {
+      const spreadsheets = indoorProjectData.filter(
+        ({ file_type }) => file_type === '.xlsx'
+      );
+      if (spreadsheets.length > 0) {
+        fetchIndoorProjectSpreadsheet(indoorProject.id, spreadsheets[0].id);
+      }
+    }
+  }, [indoorProject, indoorProjectData]);
+
+  function getRecord(key: string, attr: string): string {
+    if (
+      indoorProjectDataSpreadsheet &&
+      indoorProjectDataSpreadsheet.records &&
+      Number(key)
+    ) {
+      if (key in indoorProjectDataSpreadsheet.records) {
+        return indoorProjectDataSpreadsheet.records[Number(key)][attr];
+      }
+    }
+    return 'unknown';
+  }
+
   if (!indoorProject)
     return (
       <div>
@@ -46,27 +116,54 @@ export default function IndoorProjectDetail() {
       </div>
     );
 
+  console.log(indoorProjectDataSpreadsheet);
+  console.log(indoorProjectData);
   return (
-    <div className="mx-4 my-2">
-      JSON Response:
+    <IndoorProjectPageLayout>
+      <h1>Indoor Project Details</h1>
       <pre className="whitespace-pre-wrap p-10 border-2 border-slate-600">
         {JSON.stringify(indoorProject, null, 2)}
       </pre>
       <IndoorProjectUploadModal indoorProjectId={indoorProject.id} />
-      {projects.length > 0 && (
-        <div>
-          <label className="block" htmlFor="projectSelect">
-            Associate with project
-          </label>
-          <select name="projectSelect">
-            {projects.map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.title}
-              </option>
-            ))}
-          </select>
+      {/* <h2>Uploaded Data:</h2>
+      <pre className="whitespace-pre-wrap p-10 border-2 border-slate-600 h-60 overflow-y-auto">
+        {JSON.stringify(indoorProjectData, null, 2)}
+      </pre> */}
+      <h3>Spreadsheet Summary:</h3>
+      {indoorProjectDataSpreadsheet && indoorProjectDataSpreadsheet.summary && (
+        <pre className="whitespace-pre-wrap p-10 border-2 border-slate-600">
+          {JSON.stringify(indoorProjectDataSpreadsheet.summary, null, 2)}
+        </pre>
+      )}
+      <h3>Plants:</h3>
+      {indoorProjectDataSpreadsheet && (
+        <div className="grid grid-cols-4 gap-4">
+          {Object.keys(indoorProjectDataSpreadsheet.records).map((key) => (
+            <Link
+              key={key}
+              to={`/indoor_projects/${indoorProject.id}/uploaded/${indoorProjectDataSpreadsheet.summary.id}/plants/${key}`}
+            >
+              <div className="p-4 flex flex-col gap-2 border-2 border-slate-600 bg-white shadow-md hover:shadow-lg text-center">
+                <span className="font-bold">{key}</span>
+                <div className="flex flex-col justify-between">
+                  <div className="flex justify-between">
+                    <span>Species name:</span>
+                    <span>{getRecord(key, 'species_name')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Treatment:</span>
+                    <span>{getRecord(key, 'treatment')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Planting date:</span>
+                    <span>{getRecord(key, 'planting_date').split('T')[0]}</span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
         </div>
       )}
-    </div>
+    </IndoorProjectPageLayout>
   );
 }
