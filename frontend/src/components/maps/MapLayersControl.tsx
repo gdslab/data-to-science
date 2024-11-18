@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
-import { LayersControl, TileLayer, WMSTileLayer } from 'react-leaflet';
+import { LayersControl, TileLayer } from 'react-leaflet';
 
 export default function MapLayersControl() {
   const [mapboxAccessToken, setMapboxAccessToken] = useState('');
@@ -44,34 +44,25 @@ export default function MapLayersControl() {
         />
       </LayersControl.BaseLayer>
       <LayersControl.BaseLayer name="USGS Topo">
-        <WMSTileLayer
+        <TileLayer
           attribution="USGS The National Map: National Boundaries Dataset, 3DEP Elevation Program, Geographic Names Information System, National Hydrography Dataset, National Land Cover Database, National Structures Dataset, and National Transportation Dataset; USGS Global Ecosystems; U.S. Census Bureau TIGER/Line data; USFS Road Data; Natural Earth Data; U.S. Department of State Humanitarian Information Unit; and NOAA National Centers for Environmental Information, U.S. Coastal Relief Model. Data refreshed April, 2023."
-          url="https://basemap.nationalmap.gov/arcgis/services/USGSTopo/MapServer/WMSServer"
-          format="image/png"
-          layers="0"
-          transparent={true}
+          url="https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}"
           maxNativeZoom={16}
           maxZoom={24}
         />
       </LayersControl.BaseLayer>
       <LayersControl.BaseLayer name="USGS Imagery" checked={!mapboxAccessToken}>
-        <WMSTileLayer
+        <TileLayer
           attribution="USGS The National Map: Orthoimagery. Data refreshed December, 2021."
-          url="https://basemap.nationalmap.gov/arcgis/services/USGSImageryOnly/MapServer/WMSServer"
-          format="image/png"
-          layers="0"
-          transparent={true}
+          url="https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}"
           maxNativeZoom={16}
           maxZoom={24}
         />
       </LayersControl.BaseLayer>
       <LayersControl.BaseLayer name="USGS ImageryTopo">
-        <WMSTileLayer
+        <TileLayer
           attribution="USGS The National Map: Orthoimagery and US Topo. Data refreshed August, 2023."
-          url="https://basemap.nationalmap.gov/arcgis/services/USGSImageryTopo/MapServer/WMSServer"
-          format="image/png"
-          layers="0"
-          transparent={true}
+          url="https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}"
           maxNativeZoom={16}
           maxZoom={24}
         />
