@@ -1,5 +1,6 @@
 import { LayerProps } from 'react-map-gl/maplibre';
 
+// Cluster layers
 export const clusterLayer: LayerProps = {
   id: 'clusters',
   type: 'circle',
@@ -41,5 +42,16 @@ export const unclusteredPointLayer: LayerProps = {
     'circle-radius': 4,
     'circle-stroke-width': 1,
     'circle-stroke-color': '#fff',
+  },
+};
+
+// Project boundary layer
+export const projectBoundaryLayer: LayerProps = {
+  id: 'project-boundary',
+  type: 'line',
+  source: 'project-boundary',
+  layout: {},
+  paint: {
+    'line-color': '#fff',
   },
 };

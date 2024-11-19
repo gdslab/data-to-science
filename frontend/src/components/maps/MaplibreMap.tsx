@@ -9,7 +9,9 @@ import Map, {
   ScaleControl,
 } from 'react-map-gl/maplibre';
 
+import { useMapContext } from './MapContext';
 import MaplibreCluster from './MaplibreCluster';
+import MaplibreProjectBoundary from './MaplibreProjectBoundary';
 
 type ProjectPopup = {
   title: string;
@@ -45,6 +47,7 @@ const satelliteBasemapStyle: StyleSpecification = {
 
 export default function MaplibreMap() {
   const [popupInfo, setPopupInfo] = useState<ProjectPopup | null>(null);
+  const { activeMapTool, activeProject } = useMapContext();
 
   const markerIconUrl = 'https://docs.mapbox.com/mapbox-gl-js/assets/custom_marker.png';
 
@@ -95,9 +98,11 @@ export default function MaplibreMap() {
       onClick={handleMapClick}
       onLoad={handleMapLoad}
     >
-      {/* Marker Cluster for Project Centroids */}
-      <MaplibreCluster />
-      {popupInfo && (
+      {/* Display marker cluster for project centroids when no project is active */}
+      {activeMapTool === 'map' && !activeProject && <MaplibreCluster />}
+
+      {/* Display popup on click for project markers when no project is active */}
+      {activeMapTool === 'map' && !activeProject && popupInfo && (
         <Popup
           anchor="top"
           longitude={popupInfo.longitude}
@@ -113,6 +118,12 @@ export default function MaplibreMap() {
           </div>
         </Popup>
       )}
+
+      {/* Display project vector layers when project active and layers selected */}
+
+      {/* Display project boundary when project activated */}
+      {activeMapTool === 'map' && activeProject && <MaplibreProjectBoundary />}
+
       {/* Controls */}
       <GeolocateControl />
       <NavigationControl />

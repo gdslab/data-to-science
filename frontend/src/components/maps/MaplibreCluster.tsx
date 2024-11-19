@@ -7,7 +7,9 @@ import {
   clusterLayer,
   clusterCountLayer,
   unclusteredPointLayer,
-} from './MaplibreClusterLayers';
+} from './MaplibreLayers';
+
+import { calculateBoundsFromGeoJSON } from './utils';
 
 export default function MaplibreCluster() {
   const { current: map } = useMap();
@@ -25,19 +27,7 @@ export default function MaplibreCluster() {
         const geojsonData = await response.data;
 
         // Calculate the bounds of the GeoJSON features
-        const bounds: [number, number, number, number] = geojsonData.features.reduce(
-          (bounds, feature) => {
-            const [minLng, minLat, maxLng, maxLat] = bounds;
-            const [lng, lat] = feature.geometry.coordinates;
-            return [
-              Math.min(minLng, lng),
-              Math.min(minLat, lat),
-              Math.max(maxLng, lng),
-              Math.max(maxLat, lat),
-            ];
-          },
-          [Infinity, Infinity, -Infinity, -Infinity]
-        );
+        const bounds = calculateBoundsFromGeoJSON(geojsonData);
 
         // Fit the map to the bounds
         map.fitBounds(bounds, {

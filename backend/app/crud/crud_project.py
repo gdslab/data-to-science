@@ -9,7 +9,7 @@ from sqlalchemy import and_, func, select, update, or_
 from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm import joinedload, Session
 
-from app import crud
+from app import crud, schemas
 from app.crud.base import CRUDBase
 from app.models.data_product import DataProduct
 from app.models.flight import Flight
@@ -44,7 +44,7 @@ def is_team_member(user_id: UUID, team_members: Sequence[TeamMember]) -> bool:
 class ReadProject(TypedDict):
     response_code: int
     message: str
-    result: Project | None
+    result: schemas.Project | None
 
 
 class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):

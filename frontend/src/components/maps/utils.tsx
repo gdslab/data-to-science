@@ -1,5 +1,53 @@
+import { FeatureCollection, Point, Polygon } from 'geojson';
 import { DataProduct, Flight } from '../pages/projects/Project';
 import { SymbologySettings } from './Maps';
+
+type Bounds = [number, number, number, number];
+
+/**
+ * Calculates bounding box for features in GeoJSON Feature Collection. Supports
+ * Point or Polygon geometry types.
+ * @param geojsonData Feature Collection of Point or Polygon Feautres.
+ * @returns Bounding box array.
+ */
+function calculateBoundsFromGeoJSON(
+  geojsonData: FeatureCollection<Point | Polygon>
+): Bounds {
+  const bounds: Bounds = geojsonData.features.reduce(
+    (bounds, feature) => {
+      const [minLng, minLat, maxLng, maxLat] = bounds;
+
+      if (feature.geometry.type === 'Polygon') {
+        // Flatten the coordinates array into single array of coordinates
+        const coordinates = feature.geometry.coordinates.flat(Infinity) as number[];
+
+        for (let i = 0; i < coordinates.length; i += 2) {
+          const lng = coordinates[i];
+          const lat = coordinates[i + 1];
+          bounds[0] = Math.min(bounds[0], lng);
+          bounds[1] = Math.min(bounds[1], lat);
+          bounds[2] = Math.max(bounds[2], lng);
+          bounds[3] = Math.max(bounds[3], lat);
+        }
+
+        return bounds;
+      } else if (feature.geometry.type === 'Point') {
+        const [lng, lat] = feature.geometry.coordinates;
+        return [
+          Math.min(minLng, lng),
+          Math.min(minLat, lat),
+          Math.max(maxLng, lng),
+          Math.max(maxLat, lat),
+        ];
+      } else {
+        throw new Error('Unable to calculate bounds for GeoJSON data');
+      }
+    },
+    [Infinity, Infinity, -Infinity, -Infinity]
+  );
+
+  return bounds;
+}
 
 function getDefaultStyle(dataProduct: DataProduct): SymbologySettings {
   if (isSingleBand(dataProduct)) {
@@ -75,4 +123,4 @@ function isSingleBand(dataProduct: DataProduct): boolean {
   return dataProduct.stac_properties && dataProduct.stac_properties.raster.length === 1;
 }
 
-export { getDefaultStyle, getHillshade, isSingleBand };
+export { calculateBoundsFromGeoJSON, getDefaultStyle, getHillshade, isSingleBand };

@@ -65,15 +65,19 @@ def create_project(
     return project["result"]
 
 
-@router.get("/{project_id}", response_model=schemas.Project)
+@router.get("/{project_id}", response_model=Union[schemas.Project, FeatureCollection])
 def read_project(
     project_id: UUID,
+    format: str = Query("json", regex="^(json|geojson)$"),
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
-    project: models.Project = Depends(deps.can_read_project),
+    project: schemas.Project = Depends(deps.can_read_project),
 ) -> Any:
     """Retrieve project by id."""
-    return project
+    if format == "geojson":
+        return {"type": "FeatureCollection", "features": [project.field]}
+    else:
+        return project
 
 
 @router.get("", response_model=Union[List[schemas.project.Projects], FeatureCollection])
