@@ -4,6 +4,7 @@ import LayerPane from './LayerPane';
 import Map from './Map';
 
 import { MapContextProvider } from './MapContext';
+import MaplibreMap from './MaplibreMap';
 
 function classNames(...classes: [string, string]) {
   return classes.filter(Boolean).join(' ');
@@ -26,7 +27,8 @@ export default function MapLayout() {
         </div>
         {/* page content */}
         <div className="w-full">
-          <Map layerPaneHidden={hidePane} />
+          <MaplibreMap />
+          {/* <Map layerPaneHidden={hidePane} /> */}
         </div>
       </div>
     </MapContextProvider>
