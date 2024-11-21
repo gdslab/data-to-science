@@ -1,7 +1,7 @@
 import axios, { AxiosResponse } from 'axios';
 import { Field, useFormikContext } from 'formik';
 import Papa from 'papaparse';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import HintText from '../../../../HintText';
 import { SelectField } from '../../../../InputFields';
@@ -11,7 +11,6 @@ import { ToolboxFields } from './ToolboxModal';
 import { removeKeysFromFeatureProperties } from '../../mapLayers/utils';
 
 import { useProjectContext } from '../../ProjectContext';
-import { prepMapLayers } from '../../mapLayers/utils';
 import { useParams } from 'react-router-dom';
 import { downloadFile as downloadCSV } from '../../fieldCampaigns/utils';
 import { download as downloadGeoJSON } from '../../mapLayers/utils';
@@ -208,6 +207,16 @@ const ZonalStatisticTools = ({ dataProductId }: { dataProductId: string }) => {
   const { values } = useFormikContext<ToolboxFields>();
   const { mapLayers } = useProjectContext();
 
+  const filteredAndSortedMapLayers = useMemo(() => {
+    return mapLayers
+      .filter(
+        ({ geom_type }) =>
+          geom_type.toLowerCase() === 'polygon' ||
+          geom_type.toLowerCase() === 'multipolygon'
+      )
+      .sort((a, b) => a.layer_name.localeCompare(b.layer_name));
+  }, [mapLayers]);
+
   return (
     <ul>
       <li>
@@ -221,26 +230,19 @@ const ZonalStatisticTools = ({ dataProductId }: { dataProductId: string }) => {
           {values.zonal && (
             <div>
               <span className="text-sm">Select Layer with Zonal Features:</span>
-              {mapLayers &&
-                prepMapLayers(mapLayers)
-                  .filter(
-                    ({ geomType }) =>
-                      geomType.toLowerCase() === 'polygon' ||
-                      geomType.toLowerCase() === 'multipolygon'
-                  )
-                  .map((layer) => (
-                    <label
-                      key={layer.id}
-                      className="block text-sm text-gray-600 font-bold pb-1"
-                    >
-                      <Field type="radio" name="zonal_layer_id" value={layer.id} />
-                      <span className="ml-2">{layer.name}</span>
-                      <DownloadZonalStatistics
-                        dataProductId={dataProductId}
-                        layerId={layer.id}
-                      />
-                    </label>
-                  ))}
+              {filteredAndSortedMapLayers.map(({ layer_id, layer_name }) => (
+                <label
+                  key={layer_id}
+                  className="block text-sm text-gray-600 font-bold pb-1"
+                >
+                  <Field type="radio" name="zonal_layer_id" value={layer_id} />
+                  <span className="ml-2">{layer_name}</span>
+                  <DownloadZonalStatistics
+                    dataProductId={dataProductId}
+                    layerId={layer_id}
+                  />
+                </label>
+              ))}
             </div>
           )}
         </div>

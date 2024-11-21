@@ -1,5 +1,5 @@
 import { FeatureCollection, Point, Polygon } from 'geojson';
-import { DataProduct, Flight } from '../pages/projects/Project';
+import { DataProduct, Flight, MapLayer } from '../pages/projects/Project';
 import { SymbologySettings } from './Maps';
 
 type Bounds = [number, number, number, number];
@@ -48,6 +48,22 @@ function calculateBoundsFromGeoJSON(
 
   return bounds;
 }
+
+/**
+ * Map API response with project vector layers to MapLayer[].
+ * @param layers Vector layers returned from API response.
+ * @returns Mapped vector layers.
+ */
+const mapApiResponseToLayers = (layers: MapLayer[]) =>
+  layers.map((layer) => ({
+    id: layer.layer_id,
+    name: layer.layer_name,
+    checked: false,
+    type: layer.geom_type,
+    color: '#ffde21',
+    opacity: 100,
+    signedUrl: layer.signed_url,
+  }));
 
 function getDefaultStyle(dataProduct: DataProduct): SymbologySettings {
   if (isSingleBand(dataProduct)) {
@@ -123,4 +139,10 @@ function isSingleBand(dataProduct: DataProduct): boolean {
   return dataProduct.stac_properties && dataProduct.stac_properties.raster.length === 1;
 }
 
-export { calculateBoundsFromGeoJSON, getDefaultStyle, getHillshade, isSingleBand };
+export {
+  calculateBoundsFromGeoJSON,
+  getDefaultStyle,
+  getHillshade,
+  isSingleBand,
+  mapApiResponseToLayers,
+};

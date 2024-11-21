@@ -45,3 +45,11 @@ class Metadata(BaseModel):
 
 class VectorLayerFeatureCollection(FeatureCollection):
     metadata: Metadata
+
+
+class VectorLayerPayload(BaseModel):
+    layer_id: str
+    layer_name: str
+    geom_type: str
+    signed_url: AnyHttpUrl
+    preview_url: AnyHttpUrl

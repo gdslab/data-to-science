@@ -188,3 +188,77 @@ def get_user_name_and_email(db: Session, user_id: uuid.UUID) -> str:
         return f"{user.first_name} {user.last_name} <{user.email}>"
     else:
         return "Unknown"
+
+
+def sanitize_file_name(file_name: str) -> str:
+    """Strips unsafe characters and returns sanitized file name with original extension.
+    Args:
+        file_name (str): Original file name.
+
+    Returns:
+        str: Sanitized file name.
+    """
+    # Get the file name and extension
+    base_name, extension = os.path.splitext(file_name)
+
+    # Generate a sanitized base name: remove all non-alphanumeric characters
+    # except underscores and hyphens
+    sanitized_base_name = re.sub(r"[^\w\-_]", "_", base_name).strip("_")
+
+    # If the base name is empty, generate a random UUID
+    if not sanitized_base_name:
+        sanitized_base_name = str(uuid.uuid4())
+
+    # Sanitize the extension (ensure it starts with a dot and contains only
+    # alphanumeric characters)
+    sanitized_extension = f".{extension.lstrip('.').lower()}" if extension else ""
+
+    # Return the cleansed file name
+    return f"{sanitized_base_name}{sanitized_extension}"
+
+
+def is_geometry_match(expected_geometry: str, actual_geometry: str) -> bool:
+    """Return True if expected geometry and actual geometry match or if they match
+    when multi and non-multi types are considered matches.
+
+    Args:
+        expected_geometry (str): Expected geometry type.
+        actual_geometry (str): Actual geometry type.
+
+    Returns:
+        bool: True if expected and actual geometry match.
+    """
+    if expected_geometry.lower() == actual_geometry.lower():
+        return True
+
+    if (
+        expected_geometry.lower() == "point"
+        or expected_geometry.lower() == "multipoint"
+    ):
+        if (
+            actual_geometry.lower() == "point"
+            or actual_geometry.lower() == "multipoint"
+        ):
+            return True
+
+    if (
+        expected_geometry.lower() == "linestring"
+        or expected_geometry.lower() == "multilinestring"
+    ):
+        if (
+            actual_geometry.lower() == "linestring"
+            or actual_geometry.lower() == "multilinestring"
+        ):
+            return True
+
+    if (
+        expected_geometry.lower() == "polygon"
+        or expected_geometry.lower() == "multipolygon"
+    ):
+        if (
+            actual_geometry.lower() == "polygon"
+            or actual_geometry.lower() == "multipolygon"
+        ):
+            return True
+
+    return False

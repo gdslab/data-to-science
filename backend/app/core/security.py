@@ -1,5 +1,9 @@
+import base64
+import hashlib
+import time
 from datetime import datetime, timedelta
 from typing import Any, cast, Dict, Optional
+from urllib.parse import urlencode, quote_plus
 
 from fastapi import Request, status
 from fastapi.exceptions import HTTPException
@@ -31,6 +35,40 @@ def create_access_token(subject: str | Any, expire: datetime | None = None) -> s
     to_encode = {"exp": expire, "sub": str(subject)}
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+
+def create_signed_url(
+    base_url: str, filter_param: str, expiration_seconds: int = 3600
+) -> str:
+    """Generate a signed URL for fetching raster and vector tiles.
+
+    Args:
+        base_url (str): Base URL for fetching tile.
+        filter_param (str): Filter query parameter to be included with request.
+        expiration_seconds (int, optional): Expiration in seconds. Defaults to 3600.
+
+    Returns:
+        str: Signed URL.
+    """
+    # Set expiration for N (default 3600) seconds from now
+    expiration_timestamp = int(time.time()) + expiration_seconds
+
+    # Include `filter` query param in the hash
+    encoded_filter = quote_plus(filter_param)
+    string_to_hash = (
+        f"{expiration_timestamp}{encoded_filter} {settings.TILE_SIGNING_SECRET_KEY}"
+    )
+    hash_binary = hashlib.md5(string_to_hash.encode()).digest()
+    secure_hash = base64.urlsafe_b64encode(hash_binary).decode().rstrip("=")
+
+    # Build the query param string
+    query_params = {
+        "expires": expiration_timestamp,
+        "filter": filter_param,
+        "secure": secure_hash,
+    }
+
+    return f"{base_url}?{urlencode(query_params)}"
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

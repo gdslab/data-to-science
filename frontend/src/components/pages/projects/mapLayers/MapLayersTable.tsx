@@ -1,18 +1,17 @@
 import axios, { AxiosResponse, isAxiosError } from 'axios';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { PhotoIcon } from '@heroicons/react/24/outline';
 
+import { MapLayerFeatureCollection } from '../Project';
+import MapLayerDownloadLinks from './MapLayerDownloadLink';
 import ConfirmationModal from '../../../ConfirmationModal';
-import { useProjectContext } from '../ProjectContext';
+import { getMapLayers, useProjectContext } from '../ProjectContext';
 import { AlertBar, Status } from '../../../Alert';
-
-import { download, prepMapLayers } from './utils';
 
 import pointIcon from '../../../../assets/point-icon.svg';
 import lineIcon from '../../../../assets/line-icon.svg';
 import polygonIcon from '../../../../assets/polygon-icon.svg';
-import { MapLayerFeatureCollection } from '../Project';
 
 /**
  * If a "Multi" geometry type is provided return
@@ -20,7 +19,7 @@ import { MapLayerFeatureCollection } from '../Project';
  * @param geomType Geometry type from GeoJSON object.
  * @returns "Point", "Line", "Polygon", or original value.
  */
-function getGenericGeomType(geomType: string): string {
+export function getGenericGeomType(geomType: string): string {
   let genericGeomType = geomType.toLowerCase();
   switch (geomType.toLowerCase()) {
     case 'multipoint':
@@ -61,6 +60,19 @@ export default function ProjectLayersTable() {
 
   const [status, setStatus] = useState<Status | null>(null);
 
+  // Poll for new map layers every 30 seconds
+  useEffect(() => {
+    if (projectId) {
+      setInterval(() => {
+        getMapLayers(projectId, mapLayersDispatch);
+      }, 30000);
+    }
+  }, [projectId]);
+
+  const sortedMapLayers = useMemo(() => {
+    return [...mapLayers].sort((a, b) => a.layer_name.localeCompare(b.layer_name));
+  }, [mapLayers]);
+
   return (
     <div className="max-h-96 overflow-auto">
       <table className="relative w-full border-separate border-spacing-y-1 border-spacing-x-1">
@@ -74,47 +86,35 @@ export default function ProjectLayersTable() {
           </tr>
         </thead>
         <tbody className="max-h-96 overflow-y-auto">
-          {mapLayers &&
-            prepMapLayers(mapLayers).map((layer) => (
-              <tr key={layer.id} className="h-48 text-center border-2 border-slate-400">
+          {sortedMapLayers.length > 0 &&
+            sortedMapLayers.map((layer) => (
+              <tr
+                key={layer.layer_id}
+                className="h-48 text-center border-2 border-slate-400"
+              >
                 <td className="h-48 w-48 bg-white">
-                  {layer.featureCollection.features[0].properties ? (
-                    <img
-                      src={layer.featureCollection.metadata.preview_url}
-                      className="w-full h-full object-cover"
-                      alt="Preview image"
-                    />
+                  {layer.preview_url ? (
+                    <div className="flex items-center justify-center">
+                      <img
+                        src={layer.preview_url}
+                        className="w-full h-full object-cover"
+                        alt="Preview image"
+                      />
+                    </div>
                   ) : (
                     <PhotoIcon />
                   )}
                 </td>
-                <td className="p-4 bg-white">{layer.name}</td>
+                <td className="p-4 bg-white">{layer.layer_name}</td>
                 <td className="p-4 bg-white">
                   <div className="flex items-center justify-center gap-2">
-                    <img src={getGeomTypeIcon(getGenericGeomType(layer.geomType))} />
-                    {getGenericGeomType(layer.geomType)}
+                    <img src={getGeomTypeIcon(layer.geom_type)} />
+                    {layer.geom_type}
                   </div>
                 </td>
                 <td className="bg-white">
                   <div className="flex flex-col gap-4">
-                    <div className="flex items-center justify-center bg-white">
-                      <button
-                        className="flex items-center gap-1"
-                        type="button"
-                        onClick={() => download('json', layer.featureCollection)}
-                      >
-                        <span className="text-sky-600">GeoJSON</span>
-                      </button>
-                    </div>
-                    <div className="flex items-center justify-center bg-white">
-                      <button
-                        className="flex items-center gap-1"
-                        type="button"
-                        onClick={() => download('zip', layer.featureCollection)}
-                      >
-                        <span className="text-sky-600">Shapefile</span>
-                      </button>
-                    </div>
+                    <MapLayerDownloadLinks layerId={layer.layer_id} />
                   </div>
                 </td>
                 {projectRole !== 'viewer' && (
@@ -134,13 +134,12 @@ export default function ProjectLayersTable() {
                               await axios.delete(
                                 `${
                                   import.meta.env.VITE_API_V1_STR
-                                }/projects/${projectId}/vector_layers/${layer.id}`
+                                }/projects/${projectId}/vector_layers/${layer.layer_id}`
                               );
                             if (response.status === 200) {
-                              // update map layer context with new map layer
                               mapLayersDispatch({
                                 type: 'remove',
-                                payload: [response.data],
+                                payload: [layer],
                               });
                             } else {
                               setStatus({

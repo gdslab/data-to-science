@@ -32,6 +32,7 @@ services:
       args:
         NUM_OF_WORKERS: 1
         LIMIT_MAX_REQUESTS: 10000
+        TILE_SIGNING_SECRET_KEY: ${TILE_SIGNING_SECRET_KEY}
     image: d2s-api:latest
     platform: linux/x86_64
     volumes:
@@ -183,6 +184,7 @@ services:
       dockerfile: nginx.dockerfile
       args:
         - DEFAULT_CONF=prod
+        - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
     image: d2s-proxy:latest
     platform: linux/x86_64
     tmpfs:
@@ -217,6 +219,26 @@ services:
     command: "-p default_keep=300"
     depends_on:
       - titiler
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+    security_opt:
+      - no-new-privileges=true
+
+  pg_tileserv:
+    image: pramsey/pg_tileserv:latest
+    platform: linux/x86_64
+    ports:
+      - 7800:7800
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - db.env
     deploy:
       restart_policy:
         condition: on-failure

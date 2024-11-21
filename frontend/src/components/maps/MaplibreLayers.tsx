@@ -1,5 +1,7 @@
 import { LayerProps } from 'react-map-gl/maplibre';
 
+import { MapLayerProps } from './MapLayersContext';
+
 // Cluster layers
 export const clusterLayer: LayerProps = {
   id: 'clusters',
@@ -54,4 +56,63 @@ export const projectBoundaryLayer: LayerProps = {
   paint: {
     'line-color': '#fff',
   },
+};
+
+// Project vector layer
+export const getProjectVectorLayer = (
+  layer: MapLayerProps
+): LayerProps | LayerProps[] => {
+  const geomType = layer.type.toLowerCase();
+
+  switch (geomType) {
+    case 'point':
+      return {
+        id: layer.id,
+        type: 'circle',
+        source: layer.id,
+        'source-layer': 'public.vector_layers',
+        paint: {
+          'circle-radius': 5,
+          'circle-color': layer.color,
+          'circle-opacity': layer.opacity / 100,
+        },
+      };
+    case 'line':
+      return {
+        id: layer.id,
+        type: 'line',
+        source: layer.id,
+        'source-layer': 'public.vector_layers',
+        paint: {
+          'line-color': layer.color,
+          'line-opacity': layer.opacity / 100,
+          'line-width': 2,
+        },
+      };
+    case 'polygon':
+      return [
+        {
+          id: layer.id,
+          type: 'fill',
+          source: layer.id,
+          'source-layer': 'public.vector_layers',
+          paint: {
+            'fill-color': layer.color,
+            'fill-opacity': layer.opacity / 100,
+          },
+        },
+        {
+          id: `${layer.id}-border`,
+          type: 'line',
+          source: layer.id,
+          'source-layer': 'public.vector_layers',
+          paint: {
+            'line-color': '#FFFFFF',
+            'line-width': 2,
+          },
+        },
+      ];
+    default:
+      throw new Error(`Unexpected geometry type: ${geomType}`);
+  }
 };

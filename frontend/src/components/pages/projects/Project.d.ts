@@ -47,6 +47,14 @@ export interface MapLayerFeatureCollection<
   };
 }
 
+export type MapLayer = {
+  layer_id: string;
+  layer_name: string;
+  geom_type: string;
+  signed_url: string;
+  preview_url: string;
+};
+
 type ZonalFeatureProperties = {
   id: string;
   count: number;

@@ -2,7 +2,24 @@ vcl 4.1;
 
 import std;
 
-backend default {
+backend pg_tileserv {
+    .host = "pg_tileserv";
+    .port = "7800";
+    .max_connections = 100;
+    .probe = {
+        .request = 
+            "GET /health HTTP/1.1"
+            "Host: pg_tileserv"
+            "Connection: close"
+            "User-Agent: Varnish Health Probe";
+        .interval  = 10s;
+        .timeout   = 5s;
+        .window    = 5;
+        .threshold = 3;
+    }
+}
+
+backend titiler {
     .host = "titiler";
     .port = "8888";
     .max_connections = 100;
@@ -30,6 +47,13 @@ acl purge {
 }
 
 sub vcl_recv {
+    # set which backend to use
+    if (req.url ~ "^/cog/") {
+        set req.backend_hint = titiler;
+    } else {
+        set req.backend_hint = pg_tileserv;
+    }
+
     # strip off port numbers from object hash
     set req.http.Host = regsub(req.http.Host, ":[0-9]+", "");
 
@@ -64,20 +88,19 @@ sub vcl_recv {
     }
 
     # strip off cookie and auth headers before caching new request
-    if (req.url ~ "^[^?]*\.(7z|avi|bmp|bz2|css|csv|doc|docx|eot|flac|flv|gif|gz|ico|jpeg|jpg|js|less|mka|mkv|mov|mp3|mp4|mpeg|mpg|odt|ogg|ogm|opus|otf|pdf|png|ppt|pptx|rar|rtf|svg|svgz|swf|tar|tbz|tgz|ttf|txt|txz|wav|webm|webp|woff|woff2|xls|xlsx|xml|xz|zip)(\?.*)?$") {
-        # store access token temporarily before unsetting it
-        if (req.http.Cookie ~ "access_token") {
-            set req.http.x-temp-access-token = regsub(req.http.Cookie, ".*access_token=([^;]+);?.*", "\1");
-        }
-        unset req.http.Cookie;
-        # Only keep the following if VCL handling is complete
-        return(hash);
+    # store access token temporarily before unsetting it
+    if (req.http.Cookie ~ "access_token") {
+        set req.http.x-temp-access-token = regsub(req.http.Cookie, ".*access_token=([^;]+);?.*", "\1");
     }
+    unset req.http.Cookie;
 
     # asynchronously revalidate object while serving stale object if not past 10 seconds
     if (std.healthy(req.backend_hint)) {
         set req.grace = 10s;
     }
+
+    # Only keep the following if VCL handling is complete
+    return(hash);
 }
 
 sub vcl_synth {

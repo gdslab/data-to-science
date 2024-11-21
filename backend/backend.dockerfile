@@ -5,11 +5,15 @@ FROM python:3.11-slim AS python-base
 ARG INSTALL_DEV=false
 ARG NUM_OF_WORKERS=1
 ARG LIMIT_MAX_REQUESTS=10000
+ARG TILE_SIGNING_SECRET_KEY
 
 # do not buffer log messages and do not write byte code .pyc
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app \
     PYTHONUNBUFFERED=1
+
+# set signing key for tile requests
+ENV TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
 
 # set dev mode
 ENV DEV_MODE=$INSTALL_DEV

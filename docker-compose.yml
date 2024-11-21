@@ -19,6 +19,7 @@ services:
       dockerfile: backend.dockerfile
       args:
         INSTALL_DEV: true
+        TILE_SIGNING_SECRET_KEY: ${TILE_SIGNING_SECRET_KEY}
     image: d2s-api:dev
     platform: linux/x86_64
     volumes:
@@ -123,6 +124,7 @@ services:
       dockerfile: nginx.dockerfile
       args:
         - DEFAULT_CONF=dev
+        - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
     image: d2s-proxy:dev
     platform: linux/x86_64
     tmpfs:
@@ -143,7 +145,21 @@ services:
       - VARNISH_SIZE=2G
     command: "-p default_keep=300"
     depends_on:
+      - pg_tileserv
+      - proxy
       - titiler
+
+  pg_tileserv:
+    image: pramsey/pg_tileserv:latest
+    platform: linux/x86_64
+    ports:
+      - 7800:7800
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - db.env
 
   titiler:
     image: ghcr.io/developmentseed/titiler:0.19.0
