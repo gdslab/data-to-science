@@ -68,7 +68,7 @@ def create_project(
 @router.get("/{project_id}", response_model=Union[schemas.Project, FeatureCollection])
 def read_project(
     project_id: UUID,
-    format: str = Query("json", regex="^(json|geojson)$"),
+    format: str = Query("json", pattern="^(json|geojson)$"),
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
     project: schemas.Project = Depends(deps.can_read_project),
@@ -85,7 +85,7 @@ def read_projects(
     edit_only: bool = False,
     has_raster: bool = False,
     include_all: bool = False,
-    format: str = Query("json", regex="^(json|geojson)$"),
+    format: str = Query("json", pattern="^(json|geojson)$"),
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:

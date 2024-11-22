@@ -1,6 +1,8 @@
 import os
 from datetime import date, datetime
 
+import geopandas as gpd
+from geojson_pydantic import FeatureCollection
 from sqlalchemy import update
 from sqlalchemy.orm import Session
 
@@ -320,14 +322,15 @@ def test_update_flight_project(db: Session) -> None:
     flight3 = create_flight(db, project_id=src_project.id)
     # add data product to flight
     data_product = SampleDataProduct(db, flight=flight)
+
     # create vector layer and associate it with flight
-    fc = get_geojson_feature_collection("Point")
-    vector_layer_in = VectorLayerCreate(
-        layer_name=fc["layer_name"], geojson=fc["geojson"]
-    )
+    geojson = get_geojson_feature_collection("Point")["geojson"]
+    fc: FeatureCollection = FeatureCollection(**geojson)
+    gdf = gpd.GeoDataFrame.from_features(fc.features, crs="EPSG:4326")
     point_feature = crud.vector_layer.create_with_project(
-        db, obj_in=vector_layer_in, project_id=src_project.id
+        db, file_name="test_file.geojson", gdf=gdf, project_id=src_project.id
     )
+
     update_query = (
         update(VectorLayer)
         .values(flight_id=flight.id)

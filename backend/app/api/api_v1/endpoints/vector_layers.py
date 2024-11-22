@@ -201,7 +201,7 @@ def read_vector_layers(
 def download_vector_layer(
     layer_id: str,
     background_tasks: BackgroundTasks,
-    format: str = Query("json", regex="^(json|shp)$"),
+    format: str = Query("json", pattern="^(json|shp)$"),
     project: models.Project = Depends(deps.can_read_project),
     db: Session = Depends(deps.get_db),
 ) -> Any:
@@ -325,6 +325,7 @@ def get_preview_url(project_id: str, layer_id: str) -> str:
     Returns:
         str: URL to vector layer preview image.
     """
-    base_static_url = f"{settings.API_DOMAIN}{settings.STATIC_DIR}"
+    static_dir = get_static_dir()
+    base_static_url = f"{settings.API_DOMAIN}{static_dir}"
 
     return f"{base_static_url}/projects/{project_id}/vector/{layer_id}/preview.png"

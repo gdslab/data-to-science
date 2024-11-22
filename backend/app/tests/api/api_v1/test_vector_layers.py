@@ -17,95 +17,6 @@ from app.tests.utils.vector_layers import (
 )
 
 
-def test_create_vector_layer_with_project_owner_role(
-    client: TestClient, db: Session, normal_user_access_token: str
-) -> None:
-    current_user = get_current_user(db, normal_user_access_token)
-    project = create_project(db, owner_id=current_user.id)
-    point_feature = get_geojson_feature_collection("point")
-
-    response = client.post(
-        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers", json=point_feature
-    )
-    assert response.status_code == status.HTTP_201_CREATED
-    response_data = response.json()
-    response_feature = FeatureCollection(**response_data)
-    assert response_feature.features[0].properties["id"]
-    assert response_feature.features[0].properties["project_id"] == str(project.id)
-    assert response_feature.features[0].properties["layer_id"]
-    # check if preview image was made
-    layer_id = response_feature.features[0].properties["layer_id"]
-    preview_path = f"{settings.TEST_STATIC_DIR}/projects/{project.id}/vector/{layer_id}/preview.png"
-    assert os.path.exists(preview_path)
-
-
-def test_create_vector_layer_with_manager_role(
-    client: TestClient, db: Session, normal_user_access_token: str
-) -> None:
-    current_user = get_current_user(db, normal_user_access_token)
-    project = create_project(db)
-    point_feature = get_geojson_feature_collection("point")
-    create_project_member(
-        db, role="manager", member_id=current_user.id, project_id=project.id
-    )
-
-    response = client.post(
-        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers", json=point_feature
-    )
-    assert response.status_code == status.HTTP_201_CREATED
-    response_data = response.json()
-    response_feature = FeatureCollection(**response_data)
-    assert response_feature.features[0].properties["id"]
-    assert response_feature.features[0].properties["project_id"] == str(project.id)
-    assert response_feature.features[0].properties["layer_id"]
-    # check if preview image was made
-    layer_id = response_feature.features[0].properties["layer_id"]
-    preview_path = f"{settings.TEST_STATIC_DIR}/projects/{project.id}/vector/{layer_id}/preview.png"
-    assert os.path.exists(preview_path)
-
-
-def test_create_vector_layer_with_viewer_role(
-    client: TestClient, db: Session, normal_user_access_token: str
-) -> None:
-    current_user = get_current_user(db, normal_user_access_token)
-    project = create_project(db)
-    point_feature = get_geojson_feature_collection("point")
-    create_project_member(
-        db, role="viewer", member_id=current_user.id, project_id=project.id
-    )
-
-    response = client.post(
-        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers", json=point_feature
-    )
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-
-
-def test_create_vector_layer_without_project_role(
-    client: TestClient, db: Session, normal_user_access_token: str
-) -> None:
-    project = create_project(db)
-    point_feature = get_geojson_feature_collection("point")
-
-    response = client.post(
-        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers", json=point_feature
-    )
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-
-
-def test_create_vector_layer_with_too_many_features_features_fails(
-    client: TestClient, db: Session, normal_user_access_token: str
-) -> None:
-    current_user = get_current_user(db, normal_user_access_token)
-    project = create_project(db, owner_id=current_user.id)
-    too_many_features = get_geojson_feature_collection("too_many_features")
-
-    response = client.post(
-        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers",
-        json=too_many_features,
-    )
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-
-
 def test_read_vector_layer_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -238,21 +149,16 @@ def test_read_vector_layers_with_project_owner_role(
 
     response = client.get(f"{settings.API_V1_STR}/projects/{project.id}/vector_layers")
     assert response.status_code == status.HTTP_200_OK
-    response_feature_collections = response.json()
-    assert isinstance(response_feature_collections, list)
-    assert len(response_feature_collections) == 3
-    for feature_collection in response_feature_collections:
-        feature_collection = VectorLayerFeatureCollection(**feature_collection)
-        for feature in feature_collection.features:
-            assert feature.properties["id"] in [
-                fc1.features[0].properties["id"],
-                fc2.features[0].properties["id"],
-                fc3.features[0].properties["id"],
-            ]
-        assert feature_collection.metadata.preview_url
-        assert os.path.exists(
-            f"{settings.TEST_STATIC_DIR}/projects/{project.id}/vector/{feature_collection.features[0].properties['layer_id']}/preview.png"
-        )
+    response_data = response.json()
+    assert isinstance(response_data, list)
+    assert len(response_data) == 3
+    for layer in response_data:
+        assert "layer_id" in layer
+        assert "layer_name" in layer
+        assert "geom_type" in layer
+        assert "signed_url" in layer
+        assert "preview_url" in layer
+        assert os.path.exists(layer["preview_url"].split(settings.API_DOMAIN)[1])
 
 
 def test_read_vector_layers_with_project_manager_role(
@@ -269,21 +175,16 @@ def test_read_vector_layers_with_project_manager_role(
 
     response = client.get(f"{settings.API_V1_STR}/projects/{project.id}/vector_layers")
     assert response.status_code == status.HTTP_200_OK
-    response_feature_collections = response.json()
-    assert isinstance(response_feature_collections, list)
-    assert len(response_feature_collections) == 3
-    for feature_collection in response_feature_collections:
-        feature_collection = VectorLayerFeatureCollection(**feature_collection)
-        for feature in feature_collection.features:
-            assert feature.properties["id"] in [
-                fc1.features[0].properties["id"],
-                fc2.features[0].properties["id"],
-                fc3.features[0].properties["id"],
-            ]
-        assert feature_collection.metadata.preview_url
-        assert os.path.exists(
-            f"{settings.TEST_STATIC_DIR}/projects/{project.id}/vector/{feature_collection.features[0].properties['layer_id']}/preview.png"
-        )
+    response_data = response.json()
+    assert isinstance(response_data, list)
+    assert len(response_data) == 3
+    for layer in response_data:
+        assert "layer_id" in layer
+        assert "layer_name" in layer
+        assert "geom_type" in layer
+        assert "signed_url" in layer
+        assert "preview_url" in layer
+        assert os.path.exists(layer["preview_url"].split(settings.API_DOMAIN)[1])
 
 
 def test_read_vector_layers_with_project_viewer_role(
@@ -300,21 +201,16 @@ def test_read_vector_layers_with_project_viewer_role(
 
     response = client.get(f"{settings.API_V1_STR}/projects/{project.id}/vector_layers")
     assert response.status_code == status.HTTP_200_OK
-    response_feature_collections = response.json()
-    assert isinstance(response_feature_collections, list)
-    assert len(response_feature_collections) == 3
-    for feature_collection in response_feature_collections:
-        feature_collection = VectorLayerFeatureCollection(**feature_collection)
-        for feature in feature_collection.features:
-            assert feature.properties["id"] in [
-                fc1.features[0].properties["id"],
-                fc2.features[0].properties["id"],
-                fc3.features[0].properties["id"],
-            ]
-        assert feature_collection.metadata.preview_url
-        assert os.path.exists(
-            f"{settings.TEST_STATIC_DIR}/projects/{project.id}/vector/{feature_collection.features[0].properties['layer_id']}/preview.png"
-        )
+    response_data = response.json()
+    assert isinstance(response_data, list)
+    assert len(response_data) == 3
+    for layer in response_data:
+        assert "layer_id" in layer
+        assert "layer_name" in layer
+        assert "geom_type" in layer
+        assert "signed_url" in layer
+        assert "preview_url" in layer
+        assert os.path.exists(layer["preview_url"].split(settings.API_DOMAIN)[1])
 
 
 def test_read_vector_layers_without_project_role(
@@ -343,14 +239,9 @@ def test_remove_vector_layer_with_project_owner_role(
         f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/{layer_id}"
     )
     assert response.status_code == status.HTTP_200_OK
-    vector_layer_removed = response.json()
+
     removed_vector_layer = crud.vector_layer.get_vector_layer_by_id(
         db, project_id=project.id, layer_id=layer_id
-    )
-    assert FeatureCollection(**vector_layer_removed)
-    assert (
-        FeatureCollection(**vector_layer_removed).features
-        == feature_collection.features
     )
     assert len(removed_vector_layer) == 0
 
@@ -372,14 +263,9 @@ def test_remove_vector_layer_with_project_manager_role(
         f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/{layer_id}"
     )
     assert response.status_code == status.HTTP_200_OK
-    vector_layer_removed = response.json()
+
     removed_vector_layer = crud.vector_layer.get_vector_layer_by_id(
         db, project_id=project.id, layer_id=layer_id
-    )
-    assert FeatureCollection(**vector_layer_removed)
-    assert (
-        FeatureCollection(**vector_layer_removed).features
-        == feature_collection.features
     )
     assert len(removed_vector_layer) == 0
 

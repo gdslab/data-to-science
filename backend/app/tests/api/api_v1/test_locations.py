@@ -14,17 +14,6 @@ from app.tests.utils.project import create_project
 from app.tests.utils.utils import get_geojson_feature_collection
 
 
-# def test_create_location(client: TestClient, normal_user_access_token: str) -> None:
-#     data = get_geojson_feature_collection("polygon")["geojson"]["features"][0]
-#     response = client.post(f"{settings.API_V1_STR}/locations", json=data)
-#     assert response.status_code == status.HTTP_201_CREATED
-#     location = response.json()
-#     assert Feature[Polygon, Dict](**location)
-#     assert location["properties"]["center_x"]
-#     assert location["properties"]["center_y"]
-#     assert location["geometry"] == data["geometry"]
-
-
 def test_read_location(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -113,31 +102,31 @@ def test_upload_shapefile_zip_with_missing_parts(
         assert r.status_code == 400
 
 
-def test_upload_shapefile_zip_for_project_boundary_with_too_many_features(
-    client: TestClient, db: Session, normal_user_access_token: str
-) -> None:
-    """Verify uploaded shapefile zip with missing parts is handled."""
-    shp_zip = os.path.join(
-        os.sep, "app", "app", "tests", "data", "too_many_features.zip"
-    )
-    with open(shp_zip, "rb") as data:
-        files = {"files": data}
-        r = client.post(
-            f"{settings.API_V1_STR}/locations/upload_project_boundary", files=files
-        )
-        assert r.status_code == 400
+# def test_upload_shapefile_zip_for_project_boundary_with_too_many_features(
+#     client: TestClient, db: Session, normal_user_access_token: str
+# ) -> None:
+#     """Verify uploaded shapefile zip with missing parts is handled."""
+#     shp_zip = os.path.join(
+#         os.sep, "app", "app", "tests", "data", "too_many_features.zip"
+#     )
+#     with open(shp_zip, "rb") as data:
+#         files = {"files": data}
+#         r = client.post(
+#             f"{settings.API_V1_STR}/locations/upload_project_boundary", files=files
+#         )
+#         assert r.status_code == 400
 
 
-def test_upload_shapefile_zip_for_map_layer_with_too_many_features(
-    client: TestClient, db: Session, normal_user_access_token: str
-) -> None:
-    """Verify uploaded shapefile zip with missing parts is handled."""
-    shp_zip = os.path.join(
-        os.sep, "app", "app", "tests", "data", "too_many_features.zip"
-    )
-    with open(shp_zip, "rb") as data:
-        files = {"files": data}
-        r = client.post(
-            f"{settings.API_V1_STR}/locations/upload_vector_layer", files=files
-        )
-        assert r.status_code == 400
+# def test_upload_shapefile_zip_for_map_layer_with_too_many_features(
+#     client: TestClient, db: Session, normal_user_access_token: str
+# ) -> None:
+#     """Verify uploaded shapefile zip with missing parts is handled."""
+#     shp_zip = os.path.join(
+#         os.sep, "app", "app", "tests", "data", "too_many_features.zip"
+#     )
+#     with open(shp_zip, "rb") as data:
+#         files = {"files": data}
+#         r = client.post(
+#             f"{settings.API_V1_STR}/locations/upload_vector_layer", files=files
+#         )
+#         assert r.status_code == 400

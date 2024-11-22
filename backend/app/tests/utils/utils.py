@@ -1,6 +1,7 @@
-from faker import Faker
+from typing import Any, Dict, TypedDict, Union
 
-from geojson_pydantic import FeatureCollection
+from faker import Faker
+from geojson_pydantic import Feature, FeatureCollection, LineString, Point, Polygon
 from pydantic import PostgresDsn
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import ProgrammingError
@@ -8,6 +9,11 @@ from sqlalchemy.exc import ProgrammingError
 from app.core.config import settings
 
 faker = Faker()
+
+
+class VectorLayerDict(TypedDict):
+    layer_name: str
+    geojson: Dict[str, Any]
 
 
 def random_email() -> str:
@@ -83,7 +89,7 @@ def create_test_db(db_path: str) -> None:
 
 def get_geojson_feature_collection(
     geom_type: str,
-) -> dict[str, str | FeatureCollection]:
+) -> VectorLayerDict:
     """Creates a GeoJSON feature collection with single feature of
     the provided geometry type.
 
@@ -99,31 +105,31 @@ def get_geojson_feature_collection(
     if geom_type.lower() == "point":
         return {
             "layer_name": "Point Example",
-            "geojson": {
-                "type": "FeatureCollection",
-                "features": [
-                    {
-                        "type": "Feature",
-                        "geometry": {
+            "geojson": FeatureCollection[Feature[Point, Dict[str, object]]](
+                type="FeatureCollection",
+                features=[
+                    Feature[Point, Dict[str, object]](
+                        type="Feature",
+                        geometry={
                             "type": "Point",
                             "coordinates": [102.0, 0.5],
                         },
-                        "properties": {
+                        properties={
                             "prop0": "value0",
                         },
-                    }
+                    )
                 ],
-            },
+            ).model_dump(),
         }
     elif geom_type.lower() == "linestring":
         return {
             "layer_name": "Linestring Example",
-            "geojson": {
-                "type": "FeatureCollection",
-                "features": [
-                    {
-                        "type": "Feature",
-                        "geometry": {
+            "geojson": FeatureCollection[Feature[LineString, Dict[str, object]]](
+                type="FeatureCollection",
+                features=[
+                    Feature[LineString, Dict[str, object]](
+                        type="Feature",
+                        geometry={
                             "type": "LineString",
                             "coordinates": [
                                 [102.0, 0.0],
@@ -132,20 +138,20 @@ def get_geojson_feature_collection(
                                 [105.0, 1.0],
                             ],
                         },
-                        "properties": {"prop0": "value0", "prop1": 0.0},
-                    }
+                        properties={"prop0": "value0", "prop1": 0.0},
+                    )
                 ],
-            },
+            ).model_dump(),
         }
     elif geom_type.lower() == "polygon":
         return {
             "layer_name": "Polygon Example",
-            "geojson": {
-                "type": "FeatureCollection",
-                "features": [
-                    {
-                        "type": "Feature",
-                        "geometry": {
+            "geojson": FeatureCollection[Feature[Polygon, Dict[str, object]]](
+                type="FeatureCollection",
+                features=[
+                    Feature[Polygon, Dict[str, object]](
+                        type="Feature",
+                        geometry={
                             "type": "Polygon",
                             "coordinates": [
                                 [
@@ -157,74 +163,74 @@ def get_geojson_feature_collection(
                                 ],
                             ],
                         },
-                        "properties": {
+                        properties={
                             "prop0": "value0",
                             "prop1": {
                                 "this": "that",
                             },
                         },
-                    }
+                    )
                 ],
-            },
+            ).model_dump(),
         }
     elif geom_type.lower() == "multipoint":
         return {
             "layer_name": "Multipoint Example",
-            "geojson": {
-                "type": "FeatureCollection",
-                "features": [
-                    {
-                        "type": "Feature",
-                        "geometry": {
+            "geojson": FeatureCollection[Feature[Point, Dict[str, object]]](
+                type="FeatureCollection",
+                features=[
+                    Feature[Point, Dict[str, object]](
+                        type="Feature",
+                        geometry={
                             "type": "Point",
                             "coordinates": [102.0, 0.5],
                         },
-                        "properties": {
+                        properties={
                             "prop0": "value0",
                         },
-                    },
-                    {
-                        "type": "Feature",
-                        "geometry": {
+                    ),
+                    Feature[Point, Dict[str, object]](
+                        type="Feature",
+                        geometry={
                             "type": "Point",
                             "coordinates": [103.0, 1.0],
                         },
-                        "properties": {
-                            "prop0": "value1",
+                        properties={
+                            "prop0": "value0",
                         },
-                    },
-                    {
-                        "type": "Feature",
-                        "geometry": {
+                    ),
+                    Feature[Point, Dict[str, object]](
+                        type="Feature",
+                        geometry={
                             "type": "Point",
                             "coordinates": [104.0, 1.5],
                         },
-                        "properties": {
-                            "prop0": "value2",
+                        properties={
+                            "prop0": "value0",
                         },
-                    },
+                    ),
                 ],
-            },
+            ).model_dump(),
         }
     elif geom_type.lower() == "too_many_features":
         return {
             "layer_name": "Point Example",
-            "geojson": {
-                "type": "FeatureCollection",
-                "features": [
-                    {
-                        "type": "Feature",
-                        "geometry": {
+            "geojson": FeatureCollection[Feature[Point, Dict[str, object]]](
+                type="FeatureCollection",
+                features=[
+                    Feature[Point, Dict[str, object]](
+                        type="Feature",
+                        geometry={
                             "type": "Point",
                             "coordinates": [102.0, 0.5],
                         },
-                        "properties": {
+                        properties={
                             "prop0": "value0",
                         },
-                    }
+                    )
                 ]
-                * 2500,
-            },
+                * 250001,
+            ).model_dump(),
         }
     else:
         raise ValueError(f"Unknown geometry type provided: {geom_type}")
