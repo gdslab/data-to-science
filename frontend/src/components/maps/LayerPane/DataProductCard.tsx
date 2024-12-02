@@ -2,15 +2,15 @@ import { useMapContext } from '../MapContext';
 
 import LayerCard from './LayerCard';
 import RasterStats from './RasterStats';
-import SymbologyControls from '../SymbologyControls';
+import RasterSymbologySettings from '../RasterSymbologySettings';
 import { DataProduct } from '../../pages/projects/Project';
-
 import { getDataProductName } from '../../pages/projects/flights/DataProducts/DataProductsTable';
-import { getDefaultStyle } from '../utils';
+import { useRasterSymbologyContext } from '../RasterSymbologyContext';
 
 export default function DataProductCard({ dataProduct }: { dataProduct: DataProduct }) {
-  const { activeDataProduct, activeDataProductDispatch, symbologySettingsDispatch } =
-    useMapContext();
+  const { activeDataProduct, activeDataProductDispatch } = useMapContext();
+
+  const { dispatch } = useRasterSymbologyContext();
 
   return (
     <LayerCard
@@ -21,6 +21,8 @@ export default function DataProductCard({ dataProduct }: { dataProduct: DataProd
         <div
           className="flex flex-col gap-1.5"
           onClick={() => {
+            // disable ready state for symbology while changing data products
+            dispatch({ type: 'SET_READY_STATE', payload: false });
             if (
               (dataProduct && !activeDataProduct) ||
               (dataProduct &&
@@ -31,17 +33,6 @@ export default function DataProductCard({ dataProduct }: { dataProduct: DataProd
                 type: 'set',
                 payload: dataProduct,
               });
-              if (dataProduct.user_style) {
-                symbologySettingsDispatch({
-                  type: 'update',
-                  payload: dataProduct.user_style,
-                });
-              } else if (dataProduct.data_type !== 'point_cloud') {
-                symbologySettingsDispatch({
-                  type: 'update',
-                  payload: getDefaultStyle(dataProduct),
-                });
-              }
             }
           }}
         >
@@ -75,13 +66,7 @@ export default function DataProductCard({ dataProduct }: { dataProduct: DataProd
         activeDataProduct.id === dataProduct.id &&
         dataProduct.data_type !== 'point_cloud' ? (
           <div className="mt-2">
-            <SymbologyControls
-              numOfBands={
-                dataProduct.stac_properties
-                  ? dataProduct.stac_properties.raster.length
-                  : 1 // default to single band
-              }
-            />{' '}
+            <RasterSymbologySettings />
           </div>
         ) : null}
       </div>

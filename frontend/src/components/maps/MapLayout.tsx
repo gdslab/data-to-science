@@ -5,6 +5,7 @@ import LayerPane from './LayerPane';
 import { MapContextProvider } from './MapContext';
 import { MapLayerProvider } from './MapLayersContext';
 import MaplibreMap from './MaplibreMap';
+import { RasterSymbologyProvider } from './RasterSymbologyContext';
 
 function classNames(...classes: [string, string]) {
   return classes.filter(Boolean).join(' ');
@@ -16,22 +17,24 @@ export default function MapLayout() {
   return (
     <MapContextProvider>
       <MapLayerProvider>
-        {/* sidebar */}
-        <div className="flex flex-row h-full">
-          <div
-            className={classNames(
-              hidePane ? 'w-[48px]' : 'w-[450px]',
-              'shrink-0 bg-slate-100'
-            )}
-          >
-            <LayerPane hidePane={hidePane} toggleHidePane={toggleHidePane} />
+        <RasterSymbologyProvider>
+          {/* sidebar */}
+          <div className="flex flex-row h-full">
+            <div
+              className={classNames(
+                hidePane ? 'w-[48px]' : 'w-[450px]',
+                'shrink-0 bg-slate-100'
+              )}
+            >
+              <LayerPane hidePane={hidePane} toggleHidePane={toggleHidePane} />
+            </div>
+            {/* page content */}
+            <div className="w-full">
+              <MaplibreMap />
+              {/* <Map layerPaneHidden={hidePane} /> */}
+            </div>
           </div>
-          {/* page content */}
-          <div className="w-full">
-            <MaplibreMap />
-            {/* <Map layerPaneHidden={hidePane} /> */}
-          </div>
-        </div>
+        </RasterSymbologyProvider>
       </MapLayerProvider>
     </MapContextProvider>
   );

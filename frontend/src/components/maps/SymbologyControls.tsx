@@ -18,7 +18,7 @@ import OpacitySlider from './OpacitySlider';
 import { Project } from '../pages/projects/ProjectList';
 import ShareControls from './ShareControls';
 
-import { cmaps } from './cmaps';
+import { cmaps } from './RasterSymbologySettings/cmaps';
 
 const saveSymbology = async (
   symbologyValues: SymbologySettings,

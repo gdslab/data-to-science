@@ -3,12 +3,6 @@ import { Layer, Source } from 'react-map-gl/maplibre';
 import { getProjectVectorLayer } from './MaplibreLayers';
 import { useMapLayerContext } from './MapLayersContext';
 
-function getTilesUrl(layerId: string): string {
-  return `${import.meta.env.VITE_BASE_URL}${
-    import.meta.env.VITE_API_V1_STR
-  }/public/vectortiles?layer_id=${layerId}&x={x}&y={y}&z={z}`;
-}
-
 export default function MaplibreProjectVectorTile() {
   const {
     state: { layers },
@@ -26,7 +20,7 @@ export default function MaplibreProjectVectorTile() {
           id={layer.id}
           type="vector"
           tiles={[layer.signedUrl]}
-          minzoom={0}
+          minzoom={12}
           maxzoom={24}
         >
           {

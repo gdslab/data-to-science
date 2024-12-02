@@ -38,13 +38,17 @@ def create_access_token(subject: str | Any, expire: datetime | None = None) -> s
 
 
 def create_signed_url(
-    base_url: str, filter_param: str, expiration_seconds: int = 3600
+    base_url: str,
+    filter_param: str,
+    limit_param: int = 50000,
+    expiration_seconds: int = 3600,
 ) -> str:
     """Generate a signed URL for fetching raster and vector tiles.
 
     Args:
         base_url (str): Base URL for fetching tile.
         filter_param (str): Filter query parameter to be included with request.
+        limit_param (str): Max number of features to write to a tile.
         expiration_seconds (int, optional): Expiration in seconds. Defaults to 3600.
 
     Returns:
@@ -53,11 +57,11 @@ def create_signed_url(
     # Set expiration for N (default 3600) seconds from now
     expiration_timestamp = int(time.time()) + expiration_seconds
 
-    # Include `filter` query param in the hash
+    # Include `filter` and `limit` query params in the hash
     encoded_filter = quote_plus(filter_param)
-    string_to_hash = (
-        f"{expiration_timestamp}{encoded_filter} {settings.TILE_SIGNING_SECRET_KEY}"
-    )
+    encoded_limit = quote_plus(str(limit_param))
+    string_to_hash = f"{expiration_timestamp}{encoded_filter}{encoded_limit} {settings.TILE_SIGNING_SECRET_KEY}"
+
     hash_binary = hashlib.md5(string_to_hash.encode()).digest()
     secure_hash = base64.urlsafe_b64encode(hash_binary).decode().rstrip("=")
 
@@ -65,6 +69,7 @@ def create_signed_url(
     query_params = {
         "expires": expiration_timestamp,
         "filter": filter_param,
+        "limit": limit_param,
         "secure": secure_hash,
     }
 

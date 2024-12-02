@@ -24,7 +24,7 @@ class VectorLayer(Base):
     )
     layer_name: Mapped[str] = mapped_column(String(128), nullable=False)
     layer_id: Mapped[str] = mapped_column(String(12), nullable=False)
-    geom: Mapped[str] = mapped_column(Geometry(), nullable=False)
+    geom: Mapped[str] = mapped_column(Geometry(srid=4326), nullable=False)
     properties: Mapped[dict] = mapped_column(JSONB, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     # foreign keys

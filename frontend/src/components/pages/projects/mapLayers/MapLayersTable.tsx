@@ -1,5 +1,5 @@
 import axios, { AxiosResponse, isAxiosError } from 'axios';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { PhotoIcon } from '@heroicons/react/24/outline';
 
@@ -8,6 +8,7 @@ import MapLayerDownloadLinks from './MapLayerDownloadLink';
 import ConfirmationModal from '../../../ConfirmationModal';
 import { getMapLayers, useProjectContext } from '../ProjectContext';
 import { AlertBar, Status } from '../../../Alert';
+import { useInterval } from '../../../hooks';
 
 import pointIcon from '../../../../assets/point-icon.svg';
 import lineIcon from '../../../../assets/line-icon.svg';
@@ -60,18 +61,18 @@ export default function ProjectLayersTable() {
 
   const [status, setStatus] = useState<Status | null>(null);
 
-  // Poll for new map layers every 30 seconds
-  useEffect(() => {
-    if (projectId) {
-      setInterval(() => {
+  useInterval(
+    () => {
+      if (projectId) {
         getMapLayers(projectId, mapLayersDispatch);
-      }, 30000);
-    }
-  }, [projectId]);
+      }
+    },
+    30000 // check every 30 seconds for new map layers
+  );
 
   const sortedMapLayers = useMemo(() => {
     return [...mapLayers].sort((a, b) => a.layer_name.localeCompare(b.layer_name));
-  }, [mapLayers]);
+  }, [mapLayers, projectId]);
 
   return (
     <div className="max-h-96 overflow-auto">

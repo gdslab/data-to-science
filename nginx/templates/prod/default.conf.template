@@ -105,30 +105,20 @@ server {
         proxy_set_header Connection "upgrade";
     }
 
+    location /cog {
+        # Proxy valid requests to the backend
+        proxy_set_header Host $host;
+
+        proxy_pass http://varnish;
+    }
+
     location /mvt/ {
-        # Define the secure link validation
-        secure_link $arg_secure,$arg_expires;
-        secure_link_md5 "$secure_link_expires$arg_filter ${TILE_SIGNING_SECRET_KEY}";
-
-        # Validate expiration time
-        if ($secure_link = "") {
-            return 403; # Forbidden if secure hash is invalid
-        }
-
-        if ($secure_link = "0") {
-            return 410; # Gone if expired
-        }
-
         # Remove the /mvt prefix
         rewrite ^/mvt/(.*)$ /$1 break;
 
         # Proxy valid requests to the backend
         proxy_set_header Host $host;
         proxy_pass http://varnish/;
-
-        access_log /tmp/debug_st.log debug_st;
-        access_log /tmp/debug_filter.log debug_filter;
-        access_log /tmp/debug_uri.log debug_uri;
     }
 
     location /static {

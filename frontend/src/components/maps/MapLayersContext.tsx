@@ -3,8 +3,8 @@ import { createContext, Dispatch, useContext, useReducer } from 'react';
 export type MapLayerProps = {
   id: string;
   name: string;
-  color: string;
   checked: boolean;
+  color: string;
   opacity: number;
   type: string;
   signedUrl: string;
@@ -16,15 +16,7 @@ type MapLayerState = {
 
 type MapLayerAction = {
   type: 'SET_LAYERS';
-  payload: {
-    id: string;
-    name: string;
-    checked: boolean;
-    color: string;
-    opacity: number;
-    type: string;
-    signedUrl: string;
-  }[];
+  payload: MapLayerProps[];
 };
 
 const initialState = {

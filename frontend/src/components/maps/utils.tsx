@@ -1,6 +1,12 @@
 import { FeatureCollection, Point, Polygon } from 'geojson';
-import { DataProduct, Flight, MapLayer } from '../pages/projects/Project';
-import { SymbologySettings } from './Maps';
+
+import {
+  DataProduct,
+  Flight,
+  MapLayer,
+  STACProperties,
+} from '../pages/projects/Project';
+import { SingleBandSymbology, MultiBandSymbology } from './RasterSymbologyContext';
 
 type Bounds = [number, number, number, number];
 
@@ -65,7 +71,9 @@ const mapApiResponseToLayers = (layers: MapLayer[]) =>
     signedUrl: layer.signed_url,
   }));
 
-function getDefaultStyle(dataProduct: DataProduct): SymbologySettings {
+function getDefaultStyle(
+  dataProduct: DataProduct
+): SingleBandSymbology | MultiBandSymbology {
   if (isSingleBand(dataProduct)) {
     const stats = dataProduct.stac_properties.raster[0].stats;
     return {
@@ -139,8 +147,54 @@ function isSingleBand(dataProduct: DataProduct): boolean {
   return dataProduct.stac_properties && dataProduct.stac_properties.raster.length === 1;
 }
 
+/**
+ * Returns object with default symbology properties for a single-band data product.
+ * @param stacProperties Data product band statistics.
+ * @returns Default symbology.
+ */
+const createDefaultDsmSymbology = (
+  stacProperties: STACProperties
+): SingleBandSymbology => ({
+  colorRamp: 'rainbow',
+  meanStdDev: 2,
+  mode: 'minMax',
+  opacity: 100,
+  min: stacProperties.raster[0].stats.minimum,
+  max: stacProperties.raster[0].stats.maximum,
+  userMin: stacProperties.raster[0].stats.minimum,
+  userMax: stacProperties.raster[0].stats.maximum,
+});
+
+/**
+ * Returns object with default symbology properties for a 3-band data product.
+ * @param stacProperties Data product band statistics.
+ * @returns Default symbology.
+ */
+const createDefaultOrthoSymbology = (
+  stacProperties: STACProperties
+): MultiBandSymbology => {
+  const createColorChannel = (idx: number) => ({
+    idx,
+    min: stacProperties.raster[idx - 1].stats.minimum,
+    max: stacProperties.raster[idx - 1].stats.maximum,
+    userMin: stacProperties.raster[idx - 1].stats.minimum,
+    userMax: stacProperties.raster[idx - 1].stats.maximum,
+  });
+
+  return {
+    meanStdDev: 2,
+    mode: 'minMax',
+    opacity: 100,
+    red: createColorChannel(1),
+    green: createColorChannel(2),
+    blue: createColorChannel(3),
+  };
+};
+
 export {
   calculateBoundsFromGeoJSON,
+  createDefaultDsmSymbology,
+  createDefaultOrthoSymbology,
   getDefaultStyle,
   getHillshade,
   isSingleBand,

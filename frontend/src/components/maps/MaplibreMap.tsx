@@ -14,6 +14,7 @@ import { useMapContext } from './MapContext';
 import MaplibreCluster from './MaplibreCluster';
 import MaplibreProjectBoundary from './MaplibreProjectBoundary';
 import MaplibreProjectVectorTiles from './MaplibreProjectVectorTiles';
+import MaplibreProjectRasterTiles from './MaplibreProjectRasterTiles';
 import MaplibreLayerControl from './MaplibreLayerControl';
 import { useMapLayerContext } from './MapLayersContext';
 import { MapLayer } from '../pages/projects/Project';
@@ -21,6 +22,7 @@ import { MapLayer } from '../pages/projects/Project';
 import { mapApiResponseToLayers } from './utils';
 
 type ProjectPopup = {
+  id: string;
   title: string;
   description: string;
   latitude: number;
@@ -53,9 +55,20 @@ const satelliteBasemapStyle: StyleSpecification = {
 };
 
 export default function MaplibreMap() {
-  const [popupInfo, setPopupInfo] = useState<ProjectPopup | null>(null);
-  const { activeMapTool, activeProject } = useMapContext();
-  const { dispatch } = useMapLayerContext();
+  const [popupInfo, setPopupInfo] = useState<
+    ProjectPopup | { [key: string]: any } | null
+  >(null);
+  const {
+    activeDataProduct,
+    activeMapTool,
+    activeProject,
+    activeProjectDispatch,
+    projects,
+  } = useMapContext();
+  const {
+    state: { layers },
+    dispatch,
+  } = useMapLayerContext();
 
   // Fetch map layers when a project is activated
   useEffect(() => {
@@ -80,19 +93,45 @@ export default function MaplibreMap() {
   }, [activeProject]);
 
   const handleMapClick = (event) => {
-    const map = event.target;
-    const features = map.queryRenderedFeatures(event.point, {
-      layers: ['unclustered-point'],
-    });
+    const map: maplibregl.Map = event.target;
 
-    if (features.length > 0) {
-      const clickedFeature = features[0];
-      const coordinates = clickedFeature.geometry.coordinates;
-      setPopupInfo({
-        ...features[0].properties,
-        latitude: coordinates[1],
-        longitude: coordinates[0],
+    if (map.getLayer('unclustered-point')) {
+      const features = map.queryRenderedFeatures(event.point, {
+        layers: ['unclustered-point'],
       });
+
+      if (features.length > 0) {
+        const clickedFeature = features[0];
+        const coordinates = clickedFeature.geometry.coordinates;
+        const properties = features[0].properties as ProjectPopup;
+
+        setPopupInfo({
+          ...properties,
+          latitude: coordinates[1],
+          longitude: coordinates[0],
+        });
+      }
+    }
+
+    if (layers.length > 0) {
+      for (const layer of layers) {
+        if (layer.checked && map.getLayer(layer.id)) {
+          const features = map.queryRenderedFeatures(event.point, {
+            layers: [layer.id],
+          });
+
+          if (features.length > 0) {
+            const clickCoordinates = event.lngLat;
+            const properties = features[0].properties as { [key: string]: any };
+
+            setPopupInfo({
+              ...properties,
+              latitude: clickCoordinates.lat,
+              longitude: clickCoordinates.lng,
+            });
+          }
+        }
+      }
     }
   };
 
@@ -127,11 +166,43 @@ export default function MaplibreMap() {
           <article className="flex flex-col gap-2 text-wrap">
             <h3>{popupInfo.title}</h3>
             <p>{popupInfo.description}</p>
-            <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300">
+            <button
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300"
+              onClick={() => {
+                const thisProject = projects?.filter(({ id }) => id === popupInfo.id);
+                if (thisProject && thisProject.length === 1) {
+                  activeProjectDispatch({ type: 'set', payload: thisProject[0] });
+                  setPopupInfo(null);
+                }
+              }}
+            >
               Open
             </button>
           </article>
         </Popup>
+      )}
+
+      {/* Display popup on click on map layer feature */}
+      {activeMapTool === 'map' && activeProject && popupInfo && (
+        <Popup
+          anchor="top"
+          longitude={popupInfo.longitude}
+          latitude={popupInfo.latitude}
+          onClose={() => setPopupInfo(null)}
+          style={{ width: '240px' }}
+        >
+          <article className="flex flex-col gap-2 text-wrap">
+            <pre>{JSON.stringify(popupInfo, null, 2)}</pre>
+          </article>
+        </Popup>
+      )}
+
+      {/* Display project raster tiles when project active and data product active */}
+      {activeMapTool === 'map' && activeProject && activeDataProduct && (
+        <MaplibreProjectRasterTiles
+          key={activeDataProduct.id}
+          dataProduct={activeDataProduct}
+        />
       )}
 
       {/* Display project vector layers when project active and layers selected */}

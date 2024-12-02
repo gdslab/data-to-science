@@ -128,7 +128,7 @@ def process_vector_layer(
     job_id: UUID,
 ) -> None:
     # Max number of allowed features
-    VECTOR_FEATURE_LIMIT = 250000
+    # VECTOR_FEATURE_LIMIT = 250000
 
     # Clean up temp file
     def cleanup() -> None:
@@ -170,26 +170,26 @@ def process_vector_layer(
                 "detail": "No features. Vector layer must have at least one feature.",
             },
         )
-    if len(gdf) > VECTOR_FEATURE_LIMIT:
-        logger.error(
-            (
-                "Uploaded vector layer exceeds feature limit: ",
-                f"{VECTOR_FEATURE_LIMIT} / {len(gdf)}",
-            )
-        )
-        update_job_status(
-            job,
-            state="ERROR",
-            extra={
-                "status": 0,
-                "detail": (
-                    "Too many features. Exceeds feature limit of ",
-                    f"{VECTOR_FEATURE_LIMIT}.",
-                ),
-            },
-        )
-        cleanup()
-        return None
+    # if len(gdf) > VECTOR_FEATURE_LIMIT:
+    #     logger.error(
+    #         (
+    #             "Uploaded vector layer exceeds feature limit: ",
+    #             f"{VECTOR_FEATURE_LIMIT} / {len(gdf)}",
+    #         )
+    #     )
+    #     update_job_status(
+    #         job,
+    #         state="ERROR",
+    #         extra={
+    #             "status": 0,
+    #             "detail": (
+    #                 "Too many features. Exceeds feature limit of ",
+    #                 f"{VECTOR_FEATURE_LIMIT}.",
+    #             ),
+    #         },
+    #     )
+    #     cleanup()
+    #     return None
 
     # check for consistent geometry type
     first_feature_geometry_type = gdf.iloc[0].geometry.geom_type
