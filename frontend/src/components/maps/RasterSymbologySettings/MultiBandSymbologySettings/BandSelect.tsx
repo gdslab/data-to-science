@@ -1,6 +1,6 @@
 import Select from 'react-select';
 
-import { BandOption } from '../SymbologyControls2';
+import { BandOption } from '../RasterSymbologySettings';
 import {
   ColorBand,
   MultiBandSymbology,

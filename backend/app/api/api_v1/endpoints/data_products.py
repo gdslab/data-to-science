@@ -463,26 +463,32 @@ async def create_zonal_statistics(
         user_id=current_user.id,
     )
 
-    vector_layer_id = zone_in.properties.get("id", None)
+    if not zone_in.properties:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Zone feature missing properties",
+        )
+
+    vector_layer_feature_id = zone_in.properties.get("feature_id", None)
 
     # check if zonal stats already exist for this feature/data product
-    if vector_layer_id and utils.is_valid_uuid(vector_layer_id):
+    if vector_layer_feature_id and utils.is_valid_uuid(vector_layer_feature_id):
         metadata = crud.data_product_metadata.get_by_data_product(
             db,
             category="zonal",
             data_product_id=data_product_id,
-            vector_layer_id=vector_layer_id,
+            vector_layer_feature_id=vector_layer_feature_id,
         )
         if len(metadata) == 1:
             # return previously generated zonal stats
             if (
                 "stats" in metadata[0].properties
-                and vector_layer_id
-                and utils.is_valid_uuid(vector_layer_id)
+                and vector_layer_feature_id
+                and utils.is_valid_uuid(vector_layer_feature_id)
             ):
                 # query vector layer as GeoJSON feature
                 vector_layer_query = select(func.ST_AsGeoJSON(VectorLayer)).where(
-                    VectorLayer.id == vector_layer_id
+                    VectorLayer.vector_layer_feature_id == vector_layer_feature_id
                 )
                 with db as session:
                     vector_layer = session.execute(
@@ -513,18 +519,18 @@ async def create_zonal_statistics(
             detail="Unable to calculate zonal statistics",
         )
 
-    if vector_layer_id and utils.is_valid_uuid(vector_layer_id):
+    if vector_layer_feature_id and utils.is_valid_uuid(vector_layer_feature_id):
         metadata_in = schemas.DataProductMetadataCreate(
             category="zonal",
             properties={"stats": zonal_stats[0]},
-            vector_layer_id=vector_layer_id,
+            vector_layer_id=vector_layer_feature_id,
         )
         crud.data_product_metadata.create_with_data_product(
             db, obj_in=metadata_in, data_product_id=data_product.id
         )
         # query vector layer as GeoJSON feature
         vector_layer_query = select(func.ST_AsGeoJSON(VectorLayer)).where(
-            VectorLayer.id == vector_layer_id
+            VectorLayer.feature_id == vector_layer_feature_id
         )
         with db as session:
             vector_layer = session.execute(vector_layer_query).scalar_one_or_none()

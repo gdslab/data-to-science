@@ -28,8 +28,8 @@ class DataProductMetadata(Base):
         ForeignKey("data_products.id"), nullable=False
     )
     # foreign keys (optional)
-    vector_layer_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("vector_layers.id"), nullable=True
+    vector_layer_feature_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("vector_layers.feature_id"), nullable=True
     )
     # relationships
     data_product: Mapped["DataProduct"] = relationship(
@@ -41,7 +41,10 @@ class DataProductMetadata(Base):
     # constraints
     __table_args__ = (
         UniqueConstraint(
-            "data_product_id", "vector_layer_id", "category", name="unique_metadata"
+            "data_product_id",
+            "vector_layer_feature_id",
+            "category",
+            name="unique_metadata",
         ),
     )
 
@@ -50,5 +53,5 @@ class DataProductMetadata(Base):
             f"DataProductMetadata(id={self.id!r}, category={self.category!r}, "
             f"properties={self.properties!r}, "
             f"data_product_id={self.data_product_id!r}, "
-            f"vector_layer_id={self.vector_layer_id!r})"
+            f"vector_layer_feature_id={self.vector_layer_feature_id!r})"
         )

@@ -206,10 +206,10 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
 
         for feature in layer_id_features:
             # Unique UUID associated with the feature
-            if feature.properties and "id" in feature.properties:
-                feature_uuid = feature.properties["id"]
+            if feature.properties and "feature_id" in feature.properties:
+                feature_id = feature.properties["feature_id"]
                 # Remove feature using feature's UUID
-                self.remove(db, id=feature_uuid)
+                self.remove(db, id=feature_id)
 
     def verify_user_access_to_vector_layer_by_id(
         self, db: Session, layer_id: str, user_id: UUID

@@ -33,7 +33,7 @@ def test_create_data_product_metadata(db: Session) -> None:
         # create vector layer record for bbox
         bbox_dict = json.loads(bbox_file.read())
 
-    bbox_feature_collection = FeatureCollection(**bbox_dict)
+    bbox_feature_collection: FeatureCollection = FeatureCollection(**bbox_dict)
     project = create_project(db)
     bbox_vector_layer = create_vector_layer_with_provided_feature_collection(
         db, feature_collection=bbox_feature_collection, project_id=project.id
@@ -42,7 +42,7 @@ def test_create_data_product_metadata(db: Session) -> None:
     metadata_in = DataProductMetadataCreate(
         category="zonal",
         properties={"stats": stats[0]},
-        vector_layer_id=bbox_vector_layer.features[0].properties["id"],
+        vector_layer_feature_id=bbox_vector_layer.features[0].properties["feature_id"],
     )
     metadata = crud.data_product_metadata.create_with_data_product(
         db, obj_in=metadata_in, data_product_id=data_product.obj.id
@@ -52,7 +52,8 @@ def test_create_data_product_metadata(db: Session) -> None:
     assert metadata.properties["stats"] == stats[0]
     assert metadata.data_product_id == data_product.obj.id
     assert (
-        str(metadata.vector_layer_id) == bbox_vector_layer.features[0].properties["id"]
+        str(metadata.vector_layer_feature_id)
+        == bbox_vector_layer.features[0].properties["feature_id"]
     )
 
 
@@ -65,7 +66,7 @@ def test_create_data_product_metadata_for_multiple_zones(db: Session) -> None:
         # create vector layer record for bbox
         bbox_dict = json.loads(bbox_file.read())
 
-    bbox_feature_collection = FeatureCollection(**bbox_dict)
+    bbox_feature_collection: FeatureCollection = FeatureCollection(**bbox_dict)
     project = create_project(db)
     bbox_vector_layer = create_vector_layer_with_provided_feature_collection(
         db, feature_collection=bbox_feature_collection, project_id=project.id
@@ -78,7 +79,7 @@ def test_create_data_product_metadata_for_multiple_zones(db: Session) -> None:
         metadata_in = DataProductMetadataCreate(
             category="zonal",
             properties={"stats": stats[index]},
-            vector_layer_id=feature.properties["id"],
+            vector_layer_feature_id=feature.properties["feature_id"],
         )
         metadata = crud.data_product_metadata.create_with_data_product(
             db, obj_in=metadata_in, data_product_id=data_product.obj.id
@@ -98,7 +99,7 @@ def test_create_duplicate_zonal_metadata(db: Session) -> None:
             db,
             project_id=project.id,
             data_product_id=metadata.data_product_id,
-            vector_layer_id=metadata.vector_layer_id,
+            vector_layer_feature_id=metadata.vector_layer_feature_id,
             single_feature=True,
         )
 
@@ -112,7 +113,7 @@ def test_create_zonal_metadata_with_zone_outside_raster(db: Session) -> None:
         # create vector layer record for bbox
         bbox_dict = json.loads(bbox_file.read())
 
-    bbox_feature_collection = FeatureCollection(**bbox_dict)
+    bbox_feature_collection: FeatureCollection = FeatureCollection(**bbox_dict)
     project = create_project(db)
     bbox_vector_layer = create_vector_layer_with_provided_feature_collection(
         db, feature_collection=bbox_feature_collection, project_id=project.id
@@ -121,7 +122,7 @@ def test_create_zonal_metadata_with_zone_outside_raster(db: Session) -> None:
     metadata_in = DataProductMetadataCreate(
         category="zonal",
         properties={"stats": stats[0]},
-        vector_layer_id=bbox_vector_layer.features[0].properties["id"],
+        vector_layer_feature_id=bbox_vector_layer.features[0].properties["feature_id"],
     )
     metadata = crud.data_product_metadata.create_with_data_product(
         db, obj_in=metadata_in, data_product_id=data_product.obj.id
@@ -141,7 +142,7 @@ def test_read_data_product_metadata(db: Session) -> None:
         db,
         category="zonal",
         data_product_id=metadata.data_product_id,
-        vector_layer_id=metadata.vector_layer_id,
+        vector_layer_feature_id=metadata.vector_layer_feature_id,
     )
     assert metadata_in_db
     assert isinstance(metadata_in_db, list)
@@ -150,7 +151,7 @@ def test_read_data_product_metadata(db: Session) -> None:
     assert metadata_in_db[0].category == metadata.category
     assert metadata_in_db[0].properties == metadata.properties
     assert metadata_in_db[0].data_product_id == metadata.data_product_id
-    assert metadata_in_db[0].vector_layer_id == metadata.vector_layer_id
+    assert metadata_in_db[0].vector_layer_feature_id == metadata.vector_layer_feature_id
 
 
 def test_get_zonal_statistics_by_layer_id(db: Session) -> None:
@@ -181,7 +182,7 @@ def test_update_data_product_metadata(db: Session) -> None:
         db,
         category="zonal",
         data_product_id=metadata.data_product_id,
-        vector_layer_id=metadata.vector_layer_id,
+        vector_layer_feature_id=metadata.vector_layer_feature_id,
     )
     updated_properties = {
         **metadata.properties,

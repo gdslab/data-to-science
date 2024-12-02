@@ -23,7 +23,7 @@ class VectorLayerUpdate(VectorLayerBase):
 
 
 class VectorLayerInDBBase(VectorLayerBase, from_attributes=True):
-    id: UUID
+    feature_id: UUID
     layer_name: str
     geojson: FeatureCollection
     project_id: UUID

@@ -308,7 +308,7 @@ def test_read_data_products_without_project_access(
 
 def test_update_data_product_data_type_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
-):
+) -> None:
     old_data_type = "dsm"
     new_data_type = "dtm"
     current_user = get_current_user(db, normal_user_access_token)
@@ -328,7 +328,7 @@ def test_update_data_product_data_type_with_project_owner_role(
 
 def test_update_data_product_data_type_with_project_manager_role(
     client: TestClient, db: Session, normal_user_access_token: str
-):
+) -> None:
     old_data_type = "dsm"
     new_data_type = "dtm"
     current_user = get_current_user(db, normal_user_access_token)
@@ -352,7 +352,7 @@ def test_update_data_product_data_type_with_project_manager_role(
 
 def test_update_data_product_data_type_with_project_viewer_role(
     client: TestClient, db: Session, normal_user_access_token: str
-):
+) -> None:
     old_data_type = "dsm"
     new_data_type = "dtm"
     current_user = get_current_user(db, normal_user_access_token)
@@ -373,7 +373,7 @@ def test_update_data_product_data_type_with_project_viewer_role(
 
 def test_update_data_product_data_type_without_project_role(
     client: TestClient, db: Session, normal_user_access_token: str
-):
+) -> None:
     old_data_type = "dsm"
     new_data_type = "dtm"
     project = create_project(db)
@@ -389,7 +389,7 @@ def test_update_data_product_data_type_without_project_role(
 
 def test_update_data_product_with_point_cloud_data_type(
     client: TestClient, db: Session, normal_user_access_token: str
-):
+) -> None:
     old_data_type = "point_cloud"
     new_data_type = "dtm"
     current_user = get_current_user(db, normal_user_access_token)
@@ -406,7 +406,7 @@ def test_update_data_product_with_point_cloud_data_type(
 
 def test_deactivate_data_product_with_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
-):
+) -> None:
     current_user = get_current_user(db, normal_user_access_token)
     data_product = SampleDataProduct(db, create_style=True, user=current_user)
     response = client.delete(
@@ -427,7 +427,7 @@ def test_deactivate_data_product_with_owner_role(
 
 def test_deactivate_data_product_with_manager_role(
     client: TestClient, db: Session, normal_user_access_token: str
-):
+) -> None:
     current_user = get_current_user(db, normal_user_access_token)
     data_product = SampleDataProduct(db, create_style=True)
     create_project_member(
@@ -445,7 +445,7 @@ def test_deactivate_data_product_with_manager_role(
 
 def test_deactivate_data_product_with_viewer_role(
     client: TestClient, db: Session, normal_user_access_token: str
-):
+) -> None:
     current_user = get_current_user(db, normal_user_access_token)
     data_product = SampleDataProduct(db, create_style=True)
     create_project_member(
@@ -463,7 +463,7 @@ def test_deactivate_data_product_with_viewer_role(
 
 def test_deactivate_data_product_without_project_access(
     client: TestClient, db: Session, normal_user_access_token: str
-):
+) -> None:
     data_product = SampleDataProduct(db, create_style=True)
     response = client.delete(
         f"{settings.API_V1_STR}/projects/{data_product.project.id}"
@@ -474,7 +474,7 @@ def test_deactivate_data_product_without_project_access(
 
 def test_running_tool_on_data_product(
     client: TestClient, db: Session, normal_user_access_token: str
-):
+) -> None:
     current_user = get_current_user(db, normal_user_access_token)
     rgb_data_product = SampleDataProduct(
         db, data_type="ortho", multispectral=True, user=current_user
@@ -502,7 +502,7 @@ def test_running_tool_on_data_product(
 
 def test_get_zonal_statistics(
     client: TestClient, db: Session, normal_user_access_token: str
-):
+) -> None:
     # create project, add current user as viewer in project, and add data product
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
@@ -567,7 +567,7 @@ def test_get_zonal_statistics(
 
 def test_get_zonal_statistics_by_layer_id(
     client: TestClient, db: Session, normal_user_access_token: str
-):
+) -> None:
     # create project, add current user as viewer in project, and add data product
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
@@ -587,7 +587,7 @@ def test_get_zonal_statistics_by_layer_id(
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     assert FeatureCollection(**response_data)
-    response_feature_collection = FeatureCollection(**response_data)
+    response_feature_collection: FeatureCollection = FeatureCollection(**response_data)
     assert len(response_feature_collection.features) == len(zonal_metadata)
     # check that zonal stats are present for first feature in list
     response_first_feature = response_feature_collection.features[0]

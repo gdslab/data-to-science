@@ -19,7 +19,7 @@ class VectorLayer(Base):
     __tablename__ = "vector_layers"
 
     # columns
-    id: Mapped[uuid.UUID] = mapped_column(
+    feature_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     layer_name: Mapped[str] = mapped_column(String(128), nullable=False)
@@ -47,7 +47,7 @@ class VectorLayer(Base):
 
     def __repr__(self) -> str:
         return (
-            f"VectorLayer(id={self.id!r}, layer_name={self.layer_name!r}), "
+            f"VectorLayer(feature_id={self.feature_id!r}, layer_name={self.layer_name!r}), "
             f"layer_id={self.layer_id!r}, geom={self.geom!r}, "
             f"properties={self.properties!r}, is_active={self.is_active!r}, "
             f"project_id={self.project_id!r}, flight_id={self.flight_id!r}, "

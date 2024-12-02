@@ -153,12 +153,12 @@ def test_read_vector_layer_by_id_with_metadata(db: Session) -> None:
     )
     # generate zonal statistics metadata using data product and vector layer
     for feature in feature_collection.features:
-        vector_layer_id = feature.properties["id"]
+        vector_layer_feature_id = feature.properties["feature_id"]
         create_zonal_metadata(
             db,
             data_product_id=data_product.obj.id,
             project_id=project.id,
-            vector_layer_id=vector_layer_id,
+            vector_layer_feature_id=vector_layer_feature_id,
         )
     # get layer_id from first feature
     layer_id = feature_collection.features[0].properties["layer_id"]
@@ -178,6 +178,7 @@ def test_read_vector_layer_by_id_with_metadata(db: Session) -> None:
     # confirm first feature has expected zonal statistics in its properties
     expected_zonal_stats = ["min", "max", "mean", "median", "std", "count"]
     for expected_zonal_stat in expected_zonal_stats:
+        assert vector_layers_with_zonal_metadata[0].properties
         assert expected_zonal_stat in vector_layers_with_zonal_metadata[0].properties
 
 
@@ -206,7 +207,7 @@ def test_remove_vector_layer_removes_metadata_associated_with_layer(
         db,
         category="zonal",
         data_product_id=metadata[0].data_product_id,
-        vector_layer_id=metadata[0].vector_layer_id,
+        vector_layer_feature_id=metadata[0].vector_layer_feature_id,
     )
     assert (
         metadata_in_db and isinstance(metadata_in_db, list) and len(metadata_in_db) > 0
@@ -218,10 +219,10 @@ def test_remove_vector_layer_removes_metadata_associated_with_layer(
         db,
         category="zonal",
         data_product_id=metadata_other[0].data_product_id,
-        vector_layer_id=metadata_other[0].vector_layer_id,
+        vector_layer_feature_id=metadata_other[0].vector_layer_feature_id,
     )
     # confirm vector layer in database
-    vector_layer = crud.vector_layer.get(db, id=metadata[0].vector_layer_id)
+    vector_layer = crud.vector_layer.get(db, id=metadata[0].vector_layer_feature_id)
     assert vector_layer
     # remove vector layer from db
     crud.vector_layer.remove_layer_by_id(
@@ -240,7 +241,7 @@ def test_remove_vector_layer_removes_metadata_associated_with_layer(
         db,
         category="zonal",
         data_product_id=metadata[0].data_product_id,
-        vector_layer_id=metadata[0].vector_layer_id,
+        vector_layer_feature_id=metadata[0].vector_layer_feature_id,
     )
     assert not metadata_after_remove
     # confirm other metadata not associated with the vector id remains
@@ -248,7 +249,7 @@ def test_remove_vector_layer_removes_metadata_associated_with_layer(
         db,
         category="zonal",
         data_product_id=metadata_other[0].data_product_id,
-        vector_layer_id=metadata_other[0].vector_layer_id,
+        vector_layer_feature_id=metadata_other[0].vector_layer_feature_id,
     )
     assert (
         isinstance(metadata_other_after_remove, list)

@@ -23,19 +23,21 @@ def test_read_vector_layer_with_project_owner_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db, owner_id=current_user.id)
     point_feature_collection = create_feature_collection(db, "point", project.id)
-    vector_layer_id = point_feature_collection.features[0].properties["id"]
+    vector_layer_feature_id = point_feature_collection.features[0].properties[
+        "feature_id"
+    ]
 
     response = client.get(
-        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/{vector_layer_id}"
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/{vector_layer_feature_id}"
     )
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     response_feature = VectorLayerFeatureCollection(**response_data)
-    assert response_feature.features[0].properties["id"]
+    assert response_feature.features[0].properties["feature_id"]
     assert response_feature.features[0].properties["project_id"] == str(project.id)
     assert (
-        response_feature.features[0].properties["id"]
-        == point_feature_collection.features[0].properties["id"]
+        response_feature.features[0].properties["feature_id"]
+        == point_feature_collection.features[0].properties["feature_id"]
     )
     assert response_feature.metadata.preview_url
     assert os.path.exists(
@@ -52,19 +54,21 @@ def test_read_vector_layer_with_manager_owner_role(
     create_project_member(
         db, role="manager", member_id=current_user.id, project_id=project.id
     )
-    vector_layer_id = point_feature_collection.features[0].properties["id"]
+    vector_layer_feature_id = point_feature_collection.features[0].properties[
+        "feature_id"
+    ]
 
     response = client.get(
-        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/{vector_layer_id}"
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/{vector_layer_feature_id}"
     )
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     response_feature = VectorLayerFeatureCollection(**response_data)
-    assert response_feature.features[0].properties["id"]
+    assert response_feature.features[0].properties["feature_id"]
     assert response_feature.features[0].properties["project_id"] == str(project.id)
     assert (
-        response_feature.features[0].properties["id"]
-        == point_feature_collection.features[0].properties["id"]
+        response_feature.features[0].properties["feature_id"]
+        == point_feature_collection.features[0].properties["feature_id"]
     )
     assert response_feature.metadata.preview_url
     assert os.path.exists(
@@ -81,19 +85,21 @@ def test_read_vector_layer_with_project_viewer_role(
     create_project_member(
         db, role="viewer", member_id=current_user.id, project_id=project.id
     )
-    vector_layer_id = point_feature_collection.features[0].properties["id"]
+    vector_layer_feature_id = point_feature_collection.features[0].properties[
+        "feature_id"
+    ]
 
     response = client.get(
-        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/{vector_layer_id}"
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/{vector_layer_feature_id}"
     )
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     response_feature = VectorLayerFeatureCollection(**response_data)
-    assert response_feature.features[0].properties["id"]
+    assert response_feature.features[0].properties["feature_id"]
     assert response_feature.features[0].properties["project_id"] == str(project.id)
     assert (
-        response_feature.features[0].properties["id"]
-        == point_feature_collection.features[0].properties["id"]
+        response_feature.features[0].properties["feature_id"]
+        == point_feature_collection.features[0].properties["feature_id"]
     )
     assert response_feature.metadata.preview_url
     assert os.path.exists(
@@ -106,10 +112,12 @@ def test_read_vector_layer_without_project_role(
 ) -> None:
     project = create_project(db)
     point_feature_collection = create_feature_collection(db, "point", project.id)
-    vector_layer_id = point_feature_collection.features[0].properties["id"]
+    vector_layer_feature_id = point_feature_collection.features[0].properties[
+        "feature_id"
+    ]
 
     response = client.get(
-        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/{vector_layer_id}"
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/{vector_layer_feature_id}"
     )
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -123,10 +131,12 @@ def test_read_vector_layer_with_multiple_features(
     multipoint_feature_collection = create_feature_collection(
         db, "multipoint", project.id
     )
-    vector_layer_id = multipoint_feature_collection.features[0].properties["id"]
+    vector_layer_feature_id = multipoint_feature_collection.features[0].properties[
+        "feature_id"
+    ]
 
     response = client.get(
-        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/{vector_layer_id}"
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/{vector_layer_feature_id}"
     )
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
