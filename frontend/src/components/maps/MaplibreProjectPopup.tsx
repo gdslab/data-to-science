@@ -1,0 +1,44 @@
+import { Popup } from 'react-map-gl/maplibre';
+
+import { ProjectPopup } from './MaplibreMap';
+import { useMapContext } from './MapContext';
+
+type MaplibreProjectPopupProps = {
+  popupInfo: ProjectPopup | { [key: string]: any };
+  onClose: () => void;
+};
+
+export default function MaplibreProjectPopup({
+  popupInfo,
+  onClose,
+}: MaplibreProjectPopupProps) {
+  const { projects, activeProjectDispatch } = useMapContext();
+
+  return (
+    <Popup
+      anchor="top"
+      longitude={popupInfo.longitude}
+      latitude={popupInfo.latitude}
+      onClose={onClose}
+    >
+      <article className="flex flex-col gap-2 text-wrap">
+        <h3>{popupInfo.feature.properties.title}</h3>
+        <p>{popupInfo.feature.properties.title}</p>
+        <button
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300"
+          onClick={() => {
+            const thisProject = projects?.filter(
+              ({ id }) => id === popupInfo.feature.properties.id
+            );
+            if (thisProject && thisProject.length === 1) {
+              activeProjectDispatch({ type: 'set', payload: thisProject[0] });
+              onClose();
+            }
+          }}
+        >
+          Open
+        </button>
+      </article>
+    </Popup>
+  );
+}
