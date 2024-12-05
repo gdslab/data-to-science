@@ -18,9 +18,9 @@ import MaplibreProjectBoundary from './MaplibreProjectBoundary';
 import MaplibreProjectPopup from './MaplibreProjectPopup';
 import MaplibreProjectRasterTiles from './MaplibreProjectRasterTiles';
 import MaplibreProjectVectorTiles from './MaplibreProjectVectorTiles';
-
-import { useMapLayerContext } from './MapLayersContext';
 import { MapLayer } from '../pages/projects/Project';
+import { useMapLayerContext } from './MapLayersContext';
+import { useRasterSymbologyContext } from './RasterSymbologyContext';
 
 import { mapApiResponseToLayers } from './utils';
 
@@ -59,11 +59,12 @@ export default function MaplibreMap() {
   const [popupInfo, setPopupInfo] = useState<
     ProjectPopup | { [key: string]: any } | null
   >(null);
-  const { activeDataProduct, activeMapTool, activeProject } = useMapContext();
+  const { activeDataProduct, activeProject } = useMapContext();
   const {
     state: { layers },
     dispatch,
   } = useMapLayerContext();
+  const symbologyContext = useRasterSymbologyContext();
 
   // Fetch map layers when a project is activated
   useEffect(() => {
@@ -83,6 +84,11 @@ export default function MaplibreMap() {
       }
     };
     if (activeProject) {
+      // Remove any symbology settings for rasters from previously selected project
+      for (const rasterId in symbologyContext.state) {
+        symbologyContext.dispatch({ type: 'REMOVE_RASTER', rasterId: rasterId });
+      }
+      // Fetch map layers for selected project
       fetchMapLayers(activeProject.id);
     }
   }, [activeProject]);
@@ -149,10 +155,10 @@ export default function MaplibreMap() {
       onClick={handleMapClick}
     >
       {/* Display marker cluster for project centroids when no project is active */}
-      {activeMapTool === 'map' && !activeProject && <MaplibreCluster />}
+      {!activeProject && <MaplibreCluster />}
 
       {/* Display popup on click for project markers when no project is active */}
-      {activeMapTool === 'map' && !activeProject && popupInfo && (
+      {!activeProject && popupInfo && (
         <MaplibreProjectPopup
           popupInfo={popupInfo}
           onClose={() => setPopupInfo(null)}
@@ -160,7 +166,7 @@ export default function MaplibreMap() {
       )}
 
       {/* Display popup on click on map layer feature */}
-      {activeMapTool === 'map' && activeProject && popupInfo && (
+      {activeProject && popupInfo && (
         <MaplibreFeaturePopup
           popupInfo={popupInfo}
           onClose={() => setPopupInfo(null)}
@@ -168,7 +174,7 @@ export default function MaplibreMap() {
       )}
 
       {/* Display project raster tiles when project active and data product active */}
-      {activeMapTool === 'map' && activeProject && activeDataProduct && (
+      {activeProject && activeDataProduct && (
         <MaplibreProjectRasterTiles
           key={activeDataProduct.id}
           dataProduct={activeDataProduct}
@@ -176,13 +182,13 @@ export default function MaplibreMap() {
       )}
 
       {/* Display project vector layers when project active and layers selected */}
-      {activeMapTool === 'map' && activeProject && <MaplibreProjectVectorTiles />}
+      {activeProject && <MaplibreProjectVectorTiles />}
 
       {/* Display project boundary when project activated */}
-      {activeMapTool === 'map' && activeProject && <MaplibreProjectBoundary />}
+      {activeProject && <MaplibreProjectBoundary />}
 
       {/* Project map layer controls */}
-      {activeMapTool === 'map' && activeProject && <MaplibreLayerControl />}
+      {activeProject && <MaplibreLayerControl />}
 
       {/* General controls */}
       <GeolocateControl />

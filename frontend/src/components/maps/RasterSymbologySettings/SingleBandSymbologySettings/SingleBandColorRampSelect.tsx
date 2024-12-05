@@ -5,11 +5,16 @@ import {
   SingleBandSymbology,
   useRasterSymbologyContext,
 } from '../../RasterSymbologyContext';
+import { DataProduct } from '../../../pages/projects/Project';
 
-export default function SingleBandColorRampSelect() {
+export default function SingleBandColorRampSelect({
+  dataProduct,
+}: {
+  dataProduct: DataProduct;
+}) {
   const { state, dispatch } = useRasterSymbologyContext();
 
-  const symbology = state.symbology as SingleBandSymbology;
+  const symbology = state[dataProduct.id].symbology as SingleBandSymbology;
 
   const handleChange = (colorOption: SingleValue<ColorMapOption>) => {
     if (colorOption) {
@@ -17,7 +22,11 @@ export default function SingleBandColorRampSelect() {
         ...symbology,
         colorRamp: colorOption.value,
       } as SingleBandSymbology;
-      dispatch({ type: 'SET_SYMBOLOGY', payload: updatedSymbology });
+      dispatch({
+        type: 'SET_SYMBOLOGY',
+        rasterId: dataProduct.id,
+        payload: updatedSymbology,
+      });
     }
   };
 

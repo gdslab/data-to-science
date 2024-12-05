@@ -29,19 +29,33 @@ export interface MultiBandSymbology extends Symbology {
   blue: ColorBand;
 }
 
-type State = {
+type RasterState = {
   isLoaded: boolean;
   symbology: SingleBandSymbology | MultiBandSymbology | null;
 };
 
-type Action =
-  | { type: 'SET_SYMBOLOGY'; payload: SingleBandSymbology | MultiBandSymbology | null }
-  | { type: 'SET_READY_STATE'; payload: boolean };
+type State = Record<string, RasterState>;
 
-const initialState = {
-  isLoaded: false,
-  symbology: null,
+type SymbologyAction = {
+  type: 'SET_SYMBOLOGY';
+  rasterId: string;
+  payload: SingleBandSymbology | MultiBandSymbology | null;
 };
+
+type ReadyStateAction = {
+  type: 'SET_READY_STATE';
+  rasterId: string;
+  payload: boolean;
+};
+
+type RemoveRasterAction = {
+  type: 'REMOVE_RASTER';
+  rasterId: string;
+};
+
+type Action = SymbologyAction | ReadyStateAction | RemoveRasterAction;
+
+const initialState: State = {};
 
 const SymbologyContext = createContext<{
   state: State;
@@ -51,9 +65,25 @@ const SymbologyContext = createContext<{
 const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case 'SET_SYMBOLOGY':
-      return { ...state, symbology: action.payload };
+      return {
+        ...state,
+        [action.rasterId]: {
+          ...state[action.rasterId],
+          symbology: action.payload,
+        },
+      };
     case 'SET_READY_STATE':
-      return { ...state, isLoaded: action.payload };
+      return {
+        ...state,
+        [action.rasterId]: {
+          ...state[action.rasterId],
+          isLoaded: action.payload,
+        },
+      };
+    case 'REMOVE_RASTER':
+      const newState = { ...state };
+      delete newState[action.rasterId];
+      return newState;
     default:
       return state;
   }

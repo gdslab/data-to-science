@@ -6,8 +6,8 @@ import SingleBandSymbologySettings from './SingleBandSymbologySettings';
 import MultiBandSymbologySettings from './MultiBandSymbologySettings';
 
 import {
-  createDefaultDsmSymbology,
-  createDefaultOrthoSymbology,
+  createDefaultMultiBandSymbology,
+  createDefaultSingleBandSymbology,
   isSingleBand,
 } from '../utils';
 
@@ -18,17 +18,14 @@ export interface BandOption {
 
 export default function RasterSymbologySettings() {
   const { activeDataProduct } = useMapContext();
-  const {
-    state: { isLoaded, symbology },
-    dispatch,
-  } = useRasterSymbologyContext();
+  const { state, dispatch } = useRasterSymbologyContext();
 
   // set initial style when data product mounted
   useEffect(() => {
     if (!activeDataProduct) return;
 
     // data product changing - remove current symbology
-    dispatch({ type: 'SET_SYMBOLOGY', payload: null });
+    dispatch({ type: 'SET_SYMBOLOGY', rasterId: activeDataProduct.id, payload: null });
 
     const { stac_properties, user_style } = activeDataProduct;
 
@@ -36,32 +33,42 @@ export default function RasterSymbologySettings() {
       // default opacity to 100 for older saved styles that are missing this property
       dispatch({
         type: 'SET_SYMBOLOGY',
+        rasterId: activeDataProduct.id,
         payload: { ...user_style, opacity: user_style.opacity ?? 100 },
       });
     } else if (isSingleBand(activeDataProduct)) {
       dispatch({
         type: 'SET_SYMBOLOGY',
-        payload: createDefaultDsmSymbology(stac_properties),
+        rasterId: activeDataProduct.id,
+        payload: createDefaultSingleBandSymbology(stac_properties),
       });
     } else {
       dispatch({
         type: 'SET_SYMBOLOGY',
-        payload: createDefaultOrthoSymbology(stac_properties),
+        rasterId: activeDataProduct.id,
+        payload: createDefaultMultiBandSymbology(stac_properties),
       });
     }
 
     // update ready state for symbology
     dispatch({
       type: 'SET_READY_STATE',
+      rasterId: activeDataProduct.id,
       payload: true,
     });
   }, [activeDataProduct]);
 
-  if (!activeDataProduct || !symbology || !isLoaded) return null;
+  if (
+    !activeDataProduct ||
+    !state[activeDataProduct.id] ||
+    !state[activeDataProduct.id].symbology ||
+    !state[activeDataProduct.id].isLoaded
+  )
+    return null;
 
   if (isSingleBand(activeDataProduct)) {
-    return <SingleBandSymbologySettings />;
+    return <SingleBandSymbologySettings dataProduct={activeDataProduct} />;
   } else {
-    return <MultiBandSymbologySettings />;
+    return <MultiBandSymbologySettings dataProduct={activeDataProduct} />;
   }
 }

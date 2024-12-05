@@ -1,4 +1,4 @@
-import { useMapContext } from '../../MapContext';
+import { DataProduct } from '../../../pages/projects/Project';
 import {
   SingleBandSymbology,
   useRasterSymbologyContext,
@@ -6,18 +6,19 @@ import {
 
 export default function SingleBandNumberInput({
   name,
+  dataProduct,
   disabled = false,
 }: {
   name: 'min' | 'max' | 'userMin' | 'userMax' | 'meanStdDev';
+  dataProduct: DataProduct;
   disabled?: boolean;
 }) {
-  const { activeDataProduct } = useMapContext();
   const { state, dispatch } = useRasterSymbologyContext();
 
-  const symbology = state.symbology as SingleBandSymbology;
+  const symbology = state[dataProduct.id].symbology as SingleBandSymbology;
 
-  const rasterMin = activeDataProduct?.stac_properties?.raster?.[0]?.stats.minimum;
-  const rasterMax = activeDataProduct?.stac_properties?.raster?.[0]?.stats.maximum;
+  const rasterMin = dataProduct.stac_properties.raster[0].stats.minimum;
+  const rasterMax = dataProduct.stac_properties.raster[0].stats.maximum;
 
   // Default to 0 unless minimum raster value is negative
   const min = rasterMin && rasterMin > 0 ? 0 : rasterMin;
@@ -29,7 +30,7 @@ export default function SingleBandNumberInput({
   const step: number =
     name === 'meanStdDev'
       ? 0.1
-      : activeDataProduct?.stac_properties?.raster?.[0]?.data_type === 'uint8'
+      : dataProduct.stac_properties.raster[0].data_type === 'uint8'
       ? 1
       : 0.001;
 
@@ -39,7 +40,11 @@ export default function SingleBandNumberInput({
 
     const updatedSymbology = { ...symbology, [name]: value };
 
-    dispatch({ type: 'SET_SYMBOLOGY', payload: updatedSymbology });
+    dispatch({
+      type: 'SET_SYMBOLOGY',
+      rasterId: dataProduct.id,
+      payload: updatedSymbology,
+    });
   };
 
   const labelName = ['min', 'userMin'].includes(name)

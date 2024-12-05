@@ -1,7 +1,6 @@
 import clsx from 'clsx';
 
 import BandSelect from './BandSelect';
-
 import {
   ColorBand,
   MultiBandSymbology,
@@ -22,7 +21,7 @@ type BandSettingsProps = {
 
 export default function BandSettings({ bandColor, dataProduct }: BandSettingsProps) {
   const { state } = useRasterSymbologyContext();
-  const symbology = state.symbology as MultiBandSymbology;
+  const symbology = state[dataProduct.id].symbology as MultiBandSymbology;
 
   const bandOptions: BandOption[] = dataProduct.stac_properties.eo.map((band, idx) => ({
     label: band.name,
@@ -56,11 +55,16 @@ export default function BandSettings({ bandColor, dataProduct }: BandSettingsPro
         }
       )}
     >
-      <BandSelect bandColor={bandColor} options={bandOptions} />
+      <BandSelect
+        bandColor={bandColor}
+        dataProduct={dataProduct}
+        options={bandOptions}
+      />
       {inputNames.map((name) => (
         <BandNumberInput
           key={`${bandColor}-${name}`}
           bandColor={bandColor}
+          dataProduct={dataProduct}
           name={name}
           min={0}
           max={getBandStatistic(

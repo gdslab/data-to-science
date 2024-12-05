@@ -1,4 +1,4 @@
-import { Layer, Source } from 'react-map-gl/maplibre';
+import { Layer, Source, useMap } from 'react-map-gl/maplibre';
 import { DataProduct, STACProperties } from '../pages/projects/Project';
 
 import {
@@ -7,6 +7,7 @@ import {
   useRasterSymbologyContext,
 } from './RasterSymbologyContext';
 import { isSingleBand } from './utils';
+import { useMemo } from 'react';
 
 function getDsmMinMax(
   stacProps: STACProperties,
@@ -130,8 +131,10 @@ function getOrthoMinMax(
 
 function constructRasterTileUrl(
   dataProduct: DataProduct,
-  symbologySettings: SingleBandSymbology | MultiBandSymbology
+  symbologySettings: SingleBandSymbology | MultiBandSymbology | null
 ): string {
+  if (!symbologySettings) return '';
+
   // path to data product
   const cogUrl = dataProduct.filepath;
 
@@ -175,22 +178,31 @@ export default function MaplibreProjectRasterTiles({
 }: {
   dataProduct: DataProduct;
 }) {
-  const {
-    state: { isLoaded, symbology },
-  } = useRasterSymbologyContext();
+  const { current: map } = useMap();
 
-  if (!symbology || !isLoaded) return null;
+  const { state } = useRasterSymbologyContext();
+
+  const { isLoaded, symbology } = state[dataProduct.id];
+
+  const tiles = useMemo(
+    () => [constructRasterTileUrl(dataProduct, symbology)],
+    [dataProduct, symbology]
+  );
+
+  if (!symbology || !isLoaded || !map || !tiles) return null;
 
   return (
     <Source
+      key={`${dataProduct.id}-source`}
       id={dataProduct.id}
       type="raster"
-      tiles={[constructRasterTileUrl(dataProduct, symbology)]}
+      tiles={tiles}
       maxzoom={24}
       minzoom={0}
       tileSize={256}
     >
       <Layer
+        key={`${dataProduct.id}-layer`}
         id={dataProduct.id}
         type="raster"
         source={dataProduct.id}

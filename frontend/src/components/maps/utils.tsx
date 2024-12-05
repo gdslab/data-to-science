@@ -152,7 +152,7 @@ function isSingleBand(dataProduct: DataProduct): boolean {
  * @param stacProperties Data product band statistics.
  * @returns Default symbology.
  */
-const createDefaultDsmSymbology = (
+const createDefaultSingleBandSymbology = (
   stacProperties: STACProperties
 ): SingleBandSymbology => ({
   colorRamp: 'rainbow',
@@ -170,7 +170,7 @@ const createDefaultDsmSymbology = (
  * @param stacProperties Data product band statistics.
  * @returns Default symbology.
  */
-const createDefaultOrthoSymbology = (
+const createDefaultMultiBandSymbology = (
   stacProperties: STACProperties
 ): MultiBandSymbology => {
   const createColorChannel = (idx: number) => ({
@@ -193,8 +193,8 @@ const createDefaultOrthoSymbology = (
 
 export {
   calculateBoundsFromGeoJSON,
-  createDefaultDsmSymbology,
-  createDefaultOrthoSymbology,
+  createDefaultSingleBandSymbology,
+  createDefaultMultiBandSymbology,
   getDefaultStyle,
   getHillshade,
   isSingleBand,

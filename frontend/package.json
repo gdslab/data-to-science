@@ -21,6 +21,7 @@
     "@nivo/calendar": "^0.87.0",
     "@nivo/line": "^0.87.0",
     "@turf/area": "^6.5.0",
+    "@turf/center": "^7.1.0",
     "@turf/flip": "^6.5.0",
     "@types/react-frame-component": "^4.1.6",
     "@uppy/core": "^3.11.1",

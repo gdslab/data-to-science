@@ -4,8 +4,8 @@ import LayerPane from './LayerPane';
 
 import { MapContextProvider } from './MapContext';
 import { MapLayerProvider } from './MapLayersContext';
-import MaplibreMap from './MaplibreMap';
 import { RasterSymbologyProvider } from './RasterSymbologyContext';
+import MaplibreView from './MaplibreView';
 
 function classNames(...classes: [string, string]) {
   return classes.filter(Boolean).join(' ');
@@ -30,8 +30,7 @@ export default function MapLayout() {
             </div>
             {/* page content */}
             <div className="w-full">
-              <MaplibreMap />
-              {/* <Map layerPaneHidden={hidePane} /> */}
+              <MaplibreView />
             </div>
           </div>
         </RasterSymbologyProvider>

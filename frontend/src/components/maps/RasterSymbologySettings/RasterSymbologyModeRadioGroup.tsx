@@ -1,3 +1,4 @@
+import { DataProduct } from '../../pages/projects/Project';
 import {
   MultiBandSymbology,
   SingleBandSymbology,
@@ -5,10 +6,14 @@ import {
   useRasterSymbologyContext,
 } from '../RasterSymbologyContext';
 
-export default function RasterSymbologyModeRadioGroup() {
+export default function RasterSymbologyModeRadioGroup({
+  dataProduct,
+}: {
+  dataProduct: DataProduct;
+}) {
   const { state, dispatch } = useRasterSymbologyContext();
 
-  const symbology = state.symbology;
+  const symbology = state[dataProduct.id].symbology;
 
   const isSingleBandSymbology = (symbology: any): symbology is SingleBandSymbology => {
     return 'colorRamp' in symbology;
@@ -23,10 +28,18 @@ export default function RasterSymbologyModeRadioGroup() {
 
     if (isSingleBandSymbology(symbology)) {
       const updatedSymbology: SingleBandSymbology = { ...symbology, mode: value };
-      dispatch({ type: 'SET_SYMBOLOGY', payload: updatedSymbology });
+      dispatch({
+        type: 'SET_SYMBOLOGY',
+        rasterId: dataProduct.id,
+        payload: updatedSymbology,
+      });
     } else if (isMultiBandSymbology(symbology)) {
       const updatedSymbology: MultiBandSymbology = { ...symbology, mode: value };
-      dispatch({ type: 'SET_SYMBOLOGY', payload: updatedSymbology });
+      dispatch({
+        type: 'SET_SYMBOLOGY',
+        rasterId: dataProduct.id,
+        payload: updatedSymbology,
+      });
     } else {
       console.error('Unknown symbology type');
     }

@@ -22,7 +22,11 @@ export default function DataProductCard({ dataProduct }: { dataProduct: DataProd
           className="flex flex-col gap-1.5"
           onClick={() => {
             // disable ready state for symbology while changing data products
-            dispatch({ type: 'SET_READY_STATE', payload: false });
+            dispatch({
+              type: 'SET_READY_STATE',
+              rasterId: dataProduct.id,
+              payload: false,
+            });
             if (
               (dataProduct && !activeDataProduct) ||
               (dataProduct &&

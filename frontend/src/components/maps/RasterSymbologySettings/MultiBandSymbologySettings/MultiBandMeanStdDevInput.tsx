@@ -1,11 +1,16 @@
+import { DataProduct } from '../../../pages/projects/Project';
 import {
   MultiBandSymbology,
   useRasterSymbologyContext,
 } from '../../RasterSymbologyContext';
 
-export default function MultiBandMeanStdDevInput() {
+export default function MultiBandMeanStdDevInput({
+  dataProduct,
+}: {
+  dataProduct: DataProduct;
+}) {
   const { state, dispatch } = useRasterSymbologyContext();
-  const symbology = state.symbology as MultiBandSymbology;
+  const symbology = state[dataProduct.id].symbology as MultiBandSymbology;
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(event.target.value);
@@ -16,7 +21,11 @@ export default function MultiBandMeanStdDevInput() {
       ...symbology,
       meanStdDev: value,
     };
-    dispatch({ type: 'SET_SYMBOLOGY', payload: updatedSymbology });
+    dispatch({
+      type: 'SET_SYMBOLOGY',
+      rasterId: dataProduct.id,
+      payload: updatedSymbology,
+    });
   };
 
   if (symbology.mode !== 'meanStdDev') return;

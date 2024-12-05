@@ -110,6 +110,25 @@ function geoRasterIdReducer(state: string, action: GeoRasterIdAction) {
   }
 }
 
+type MapViewPropertiesState = {
+  zoom: number;
+} | null;
+type MapViewPropertiesAction = {
+  type: 'SET_VIEW_PROPERTIES';
+  payload: MapViewPropertiesState;
+};
+function mapViewPropertiesReducer(
+  state: MapViewPropertiesState,
+  action: MapViewPropertiesAction
+) {
+  switch (action.type) {
+    case 'SET_VIEW_PROPERTIES':
+      return action.payload;
+    default:
+      return state;
+  }
+}
+
 type ProjectLayersAction = { type: string; payload?: MapLayerFeatureCollection[] };
 
 function projectLayersReducer(
@@ -197,6 +216,8 @@ const context: {
   flights: Flight[];
   geoRasterId: string;
   geoRasterIdDispatch: React.Dispatch<GeoRasterIdAction>;
+  mapViewProperties: MapViewPropertiesState;
+  mapViewPropertiesDispatch: React.Dispatch<MapViewPropertiesAction>;
   projectLayers: MapLayerFeatureCollection[];
   projectLayersDispatch: React.Dispatch<ProjectLayersAction>;
   projects: Project[] | null;
@@ -217,6 +238,8 @@ const context: {
   flights: [],
   geoRasterId: '',
   geoRasterIdDispatch: () => {},
+  mapViewProperties: null,
+  mapViewPropertiesDispatch: () => {},
   projectLayers: [],
   projectLayersDispatch: () => {},
   projects: null,
@@ -244,6 +267,10 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
   const [activeProject, activeProjectDispatch] = useReducer(activeProjectReducer, null);
   const [flights, flightsDispatch] = useReducer(flightsReducer, []);
   const [geoRasterId, geoRasterIdDispatch] = useReducer(geoRasterIdReducer, '');
+  const [mapViewProperties, mapViewPropertiesDispatch] = useReducer(
+    mapViewPropertiesReducer,
+    null
+  );
   const [projectLayers, projectLayersDispatch] = useReducer(projectLayersReducer, []);
   const [projects, projectsDispatch] = useReducer(projectsReducer, null);
   const [projectsVisible, projectsVisibleDispatch] = useReducer(
@@ -329,6 +356,8 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
         flights,
         geoRasterId,
         geoRasterIdDispatch,
+        mapViewProperties,
+        mapViewPropertiesDispatch,
         projectLayers,
         projectLayersDispatch,
         projects,

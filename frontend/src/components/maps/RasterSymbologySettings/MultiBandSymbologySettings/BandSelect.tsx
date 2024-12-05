@@ -6,16 +6,19 @@ import {
   MultiBandSymbology,
   useRasterSymbologyContext,
 } from '../../RasterSymbologyContext';
+import { DataProduct } from '../../../pages/projects/Project';
 
 export default function BandSelect({
   bandColor,
+  dataProduct,
   options,
 }: {
   bandColor: 'red' | 'green' | 'blue';
+  dataProduct: DataProduct;
   options: BandOption[];
 }) {
   const { state, dispatch } = useRasterSymbologyContext();
-  const symbology = state.symbology as MultiBandSymbology;
+  const symbology = state[dataProduct.id].symbology as MultiBandSymbology;
 
   const toNumber = (bandValue: number | string): number => {
     if (typeof bandValue === 'number') return bandValue;
@@ -35,7 +38,11 @@ export default function BandSelect({
       ...symbology,
       [bandColor]: { ...symbology[bandColor], idx: value },
     };
-    dispatch({ type: 'SET_SYMBOLOGY', payload: updatedSymbology });
+    dispatch({
+      type: 'SET_SYMBOLOGY',
+      rasterId: dataProduct.id,
+      payload: updatedSymbology,
+    });
   };
 
   return (

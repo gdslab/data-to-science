@@ -45,6 +45,7 @@ export default function LayerPane({
   const {
     activeDataProduct,
     activeDataProductDispatch,
+    activeMapTool,
     activeMapToolDispatch,
     activeProject,
     activeProjectDispatch,
@@ -70,6 +71,13 @@ export default function LayerPane({
       toggleHidePane(true);
     }
   }, [activeDataProduct]);
+
+  useEffect(() => {
+    // hide left-side pane when compare mode turned on
+    if (activeMapTool === 'compare') {
+      toggleHidePane(true);
+    }
+  }, [activeMapTool]);
 
   useEffect(() => {
     // reset to page one if the number of visible project markers
