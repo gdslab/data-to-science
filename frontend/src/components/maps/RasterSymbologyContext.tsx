@@ -23,7 +23,7 @@ export interface ColorBand extends ValueRange {
   idx: number;
 }
 
-export interface MultiBandSymbology extends Symbology {
+export interface MultibandSymbology extends Symbology {
   red: ColorBand;
   green: ColorBand;
   blue: ColorBand;
@@ -31,7 +31,7 @@ export interface MultiBandSymbology extends Symbology {
 
 type RasterState = {
   isLoaded: boolean;
-  symbology: SingleBandSymbology | MultiBandSymbology | null;
+  symbology: SingleBandSymbology | MultibandSymbology | null;
 };
 
 type State = Record<string, RasterState>;
@@ -39,7 +39,7 @@ type State = Record<string, RasterState>;
 type SymbologyAction = {
   type: 'SET_SYMBOLOGY';
   rasterId: string;
-  payload: SingleBandSymbology | MultiBandSymbology | null;
+  payload: SingleBandSymbology | MultibandSymbology | null;
 };
 
 type ReadyStateAction = {

@@ -6,7 +6,7 @@ import {
   MapLayer,
   STACProperties,
 } from '../pages/projects/Project';
-import { SingleBandSymbology, MultiBandSymbology } from './RasterSymbologyContext';
+import { SingleBandSymbology, MultibandSymbology } from './RasterSymbologyContext';
 
 type Bounds = [number, number, number, number];
 
@@ -73,7 +73,7 @@ const mapApiResponseToLayers = (layers: MapLayer[]) =>
 
 function getDefaultStyle(
   dataProduct: DataProduct
-): SingleBandSymbology | MultiBandSymbology {
+): SingleBandSymbology | MultibandSymbology {
   if (isSingleBand(dataProduct)) {
     const stats = dataProduct.stac_properties.raster[0].stats;
     return {
@@ -170,9 +170,9 @@ const createDefaultSingleBandSymbology = (
  * @param stacProperties Data product band statistics.
  * @returns Default symbology.
  */
-const createDefaultMultiBandSymbology = (
+const createDefaultMultibandSymbology = (
   stacProperties: STACProperties
-): MultiBandSymbology => {
+): MultibandSymbology => {
   const createColorChannel = (idx: number) => ({
     idx,
     min: stacProperties.raster[idx - 1].stats.minimum,
@@ -191,12 +191,146 @@ const createDefaultMultiBandSymbology = (
   };
 };
 
+/**
+ * Returns default min/max values for single band raster.
+ * @param stacProps STAC metadata for raster band.
+ * @param symbology Current symbology settings.
+ * @returns Min/max values for single band.
+ */
+const getSingleBandMinMax = (
+  stacProps: STACProperties,
+  symbology: SingleBandSymbology
+): [number, number] => {
+  const defaultMinMax: [number, number] = [0, 255];
+
+  switch (symbology.mode) {
+    case 'minMax':
+      if (symbology.min === undefined || symbology.max === undefined) {
+        console.warn(
+          'Min and max raster props missing, falling back to default min/max.'
+        );
+        return defaultMinMax;
+      }
+      return [symbology.min, symbology.max];
+
+    case 'userDefined':
+      if (symbology.userMin === undefined || symbology.userMax === undefined) {
+        console.warn(
+          'User defined min and max props missing, falling back to default min/max.'
+        );
+        return defaultMinMax;
+      }
+      return [symbology.userMin, symbology.userMax];
+
+    case 'meanStdDev':
+      const stats = stacProps.raster?.[0]?.stats;
+      if (!stats || stats.mean === undefined || stats.stddev === undefined) {
+        console.warn('Stats missing, falling back to default min/max.');
+        return defaultMinMax;
+      }
+      const deviation = stats.stddev * symbology.meanStdDev;
+      return [stats.mean - deviation, stats.mean + deviation];
+
+    default:
+      console.warn(`Unexpected symbology mode: ${symbology.mode}`);
+      return defaultMinMax;
+  }
+};
+
+/**
+ * Returns default min/max values for multiband raster.
+ * @param stacProps STAC metadata for raster bands.
+ * @param symbology Current symbology settings.
+ * @returns Min/max values for each band.
+ */
+const getMultibandMinMax = (
+  stacProps: STACProperties,
+  symbology: MultibandSymbology
+): [[number, number], [number, number], [number, number]] => {
+  const defaultMinMax: [[number, number], [number, number], [number, number]] = [
+    [0, 255],
+    [0, 255],
+    [0, 255],
+  ];
+
+  const validateBands = (key: 'min' | 'max' | 'userMin' | 'userMax') =>
+    ['red', 'green', 'blue'].every((band) => symbology[band]?.[key] !== undefined);
+
+  const getStats = (index: number) => stacProps.raster?.[index - 1]?.stats;
+
+  switch (symbology.mode) {
+    case 'minMax':
+      if (!validateBands('min') || !validateBands('max')) {
+        console.warn(
+          'Min and max raster props missing for at least one band, falling back to default min/max.'
+        );
+        return defaultMinMax;
+      } else {
+        return [
+          [symbology.red.min, symbology.red.max],
+          [symbology.green.min, symbology.green.max],
+          [symbology.blue.min, symbology.blue.max],
+        ];
+      }
+
+    case 'userDefined':
+      if (!validateBands('userMin') || !validateBands('userMax')) {
+        console.warn(
+          'User defined min and max props missing for at least one band, falling back to default min/max.'
+        );
+        return defaultMinMax;
+      } else {
+        return [
+          [symbology.red.userMin, symbology.red.userMax],
+          [symbology.green.userMin, symbology.green.userMax],
+          [symbology.blue.userMin, symbology.blue.userMax],
+        ];
+      }
+
+    case 'meanStdDev':
+      // verify we have a band index for RGB
+      if (
+        !['red', 'green', 'blue'].every((band) => symbology[band]?.idx !== undefined)
+      ) {
+        console.warn(
+          'Missing index for at least one band, falling back to default min/max.'
+        );
+        return defaultMinMax;
+      } else {
+        const stats = ['red', 'green', 'blue'].map((band) =>
+          getStats(symbology[band].idx)
+        );
+
+        // verify we have a mean, std. dev. for each band and a meanStdDev mult factor
+        if (
+          stats.some((s) => !s || s.mean === undefined || s.stddev === undefined) ||
+          symbology.meanStdDev === undefined
+        ) {
+          console.warn(
+            'Stats missing for at least one band, falling back to default min/max.'
+          );
+          return defaultMinMax;
+        }
+
+        return stats.map((stat) => {
+          const deviation = stat.stddev * symbology.meanStdDev;
+          return [stat.mean - deviation, stat.mean + deviation];
+        }) as [[number, number], [number, number], [number, number]];
+      }
+
+    default:
+      return defaultMinMax;
+  }
+};
+
 export {
   calculateBoundsFromGeoJSON,
   createDefaultSingleBandSymbology,
-  createDefaultMultiBandSymbology,
+  createDefaultMultibandSymbology,
   getDefaultStyle,
   getHillshade,
+  getSingleBandMinMax,
+  getMultibandMinMax,
   isSingleBand,
   mapApiResponseToLayers,
 };

@@ -37,8 +37,9 @@ export default function SingleBandNumberInput({
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const name = event.target.name as keyof SingleBandSymbology;
     const value = event.target.value as SingleBandSymbology[keyof SingleBandSymbology];
+    const valueAsNumber = typeof value === 'string' ? parseFloat(value) : value;
 
-    const updatedSymbology = { ...symbology, [name]: value };
+    const updatedSymbology = { ...symbology, [name]: valueAsNumber };
 
     dispatch({
       type: 'SET_SYMBOLOGY',

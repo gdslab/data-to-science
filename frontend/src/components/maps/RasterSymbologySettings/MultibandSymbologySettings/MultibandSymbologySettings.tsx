@@ -2,10 +2,10 @@ import { DataProduct } from '../../../pages/projects/Project';
 import RasterSymbologyFieldSet from '../RasterSymbologyFieldset';
 import RasterSymbologyModeRadioGroup from '../RasterSymbologyModeRadioGroup';
 import RasterSymbologyOpacitySlider from '../RasterSymbologyOpacitySlider';
-import MultiBandBandProperties from './MultiBandBandProperties';
-import MultiBandMeanStdDevInput from './MultiBandMeanStdDevInput';
+import MultibandBandProperties from './MultibandBandProperties';
+import MultibandMeanStdDevInput from './MultibandMeanStdDevInput';
 
-export default function MultiBandSymbologySettings({
+export default function MultibandSymbologySettings({
   dataProduct,
 }: {
   dataProduct: DataProduct;
@@ -14,8 +14,8 @@ export default function MultiBandSymbologySettings({
     <div className="mb-4">
       <RasterSymbologyFieldSet title="RGB Properties">
         <RasterSymbologyModeRadioGroup dataProduct={dataProduct} />
-        <MultiBandMeanStdDevInput dataProduct={dataProduct} />
-        <MultiBandBandProperties dataProduct={dataProduct} />
+        <MultibandMeanStdDevInput dataProduct={dataProduct} />
+        <MultibandBandProperties dataProduct={dataProduct} />
         <RasterSymbologyOpacitySlider dataProduct={dataProduct} />
       </RasterSymbologyFieldSet>
     </div>

@@ -29,7 +29,7 @@ export default function MaplibreLayerControl() {
   const toggleVisibility = () => setVisible(!visible);
 
   return (
-    <div className="absolute top-0 left-0 max-w-80 bg-white shadow-md px-3 py-6 m-5 leading-3 text-slate-600 outline-none">
+    <div className="absolute top-0 left-0 max-w-80 bg-white rounded-md shadow-md px-3 py-6 m-2.5 leading-3 text-slate-600 outline-none">
       <h3>Map Layers</h3>
       <p className="text-sm text-slate-500 italic">
         Toggle map layer on/off, change layer color, and adjust layer opacity.

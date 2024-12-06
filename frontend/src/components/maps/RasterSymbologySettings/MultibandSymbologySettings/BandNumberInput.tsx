@@ -1,7 +1,7 @@
 import { DataProduct } from '../../../pages/projects/Project';
 import {
   ColorBand,
-  MultiBandSymbology,
+  MultibandSymbology,
   useRasterSymbologyContext,
 } from '../../RasterSymbologyContext';
 
@@ -23,7 +23,7 @@ export default function BandNumberInput({
   step,
 }: BandNumberProps) {
   const { state, dispatch } = useRasterSymbologyContext();
-  const symbology = state[dataProduct.id].symbology as MultiBandSymbology;
+  const symbology = state[dataProduct.id].symbology as MultibandSymbology;
 
   const label = name === 'min' || name === 'userMin' ? 'Min' : 'Max';
 
@@ -40,11 +40,12 @@ export default function BandNumberInput({
   };
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value as MultiBandSymbology[keyof MultiBandSymbology];
+    const value = event.target.value as MultibandSymbology[keyof MultibandSymbology];
+    const valueAsNumber = typeof value === 'string' ? parseFloat(value) : value;
 
     const updatedSymbology = {
       ...symbology,
-      [bandColor]: { [name]: value },
+      [bandColor]: { [name]: valueAsNumber },
     };
 
     dispatch({

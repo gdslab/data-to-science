@@ -2,7 +2,6 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import './MaplibreMap.css';
 import axios, { AxiosResponse } from 'axios';
 import { Feature } from 'geojson';
-import { StyleSpecification } from 'maplibre-gl';
 import { useEffect, useState } from 'react';
 import Map, {
   GeolocateControl,
@@ -22,37 +21,14 @@ import { MapLayer } from '../pages/projects/Project';
 import { useMapLayerContext } from './MapLayersContext';
 import { useRasterSymbologyContext } from './RasterSymbologyContext';
 
-import { mapApiResponseToLayers } from './utils';
+import { satelliteBasemapStyle } from './basemapStyles';
+import { isSingleBand, mapApiResponseToLayers } from './utils';
+import MaplibreColorBarControl from './MaplibreColorBarControl';
 
 export type ProjectPopup = {
   feature: Feature;
   latitude: number;
   longitude: number;
-};
-
-const satelliteBasemapStyle: StyleSpecification = {
-  version: 8,
-  glyphs: `https://api.maptiler.com/fonts/{fontstack}/{range}.pbf?key=${
-    import.meta.env.VITE_MAPTILER_API_KEY
-  }`,
-  sources: {
-    satellite: {
-      type: 'raster',
-      tiles: [
-        `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/{z}/{x}/{y}?access_token=${
-          import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
-        }`,
-      ],
-      tileSize: 256,
-    },
-  },
-  layers: [
-    {
-      id: 'satellite-layer',
-      type: 'raster',
-      source: 'satellite',
-    },
-  ],
 };
 
 export default function MaplibreMap() {
@@ -178,6 +154,14 @@ export default function MaplibreMap() {
         <MaplibreProjectRasterTiles
           key={activeDataProduct.id}
           dataProduct={activeDataProduct}
+        />
+      )}
+
+      {/* Display color bar when project active and single band data product active */}
+      {activeProject && activeDataProduct && isSingleBand(activeDataProduct) && (
+        <MaplibreColorBarControl
+          dataProduct={activeDataProduct}
+          projectId={activeProject.id}
         />
       )}
 

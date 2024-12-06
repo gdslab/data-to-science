@@ -1,16 +1,16 @@
 import { DataProduct } from '../../../pages/projects/Project';
 import {
-  MultiBandSymbology,
+  MultibandSymbology,
   useRasterSymbologyContext,
 } from '../../RasterSymbologyContext';
 
-export default function MultiBandMeanStdDevInput({
+export default function MultibandMeanStdDevInput({
   dataProduct,
 }: {
   dataProduct: DataProduct;
 }) {
   const { state, dispatch } = useRasterSymbologyContext();
-  const symbology = state[dataProduct.id].symbology as MultiBandSymbology;
+  const symbology = state[dataProduct.id].symbology as MultibandSymbology;
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(event.target.value);

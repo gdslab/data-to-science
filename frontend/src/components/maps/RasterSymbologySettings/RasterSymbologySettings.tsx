@@ -3,10 +3,10 @@ import { useEffect } from 'react';
 import { useMapContext } from '../MapContext';
 import { useRasterSymbologyContext } from '../RasterSymbologyContext';
 import SingleBandSymbologySettings from './SingleBandSymbologySettings';
-import MultiBandSymbologySettings from './MultiBandSymbologySettings';
+import MultibandSymbologySettings from './MultibandSymbologySettings';
 
 import {
-  createDefaultMultiBandSymbology,
+  createDefaultMultibandSymbology,
   createDefaultSingleBandSymbology,
   isSingleBand,
 } from '../utils';
@@ -29,24 +29,33 @@ export default function RasterSymbologySettings() {
 
     const { stac_properties, user_style } = activeDataProduct;
 
-    if (user_style) {
-      // default opacity to 100 for older saved styles that are missing this property
+    if (user_style && !state[activeDataProduct.id].symbology) {
+      // user style exists and symbology context has not yet been set
       dispatch({
         type: 'SET_SYMBOLOGY',
         rasterId: activeDataProduct.id,
         payload: { ...user_style, opacity: user_style.opacity ?? 100 },
       });
+    } else if (state[activeDataProduct.id].symbology) {
+      // symbology context exists, uses it
+      dispatch({
+        type: 'SET_SYMBOLOGY',
+        rasterId: activeDataProduct.id,
+        payload: state[activeDataProduct.id].symbology,
+      });
     } else if (isSingleBand(activeDataProduct)) {
+      // no user style and no symbology context, use default single band symbology
       dispatch({
         type: 'SET_SYMBOLOGY',
         rasterId: activeDataProduct.id,
         payload: createDefaultSingleBandSymbology(stac_properties),
       });
     } else {
+      // no user style and no symbology context, use default multi band symbology
       dispatch({
         type: 'SET_SYMBOLOGY',
         rasterId: activeDataProduct.id,
-        payload: createDefaultMultiBandSymbology(stac_properties),
+        payload: createDefaultMultibandSymbology(stac_properties),
       });
     }
 
@@ -69,6 +78,6 @@ export default function RasterSymbologySettings() {
   if (isSingleBand(activeDataProduct)) {
     return <SingleBandSymbologySettings dataProduct={activeDataProduct} />;
   } else {
-    return <MultiBandSymbologySettings dataProduct={activeDataProduct} />;
+    return <MultibandSymbologySettings dataProduct={activeDataProduct} />;
   }
 }

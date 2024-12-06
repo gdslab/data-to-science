@@ -3,7 +3,7 @@ import Select from 'react-select';
 import { BandOption } from '../RasterSymbologySettings';
 import {
   ColorBand,
-  MultiBandSymbology,
+  MultibandSymbology,
   useRasterSymbologyContext,
 } from '../../RasterSymbologyContext';
 import { DataProduct } from '../../../pages/projects/Project';
@@ -18,7 +18,7 @@ export default function BandSelect({
   options: BandOption[];
 }) {
   const { state, dispatch } = useRasterSymbologyContext();
-  const symbology = state[dataProduct.id].symbology as MultiBandSymbology;
+  const symbology = state[dataProduct.id].symbology as MultibandSymbology;
 
   const toNumber = (bandValue: number | string): number => {
     if (typeof bandValue === 'number') return bandValue;

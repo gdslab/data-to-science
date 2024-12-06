@@ -35,6 +35,7 @@ import Landing from './components/Landing';
 import LoginForm from './components/pages/auth/LoginForm';
 import Logout from './components/pages/auth/Logout';
 import MapLayout from './components/maps/MapLayout';
+import MaplibreShareMap from './components/maps/MaplibreShareMap';
 import PasswordRecovery from './components/pages/auth/PasswordRecovery';
 import PasswordResetForm from './components/pages/auth/PasswordResetForm';
 import Profile from './components/pages/auth/Profile';
@@ -46,7 +47,7 @@ import ProjectList, {
   loader as projectListLoader,
 } from './components/pages/projects/ProjectList';
 import RegistrationForm from './components/pages/auth/RegistrationForm';
-import ShareMap from './components/maps/ShareMap';
+import { RasterSymbologyProvider } from './components/maps/RasterSymbologyContext';
 import SharePotreeViewer from './components/maps/SharePotreeViewer';
 import Teams, { loader as teamsLoader } from './components/pages/teams/Teams';
 import TeamCreate, {
@@ -93,7 +94,16 @@ export const router = createBrowserRouter([
       {
         path: '/sharemap',
         element: <RootProtected />,
-        children: [{ path: '/sharemap', element: <ShareMap /> }],
+        children: [
+          {
+            path: '/sharemap',
+            element: (
+              <RasterSymbologyProvider>
+                <MaplibreShareMap />
+              </RasterSymbologyProvider>
+            ),
+          },
+        ],
       },
       {
         path: '/sharepotree',

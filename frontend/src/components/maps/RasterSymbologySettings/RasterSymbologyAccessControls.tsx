@@ -2,22 +2,22 @@ import axios from 'axios';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import Alert, { Status } from '../Alert';
-import { CopyURLButton } from '../Buttons';
-import { DataProduct } from '../pages/projects/Project';
-import { useMapContext } from './MapContext';
-import { SymbologySettings } from './Maps';
-import { Project } from '../pages/projects/ProjectList';
+import Alert, { Status } from '../../Alert';
+import { CopyURLButton } from '../../Buttons';
+import { DataProduct } from '../../pages/projects/Project';
+import { useMapContext } from '../MapContext';
+import { Project } from '../../pages/projects/ProjectList';
+import { MultibandSymbology, SingleBandSymbology } from '../RasterSymbologyContext';
 
-export default function ShareControls({
+export default function RasterSymbologyAccessControls({
   dataProduct,
   project,
-  symbologySettings,
+  symbology,
   refreshUrl,
 }: {
   dataProduct: DataProduct;
   project: Project;
-  symbologySettings?: SymbologySettings;
+  symbology?: SingleBandSymbology | MultibandSymbology;
   refreshUrl?: string;
 }) {
   const [accessOption, setAccessOption] = useState<boolean>(dataProduct.public);
@@ -156,7 +156,7 @@ export default function ShareControls({
             title="Copy link that can be used to directly access the data product"
           />
         </div>
-        {symbologySettings ? (
+        {symbology ? (
           <div className="col-span-2">
             <CopyURLButton
               copyText="Copy Share URL"
@@ -164,7 +164,7 @@ export default function ShareControls({
               url={
                 window.origin +
                 `/sharemap?file_id=${dataProduct.id}&symbology=` +
-                btoa(JSON.stringify(symbologySettings))
+                btoa(JSON.stringify(symbology))
               }
               title="Copy link that can be used to share the current map and selected data product"
             />

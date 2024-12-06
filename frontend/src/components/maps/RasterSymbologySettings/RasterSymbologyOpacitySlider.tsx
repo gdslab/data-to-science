@@ -1,7 +1,7 @@
 import { DataProduct } from '../../pages/projects/Project';
 import OpacitySlider from '../OpacitySlider';
 import {
-  MultiBandSymbology,
+  MultibandSymbology,
   SingleBandSymbology,
   useRasterSymbologyContext,
 } from '../RasterSymbologyContext';
@@ -19,7 +19,7 @@ export default function RasterSymbologyOpacitySlider({
     return 'colorRamp' in symbology;
   };
 
-  const isMultiBandSymbology = (symbology: any): symbology is MultiBandSymbology => {
+  const isMultibandSymbology = (symbology: any): symbology is MultibandSymbology => {
     return 'red' in symbology;
   };
 
@@ -35,8 +35,8 @@ export default function RasterSymbologyOpacitySlider({
           rasterId: dataProduct.id,
           payload: updatedSymbology,
         });
-      } else if (isMultiBandSymbology(symbology)) {
-        const updatedSymbology = { ...symbology, opacity: value } as MultiBandSymbology;
+      } else if (isMultibandSymbology(symbology)) {
+        const updatedSymbology = { ...symbology, opacity: value } as MultibandSymbology;
         dispatch({
           type: 'SET_SYMBOLOGY',
           rasterId: dataProduct.id,
@@ -52,5 +52,9 @@ export default function RasterSymbologyOpacitySlider({
 
   if (!symbology) return;
 
-  return <OpacitySlider currentValue={symbology.opacity} onChange={handleChange} />;
+  return (
+    <div className="mt-4">
+      <OpacitySlider currentValue={symbology.opacity} onChange={handleChange} />
+    </div>
+  );
 }

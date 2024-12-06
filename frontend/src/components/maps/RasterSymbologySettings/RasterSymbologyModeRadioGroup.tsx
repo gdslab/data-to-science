@@ -1,6 +1,6 @@
 import { DataProduct } from '../../pages/projects/Project';
 import {
-  MultiBandSymbology,
+  MultibandSymbology,
   SingleBandSymbology,
   SymbologyMode,
   useRasterSymbologyContext,
@@ -19,7 +19,7 @@ export default function RasterSymbologyModeRadioGroup({
     return 'colorRamp' in symbology;
   };
 
-  const isMultiBandSymbology = (symbology: any): symbology is MultiBandSymbology => {
+  const isMultibandSymbology = (symbology: any): symbology is MultibandSymbology => {
     return 'red' in symbology;
   };
 
@@ -33,8 +33,8 @@ export default function RasterSymbologyModeRadioGroup({
         rasterId: dataProduct.id,
         payload: updatedSymbology,
       });
-    } else if (isMultiBandSymbology(symbology)) {
-      const updatedSymbology: MultiBandSymbology = { ...symbology, mode: value };
+    } else if (isMultibandSymbology(symbology)) {
+      const updatedSymbology: MultibandSymbology = { ...symbology, mode: value };
       dispatch({
         type: 'SET_SYMBOLOGY',
         rasterId: dataProduct.id,
