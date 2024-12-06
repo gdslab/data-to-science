@@ -3,11 +3,7 @@ import './MaplibreMap.css';
 import axios, { AxiosResponse } from 'axios';
 import { Feature } from 'geojson';
 import { useEffect, useState } from 'react';
-import Map, {
-  GeolocateControl,
-  NavigationControl,
-  ScaleControl,
-} from 'react-map-gl/maplibre';
+import Map, { NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
 
 import { useMapContext } from './MapContext';
 import MaplibreCluster from './MaplibreCluster';
@@ -24,6 +20,7 @@ import { useRasterSymbologyContext } from './RasterSymbologyContext';
 import { satelliteBasemapStyle } from './basemapStyles';
 import { isSingleBand, mapApiResponseToLayers } from './utils';
 import MaplibreColorBarControl from './MaplibreColorBarControl';
+import MaplibreGeocoderControl from './MaplibreGeocoderControl';
 
 export type ProjectPopup = {
   feature: Feature;
@@ -175,7 +172,7 @@ export default function MaplibreMap() {
       {activeProject && <MaplibreLayerControl />}
 
       {/* General controls */}
-      <GeolocateControl />
+      {!activeProject && <MaplibreGeocoderControl />}
       <NavigationControl />
       <ScaleControl />
     </Map>

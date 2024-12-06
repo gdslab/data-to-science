@@ -16,6 +16,7 @@
     "@heroicons/react": "^2.0.18",
     "@hookform/resolvers": "^3.6.0",
     "@mapbox/shp-write": "^0.4.3",
+    "@maplibre/maplibre-gl-geocoder": "^1.7.0",
     "@mui/material": "^6.1.4",
     "@nivo/bar": "^0.87.0",
     "@nivo/calendar": "^0.87.0",

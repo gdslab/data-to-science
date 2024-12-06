@@ -1,0 +1,13 @@
+/* Overrides Tailwind CSS properties affecting control layout */
+.maplibregl-ctrl-geocoder--input {
+    background-color: transparent !important;
+    padding: 6px 35px !important;
+}
+
+/* Overrides Tailwind CSS properties affecting control layout */
+.maplibregl-ctrl-geocoder--input:focus {
+    color: rgba(0, 0, 0, 0.75) !important;
+    box-shadow: none !important;
+    outline: thin dotted !important;
+    outline-offset: 0 !important;
+}

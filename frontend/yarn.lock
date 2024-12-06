@@ -781,6 +781,17 @@
   resolved "https://registry.yarnpkg.com/@mapbox/whoots-js/-/whoots-js-3.1.0.tgz#497c67a1cef50d1a2459ba60f315e448d2ad87fe"
   integrity sha512-Es6WcD0nO5l+2BOQS4uLfNPYQaNDfbot3X1XUoloz+x0mPDS3eeORZJl06HXjwBG1fOGwCRnzK88LMdxKRrd6Q==
 
+"@maplibre/maplibre-gl-geocoder@^1.7.0":
+  version "1.7.0"
+  resolved "https://registry.yarnpkg.com/@maplibre/maplibre-gl-geocoder/-/maplibre-gl-geocoder-1.7.0.tgz#5347ee261ad90b14bb82edc6946423634ca6cf63"
+  integrity sha512-w6WnEPf+sIzcyRzTcI7mYNkz8MKjepZf/sROqBUwDX/hb0BvhrhwaDSRa2e+jGQ3RYdKWvxLDjmszn4bVJyESQ==
+  dependencies:
+    events "^3.3.0"
+    lodash.debounce "^4.0.6"
+    subtag "^0.5.0"
+    suggestions-list "^0.0.2"
+    xtend "^4.0.1"
+
 "@maplibre/maplibre-gl-style-spec@^19.2.1":
   version "19.3.3"
   resolved "https://registry.yarnpkg.com/@maplibre/maplibre-gl-style-spec/-/maplibre-gl-style-spec-19.3.3.tgz#a106248bd2e25e77c963a362aeaf630e00f924e9"
@@ -2790,6 +2801,11 @@ eventemitter3@^5.0.1:
   resolved "https://registry.yarnpkg.com/eventemitter3/-/eventemitter3-5.0.1.tgz#53f5ffd0a492ac800721bb42c66b841de96423c4"
   integrity sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA==
 
+events@^3.3.0:
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/events/-/events-3.3.0.tgz#31a95ad0a924e2d2c419a813aeb2c4e878ea7400"
+  integrity sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q==
+
 exifr@^7.0.0:
   version "7.1.3"
   resolved "https://registry.yarnpkg.com/exifr/-/exifr-7.1.3.tgz#f6218012c36dbb7d843222011b27f065fddbab6f"
@@ -2965,6 +2981,11 @@ function-bind@^1.1.2:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/function-bind/-/function-bind-1.1.2.tgz#2c02d864d97f3ea6c8830c464cbd11ab6eab7a1c"
   integrity sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==
+
+fuzzy@^0.1.1:
+  version "0.1.3"
+  resolved "https://registry.yarnpkg.com/fuzzy/-/fuzzy-0.1.3.tgz#4c76ec2ff0ac1a36a9dccf9a00df8623078d4ed8"
+  integrity sha512-/gZffu4ykarLrCiP3Ygsa86UAo1E5vEVlvTrpkKywXSbP9Xhln3oSp9QSV57gEq3JFFpGJ4GZ+5zdEp3FcUh4w==
 
 gensync@^1.0.0-beta.2:
   version "1.0.0-beta.2"
@@ -3592,6 +3613,11 @@ lodash.assign@^3.2.0:
     lodash._baseassign "^3.0.0"
     lodash._createassigner "^3.0.0"
     lodash.keys "^3.0.0"
+
+lodash.debounce@^4.0.6:
+  version "4.0.8"
+  resolved "https://registry.yarnpkg.com/lodash.debounce/-/lodash.debounce-4.0.8.tgz#82d79bff30a67c4005ffd5e2515300ad9ca4d7af"
+  integrity sha512-FT1yDzDYEoYWhnSGnpE/4Kj1fLZkDFyqRb7fNt6FdYOSxlUWAtp42Eh6Wb0rGIv/m9Bgo7x4GhQbm5Ys4SG5ow==
 
 lodash.isarguments@^3.0.0:
   version "3.1.0"
@@ -4661,6 +4687,11 @@ stylis@4.2.0:
   resolved "https://registry.yarnpkg.com/stylis/-/stylis-4.2.0.tgz#79daee0208964c8fe695a42fcffcac633a211a51"
   integrity sha512-Orov6g6BB1sDfYgzWfTHDOxamtX1bE/zo104Dh9e6fqJ3PooipYyfJ0pUmrZO2wAvO8YbEyeFrkV91XTsGMSrw==
 
+subtag@^0.5.0:
+  version "0.5.0"
+  resolved "https://registry.yarnpkg.com/subtag/-/subtag-0.5.0.tgz#1728a8df5257fb98ded4fb981b2ac7af10cf58ba"
+  integrity sha512-CaIBcTSb/nyk4xiiSOtZYz1B+F12ZxW8NEp54CdT+84vmh/h4sUnHGC6+KQXUfED8u22PQjCYWfZny8d2ELXwg==
+
 sucrase@^3.32.0:
   version "3.35.0"
   resolved "https://registry.yarnpkg.com/sucrase/-/sucrase-3.35.0.tgz#57f17a3d7e19b36d8995f06679d121be914ae263"
@@ -4673,6 +4704,14 @@ sucrase@^3.32.0:
     mz "^2.7.0"
     pirates "^4.0.1"
     ts-interface-checker "^0.1.9"
+
+suggestions-list@^0.0.2:
+  version "0.0.2"
+  resolved "https://registry.yarnpkg.com/suggestions-list/-/suggestions-list-0.0.2.tgz#3c5f501833e697a726a1bf58fbc454d57ffa0e98"
+  integrity sha512-Yw0fdq14c6RQWQIfE1/8WEi9Dp8rjyCD6FhYA/Tit2/ADbE9Y4ADG4ezlvivsa8Civ5nz++pyVVBMjOMlgIUJw==
+  dependencies:
+    fuzzy "^0.1.1"
+    xtend "^4.0.0"
 
 supercluster@^8.0.1:
   version "8.0.1"
@@ -5026,17 +5065,17 @@ wrappy@1:
   resolved "https://registry.yarnpkg.com/wrappy/-/wrappy-1.0.2.tgz#b5243d8f3ec1aa35f1364605bc0d1036e30ab69f"
   integrity sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==
 
+xtend@^4.0.0, xtend@^4.0.1, xtend@~4.0.0, xtend@~4.0.1:
+  version "4.0.2"
+  resolved "https://registry.yarnpkg.com/xtend/-/xtend-4.0.2.tgz#bb72779f5fa465186b1f438f674fa347fdb5db54"
+  integrity sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==
+
 xtend@~2.1.1:
   version "2.1.2"
   resolved "https://registry.yarnpkg.com/xtend/-/xtend-2.1.2.tgz#6efecc2a4dad8e6962c4901b337ce7ba87b5d28b"
   integrity sha512-vMNKzr2rHP9Dp/e1NQFnLQlwlhp9L/LfvnsVdHxN1f+uggyVI3i08uD14GPvCToPkdsRfyPqIyYGmIk58V98ZQ==
   dependencies:
     object-keys "~0.4.0"
-
-xtend@~4.0.0, xtend@~4.0.1:
-  version "4.0.2"
-  resolved "https://registry.yarnpkg.com/xtend/-/xtend-4.0.2.tgz#bb72779f5fa465186b1f438f674fa347fdb5db54"
-  integrity sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==
 
 yallist@^3.0.2:
   version "3.1.1"
