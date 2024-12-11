@@ -13,7 +13,10 @@ import {
 } from './RasterSymbologyContext';
 import { DataProduct } from '../pages/projects/Project';
 
-import { satelliteBasemapStyle } from './basemapStyles';
+import {
+  mapboxSatelliteBasemapStyle,
+  usgsImageryTopoBasemapStyle,
+} from './basemapStyles';
 import { isSingleBand } from './utils';
 
 function useQuery() {
@@ -130,8 +133,12 @@ export default function MaplibreShareMap() {
         width: '100%',
         height: '100%',
       }}
-      mapboxAccessToken={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
-      mapStyle={satelliteBasemapStyle}
+      mapboxAccessToken={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || undefined}
+      mapStyle={
+        import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
+          ? mapboxSatelliteBasemapStyle
+          : usgsImageryTopoBasemapStyle
+      }
       reuseMaps={true}
     >
       {/* Display raster tiles */}

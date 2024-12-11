@@ -8,7 +8,10 @@ import MaplibreProjectRasterTiles from './MaplibreProjectRasterTiles';
 import { DataProduct } from '../pages/projects/Project';
 import { useRasterSymbologyContext } from './RasterSymbologyContext';
 
-import { satelliteBasemapStyle } from './basemapStyles';
+import {
+  mapboxSatelliteBasemapStyle,
+  usgsImageryTopoBasemapStyle,
+} from './basemapStyles';
 import {
   createDefaultMultibandSymbology,
   createDefaultSingleBandSymbology,
@@ -188,8 +191,12 @@ export default function MaplibreCompareMap() {
         onMoveStart={onLeftMoveStart}
         onMove={activeMap === 'left' ? onMove : undefined}
         style={LeftMapStyle}
-        mapboxAccessToken={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
-        mapStyle={satelliteBasemapStyle}
+        mapboxAccessToken={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || undefined}
+        mapStyle={
+          import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
+            ? mapboxSatelliteBasemapStyle
+            : usgsImageryTopoBasemapStyle
+        }
         reuseMaps={true}
       >
         {/* Display project boundary when project activated */}
@@ -219,7 +226,7 @@ export default function MaplibreCompareMap() {
         onMove={activeMap === 'right' ? onMove : undefined}
         style={RightMapStyle}
         mapboxAccessToken={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
-        mapStyle={satelliteBasemapStyle}
+        mapStyle={mapboxSatelliteBasemapStyle}
         reuseMaps={true}
       >
         {/* Display project boundary when project activated */}

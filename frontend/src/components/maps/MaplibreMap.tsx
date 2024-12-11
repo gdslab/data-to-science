@@ -17,7 +17,10 @@ import { MapLayer } from '../pages/projects/Project';
 import { useMapLayerContext } from './MapLayersContext';
 import { useRasterSymbologyContext } from './RasterSymbologyContext';
 
-import { satelliteBasemapStyle } from './basemapStyles';
+import {
+  mapboxSatelliteBasemapStyle,
+  usgsImageryTopoBasemapStyle,
+} from './basemapStyles';
 import { isSingleBand, mapApiResponseToLayers } from './utils';
 import MaplibreColorBarControl from './MaplibreColorBarControl';
 import MaplibreGeocoderControl from './MaplibreGeocoderControl';
@@ -122,8 +125,12 @@ export default function MaplibreMap() {
         width: '100%',
         height: '100%',
       }}
-      mapboxAccessToken={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
-      mapStyle={satelliteBasemapStyle}
+      mapboxAccessToken={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || undefined}
+      mapStyle={
+        import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
+          ? mapboxSatelliteBasemapStyle
+          : usgsImageryTopoBasemapStyle
+      }
       reuseMaps={true}
       onClick={handleMapClick}
     >
