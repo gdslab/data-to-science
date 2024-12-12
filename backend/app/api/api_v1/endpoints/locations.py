@@ -13,7 +13,7 @@ import geopandas as gpd
 from fastapi import APIRouter, Depends, HTTPException, Request, status, UploadFile
 from fiona.errors import DriverError
 from fiona.io import ZipMemoryFile
-from geojson_pydantic import Feature, FeatureCollection, Polygon
+from geojson_pydantic import Feature, FeatureCollection, Polygon, MultiPolygon
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
@@ -200,10 +200,13 @@ def shapefile_to_geojson(
     fc = FeatureCollection(**geojson)
     assert fc.type == "FeatureCollection"
     assert len(fc.features) > 0
-    if required_geom_type and required_geom_type == "Polygon":
+    if required_geom_type and required_geom_type.lower() == "polygon":
         try:
             for feature in fc.features:
-                assert isinstance(feature.geometry, Polygon)
+                if not isinstance(feature.geometry, Polygon) and not isinstance(
+                    feature.geometry, MultiPolygon
+                ):
+                    raise ValueError("Invalid geometry type")
         except Exception as e:
             logger.exception("Exception")
             raise HTTPException(
