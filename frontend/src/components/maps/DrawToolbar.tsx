@@ -47,6 +47,7 @@ export default function DrawToolbar() {
 
     map.on('draw.create', (e: DrawCreateEvent) => {
       // do something on create
+      console.log(e.features);
     });
 
     return () => {

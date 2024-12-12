@@ -17,6 +17,7 @@ import {
   createDefaultSingleBandSymbology,
 } from './utils';
 import { isSingleBand } from './utils';
+import MapLibreCompareModeControl from './MapLibreCompareModeControl';
 
 const LeftMapStyle: React.CSSProperties = {
   position: 'absolute',
@@ -62,7 +63,7 @@ export default function MaplibreCompareMap() {
     latitude: 40.428655143949925,
     zoom: 8,
   });
-  const [mode, _setMode] = useState<Mode>('split-screen');
+  const [mode, setMode] = useState<Mode>('split-screen');
 
   const [activeMap, setActiveMap] = useState<'left' | 'right'>('left');
 
@@ -214,6 +215,9 @@ export default function MaplibreCompareMap() {
           symbologyState[selectedLeftDataProduct.id]?.isLoaded && (
             <MaplibreProjectRasterTiles dataProduct={selectedLeftDataProduct} />
           )}
+
+        {/* Toggle compare mode */}
+        <MapLibreCompareModeControl mode={mode} onModeChange={setMode} />
 
         {/* General controls */}
         <NavigationControl position="top-left" />

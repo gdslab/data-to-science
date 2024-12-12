@@ -185,7 +185,7 @@ services:
       args:
         - DEFAULT_CONF=prod
         - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
-    image: d2s-proxy:latest
+    image: d2s-proxy:dev
     platform: linux/x86_64
     tmpfs:
       - /tmp
@@ -231,6 +231,8 @@ services:
   pg_tileserv:
     image: pramsey/pg_tileserv:latest
     platform: linux/x86_64
+    volumes:
+      - ./pg_tileserv.toml:/config/pg_tileserv.toml:ro
     ports:
       - 7800:7800
     restart: always

@@ -188,6 +188,7 @@ def read_vector_layers(
             "signed_url": create_signed_url(
                 f"{settings.API_DOMAIN}/mvt/public.vector_layers/{{z}}/{{x}}/{{y}}.pbf",
                 f"layer_id='{layer[0]}'",
+                -1,
             ),
             "preview_url": get_preview_url(str(project.id), layer[0]),
         }
