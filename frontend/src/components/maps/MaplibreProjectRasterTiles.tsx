@@ -48,6 +48,11 @@ function constructRasterTileUrl(
     });
   }
 
+  // add data product id and add signature
+  queryParams.append('dataProductId', dataProduct.id);
+  queryParams.append('expires', (dataProduct.signature?.expires || 0).toString());
+  queryParams.append('secure', dataProduct.signature?.secure || '');
+
   // add query params to base url
   const url = `${basePath}${resourcePath}?${queryParams.toString()}`;
 

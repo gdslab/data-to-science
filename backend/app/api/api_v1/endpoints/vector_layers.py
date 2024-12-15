@@ -3,11 +3,13 @@ import logging
 import os
 import shutil
 import tempfile
+import time
 import urllib.parse
 import zipfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Sequence
+from urllib.parse import urlencode, quote_plus
 from uuid import UUID
 
 import geopandas as gpd
@@ -26,9 +28,9 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
-from app.api.utils import sanitize_file_name
+from app.api.utils import sanitize_file_name, get_tile_url_with_signed_payload
 from app.core.config import settings
-from app.core.security import create_signed_url
+from app.core.security import sign_map_tile_payload
 from app.tasks import process_vector_layer
 
 router = APIRouter()
@@ -178,6 +180,7 @@ def read_vector_layers(
             status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
         )
 
+    # Vector layers associated with project id
     vector_layers = crud.vector_layer.get_multi_by_project(db, project_id=project.id)
 
     payload = [
@@ -185,11 +188,7 @@ def read_vector_layers(
             "layer_id": layer[0],
             "layer_name": layer[1],
             "geom_type": layer[2],
-            "signed_url": create_signed_url(
-                f"{settings.API_DOMAIN}/mvt/public.vector_layers/{{z}}/{{x}}/{{y}}.pbf",
-                f"layer_id='{layer[0]}'",
-                -1,
-            ),
+            "signed_url": get_tile_url_with_signed_payload(layer[0]),
             "preview_url": get_preview_url(str(project.id), layer[0]),
         }
         for layer in vector_layers

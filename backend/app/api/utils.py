@@ -1,18 +1,23 @@
 import base64
 import os
 import re
+import time
 import uuid
 from pathlib import Path
+from typing import List, Tuple
+from urllib.parse import urlencode, quote_plus
 
 from geojson_pydantic import Feature
+from pydantic import UUID4
 from sqlalchemy.orm import Session
 
 from app import crud
 from app.core.config import settings
+from app.core.security import sign_map_tile_payload
 from app.utils.MapMaker import MapMaker
 
 
-def create_project_field_preview(project_id: uuid.UUID, features: list[Feature]) -> str:
+def create_project_field_preview(project_id: uuid.UUID, features: List[Feature]) -> str:
     """Create preview image of project field boundary.
 
     Args:
@@ -39,7 +44,7 @@ def create_project_field_preview(project_id: uuid.UUID, features: list[Feature])
 
 
 def create_vector_layer_preview(
-    project_id: uuid.UUID, layer_id: str, features: list[Feature]
+    project_id: uuid.UUID, layer_id: str, features: List[Feature]
 ) -> str:
     """Create preview image of vector layer.
 
@@ -262,3 +267,59 @@ def is_geometry_match(expected_geometry: str, actual_geometry: str) -> bool:
             return True
 
     return False
+
+
+def get_tile_url_with_signed_payload(layer_id: str) -> str:
+    """Returns pg_tileserv URL with signed payload.
+
+    Args:
+        layer_id (str): Unique ID for vector layer.
+
+    Returns:
+        str: Tile URL with signed payload.
+    """
+    # Include `filter` and `limit` query params in the payload
+    filter_param = f"layer_id='{layer_id}'"
+    limit_param = -1
+
+    # Encode query params before signing payload
+    encoded_filter = quote_plus(filter_param)
+    encoded_limit = quote_plus(str(limit_param))
+
+    # Create payload string
+    payload_str = encoded_filter + encoded_limit
+
+    # Sign payload (expiration defaults to 10 minutes)
+    signed_payload, expiration_timestamp = sign_map_tile_payload(payload_str)
+
+    # Build query params for tile request
+    query_params = {
+        "expires": expiration_timestamp,
+        "filter": filter_param,
+        "limit": limit_param,
+        "secure": signed_payload,
+    }
+
+    # Add payload to base tile URL
+    base_url = f"{settings.API_DOMAIN}/mvt/public.vector_layers/{{z}}/{{x}}/{{y}}.pbf"
+    signed_url = f"{base_url}?{urlencode(query_params)}"
+
+    return signed_url
+
+
+def get_signature_for_data_product(data_product_id: UUID4) -> Tuple[str, int]:
+    """Return signed payload to be included in data product properties.
+
+    Args:
+        data_product_id (UUID4): Unique ID for data product.
+
+    Returns:
+        str: Signed payload.
+    """
+    # Create payload string
+    payload_str = str(data_product_id)
+
+    # Sign payload (expiration defaults to 10 minutes)
+    signed_payload, expiration_timestamp = sign_map_tile_payload(payload_str)
+
+    return signed_payload, expiration_timestamp

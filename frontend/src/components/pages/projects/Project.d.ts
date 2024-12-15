@@ -137,6 +137,10 @@ export interface DataProduct {
   url: string;
   flight_id: string;
   public: boolean;
+  signature?: {
+    secure: string;
+    expires: number;
+  };
   stac_properties: STACProperties;
   status: string;
   user_style: DsmSymbology | OrthoSymbology;

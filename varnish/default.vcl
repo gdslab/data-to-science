@@ -1,6 +1,7 @@
 vcl 4.1;
 
 import std;
+import digest;
 
 backend pg_tileserv {
     .host = "pg_tileserv";
@@ -49,8 +50,61 @@ acl purge {
 sub vcl_recv {
     # set which backend to use
     if (req.url ~ "^/cog/") {
+        # Extract signature from query parameters
+        set req.http.dataProductId = regsub(req.url, ".*[?&]dataProductId=([^&]+).*", "\1");
+        set req.http.expires = regsub(req.url, ".*[?&]expires=([^&]+).*", "\1");
+        set req.http.secure = regsub(req.url, ".*[?&]secure=([^&]+).*", "\1");
+
+        # Ensure all required parameters are present
+        if (req.http.expires == "" || req.http.dataProductId == "" || req.http.secure == "") {
+            return (synth(400, "Missing required parameters"));
+        }
+
+        # Check expiration
+        if (std.integer(req.http.expires, 0) < std.time2integer(now, 0)) {
+            return (synth(403, "URL expired"));
+        }
+
+        # Reconstruct the payload
+        set req.http.payload = req.http.expires + req.http.dataProductId;
+
+        # Compute the expected signature
+        set req.http.expected_signature = digest.hmac_sha256(digest.base64_decode(std.getenv("TILE_SIGNING_SECRET_KEY")), req.http.payload);
+
+        # Compare signatures
+        if (req.http.secure != req.http.expected_signature) {
+            return (synth(403, "Invalid signature"));
+        }
+
         set req.backend_hint = titiler;
     } else {
+        # Extract query parameters
+        set req.http.expires = regsub(req.url, ".*[?&]expires=([^&]+).*", "\1");
+        set req.http.filter = regsub(req.url, ".*[?&]filter=([^&]+).*", "\1");
+        set req.http.limit = regsub(req.url, ".*[?&]limit=([^&]+).*", "\1");
+        set req.http.secure = regsub(req.url, ".*[?&]secure=([^&]+).*", "\1");
+
+        # Ensure all required parameters are present
+        if (req.http.expires == "" || req.http.filter == "" || req.http.limit == "" || req.http.secure == "") {
+            return (synth(400, "Missing required parameters"));
+        }
+
+        # Check expiration
+        if (std.integer(req.http.expires, 0) < std.time2integer(now, 0)) {
+            return (synth(403, "URL expired"));
+        }
+
+        # Reconstruct the payload
+        set req.http.payload = req.http.expires + req.http.filter + req.http.limit;
+
+        # Compute the expected signature
+        set req.http.expected_signature = digest.hmac_sha256(digest.base64_decode(std.getenv("TILE_SIGNING_SECRET_KEY")), req.http.payload);
+
+        # Compare signatures
+        if (req.http.secure != req.http.expected_signature) {
+            return (synth(403, "Invalid signature"));
+        }
+
         set req.backend_hint = pg_tileserv;
     }
 

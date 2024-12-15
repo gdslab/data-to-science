@@ -45,7 +45,7 @@ export default function BandNumberInput({
 
     const updatedSymbology = {
       ...symbology,
-      [bandColor]: { [name]: valueAsNumber },
+      [bandColor]: { ...symbology[bandColor], [name]: valueAsNumber },
     };
 
     dispatch({

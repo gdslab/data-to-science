@@ -3,7 +3,7 @@ services:
     build:
       context: ./frontend
       dockerfile: frontend.prod.dockerfile
-    image: d2s-app:latest
+    image: d2s-app:dev
     platform: linux/x86_64
     depends_on:
       - backend
@@ -33,7 +33,7 @@ services:
         NUM_OF_WORKERS: 1
         LIMIT_MAX_REQUESTS: 10000
         TILE_SIGNING_SECRET_KEY: ${TILE_SIGNING_SECRET_KEY}
-    image: d2s-api:latest
+    image: d2s-api:dev
     platform: linux/x86_64
     volumes:
       - external-data:/srv/external-data
@@ -115,7 +115,7 @@ services:
       - no-new-privileges=true
 
   celery_worker:
-    image: d2s-api:latest
+    image: d2s-api:dev
     platform: linux/x86_64
     command: /app/celery/worker-start.sh
     volumes:
@@ -147,7 +147,7 @@ services:
       - db.env
 
   celery_beat:
-    image: d2s-api:latest
+    image: d2s-api:dev
     platform: linux/x86_64
     command: /app/celery/beat-start.sh
     volumes:

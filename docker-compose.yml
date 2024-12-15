@@ -124,7 +124,6 @@ services:
       dockerfile: nginx.dockerfile
       args:
         - DEFAULT_CONF=dev
-        - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
     image: d2s-proxy:dev
     platform: linux/x86_64
     tmpfs:
@@ -136,12 +135,14 @@ services:
       - frontend
 
   varnish:
-    image: varnish:latest
-    volumes:
-      - ./default.vcl:/etc/varnish/default.vcl:ro
+    build:
+      context: ./varnish
+      dockerfile: varnish.dockerfile
+    image: d2s-varnish:dev
     tmpfs:
       - /var/lib/varnish/varnishd:exec
     environment:
+      - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
       - VARNISH_SIZE=2G
     command: "-p default_keep=300"
     depends_on:

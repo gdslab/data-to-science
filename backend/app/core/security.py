@@ -1,8 +1,9 @@
 import base64
+import hmac
 import hashlib
 import time
 from datetime import datetime, timedelta
-from typing import Any, cast, Dict, Optional
+from typing import Any, cast, Dict, Optional, Tuple
 from urllib.parse import urlencode, quote_plus
 
 from fastapi import Request, status
@@ -10,7 +11,7 @@ from fastapi.exceptions import HTTPException
 from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
 from fastapi.security import OAuth2
 from fastapi.security.utils import get_authorization_scheme_param
-from jose import jwt
+from jose import jws, jwt
 from passlib.context import CryptContext
 from passlib.hash import sha256_crypt
 
@@ -37,43 +38,29 @@ def create_access_token(subject: str | Any, expire: datetime | None = None) -> s
     return encoded_jwt
 
 
-def create_signed_url(
-    base_url: str,
-    filter_param: str,
-    limit_param: int = 50000,
-    expiration_seconds: int = 3600,
-) -> str:
-    """Generate a signed URL for fetching raster and vector tiles.
+def sign_map_tile_payload(payload: str, expiration: int = 600) -> Tuple[str, int]:
+    """Returns signed payload for either raster or vector tile data.
 
     Args:
-        base_url (str): Base URL for fetching tile.
-        filter_param (str): Filter query parameter to be included with request.
-        limit_param (str): Max number of features to write to a tile.
-        expiration_seconds (int, optional): Expiration in seconds. Defaults to 3600.
-
+        payload (str): Payload to be signed.
+        expiration (int, optional): Expiration duration. Defaults to 600.
     Returns:
-        str: Signed URL.
+        Tuple[str, int]: Signed payload and expiration timestamp.
     """
-    # Set expiration for N (default 3600) seconds from now
-    expiration_timestamp = int(time.time()) + expiration_seconds
+    # Add expiration duration to current time
+    expiration_timestamp = int(time.time()) + expiration
 
-    # Include `filter` and `limit` query params in the hash
-    encoded_filter = quote_plus(filter_param)
-    encoded_limit = quote_plus(str(limit_param))
-    string_to_hash = f"{expiration_timestamp}{encoded_filter}{encoded_limit} {settings.TILE_SIGNING_SECRET_KEY}"
+    # Append expiration timestamp to front of payload
+    payload_with_timestamp = str(expiration_timestamp) + payload
 
-    hash_binary = hashlib.md5(string_to_hash.encode()).digest()
-    secure_hash = base64.urlsafe_b64encode(hash_binary).decode().rstrip("=")
+    # Create SHA256 hash
+    payload_signed = hmac.new(
+        base64.b64decode(settings.TILE_SIGNING_SECRET_KEY),
+        payload_with_timestamp.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
 
-    # Build the query param string
-    query_params = {
-        "expires": expiration_timestamp,
-        "filter": filter_param,
-        "limit": limit_param,
-        "secure": secure_hash,
-    }
-
-    return f"{base_url}?{urlencode(query_params)}"
+    return f"0x{payload_signed}", expiration_timestamp
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
