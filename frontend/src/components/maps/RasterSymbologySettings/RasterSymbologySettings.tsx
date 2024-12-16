@@ -29,7 +29,7 @@ export default function RasterSymbologySettings() {
 
     const { stac_properties, user_style } = activeDataProduct;
 
-    if (user_style && !state[activeDataProduct.id].symbology) {
+    if (user_style && !state[activeDataProduct.id]?.symbology) {
       // user style exists and symbology context has not yet been set
       dispatch({
         type: 'SET_SYMBOLOGY',

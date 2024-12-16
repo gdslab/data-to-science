@@ -128,6 +128,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                     if user_style:
                         set_user_style_attr(data_product, user_style.settings)
                 set_public_attr(data_product, data_product.file_permission.is_public)
+                set_signature_attr(data_product)
                 set_url_attr(data_product, upload_dir)
                 is_status_set = set_status_attr(data_product, data_product.jobs)
                 if is_status_set:
