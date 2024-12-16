@@ -32,7 +32,6 @@ services:
       args:
         NUM_OF_WORKERS: 1
         LIMIT_MAX_REQUESTS: 10000
-        TILE_SIGNING_SECRET_KEY: ${TILE_SIGNING_SECRET_KEY}
     image: d2s-api:dev
     platform: linux/x86_64
     volumes:
@@ -60,6 +59,8 @@ services:
         window: 120s
     security_opt:
       - no-new-privileges=true
+    environment:
+      - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
     env_file:
       - backend.env
       - db.env
@@ -209,15 +210,16 @@ services:
       - no-new-privileges=true
 
   varnish:
-    image: varnish:latest
-    volumes:
-      - ./default.vcl:/etc/varnish/default.vcl:ro
+    build:
+      context: ./varnish
+      dockerfile: varnish.dockerfile
+    image: d2s-varnish:dev
     tmpfs:
       - /var/lib/varnish/varnishd:exec
-    environment:
-      - VARNISH_SIZE=2G
     command: "-p default_keep=300"
     depends_on:
+      - pg_tileserv
+      - proxy
       - titiler
     deploy:
       restart_policy:
@@ -227,6 +229,9 @@ services:
         window: 120s
     security_opt:
       - no-new-privileges=true
+    environment:
+      - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
+      - VARNISH_SIZE=2G
 
   pg_tileserv:
     image: pramsey/pg_tileserv:latest

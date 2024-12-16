@@ -19,7 +19,6 @@ services:
       dockerfile: backend.dockerfile
       args:
         INSTALL_DEV: true
-        TILE_SIGNING_SECRET_KEY: ${TILE_SIGNING_SECRET_KEY}
     image: d2s-api:dev
     platform: linux/x86_64
     volumes:
@@ -32,6 +31,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    environment:
+      - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
     env_file:
       - backend.env
       - db.env
@@ -141,14 +142,14 @@ services:
     image: d2s-varnish:dev
     tmpfs:
       - /var/lib/varnish/varnishd:exec
-    environment:
-      - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
-      - VARNISH_SIZE=2G
     command: "-p default_keep=300"
     depends_on:
       - pg_tileserv
       - proxy
       - titiler
+    environment:
+      - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
+      - VARNISH_SIZE=2G
 
   pg_tileserv:
     image: pramsey/pg_tileserv:latest
