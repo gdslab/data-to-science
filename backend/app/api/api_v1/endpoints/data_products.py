@@ -523,7 +523,7 @@ async def create_zonal_statistics(
         metadata_in = schemas.DataProductMetadataCreate(
             category="zonal",
             properties={"stats": zonal_stats[0]},
-            vector_layer_id=vector_layer_feature_id,
+            vector_layer_feature_id=vector_layer_feature_id,
         )
         crud.data_product_metadata.create_with_data_product(
             db, obj_in=metadata_in, data_product_id=data_product.id
@@ -546,8 +546,8 @@ async def create_zonal_statistics(
 
 @router.get(
     "/{data_product_id}/zonal_statistics",
-    response_model=FeatureCollection[
-        Feature[Union[Polygon, MultiPolygon], ZonalStatisticsProps]
+    response_model=Optional[
+        FeatureCollection[Feature[Union[Polygon, MultiPolygon], ZonalStatisticsProps]]
     ],
 )
 async def read_zonal_statistics(
@@ -558,9 +558,24 @@ async def read_zonal_statistics(
     flight: models.Flight = Depends(deps.can_read_flight),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    zonal_stats = crud.data_product_metadata.get_zonal_statistics_by_layer_id(
-        db, data_product_id=data_product_id, layer_id=layer_id
-    )
+    def verify_stats_are_set(feature: Feature) -> bool:
+        """Return False if any stat properties are missing or do not have value set.
+
+        Args:
+            feature (Feature): GeoJSON feature with stat properties.
+
+        Returns:
+            bool: True if stats are set, otherwise False.
+        """
+        required_props = ["max", "min", "std", "mean", "count", "median"]
+        if not hasattr(feature, "properties") or not isinstance(
+            feature.properties, dict
+        ):
+            return False
+        return all(
+            prop in feature.properties and feature.properties[prop] is not None
+            for prop in required_props
+        )
 
     # query vector layers as GeoJSON feature with zonal metadata in properties
     vector_layer_features = crud.vector_layer.get_vector_layer_by_id_with_metadata(
@@ -570,6 +585,11 @@ async def read_zonal_statistics(
         data_product_id=data_product_id,
         metadata_category="zonal",
     )
+
+    # verify stats and return None if stats missing or not set
+    for feature in vector_layer_features:
+        if not verify_stats_are_set(feature):
+            return None
 
     return FeatureCollection(
         type="FeatureCollection",

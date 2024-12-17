@@ -140,7 +140,7 @@ const DownloadZonalStatistics = ({
   useEffect(() => {
     async function fetchZonalStats() {
       try {
-        const response: AxiosResponse<ZonalFeatureCollection> = await axios.get(
+        const response: AxiosResponse<ZonalFeatureCollection | null> = await axios.get(
           `${
             import.meta.env.VITE_API_V1_STR
           }/projects/${projectId}/flights/${flightId}/data_products/${dataProductId}/zonal_statistics?layer_id=${layerId}`
@@ -230,17 +230,20 @@ const ZonalStatisticTools = ({ dataProductId }: { dataProductId: string }) => {
           {values.zonal && (
             <div>
               <span className="text-sm">Select Layer with Zonal Features:</span>
-              {filteredAndSortedMapLayers.map(({ layer_id, layer_name }) => (
+              {filteredAndSortedMapLayers.map(({ layer_id, layer_name, geom_type }) => (
                 <label
                   key={layer_id}
                   className="block text-sm text-gray-600 font-bold pb-1"
                 >
                   <Field type="radio" name="zonal_layer_id" value={layer_id} />
                   <span className="ml-2">{layer_name}</span>
-                  <DownloadZonalStatistics
-                    dataProductId={dataProductId}
-                    layerId={layer_id}
-                  />
+                  {(geom_type.toLowerCase() === 'polygon' ||
+                    geom_type.toLowerCase() === 'multipolygon') && (
+                    <DownloadZonalStatistics
+                      dataProductId={dataProductId}
+                      layerId={layer_id}
+                    />
+                  )}
                 </label>
               ))}
             </div>

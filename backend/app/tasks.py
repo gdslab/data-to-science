@@ -699,10 +699,11 @@ def generate_zonal_statistics_bulk(
         features = feature_collection.features
         # create metadata record for each zone
         for index, zstats in enumerate(all_zonal_stats):
+            vector_layer_feature_id = features[index].properties["feature_id"]
             metadata_in = schemas.DataProductMetadataCreate(
                 category="zonal",
                 properties={"stats": zstats},
-                vector_layer_id=features[index].properties["id"],
+                vector_layer_feature_id=vector_layer_feature_id,
             )
             try:
                 crud.data_product_metadata.create_with_data_product(
@@ -714,7 +715,7 @@ def generate_zonal_statistics_bulk(
                     db,
                     category="zonal",
                     data_product_id=data_product_id,
-                    vector_layer_id=features[index].properties["id"],
+                    vector_layer_id=vector_layer_feature_id,
                 )
                 if len(existing_metadata) == 1:
                     crud.data_product_metadata.update(

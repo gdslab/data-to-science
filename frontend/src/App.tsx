@@ -8,7 +8,7 @@ import { AuthContextProvider } from './AuthContext';
 export default function App() {
   return (
     <AuthContextProvider>
-      <RouterProvider router={router} />
+      <RouterProvider future={{ v7_startTransition: true }} router={router} />
     </AuthContextProvider>
   );
 }

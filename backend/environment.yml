@@ -377,4 +377,3 @@ dependencies:
   - zstd=1.5.6=ha6fb4c9_0
   - pip:
       - pdal-plugins==1.6.2
-prefix: /home/benh/miniforge3/envs/d2s

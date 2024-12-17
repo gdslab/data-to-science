@@ -24,7 +24,6 @@ import Sort, {
 } from '../../Sort';
 
 import { getLocalStorageProjects } from './utils';
-import { getDefaultStyle } from '../utils';
 
 export default function LayerPane({
   hidePane,
@@ -52,7 +51,6 @@ export default function LayerPane({
     flights,
     projects,
     projectsVisible,
-    symbologySettingsDispatch,
   } = useMapContext();
 
   const { state } = useLocation();
