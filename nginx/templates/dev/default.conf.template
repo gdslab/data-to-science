@@ -80,6 +80,12 @@ server {
         keepalive_timeout 600s;
     }
 
+    location /developer {
+        proxy_set_header Host $host;
+
+        proxy_pass http://backend;
+    }
+
     location /files {
         # forward incoming requests to tusd container
         proxy_pass http://tusd;
@@ -101,18 +107,6 @@ server {
         # websocket proxying
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
-    }
-
-    location /docs {
-        proxy_set_header Host $host;
-
-        proxy_pass http://backend;
-    }
-
-    location /redoc {
-        proxy_set_header Host $host;
-
-        proxy_pass http://backend;
     }
 
     location /static {

@@ -72,6 +72,12 @@ server {
         keepalive_timeout 600s;
     }
 
+    location /developer {
+        proxy_set_header Host $host;
+
+        proxy_pass http://backend;
+    }
+
     location /files {
         # forward incoming requests to tusd container
         proxy_pass http://tusd;
