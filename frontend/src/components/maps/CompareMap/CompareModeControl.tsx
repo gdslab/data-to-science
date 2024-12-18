@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 
 export type Mode = 'side-by-side' | 'split-screen';
 
-export default function MapLibreCompareModeControl(props: {
+export default function CompareModeControl(props: {
   mode: Mode;
   onModeChange: (newMode: Mode) => void;
 }) {

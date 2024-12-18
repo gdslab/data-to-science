@@ -7,7 +7,7 @@ import {
 import { useMapLayerContext } from './MapLayersContext';
 import OpacitySlider from './OpacitySlider';
 
-export default function MaplibreLayerControl() {
+export default function LayerControl() {
   const [visible, setVisible] = useState(true);
 
   const {

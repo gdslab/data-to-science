@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useMap } from 'react-map-gl/maplibre';
 import MapboxDraw, { DrawCreateEvent } from '@mapbox/mapbox-gl-draw';
 
-import { drawStyles } from './drawStyles';
+import { drawStyles } from './styles/drawStyles';
 
 export default function DrawToolbar() {
   const { current: map } = useMap();

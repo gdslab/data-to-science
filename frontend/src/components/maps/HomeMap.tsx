@@ -1,39 +1,41 @@
 import 'maplibre-gl/dist/maplibre-gl.css';
-import './MaplibreMap.css';
+import './HomeMap.css';
 import axios, { AxiosResponse } from 'axios';
 import { Feature } from 'geojson';
 import { useEffect, useState } from 'react';
 import Map, { NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
 
-import { useMapContext } from './MapContext';
-import MaplibreCluster from './MaplibreCluster';
-import MaplibreFeaturePopup from './MaplibreFeaturePopup';
-import MaplibreLayerControl from './MaplibreLayerControl';
-import MaplibreProjectBoundary from './MaplibreProjectBoundary';
-import MaplibreProjectPopup from './MaplibreProjectPopup';
-import MaplibreProjectRasterTiles from './MaplibreProjectRasterTiles';
-import MaplibreProjectVectorTiles from './MaplibreProjectVectorTiles';
+import ColorBarControl from './ColorBarControl';
+import GeocoderControl from './GeocoderControl';
+import ProjectCluster from './ProjectCluster';
+import FeaturePopup from './FeaturePopup';
+import LayerControl from './LayerControl';
+import ProjectBoundary from './ProjectBoundary';
+import ProjectPopup from './ProjectPopup';
+import ProjectRasterTiles from './ProjectRasterTiles';
+import ProjectVectorTiles from './ProjectVectorTiles';
 import { MapLayer } from '../pages/projects/Project';
+
+import { useMapContext } from './MapContext';
 import { useMapLayerContext } from './MapLayersContext';
 import { useRasterSymbologyContext } from './RasterSymbologyContext';
 
 import {
   mapboxSatelliteBasemapStyle,
   usgsImageryTopoBasemapStyle,
-} from './basemapStyles';
-import { isSingleBand, mapApiResponseToLayers } from './utils';
-import MaplibreColorBarControl from './MaplibreColorBarControl';
-import MaplibreGeocoderControl from './MaplibreGeocoderControl';
+} from './styles/basemapStyles';
 
-export type ProjectPopup = {
+import { isSingleBand, mapApiResponseToLayers } from './utils';
+
+export type PopupInfoProps = {
   feature: Feature;
   latitude: number;
   longitude: number;
 };
 
-export default function MaplibreMap() {
+export default function HomeMap() {
   const [popupInfo, setPopupInfo] = useState<
-    ProjectPopup | { [key: string]: any } | null
+    PopupInfoProps | { [key: string]: any } | null
   >(null);
   const { activeDataProduct, activeProject } = useMapContext();
   const {
@@ -135,27 +137,21 @@ export default function MaplibreMap() {
       onClick={handleMapClick}
     >
       {/* Display marker cluster for project centroids when no project is active */}
-      {!activeProject && <MaplibreCluster />}
+      {!activeProject && <ProjectCluster />}
 
       {/* Display popup on click for project markers when no project is active */}
       {!activeProject && popupInfo && (
-        <MaplibreProjectPopup
-          popupInfo={popupInfo}
-          onClose={() => setPopupInfo(null)}
-        />
+        <ProjectPopup popupInfo={popupInfo} onClose={() => setPopupInfo(null)} />
       )}
 
       {/* Display popup on click on map layer feature */}
       {activeProject && popupInfo && (
-        <MaplibreFeaturePopup
-          popupInfo={popupInfo}
-          onClose={() => setPopupInfo(null)}
-        />
+        <FeaturePopup popupInfo={popupInfo} onClose={() => setPopupInfo(null)} />
       )}
 
       {/* Display project raster tiles when project active and data product active */}
       {activeProject && activeDataProduct && (
-        <MaplibreProjectRasterTiles
+        <ProjectRasterTiles
           key={activeDataProduct.id}
           dataProduct={activeDataProduct}
         />
@@ -163,23 +159,20 @@ export default function MaplibreMap() {
 
       {/* Display color bar when project active and single band data product active */}
       {activeProject && activeDataProduct && isSingleBand(activeDataProduct) && (
-        <MaplibreColorBarControl
-          dataProduct={activeDataProduct}
-          projectId={activeProject.id}
-        />
+        <ColorBarControl dataProduct={activeDataProduct} projectId={activeProject.id} />
       )}
 
       {/* Display project vector layers when project active and layers selected */}
-      {activeProject && <MaplibreProjectVectorTiles />}
+      {activeProject && <ProjectVectorTiles />}
 
       {/* Display project boundary when project activated */}
-      {activeProject && <MaplibreProjectBoundary />}
+      {activeProject && <ProjectBoundary />}
 
       {/* Project map layer controls */}
-      {activeProject && <MaplibreLayerControl />}
+      {activeProject && <LayerControl />}
 
       {/* General controls */}
-      {!activeProject && <MaplibreGeocoderControl />}
+      {!activeProject && <GeocoderControl />}
       <NavigationControl />
       <ScaleControl />
     </Map>

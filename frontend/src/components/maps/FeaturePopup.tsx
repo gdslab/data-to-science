@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Popup } from 'react-map-gl/maplibre';
 import area from '@turf/area';
 
-import { ProjectPopup } from './MaplibreMap';
+import { PopupInfoProps } from './HomeMap';
 import { ZonalFeature } from '../pages/projects/Project';
 import { useMapContext } from './MapContext';
 import StripedTable from '../StripedTable';
@@ -16,15 +16,12 @@ import {
 
 import { isSingleBand } from './utils';
 
-type MaplibreFeaturePopupProps = {
-  popupInfo: ProjectPopup | { [key: string]: any };
+type FeaturePopupProps = {
+  popupInfo: PopupInfoProps | { [key: string]: any };
   onClose: () => void;
 };
 
-export default function MaplibreFeaturePopup({
-  popupInfo,
-  onClose,
-}: MaplibreFeaturePopupProps) {
+export default function FeaturePopup({ popupInfo, onClose }: FeaturePopupProps) {
   const [isCalculatingZonalStats, setIsCalculatingZonalStats] = useState(false);
   const [statistics, setStatistics] = useState<ZonalFeature | null>(null);
 

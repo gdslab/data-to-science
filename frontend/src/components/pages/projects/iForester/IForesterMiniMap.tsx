@@ -6,7 +6,7 @@ import { ScaleControl } from 'react-leaflet';
 import { ZoomControl } from 'react-leaflet/ZoomControl';
 import { useLeafletContext } from '@react-leaflet/core';
 
-import MapLayersControl from '../../../maps/MapLayersControl';
+import MapLayersControl from '../../../maps/DrawFieldMap/MapLayersControl';
 
 // updates map (loads tiles) after container size changes
 const InvalidateSize = () => {

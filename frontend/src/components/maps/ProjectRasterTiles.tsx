@@ -59,7 +59,7 @@ function constructRasterTileUrl(
   return url;
 }
 
-export default function MaplibreProjectRasterTiles({
+export default function ProjectRasterTiles({
   dataProduct,
 }: {
   dataProduct: DataProduct;

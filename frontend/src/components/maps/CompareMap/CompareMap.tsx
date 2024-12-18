@@ -1,23 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Map, { NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
 
-import MaplibreCompareMapControl from './MaplibreCompareMapControl';
-import MaplibreProjectBoundary from './MaplibreProjectBoundary';
-import { useMapContext } from './MapContext';
-import MaplibreProjectRasterTiles from './MaplibreProjectRasterTiles';
-import { DataProduct } from '../pages/projects/Project';
-import { useRasterSymbologyContext } from './RasterSymbologyContext';
+import CompareMapControl from './CompareMapControl';
+import CompareModeControl from './CompareModeControl';
+import ProjectBoundary from '../ProjectBoundary';
+import { useMapContext } from '../MapContext';
+import ProjectRasterTiles from '../ProjectRasterTiles';
+import { DataProduct } from '../../pages/projects/Project';
+import { useRasterSymbologyContext } from '../RasterSymbologyContext';
 
 import {
   mapboxSatelliteBasemapStyle,
   usgsImageryTopoBasemapStyle,
-} from './basemapStyles';
+} from '../styles/basemapStyles';
 import {
   createDefaultMultibandSymbology,
   createDefaultSingleBandSymbology,
-} from './utils';
-import { isSingleBand } from './utils';
-import MapLibreCompareModeControl from './MapLibreCompareModeControl';
+} from '../utils';
+import { isSingleBand } from '../utils';
 
 const LeftMapStyle: React.CSSProperties = {
   position: 'absolute',
@@ -57,7 +57,7 @@ const defaultMapComparisonState = {
   },
 };
 
-export default function MaplibreCompareMap() {
+export default function CompareMap() {
   const [viewState, setViewState] = useState({
     longitude: -86.9138040788386,
     latitude: 40.428655143949925,
@@ -201,9 +201,9 @@ export default function MaplibreCompareMap() {
         reuseMaps={true}
       >
         {/* Display project boundary when project activated */}
-        {activeProject && <MaplibreProjectBoundary setViewState={setViewState} />}
+        {activeProject && <ProjectBoundary setViewState={setViewState} />}
 
-        <MaplibreCompareMapControl
+        <CompareMapControl
           flights={flights}
           mapComparisonState={mapComparisonState}
           setMapComparisonState={setMapComparisonState}
@@ -213,11 +213,11 @@ export default function MaplibreCompareMap() {
         {activeProject &&
           selectedLeftDataProduct &&
           symbologyState[selectedLeftDataProduct.id]?.isLoaded && (
-            <MaplibreProjectRasterTiles dataProduct={selectedLeftDataProduct} />
+            <ProjectRasterTiles dataProduct={selectedLeftDataProduct} />
           )}
 
         {/* Toggle compare mode */}
-        <MapLibreCompareModeControl mode={mode} onModeChange={setMode} />
+        <CompareModeControl mode={mode} onModeChange={setMode} />
 
         {/* General controls */}
         <NavigationControl position="top-left" />
@@ -234,9 +234,9 @@ export default function MaplibreCompareMap() {
         reuseMaps={true}
       >
         {/* Display project boundary when project activated */}
-        {activeProject && <MaplibreProjectBoundary />}
+        {activeProject && <ProjectBoundary />}
 
-        <MaplibreCompareMapControl
+        <CompareMapControl
           flights={flights}
           mapComparisonState={mapComparisonState}
           setMapComparisonState={setMapComparisonState}
@@ -246,7 +246,7 @@ export default function MaplibreCompareMap() {
         {activeProject &&
           selectedRightDataProduct &&
           symbologyState[selectedRightDataProduct.id]?.isLoaded && (
-            <MaplibreProjectRasterTiles dataProduct={selectedRightDataProduct} />
+            <ProjectRasterTiles dataProduct={selectedRightDataProduct} />
           )}
 
         {/* General controls */}

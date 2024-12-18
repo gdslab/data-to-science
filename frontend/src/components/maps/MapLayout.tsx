@@ -5,7 +5,7 @@ import LayerPane from './LayerPane';
 import { MapContextProvider } from './MapContext';
 import { MapLayerProvider } from './MapLayersContext';
 import { RasterSymbologyProvider } from './RasterSymbologyContext';
-import MaplibreView from './MaplibreView';
+import MapViewMode from './MapViewMode';
 
 function classNames(...classes: [string, string]) {
   return classes.filter(Boolean).join(' ');
@@ -30,7 +30,7 @@ export default function MapLayout() {
             </div>
             {/* page content */}
             <div className="w-full">
-              <MaplibreView />
+              <MapViewMode />
             </div>
           </div>
         </RasterSymbologyProvider>

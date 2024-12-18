@@ -8,13 +8,17 @@ import {
   clusterLayerOuter,
   clusterCountLayer,
   unclusteredPointLayer,
-} from './MaplibreLayers';
+} from './layerProps';
 
 import { calculateBoundsFromGeoJSON } from './utils';
 
-export default function MaplibreCluster() {
+type ProjectClusterProps = { includeAll?: boolean };
+
+export default function ProjectCluster({ includeAll = false }: ProjectClusterProps) {
   const { current: map } = useMap();
-  const geojsonUrl = `${import.meta.env.VITE_API_V1_STR}/projects?format=geojson`;
+  const geojsonUrl = `${
+    import.meta.env.VITE_API_V1_STR
+  }/projects?include_all=${includeAll}&format=geojson`;
 
   useEffect(() => {
     if (!map) return;

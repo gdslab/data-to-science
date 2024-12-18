@@ -1,9 +1,9 @@
 import { Layer, Source } from 'react-map-gl/maplibre';
 
-import { getProjectVectorLayer } from './MaplibreLayers';
+import { getProjectVectorLayer } from './layerProps';
 import { useMapLayerContext } from './MapLayersContext';
 
-export default function MaplibreProjectVectorTile() {
+export default function ProjectVectorTile() {
   const {
     state: { layers },
   } = useMapLayerContext();

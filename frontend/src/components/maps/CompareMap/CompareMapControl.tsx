@@ -1,24 +1,24 @@
 import clsx from 'clsx';
 import { useMemo } from 'react';
 
-import { MapComparisonState } from './MaplibreCompareMap';
-import { Flight } from '../pages/projects/Project';
+import { MapComparisonState } from '.';
+import { Flight } from '../../pages/projects/Project';
 
-import { sorter } from '../utils';
+import { sorter } from '../../utils';
 
-type MaplibreComparisonMapControlProps = {
+type ComparisonMapControlProps = {
   flights: Flight[];
   mapComparisonState: MapComparisonState;
   setMapComparisonState: React.Dispatch<React.SetStateAction<MapComparisonState>>;
   side: 'left' | 'right';
 };
 
-export default function MaplibreCompareMapControl({
+export default function CompareMapControl({
   flights,
   mapComparisonState,
   setMapComparisonState,
   side = 'left',
-}: MaplibreComparisonMapControlProps) {
+}: ComparisonMapControlProps) {
   // filter out flights with no data products or only point cloud data products
   const flightsWithRasters = useMemo(() => {
     return flights

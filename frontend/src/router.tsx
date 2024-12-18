@@ -8,9 +8,7 @@ import DashboardCharts, {
 import DashboardExtensions, {
   loader as dashboardExtensionsLoader,
 } from './components/pages/admin/DashboardExtensions';
-import DashboardMap, {
-  loader as dashboardMapLoader,
-} from './components/pages/admin/DashboardMap';
+import DashboardMap from './components/pages/admin/DashboardMap';
 import DashboardProjectStorage, {
   loader as dashboardProjectStorageLoader,
 } from './components/pages/admin/DashboardProjectStorage';
@@ -35,7 +33,7 @@ import Landing from './components/Landing';
 import LoginForm from './components/pages/auth/LoginForm';
 import Logout from './components/pages/auth/Logout';
 import MapLayout from './components/maps/MapLayout';
-import MaplibreShareMap from './components/maps/MaplibreShareMap';
+import ShareMap from './components/maps/ShareMap';
 import PasswordRecovery from './components/pages/auth/PasswordRecovery';
 import PasswordResetForm from './components/pages/auth/PasswordResetForm';
 import Profile from './components/pages/auth/Profile';
@@ -100,7 +98,7 @@ export const router = createBrowserRouter(
               path: '/sharemap',
               element: (
                 <RasterSymbologyProvider>
-                  <MaplibreShareMap />
+                  <ShareMap />
                 </RasterSymbologyProvider>
               ),
             },
@@ -214,7 +212,6 @@ export const router = createBrowserRouter(
             {
               path: '/admin/dashboard/map',
               element: <DashboardMap />,
-              loader: dashboardMapLoader,
             },
             {
               path: '/admin/dashboard/storage',
