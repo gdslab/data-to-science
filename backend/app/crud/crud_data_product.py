@@ -83,6 +83,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
         with db as session:
             data_product = session.scalar(data_product_query)
             if data_product and data_product.file_permission.is_public:
+                set_signature_attr(data_product)
                 set_url_attr(data_product, upload_dir)
                 return data_product
             elif data_product and user_id:
@@ -91,6 +92,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                     db, project_id=project_id, member_id=user_id
                 )
                 if project_member:
+                    set_signature_attr(data_product)
                     set_url_attr(data_product, upload_dir)
                     return data_product
                 else:

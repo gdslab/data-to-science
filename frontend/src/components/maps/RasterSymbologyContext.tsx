@@ -1,4 +1,5 @@
 import { createContext, Dispatch, useContext, useReducer } from 'react';
+import { DataProduct } from '../pages/projects/Project';
 
 export type SymbologyMode = 'meanStdDev' | 'minMax' | 'userDefined';
 
@@ -16,6 +17,7 @@ type ValueRange = {
 };
 
 export interface SingleBandSymbology extends Symbology, ValueRange {
+  background?: DataProduct;
   colorRamp: string;
 }
 

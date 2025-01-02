@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { useMemo } from 'react';
 
-import { MapComparisonState } from '.';
+import { MapComparisonState } from './CompareMap';
 import { Flight } from '../../pages/projects/Project';
 
 import { sorter } from '../../utils';

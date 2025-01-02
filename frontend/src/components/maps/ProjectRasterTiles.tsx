@@ -9,6 +9,7 @@ import {
 } from './RasterSymbologyContext';
 
 import { getMultibandMinMax, getSingleBandMinMax, isSingleBand } from './utils';
+import { useMapContext } from './MapContext';
 
 function constructRasterTileUrl(
   dataProduct: DataProduct,
@@ -66,6 +67,8 @@ export default function ProjectRasterTiles({
 }) {
   const { current: map } = useMap();
 
+  const { activeDataProduct } = useMapContext();
+
   const { state } = useRasterSymbologyContext();
 
   const { isLoaded, symbology } = state[dataProduct.id] || {};
@@ -95,6 +98,9 @@ export default function ProjectRasterTiles({
         paint={{
           'raster-opacity': symbology.opacity ? symbology.opacity / 100 : 1,
         }}
+        beforeId={
+          dataProduct.id !== activeDataProduct?.id ? activeDataProduct?.id : undefined
+        }
       />
     </Source>
   );

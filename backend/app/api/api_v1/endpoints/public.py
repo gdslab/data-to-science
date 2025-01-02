@@ -45,7 +45,7 @@ def read_shared_data_product_with_user_access(
     file_id: UUID4,
     db: Session = Depends(deps.get_db),
     current_user: models.User = Depends(deps.get_current_approved_user),
-):
+) -> Any:
     if os.environ.get("RUNNING_TESTS") == "1":
         upload_dir = settings.TEST_STATIC_DIR
     else:
@@ -167,7 +167,7 @@ def read_data_product_bounds(
     data_product_id: UUID4,
     current_user: Optional[models.User] = Depends(deps.get_optional_current_user),
     db: Session = Depends(deps.get_db),
-):
+) -> Any:
     if os.environ.get("RUNNING_TESTS") == "1":
         upload_dir = settings.TEST_STATIC_DIR
     else:

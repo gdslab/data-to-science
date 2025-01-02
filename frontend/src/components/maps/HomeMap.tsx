@@ -18,7 +18,10 @@ import { MapLayer } from '../pages/projects/Project';
 
 import { useMapContext } from './MapContext';
 import { useMapLayerContext } from './MapLayersContext';
-import { useRasterSymbologyContext } from './RasterSymbologyContext';
+import {
+  SingleBandSymbology,
+  useRasterSymbologyContext,
+} from './RasterSymbologyContext';
 
 import {
   mapboxSatelliteBasemapStyle,
@@ -116,6 +119,26 @@ export default function HomeMap() {
     }
   };
 
+  const showBackgroundRaster = () => {
+    if (
+      activeDataProduct &&
+      isSingleBand(activeDataProduct) &&
+      symbologyContext.state[activeDataProduct.id]
+    ) {
+      const activeDataProductSymbology = symbologyContext.state[activeDataProduct.id]
+        .symbology as SingleBandSymbology;
+      if (activeDataProductSymbology && activeDataProductSymbology.background) {
+        return (
+          <ProjectRasterTiles dataProduct={activeDataProductSymbology.background} />
+        );
+      } else {
+        return null;
+      }
+    } else {
+      return null;
+    }
+  };
+
   return (
     <Map
       initialViewState={{
@@ -156,6 +179,8 @@ export default function HomeMap() {
           dataProduct={activeDataProduct}
         />
       )}
+      {/* Show background raster if one is set */}
+      {activeProject && activeDataProduct && showBackgroundRaster()}
 
       {/* Display color bar when project active and single band data product active */}
       {activeProject && activeDataProduct && isSingleBand(activeDataProduct) && (

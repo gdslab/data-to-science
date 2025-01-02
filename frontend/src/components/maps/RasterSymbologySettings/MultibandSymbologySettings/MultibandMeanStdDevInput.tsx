@@ -13,7 +13,7 @@ export default function MultibandMeanStdDevInput({
   const symbology = state[dataProduct.id].symbology as MultibandSymbology;
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(event.target.value);
+    const value = parseFloat(event.target.value);
 
     if (isNaN(value)) return;
 
