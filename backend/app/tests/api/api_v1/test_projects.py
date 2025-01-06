@@ -146,14 +146,15 @@ def test_create_project_with_demo_user(
 def test_create_project_date_validation(
     client: TestClient, normal_user_access_token: str, db: Session
 ) -> None:
+    current_year = datetime.now().year
     location = create_location(db)
     # invalid - harvest_date before planting_date
     data = jsonable_encoder(
         {
             "title": random_team_name(),
             "description": random_team_description(),
-            "planting_date": date(2024, 6, 1),
-            "harvest_date": date(2024, 5, 1),
+            "planting_date": date(current_year, 6, 1),
+            "harvest_date": date(current_year, 5, 1),
             "location": get_geojson_feature_collection("polygon")["geojson"][
                 "features"
             ][0],
@@ -167,7 +168,7 @@ def test_create_project_date_validation(
         {
             "title": random_team_name(),
             "description": random_team_description(),
-            "planting_date": date(2024, 6, 1),
+            "planting_date": date(current_year, 6, 1),
             "location": get_geojson_feature_collection("polygon")["geojson"][
                 "features"
             ][0],
@@ -181,7 +182,7 @@ def test_create_project_date_validation(
         {
             "title": random_team_name(),
             "description": random_team_description(),
-            "harvest_date": date(2024, 6, 1),
+            "harvest_date": date(current_year, 6, 1),
             "location": get_geojson_feature_collection("polygon")["geojson"][
                 "features"
             ][0],
@@ -195,8 +196,8 @@ def test_create_project_date_validation(
         {
             "title": random_team_name(),
             "description": random_team_description(),
-            "planting_date": date(2024, 6, 1),
-            "harvest_date": date(2024, 6, 1),
+            "planting_date": date(current_year, 6, 1),
+            "harvest_date": date(current_year, 6, 1),
             "location": get_geojson_feature_collection("polygon")["geojson"][
                 "features"
             ][0],
@@ -210,8 +211,8 @@ def test_create_project_date_validation(
         {
             "title": random_team_name(),
             "description": random_team_description(),
-            "planting_date": date(2024, 6, 1),
-            "harvest_date": date(2024, 6, 2),
+            "planting_date": date(current_year, 6, 1),
+            "harvest_date": date(current_year, 6, 2),
             "location": get_geojson_feature_collection("polygon")["geojson"][
                 "features"
             ][0],
@@ -581,6 +582,7 @@ def test_update_project_date_validation(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     # valid - harvest_date when no planting_date set
+    current_year = datetime.now().year
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(
         db, owner_id=current_user.id, planting_date=None, harvest_date=None
@@ -591,9 +593,12 @@ def test_update_project_date_validation(
 
     # valid - harvest_date after planting_date
     project = create_project(
-        db, owner_id=current_user.id, planting_date=date(2024, 6, 1), harvest_date=None
+        db,
+        owner_id=current_user.id,
+        planting_date=date(current_year, 6, 1),
+        harvest_date=None,
     )
-    update_data = jsonable_encoder({"harvest_date": date(2024, 6, 2)})
+    update_data = jsonable_encoder({"harvest_date": date(current_year, 6, 2)})
     response = client.put(f"{API_URL}/{project.id}", json=update_data)
     assert response.status_code == status.HTTP_200_OK
 
@@ -601,31 +606,40 @@ def test_update_project_date_validation(
     project = create_project(
         db, owner_id=current_user.id, planting_date=None, harvest_date=None
     )
-    update_data = jsonable_encoder({"planting_date": date(2024, 6, 2)})
+    update_data = jsonable_encoder({"planting_date": date(current_year, 6, 2)})
     response = client.put(f"{API_URL}/{project.id}", json=update_data)
     assert response.status_code == status.HTTP_200_OK
 
     # valid - update harvest date to same date as planting date
     project = create_project(
-        db, owner_id=current_user.id, planting_date=date(2024, 6, 1), harvest_date=None
+        db,
+        owner_id=current_user.id,
+        planting_date=date(current_year, 6, 1),
+        harvest_date=None,
     )
-    update_data = jsonable_encoder({"harvest_date": date(2024, 6, 1)})
+    update_data = jsonable_encoder({"harvest_date": date(current_year, 6, 1)})
     response = client.put(f"{API_URL}/{project.id}", json=update_data)
     assert response.status_code == status.HTTP_200_OK
 
     # invalid - harvest_date before planting_date
     project = create_project(
-        db, owner_id=current_user.id, planting_date=date(2024, 6, 1), harvest_date=None
+        db,
+        owner_id=current_user.id,
+        planting_date=date(current_year, 6, 1),
+        harvest_date=None,
     )
-    update_data = jsonable_encoder({"harvest_date": date(2024, 5, 1)})
+    update_data = jsonable_encoder({"harvest_date": date(current_year, 5, 1)})
     response = client.put(f"{API_URL}/{project.id}", json=update_data)
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     # invalid - harvest_date before planting_date
     project = create_project(
-        db, owner_id=current_user.id, planting_date=None, harvest_date=date(2024, 6, 5)
+        db,
+        owner_id=current_user.id,
+        planting_date=None,
+        harvest_date=date(current_year, 6, 5),
     )
-    update_data = jsonable_encoder({"planting_date": date(2024, 6, 7)})
+    update_data = jsonable_encoder({"planting_date": date(current_year, 6, 7)})
     response = client.put(f"{API_URL}/{project.id}", json=update_data)
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 

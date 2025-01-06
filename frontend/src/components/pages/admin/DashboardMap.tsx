@@ -1,5 +1,5 @@
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Map, { NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
 
 import ProjectCluster from '../../maps/ProjectCluster';
@@ -7,12 +7,28 @@ import ProjectPopup from '../../maps/ProjectPopup';
 
 import { PopupInfoProps } from '../../maps/HomeMap';
 import {
-  mapboxSatelliteBasemapStyle,
+  getMapboxSatelliteBasemapStyle,
   usgsImageryTopoBasemapStyle,
 } from '../../maps/styles/basemapStyles';
 
 export default function DashboardMap() {
+  const [mapboxAccessToken, setMapboxAccessToken] = useState('');
   const [popupInfo, setPopupInfo] = useState<PopupInfoProps | null>(null);
+
+  useEffect(() => {
+    if (!import.meta.env.VITE_MAPBOX_ACCESS_TOKEN) {
+      fetch('/config.json')
+        .then((response) => response.json())
+        .then((config) => {
+          setMapboxAccessToken(config.mapboxAccessToken);
+        })
+        .catch((error) => {
+          console.error('Failed to load config.json:', error);
+        });
+    } else {
+      setMapboxAccessToken(import.meta.env.VITE_MAPBOX_ACCESS_TOKEN);
+    }
+  }, []);
 
   const handleMapClick = (event) => {
     const map: maplibregl.Map = event.target;
@@ -51,10 +67,10 @@ export default function DashboardMap() {
         width: '100%',
         height: '100%',
       }}
-      mapboxAccessToken={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || undefined}
+      mapboxAccessToken={mapboxAccessToken || undefined}
       mapStyle={
-        import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
-          ? mapboxSatelliteBasemapStyle
+        mapboxAccessToken
+          ? getMapboxSatelliteBasemapStyle(mapboxAccessToken)
           : usgsImageryTopoBasemapStyle
       }
       reuseMaps={true}

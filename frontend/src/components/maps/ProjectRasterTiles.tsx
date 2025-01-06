@@ -25,7 +25,7 @@ function constructRasterTileUrl(
 
   // parts of path for fetching tiles
   const resourcePath = `/cog/tiles/${tms}/{z}/{x}/{y}@2x`;
-  const basePath = import.meta.env.VITE_BASE_URL || window.location.origin;
+  const basePath = window.location.origin;
 
   const queryParams = new URLSearchParams();
   queryParams.append('url', cogUrl);

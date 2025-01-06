@@ -1,17 +1,15 @@
 import { StyleSpecification } from 'maplibre-gl';
 
-const mapboxSatelliteBasemapStyle: StyleSpecification = {
+const getMapboxSatelliteBasemapStyle = (
+  mapboxAccessToken: string
+): StyleSpecification => ({
   version: 8,
-  glyphs: `https://api.mapbox.com/fonts/v1/gdslab/{fontstack}/{range}.pbf?access_token=${
-    import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
-  }`,
+  glyphs: `https://api.mapbox.com/fonts/v1/gdslab/{fontstack}/{range}.pbf?access_token=${mapboxAccessToken}`,
   sources: {
     satellite: {
       type: 'raster',
       tiles: [
-        `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/{z}/{x}/{y}?access_token=${
-          import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
-        }`,
+        `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/{z}/{x}/{y}?access_token=${mapboxAccessToken}`,
       ],
       tileSize: 512,
       attribution: `© <a href="https://www.mapbox.com/about/maps/">Mapbox</a> © <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> <strong><a href="https://www.mapbox.com/map-feedback/" target="_blank">Improve this map</a></strong>`,
@@ -24,7 +22,7 @@ const mapboxSatelliteBasemapStyle: StyleSpecification = {
       source: 'satellite',
     },
   ],
-};
+});
 
 const osmBasemapStyle: StyleSpecification = {
   version: 8,
@@ -70,4 +68,4 @@ const usgsImageryTopoBasemapStyle: StyleSpecification = {
   ],
 };
 
-export { mapboxSatelliteBasemapStyle, osmBasemapStyle, usgsImageryTopoBasemapStyle };
+export { getMapboxSatelliteBasemapStyle, osmBasemapStyle, usgsImageryTopoBasemapStyle };

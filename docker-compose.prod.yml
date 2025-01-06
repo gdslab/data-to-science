@@ -24,6 +24,8 @@ services:
         window: 120s
     security_opt:
       - no-new-privileges=true
+    env_file:
+      - frontend.env
 
   backend:
     build:

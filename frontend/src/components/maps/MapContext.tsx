@@ -15,6 +15,7 @@ import {
   ActiveProjectAction,
   FlightsAction,
   GeoRasterIdAction,
+  MapboxAccessTokenAction,
   MapTool,
   ProjectsAction,
   ProjectsVisibleAction,
@@ -104,6 +105,16 @@ function geoRasterIdReducer(state: string, action: GeoRasterIdAction) {
     }
     case 'remove': {
       return '';
+    }
+    default:
+      return state;
+  }
+}
+
+function mapboxAccessTokenReducer(state: string, action: MapboxAccessTokenAction) {
+  switch (action.type) {
+    case 'set': {
+      return action.payload;
     }
     default:
       return state;
@@ -216,6 +227,8 @@ const context: {
   flights: Flight[];
   geoRasterId: string;
   geoRasterIdDispatch: React.Dispatch<GeoRasterIdAction>;
+  mapboxAccessToken: string;
+  mapboxAccessTokenDispatch: React.Dispatch<MapboxAccessTokenAction>;
   mapViewProperties: MapViewPropertiesState;
   mapViewPropertiesDispatch: React.Dispatch<MapViewPropertiesAction>;
   projectLayers: MapLayerFeatureCollection[];
@@ -238,6 +251,8 @@ const context: {
   flights: [],
   geoRasterId: '',
   geoRasterIdDispatch: () => {},
+  mapboxAccessToken: '',
+  mapboxAccessTokenDispatch: () => {},
   mapViewProperties: null,
   mapViewPropertiesDispatch: () => {},
   projectLayers: [],
@@ -267,6 +282,10 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
   const [activeProject, activeProjectDispatch] = useReducer(activeProjectReducer, null);
   const [flights, flightsDispatch] = useReducer(flightsReducer, []);
   const [geoRasterId, geoRasterIdDispatch] = useReducer(geoRasterIdReducer, '');
+  const [mapboxAccessToken, mapboxAccessTokenDispatch] = useReducer(
+    mapboxAccessTokenReducer,
+    ''
+  );
   const [mapViewProperties, mapViewPropertiesDispatch] = useReducer(
     mapViewPropertiesReducer,
     null
@@ -356,6 +375,8 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
         flights,
         geoRasterId,
         geoRasterIdDispatch,
+        mapboxAccessToken,
+        mapboxAccessTokenDispatch,
         mapViewProperties,
         mapViewPropertiesDispatch,
         projectLayers,

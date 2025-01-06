@@ -488,7 +488,7 @@ async def create_zonal_statistics(
             ):
                 # query vector layer as GeoJSON feature
                 vector_layer_query = select(func.ST_AsGeoJSON(VectorLayer)).where(
-                    VectorLayer.vector_layer_feature_id == vector_layer_feature_id
+                    VectorLayer.feature_id == vector_layer_feature_id
                 )
                 with db as session:
                     vector_layer = session.execute(

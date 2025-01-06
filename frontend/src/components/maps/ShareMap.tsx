@@ -14,7 +14,7 @@ import {
 import { DataProduct } from '../pages/projects/Project';
 
 import {
-  mapboxSatelliteBasemapStyle,
+  getMapboxSatelliteBasemapStyle,
   usgsImageryTopoBasemapStyle,
 } from './styles/basemapStyles';
 import { isSingleBand } from './utils';
@@ -43,6 +43,7 @@ export default function ShareMap() {
   const [dataProduct, setDataProduct] = useState<DataProduct | null>(null);
   const [status, setStatus] = useState<Status | null>(null);
 
+  const [mapboxAccessToken, setMapboxAccessToken] = useState('');
   const { state, dispatch } = useRasterSymbologyContext();
 
   const mapRef = useRef<MapRef | null>(null);
@@ -50,6 +51,21 @@ export default function ShareMap() {
   const query = useQuery();
   const fileId = query.get('file_id');
   const symbologyFromQueryParams = parseSymbology(query.get('symbology'));
+
+  useEffect(() => {
+    if (!import.meta.env.VITE_MAPBOX_ACCESS_TOKEN) {
+      fetch('/config.json')
+        .then((response) => response.json())
+        .then((config) => {
+          setMapboxAccessToken(config.mapboxAccessToken);
+        })
+        .catch((error) => {
+          console.error('Failed to load config.json:', error);
+        });
+    } else {
+      setMapboxAccessToken(import.meta.env.VITE_MAPBOX_ACCESS_TOKEN);
+    }
+  }, []);
 
   useEffect(() => {
     async function fetchDataProduct(fileID) {
@@ -133,10 +149,10 @@ export default function ShareMap() {
         width: '100%',
         height: '100%',
       }}
-      mapboxAccessToken={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || undefined}
+      mapboxAccessToken={mapboxAccessToken || undefined}
       mapStyle={
-        import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
-          ? mapboxSatelliteBasemapStyle
+        mapboxAccessToken
+          ? getMapboxSatelliteBasemapStyle(mapboxAccessToken)
           : usgsImageryTopoBasemapStyle
       }
       reuseMaps={true}

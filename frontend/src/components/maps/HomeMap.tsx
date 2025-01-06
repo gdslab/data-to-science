@@ -24,7 +24,7 @@ import {
 } from './RasterSymbologyContext';
 
 import {
-  mapboxSatelliteBasemapStyle,
+  getMapboxSatelliteBasemapStyle,
   usgsImageryTopoBasemapStyle,
 } from './styles/basemapStyles';
 
@@ -40,7 +40,7 @@ export default function HomeMap() {
   const [popupInfo, setPopupInfo] = useState<
     PopupInfoProps | { [key: string]: any } | null
   >(null);
-  const { activeDataProduct, activeProject } = useMapContext();
+  const { activeDataProduct, activeProject, mapboxAccessToken } = useMapContext();
   const {
     state: { layers },
     dispatch,
@@ -150,10 +150,10 @@ export default function HomeMap() {
         width: '100%',
         height: '100%',
       }}
-      mapboxAccessToken={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || undefined}
+      mapboxAccessToken={mapboxAccessToken || undefined}
       mapStyle={
-        import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
-          ? mapboxSatelliteBasemapStyle
+        mapboxAccessToken
+          ? getMapboxSatelliteBasemapStyle(mapboxAccessToken)
           : usgsImageryTopoBasemapStyle
       }
       reuseMaps={true}

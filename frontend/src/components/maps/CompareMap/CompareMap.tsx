@@ -10,7 +10,7 @@ import { DataProduct } from '../../pages/projects/Project';
 import { useRasterSymbologyContext } from '../RasterSymbologyContext';
 
 import {
-  mapboxSatelliteBasemapStyle,
+  getMapboxSatelliteBasemapStyle,
   usgsImageryTopoBasemapStyle,
 } from '../styles/basemapStyles';
 import {
@@ -71,7 +71,7 @@ export default function CompareMap() {
     defaultMapComparisonState
   );
 
-  const { activeProject, flights } = useMapContext();
+  const { activeProject, flights, mapboxAccessToken } = useMapContext();
 
   const { state: symbologyState, dispatch } = useRasterSymbologyContext();
 
@@ -192,10 +192,10 @@ export default function CompareMap() {
         onMoveStart={onLeftMoveStart}
         onMove={activeMap === 'left' ? onMove : undefined}
         style={LeftMapStyle}
-        mapboxAccessToken={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || undefined}
+        mapboxAccessToken={mapboxAccessToken || undefined}
         mapStyle={
-          import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
-            ? mapboxSatelliteBasemapStyle
+          mapboxAccessToken
+            ? getMapboxSatelliteBasemapStyle(mapboxAccessToken)
             : usgsImageryTopoBasemapStyle
         }
         reuseMaps={true}
@@ -229,8 +229,8 @@ export default function CompareMap() {
         onMoveStart={onRightMoveStart}
         onMove={activeMap === 'right' ? onMove : undefined}
         style={RightMapStyle}
-        mapboxAccessToken={import.meta.env.VITE_MAPBOX_ACCESS_TOKEN}
-        mapStyle={mapboxSatelliteBasemapStyle}
+        mapboxAccessToken={mapboxAccessToken}
+        mapStyle={getMapboxSatelliteBasemapStyle(mapboxAccessToken)}
         reuseMaps={true}
       >
         {/* Display project boundary when project activated */}

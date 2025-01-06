@@ -16,8 +16,17 @@ WORKDIR /etc/nginx
 
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 
+COPY docker-entrypoint.sh /
 COPY ./frontend.nginx.conf ./conf.d/default.conf
 
-ENTRYPOINT ["nginx"]
+USER root
 
-CMD ["-g", "daemon off;"]
+RUN touch /usr/share/nginx/html/config.json
+RUN chown 101:101 /usr/share/nginx/html/config.json
+RUN chmod +x /docker-entrypoint.sh
+
+USER 101
+
+ENTRYPOINT ["/docker-entrypoint.sh"]
+
+CMD ["nginx", "-g", "daemon off;"]
