@@ -1,0 +1,125 @@
+import axios, { AxiosResponse } from 'axios';
+import { useState } from 'react';
+
+import { Button } from '../../Buttons';
+import { DataProduct } from '../../pages/projects/Project';
+import Modal from '../../Modal';
+import { Project } from '../../pages/projects/ProjectList';
+import RasterSymbologyAccessControls from './RasterSymbologyAccessControls';
+import { useMapContext } from '../MapContext';
+import {
+  MultibandSymbology,
+  SingleBandSymbology,
+  useRasterSymbologyContext,
+} from '../RasterSymbologyContext';
+
+function RasterSymbologyShare({
+  dataProduct,
+  project,
+  symbology,
+}: {
+  dataProduct: DataProduct;
+  project: Project;
+  symbology: SingleBandSymbology | MultibandSymbology;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="w-36">
+      <Button type="button" size="sm" icon="share2" onClick={() => setOpen(true)}>
+        Share
+      </Button>
+      <Modal open={open} setOpen={setOpen}>
+        <RasterSymbologyAccessControls
+          dataProduct={dataProduct}
+          project={project}
+          symbology={symbology}
+        />
+      </Modal>
+    </div>
+  );
+}
+
+type RasterSymbologySaveProps = {
+  dataProduct: DataProduct;
+  projectId: string;
+  symbology: SingleBandSymbology | MultibandSymbology;
+};
+
+type StyleResponse = {
+  id: string;
+  settings: SingleBandSymbology | MultibandSymbology;
+  data_product_id: string;
+  user_id: string;
+};
+
+function RasterSymbologySave({
+  dataProduct,
+  projectId,
+  symbology,
+}: RasterSymbologySaveProps) {
+  const { dispatch } = useRasterSymbologyContext();
+
+  const saveSymbology = async (dataProduct, projectId, symbology) => {
+    try {
+      const axiosRequest = dataProduct.user_style ? axios.put : axios.post;
+      const response: AxiosResponse<StyleResponse> = await axiosRequest(
+        `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/flights/${
+          dataProduct.flight_id
+        }/data_products/${dataProduct.id}/style`,
+        { settings: symbology }
+      );
+      if (response) {
+        dispatch({
+          type: 'SET_SYMBOLOGY',
+          rasterId: dataProduct.id,
+          payload: response.data.settings,
+        });
+      } else {
+        console.error('Unable to update symbology');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  return (
+    <div className="w-36">
+      <Button
+        type="button"
+        size="sm"
+        onClick={() => saveSymbology(dataProduct, projectId, symbology)}
+      >
+        Save Changes
+      </Button>
+    </div>
+  );
+}
+
+export default function RasterSymbologySaveAndShare({
+  dataProduct,
+}: {
+  dataProduct: DataProduct;
+}) {
+  const { activeProject } = useMapContext();
+
+  const { state } = useRasterSymbologyContext();
+
+  const symbology = state[dataProduct.id].symbology;
+
+  if (!activeProject || !symbology) return null;
+
+  return (
+    <div className="mt-4 w-full flex items-center justify-between">
+      <RasterSymbologyShare
+        dataProduct={dataProduct}
+        project={activeProject}
+        symbology={symbology}
+      />
+      <RasterSymbologySave
+        dataProduct={dataProduct}
+        projectId={activeProject.id}
+        symbology={symbology}
+      />
+    </div>
+  );
+}

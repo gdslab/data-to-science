@@ -1,30 +1,29 @@
 import axios from 'axios';
+import clsx from 'clsx';
 import { useEffect, useState } from 'react';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 
-import { useMapContext } from './MapContext';
-import { DSMSymbologySettings } from './Maps';
 import { DataProduct } from '../pages/projects/Project';
-import { classNames } from '../utils';
+import {
+  SingleBandSymbology,
+  useRasterSymbologyContext,
+} from './RasterSymbologyContext';
 
 export default function ColorBarControl({
   projectId,
   dataProduct,
-  symbology = undefined,
 }: {
   projectId?: string;
   dataProduct: DataProduct;
-  symbology?: DSMSymbologySettings | undefined;
 }) {
   const [isRefreshing, toggleIsRefreshing] = useState(false);
   const [url, setURL] = useState('');
-  const { symbologySettings } = useMapContext();
 
-  const colorBarSymbology = symbology
-    ? symbology
-    : (symbologySettings as DSMSymbologySettings);
+  const { state } = useRasterSymbologyContext();
 
-  async function fetchColorBar(symbology: DSMSymbologySettings, refresh = false) {
+  const symbology = state[dataProduct.id]?.symbology;
+
+  async function fetchColorBar(symbology: SingleBandSymbology, refresh = false) {
     const stats = dataProduct.stac_properties.raster[0].stats;
 
     try {
@@ -73,33 +72,30 @@ export default function ColorBarControl({
   }
 
   useEffect(() => {
-    fetchColorBar(colorBarSymbology);
-  }, [symbologySettings]);
+    if (symbology) {
+      fetchColorBar(symbology as SingleBandSymbology);
+    }
+  }, [symbology]);
+
+  if (!symbology) return null;
 
   if (url) {
     return (
-      <div className="leaflet-control-container">
-        <div className="leaflet-bottom leaflet-left bottom-8">
-          <div className="leaflet-control p-1.5 bg-white/60 border-4 border-white/40 rounded-md shadow-md">
-            <img src={url} className="h-80" />
-            <button
-              type="button"
-              className="flex items-center text-sky-600"
-              onClick={async () => {
-                toggleIsRefreshing(true);
-                fetchColorBar(colorBarSymbology, true);
-              }}
-            >
-              <ArrowPathIcon
-                className={classNames(
-                  isRefreshing ? 'animate-spin' : '',
-                  'h-4 w-4 inline mr-2'
-                )}
-              />
-              <span>Refresh</span>
-            </button>
-          </div>
-        </div>
+      <div className="absolute left-0 bottom-8 bg-white/75 rounded-md shadow-md px-3 py-6 m-2.5 leading-3 text-slate-600 outline-none">
+        <img src={url} className="h-80" />
+        <button
+          type="button"
+          className="flex items-center text-sky-600"
+          onClick={async () => {
+            toggleIsRefreshing(true);
+            fetchColorBar(symbology as SingleBandSymbology, true);
+          }}
+        >
+          <ArrowPathIcon
+            className={clsx('h-4 w-4 inline mr-2', { 'animate-spin': isRefreshing })}
+          />
+          <span>Refresh</span>
+        </button>
       </div>
     );
   } else {

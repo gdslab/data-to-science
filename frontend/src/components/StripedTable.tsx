@@ -34,7 +34,7 @@ const TableRow = ({ label, value }: { label: string; value: string }) => (
 );
 
 const TableBody = ({ children }: { children: React.ReactNode }) => (
-  <tbody className="divide-y divide-gray-200">{children}</tbody>
+  <tbody className="divide-y divide-gray-200 text-left">{children}</tbody>
 );
 
 const StripedTable = ({

@@ -1,8 +1,8 @@
 import axios, { AxiosResponse } from 'axios';
 import { createContext, useContext, useEffect, useReducer } from 'react';
-import { Params, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
-import { GeoJSONFeature, IForester, MapLayerFeatureCollection } from '../Project';
+import { GeoJSONFeature, IForester, MapLayer } from '../Project';
 import { Project } from '../ProjectList';
 import { ProjectMember } from '../ProjectAccess';
 import { User } from '../../../../AuthContext';
@@ -35,7 +35,7 @@ interface Context {
   iforesterDispatch: React.Dispatch<IForesterAction>;
   location: GeoJSONFeature | null;
   locationDispatch: React.Dispatch<LocationAction>;
-  mapLayers: MapLayerFeatureCollection[];
+  mapLayers: MapLayer[];
   mapLayersDispatch: React.Dispatch<MapLayersAction>;
   project: Project | null;
   projectDispatch: React.Dispatch<ProjectAction>;
@@ -69,12 +69,12 @@ const context: Context = {
 };
 
 export async function getProjectMembers(
-  params: Params,
+  projectId: string,
   projectMembersDispatch: React.Dispatch<ProjectMembersAction>
 ) {
   try {
     const response: AxiosResponse<ProjectMember[]> = await axios.get(
-      `${import.meta.env.VITE_API_V1_STR}/projects/${params.projectId}/members`
+      `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/members`
     );
     if (response) {
       projectMembersDispatch({ type: 'set', payload: response.data });
@@ -88,6 +88,29 @@ export async function getProjectMembers(
       console.error(err);
     }
     projectMembersDispatch({ type: 'clear', payload: null });
+  }
+}
+
+export async function getMapLayers(
+  projectId: string,
+  mapLayersDispatch: React.Dispatch<MapLayersAction>
+) {
+  try {
+    const response: AxiosResponse<MapLayer[]> = await axios.get(
+      `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/vector_layers`
+    );
+    if (response.status === 200) {
+      mapLayersDispatch({ type: 'set', payload: response.data });
+    } else {
+      mapLayersDispatch({ type: 'clear' });
+    }
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      console.log(err.response?.data);
+    } else {
+      console.error(err);
+    }
+    mapLayersDispatch({ type: 'clear' });
   }
 }
 
@@ -181,29 +204,8 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
   }, [params.projectId]);
 
   useEffect(() => {
-    async function getMapLayers() {
-      try {
-        const response: AxiosResponse<MapLayerFeatureCollection[]> = await axios.get(
-          `${import.meta.env.VITE_API_V1_STR}/projects/${
-            params.projectId
-          }/vector_layers`
-        );
-        if (response.status === 200) {
-          mapLayersDispatch({ type: 'set', payload: response.data });
-        } else {
-          mapLayersDispatch({ type: 'clear' });
-        }
-      } catch (err) {
-        if (axios.isAxiosError(err)) {
-          console.log(err.response?.data);
-        } else {
-          console.error(err);
-        }
-        mapLayersDispatch({ type: 'clear' });
-      }
-    }
     if (params.projectId) {
-      getMapLayers();
+      getMapLayers(params.projectId, mapLayersDispatch);
     } else {
       mapLayersDispatch({ type: 'clear' });
     }
@@ -239,7 +241,7 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
 
   useEffect(() => {
     if (params.projectId) {
-      getProjectMembers(params, projectMembersDispatch);
+      getProjectMembers(params.projectId, projectMembersDispatch);
     } else {
       projectMembersDispatch({ type: 'clear', payload: null });
     }

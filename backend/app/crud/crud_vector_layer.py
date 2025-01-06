@@ -1,13 +1,14 @@
 import json
-from collections import defaultdict
 from uuid import UUID
-from typing import List
+from typing import List, Tuple
 
+import geopandas as gpd
 from geojson_pydantic import Feature
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, select, text
 from sqlalchemy.orm import Session
 
+from app import crud
 from app.api.utils import create_vector_layer_preview
 from app.crud.base import CRUDBase
 from app.models.data_product_metadata import DataProductMetadata
@@ -18,33 +19,39 @@ from app.utils.unique_id import generate_unique_id
 
 class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate]):
     def create_with_project(
-        self, db: Session, obj_in: VectorLayerCreate, project_id: UUID
+        self,
+        db: Session,
+        file_name: str,
+        gdf: gpd.GeoDataFrame,
+        project_id: UUID,
     ) -> List[Feature]:
         """Creates new vector layer records for features in a feature collection.
 
         Args:
             db (Session): Database session.
-            obj_in (VectorLayerCreate): Feature name and GeoJSON for new vector data.
+            file_name (str): Original file name.
+            gdf (gpd.GeoDataFrame): GeoDataFrame of vector data.
             project_id (UUID): ID of project the vector data belongs to.
 
         Returns:
             List[Feature]: List of GeoJSON features.
         """
-        # List of features from feature collection
-        features = obj_in.geojson.features
         # Unique ID for feature collection
         layer_id = generate_unique_id()
         # List of vector layer objects
         vector_layers = []
         # Create record in database for each feature
-        for feature in features:
-            geometry = feature.geometry.__dict__
-            properties = jsonable_encoder(feature.properties)
-            # Serialize geometry for ST_GeomFromGeoJSON function
-            geom = func.ST_Force2D(func.ST_GeomFromGeoJSON(json.dumps(geometry)))
+        for _, row in gdf.iterrows():
+            # Get geometry in WKT format
+            wkt_geometry = row.geometry.wkt
+            # Convert to postgis compatible geometry
+            geom = func.ST_Force2D(
+                func.ST_GeomFromText(text(f"'{wkt_geometry}'"), 4326)
+            )
+            properties = jsonable_encoder(row.drop("geometry").to_dict())
             # Layer ID will be same for each feature from the feature collection
             vector_layer = VectorLayer(
-                layer_name=obj_in.layer_name,
+                layer_name=file_name,
                 layer_id=layer_id,
                 geom=geom,
                 properties=properties,
@@ -87,7 +94,7 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
                     Feature(**json.loads(feature)) for feature in vector_layers
                 ]
                 # Create preview image (if one does not exist)
-                preview_img = create_vector_layer_preview(
+                create_vector_layer_preview(
                     project_id=project_id,
                     layer_id=layer_id,
                     features=features,
@@ -117,7 +124,7 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
             metadata_category (str): Metadata category (e.g. "zonal")
 
         Returns:
-            List[Feature]: Vector layer features with metadata in properties.
+            List[Feature]: Features in Feature Collections.
         """
         statement = (
             select(func.ST_AsGeoJSON(VectorLayer), DataProductMetadata)
@@ -155,7 +162,7 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
 
     def get_multi_by_project(
         self, db: Session, project_id: UUID
-    ) -> List[List[Feature]]:
+    ) -> List[Tuple[str, str, str]]:
         """Fetches all vector layers and groups by feature collections.
 
         Args:
@@ -163,58 +170,101 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
             project_id (UUID): Vector layer's project ID.
 
         Returns:
-            List[List[Feature]]: Features in Feature Collections.
+            List[Tuple[str, str, str]]: List of vector layers with identifying attrs.
         """
-        # Assign new keys empty list
-        vector_layers = defaultdict(list)
-        with db as session:
-            for feature in (
-                session.query(func.ST_AsGeoJSON(VectorLayer))
-                .order_by(VectorLayer.id)
-                .where(
-                    and_(VectorLayer.project_id == project_id, VectorLayer.is_active)
-                )
-            ):
-                feature = Feature(**json.loads(feature[0]))
-                vector_layers[feature.properties["layer_id"]].append(feature)
-        for layer_id in vector_layers.keys():
-            # Create preview image (if one does not exist)
-            preview_img = create_vector_layer_preview(
-                project_id=project_id,
-                layer_id=layer_id,
-                features=vector_layers[layer_id],
+        statement = (
+            select(
+                VectorLayer.layer_id,
+                VectorLayer.layer_name,
+                func.ST_GeometryType(VectorLayer.geom).label("geometry_type"),
             )
-        # Each list element is a list of features from a feature collection
-        return list(vector_layers.values())
+            .where(and_(VectorLayer.project_id == project_id, VectorLayer.is_active))
+            .distinct(VectorLayer.layer_id)
+        )
 
-    def remove_layer_by_id(
-        self, db: Session, project_id: UUID, layer_id: str
-    ) -> List[Feature]:
+        with db as session:
+            results = session.execute(statement).all()
+            updated_results = [
+                (result[0], result[1], get_generic_geometry_type(result[2]))
+                for result in results
+            ]
+
+            return updated_results
+
+    def remove_layer_by_id(self, db: Session, project_id: UUID, layer_id: str) -> None:
         """_summary_
 
         Args:
             db (Session): Database session.
             project_id (UUID): Project ID.
             layer_id (str): Layer ID for feature collection.
-
-        Returns:
-            List[Feature]: List of GeoJSON features that were removed.
         """
         # Find all features associated with the layer feature collection
-        features_to_remove = self.get_vector_layer_by_id(
+        layer_id_features = self.get_vector_layer_by_id(
             db, project_id=project_id, layer_id=layer_id
         )
-        removed_features = []
-        if len(features_to_remove) > 0:
-            for feature in features_to_remove:
-                # Unique UUID associated with the feature
-                if feature.properties and "id" in feature.properties:
-                    feature_uuid = feature.properties["id"]
-                    # Remove feature using feature's UUID
-                    self.remove(db, id=feature_uuid)
-                    removed_features.append(feature)
 
-        return removed_features
+        for feature in layer_id_features:
+            # Unique UUID associated with the feature
+            if feature.properties and "feature_id" in feature.properties:
+                feature_id = feature.properties["feature_id"]
+                # Remove feature using feature's UUID
+                self.remove(db, id=feature_id)
+
+    def verify_user_access_to_vector_layer_by_id(
+        self, db: Session, layer_id: str, user_id: UUID
+    ) -> bool:
+        """Check if user can access a vector layer through project membership.
+
+        Args:
+            db (Session): Database session.
+            layer_id (str): Layer ID for feature collection.
+            user_id (UUID): ID for user.
+
+        Returns:
+            bool: True if user can access, False if not.
+        """
+        statement = select(VectorLayer.project_id).where(
+            and_(VectorLayer.layer_id == layer_id, VectorLayer.is_active)
+        )
+        with db as session:
+            project_id = session.scalars(statement).unique().all()
+            if len(project_id) == 1:
+                project_member = crud.project_member.get_by_project_and_member_id(
+                    db, project_id=project_id[0], member_id=user_id
+                )
+                if project_member:
+                    return True
+                else:
+                    return False
+            else:
+                return False
+
+        return False
+
+
+def get_generic_geometry_type(postgis_geom_type: str) -> str:
+    """Takes a PostGIS geometry (e.g., ST_Point) and returns a generic
+    geometry type (e.g. point).
+
+    Args:
+        postgis_geom_type (str): PostGIS geometry type.
+
+    Returns:
+        str: Generic geometry type.
+    """
+    geom_type_mapping = {
+        "ST_POINT": "point",
+        "ST_MULTIPOINT": "point",
+        "ST_LINESTRING": "line",
+        "ST_MULTILINESTRING": "line",
+        "ST_POLYGON": "polygon",
+        "ST_MULTIPOLYGON": "polygon",
+    }
+
+    normalized_geom_type = postgis_geom_type.strip().upper()
+
+    return geom_type_mapping.get(normalized_geom_type, "unknown")
 
 
 vector_layer = CRUDVectorLayer(VectorLayer)

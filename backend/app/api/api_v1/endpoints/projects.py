@@ -1,11 +1,11 @@
 import logging
 import os
 from datetime import date
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 from uuid import UUID
 
-from geojson_pydantic import Feature
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from geojson_pydantic import Feature, FeatureCollection
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
@@ -65,22 +65,27 @@ def create_project(
     return project["result"]
 
 
-@router.get("/{project_id}", response_model=schemas.Project)
+@router.get("/{project_id}", response_model=Union[schemas.Project, FeatureCollection])
 def read_project(
     project_id: UUID,
+    format: str = Query("json", pattern="^(json|geojson)$"),
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
-    project: models.Project = Depends(deps.can_read_project),
+    project: schemas.Project = Depends(deps.can_read_project),
 ) -> Any:
     """Retrieve project by id."""
-    return project
+    if format == "geojson":
+        return {"type": "FeatureCollection", "features": [project.field]}
+    else:
+        return project
 
 
-@router.get("", response_model=List[schemas.project.Projects])
+@router.get("", response_model=Union[List[schemas.project.Projects], FeatureCollection])
 def read_projects(
     edit_only: bool = False,
     has_raster: bool = False,
     include_all: bool = False,
+    format: str = Query("json", pattern="^(json|geojson)$"),
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
@@ -91,7 +96,28 @@ def read_projects(
         has_raster=has_raster,
         include_all=include_all,
     )
-    return projects
+
+    if format == "geojson":
+        return {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [project.centroid.x, project.centroid.y],
+                    },
+                    "properties": {
+                        "id": project.id,
+                        "title": project.title,
+                        "description": project.description,
+                    },
+                }
+                for project in projects
+            ],
+        }
+    else:
+        return projects
 
 
 @router.put("/{project_id}", response_model=schemas.Project)

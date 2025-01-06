@@ -12,6 +12,8 @@ services:
     restart: always
     depends_on:
       - backend
+    env_file:
+      - frontend.env
 
   backend:
     build:
@@ -31,6 +33,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    environment:
+      - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
     env_file:
       - backend.env
       - db.env
@@ -134,16 +138,34 @@ services:
       - frontend
 
   varnish:
-    image: varnish:latest
-    volumes:
-      - ./default.vcl:/etc/varnish/default.vcl:ro
+    build:
+      context: ./varnish
+      dockerfile: varnish.dockerfile
+    image: d2s-varnish:dev
     tmpfs:
       - /var/lib/varnish/varnishd:exec
-    environment:
-      - VARNISH_SIZE=2G
     command: "-p default_keep=300"
     depends_on:
+      - pg_tileserv
+      - proxy
       - titiler
+    environment:
+      - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
+      - VARNISH_SIZE=2G
+
+  pg_tileserv:
+    image: pramsey/pg_tileserv:latest
+    platform: linux/x86_64
+    volumes:
+      - ./pg_tileserv.toml:/config/pg_tileserv.toml:ro
+    ports:
+      - 7800:7800
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - db.env
 
   titiler:
     image: ghcr.io/developmentseed/titiler:0.19.0

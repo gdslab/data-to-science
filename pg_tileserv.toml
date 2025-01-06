@@ -1,0 +1,2 @@
+# Limit number of features requested (-1 = no limit)
+MaxFeaturesPerTile = -1

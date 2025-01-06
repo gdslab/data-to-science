@@ -24,7 +24,6 @@ import Sort, {
 } from '../../Sort';
 
 import { getLocalStorageProjects } from './utils';
-import { getDefaultStyle } from '../utils';
 
 export default function LayerPane({
   hidePane,
@@ -45,13 +44,13 @@ export default function LayerPane({
   const {
     activeDataProduct,
     activeDataProductDispatch,
+    activeMapTool,
     activeMapToolDispatch,
     activeProject,
     activeProjectDispatch,
     flights,
     projects,
     projectsVisible,
-    symbologySettingsDispatch,
   } = useMapContext();
 
   const { state } = useLocation();
@@ -70,6 +69,13 @@ export default function LayerPane({
       toggleHidePane(true);
     }
   }, [activeDataProduct]);
+
+  useEffect(() => {
+    // hide left-side pane when compare mode turned on
+    if (activeMapTool === 'compare') {
+      toggleHidePane(true);
+    }
+  }, [activeMapTool]);
 
   useEffect(() => {
     // reset to page one if the number of visible project markers
@@ -91,17 +97,6 @@ export default function LayerPane({
     if (state && state.project && state.dataProduct) {
       activeProjectDispatch({ type: 'set', payload: state.project });
       activeDataProductDispatch({ type: 'set', payload: state.dataProduct });
-      if (state.dataProduct.user_style) {
-        symbologySettingsDispatch({
-          type: 'update',
-          payload: state.dataProduct.user_style,
-        });
-      } else if (state.dataProduct.data_type !== 'point_cloud') {
-        symbologySettingsDispatch({
-          type: 'update',
-          payload: getDefaultStyle(state.dataProduct),
-        });
-      }
     }
   }, [state]);
 

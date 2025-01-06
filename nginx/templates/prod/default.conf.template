@@ -1,13 +1,17 @@
-upstream frontend {
-    server  frontend:8080;
-}
-
 upstream backend {
     server  backend:5000;
 }
 
+upstream frontend {
+    server  frontend:8080;
+}
+
 upstream tusd {
     server tusd:8080;
+}
+
+upstream varnish {
+    server varnish:80;
 }
 
 server {
@@ -99,6 +103,22 @@ server {
         # websocket proxying
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
+    }
+
+    location /cog {
+        # Proxy valid requests to the backend
+        proxy_set_header Host $host;
+
+        proxy_pass http://varnish;
+    }
+
+    location /mvt/ {
+        # Remove the /mvt prefix
+        rewrite ^/mvt/(.*)$ /$1 break;
+
+        # Proxy valid requests to the backend
+        proxy_set_header Host $host;
+        proxy_pass http://varnish/;
     }
 
     location /static {

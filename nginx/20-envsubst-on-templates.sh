@@ -69,6 +69,8 @@ auto_envsubst() {
       mkdir -p "$stream_output_dir/$subdir"
       entrypoint_log "$ME: Running envsubst on $template to $output_path"
       envsubst "$defined_envs" < "$template" > "$output_path"
+      # substitute environment variable for secret signing key
+      envsubst '${TILE_SIGNING_SECRET_KEY}' < "$template" > "$output_path"
     done
   fi
 }

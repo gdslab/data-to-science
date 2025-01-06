@@ -1,16 +1,37 @@
+import json
 import logging
 import os
+import shutil
+import tempfile
+import time
+import urllib.parse
+import zipfile
+from datetime import datetime
+from pathlib import Path
 from typing import Any, Sequence
+from urllib.parse import urlencode, quote_plus
 from uuid import UUID
 
+import geopandas as gpd
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Query,
+    status,
+    UploadFile,
+)
+from fastapi.responses import FileResponse, JSONResponse
 from geojson_pydantic import FeatureCollection
-from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
-from app.api.utils import create_vector_layer_preview
+from app.api.utils import sanitize_file_name, get_tile_url_with_signed_payload
 from app.core.config import settings
+from app.core.security import sign_map_tile_payload
+from app.tasks import process_vector_layer
 
 router = APIRouter()
 
@@ -18,75 +39,97 @@ router = APIRouter()
 logger = logging.getLogger("__name__")
 
 
-@router.post(
-    "",
-    response_model=schemas.vector_layer.VectorLayerFeatureCollection,
-    status_code=status.HTTP_201_CREATED,
-)
-def create_vector_layer(
-    vector_layer_in: schemas.VectorLayerCreate,
+def cleanup_temp(temp_path: str) -> None:
+    """Delete temp file or temp dir once no longer in use.
+
+    Args:
+        temp_path (str): Path to temporary file or directory.
+    """
+    if os.path.isfile(temp_path):
+        os.remove(temp_path)
+    elif os.path.isdir(temp_path):
+        shutil.rmtree(temp_path)
+
+
+def get_static_dir() -> str:
+    """Returns current static directory path.
+
+    Returns:
+        str: Static directory path.
+    """
+    if os.environ.get("RUNNING_TESTS") == "1":
+        return settings.TEST_STATIC_DIR
+    else:
+        return settings.STATIC_DIR
+
+
+def get_project_tmp_dir(project_id: str) -> str:
+    """Creates a tmp directory inside a project.
+
+    Args:
+        project_id (str): Unique project ID.
+
+    Returns:
+        str: File path for project tmp directory.
+    """
+    project_tmp_dir = os.path.join(get_static_dir(), "projects", project_id, "tmp")
+    if not os.path.exists(project_tmp_dir):
+        os.makedirs(project_tmp_dir)
+
+    return project_tmp_dir
+
+
+@router.post("", status_code=status.HTTP_202_ACCEPTED)
+async def create_vector_layer(
+    file: UploadFile,
+    background_tasks: BackgroundTasks,
     current_user: models.User = Depends(deps.get_current_approved_user),
     project: models.Project = Depends(deps.can_read_write_project),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    if not project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+    # Create temp file path for the uploaded vector file
+    if file and file.filename:
+        project_tmp_dir = get_project_tmp_dir(str(project.id))
+        suffix = Path(file.filename).suffix
+        temp_file = tempfile.NamedTemporaryFile(
+            delete=False, dir=project_tmp_dir, suffix=suffix
         )
-    # Raise exception if no features included in feature collection
-    if len(vector_layer_in.geojson.features) < 1:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="GeoJSON Feature Collection must have at least one Feature",
-        )
-    # Raise exception if feature collection contains more than 2000 features
-    if len(vector_layer_in.geojson.features) > 2000:
+        temp_file_path = temp_file.name
+        temp_file.close()
+    else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="GeoJSON Feature Collection cannot contain more than 2000 feautres",
+            detail="Unable to read filename for uploaded map layer",
         )
-    # Raise exception if features do not have same geometry type
-    first_features_geometry_type = vector_layer_in.geojson.features[0].geometry.type
-    for feature in vector_layer_in.geojson.features:
-        if not is_geometry_match(
-            expected_geometry=first_features_geometry_type,
-            actual_geometry=feature.geometry.type,
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Features in GeoJSON Feature Collection must have same geometry type",
-            )
 
+    # Write uploaded vector file to disk at temp_file location
     try:
-        features = crud.vector_layer.create_with_project(
-            db, obj_in=vector_layer_in, project_id=project.id
-        )
+        with open(temp_file_path, "wb") as tmpf:
+            while chunk := await file.read(1024 * 1024):  # 1 MB chunk
+                tmpf.write(chunk)
     except Exception:
-        logger.exception("Failed while creating vector layer records")
+        logger.exception("Unable to write uploaded file to disk")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Unable to process map layer",
+            detail="Unable to save map layer",
         )
 
-    preview_url = None
-    if features[0].properties and "layer_id" in features[0].properties.keys():
-        layer_id = features[0].properties["layer_id"]
-        if os.environ.get("RUNNING_TESTS") == "1":
-            static_dir = settings.TEST_STATIC_DIR
-        else:
-            static_dir = settings.STATIC_DIR
-        if os.path.exists(
-            f"{static_dir}/projects/{project.id}/vector/{layer_id}/preview.png"
-        ):
-            preview_url = f"{settings.API_DOMAIN}{static_dir}/projects/{project.id}/vector/{layer_id}/preview.png"
+    # Create job for processing task
+    job_in = schemas.JobCreate(
+        name="upload-vector-layer",
+        state="PENDING",
+        status="WAITING",
+        start_time=datetime.now(),
+    )
+    job = crud.job.create_job(db, obj_in=job_in)
 
-    feature_collection = {
-        "type": "FeatureCollection",
-        "features": features,
-        "metadata": {"preview_url": preview_url},
-    }
-
-    return schemas.vector_layer.VectorLayerFeatureCollection(**feature_collection)
+    # Sanitize original file name
+    original_file_name = sanitize_file_name(file.filename)
+    logger.info(temp_file_path)
+    # Start celery task for processing and adding uploaded vector file to database
+    process_vector_layer.apply_async(
+        args=(temp_file_path, original_file_name, project.id, current_user.id, job.id)
+    )
 
 
 @router.get(
@@ -119,15 +162,15 @@ def read_vector_layer(
             "type": "FeatureCollection",
             "features": features,
             "metadata": {
-                "preview_url": f"{settings.API_DOMAIN}{settings.STATIC_DIR}/projects/{project.id}/vector/{layer_id}/preview.png"
+                "preview_url": f"{settings.API_DOMAIN}{settings.STATIC_DIR}"
+                f"/projects/{project.id}/vector/{layer_id}"
+                f"/preview.png",
             },
         }
         return feature_collection
 
 
-@router.get(
-    "", response_model=Sequence[schemas.vector_layer.VectorLayerFeatureCollection]
-)
+@router.get("", response_model=Sequence[schemas.vector_layer.VectorLayerPayload])
 def read_vector_layers(
     project: models.Project = Depends(deps.can_read_project),
     db: Session = Depends(deps.get_db),
@@ -136,94 +179,153 @@ def read_vector_layers(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
         )
-    feature_collections = crud.vector_layer.get_multi_by_project(
-        db, project_id=project.id
+
+    # Vector layers associated with project id
+    vector_layers = crud.vector_layer.get_multi_by_project(db, project_id=project.id)
+
+    payload = [
+        {
+            "layer_id": layer[0],
+            "layer_name": layer[1],
+            "geom_type": layer[2],
+            "signed_url": get_tile_url_with_signed_payload(layer[0]),
+            "preview_url": get_preview_url(str(project.id), layer[0]),
+        }
+        for layer in vector_layers
+    ]
+
+    return JSONResponse(content=payload)
+
+
+@router.get("/{layer_id}/download")
+def download_vector_layer(
+    layer_id: str,
+    background_tasks: BackgroundTasks,
+    format: str = Query("json", pattern="^(json|shp)$"),
+    project: models.Project = Depends(deps.can_read_project),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    # Fetch GeoJSON features for vector layer
+    features = crud.vector_layer.get_vector_layer_by_id(
+        db, project_id=project.id, layer_id=layer_id
     )
-    if len(feature_collections) > 0:
-        final_feature_collections: list[
-            schemas.vector_layer.VectorLayerFeatureCollection
-        ] = []
-        for features in feature_collections:
-            layer_id = "undefined"
-            if (
-                len(features) > 0
-                and features[0].properties
-                and "layer_id" in features[0].properties.keys()
-            ):
-                layer_id = features[0].properties["layer_id"]
-            feature_collection = {
-                "type": "FeatureCollection",
-                "features": features,
-                "metadata": {
-                    "preview_url": f"{settings.API_DOMAIN}{settings.STATIC_DIR}/projects/{project.id}/vector/{layer_id}/preview.png"
-                },
-            }
-            final_feature_collections.append(
-                schemas.vector_layer.VectorLayerFeatureCollection(**feature_collection)
+    feature_collection = {
+        "type": "FeatureCollection",
+        "features": [feature.model_dump() for feature in features],
+    }
+
+    # Get original filename from first feature's properties
+    layer_name = (
+        features[0].properties.get("layer_name", "feature_collection")
+        if features and features[0].properties
+        else "feature_collection"
+    )
+
+    if format == "shp":
+        # Convert GeoJSON dict to GeoDataFrame
+        gdf = gpd.GeoDataFrame.from_features(features)
+
+        # Create temporary directory for shapefile zip
+        temp_dir = tempfile.mkdtemp()
+        shp_file_path = os.path.join(temp_dir, Path(layer_name).stem + ".shp")
+
+        try:
+            # Export GeoDataFrame to shapefile
+            gdf.to_file(shp_file_path, driver="ESRI Shapefile")
+
+            # Zip exported shapefile
+            zip_file_path = tempfile.NamedTemporaryFile(
+                delete=False, suffix=".zip"
+            ).name
+            try:
+                with zipfile.ZipFile(zip_file_path, "w") as zipf:
+                    for file_name in os.listdir(temp_dir):
+                        file_path = os.path.join(temp_dir, file_name)
+                        zipf.write(file_path, arcname=file_name)
+            except Exception:
+                logger.exception("Failed to zip shapefile")
+                cleanup_temp(zip_file_path)
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Unable to create shapefile",
+                )
+        except Exception:
+            logger.exception("Failed to convert vector layer to shapefile")
+            cleanup_temp(temp_dir)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Unable to create shapefile",
             )
-        return final_feature_collections
+
+        # Clean up temporary zip file and temporary directory after request finishes
+        background_tasks.add_task(cleanup_temp, zip_file_path)
+        background_tasks.add_task(cleanup_temp, temp_dir)
+
+        return FileResponse(
+            zip_file_path,
+            media_type="application/zip",
+            filename=Path(layer_name).stem + ".zip",
+        )
     else:
-        return []
+        # Create FeatureCollection with GeoJSON features
+        temp_file = tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".geojson"
+        )
+        temp_file_path = temp_file.name
+
+        try:
+            json.dump(feature_collection, temp_file)
+        except Exception:
+            logger.exception("Failed to serialize feature collection")
+            cleanup_temp(temp_file_path)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Unable to create GeoJSON",
+            )
+
+        # Clean up temporary file after request finishes
+        background_tasks.add_task(cleanup_temp, temp_file_path)
+
+        return FileResponse(
+            temp_file_path,
+            media_type="application/geo+json",
+            filename=Path(layer_name).stem + ".geojson",
+        )
 
 
-@router.delete("/{layer_id}", response_model=FeatureCollection)
+@router.delete("/{layer_id}", status_code=status.HTTP_200_OK)
 def delete_vector_layer(
     layer_id: str,
     project: models.Project = Depends(deps.can_read_write_project),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    removed_vector_layer = crud.vector_layer.remove_layer_by_id(
+    # Remove all vector layer records associated with layer_id
+    crud.vector_layer.remove_layer_by_id(db, project_id=project.id, layer_id=layer_id)
+
+    # Check if vector layer records associated with layer_id are still found
+    removed_layer_id_features = crud.vector_layer.get_vector_layer_by_id(
         db, project_id=project.id, layer_id=layer_id
     )
-    if len(removed_vector_layer) == 0:
+
+    # Raise exception records were found
+    if len(removed_layer_id_features) > 0:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Vector layer not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Unable to remove vector layer",
         )
-    return {"type": "FeatureCollection", "features": removed_vector_layer}
 
 
-def is_geometry_match(expected_geometry: str, actual_geometry: str) -> bool:
-    """Return True if expected geometry and actual geometry match or if they match
-    when multi and non-multi types are considered matches.
+def get_preview_url(project_id: str, layer_id: str) -> str:
+    """Returns URL for vector layer preview image.
 
     Args:
-        expected_geometry (str): Expected geometry type.
-        actual_geometry (str): Actual geometry type.
+        project_id (str): Unique project ID.
+        layer_id (str): Unique layer ID.
 
     Returns:
-        bool: True if expected and actual geometry match.
+        str: URL to vector layer preview image.
     """
-    if expected_geometry.lower() == actual_geometry.lower():
-        return True
+    static_dir = get_static_dir()
+    base_static_url = f"{settings.API_DOMAIN}{static_dir}"
 
-    if (
-        expected_geometry.lower() == "point"
-        or expected_geometry.lower() == "multipoint"
-    ):
-        if (
-            actual_geometry.lower() == "point"
-            or actual_geometry.lower() == "multipoint"
-        ):
-            return True
-
-    if (
-        expected_geometry.lower() == "linestring"
-        or expected_geometry.lower() == "multilinestring"
-    ):
-        if (
-            actual_geometry.lower() == "linestring"
-            or actual_geometry.lower() == "multilinestring"
-        ):
-            return True
-
-    if (
-        expected_geometry.lower() == "polygon"
-        or expected_geometry.lower() == "multipolygon"
-    ):
-        if (
-            actual_geometry.lower() == "polygon"
-            or actual_geometry.lower() == "multipolygon"
-        ):
-            return True
-
-    return False
+    return f"{base_static_url}/projects/{project_id}/vector/{layer_id}/preview.png"

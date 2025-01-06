@@ -1,12 +1,17 @@
+import base64
+import hmac
+import hashlib
+import time
 from datetime import datetime, timedelta
-from typing import Any, cast, Dict, Optional
+from typing import Any, cast, Dict, Optional, Tuple
+from urllib.parse import urlencode, quote_plus
 
 from fastapi import Request, status
 from fastapi.exceptions import HTTPException
 from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
 from fastapi.security import OAuth2
 from fastapi.security.utils import get_authorization_scheme_param
-from jose import jwt
+from jose import jws, jwt
 from passlib.context import CryptContext
 from passlib.hash import sha256_crypt
 
@@ -31,6 +36,31 @@ def create_access_token(subject: str | Any, expire: datetime | None = None) -> s
     to_encode = {"exp": expire, "sub": str(subject)}
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+
+def sign_map_tile_payload(payload: str, expiration: int = 600) -> Tuple[str, int]:
+    """Returns signed payload for either raster or vector tile data.
+
+    Args:
+        payload (str): Payload to be signed.
+        expiration (int, optional): Expiration duration. Defaults to 600.
+    Returns:
+        Tuple[str, int]: Signed payload and expiration timestamp.
+    """
+    # Add expiration duration to current time
+    expiration_timestamp = int(time.time()) + expiration
+
+    # Append expiration timestamp to front of payload
+    payload_with_timestamp = str(expiration_timestamp) + payload
+
+    # Create SHA256 hash
+    payload_signed = hmac.new(
+        base64.b64decode(settings.TILE_SIGNING_SECRET_KEY),
+        payload_with_timestamp.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+
+    return f"0x{payload_signed}", expiration_timestamp
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

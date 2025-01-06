@@ -8,6 +8,7 @@ from sqlalchemy import and_, func, select, update
 from sqlalchemy.orm import joinedload, Session
 
 from app import crud
+from app.api.utils import get_signature_for_data_product
 from app.core.config import settings
 from app.crud.base import CRUDBase
 from app.models.data_product import DataProduct
@@ -82,6 +83,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
         with db as session:
             data_product = session.scalar(data_product_query)
             if data_product and data_product.file_permission.is_public:
+                set_signature_attr(data_product)
                 set_url_attr(data_product, upload_dir)
                 return data_product
             elif data_product and user_id:
@@ -90,6 +92,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                     db, project_id=project_id, member_id=user_id
                 )
                 if project_member:
+                    set_signature_attr(data_product)
                     set_url_attr(data_product, upload_dir)
                     return data_product
                 else:
@@ -127,6 +130,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                     if user_style:
                         set_user_style_attr(data_product, user_style.settings)
                 set_public_attr(data_product, data_product.file_permission.is_public)
+                set_signature_attr(data_product)
                 set_url_attr(data_product, upload_dir)
                 is_status_set = set_status_attr(data_product, data_product.jobs)
                 if is_status_set:
@@ -195,11 +199,19 @@ def set_status_attr(data_product_obj: DataProduct, jobs: List[Job]) -> bool:
         return True
 
 
-def set_public_attr(data_product_obj: DataProduct, is_public: bool):
+def set_public_attr(data_product_obj: DataProduct, is_public: bool) -> None:
     setattr(data_product_obj, "public", is_public)
 
 
-def set_url_attr(data_product_obj: DataProduct, upload_dir: str):
+def set_signature_attr(data_product_obj: DataProduct) -> None:
+    signature, expiration_timestamp = get_signature_for_data_product(
+        data_product_obj.id
+    )
+    signature_prop = {"secure": signature, "expires": expiration_timestamp}
+    setattr(data_product_obj, "signature", signature_prop)
+
+
+def set_url_attr(data_product_obj: DataProduct, upload_dir: str) -> None:
     try:
         static_url = settings.API_DOMAIN + settings.STATIC_DIR
         relative_path = Path(data_product_obj.filepath).relative_to(upload_dir)
@@ -208,7 +220,7 @@ def set_url_attr(data_product_obj: DataProduct, upload_dir: str):
         setattr(data_product_obj, "url", None)
 
 
-def set_user_style_attr(data_product_obj: DataProduct, user_style: dict):
+def set_user_style_attr(data_product_obj: DataProduct, user_style: dict) -> None:
     setattr(data_product_obj, "user_style", user_style)
 
 

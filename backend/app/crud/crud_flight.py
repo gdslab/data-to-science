@@ -12,6 +12,7 @@ from app import crud
 from app.crud.base import CRUDBase
 from app.crud.crud_data_product import (
     set_public_attr,
+    set_signature_attr,
     set_url_attr,
     set_user_style_attr,
 )
@@ -128,6 +129,7 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                             set_public_attr(
                                 data_product, data_product.file_permission.is_public
                             )
+                            set_signature_attr(data_product)
                             set_url_attr(data_product, upload_dir)
                             # check for saved user style
                             user_style_query = (

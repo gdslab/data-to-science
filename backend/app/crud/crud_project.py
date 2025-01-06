@@ -9,7 +9,7 @@ from sqlalchemy import and_, func, select, update, or_
 from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm import joinedload, Session
 
-from app import crud
+from app import crud, schemas
 from app.crud.base import CRUDBase
 from app.models.data_product import DataProduct
 from app.models.flight import Flight
@@ -19,7 +19,7 @@ from app.models.project_member import ProjectMember
 from app.models.team_member import TeamMember
 from app.models.user import User
 from app.models.utils.user import utcnow
-from app.schemas.project import ProjectCreate, ProjectUpdate
+from app.schemas.project import Centroid, ProjectCreate, ProjectUpdate, Projects
 
 
 logger = logging.getLogger("__name__")
@@ -44,7 +44,7 @@ def is_team_member(user_id: UUID, team_members: Sequence[TeamMember]) -> bool:
 class ReadProject(TypedDict):
     response_code: int
     message: str
-    result: Project | None
+    result: schemas.Project | None
 
 
 class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
@@ -203,7 +203,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         user: User,
         has_raster: bool = False,
         include_all: bool = False,
-    ) -> List[Project]:
+    ) -> List[Projects]:
         # query to select active projects associated with user
         if include_all and user.is_superuser:
             statement = (
@@ -237,7 +237,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 else:
                     project_obj, member_obj, center_x, center_y = project
                 # add center x, y attributes to project obj
-                setattr(project_obj, "centroid", {"x": center_x, "y": center_y})
+                setattr(project_obj, "centroid", Centroid(x=center_x, y=center_y))
                 # count of project's active flights and most recent flight date
                 flight_count, most_recent_flight = (
                     get_flight_count_and_most_recent_flight(project_obj)
