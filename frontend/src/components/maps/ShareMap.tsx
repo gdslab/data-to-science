@@ -137,6 +137,12 @@ export default function ShareMap() {
     }
   }, [dataProduct]);
 
+  const mapStyle = useMemo(() => {
+    return mapboxAccessToken
+      ? getMapboxSatelliteBasemapStyle(mapboxAccessToken)
+      : usgsImageryTopoBasemapStyle;
+  }, [mapboxAccessToken]);
+
   return (
     <Map
       ref={mapRef}
@@ -150,11 +156,7 @@ export default function ShareMap() {
         height: '100%',
       }}
       mapboxAccessToken={mapboxAccessToken || undefined}
-      mapStyle={
-        mapboxAccessToken
-          ? getMapboxSatelliteBasemapStyle(mapboxAccessToken)
-          : usgsImageryTopoBasemapStyle
-      }
+      mapStyle={mapStyle}
       reuseMaps={true}
     >
       {/* Display raster tiles */}

@@ -1,5 +1,5 @@
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Map, { NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
 
 import ProjectCluster from '../../maps/ProjectCluster';
@@ -56,6 +56,12 @@ export default function DashboardMap() {
 
   const handlePopupClose = () => setPopupInfo(null);
 
+  const mapStyle = useMemo(() => {
+    return mapboxAccessToken
+      ? getMapboxSatelliteBasemapStyle(mapboxAccessToken)
+      : usgsImageryTopoBasemapStyle;
+  }, [mapboxAccessToken]);
+
   return (
     <Map
       initialViewState={{
@@ -68,11 +74,7 @@ export default function DashboardMap() {
         height: '100%',
       }}
       mapboxAccessToken={mapboxAccessToken || undefined}
-      mapStyle={
-        mapboxAccessToken
-          ? getMapboxSatelliteBasemapStyle(mapboxAccessToken)
-          : usgsImageryTopoBasemapStyle
-      }
+      mapStyle={mapStyle}
       reuseMaps={true}
       onClick={handleMapClick}
     >

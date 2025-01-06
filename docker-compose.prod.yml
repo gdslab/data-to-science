@@ -3,7 +3,7 @@ services:
     build:
       context: ./frontend
       dockerfile: frontend.prod.dockerfile
-    image: d2s-app:dev
+    image: d2s-app:latest
     platform: linux/x86_64
     depends_on:
       - backend
@@ -34,7 +34,7 @@ services:
       args:
         NUM_OF_WORKERS: 1
         LIMIT_MAX_REQUESTS: 10000
-    image: d2s-api:dev
+    image: d2s-api:latest
     platform: linux/x86_64
     volumes:
       - external-data:/srv/external-data
@@ -118,7 +118,7 @@ services:
       - no-new-privileges=true
 
   celery_worker:
-    image: d2s-api:dev
+    image: d2s-api:latest
     platform: linux/x86_64
     command: /app/celery/worker-start.sh
     volumes:
@@ -150,7 +150,7 @@ services:
       - db.env
 
   celery_beat:
-    image: d2s-api:dev
+    image: d2s-api:latest
     platform: linux/x86_64
     command: /app/celery/beat-start.sh
     volumes:
@@ -187,8 +187,7 @@ services:
       dockerfile: nginx.dockerfile
       args:
         - DEFAULT_CONF=prod
-        - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
-    image: d2s-proxy:dev
+    image: d2s-proxy:latest
     platform: linux/x86_64
     tmpfs:
       - /tmp
@@ -215,7 +214,7 @@ services:
     build:
       context: ./varnish
       dockerfile: varnish.dockerfile
-    image: d2s-varnish:dev
+    image: d2s-varnish:latest
     tmpfs:
       - /var/lib/varnish/varnishd:exec
     command: "-p default_keep=300"

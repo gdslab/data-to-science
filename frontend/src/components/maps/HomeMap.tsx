@@ -2,7 +2,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import './HomeMap.css';
 import axios, { AxiosResponse } from 'axios';
 import { Feature } from 'geojson';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Map, { NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
 
 import ColorBarControl from './ColorBarControl';
@@ -139,6 +139,12 @@ export default function HomeMap() {
     }
   };
 
+  const mapStyle = useMemo(() => {
+    return mapboxAccessToken
+      ? getMapboxSatelliteBasemapStyle(mapboxAccessToken)
+      : usgsImageryTopoBasemapStyle;
+  }, [mapboxAccessToken]);
+
   return (
     <Map
       initialViewState={{
@@ -151,11 +157,7 @@ export default function HomeMap() {
         height: '100%',
       }}
       mapboxAccessToken={mapboxAccessToken || undefined}
-      mapStyle={
-        mapboxAccessToken
-          ? getMapboxSatelliteBasemapStyle(mapboxAccessToken)
-          : usgsImageryTopoBasemapStyle
-      }
+      mapStyle={mapStyle}
       reuseMaps={true}
       onClick={handleMapClick}
     >
