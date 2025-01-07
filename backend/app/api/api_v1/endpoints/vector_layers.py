@@ -8,7 +8,7 @@ import urllib.parse
 import zipfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Sequence, Union
 from urllib.parse import urlencode, quote_plus
 from uuid import UUID
 
@@ -170,9 +170,16 @@ def read_vector_layer(
         return feature_collection
 
 
-@router.get("", response_model=Sequence[schemas.vector_layer.VectorLayerPayload])
+@router.get(
+    "",
+    response_model=Union[
+        Sequence[schemas.vector_layer.VectorLayerPayload],
+        Sequence[schemas.vector_layer.VectorLayerFeatureCollection],
+    ],
+)
 def read_vector_layers(
     project: models.Project = Depends(deps.can_read_project),
+    format: str = Query(None),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     if not project:
@@ -180,21 +187,51 @@ def read_vector_layers(
             status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
         )
 
-    # Vector layers associated with project id
-    vector_layers = crud.vector_layer.get_multi_by_project(db, project_id=project.id)
+    if format == "json":
+        feature_collections = crud.vector_layer.get_multi_in_geojson_by_project(
+            db, project_id=project.id
+        )
+        if len(feature_collections) > 0:
+            final_feature_collections: list[
+                schemas.vector_layer.VectorLayerFeatureCollection
+            ] = []
+        for features in feature_collections:
+            layer_id = "undefined"
+            if (
+                len(features) > 0
+                and features[0].properties
+                and "layer_id" in features[0].properties.keys()
+            ):
+                layer_id = features[0].properties["layer_id"]
+            feature_collection = {
+                "type": "FeatureCollection",
+                "features": features,
+                "metadata": {
+                    "preview_url": f"{settings.API_DOMAIN}{settings.STATIC_DIR}/projects/{project.id}/vector/{layer_id}/preview.png"
+                },
+            }
+            final_feature_collections.append(
+                schemas.vector_layer.VectorLayerFeatureCollection(**feature_collection)
+            )
+        return final_feature_collections
+    else:
+        # Vector layers associated with project id
+        vector_layers = crud.vector_layer.get_multi_by_project(
+            db, project_id=project.id
+        )
 
-    payload = [
-        {
-            "layer_id": layer[0],
-            "layer_name": layer[1],
-            "geom_type": layer[2],
-            "signed_url": get_tile_url_with_signed_payload(layer[0]),
-            "preview_url": get_preview_url(str(project.id), layer[0]),
-        }
-        for layer in vector_layers
-    ]
+        payload = [
+            {
+                "layer_id": layer[0],
+                "layer_name": layer[1],
+                "geom_type": layer[2],
+                "signed_url": get_tile_url_with_signed_payload(layer[0]),
+                "preview_url": get_preview_url(str(project.id), layer[0]),
+            }
+            for layer in vector_layers
+        ]
 
-    return JSONResponse(content=payload)
+        return JSONResponse(content=payload)
 
 
 @router.get("/{layer_id}/download")

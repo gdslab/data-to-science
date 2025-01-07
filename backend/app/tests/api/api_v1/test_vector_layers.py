@@ -235,6 +235,37 @@ def test_read_vector_layers_without_project_role(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+def test_read_vector_layers_in_geojson_format_with_project_owner_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id)
+    fc1 = create_feature_collection(db, "point", project.id)
+    fc2 = create_feature_collection(db, "linestring", project_id=project.id)
+    fc3 = create_feature_collection(db, "polygon", project_id=project.id)
+
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers",
+        params={"format": "json"},
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_feature_collections = response.json()
+    assert isinstance(response_feature_collections, list)
+    assert len(response_feature_collections) == 3
+    for feature_collection in response_feature_collections:
+        feature_collection = VectorLayerFeatureCollection(**feature_collection)
+        for feature in feature_collection.features:
+            assert feature.properties["feature_id"] in [
+                fc1.features[0].properties["feature_id"],
+                fc2.features[0].properties["feature_id"],
+                fc3.features[0].properties["feature_id"],
+            ]
+        assert feature_collection.metadata.preview_url
+        assert os.path.exists(
+            f"{settings.TEST_STATIC_DIR}/projects/{project.id}/vector/{feature_collection.features[0].properties['layer_id']}/preview.png"
+        )
+
+
 def test_remove_vector_layer_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
