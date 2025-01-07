@@ -144,6 +144,32 @@ def test_read_vector_layers(db: Session) -> None:
         assert layer[2] in ["point", "line", "polygon"]
 
 
+def test_read_geojson_vector_layers(db: Session) -> None:
+    project = create_project(db)
+    create_feature_collection(db, "point", project_id=project.id)
+    create_feature_collection(db, "linestring", project_id=project.id)
+    create_feature_collection(db, "polygon", project_id=project.id)
+    create_feature_collection(db, "multipoint", project_id=project.id)
+
+    # list of feature collections (should be four)
+    feature_collections = crud.vector_layer.get_multi_in_geojson_by_project(
+        db, project_id=project.id
+    )
+    assert feature_collections and isinstance(feature_collections, list)
+    assert len(feature_collections) == 4
+    for features in feature_collections:
+        assert len(features) > 0
+        assert features[0].properties
+        # check that each feature in the multipoint example has the same layer_id
+        layer_id = features[0].properties.get("layer_id")
+        for feature in features:
+            assert feature.properties
+            assert feature.properties.get("layer_id") == layer_id
+        assert os.path.exists(
+            f"{settings.TEST_STATIC_DIR}/projects/{project.id}/vector/{layer_id}/preview.png"
+        )
+
+
 def test_read_vector_layer_by_id_with_metadata(db: Session) -> None:
     # create a project with a single band data product and vector layer
     project = create_project(db)

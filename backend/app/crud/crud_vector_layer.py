@@ -1,4 +1,5 @@
 import json
+from collections import defaultdict
 from uuid import UUID
 from typing import List, Tuple
 
@@ -190,6 +191,40 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
             ]
 
             return updated_results
+
+    def get_multi_in_geojson_by_project(
+        self, db: Session, project_id: UUID
+    ) -> List[List[Feature]]:
+        """Fetches all vector layers and groups by feature collections.
+
+        Args:
+            db (Session): Database session.
+            project_id (UUID): Vector layer's project ID.
+
+        Returns:
+            List[List[Feature]]: Features in Feature Collections.
+        """
+        # Assign new keys empty list
+        vector_layers = defaultdict(list)
+        with db as session:
+            for feature in (
+                session.query(func.ST_AsGeoJSON(VectorLayer))
+                .order_by(VectorLayer.feature_id)
+                .where(
+                    and_(VectorLayer.project_id == project_id, VectorLayer.is_active)
+                )
+            ):
+                feature = Feature(**json.loads(feature[0]))
+                vector_layers[feature.properties["layer_id"]].append(feature)
+        for layer_id in vector_layers.keys():
+            # Create preview image (if one does not exist)
+            preview_img = create_vector_layer_preview(
+                project_id=project_id,
+                layer_id=layer_id,
+                features=vector_layers[layer_id],
+            )
+        # Each list element is a list of features from a feature collection
+        return list(vector_layers.values())
 
     def remove_layer_by_id(self, db: Session, project_id: UUID, layer_id: str) -> None:
         """_summary_
