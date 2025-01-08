@@ -471,6 +471,9 @@ async def create_zonal_statistics(
 
     vector_layer_feature_id = zone_in.properties.get("feature_id", None)
 
+    # required zonal stats
+    required_stats = {"count", "min", "max", "mean", "median", "std"}
+
     # check if zonal stats already exist for this feature/data product
     if vector_layer_feature_id and utils.is_valid_uuid(vector_layer_feature_id):
         metadata = crud.data_product_metadata.get_by_data_product(
@@ -486,23 +489,30 @@ async def create_zonal_statistics(
                 and vector_layer_feature_id
                 and utils.is_valid_uuid(vector_layer_feature_id)
             ):
-                # query vector layer as GeoJSON feature
-                vector_layer_query = select(func.ST_AsGeoJSON(VectorLayer)).where(
-                    VectorLayer.feature_id == vector_layer_feature_id
-                )
-                with db as session:
-                    vector_layer = session.execute(
-                        vector_layer_query
-                    ).scalar_one_or_none()
-                    vector_layer_geojson_dict = json.loads(vector_layer)
-                    # add zonal stats to geojson properties
-                    vector_layer_geojson_dict["properties"] = {
-                        **vector_layer_geojson_dict["properties"],
-                        **metadata[0].properties["stats"],
-                    }
-                    return update_feature_properties(
-                        Feature(**vector_layer_geojson_dict)
+                # if all required stats are present
+                if all(
+                    key in metadata[0].properties["stats"] for key in required_stats
+                ):
+                    # query vector layer as GeoJSON feature
+                    vector_layer_query = select(func.ST_AsGeoJSON(VectorLayer)).where(
+                        VectorLayer.feature_id == vector_layer_feature_id
                     )
+                    with db as session:
+                        vector_layer = session.execute(
+                            vector_layer_query
+                        ).scalar_one_or_none()
+                        vector_layer_geojson_dict = json.loads(vector_layer)
+                        # add zonal stats to geojson properties
+                        vector_layer_geojson_dict["properties"] = {
+                            **vector_layer_geojson_dict["properties"],
+                            **metadata[0].properties["stats"],
+                        }
+                        return update_feature_properties(
+                            Feature(**vector_layer_geojson_dict)
+                        )
+                else:
+                    # missing one or more stats, remove record and recalculate
+                    crud.data_product_metadata.remove(db, id=metadata[0].id)
 
     # send request to celery task queue
     result = generate_zonal_statistics.apply_async(
