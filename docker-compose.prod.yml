@@ -7,7 +7,7 @@ services:
     platform: linux/x86_64
     depends_on:
       - backend
-    read_only: true
+    # read_only: true
     tmpfs:
       - /tmp
     healthcheck:
