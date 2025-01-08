@@ -36,7 +36,7 @@ export default function RasterSymbologySettings() {
         rasterId: activeDataProduct.id,
         payload: { ...user_style, opacity: user_style.opacity ?? 100 },
       });
-    } else if (state[activeDataProduct.id].symbology) {
+    } else if (state[activeDataProduct.id]?.symbology) {
       // symbology context exists, uses it
       dispatch({
         type: 'SET_SYMBOLOGY',
