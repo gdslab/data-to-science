@@ -61,7 +61,7 @@ export default function BackgroundRasterSelect({
             rasterId: backgroundDataProduct.id,
             payload: { ...user_style, opacity: user_style.opacity ?? 100 },
           });
-        } else if (state[backgroundDataProduct.id].symbology) {
+        } else if (state[backgroundDataProduct.id]?.symbology) {
           // symbology context exists, uses it
           dispatch({
             type: 'SET_SYMBOLOGY',
