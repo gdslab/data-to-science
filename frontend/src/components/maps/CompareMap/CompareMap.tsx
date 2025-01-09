@@ -184,6 +184,12 @@ export default function CompareMap() {
     }
   }, [selectedRightDataProduct]);
 
+  const mapStyle = useMemo(() => {
+    return mapboxAccessToken
+      ? getMapboxSatelliteBasemapStyle(mapboxAccessToken)
+      : usgsImageryTopoBasemapStyle;
+  }, [mapboxAccessToken]);
+
   return (
     <div className="relative h-full">
       <Map
@@ -193,11 +199,7 @@ export default function CompareMap() {
         onMove={activeMap === 'left' ? onMove : undefined}
         style={LeftMapStyle}
         mapboxAccessToken={mapboxAccessToken || undefined}
-        mapStyle={
-          mapboxAccessToken
-            ? getMapboxSatelliteBasemapStyle(mapboxAccessToken)
-            : usgsImageryTopoBasemapStyle
-        }
+        mapStyle={mapStyle}
         reuseMaps={true}
       >
         {/* Display project boundary when project activated */}
@@ -230,7 +232,7 @@ export default function CompareMap() {
         onMove={activeMap === 'right' ? onMove : undefined}
         style={RightMapStyle}
         mapboxAccessToken={mapboxAccessToken}
-        mapStyle={getMapboxSatelliteBasemapStyle(mapboxAccessToken)}
+        mapStyle={mapStyle}
         reuseMaps={true}
       >
         {/* Display project boundary when project activated */}
