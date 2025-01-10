@@ -41,9 +41,6 @@ import ProjectAccess from './components/pages/projects/ProjectAccess';
 import ProjectDetail, {
   loader as projectDetailLoader,
 } from './components/pages/projects/ProjectDetail';
-import ProjectList, {
-  loader as projectListLoader,
-} from './components/pages/projects/ProjectList';
 import RegistrationForm from './components/pages/auth/RegistrationForm';
 import { RasterSymbologyProvider } from './components/maps/RasterSymbologyContext';
 import SharePotreeViewer from './components/maps/SharePotreeViewer';
@@ -54,6 +51,7 @@ import TeamCreate, {
 import TeamDetail, {
   loader as teamDetailLoader,
 } from './components/pages/teams/TeamDetail';
+import Workspace, { loader as workspaceLoader } from './components/pages/Workspace';
 
 import { RootPublic, RootProtected } from './components/layout/Root';
 import { RequireAdmin, RequireAuth } from './AuthContext';
@@ -179,8 +177,8 @@ export const router = createBrowserRouter(
             },
             {
               path: '/projects',
-              element: <ProjectList />,
-              loader: projectListLoader,
+              element: <Workspace />,
+              loader: workspaceLoader,
             },
           ],
         },
