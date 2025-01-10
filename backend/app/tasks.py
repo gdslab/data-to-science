@@ -596,9 +596,9 @@ def run_raw_data_image_processing(
         ) as info_file:
             raw_data_meta = {
                 "callback_url": (
-                    f"{settings.API_DOMAIN}{settings.API_V1_STR}/projects/",
-                    f"{project_id}/flights/{flight_id}/data_products/",
-                    "create_from_ext_storage",
+                    f"{settings.API_DOMAIN}{settings.API_V1_STR}/projects/"
+                    f"{project_id}/flights/{flight_id}/data_products/"
+                    "create_from_ext_storage"
                 ),
                 "created_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
                 "flight_id": str(flight_id),
