@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 
 import { Button } from '../../Buttons';
 import Modal from '../../Modal';
