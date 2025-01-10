@@ -1,6 +1,5 @@
-import axios, { AxiosResponse } from 'axios';
 import { useEffect, useMemo, useState } from 'react';
-import { useLoaderData, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 import { Button } from '../../Buttons';
 import Modal from '../../Modal';
@@ -40,17 +39,6 @@ export interface Project {
   title: string;
 }
 
-export async function loader() {
-  const response: AxiosResponse<Project[]> = await axios.get(
-    `${import.meta.env.VITE_API_V1_STR}/projects`
-  );
-  if (response) {
-    return response.data;
-  } else {
-    return [];
-  }
-}
-
 function ProjectListHeader() {
   const [open, setOpen] = useState(false);
 
@@ -75,14 +63,13 @@ function ProjectListHeader() {
   );
 }
 
-export default function ProjectList() {
+export default function ProjectList({ projects }: { projects: Project[] }) {
   const [currentPage, setCurrentPage] = useState(0);
   const [sortSelection, setSortSelection] = useState<SortSelection>(
     getSortPreferenceFromLocalStorage('sortPreference')
   );
 
   const [searchText, setSearchText] = useState('');
-  const projects = useLoaderData() as Project[];
 
   const { locationDispatch, project, projectDispatch } = useProjectContext();
 

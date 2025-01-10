@@ -71,9 +71,9 @@ export default function Navbar() {
                       {navigation.map((item) => {
                         if (item.href) {
                           return (
-                            <a
+                            <Link
                               key={item.name}
-                              href={item.href}
+                              to={item.href}
                               className={clsx(
                                 'rounded-md px-3 py-2 text-md text-white visited:text-white',
                                 location.pathname === item.href
@@ -85,7 +85,7 @@ export default function Navbar() {
                               }
                             >
                               {item.name}
-                            </a>
+                            </Link>
                           );
                         } else {
                           return <div key={item.name}>{item.component}</div>;

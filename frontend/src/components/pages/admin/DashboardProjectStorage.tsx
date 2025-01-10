@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from 'axios';
 import { Suspense } from 'react';
-import { Await, defer, useLoaderData } from 'react-router-dom';
+import { Await, useLoaderData } from 'react-router-dom';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 import DashboardProjectStorageTable from './DashboardProjectStorageTable';
@@ -11,7 +11,7 @@ export async function loader() {
   const response: Promise<AxiosResponse<ProjectStatistics[]>> = axios.get(
     `${import.meta.env.VITE_API_V1_STR}/admin/project_statistics`
   );
-  return defer({ response });
+  return { response };
 }
 
 function ErrorElement() {
