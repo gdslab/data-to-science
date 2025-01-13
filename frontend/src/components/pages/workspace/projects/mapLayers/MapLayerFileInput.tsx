@@ -2,7 +2,7 @@ import { ChangeEvent } from 'react';
 
 import { Status } from '../../../../Alert';
 
-import uploadPageIcon from '../../../../assets/upload-page-icon.svg';
+import uploadPageIcon from '../../../../../assets/upload-page-icon.svg';
 
 export default function MapLayerFileInput({
   inputKey,

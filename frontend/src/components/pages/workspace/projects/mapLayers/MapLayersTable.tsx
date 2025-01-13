@@ -10,9 +10,9 @@ import { getMapLayers, useProjectContext } from '../ProjectContext';
 import { AlertBar, Status } from '../../../../Alert';
 import { useInterval } from '../../../../hooks';
 
-import pointIcon from '../../../../assets/point-icon.svg';
-import lineIcon from '../../../../assets/line-icon.svg';
-import polygonIcon from '../../../../assets/polygon-icon.svg';
+import pointIcon from '../../../../../assets/point-icon.svg';
+import lineIcon from '../../../../../assets/line-icon.svg';
+import polygonIcon from '../../../../../assets/polygon-icon.svg';
 
 /**
  * If a "Multi" geometry type is provided return

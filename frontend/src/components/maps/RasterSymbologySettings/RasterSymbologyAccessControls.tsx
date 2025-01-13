@@ -2,21 +2,12 @@ import axios from 'axios';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-<<<<<<< HEAD:frontend/src/components/maps/ShareControls.tsx
-import Alert, { Status } from '../Alert';
-import { CopyURLButton } from '../Buttons';
-import { DataProduct } from '../pages/workspace/projects/Project';
-import { useMapContext } from './MapContext';
-import { SymbologySettings } from './Maps';
-import { Project } from '../pages/workspace/ProjectList';
-=======
 import Alert, { Status } from '../../Alert';
 import { CopyURLButton } from '../../Buttons';
-import { DataProduct } from '../../pages/projects/Project';
+import { DataProduct } from '../../pages/workspace/projects/Project';
 import { useMapContext } from '../MapContext';
-import { Project } from '../../pages/projects/ProjectList';
+import { Project } from '../../pages/workspace/projects/ProjectList';
 import { MultibandSymbology, SingleBandSymbology } from '../RasterSymbologyContext';
->>>>>>> main:frontend/src/components/maps/RasterSymbologySettings/RasterSymbologyAccessControls.tsx
 
 export default function RasterSymbologyAccessControls({
   dataProduct,

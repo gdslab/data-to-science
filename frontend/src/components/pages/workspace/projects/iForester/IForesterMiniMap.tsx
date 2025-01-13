@@ -6,11 +6,7 @@ import { ScaleControl } from 'react-leaflet';
 import { ZoomControl } from 'react-leaflet/ZoomControl';
 import { useLeafletContext } from '@react-leaflet/core';
 
-<<<<<<< HEAD:frontend/src/components/pages/workspace/projects/iForester/IForesterMiniMap.tsx
-import MapLayersControl from '../../../../maps/MapLayersControl';
-=======
-import MapLayersControl from '../../../maps/DrawFieldMap/MapLayersControl';
->>>>>>> main:frontend/src/components/pages/projects/iForester/IForesterMiniMap.tsx
+import MapLayersControl from '../../../../maps/DrawFieldMap/MapLayersControl';
 
 // updates map (loads tiles) after container size changes
 const InvalidateSize = () => {

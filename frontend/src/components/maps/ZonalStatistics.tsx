@@ -1,13 +1,13 @@
 import Papa from 'papaparse';
 
-import { DataProduct, ZonalFeature } from '../pages/projects/Project';
+import { DataProduct, ZonalFeature } from '../pages/workspace/projects/Project';
 import LoadingBars from '../LoadingBars';
 import StripedTable from '../StripedTable';
 
-import { download as downloadGeoJSON } from '../pages/projects/mapLayers/utils';
-import { downloadFile as downloadCSV } from '../pages/projects/fieldCampaigns/utils';
+import { download as downloadGeoJSON } from '../pages/workspace/projects/mapLayers/utils';
+import { downloadFile as downloadCSV } from '../pages/workspace/projects/fieldCampaigns/utils';
 import { isSingleBand } from './utils';
-import { removeKeysFromFeatureProperties } from '../pages/projects/mapLayers/utils';
+import { removeKeysFromFeatureProperties } from '../pages/workspace/projects/mapLayers/utils';
 
 export type ZonalStatistics = {
   min: number;
