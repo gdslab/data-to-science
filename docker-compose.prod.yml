@@ -211,10 +211,7 @@ services:
       - no-new-privileges=true
 
   varnish:
-    build:
-      context: ./varnish
-      dockerfile: varnish.dockerfile
-    image: d2s-varnish:latest
+    image: gdslab/d2s-varnish:latest
     tmpfs:
       - /var/lib/varnish/varnishd:exec
     command: "-p default_keep=300"
