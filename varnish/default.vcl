@@ -48,73 +48,76 @@ acl purge {
 }
 
 sub vcl_recv {
-    # set which backend to use
-    if (req.url ~ "^/cog/") {
-        # Extract signature from query parameters
-        set req.http.dataProductId = regsub(req.url, ".*[?&]dataProductId=([^&]+).*", "\1");
-        set req.http.expires = regsub(req.url, ".*[?&]expires=([^&]+).*", "\1");
-        set req.http.secure = regsub(req.url, ".*[?&]secure=([^&]+).*", "\1");
+    # Extract query parameters for authorization
+    set req.http.expires = regsub(req.url, ".*[?&]expires=([^&]+).*", "\1");
+    set req.http.secure = regsub(req.url, ".*[?&]secure=([^&]+).*", "\1");
 
-        # Ensure all required parameters are present
-        if (req.http.expires == "" || req.http.dataProductId == "" || req.http.secure == "") {
+    # Ensure required parameters are present
+    if (req.http.expires == "" || req.http.secure == "") {
+        return (synth(400, "Missing required parameters"));
+    }
+
+    # Check if the request has expired
+    if (std.integer(req.http.expires, 0) < std.time2integer(now, 0)) {
+        return (synth(403, "URL expired"));
+    }
+
+    if (req.url ~ "^/cog/") {
+        # TiTiler backend
+        set req.http.dataProductId = regsub(req.url, ".*[?&]dataProductId=([^&]+).*", "\1");
+        if (req.http.dataProductId == "") {
             return (synth(400, "Missing required parameters"));
         }
-
-        # Check expiration
-        if (std.integer(req.http.expires, 0) < std.time2integer(now, 0)) {
-            return (synth(403, "URL expired"));
-        }
-
-        # Reconstruct the payload
         set req.http.payload = req.http.expires + req.http.dataProductId;
-
-        # Compute the expected signature
-        set req.http.expected_signature = digest.hmac_sha256(digest.base64_decode(std.getenv("TILE_SIGNING_SECRET_KEY")), req.http.payload);
-
-        # Compare signatures
-        if (req.http.secure != req.http.expected_signature) {
-            return (synth(403, "Invalid signature"));
-        }
-
         set req.backend_hint = titiler;
     } else {
-        # Extract query parameters
-        set req.http.expires = regsub(req.url, ".*[?&]expires=([^&]+).*", "\1");
+        # pg_tilserv backend
         set req.http.filter = regsub(req.url, ".*[?&]filter=([^&]+).*", "\1");
         set req.http.limit = regsub(req.url, ".*[?&]limit=([^&]+).*", "\1");
-        set req.http.secure = regsub(req.url, ".*[?&]secure=([^&]+).*", "\1");
-
-        # Ensure all required parameters are present
-        if (req.http.expires == "" || req.http.filter == "" || req.http.limit == "" || req.http.secure == "") {
+        if (req.http.filter == "" || req.http.limit == "") {
             return (synth(400, "Missing required parameters"));
         }
-
-        # Check expiration
-        if (std.integer(req.http.expires, 0) < std.time2integer(now, 0)) {
-            return (synth(403, "URL expired"));
-        }
-
-        # Reconstruct the payload
         set req.http.payload = req.http.expires + req.http.filter + req.http.limit;
-
-        # Compute the expected signature
-        set req.http.expected_signature = digest.hmac_sha256(digest.base64_decode(std.getenv("TILE_SIGNING_SECRET_KEY")), req.http.payload);
-
-        # Compare signatures
-        if (req.http.secure != req.http.expected_signature) {
-            return (synth(403, "Invalid signature"));
-        }
-
         set req.backend_hint = pg_tileserv;
     }
 
-    # strip off port numbers from object hash
-    set req.http.Host = regsub(req.http.Host, ":[0-9]+", "");
+    # Compute the expected signature
+    set req.http.expected_signature = digest.hmac_sha256(
+        digest.base64_decode(std.getenv("TILE_SIGNING_SECRET_KEY")),
+        req.http.payload
+    );
 
-    # strip off trailing /?
-    set req.url = regsub(req.url, "\?$", "");
+    # Compare signatures
+    if (req.http.secure != req.http.expected_signature) {
+        return (synth(403, "Invalid signature"));
+    }
 
-    # allow purging from local server
+    # Normalize query parameters for caching
+    if (req.url ~ "[&?](expires|secure)=[^&]*") {
+        # Remove the unwanted parameters (expires, secure)
+        set req.url = regsuball(req.url, "[&?](expires|secure)=[^&]*", "");
+    }
+
+    # Unset authorization related headers
+    unset req.http.secure;
+    unset req.http.expires;
+    unset req.http.payload;
+    unset req.http.expected_signature;
+
+    # Unset user/browser-specific headers
+    unset req.http.User-Agent;
+    unset req.http.Accept-Encoding;
+    unset req.http.Accept-Language;
+    unset req.http.Accept;
+    unset req.http.Cookie;
+    unset req.http.Referer;
+    unset req.http.Sec-Fetch-Site;
+    unset req.http.Sec-Fetch-Dest;
+    unset req.http.Sec-Fetch-Mode;
+    unset req.http.Sec-Fetch-User;
+    unset req.http.Priority;
+
+    # Only allow PURGE from local server
     if (req.method == "PURGE") {
         if (!client.ip ~ purge) {
             return (synth(405, client.ip + " is not allowed to send PURGE requests."));
@@ -122,39 +125,26 @@ sub vcl_recv {
         return (purge);
     }
 
-    # limit HTTP methods to GET and HEAD requests
+    # Limit HTTP methods to GET and HEAD
     if (req.method != "GET" && req.method != "HEAD") {
         return (synth(405, "Method Not Allowed"));
     }
 
-    # only cache GET and HEAD requests
-    if (req.method != "GET" && req.method != "HEAD") {
-        return (pass);
-    }
-
-    # indicate if https or http used in request with X-Forwarded-Proto header
+    # Set X-Forwarded-Proto header
     if (!req.http.X-Forwarded-Proto) {
-        if(std.port(server.ip) == 443 || std.port(server.ip) == 8443) {
+        if (std.port(server.ip) == 443 || std.port(server.ip) == 8443) {
             set req.http.X-Forwarded-Proto = "https";
         } else {
             set req.http.X-Forwarded-Proto = "http";
         }
     }
 
-    # strip off cookie and auth headers before caching new request
-    # store access token temporarily before unsetting it
-    if (req.http.Cookie ~ "access_token") {
-        set req.http.x-temp-access-token = regsub(req.http.Cookie, ".*access_token=([^;]+);?.*", "\1");
-    }
-    unset req.http.Cookie;
-
-    # asynchronously revalidate object while serving stale object if not past 10 seconds
+    # Enable grace period for cache revalidation
     if (std.healthy(req.backend_hint)) {
         set req.grace = 10s;
     }
 
-    # Only keep the following if VCL handling is complete
-    return(hash);
+    return (hash);
 }
 
 sub vcl_synth {
@@ -166,21 +156,20 @@ sub vcl_synth {
 }
 
 sub vcl_hash {
+    # Use protocol in cache key
     hash_data(req.http.X-Forwarded-Proto);
+
+    # Use normalized URL without excluded parameters
+    hash_data(req.url);
+
+    # Optionally include the Host header
+    if (req.http.Host) {
+        hash_data(req.http.Host);
+    }
 }
 
 sub vcl_backend_response {
-    if (bereq.url ~ "^[^?]*\.(7z|avi|bmp|bz2|css|csv|doc|docx|eot|flac|flv|gif|gz|ico|jpeg|jpg|js|less|mka|mkv|mov|mp3|mp4|mpeg|mpg|odt|ogg|ogm|opus|otf|pdf|png|ppt|pptx|rar|rtf|svg|svgz|swf|tar|tbz|tgz|ttf|txt|txz|wav|webm|webp|woff|woff2|xls|xlsx|xml|xz|zip)(\?.*)?$") {
-        unset beresp.http.Set-Cookie;
-        set beresp.ttl = 1d;
-    }
-
+    # Set TTL and grace period
+    set beresp.ttl = 1d;
     set beresp.grace = 6h;
-}
-
-sub vcl_backend_fetch {
-    # Add temp access token to request before forwarding to backend
-    if (bereq.http.x-temp-access-token) {
-        set bereq.http.Cookie = "access_token=" + bereq.http.x-temp-access-token + "; " + bereq.http.Cookie;
-    }
 }

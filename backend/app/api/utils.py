@@ -294,10 +294,10 @@ def get_tile_url_with_signed_payload(layer_id: str) -> str:
 
     # Build query params for tile request
     query_params = {
-        "expires": expiration_timestamp,
         "filter": filter_param,
         "limit": limit_param,
         "secure": signed_payload,
+        "expires": expiration_timestamp,
     }
 
     # Add payload to base tile URL
