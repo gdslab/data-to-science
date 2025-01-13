@@ -604,7 +604,8 @@ def process_indoor_project_data(
         # add filepath to indoor project data
         indoor_project_data_update_in = (
             schemas.indoor_project_data.IndoorProjectDataUpdate(
-                file_path=str(destination_filepath)
+                file_path=str(destination_filepath),
+                is_initial_processing_completed=True,
             )
         )
         indoor_project_data_updated = crud.indoor_project_data.update(
