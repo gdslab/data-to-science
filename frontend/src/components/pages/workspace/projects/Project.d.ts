@@ -2,7 +2,10 @@ import { Feature, FeatureCollection, Geometry } from 'geojson';
 
 import { FieldCampaignInitialValues } from './fieldCampaigns/FieldCampaign';
 import { SymbologySettings } from '../../maps/Maps';
-import { DsmSymbology, OrthoSymbology } from '../../maps/RasterSymbologyContext';
+import {
+  SingleBandSymbology,
+  MultibandSymbology,
+} from '../../maps/RasterSymbologyContext';
 
 // geojson object representing project field boundary
 export type FieldGeoJSONFeature = Omit<Feature, 'properties'> & {
@@ -143,7 +146,7 @@ export interface DataProduct {
   };
   stac_properties: STACProperties;
   status: string;
-  user_style: DsmSymbology | OrthoSymbology;
+  user_style: SingleBandSymbology | MultibandSymbology;
 }
 
 // flight object returned from api

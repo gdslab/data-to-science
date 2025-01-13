@@ -19,21 +19,8 @@ import {
   MapTool,
   ProjectsAction,
   ProjectsVisibleAction,
-  SymbologySettings,
-  SymbologySettingsAction,
   TileScaleAction,
 } from './Maps';
-
-const defaultSymbologySettings = {
-  colorRamp: 'rainbow',
-  max: 255,
-  meanStdDev: 2,
-  min: 0,
-  mode: 'minMax',
-  userMin: 0,
-  userMax: 255,
-  opacity: 100,
-};
 
 function activeDataProductReducer(
   state: DataProduct | null,
@@ -187,22 +174,6 @@ function projectsVisibleReducer(state: string[], action: ProjectsVisibleAction) 
   }
 }
 
-function symbologySettingsReducer(
-  state: SymbologySettings,
-  action: SymbologySettingsAction
-) {
-  switch (action.type) {
-    case 'update': {
-      return {
-        ...action.payload,
-        opacity: action.payload.opacity ? action.payload.opacity : 100,
-      };
-    }
-    default:
-      return state;
-  }
-}
-
 function tileScaleReducer(state: number, action: TileScaleAction) {
   switch (action.type) {
     case 'set': {
@@ -237,8 +208,6 @@ const context: {
   projectsDispatch: React.Dispatch<ProjectsAction>;
   projectsVisible: string[];
   projectsVisibleDispatch: React.Dispatch<ProjectsVisibleAction>;
-  symbologySettings: SymbologySettings;
-  symbologySettingsDispatch: React.Dispatch<SymbologySettingsAction>;
   tileScale: number;
   tileScaleDispatch: React.Dispatch<TileScaleAction>;
 } = {
@@ -261,8 +230,6 @@ const context: {
   projectsDispatch: () => {},
   projectsVisible: [],
   projectsVisibleDispatch: () => {},
-  symbologySettings: defaultSymbologySettings,
-  symbologySettingsDispatch: () => {},
   tileScale: 2,
   tileScaleDispatch: () => {},
 };
@@ -295,10 +262,6 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
   const [projectsVisible, projectsVisibleDispatch] = useReducer(
     projectsVisibleReducer,
     []
-  );
-  const [symbologySettings, symbologySettingsDispatch] = useReducer(
-    symbologySettingsReducer,
-    defaultSymbologySettings
   );
   const [tileScale, tileScaleDispatch] = useReducer(tileScaleReducer, 2);
 
@@ -385,8 +348,6 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
         projectsDispatch,
         projectsVisible,
         projectsVisibleDispatch,
-        symbologySettings,
-        symbologySettingsDispatch,
         tileScale,
         tileScaleDispatch,
       }}
