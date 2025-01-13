@@ -6,35 +6,28 @@ import shutil
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, TypedDict
+from typing import Dict, List
 from uuid import UUID
 
 import geopandas as gpd
-import pika
 import rasterio
 from celery.utils.log import get_task_logger
 from fastapi.encoders import jsonable_encoder
-from geojson_pydantic import Feature, FeatureCollection, Polygon
+from geojson_pydantic import FeatureCollection
 from rasterstats import zonal_stats
 from sqlalchemy.exc import IntegrityError
 
 from app import crud, models, schemas
 from app.api.deps import get_db
+from app.api.utils import is_geometry_match
 from app.core.celery_app import celery_app
 from app.core.config import settings
 from app.core.security import get_token_hash
-from app.schemas.data_product import DataProduct, DataProductUpdate
-from app.schemas.data_product_metadata import (
-    ZonalFeature,
-    ZonalFeatureCollection,
-    ZonalStatistics,
-    ZonalStatisticsProps,
-)
+from app.schemas.data_product import DataProductUpdate
+from app.schemas.data_product_metadata import ZonalStatisticsProps
 from app.schemas.job import JobUpdate
-from app.schemas.raw_data import ImageProcessingQueryParams
 from app.utils import gen_preview_from_pointcloud
 from app.utils.ImageProcessor import ImageProcessor
-from app.utils.rabbitmq import get_pika_connection
 from app.utils.RpcClient import RpcClient
 from app.utils.TarProcessor import TarProcessor
 from app.utils.Toolbox import Toolbox
@@ -46,7 +39,11 @@ logger = get_task_logger(__name__)
 
 # Schedule periodic tasks here
 # celery_app.conf.beat_schedule = {
-#     "print-hello-every-10s": {"task": "tasks.test", "schedule": 10.0, "args": ("hello")}
+#     "print-hello-every-10s": {
+#         "task": "tasks.test",
+#         "schedule": 10.0,
+#         "args": ("hello")
+#     }
 # }
 
 
@@ -124,6 +121,104 @@ def run_toolbox_process(
     update_job_status(job=job, state="DONE")
 
 
+@celery_app.task(name="vector_layer_upload_task")
+def process_vector_layer(
+    file_path: str,
+    original_file_name: str,
+    project_id: UUID,
+    user_id: UUID,
+    job_id: UUID,
+) -> None:
+    # Max number of allowed features
+    # VECTOR_FEATURE_LIMIT = 250000
+
+    # Clean up temp file
+    def cleanup() -> None:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+    # get database session
+    db = next(get_db())
+    # retrieve job associated with task
+    job = crud.job.get(db, job_id)
+    # update job status to indicate process has started
+    update_job_status(job, state="INPROGRESS")
+
+    # confirm uploaded file exists on disk
+    try:
+        assert os.path.exists(file_path)
+    except AssertionError:
+        logger.exception("Cannot find uploaded file on disk")
+        update_job_status(job, state="ERROR")
+        return None
+
+    # read uploaded file into geopandas dataframe
+    try:
+        gdf = gpd.read_file(file_path)
+    except Exception:
+        logger.exception("Failed to read uploaded vector layer file")
+        update_job_status(job, state="ERROR")
+        cleanup()
+        return None
+
+    # check number of features
+    if len(gdf) == 0:
+        logger.error("Uploaded vector layer does not have any features")
+        update_job_status(
+            job,
+            state="ERROR",
+            extra={
+                "status": 0,
+                "detail": "No features. Vector layer must have at least one feature.",
+            },
+        )
+    # if len(gdf) > VECTOR_FEATURE_LIMIT:
+    #     logger.error(
+    #         (
+    #             "Uploaded vector layer exceeds feature limit: ",
+    #             f"{VECTOR_FEATURE_LIMIT} / {len(gdf)}",
+    #         )
+    #     )
+    #     update_job_status(
+    #         job,
+    #         state="ERROR",
+    #         extra={
+    #             "status": 0,
+    #             "detail": (
+    #                 "Too many features. Exceeds feature limit of ",
+    #                 f"{VECTOR_FEATURE_LIMIT}.",
+    #             ),
+    #         },
+    #     )
+    #     cleanup()
+    #     return None
+
+    # check for consistent geometry type
+    first_feature_geometry_type = gdf.iloc[0].geometry.geom_type
+    for _, row in gdf.iterrows():
+        if not is_geometry_match(
+            expected_geometry=first_feature_geometry_type,
+            actual_geometry=row.geometry.geom_type,
+        ):
+            logger.error("Inconsistent geometry types in uploaded vector layer")
+
+    # add vector layer to database
+    try:
+        crud.vector_layer.create_with_project(
+            db, file_name=original_file_name, gdf=gdf, project_id=project_id
+        )
+    except Exception:
+        logger.exception("Error occurred while adding vector layer to database")
+        update_job_status(job, state="ERROR")
+        cleanup()
+        return None
+
+    # update job to indicate process finished
+    update_job_status(job, state="DONE")
+    # remove uploaded file
+    cleanup()
+
+
 @celery_app.task(name="geotiff_upload_task")
 def process_geotiff(
     original_filename: str,
@@ -182,7 +277,7 @@ def process_geotiff(
         ip = ImageProcessor(str(in_raster))
         out_raster = ip.run()
         default_symbology = ip.get_default_symbology()
-    except Exception as e:
+    except Exception:
         if os.path.exists(in_raster.parents[1]):
             shutil.rmtree(in_raster.parents[1])
         update_job_status(job, state="ERROR")
@@ -199,7 +294,7 @@ def process_geotiff(
                 stac_properties=jsonable_encoder(ip.stac_properties),
             ),
         )
-    except Exception as e:
+    except Exception:
         if os.path.exists(in_raster.parents[1]):
             shutil.rmtree(in_raster.parents[1])
         update_job_status(job, state="ERROR")
@@ -260,7 +355,7 @@ def create_point_cloud_preview_image(in_las: str) -> None:
             input_las_path=in_las_pth,
             preview_out_path=preview_out_path,
         )
-    except Exception as e:
+    except Exception:
         logger.exception("Unable to generate preview image for uploaded point cloud")
         # if this file is present the preview image generation will be skipped next time
         with open(Path(in_las_pth).parent / "preview_failed", "w") as preview:
@@ -331,7 +426,7 @@ def convert_las_to_copc(
         else:
             copc_laz_filepath = in_las.parents[1] / in_las.with_suffix(".copc.laz").name
 
-            result = subprocess.run(
+            subprocess.run(
                 [
                     "untwine",
                     "--single_file",
@@ -344,7 +439,7 @@ def convert_las_to_copc(
             # clean up temp directory created by untwine
             if os.path.exists(f"{copc_laz_filepath}_tmp"):
                 shutil.rmtree(f"{copc_laz_filepath}_tmp")
-    except Exception as e:
+    except Exception:
         logger.exception("Failed to build COPC from uploaded point cloud")
         shutil.rmtree(in_las.parents[1])
         update_job_status(job, state="ERROR")
@@ -511,7 +606,11 @@ def run_raw_data_image_processing(
             os.path.join(external_raw_data_dir, raw_data_identifier + ".info"), "w"
         ) as info_file:
             raw_data_meta = {
-                "callback_url": f"{settings.API_DOMAIN}{settings.API_V1_STR}/projects/{project_id}/flights/{flight_id}/data_products/create_from_ext_storage",
+                "callback_url": (
+                    f"{settings.API_DOMAIN}{settings.API_V1_STR}/projects/"
+                    f"{project_id}/flights/{flight_id}/data_products/"
+                    "create_from_ext_storage"
+                ),
                 "created_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
                 "flight_id": str(flight_id),
                 "original_filename": original_filename,
@@ -726,11 +825,12 @@ def generate_zonal_statistics_bulk(
         # deserialize feature collection
         features = ZonalFeatureCollection(**feature_collection).features
         # create metadata record for each zone
-        for index, zonal_stats in enumerate(all_zonal_stats):
+        for index, zstats in enumerate(all_zonal_stats):
+            vector_layer_feature_id = features[index].properties["feature_id"]
             metadata_in = schemas.DataProductMetadataCreate(
                 category="zonal",
-                properties={"stats": zonal_stats},
-                vector_layer_id=features[index].properties["id"],
+                properties={"stats": zstats},
+                vector_layer_feature_id=vector_layer_feature_id,
             )
             try:
                 crud.data_product_metadata.create_with_data_product(
@@ -742,14 +842,14 @@ def generate_zonal_statistics_bulk(
                     db,
                     category="zonal",
                     data_product_id=data_product_id,
-                    vector_layer_id=features[index].properties["id"],
+                    vector_layer_id=vector_layer_feature_id,
                 )
                 if len(existing_metadata) == 1:
                     crud.data_product_metadata.update(
                         db,
                         db_obj=existing_metadata[0],
                         obj_in=schemas.DataProductMetadataUpdate(
-                            properties={"stats": zonal_stats}
+                            properties={"stats": zstats}
                         ),
                     )
                 else:
@@ -780,8 +880,10 @@ def update_job_status(
     Args:
         job (models.Job | None): Existing job object or none if this is a new job.
         state (str): State to update on job.
-        data_product_id (UUID | None, optional): _description_. Defaults to None. Data product id (only required to create a job).
-        name (str, optional): _description_. Defaults to "unknown". Tool name (if applicable).
+        data_product_id (UUID | None, optional): _description_. Defaults to None.
+            Data product id (only required to create a job).
+        name (str, optional): _description_. Defaults to "unknown".
+            Tool name (if applicable).
 
     Returns:
         models.Job: Job object that was created or updated.

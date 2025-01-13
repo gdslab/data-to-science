@@ -7,7 +7,7 @@ services:
     platform: linux/x86_64
     depends_on:
       - backend
-    read_only: true
+    # read_only: true
     tmpfs:
       - /tmp
     healthcheck:
@@ -24,6 +24,8 @@ services:
         window: 120s
     security_opt:
       - no-new-privileges=true
+    env_file:
+      - frontend.env
 
   backend:
     build:
@@ -59,6 +61,8 @@ services:
         window: 120s
     security_opt:
       - no-new-privileges=true
+    environment:
+      - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
     env_file:
       - backend.env
       - db.env
@@ -207,16 +211,39 @@ services:
       - no-new-privileges=true
 
   varnish:
-    image: varnish:latest
-    volumes:
-      - ./default.vcl:/etc/varnish/default.vcl:ro
+    image: gdslab/d2s-varnish:latest
     tmpfs:
       - /var/lib/varnish/varnishd:exec
-    environment:
-      - VARNISH_SIZE=2G
     command: "-p default_keep=300"
     depends_on:
+      - pg_tileserv
+      - proxy
       - titiler
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+    security_opt:
+      - no-new-privileges=true
+    environment:
+      - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
+      - VARNISH_SIZE=2G
+
+  pg_tileserv:
+    image: pramsey/pg_tileserv:latest
+    platform: linux/x86_64
+    volumes:
+      - ./pg_tileserv.toml:/config/pg_tileserv.toml:ro
+    ports:
+      - 7800:7800
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - db.env
     deploy:
       restart_policy:
         condition: on-failure

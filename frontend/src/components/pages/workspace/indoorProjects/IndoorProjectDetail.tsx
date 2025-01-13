@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link, Params, useLoaderData } from 'react-router-dom';
 
 import {
+  IndoorProject,
   IndoorProjectAPIResponse,
   IndoorProjectDataAPIResponse,
   IndoorProjectDataSpreadsheetAPIResponse,
@@ -35,7 +36,7 @@ export default function IndoorProjectDetail() {
   const [indoorProjectDataSpreadsheet, setIndoorProjectDataSpreadsheet] =
     useState<IndoorProjectDataSpreadsheetAPIResponse | null>(null);
   const { indoorProject } = useLoaderData() as {
-    indoorProject: IndoorProjectAPIResponse;
+    indoorProject: IndoorProject;
   };
 
   useEffect(() => {

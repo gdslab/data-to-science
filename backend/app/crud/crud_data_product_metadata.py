@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Sequence
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
@@ -34,14 +34,15 @@ class CRUDDataProductMetadata(
         db: Session,
         category: str,
         data_product_id: UUID,
-        vector_layer_id: UUID | None = None,
-    ) -> List[DataProductMetadata]:
-        if vector_layer_id:
+        vector_layer_feature_id: UUID | None = None,
+    ) -> Sequence[DataProductMetadata]:
+        if vector_layer_feature_id:
             metadata_query = select(DataProductMetadata).where(
                 and_(
                     DataProductMetadata.category == category,
                     DataProductMetadata.data_product_id == data_product_id,
-                    DataProductMetadata.vector_layer_id == vector_layer_id,
+                    DataProductMetadata.vector_layer_feature_id
+                    == vector_layer_feature_id,
                 )
             )
         else:
@@ -57,7 +58,7 @@ class CRUDDataProductMetadata(
 
     def get_zonal_statistics_by_layer_id(
         self, db: Session, data_product_id: UUID, layer_id: str
-    ) -> Dict:
+    ) -> Sequence[DataProductMetadata]:
         zonal_statistics_query = (
             select(DataProductMetadata)
             .join(DataProductMetadata.vector_layer)
@@ -69,7 +70,7 @@ class CRUDDataProductMetadata(
                 )
             )
         )
-        zonal_statistics_and_props = []
+
         with db as session:
             metadata = session.scalars(zonal_statistics_query).all()
             return metadata

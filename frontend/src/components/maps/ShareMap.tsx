@@ -1,17 +1,22 @@
-import 'leaflet/dist/leaflet.css';
 import axios, { AxiosResponse } from 'axios';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { MapContainer } from 'react-leaflet/MapContainer';
-import { ZoomControl } from 'react-leaflet/ZoomControl';
+import Map, { MapRef, NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
 import { useLocation } from 'react-router-dom';
 
 import { AlertBar, Status } from '../Alert';
 import ColorBarControl from './ColorBarControl';
-import DataProductTileLayer from './DataProductTileLayer';
-import MapLayersControl from './MapLayersControl';
+import ProjectRasterTiles from './ProjectRasterTiles';
+import {
+  MultibandSymbology,
+  SingleBandSymbology,
+  useRasterSymbologyContext,
+} from './RasterSymbologyContext';
 import { DataProduct } from '../pages/workspace/projects/Project';
-import { DSMSymbologySettings, OrthoSymbologySettings } from './Maps';
 
+import {
+  getMapboxSatelliteBasemapStyle,
+  usgsImageryTopoBasemapStyle,
+} from './styles/basemapStyles';
 import { isSingleBand } from './utils';
 
 function useQuery() {
@@ -21,29 +26,46 @@ function useQuery() {
 }
 
 function parseSymbology(
-  symbologyParam: string | null
-): DSMSymbologySettings | OrthoSymbologySettings | undefined {
+  symbologyQueryParams: string | null
+): SingleBandSymbology | MultibandSymbology | undefined {
   let symbology = undefined;
   try {
-    if (!symbologyParam) throw new Error();
-    symbology = JSON.parse(atob(symbologyParam));
+    if (!symbologyQueryParams) throw new Error();
+    symbology = JSON.parse(atob(symbologyQueryParams));
   } catch (error) {
-    console.log('Unable to parse symbology');
+    console.error(`Unable to parse symbology: ${error}`);
   }
   return symbology;
 }
 
 export default function ShareMap() {
-  const [bounds, setBounds] = useState<number[] | null>(null);
+  const [bounds, setBounds] = useState<[number, number, number, number] | null>(null);
   const [dataProduct, setDataProduct] = useState<DataProduct | null>(null);
   const [status, setStatus] = useState<Status | null>(null);
-  const query = useQuery();
-  const fileID = query.get('file_id');
-  const symbology: DSMSymbologySettings | OrthoSymbologySettings | undefined =
-    parseSymbology(query.get('symbology'));
 
-  const tileLayerRef = useRef<L.TileLayer | null>(null);
-  const mapRef = useRef<L.Map | null>(null);
+  const [mapboxAccessToken, setMapboxAccessToken] = useState('');
+  const { state, dispatch } = useRasterSymbologyContext();
+
+  const mapRef = useRef<MapRef | null>(null);
+
+  const query = useQuery();
+  const fileId = query.get('file_id');
+  const symbologyFromQueryParams = parseSymbology(query.get('symbology'));
+
+  useEffect(() => {
+    if (!import.meta.env.VITE_MAPBOX_ACCESS_TOKEN) {
+      fetch('/config.json')
+        .then((response) => response.json())
+        .then((config) => {
+          setMapboxAccessToken(config.mapboxAccessToken);
+        })
+        .catch((error) => {
+          console.error('Failed to load config.json:', error);
+        });
+    } else {
+      setMapboxAccessToken(import.meta.env.VITE_MAPBOX_ACCESS_TOKEN);
+    }
+  }, []);
 
   useEffect(() => {
     async function fetchDataProduct(fileID) {
@@ -61,18 +83,18 @@ export default function ShareMap() {
       }
     }
 
-    if (fileID && symbology) {
-      fetchDataProduct(fileID);
+    if (fileId) {
+      fetchDataProduct(fileId);
     }
   }, []);
 
   useEffect(() => {
     if (mapRef.current && bounds) {
-      if (bounds.length == 4) {
-        mapRef.current.fitBounds([
-          [bounds[1], bounds[0]],
-          [bounds[3], bounds[2]],
-        ]);
+      if (bounds.length === 4) {
+        mapRef.current.fitBounds(bounds, {
+          padding: 20,
+          duration: 1000,
+        });
       }
     }
   }, [bounds]);
@@ -100,32 +122,59 @@ export default function ShareMap() {
     }
   }, [dataProduct]);
 
+  useEffect(() => {
+    if (dataProduct && symbologyFromQueryParams) {
+      dispatch({
+        type: 'SET_SYMBOLOGY',
+        rasterId: dataProduct.id,
+        payload: symbologyFromQueryParams,
+      });
+      dispatch({
+        type: 'SET_READY_STATE',
+        rasterId: dataProduct.id,
+        payload: true,
+      });
+    }
+  }, [dataProduct]);
+
+  const mapStyle = useMemo(() => {
+    return mapboxAccessToken
+      ? getMapboxSatelliteBasemapStyle(mapboxAccessToken)
+      : usgsImageryTopoBasemapStyle;
+  }, [mapboxAccessToken]);
+
   return (
-    <MapContainer
+    <Map
       ref={mapRef}
-      center={[40.428655143949925, -86.9138040788386]}
-      preferCanvas={true}
-      zoom={8}
-      maxZoom={24}
-      scrollWheelZoom={true}
-      zoomControl={false}
+      initialViewState={{
+        longitude: -86.9138040788386,
+        latitude: 40.428655143949925,
+        zoom: 8,
+      }}
+      style={{
+        width: '100%',
+        height: '100%',
+      }}
+      mapboxAccessToken={mapboxAccessToken || undefined}
+      mapStyle={mapStyle}
+      reuseMaps={true}
     >
-      {status ? <AlertBar alertType={status.type}>{status.msg}</AlertBar> : null}
-      {dataProduct ? (
-        <DataProductTileLayer
-          activeDataProduct={dataProduct}
-          symbology={symbology}
-          tileLayerRef={tileLayerRef}
-        />
-      ) : null}
-      {dataProduct && isSingleBand(dataProduct) ? (
-        <ColorBarControl
-          dataProduct={dataProduct}
-          symbology={symbology as DSMSymbologySettings}
-        />
-      ) : null}
-      <MapLayersControl />
-      <ZoomControl position="bottomright" />
-    </MapContainer>
+      {/* Display raster tiles */}
+      {dataProduct && state[dataProduct.id]?.symbology && (
+        <ProjectRasterTiles dataProduct={dataProduct} />
+      )}
+
+      {/* Display color bar when single band data product */}
+      {dataProduct && isSingleBand(dataProduct) && state[dataProduct.id]?.symbology && (
+        <ColorBarControl dataProduct={dataProduct} />
+      )}
+
+      {/* General controls */}
+      <NavigationControl />
+      <ScaleControl />
+
+      {/* Display alerts */}
+      {status && <AlertBar alertType={status.type}>{status.msg}</AlertBar>}
+    </Map>
   );
 }

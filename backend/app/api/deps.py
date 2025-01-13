@@ -273,8 +273,13 @@ def can_read_project(
     project_id: UUID,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_approved_user),
+<<<<<<< HEAD
 ) -> Optional[models.Project]:
     """Return project if current user is project owner, manager, or viewer."""
+=======
+) -> Optional[schemas.Project]:
+    """Return project is current user is project owner, manager, or viewer."""
+>>>>>>> main
     project = crud.project.get_user_project(
         db, user_id=current_user.id, project_id=project_id, permission="r"
     )

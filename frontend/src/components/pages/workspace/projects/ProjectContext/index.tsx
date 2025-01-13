@@ -1,4 +1,8 @@
-import { ProjectContextProvider, useProjectContext } from './ProjectContext';
+import {
+  getMapLayers,
+  ProjectContextProvider,
+  useProjectContext,
+} from './ProjectContext';
 
-export { useProjectContext };
+export { getMapLayers, useProjectContext };
 export default ProjectContextProvider;

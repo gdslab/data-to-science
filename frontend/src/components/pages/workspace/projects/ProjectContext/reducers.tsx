@@ -1,10 +1,5 @@
-import {
-  GeoJSONFeature,
-  IForester,
-  Flight,
-  MapLayerFeatureCollection,
-} from '../Project';
-import { Project } from '../../ProjectList';
+import { GeoJSONFeature, IForester, Flight, MapLayer } from '../Project';
+import { Project } from '../ProjectList';
 import { ProjectMember } from '../ProjectAccess';
 
 import {
@@ -77,7 +72,7 @@ function flightsFilterSelectionReducer(
   }
 }
 
-function mapLayersReducer(state: MapLayerFeatureCollection[], action: MapLayersAction) {
+function mapLayersReducer(state: MapLayer[], action: MapLayersAction) {
   switch (action.type) {
     case 'set': {
       return action.payload ? action.payload : [];
@@ -96,19 +91,11 @@ function mapLayersReducer(state: MapLayerFeatureCollection[], action: MapLayersA
     case 'remove': {
       if (action.payload) {
         if (state.length > 0 && action.payload.length === 1) {
-          const layerIdToRemove: string | undefined =
-            action.payload[0].features[0].properties?.layer_id;
+          const layerIdToRemove: string | undefined = action.payload[0].layer_id;
           if (layerIdToRemove) {
-            return state.filter((fc) => {
-              if (fc && fc.features && fc.features.length > 0) {
-                if (
-                  fc.features[0].properties &&
-                  'layer_id' in fc.features[0].properties
-                ) {
-                  if (fc.features[0].properties.layer_id !== layerIdToRemove) {
-                    return fc;
-                  }
-                }
+            return state.filter((layer) => {
+              if (layer.layer_id !== layerIdToRemove) {
+                return layer;
               }
             });
           }

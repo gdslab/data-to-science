@@ -378,4 +378,3 @@ dependencies:
   - zstd=1.5.6=ha6fb4c9_0
   - pip:
       - pdal-plugins==1.6.2
-prefix: /opt/conda/envs/d2s

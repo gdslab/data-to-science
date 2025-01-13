@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from 'axios';
 import { useEffect } from 'react';
-import { Params, useLoaderData, useParams } from 'react-router-dom';
+import { Params, useLoaderData } from 'react-router-dom';
 
 import { User } from '../../../../AuthContext';
 import { useProjectContext } from './ProjectContext';
@@ -68,8 +68,6 @@ export async function loader({ params }: { params: Params<string> }) {
 export default function ProjectDetail() {
   const { project, role, flights, teams } = useLoaderData() as ProjectLoaderData;
 
-  const params = useParams();
-
   const {
     projectRole,
     flights: flightsPrev,
@@ -92,7 +90,7 @@ export default function ProjectDetail() {
 
   useEffect(() => {
     // update project members if team changes
-    if (project) getProjectMembers(params, projectMembersDispatch);
+    if (project) getProjectMembers(project.id, projectMembersDispatch);
   }, [project.team_id]);
 
   useEffect(() => {

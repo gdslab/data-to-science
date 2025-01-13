@@ -1,89 +1,77 @@
 import axios, { isAxiosError, AxiosResponse } from 'axios';
 import { useEffect, useState } from 'react';
-import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { useParams } from 'react-router-dom';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { yupResolver } from '@hookform/resolvers/yup';
 
 import Alert, { Status } from '../../../../Alert';
 import { Button } from '../../../../Buttons';
 import MapLayerFileInput from './MapLayerFileInput';
 import Modal from '../../../../Modal';
-import { useProjectContext } from '../ProjectContext';
-import { validationSchema } from './validationSchema';
 import { MapLayerFeatureCollection } from '../Project';
 
-export interface MapLayerFormInput {
-  layerName: string;
-  geojson: string;
-}
-
-const defaultValues = {
-  layerName: '',
-  geojson: '',
-};
-
 export default function MapLayerUpload() {
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [mlFileInputKey, setMLFileInputKey] = useState(Date.now());
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
 
   const { projectId } = useParams();
-  const { mapLayersDispatch } = useProjectContext();
 
-  const methods = useForm<MapLayerFormInput>({
-    defaultValues,
-    resolver: yupResolver(validationSchema),
-  });
-  const {
-    formState: { errors, isSubmitting },
-    handleSubmit,
-    register,
-    reset,
-  } = methods;
-
-  const onSubmit: SubmitHandler<MapLayerFormInput> = async (values) => {
+  const onSubmit = async (event) => {
+    event.preventDefault();
     setStatus(null);
-    try {
-      const response: AxiosResponse<MapLayerFeatureCollection> = await axios.post(
-        `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/vector_layers`,
-        { layer_name: values.layerName, geojson: JSON.parse(values.geojson) }
-      );
-      if (response.status === 201) {
-        setStatus({ type: 'success', msg: 'Project layer added' });
-        // reset form
-        reset();
+    if (uploadFile) {
+      setIsUploading(true);
+      try {
+        const formData = new FormData();
+        formData.append('file', uploadFile);
+
+        const headers = { 'Content-Type': 'multipart/form-data' };
+
+        const response: AxiosResponse<MapLayerFeatureCollection> = await axios.post(
+          `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/vector_layers`,
+          formData,
+          { headers }
+        );
+
+        if (response.status === 202) {
+          setStatus({
+            type: 'success',
+            msg: 'Your uploaded map layer will be added once it has been processed.',
+          });
+          // update key for file input elem (clears out previous file)
+          setMLFileInputKey(Date.now());
+          setUploadFile(null);
+        } else {
+          setStatus({ type: 'error', msg: 'Unable to add map layer' });
+          // update key for file input elem (clears out previous file)
+          setMLFileInputKey(Date.now());
+          setUploadFile(null);
+        }
+        setIsUploading(false);
+      } catch (err) {
+        if (isAxiosError(err)) {
+          if (typeof err.response?.data.detail === 'string') {
+            setStatus({ type: 'error', msg: err.response?.data.detail });
+          } else {
+            setStatus({ type: 'error', msg: 'Unable to add map layer' });
+          }
+        } else {
+          setStatus({ type: 'error', msg: 'Unable to add map layer' });
+        }
         // update key for file input elem (clears out previous file)
         setMLFileInputKey(Date.now());
         setUploadFile(null);
-        // update map layer context with new map layer
-        mapLayersDispatch({ type: 'update', payload: [response.data] });
-      } else {
-        setStatus({ type: 'error', msg: 'Unable to add project layer' });
-        // reset form
-        reset();
-        // update key for file input elem (clears out previous file)
-        setMLFileInputKey(Date.now());
-        setUploadFile(null);
+        setIsUploading(false);
       }
-    } catch (err) {
-      if (isAxiosError(err)) {
-        setStatus({ type: 'error', msg: err.response?.data.detail });
-      } else {
-        setStatus({ type: 'error', msg: 'Unable to add project layer' });
-      }
-      // reset form
-      reset();
-      // update key for file input elem (clears out previous file)
-      setMLFileInputKey(Date.now());
-      setUploadFile(null);
+    } else {
+      setStatus({ type: 'warning', msg: 'Must select a file first' });
+      setIsUploading(false);
     }
   };
 
   useEffect(() => {
-    reset();
     setUploadFile(null);
     setStatus(null);
   }, [open]);
@@ -112,55 +100,29 @@ export default function MapLayerUpload() {
               <strong>WGS84 datum</strong> (e.g., EPSG:4326).
             </p>
             {/* form */}
-            <FormProvider {...methods}>
-              <form className="flex flex-col gap-2" onSubmit={handleSubmit(onSubmit)}>
-                <div className="w-full flex justify-center">
-                  <input className="hidden" {...register('layerName')} />
-                  <input className="hidden" {...register('geojson')} />
-                  <MapLayerFileInput
-                    inputKey={mlFileInputKey}
-                    setIsProcessing={setIsProcessing}
-                    setStatus={setStatus}
-                    uploadFile={uploadFile}
-                    setUploadFile={setUploadFile}
-                  />
+
+            <form className="flex flex-col gap-2" onSubmit={onSubmit}>
+              <div className="w-full flex justify-center">
+                <MapLayerFileInput
+                  inputKey={mlFileInputKey}
+                  setStatus={setStatus}
+                  uploadFile={uploadFile}
+                  setUploadFile={setUploadFile}
+                />
+              </div>
+              {/* Submit button */}
+              <div className="w-full flex justify-end">
+                <div className="w-36">
+                  <Button type="submit" size="sm" disabled={isUploading || !uploadFile}>
+                    {isUploading ? 'Uploading...' : 'Upload'}
+                  </Button>
                 </div>
-                {/* Submit button */}
-                <div className="w-full flex justify-end">
-                  <div className="w-36">
-                    <Button
-                      type="submit"
-                      size="sm"
-                      disabled={
-                        isSubmitting ||
-                        isProcessing ||
-                        !uploadFile ||
-                        errors.layerName ||
-                        errors.geojson
-                          ? true
-                          : false
-                      }
-                    >
-                      {isSubmitting ? 'Uploading...' : 'Upload'}
-                    </Button>
-                  </div>
-                </div>
-                {/* Display processing message while file is read */}
-                {isProcessing && (
-                  <Alert alertType="info">
-                    Please wait for selected file to be processed
-                  </Alert>
-                )}
-                {/* Display any error messages from backend API */}
-                {status && status.type && status.msg && (
-                  <Alert alertType={status.type}>{status.msg}</Alert>
-                )}
-                {/* Display any form error messages */}
-                {errors && errors.geojson && (
-                  <Alert alertType="error">{errors.geojson.message}</Alert>
-                )}
-              </form>
-            </FormProvider>
+              </div>
+              {/* Display any error messages from backend API */}
+              {status && status.type && status.msg && (
+                <Alert alertType={status.type}>{status.msg}</Alert>
+              )}
+            </form>
           </div>
         </div>
       </Modal>

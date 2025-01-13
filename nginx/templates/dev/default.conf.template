@@ -1,13 +1,17 @@
-upstream frontend {
-    server  frontend:8080;
-}
-
 upstream backend {
     server  backend:5000;
 }
 
+upstream frontend {
+    server  frontend:8080;
+}
+
 upstream tusd {
     server tusd:8080;
+}
+
+upstream varnish {
+    server varnish:80;
 }
 
 server {
@@ -80,6 +84,12 @@ server {
         keepalive_timeout 600s;
     }
 
+    location /developer {
+        proxy_set_header Host $host;
+
+        proxy_pass http://backend;
+    }
+
     location /files {
         # forward incoming requests to tusd container
         proxy_pass http://tusd;
@@ -103,7 +113,23 @@ server {
         proxy_set_header Connection "upgrade";
     }
 
-    location /docs {
+    location /cog {
+        # Proxy valid requests to the backend
+        proxy_set_header Host $host;
+
+        proxy_pass http://varnish;
+    }
+
+    location /mvt/ {
+        # Remove the /mvt prefix
+        rewrite ^/mvt/(.*)$ /$1 break;
+
+        # Proxy valid requests to the backend
+        proxy_set_header Host $host;
+        proxy_pass http://varnish/;
+    }
+
+    location /potree {
         proxy_set_header Host $host;
 
         proxy_pass http://backend;
@@ -116,12 +142,6 @@ server {
     }
 
     location /static {
-        proxy_set_header Host $host;
-
-        proxy_pass http://backend;
-    }
-
-    location /potree {
         proxy_set_header Host $host;
 
         proxy_pass http://backend;

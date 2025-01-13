@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
 
     SECRET_KEY: str = ""
+    # Secret key used for signing pg_tileserv and titiler requests
+    TILE_SIGNING_SECRET_KEY: str = ""
 
     @field_validator("SECRET_KEY", mode="before")
     def generate_secret_key(cls, v: str | None) -> str:

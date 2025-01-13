@@ -1,4 +1,5 @@
 import os
+import urllib.parse
 from io import BytesIO
 from typing import Annotated, Any, List, Optional
 
@@ -44,7 +45,7 @@ def read_shared_data_product_with_user_access(
     file_id: UUID4,
     db: Session = Depends(deps.get_db),
     current_user: models.User = Depends(deps.get_current_approved_user),
-):
+) -> Any:
     if os.environ.get("RUNNING_TESTS") == "1":
         upload_dir = settings.TEST_STATIC_DIR
     else:
@@ -60,6 +61,47 @@ def read_shared_data_product_with_user_access(
     return data_product
 
 
+@router.get("/vectortiles")
+async def get_vector_tiles_for_vector_layer(
+    x: int,
+    y: int,
+    z: int,
+    layer_id: str,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> StreamingResponse:
+    if os.environ.get("RUNNING_TESTS") == "1":
+        upload_dir = settings.TEST_STATIC_DIR
+    else:
+        upload_dir = settings.STATIC_DIR
+
+    # check if user has access through project member role
+    can_access = crud.vector_layer.verify_user_access_to_vector_layer_by_id(
+        db, layer_id=layer_id, user_id=current_user.id
+    )
+    if not can_access:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Unable to view vector layer"
+        )
+
+    filter_param = urllib.parse.quote(f"layer_id = '{layer_id}'")
+    # request vector tile from pg_tileserv
+    async with httpx.AsyncClient() as client:
+        tile_url = (
+            f"http://varnish/public.vector_layers/{z}/{x}/{y}.pbf?filter={filter_param}"
+        )
+        # timeout request after 30 seconds
+        response = await client.get(tile_url, timeout=30.0)
+    if response.status_code == 200:
+        return StreamingResponse(
+            BytesIO(response.content), media_type="application/vnd.mapbox-vector-tile"
+        )
+    else:
+        raise HTTPException(
+            status_code=response.status_code, detail=f"Error: {response.text}"
+        )
+
+
 @router.get("/maptiles")
 async def get_map_tiles_for_data_product(
     x: float,
@@ -72,7 +114,7 @@ async def get_map_tiles_for_data_product(
     colormap_name: Annotated[Optional[str], Query()] = None,
     current_user: models.User = Depends(deps.get_optional_current_user),
     db: Session = Depends(deps.get_db),
-):
+) -> StreamingResponse:
     if os.environ.get("RUNNING_TESTS") == "1":
         upload_dir = settings.TEST_STATIC_DIR
     else:
@@ -125,7 +167,7 @@ def read_data_product_bounds(
     data_product_id: UUID4,
     current_user: Optional[models.User] = Depends(deps.get_optional_current_user),
     db: Session = Depends(deps.get_db),
-):
+) -> Any:
     if os.environ.get("RUNNING_TESTS") == "1":
         upload_dir = settings.TEST_STATIC_DIR
     else:

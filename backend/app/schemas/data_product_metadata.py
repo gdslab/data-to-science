@@ -15,7 +15,7 @@ class DataProductMetadataBase(BaseModel):
 class DataProductMetadataCreate(DataProductMetadataBase):
     category: str
     properties: dict
-    vector_layer_id: UUID | None = None
+    vector_layer_feature_id: UUID | None = None
 
 
 # properties to receive via API on update
@@ -30,7 +30,7 @@ class DataProductMetadataInDBBase(DataProductMetadataBase, from_attributes=True)
     properties: dict
 
     data_product_id: UUID
-    vector_layer_id: UUID | None = None
+    vector_layer_feature_id: UUID | None = None
 
 
 # additional properties to return via API

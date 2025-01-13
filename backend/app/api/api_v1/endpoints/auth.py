@@ -286,13 +286,6 @@ def reset_user_password(
     return {"status": "success"}
 
 
-@router.post("/mapbox-access-token")
-def get_mapbox_access_token(response: Response) -> Any:
-    """Returns mapbox access token."""
-    mapbox_acceses_token = settings.MAPBOX_ACCESS_TOKEN
-    return {"token": mapbox_acceses_token}
-
-
 @router.get("/request-api-key", status_code=status.HTTP_200_OK)
 def get_api_key(
     response: Response,

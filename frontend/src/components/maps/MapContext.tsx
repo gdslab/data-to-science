@@ -15,6 +15,7 @@ import {
   ActiveProjectAction,
   FlightsAction,
   GeoRasterIdAction,
+  MapboxAccessTokenAction,
   MapTool,
   ProjectsAction,
   ProjectsVisibleAction,
@@ -110,6 +111,35 @@ function geoRasterIdReducer(state: string, action: GeoRasterIdAction) {
   }
 }
 
+function mapboxAccessTokenReducer(state: string, action: MapboxAccessTokenAction) {
+  switch (action.type) {
+    case 'set': {
+      return action.payload;
+    }
+    default:
+      return state;
+  }
+}
+
+type MapViewPropertiesState = {
+  zoom: number;
+} | null;
+type MapViewPropertiesAction = {
+  type: 'SET_VIEW_PROPERTIES';
+  payload: MapViewPropertiesState;
+};
+function mapViewPropertiesReducer(
+  state: MapViewPropertiesState,
+  action: MapViewPropertiesAction
+) {
+  switch (action.type) {
+    case 'SET_VIEW_PROPERTIES':
+      return action.payload;
+    default:
+      return state;
+  }
+}
+
 type ProjectLayersAction = { type: string; payload?: MapLayerFeatureCollection[] };
 
 function projectLayersReducer(
@@ -197,6 +227,10 @@ const context: {
   flights: Flight[];
   geoRasterId: string;
   geoRasterIdDispatch: React.Dispatch<GeoRasterIdAction>;
+  mapboxAccessToken: string;
+  mapboxAccessTokenDispatch: React.Dispatch<MapboxAccessTokenAction>;
+  mapViewProperties: MapViewPropertiesState;
+  mapViewPropertiesDispatch: React.Dispatch<MapViewPropertiesAction>;
   projectLayers: MapLayerFeatureCollection[];
   projectLayersDispatch: React.Dispatch<ProjectLayersAction>;
   projects: Project[] | null;
@@ -217,6 +251,10 @@ const context: {
   flights: [],
   geoRasterId: '',
   geoRasterIdDispatch: () => {},
+  mapboxAccessToken: '',
+  mapboxAccessTokenDispatch: () => {},
+  mapViewProperties: null,
+  mapViewPropertiesDispatch: () => {},
   projectLayers: [],
   projectLayersDispatch: () => {},
   projects: null,
@@ -244,6 +282,14 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
   const [activeProject, activeProjectDispatch] = useReducer(activeProjectReducer, null);
   const [flights, flightsDispatch] = useReducer(flightsReducer, []);
   const [geoRasterId, geoRasterIdDispatch] = useReducer(geoRasterIdReducer, '');
+  const [mapboxAccessToken, mapboxAccessTokenDispatch] = useReducer(
+    mapboxAccessTokenReducer,
+    ''
+  );
+  const [mapViewProperties, mapViewPropertiesDispatch] = useReducer(
+    mapViewPropertiesReducer,
+    null
+  );
   const [projectLayers, projectLayersDispatch] = useReducer(projectLayersReducer, []);
   const [projects, projectsDispatch] = useReducer(projectsReducer, null);
   const [projectsVisible, projectsVisibleDispatch] = useReducer(
@@ -329,6 +375,10 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
         flights,
         geoRasterId,
         geoRasterIdDispatch,
+        mapboxAccessToken,
+        mapboxAccessTokenDispatch,
+        mapViewProperties,
+        mapViewPropertiesDispatch,
         projectLayers,
         projectLayersDispatch,
         projects,

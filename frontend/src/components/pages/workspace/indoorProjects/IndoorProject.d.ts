@@ -1,10 +1,12 @@
-export type IndoorProjectAPIResponse = {
+export type IndoorProject = {
   id: string;
   title: string;
   description: string;
   start_date?: Date;
   end_date?: Date;
 };
+
+export type IndoorProjectAPIResponse = IndoorProject[];
 
 export type IndoorProjectUploadInputProps = {
   indoorProjectId: string;

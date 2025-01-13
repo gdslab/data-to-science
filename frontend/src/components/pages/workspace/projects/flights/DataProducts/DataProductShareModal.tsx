@@ -5,7 +5,11 @@ import { Button } from '../../../../../Buttons';
 import Modal from '../../../../../Modal';
 import { DataProduct } from '../../Project';
 import { useProjectContext } from '../../ProjectContext';
+<<<<<<< HEAD:frontend/src/components/pages/workspace/projects/flights/DataProducts/DataProductShareModal.tsx
 import ShareControls from '../../../../../maps/ShareControls';
+=======
+import ShareControls from '../../../../maps/RasterSymbologySettings/RasterSymbologyAccessControls';
+>>>>>>> main:frontend/src/components/pages/projects/flights/DataProducts/DataProductShareModal.tsx
 import { useParams } from 'react-router-dom';
 
 export default function DataProductShareModal({

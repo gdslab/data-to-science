@@ -1,43 +1,83 @@
 import axios, { AxiosResponse } from 'axios';
-import { useEffect, useRef, useState } from 'react';
-import { GeoJSON } from 'react-leaflet/GeoJSON';
-import { useMap } from 'react-leaflet';
-import { Project } from '../pages/workspace/ProjectList';
+import { FeatureCollection, Polygon } from 'geojson';
+import { useEffect } from 'react';
+import { Layer, Source, useMap } from 'react-map-gl/maplibre';
+import center from '@turf/center';
 
-export default function ProjectBoundary({ projectId }: { projectId: string }) {
-  const [project, setProject] = useState<Project | null>(null);
+import { projectBoundaryLayer } from './layerProps';
+import { useMapContext } from './MapContext';
 
-  const map = useMap();
-  const boundaryRef = useRef<L.GeoJSON>(null);
+import { calculateBoundsFromGeoJSON } from './utils';
+
+type ProjectBoundaryProps = {
+  setViewState?: React.Dispatch<
+    React.SetStateAction<{
+      longitude: number;
+      latitude: number;
+      zoom: number;
+    }>
+  >;
+};
+
+export default function ProjectBoundary({ setViewState }: ProjectBoundaryProps) {
+  const { current: map } = useMap();
+  const { activeMapTool, activeProject, mapViewProperties, mapViewPropertiesDispatch } =
+    useMapContext();
+  const geojsonUrl = `${import.meta.env.VITE_API_V1_STR}/projects/${
+    activeProject?.id
+  }?format=geojson`;
 
   useEffect(() => {
-    async function fetchProject() {
+    if (!map) return;
+    // Fetch project boundary GeoJSON to calculate the bounds
+    const fetchGeoJSONAndFitBounds = async () => {
       try {
-        const response: AxiosResponse<Project> = await axios.get(
-          `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}`
+        const response: AxiosResponse<FeatureCollection<Polygon>> = await axios.get(
+          geojsonUrl
         );
-        if (response) {
-          setProject(response.data);
+        const geojsonData = await response.data;
+
+        // Calculate the bounds of the GeoJSON feature
+        const bounds: [number, number, number, number] =
+          calculateBoundsFromGeoJSON(geojsonData);
+
+        if (!setViewState) {
+          // Fit the map to the bounds
+          map.fitBounds(bounds, {
+            padding: 20,
+            duration: 1000,
+          });
+          setTimeout(() => {
+            mapViewPropertiesDispatch({
+              type: 'SET_VIEW_PROPERTIES',
+              payload: { zoom: map.getZoom() },
+            });
+          }, 1000);
         } else {
-          return null;
+          // Get center lat/lng
+          const bboxCenter = center(geojsonData).geometry.coordinates;
+          // Set view to center coordinates and zoom level set when project loaded
+          setViewState((prev) => ({
+            ...prev,
+            longitude: bboxCenter[0],
+            latitude: bboxCenter[1],
+            zoom: mapViewProperties ? mapViewProperties.zoom : 12,
+          }));
         }
-      } catch {
-        console.error('Unable to fetch project');
-        return null;
+      } catch (error) {
+        console.error(
+          'Error fetching or processing project boundary GeoJSON data:',
+          error
+        );
       }
-    }
-    fetchProject();
-  }, [projectId]);
+    };
 
-  useEffect(() => {
-    if (boundaryRef.current) map.fitBounds(boundaryRef.current.getBounds());
-  }, [boundaryRef.current]);
+    fetchGeoJSONAndFitBounds();
+  }, [activeMapTool, map, geojsonUrl]);
 
-  return project ? (
-    <GeoJSON
-      ref={boundaryRef}
-      style={{ fillOpacity: 0, color: '#ffffff', weight: 2 }}
-      data={project.field}
-    />
-  ) : null;
+  return (
+    <Source id="project-boundary" type="geojson" data={geojsonUrl}>
+      <Layer {...projectBoundaryLayer} />
+    </Source>
+  );
 }
