@@ -101,7 +101,7 @@ class IndoorProjectDataPlant(BaseModel):
     pi: str
 
 
-class IndoorProjectDataPlantSide(BaseModel):
+class IndoorProjectDataPlantSideAll(BaseModel):
     filename: str
     exp_id: int
     pot_barcode: int
@@ -124,6 +124,83 @@ class IndoorProjectDataPlantSide(BaseModel):
     saturation: int
     intensity: int
     fluorescence: int
+
+
+class IndoorProjectDataPlantSideAvg(BaseModel):
+    filename: str
+    exp_id: int
+    pot_barcode: int
+    variety: str
+    treatment: str
+    scan_time: str
+    scan_date: date
+    dfp: int
+    view: str
+    width: int
+    height: int
+    surface: int
+    convex_hull: int
+    roundness: int
+    center_of_mass_distance: int
+    center_of_mass_x: int
+    center_of_mass_y: int
+    hue: int
+    saturation: int
+    intensity: int
+    fluorescence: int
+
+    class Config:
+        extra = Extra.allow  # allows h0, h1, h2, etc. fields to be dynamically added
+
+    @classmethod
+    def validate_dynamic_hue_fields(cls, values: Dict[str, int]) -> Dict[str, int]:
+        for key in values:
+            if key.startswith("h") and key[1:].isdigit():
+                index = int(key[1:])
+                if not (0 <= index <= 359):
+                    raise ValueError(
+                        f"Invalid key {key}. Expected keys to follow 'h0' to 'h359'."
+                    )
+        return values
+
+    @classmethod
+    def validate_dynamic_saturation_fields(
+        cls, values: Dict[str, int]
+    ) -> Dict[str, int]:
+        for key in values:
+            if key.startswith("s") and key[1:].isdigit():
+                index = int(key[1:])
+                if not (0 <= index <= 99):
+                    raise ValueError(
+                        f"Invalid key {key}. Expected keys to follow 's0' to 's99'."
+                    )
+        return values
+
+    @classmethod
+    def validate_dynamic_intensity_fields(
+        cls, values: Dict[str, int]
+    ) -> Dict[str, int]:
+        for key in values:
+            if key.startswith("v") and key[1:].isdigit():
+                index = int(key[1:])
+                if not (0 <= index <= 99):
+                    raise ValueError(
+                        f"Invalid key {key}. Expected keys to follow 'v0' to 'v99'."
+                    )
+        return values
+
+    @classmethod
+    def validate_dynamic_fluorescence_fields(
+        cls, values: Dict[str, int]
+    ) -> Dict[str, int]:
+        for key in values:
+            if key.startswith("f") and key[1:].isdigit():
+                index = int(key[1:])
+                if not (0 <= index <= 99):
+                    raise ValueError(
+                        f"Invalid key {key}. Expected keys to follow 'f0' to 'f99'."
+                    )
+        return values
 
 
 class IndoorProjectDataPlantTop(BaseModel):
@@ -204,7 +281,8 @@ class IndoorProjectDataPlantTop(BaseModel):
 class IndoorProjectDataSpreadsheetPlantData(BaseModel):
     ppew: IndoorProjectDataPlant
     top: List[IndoorProjectDataPlantTop]
-    side: List[IndoorProjectDataPlantSide]
+    side_all: List[IndoorProjectDataPlantSideAll]
+    side_avg: List[IndoorProjectDataPlantSideAvg]
 
 
 class IndoorProjectDataSpreadsheetData(RootModel[Dict[int, IndoorProjectDataPlant]]):

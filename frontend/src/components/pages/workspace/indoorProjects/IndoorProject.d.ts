@@ -90,7 +90,7 @@ export type IndoorProjectDataPlantAPIResponse = {
     [key: `v${number}`]: number;
     [key: `f${number}`]: number;
   }[];
-  side: {
+  side_all: {
     filename: string;
     exp_id: number;
     pot_barcode: number;
@@ -101,6 +101,29 @@ export type IndoorProjectDataPlantAPIResponse = {
     dfp: number;
     view: string;
     frame_nr: number;
+    width: number;
+    height: number;
+    surface: number;
+    convex_hull: number;
+    roundness: number;
+    center_of_mass_distance: number;
+    center_of_mass_x: number;
+    center_of_mass_y: number;
+    hue: number;
+    saturation: number;
+    intensity: number;
+    fluorescence: number;
+  }[];
+  side_avg: {
+    filename: string;
+    exp_id: number;
+    pot_barcode: number;
+    variety: string;
+    treatment: string;
+    scan_time: string;
+    scan_date: string;
+    dfp: number;
+    view: string;
     width: number;
     height: number;
     surface: number;

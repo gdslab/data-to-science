@@ -199,10 +199,24 @@ def read_indoor_project_data_plant(
                 detail="Spreadsheet missing 'Side all' worksheet",
             )
 
+        try:
+            # read "Side Average" worksheet into pandas dataframe
+            side_avg_df = pd.read_excel(
+                spreadsheet_file.file_path,
+                sheet_name="Side average",
+                dtype={"VARIETY": str},
+            )
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Spreadsheet missing 'Side average' worksheet",
+            )
+
         # search for row with matching pot barcode
         pot_ppew_df = ppew_df.query(f"POT_BARCODE == {plant_id}")
         pot_top_df = top_df.query(f"POT_BARCODE == {plant_id}")
         pot_side_all_df = side_all_df.query(f"POT_BARCODE == {plant_id}")
+        pot_side_avg_df = side_avg_df.query(f"POT_BARCODE == {plant_id}")
 
         # raise exception if no records in PPEW worksheet
         if len(pot_ppew_df) == 0:
@@ -225,6 +239,13 @@ def read_indoor_project_data_plant(
                 detail="Side all worksheet has zero records",
             )
 
+        # raise exception if no records in Side average worksheet
+        if len(pot_side_avg_df) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Side average worksheet has zero records",
+            )
+
         # raise exception if more than one record found for pot barcode
         if len(pot_ppew_df) > 1:
             raise HTTPException(
@@ -236,11 +257,13 @@ def read_indoor_project_data_plant(
         pot_ppew_df.columns = pot_ppew_df.columns.str.lower()
         pot_top_df.columns = pot_top_df.columns.str.lower()
         pot_side_all_df.columns = pot_side_all_df.columns.str.lower()
+        pot_side_avg_df.columns = pot_side_avg_df.columns.str.lower()
 
         # replace any spaces in column names with underscores
         pot_ppew_df.columns = pot_ppew_df.columns.str.replace(" ", "_")
         pot_top_df.columns = pot_top_df.columns.str.replace(" ", "_")
         pot_side_all_df.columns = pot_side_all_df.columns.str.replace(" ", "_")
+        pot_side_avg_df.columns = pot_side_avg_df.columns.str.replace(" ", "_")
 
         # convert planting date to datetime string YYYY-mm-dd HH:MM:SS
         pot_ppew_df["planting_date"] = pot_ppew_df["planting_date"].dt.strftime(
@@ -252,6 +275,9 @@ def read_indoor_project_data_plant(
         pot_side_all_df["scan_date"] = pot_side_all_df["scan_date"].dt.strftime(
             "%Y-%m-%d"
         )
+        pot_side_avg_df["scan_date"] = pot_side_avg_df["scan_date"].dt.strftime(
+            "%Y-%m-%d"
+        )
 
         # replace nan with "" for object columns and -9999 for numeric columns
         pot_ppew_df = pot_ppew_df.apply(
@@ -260,7 +286,10 @@ def read_indoor_project_data_plant(
         pot_top_df = pot_top_df.apply(
             lambda col: col.fillna("") if col.dtype == "object" else col.fillna(-9999)
         )
-        pot_side_all = pot_side_all_df.apply(
+        pot_side_all_df = pot_side_all_df.apply(
+            lambda col: col.fillna("") if col.dtype == "object" else col.fillna(-9999)
+        )
+        pot_side_avg_df = pot_side_avg_df.apply(
             lambda col: col.fillna("") if col.dtype == "object" else col.fillna(-9999)
         )
 
@@ -289,9 +318,15 @@ def read_indoor_project_data_plant(
                 ppew_summary[column] = ""
 
         top_records = pot_top_df.to_dict(orient="records")
-        side_all_records = pot_side_all.to_dict(orient="records")
+        side_all_records = pot_side_all_df.to_dict(orient="records")
+        side_avg_records = pot_side_avg_df.to_dict(orient="records")
 
-        payload = {"ppew": ppew_summary, "top": top_records, "side": side_all_records}
+        payload = {
+            "ppew": ppew_summary,
+            "top": top_records,
+            "side_all": side_all_records,
+            "side_avg": side_avg_records,
+        }
 
         try:
             # validate spreadsheet data
@@ -301,6 +336,11 @@ def read_indoor_project_data_plant(
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=e.errors()
             )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only RGB data supported at this time",
+        )
 
 
 def is_data_type(xlsx_filename: str, data_type: str) -> bool:

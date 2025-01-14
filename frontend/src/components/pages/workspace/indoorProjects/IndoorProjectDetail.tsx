@@ -8,6 +8,7 @@ import {
   IndoorProjectDataAPIResponse,
   IndoorProjectDataSpreadsheetAPIResponse,
 } from './IndoorProject';
+import IndoorProjectDataVizForm from './IndoorProjectDataVizForm';
 import IndoorProjectUploadModal from './IndoorProjectUploadModal';
 import IndoorProjectPageLayout from './IndoorProjectPageLayout';
 
@@ -136,6 +137,7 @@ export default function IndoorProjectDetail() {
           {JSON.stringify(indoorProjectDataSpreadsheet.summary, null, 2)}
         </pre>
       )}
+      <IndoorProjectDataVizForm />
       <h3>Plants:</h3>
       {indoorProjectDataSpreadsheet && (
         <div className="grid grid-cols-4 gap-4">

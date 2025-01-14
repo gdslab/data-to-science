@@ -17,8 +17,8 @@ export async function loader({ params }: { params: Params<string> }) {
       );
     if (indoorProjectPlantResponse && indoorProjectPlantResponse.status == 200) {
       const data = indoorProjectPlantResponse.data;
-      if (data.ppew && data.side && data.top) return data;
-      return { ppew: [], side: [], top: [] };
+      if (data.ppew && data.side_all && data.top) return data;
+      return { ppew: [], side_all: [], top: [] };
     } else {
       throw new Response('Indoor project plant not found', { status: 404 });
     }
@@ -178,8 +178,8 @@ export default function IndoorProjectDetail() {
   }, [indoorProjectPlant.top]);
 
   const sortedSideData = useMemo(() => {
-    if (indoorProjectPlant.side.length > 0) {
-      const sorted = indoorProjectPlant.side.sort((a, b) => {
+    if (indoorProjectPlant.side_all.length > 0) {
+      const sorted = indoorProjectPlant.side_all.sort((a, b) => {
         const scanDateA = new Date(a.scan_date);
         const scanDateB = new Date(b.scan_date);
 
@@ -194,7 +194,11 @@ export default function IndoorProjectDetail() {
     } else {
       return [];
     }
-  }, [indoorProjectPlant.side]);
+  }, [indoorProjectPlant.side_all]);
+
+  const sortedSideAvgData = useMemo(() => {
+    return indoorProjectPlant.side_avg;
+  }, [indoorProjectPlant.side_avg]);
 
   console.log(indoorProjectPlant);
 
@@ -311,6 +315,7 @@ export default function IndoorProjectDetail() {
           </table>
         </div>
       )}
+
       <h2>Side All</h2>
       {sortedSideData.length > 0 && (
         <div className="max-w-full overflow-x-auto">
@@ -377,6 +382,117 @@ export default function IndoorProjectDetail() {
                         indoorProjectDataId={indoorProjectDataId}
                       />
                     )}
+                  </Cell>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <h2>Side Average</h2>
+      {sortedSideAvgData.length > 0 && (
+        <div className="max-w-full overflow-x-auto">
+          <table className="min-w-[600px] w-full border-separate border-spacing-y-1 border-spacing-x-1">
+            <thead>
+              <tr className="h-12 sticky top-0 text-slate-700 bg-slate-300">
+                <HeaderCell>Filename</HeaderCell>
+                <HeaderCell>Exp ID</HeaderCell>
+                <HeaderCell>Pot Barcode</HeaderCell>
+                <HeaderCell>Variety</HeaderCell>
+                <HeaderCell>Treatment</HeaderCell>
+                <HeaderCell>Scan Time</HeaderCell>
+                <HeaderCell>Scan Date</HeaderCell>
+                <HeaderCell>DFP</HeaderCell>
+                <HeaderCell>View</HeaderCell>
+                <HeaderCell>Width</HeaderCell>
+                <HeaderCell>Height</HeaderCell>
+                <HeaderCell>Surface</HeaderCell>
+                <HeaderCell>Convex Hull</HeaderCell>
+                <HeaderCell>Roundness</HeaderCell>
+                <HeaderCell>Center of mass distance</HeaderCell>
+                <HeaderCell>Center of mass x</HeaderCell>
+                <HeaderCell>Center of mass y</HeaderCell>
+                <HeaderCell>Hue</HeaderCell>
+                <HeaderCell>Saturation</HeaderCell>
+                <HeaderCell>Intensity</HeaderCell>
+                <HeaderCell>Fluorescence</HeaderCell>
+                <HeaderCell>Images</HeaderCell>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedSideAvgData.map((sideRecord, index) => (
+                <tr key={index}>
+                  <Cell extraStyles="max-w-60 truncate">
+                    <span title={sideRecord.filename}>{sideRecord.filename}</span>
+                  </Cell>
+                  <Cell>{sideRecord.exp_id}</Cell>
+                  <Cell>{sideRecord.pot_barcode}</Cell>
+                  <Cell>{sideRecord.variety}</Cell>
+                  <Cell>{sideRecord.treatment}</Cell>
+                  <Cell>{sideRecord.scan_time}</Cell>
+                  <Cell>{sideRecord.scan_date}</Cell>
+                  <Cell>{sideRecord.dfp}</Cell>
+                  <Cell>{sideRecord.view}</Cell>
+                  <Cell>{sideRecord.width}</Cell>
+                  <Cell>{sideRecord.height}</Cell>
+                  <Cell>{sideRecord.surface}</Cell>
+                  <Cell>{sideRecord.convex_hull}</Cell>
+                  <Cell>{sideRecord.roundness}</Cell>
+                  <Cell>{sideRecord.center_of_mass_distance}</Cell>
+                  <Cell>{sideRecord.center_of_mass_x}</Cell>
+                  <Cell>{sideRecord.center_of_mass_y}</Cell>
+                  <Cell>{sideRecord.hue}</Cell>
+                  <Cell>{sideRecord.saturation}</Cell>
+                  <Cell>{sideRecord.intensity}</Cell>
+                  <Cell>{sideRecord.fluorescence}</Cell>
+                  <Cell>
+                    <div className="flex gap-2">
+                      {sideRecord.hue > 0 && (
+                        <ChartModal
+                          data={{
+                            btnLabel: 'H',
+                            label: 'hue',
+                            values: Object.entries(sideRecord).filter(([key, _value]) =>
+                              /^h\d+$/.test(key)
+                            ) as [],
+                          }}
+                        />
+                      )}
+                      {sideRecord.saturation > 0 && (
+                        <ChartModal
+                          data={{
+                            btnLabel: 'S',
+                            label: 'saturation',
+                            values: Object.entries(sideRecord).filter(([key, _value]) =>
+                              /^s\d+$/.test(key)
+                            ) as [],
+                          }}
+                        />
+                      )}
+                      {sideRecord.intensity > 0 && (
+                        <ChartModal
+                          data={{
+                            btnLabel: 'V',
+                            label: 'intensity',
+                            values: Object.entries(sideRecord).filter(([key, _value]) =>
+                              /^v\d+$/.test(key)
+                            ) as [],
+                          }}
+                        />
+                      )}
+                      {sideRecord.fluorescence > 0 && (
+                        <ChartModal
+                          data={{
+                            btnLabel: 'F',
+                            label: 'fluorescence',
+                            values: Object.entries(sideRecord).filter(([key, _value]) =>
+                              /^f\d+$/.test(key)
+                            ) as [],
+                          }}
+                        />
+                      )}
+                    </div>
                   </Cell>
                 </tr>
               ))}
