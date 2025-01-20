@@ -14,7 +14,10 @@ from app.utils.ProtectedStaticFiles import ProtectedStaticFiles
 
 
 app = FastAPI(
-    title=settings.API_PROJECT_NAME, openapi_url=f"{settings.API_V1_STR}/openapi.json"
+    docs_url="/developer/api",
+    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    redoc_url="/developer/docs",
+    title=settings.API_PROJECT_NAME,
 )
 
 app.add_middleware(

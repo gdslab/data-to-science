@@ -24,7 +24,6 @@ import Sort, {
 } from '../../Sort';
 
 import { getLocalStorageProjects } from './utils';
-import { getDefaultStyle } from '../utils';
 
 export default function LayerPane({
   hidePane,
@@ -45,13 +44,13 @@ export default function LayerPane({
   const {
     activeDataProduct,
     activeDataProductDispatch,
+    activeMapTool,
     activeMapToolDispatch,
     activeProject,
     activeProjectDispatch,
     flights,
     projects,
     projectsVisible,
-    symbologySettingsDispatch,
   } = useMapContext();
 
   const { state } = useLocation();
@@ -70,6 +69,13 @@ export default function LayerPane({
       toggleHidePane(true);
     }
   }, [activeDataProduct]);
+
+  useEffect(() => {
+    // hide left-side pane when compare mode turned on
+    if (activeMapTool === 'compare') {
+      toggleHidePane(true);
+    }
+  }, [activeMapTool]);
 
   useEffect(() => {
     // reset to page one if the number of visible project markers
@@ -91,17 +97,6 @@ export default function LayerPane({
     if (state && state.project && state.dataProduct) {
       activeProjectDispatch({ type: 'set', payload: state.project });
       activeDataProductDispatch({ type: 'set', payload: state.dataProduct });
-      if (state.dataProduct.user_style) {
-        symbologySettingsDispatch({
-          type: 'update',
-          payload: state.dataProduct.user_style,
-        });
-      } else if (state.dataProduct.data_type !== 'point_cloud') {
-        symbologySettingsDispatch({
-          type: 'update',
-          payload: getDefaultStyle(state.dataProduct),
-        });
-      }
     }
   }, [state]);
 
@@ -232,7 +227,9 @@ export default function LayerPane({
           {activeProject ? (
             <article className="h-[calc(100%_-_44px)] p-4">
               <div className="h-44">
-                <h1 className="truncate">{activeProject.title}</h1>
+                <h1 className="truncate" title={activeProject.title}>
+                  {activeProject.title}
+                </h1>
                 <p className="text-slate-700 text-sm font-light line-clamp-2">
                   {activeProject.description}
                 </p>
@@ -281,6 +278,7 @@ export default function LayerPane({
                             activeDataProductDispatch({ type: 'clear', payload: null });
                             activeProjectDispatch({ type: 'set', payload: project });
                           }}
+                          title={project.title}
                         >
                           <div className="grid grid-cols-4 gap-4">
                             <div className="flex items-center justify-between">
@@ -345,13 +343,15 @@ export default function LayerPane({
           )}
         </div>
 
-        <div className="w-[450px] bg-slate-100 fixed bottom-0 p-2.5">
-          <Pagination
-            currentPage={currentPage}
-            totalPages={TOTAL_PAGES}
-            updateCurrentPage={updateCurrentPage}
-          />
-        </div>
+        {!activeProject && (
+          <div className="w-[450px] bg-slate-100 fixed bottom-0 p-2.5">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={TOTAL_PAGES}
+              updateCurrentPage={updateCurrentPage}
+            />
+          </div>
+        )}
       </div>
     );
   }

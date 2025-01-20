@@ -1,6 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
 import { useEffect, useMemo, useState } from 'react';
-import { useLoaderData, Link } from 'react-router-dom';
 
 import { Button } from '../../Buttons';
 import Modal from '../../Modal';
@@ -13,6 +11,7 @@ import Sort, {
   getSortPreferenceFromLocalStorage,
   sortProjects,
 } from '../../Sort';
+import ProjectCard from './ProjectCard';
 
 interface FieldProperties {
   id: string;
@@ -40,17 +39,6 @@ export interface Project {
   title: string;
 }
 
-export async function loader() {
-  const response: AxiosResponse<Project[]> = await axios.get(
-    `${import.meta.env.VITE_API_V1_STR}/projects`
-  );
-  if (response) {
-    return response.data;
-  } else {
-    return [];
-  }
-}
-
 function ProjectListHeader() {
   const [open, setOpen] = useState(false);
 
@@ -75,14 +63,13 @@ function ProjectListHeader() {
   );
 }
 
-export default function ProjectList() {
+export default function ProjectList({ projects }: { projects: Project[] }) {
   const [currentPage, setCurrentPage] = useState(0);
   const [sortSelection, setSortSelection] = useState<SortSelection>(
     getSortPreferenceFromLocalStorage('sortPreference')
   );
 
   const [searchText, setSearchText] = useState('');
-  const projects = useLoaderData() as Project[];
 
   const { locationDispatch, project, projectDispatch } = useProjectContext();
 
@@ -188,25 +175,7 @@ export default function ProjectList() {
           () => filterAndSlice(sortProjects(projects, sortSelection)),
           [currentPage, projects, searchText, sortSelection]
         ).map((project) => (
-          <Link key={project.id} to={`/projects/${project.id}`} className="block h-36">
-            <article className="flex items-center w-96 h-36 shadow bg-white transition hover:shadow-xl">
-              <div className="w-32 h-full p-1.5 hidden sm:block">
-                <img
-                  className="h-full object-cover"
-                  src={`/static/projects/${project.id}/preview_map.png`}
-                />
-              </div>
-
-              <div className="w-full md:w-64 border-s border-gray-900/10 p-2 sm:border-l-transparent sm:p-4">
-                <h3 className="font-bold uppercase text-gray-900 truncate">
-                  {project.title}
-                </h3>
-                <p className="mt-2 line-clamp-3 text-sm/relaxed text-gray-700 text-wrap truncate">
-                  {project.description}
-                </p>
-              </div>
-            </article>
-          </Link>
+          <ProjectCard project={project} />
         ))}
       </div>
       {/* Pagination */}

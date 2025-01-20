@@ -1,11 +1,10 @@
 import logging
 import json
 import os
-import shutil
 import tempfile
 from pathlib import Path
 from uuid import UUID
-from typing import Any, Dict
+from typing import Any, BinaryIO, Dict
 from zipfile import ZipFile
 
 import fiona
@@ -13,14 +12,13 @@ import geopandas as gpd
 from fastapi import APIRouter, Depends, HTTPException, Request, status, UploadFile
 from fiona.errors import DriverError
 from fiona.io import ZipMemoryFile
-from geojson_pydantic import Feature, FeatureCollection, Polygon
+from geojson_pydantic import Feature, FeatureCollection, Polygon, MultiPolygon
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
 from app.api.utils import create_project_field_preview
-from app.core.config import settings
-from app.utils.MapMaker import MapMaker
+
 
 router = APIRouter()
 
@@ -28,27 +26,8 @@ router = APIRouter()
 logger = logging.getLogger("__name__")
 
 
-FEATURE_LIMIT = 2000
+# FEATURE_LIMIT = 250000
 REQUIRED_SHP_PARTS = [".dbf", ".shp", ".shx"]
-
-
-# @router.post(
-#     "",
-#     response_model=Feature[Polygon, Dict],
-#     status_code=status.HTTP_201_CREATED,
-# )
-# def create_location(
-#     location_in: schemas.LocationCreate,
-#     current_user: models.User = Depends(deps.get_current_approved_user),
-#     db: Session = Depends(deps.get_db),
-# ) -> Any:
-#     """Create new location."""
-#     location = crud.location.create_with_geojson(db, obj_in=location_in)
-#     if not location:
-#         raise HTTPException(
-#             status_code=status.HTTP_400_BAD_REQUEST, detail="Location not created"
-#         )
-#     return location
 
 
 @router.get("/{project_id}/{location_id}", response_model=Feature[Polygon, Dict])
@@ -111,7 +90,7 @@ def upload_field_shapefile(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Handles zipped shapefile upload and converts to geojson format."""
-    geojson = handle_zipped_shapefile(files, required_geom_type="Polygon")
+    geojson = handle_zipped_shapefile(files.file, required_geom_type="Polygon")
     return geojson
 
 
@@ -126,20 +105,22 @@ def upload_vector_layer_shapefile(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Handles zipped shapefile upload and coverts to geojson format."""
-    geojson = handle_zipped_shapefile(files)
+    geojson = handle_zipped_shapefile(files.file)
     return geojson
 
 
-def handle_zipped_shapefile(files: UploadFile, required_geom_type: str | None = None):
-    uploaded_file = files.file.read()
+def handle_zipped_shapefile(
+    file: BinaryIO, required_geom_type: str | None = None
+) -> dict:
+    uploaded_file = file.read()
     geojson = {}
     try:
         # attempt to directly access uploaded shapefile from memory
         with ZipMemoryFile(uploaded_file) as zmf:
             with zmf.open() as src:
                 geojson = shapefile_to_geojson(src, required_geom_type)
-    except DriverError as e:
-        logger.exception("DriverError")
+    except DriverError:
+        logger.exception("DriverError occurred while reading shapefile from memory")
         try:
             # attempt temporarily writing zip to disk and accessing shapefile
             with tempfile.TemporaryDirectory() as tmpdirname:
@@ -163,8 +144,8 @@ def handle_zipped_shapefile(files: UploadFile, required_geom_type: str | None = 
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=str(e),
             )
-        except Exception as e:
-            logger.exception("Exception")
+        except Exception:
+            logger.exception("Error occurred while processing shapefile from disk")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Unable process shapefile",
@@ -189,23 +170,26 @@ def shapefile_to_geojson(
     Returns:
         dict: GeoJSON object.
     """
-    if len(src) > FEATURE_LIMIT:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Shapefile cannot contain more than {FEATURE_LIMIT} features",
-        )
+    # if len(src) > FEATURE_LIMIT:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST,
+    #         detail=f"Shapefile cannot contain more than {FEATURE_LIMIT} features",
+    #     )
     gdf = gpd.GeoDataFrame.from_features(src, crs=src.crs)
     geojson = json.loads(gdf.to_json(to_wgs84=True))
 
     fc = FeatureCollection(**geojson)
     assert fc.type == "FeatureCollection"
     assert len(fc.features) > 0
-    if required_geom_type and required_geom_type == "Polygon":
+    if required_geom_type and required_geom_type.lower() == "polygon":
         try:
             for feature in fc.features:
-                assert isinstance(feature.geometry, Polygon)
-        except Exception as e:
-            logger.exception("Exception")
+                if not isinstance(feature.geometry, Polygon) and not isinstance(
+                    feature.geometry, MultiPolygon
+                ):
+                    raise ValueError("Invalid geometry type")
+        except Exception:
+            logger.exception("Feature does not have polygon geometry")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Shapefile must contain polygon features",

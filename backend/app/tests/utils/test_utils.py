@@ -2,6 +2,7 @@ import os
 from datetime import datetime, timedelta
 from typing import List
 
+import geopandas as gpd
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -18,7 +19,10 @@ from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.project import create_project
 from app.tests.utils.raw_data import SampleRawData
 from app.tests.utils.user import create_user
-from app.tests.utils.vector_layers import get_geojson_feature_collection
+from app.tests.utils.utils import VectorLayerDict
+from app.tests.utils.vector_layers import (
+    get_geojson_feature_collection,
+)
 from app.utils.cleanup.cleanup_data_products_and_raw_data import (
     cleanup_data_products_and_raw_data,
 )
@@ -33,12 +37,12 @@ def test_create_vector_layer_preview_image(
     # project
     project = create_project(db)
     # point preview
-    point_fc = get_geojson_feature_collection("point")
-    point_in = schemas.vector_layer.VectorLayerCreate(
-        layer_name=point_fc["layer_name"], geojson=point_fc["geojson"]
+    point_vector_layer: VectorLayerDict = get_geojson_feature_collection("point")
+    gdf = gpd.GeoDataFrame.from_features(
+        point_vector_layer["geojson"]["features"], crs="EPSG:4326"
     )
     point_features = crud.vector_layer.create_with_project(
-        db, obj_in=point_in, project_id=project.id
+        db, file_name=point_vector_layer["layer_name"], gdf=gdf, project_id=project.id
     )
     point_preview = create_vector_layer_preview(
         project_id=project.id,
@@ -46,12 +50,12 @@ def test_create_vector_layer_preview_image(
         features=point_features,
     )
     # line preview
-    line_fc = get_geojson_feature_collection("linestring")
-    line_in = schemas.vector_layer.VectorLayerCreate(
-        layer_name=line_fc["layer_name"], geojson=line_fc["geojson"]
+    line_vector_layer: VectorLayerDict = get_geojson_feature_collection("linestring")
+    gdf = gpd.GeoDataFrame.from_features(
+        line_vector_layer["geojson"]["features"], crs="EPSG:4326"
     )
     line_features = crud.vector_layer.create_with_project(
-        db, obj_in=line_in, project_id=project.id
+        db, file_name=line_vector_layer["layer_name"], gdf=gdf, project_id=project.id
     )
     line_preview = create_vector_layer_preview(
         project_id=project.id,
@@ -59,12 +63,12 @@ def test_create_vector_layer_preview_image(
         features=line_features,
     )
     # polygon preview
-    polygon_fc = get_geojson_feature_collection("polygon")
-    polygon_in = schemas.vector_layer.VectorLayerCreate(
-        layer_name=polygon_fc["layer_name"], geojson=polygon_fc["geojson"]
+    polygon_vector_layer: VectorLayerDict = get_geojson_feature_collection("polygon")
+    gdf = gpd.GeoDataFrame.from_features(
+        polygon_vector_layer["geojson"]["features"], crs="EPSG:4326"
     )
     polygon_features = crud.vector_layer.create_with_project(
-        db, obj_in=polygon_in, project_id=project.id
+        db, file_name=polygon_vector_layer["layer_name"], gdf=gdf, project_id=project.id
     )
     polygon_preview = create_vector_layer_preview(
         project_id=project.id,

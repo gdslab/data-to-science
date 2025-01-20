@@ -23,7 +23,7 @@ class VectorLayerUpdate(VectorLayerBase):
 
 
 class VectorLayerInDBBase(VectorLayerBase, from_attributes=True):
-    id: UUID
+    feature_id: UUID
     layer_name: str
     geojson: FeatureCollection
     project_id: UUID
@@ -45,3 +45,11 @@ class Metadata(BaseModel):
 
 class VectorLayerFeatureCollection(FeatureCollection):
     metadata: Metadata
+
+
+class VectorLayerPayload(BaseModel):
+    layer_id: str
+    layer_name: str
+    geom_type: str
+    signed_url: AnyHttpUrl
+    preview_url: AnyHttpUrl

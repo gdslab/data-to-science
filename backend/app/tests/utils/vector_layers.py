@@ -1,5 +1,6 @@
 from uuid import UUID
 
+import geopandas as gpd
 from geojson_pydantic import FeatureCollection
 from sqlalchemy.orm import Session
 
@@ -24,20 +25,25 @@ def create_feature_collection(
     if not project_id:
         project = create_project(db)
         project_id = project.id
-    feature = get_geojson_feature_collection(geom_type)
-    vector_layer_in = schemas.VectorLayerCreate(
-        layer_name=feature["layer_name"], geojson=feature["geojson"]
-    )
+
+    geojson = get_geojson_feature_collection(geom_type)["geojson"]
+    fc: FeatureCollection = FeatureCollection(**geojson)
+    gdf = gpd.GeoDataFrame.from_features(fc.features, crs="EPSG:4326")
+
     features = crud.vector_layer.create_with_project(
-        db, vector_layer_in, project_id=project_id
+        db, file_name="test_file.geojson", gdf=gdf, project_id=project_id
     )
+
     feature_collection = {
         "type": "FeatureCollection",
         "features": features,
         "metadata": {
-            "preview_url": f"{settings.API_DOMAIN}{settings.TEST_STATIC_DIR}/projects/{project_id}/vector/{features[0].properties['layer_id']}/preview.png"
+            "preview_url": f"{settings.API_DOMAIN}{settings.TEST_STATIC_DIR}"
+            f"/projects/{project_id}/vector/{features[0].properties['layer_id']}"
+            "/preview.png"
         },
     }
+
     return schemas.VectorLayerFeatureCollection(**feature_collection)
 
 
@@ -57,11 +63,11 @@ def create_vector_layer_with_provided_feature_collection(
     if not project_id:
         project = create_project(db)
         project_id = project.id
-    vector_layer_in = schemas.VectorLayerCreate(
-        layer_name="Feature Collection Example", geojson=feature_collection.__dict__
-    )
+
+    gdf = gpd.GeoDataFrame.from_features(feature_collection.features, crs="EPSG:4326")
+
     features = crud.vector_layer.create_with_project(
-        db, vector_layer_in, project_id=project_id
+        db, file_name="test_file.geojson", gdf=gdf, project_id=project_id
     )
-    feature_collection = {"type": "FeatureCollection", "features": features}
-    return FeatureCollection(**feature_collection)
+
+    return FeatureCollection(**{"type": "FeatureCollection", "features": features})

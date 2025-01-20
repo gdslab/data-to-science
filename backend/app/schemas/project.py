@@ -78,7 +78,9 @@ class Projects(BaseModel):
     centroid: Centroid
     description: str
     flight_count: int = 0
+    harvest_date: Optional[date] = None
     most_recent_flight: Optional[date] = None
+    planting_date: Optional[date] = None
     role: Literal["owner", "manager", "viewer"]
     title: str
 

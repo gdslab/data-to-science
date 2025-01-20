@@ -2,6 +2,10 @@ import { Feature, FeatureCollection, Geometry } from 'geojson';
 
 import { FieldCampaignInitialValues } from './fieldCampaigns/FieldCampaign';
 import { SymbologySettings } from '../../maps/Maps';
+import {
+  SingleBandSymbology,
+  MultibandSymbology,
+} from '../../maps/RasterSymbologyContext';
 
 // geojson object representing project field boundary
 export type FieldGeoJSONFeature = Omit<Feature, 'properties'> & {
@@ -46,6 +50,14 @@ export interface MapLayerFeatureCollection<
     preview_url: string;
   };
 }
+
+export type MapLayer = {
+  layer_id: string;
+  layer_name: string;
+  geom_type: string;
+  signed_url: string;
+  preview_url: string;
+};
 
 type ZonalFeatureProperties = {
   id: string;
@@ -114,6 +126,11 @@ export interface EO {
   description: string;
 }
 
+export type STACProperties = {
+  raster: Band[];
+  eo: EO[];
+};
+
 // data product object returned from api
 export interface DataProduct {
   id: string;
@@ -123,12 +140,13 @@ export interface DataProduct {
   url: string;
   flight_id: string;
   public: boolean;
-  stac_properties: {
-    raster: Band[];
-    eo: EO[];
+  signature?: {
+    secure: string;
+    expires: number;
   };
+  stac_properties: STACProperties;
   status: string;
-  user_style: SymbologySettings;
+  user_style: SingleBandSymbology | MultibandSymbology;
 }
 
 // flight object returned from api

@@ -49,8 +49,14 @@ class DataProductInDBBase(DataProductBase, from_attributes=True):
 
 
 # additional properties to return via API
+class DataProductSignature(BaseModel):
+    expires: int
+    secure: str
+
+
 class DataProduct(DataProductInDBBase):
     public: bool = False
+    signature: Optional[DataProductSignature] = None
     status: Optional[str] = None
     url: Optional[AnyHttpUrl] = None
 

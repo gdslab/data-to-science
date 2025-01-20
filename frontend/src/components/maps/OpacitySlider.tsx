@@ -24,9 +24,11 @@ const marks = [
 ];
 
 export default function OpacitySlider({
+  disabled = false,
   currentValue,
   onChange,
 }: {
+  disabled?: boolean;
   currentValue: number;
   onChange: (_: Event, newValue: number | number[]) => void;
 }) {
@@ -38,6 +40,7 @@ export default function OpacitySlider({
       <div className="px-2 grow">
         <Slider
           aria-label="Opacity"
+          disabled={disabled}
           defaultValue={100}
           getAriaValueText={getAriaValueText}
           step={1}
@@ -52,13 +55,13 @@ export default function OpacitySlider({
               width: '20px',
               height: '14px',
               backgroundColor: 'white',
-              border: '2px solid #ABABAB',
+              border: !disabled ? '2px solid #ABABAB' : '2px solid #ebebeb',
               borderRadius: '4px',
             },
             '& .MuiSlider-markLabel': {
               fontSize: '12px',
               fontWeight: 600,
-              color: '#ABABAB',
+              color: !disabled ? '#ABABAB' : '#ebebeb',
             },
             '& .MuiSlider-mark': {
               color: '#374151',
@@ -72,7 +75,7 @@ export default function OpacitySlider({
             },
             '& .MuiSlider-track': {
               height: '8px',
-              color: '#3471FF',
+              color: !disabled ? '#3471FF' : '#ebebeb',
             },
             '& .MuiSlider-rail': {
               height: '6px',

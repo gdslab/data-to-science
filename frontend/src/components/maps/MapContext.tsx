@@ -15,24 +15,12 @@ import {
   ActiveProjectAction,
   FlightsAction,
   GeoRasterIdAction,
+  MapboxAccessTokenAction,
   MapTool,
   ProjectsAction,
   ProjectsVisibleAction,
-  SymbologySettings,
-  SymbologySettingsAction,
   TileScaleAction,
 } from './Maps';
-
-const defaultSymbologySettings = {
-  colorRamp: 'rainbow',
-  max: 255,
-  meanStdDev: 2,
-  min: 0,
-  mode: 'minMax',
-  userMin: 0,
-  userMax: 255,
-  opacity: 100,
-};
 
 function activeDataProductReducer(
   state: DataProduct | null,
@@ -110,6 +98,35 @@ function geoRasterIdReducer(state: string, action: GeoRasterIdAction) {
   }
 }
 
+function mapboxAccessTokenReducer(state: string, action: MapboxAccessTokenAction) {
+  switch (action.type) {
+    case 'set': {
+      return action.payload;
+    }
+    default:
+      return state;
+  }
+}
+
+type MapViewPropertiesState = {
+  zoom: number;
+} | null;
+type MapViewPropertiesAction = {
+  type: 'SET_VIEW_PROPERTIES';
+  payload: MapViewPropertiesState;
+};
+function mapViewPropertiesReducer(
+  state: MapViewPropertiesState,
+  action: MapViewPropertiesAction
+) {
+  switch (action.type) {
+    case 'SET_VIEW_PROPERTIES':
+      return action.payload;
+    default:
+      return state;
+  }
+}
+
 type ProjectLayersAction = { type: string; payload?: MapLayerFeatureCollection[] };
 
 function projectLayersReducer(
@@ -157,22 +174,6 @@ function projectsVisibleReducer(state: string[], action: ProjectsVisibleAction) 
   }
 }
 
-function symbologySettingsReducer(
-  state: SymbologySettings,
-  action: SymbologySettingsAction
-) {
-  switch (action.type) {
-    case 'update': {
-      return {
-        ...action.payload,
-        opacity: action.payload.opacity ? action.payload.opacity : 100,
-      };
-    }
-    default:
-      return state;
-  }
-}
-
 function tileScaleReducer(state: number, action: TileScaleAction) {
   switch (action.type) {
     case 'set': {
@@ -197,14 +198,16 @@ const context: {
   flights: Flight[];
   geoRasterId: string;
   geoRasterIdDispatch: React.Dispatch<GeoRasterIdAction>;
+  mapboxAccessToken: string;
+  mapboxAccessTokenDispatch: React.Dispatch<MapboxAccessTokenAction>;
+  mapViewProperties: MapViewPropertiesState;
+  mapViewPropertiesDispatch: React.Dispatch<MapViewPropertiesAction>;
   projectLayers: MapLayerFeatureCollection[];
   projectLayersDispatch: React.Dispatch<ProjectLayersAction>;
   projects: Project[] | null;
   projectsDispatch: React.Dispatch<ProjectsAction>;
   projectsVisible: string[];
   projectsVisibleDispatch: React.Dispatch<ProjectsVisibleAction>;
-  symbologySettings: SymbologySettings;
-  symbologySettingsDispatch: React.Dispatch<SymbologySettingsAction>;
   tileScale: number;
   tileScaleDispatch: React.Dispatch<TileScaleAction>;
 } = {
@@ -217,14 +220,16 @@ const context: {
   flights: [],
   geoRasterId: '',
   geoRasterIdDispatch: () => {},
+  mapboxAccessToken: '',
+  mapboxAccessTokenDispatch: () => {},
+  mapViewProperties: null,
+  mapViewPropertiesDispatch: () => {},
   projectLayers: [],
   projectLayersDispatch: () => {},
   projects: null,
   projectsDispatch: () => {},
   projectsVisible: [],
   projectsVisibleDispatch: () => {},
-  symbologySettings: defaultSymbologySettings,
-  symbologySettingsDispatch: () => {},
   tileScale: 2,
   tileScaleDispatch: () => {},
 };
@@ -244,15 +249,19 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
   const [activeProject, activeProjectDispatch] = useReducer(activeProjectReducer, null);
   const [flights, flightsDispatch] = useReducer(flightsReducer, []);
   const [geoRasterId, geoRasterIdDispatch] = useReducer(geoRasterIdReducer, '');
+  const [mapboxAccessToken, mapboxAccessTokenDispatch] = useReducer(
+    mapboxAccessTokenReducer,
+    ''
+  );
+  const [mapViewProperties, mapViewPropertiesDispatch] = useReducer(
+    mapViewPropertiesReducer,
+    null
+  );
   const [projectLayers, projectLayersDispatch] = useReducer(projectLayersReducer, []);
   const [projects, projectsDispatch] = useReducer(projectsReducer, null);
   const [projectsVisible, projectsVisibleDispatch] = useReducer(
     projectsVisibleReducer,
     []
-  );
-  const [symbologySettings, symbologySettingsDispatch] = useReducer(
-    symbologySettingsReducer,
-    defaultSymbologySettings
   );
   const [tileScale, tileScaleDispatch] = useReducer(tileScaleReducer, 2);
 
@@ -329,14 +338,16 @@ export function MapContextProvider({ children }: { children: React.ReactNode }) 
         flights,
         geoRasterId,
         geoRasterIdDispatch,
+        mapboxAccessToken,
+        mapboxAccessTokenDispatch,
+        mapViewProperties,
+        mapViewPropertiesDispatch,
         projectLayers,
         projectLayersDispatch,
         projects,
         projectsDispatch,
         projectsVisible,
         projectsVisibleDispatch,
-        symbologySettings,
-        symbologySettingsDispatch,
         tileScale,
         tileScaleDispatch,
       }}
