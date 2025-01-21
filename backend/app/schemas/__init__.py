@@ -3,6 +3,7 @@ from .api_key import APIKey, APIKeyCreate, APIKeyUpdate
 from .campaign import Campaign, CampaignCreate, CampaignUpdate, CampaignTemplateCreate
 from .data_product import (
     DataProduct,
+    DataProductBands,
     DataProductCreate,
     DataProductUpdate,
     DataProductUpdateDataType,

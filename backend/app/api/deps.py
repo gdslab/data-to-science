@@ -357,7 +357,7 @@ def can_read_write_flight(
         raise HTTPException(
             status_code=flight["response_code"], detail=flight["message"]
         )
-    if flight["result"].read_only:
+    if flight["result"] and flight["result"].read_only:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Flight currently locked. Please try again later.",
