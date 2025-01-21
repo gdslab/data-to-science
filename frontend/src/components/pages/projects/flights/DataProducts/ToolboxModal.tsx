@@ -19,6 +19,7 @@ import {
 import { DataProduct } from '../../Project';
 
 import { isSingleBand } from '../../../../maps/utils';
+import DataProductBandForm from './DataProductBandForm';
 
 export interface ToolboxFields {
   chm: boolean;
@@ -75,92 +76,101 @@ export default function ToolboxModal({
             <span className="text-xl font-bold">Toolbox</span>
           </div>
           <hr className="mb-2 border-gray-300" />
-          <Formik
-            initialValues={
-              {
-                chm: false,
-                exg: false,
-                exgRed: 3,
-                exgGreen: 2,
-                exgBlue: 1,
-                ndvi: false,
-                ndviNIR: 4,
-                ndviRed: 3,
-                zonal: false,
-                zonal_layer_id: '',
-              } as ToolboxFields
-            }
-            onSubmit={async (values, actions) => {
-              setStatus(null);
-              if (projectId && flightId && dataProduct.id) {
-                try {
-                  const response = await axios.post(
-                    `${
-                      import.meta.env.VITE_API_V1_STR
-                    }/projects/${projectId}/flights/${flightId}/data_products/${
-                      dataProduct.id
-                    }/tools`,
-                    values
-                  );
-                  if (response) {
-                    setStatus({
-                      type: 'success',
-                      msg: 'Processing has begun. You may close this window.',
-                    });
-                    actions.resetForm({ values: values });
-                    setTimeout(() => {
-                      revalidator.revalidate();
-                    }, 3000);
-                  }
-                } catch (err) {
-                  setStatus({ type: 'error', msg: 'Unable to complete request' });
-                }
-              } else {
-                setStatus({ type: 'error', msg: 'Unable to complete request' });
+          <div className="flex flex-col gap-4">
+            <DataProductBandForm dataProduct={dataProduct} />
+            <Formik
+              initialValues={
+                {
+                  chm: false,
+                  exg: false,
+                  exgRed: 3,
+                  exgGreen: 2,
+                  exgBlue: 1,
+                  ndvi: false,
+                  ndviNIR: 4,
+                  ndviRed: 3,
+                  zonal: false,
+                  zonal_layer_id: '',
+                } as ToolboxFields
               }
-            }}
-          >
-            {({ dirty, isSubmitting, values }) => (
-              <Form className="grid grid-row-auto gap-4">
-                <HintText>Select data products to be generated</HintText>
-                {/* rgb tools */}
-                {flight &&
-                  (flight.sensor.toLowerCase() === 'rgb' ||
-                    flight.sensor.toLowerCase() === 'multispectral') &&
-                  getNumOfBands(dataProduct) > 2 && (
-                    <RGBTools dataProduct={dataProduct} />
-                  )}
-                {/* multispectral tools */}
-                {flight &&
-                  flight.sensor.toLowerCase() === 'multispectral' &&
-                  getNumOfBands(dataProduct) > 2 && (
-                    <MultiSpectralTools dataProduct={dataProduct} />
-                  )}
-                {/* lidar tools */}
-                {flight &&
-                  flight.sensor.toLowerCase() === 'lidar' &&
-                  isSingleBand(dataProduct) && <LidarTools />}
-                {flight && getNumOfBands(dataProduct) === 1 && (
-                  <ZonalStatisticTools dataProductId={dataProduct.id} />
-                )}
-                <Button
-                  type="submit"
-                  disabled={
-                    (!values.exg && !values.ndvi && !values.chm && !values.zonal) ||
-                    (values.zonal && !values.zonal_layer_id) ||
-                    !dirty
+              onSubmit={async (values, actions) => {
+                setStatus(null);
+                if (projectId && flightId && dataProduct.id) {
+                  try {
+                    const response = await axios.post(
+                      `${
+                        import.meta.env.VITE_API_V1_STR
+                      }/projects/${projectId}/flights/${flightId}/data_products/${
+                        dataProduct.id
+                      }/tools`,
+                      values
+                    );
+                    if (response) {
+                      setStatus({
+                        type: 'success',
+                        msg: 'Processing has begun. You may close this window.',
+                      });
+                      actions.resetForm({ values: values });
+                      setTimeout(() => {
+                        revalidator.revalidate();
+                      }, 3000);
+                    }
+                  } catch (err) {
+                    setStatus({
+                      type: 'error',
+                      msg: 'Unable to complete request',
+                    });
                   }
-                >
-                  {!isSubmitting ? 'Start' : 'Starting process...'}
-                </Button>
-              </Form>
-            )}
-          </Formik>
-          {status && (
-            <div className="mt-4">
-              <Alert alertType={status.type}>{status.msg}</Alert>
-            </div>
-          )}
+                } else {
+                  setStatus({
+                    type: 'error',
+                    msg: 'Unable to complete request',
+                  });
+                }
+              }}
+            >
+              {({ dirty, isSubmitting, values }) => (
+                <Form className="grid grid-row-auto gap-4">
+                  <HintText>Select data products to be generated</HintText>
+                  {/* rgb tools */}
+                  {flight &&
+                    (flight.sensor.toLowerCase() === 'rgb' ||
+                      flight.sensor.toLowerCase() === 'multispectral') &&
+                    getNumOfBands(dataProduct) > 2 && (
+                      <RGBTools dataProduct={dataProduct} />
+                    )}
+                  {/* multispectral tools */}
+                  {flight &&
+                    flight.sensor.toLowerCase() === 'multispectral' &&
+                    getNumOfBands(dataProduct) > 2 && (
+                      <MultiSpectralTools dataProduct={dataProduct} />
+                    )}
+                  {/* lidar tools */}
+                  {flight &&
+                    flight.sensor.toLowerCase() === 'lidar' &&
+                    isSingleBand(dataProduct) && <LidarTools />}
+                  {flight && getNumOfBands(dataProduct) === 1 && (
+                    <ZonalStatisticTools dataProductId={dataProduct.id} />
+                  )}
+                  <Button
+                    type="submit"
+                    disabled={
+                      (!values.exg &&
+                        !values.ndvi &&
+                        !values.chm &&
+                        !values.zonal) ||
+                      (values.zonal && !values.zonal_layer_id) ||
+                      !dirty
+                    }
+                    size="sm"
+                  >
+                    {!isSubmitting ? 'Start' : 'Starting process...'}
+                  </Button>
+                </Form>
+              )}
+            </Formik>
+            {status && <Alert alertType={status.type}>{status.msg}</Alert>}
+          </div>
         </div>
       </Modal>
     </div>
