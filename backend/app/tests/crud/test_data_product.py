@@ -97,6 +97,24 @@ def test_read_data_products(db: Session) -> None:
         assert data_product.public is False
 
 
+def test_update_data_product_eo_bands(db: Session) -> None:
+    # New band description
+    bands_in = [{"name": "b1", "description": "Blue"}]
+    # Sample data product object
+    data_product = SampleDataProduct(db).obj
+    # Original data product metadata
+    original_metadata = data_product.stac_properties
+    # Updated metadata
+    updated_metadata = original_metadata.copy()
+    updated_metadata["eo"] = bands_in
+    # Update data product
+    updated_data_product = crud.data_product.update_bands(
+        db, data_product_id=data_product.id, updated_metadata=updated_metadata
+    )
+    assert updated_data_product
+    assert updated_data_product.stac_properties["eo"] == bands_in
+
+
 def test_update_data_product(db: Session) -> None:
     old_data_type = "dsm"
     new_data_type = "dtm"

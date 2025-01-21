@@ -13,7 +13,7 @@ from geojson_pydantic import Feature, FeatureCollection, Polygon, MultiPolygon
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, UUID4
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -28,6 +28,7 @@ from app.tasks import (
     generate_zonal_statistics_bulk,
     run_toolbox_process,
 )
+from app.utils.STACProperties import STACEOProperties, STACProperties
 from app.utils.tusd.post_processing import process_data_product_uploaded_to_tusd
 
 
@@ -118,6 +119,69 @@ def read_all_data_product(
         db, flight_id=flight.id, upload_dir=upload_dir, user_id=current_user.id
     )
     return all_data_product
+
+
+@router.put("/{data_product_id}/bands", response_model=schemas.DataProduct)
+def update_data_product_bands(
+    data_product_id: UUID4,
+    data_product_bands_in: schemas.DataProductBands,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    flight: schemas.Flight = Depends(deps.can_read_write_flight),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    # Raise exception if flight is not found
+    if not flight:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
+        )
+
+    # Get upload directory
+    upload_dir = get_static_dir()
+
+    # Get data product
+    data_product = crud.data_product.get_single_by_id(
+        db,
+        data_product_id=data_product_id,
+        upload_dir=upload_dir,
+        user_id=current_user.id,
+    )
+
+    # Check if data product exists
+    if not data_product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
+        )
+
+    # Check if data product STAC metadata exists
+    if not data_product.stac_properties:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Data product has no STAC metadata",
+        )
+
+    # Verify and update band metadata
+    current_metadata = data_product.stac_properties
+    current_eo_metadata = current_metadata.get("eo", [])
+    current_band_names = {band["name"]: band for band in current_eo_metadata}
+    for band_in in data_product_bands_in.bands:
+        if band_in.name not in current_band_names:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Band not found"
+            )
+        # Update band description
+        current_band_names[band_in.name]["description"] = band_in.description
+
+    # Update metadata
+    current_metadata["eo"] = list(current_band_names.values())
+
+    # Update data product bands
+    updated_data_product = crud.data_product.update_bands(
+        db,
+        data_product_id=data_product_id,
+        updated_metadata=current_metadata,
+    )
+
+    return updated_data_product
 
 
 @router.put("/{data_product_id}", response_model=schemas.DataProduct)

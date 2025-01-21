@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Any, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
@@ -14,9 +14,14 @@ from app.crud.base import CRUDBase
 from app.models.data_product import DataProduct
 from app.models.file_permission import FilePermission
 from app.models.job import Job
-from app.schemas.data_product import DataProductCreate, DataProductUpdate
+from app.schemas.data_product import (
+    DataProductBands,
+    DataProductCreate,
+    DataProductUpdate,
+)
 from app.models.user_style import UserStyle
 from app.models.utils.user import utcnow
+from app.utils.ImageProcessor import STACProperties
 
 
 class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate]):
@@ -138,6 +143,20 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
 
             return updated_data_products
 
+    def update_bands(
+        self, db: Session, data_product_id: UUID, updated_metadata: Dict
+    ) -> Optional[DataProduct]:
+        update_data_product_sql = (
+            update(DataProduct)
+            .values(stac_properties=updated_metadata)
+            .where(DataProduct.id == data_product_id)
+        )
+        with db as session:
+            session.execute(update_data_product_sql)
+            session.commit()
+
+        return crud.data_product.get(db, id=data_product_id)
+
     def update_data_type(
         self, db: Session, data_product_id: UUID, new_data_type: str
     ) -> Optional[DataProduct]:
@@ -220,7 +239,7 @@ def set_url_attr(data_product_obj: DataProduct, upload_dir: str) -> None:
         setattr(data_product_obj, "url", None)
 
 
-def set_user_style_attr(data_product_obj: DataProduct, user_style: dict) -> None:
+def set_user_style_attr(data_product_obj: DataProduct, user_style: Dict) -> None:
     setattr(data_product_obj, "user_style", user_style)
 
 
