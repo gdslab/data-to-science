@@ -70,24 +70,24 @@ export default function FilterOptions() {
     dispatch({ type: 'SET_DBH_VISIBILITY', payload: !dbhVisibility });
   };
 
-  const updateHeightMin = (newHeightMin) => {
-    dispatch({ type: 'SET_HEIGHT_MIN', payload: newHeightMin });
-  };
+  // const updateHeightMin = (newHeightMin) => {
+  //   dispatch({ type: 'SET_HEIGHT_MIN', payload: newHeightMin });
+  // };
 
-  const updateHeightMax = (newHeightMax) => {
-    dispatch({ type: 'SET_HEIGHT_MAX', payload: newHeightMax });
-  };
+  // const updateHeightMax = (newHeightMax) => {
+  //   dispatch({ type: 'SET_HEIGHT_MAX', payload: newHeightMax });
+  // };
 
-  const toggleHeightVisibility = () => {
-    if (dbhVisibility) {
-      dispatch({ type: 'SET_DBH_VISIBILITY', payload: !dbhVisibility });
-    }
+  // const toggleHeightVisibility = () => {
+  //   if (dbhVisibility) {
+  //     dispatch({ type: 'SET_DBH_VISIBILITY', payload: !dbhVisibility });
+  //   }
 
-    if (speciesVisibility) {
-      dispatch({ type: 'SET_SPECIES_VISIBILITY', payload: !speciesVisibility });
-    }
-    dispatch({ type: 'SET_HEIGHT_VISIBILITY', payload: !heightVisibility });
-  };
+  //   if (speciesVisibility) {
+  //     dispatch({ type: 'SET_SPECIES_VISIBILITY', payload: !speciesVisibility });
+  //   }
+  //   dispatch({ type: 'SET_HEIGHT_VISIBILITY', payload: !heightVisibility });
+  // };
 
   const updateSpecies = (newSpecies: string[]) => {
     dispatch({ type: 'SET_SPECIES_SELECTION', payload: newSpecies });
@@ -181,7 +181,7 @@ export default function FilterOptions() {
                 />
               )}
             </div>
-            <div className="-mx-2 border-t border-gray-300"></div>
+            {/* <div className="-mx-2 border-t border-gray-300"></div>
             <div className="relative">
               <div className="flex items-center justify-between">
                 <span className="text-md font-bold">Height (ft)</span>
@@ -203,7 +203,7 @@ export default function FilterOptions() {
                   values={iforester.map(({ dbh }) => dbh)}
                 />
               )}
-            </div>
+            </div> */}
             <div className="-mx-2 border-t border-gray-300"></div>
             <div className="relative">
               <div className="flex items-center justify-between pb-2">
@@ -230,7 +230,8 @@ export default function FilterOptions() {
                     menuPortal: (base) => ({
                       ...base,
                       zIndex: 9999,
-                      fontFamily: '"Helvetica Neue", Arial, Helvetica, sans-serif',
+                      fontFamily:
+                        '"Helvetica Neue", Arial, Helvetica, sans-serif',
                       fontSize: '0.75rem',
                       lineHeight: 1.5,
                     }),

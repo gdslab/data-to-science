@@ -27,10 +27,38 @@ export default function FilterSlider({
     return `${value} ${unit}`;
   }
 
-  const marks = getUniqueValues(values).map((v) => ({
-    label: `${v} ${unit}`,
-    value: v as number,
-  }));
+  const marks = (() => {
+    const uniqueValues = getUniqueValues(values) as number[];
+
+    if (uniqueValues.length <= 10) {
+      return uniqueValues.map((v) => ({
+        label: `${v} ${unit}`,
+        value: v as number,
+      }));
+    }
+
+    // Sort the values
+    const sortedValues = uniqueValues.sort((a, b) => a - b);
+
+    // Select 10 evenly distributed values
+    const step = Math.floor(sortedValues.length / 9); // 9 intervals = 10 values
+    const selectedValues = sortedValues.filter(
+      (_, index) => index % step === 0
+    );
+
+    // Ensure the last value is included (in case of rounding issues)
+    if (
+      selectedValues[selectedValues.length - 1] !==
+      sortedValues[sortedValues.length - 1]
+    ) {
+      selectedValues.push(sortedValues[sortedValues.length - 1]);
+    }
+
+    return selectedValues.map((v) => ({
+      label: `${v.toFixed(3)} ${unit}`,
+      value: v,
+    }));
+  })();
 
   const min = Math.min.apply(Math, values);
   const max = Math.max.apply(Math, values);
@@ -42,12 +70,18 @@ export default function FilterSlider({
         getAriaLabel={() => label}
         orientation="vertical"
         getAriaValueText={valuetext}
-        defaultValue={[minThumb, maxThumb]}
+        defaultValue={[
+          parseFloat(minThumb.toFixed(3)),
+          parseFloat(maxThumb.toFixed(3)),
+        ]}
         marks={marks}
         min={min}
         max={max}
         valueLabelDisplay="on"
-        value={[minThumb, maxThumb]}
+        value={[
+          parseFloat(minThumb.toFixed(3)),
+          parseFloat(maxThumb.toFixed(3)),
+        ]}
         onChange={(_, newValues) => {
           updateMinThumb(newValues[0]);
           updateMaxThumb(newValues[1]);

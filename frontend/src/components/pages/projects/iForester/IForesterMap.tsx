@@ -1,29 +1,95 @@
 import './IForesterMap.css';
 import L from 'leaflet';
-import { useEffect, useRef, useState } from 'react';
-import { MapContainer } from 'react-leaflet/MapContainer';
-import { ZoomControl } from 'react-leaflet/ZoomControl';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import Map, {
+  MapRef,
+  NavigationControl,
+  ScaleControl,
+} from 'react-map-gl/maplibre';
+import bbox from '@turf/bbox';
+import { point } from '@turf/helpers';
+// import { MapContainer } from 'react-leaflet/MapContainer';
+// import { ZoomControl } from 'react-leaflet/ZoomControl';
 
 import ClusterMarkers from './ClusterMarkers';
 import IForesterControl from './IForesterControl';
 import { useIForesterControlContext } from './IForesterContext';
 import { useProjectContext } from '../ProjectContext';
-import MapLayersControl from '../../../maps/MapLayersControl';
 import { IForester } from '../Project';
 
-export function getUniqueValues(array: (number | string)[]): (number | string)[] {
+import {
+  getMapboxSatelliteBasemapStyle,
+  usgsImageryTopoBasemapStyle,
+} from '../../../maps/styles/basemapStyles';
+import IForesterCluster from './IForesterCluster';
+import { FeatureCollection } from 'geojson';
+
+export function getUniqueValues(
+  array: (number | string)[]
+): (number | string)[] {
   return Array.from(new Set(array));
 }
 
 export default function IForesterMap() {
-  const [filteredLocations, setFilteredLocations] = useState<IForester[]>([]);
+  const [mapboxAccessToken, setMapboxAccessToken] = useState<string>('');
   const { state, dispatch } = useIForesterControlContext();
-  const { activeMarker, activeMarkerZoom, dbhMin, dbhMax, speciesSelection } = state;
+  const { activeMarker, activeMarkerZoom, dbhMin, dbhMax, speciesSelection } =
+    state;
   const { iforester } = useProjectContext();
 
-  const mapRef = useRef<L.Map>(null);
+  const mapRef = useRef<MapRef | null>(null);
 
-  // set initial selected species
+  // Filter IForester data based on DBH and species selection
+  const filteredLocations = useMemo(() => {
+    if (!iforester || iforester.length === 0) return [];
+    return iforester.filter(
+      ({ dbh, species }) =>
+        dbh >= dbhMin &&
+        dbh <= dbhMax &&
+        speciesSelection.includes(species.toLowerCase())
+    );
+  }, [dbhMin, dbhMax, iforester, speciesSelection]);
+
+  // Create FeatureCollection of the filtered point locations
+  const filteredLocationsGeoJSON: FeatureCollection = useMemo(() => {
+    return {
+      type: 'FeatureCollection',
+      features: filteredLocations
+        .filter(({ latitude, longitude }) => latitude && longitude)
+        .map(({ id, latitude, longitude }) =>
+          point([longitude, latitude], { id: id })
+        ),
+    };
+  }, [filteredLocations]);
+
+  // Zoom to extent of filtered locations
+  useEffect(() => {
+    if (mapRef.current && filteredLocationsGeoJSON.features.length > 0) {
+      const bounds = bbox(filteredLocationsGeoJSON);
+      mapRef.current.fitBounds([bounds[0], bounds[1], bounds[2], bounds[3]], {
+        padding: 20,
+        duration: 1000,
+      });
+    }
+  }, [filteredLocationsGeoJSON]);
+
+  // Load mapbox access token
+  useEffect(() => {
+    if (!import.meta.env.VITE_MAPBOX_ACCESS_TOKEN) {
+      fetch('/config.json')
+        .then((response) => response.json())
+        .then((config) => {
+          setMapboxAccessToken(config.mapboxAccessToken);
+        })
+        .catch((error) => {
+          console.error('Failed to load config.json:', error);
+        });
+    } else {
+      setMapboxAccessToken(import.meta.env.VITE_MAPBOX_ACCESS_TOKEN);
+    }
+  }, []);
+
+  // Set initial selected species
   useEffect(() => {
     if (iforester && iforester.length > 0 && speciesSelection.length === 0) {
       dispatch({
@@ -35,7 +101,7 @@ export default function IForesterMap() {
     }
   }, [iforester]);
 
-  // set initial DBH min and DBH max
+  // Set initial DBH min and DBH max
   useEffect(() => {
     if (iforester && iforester.length > 0) {
       if (dbhMin === -1) {
@@ -57,27 +123,18 @@ export default function IForesterMap() {
         });
       }
     }
-  });
-
-  // update locations when filter options change
-  useEffect(() => {
-    if (iforester && iforester.length > 0) {
-      setFilteredLocations(
-        iforester.filter(
-          ({ dbh, species }) =>
-            dbh >= dbhMin &&
-            dbh <= dbhMax &&
-            speciesSelection.includes(species.toLowerCase())
-        )
-      );
-    }
-  }, [dbhMin, dbhMax, iforester, speciesSelection]);
+  }, []);
 
   useEffect(() => {
     if (mapRef.current && activeMarkerZoom) {
-      const zoomMarker = filteredLocations.filter(({ id }) => id === activeMarkerZoom);
+      const zoomMarker = filteredLocations.filter(
+        ({ id }) => id === activeMarkerZoom
+      );
       if (zoomMarker.length > 0) {
-        const coords = L.latLng([zoomMarker[0].latitude, zoomMarker[0].longitude]);
+        const coords = L.latLng([
+          zoomMarker[0].latitude,
+          zoomMarker[0].longitude,
+        ]);
         mapRef.current.flyTo(coords, 18);
         dispatch({ type: 'SET_ACTIVE_MARKER_ZOOM', payload: '' });
       }
@@ -91,27 +148,45 @@ export default function IForesterMap() {
     });
   }
 
+  const mapStyle = useMemo(() => {
+    return mapboxAccessToken
+      ? getMapboxSatelliteBasemapStyle(mapboxAccessToken)
+      : usgsImageryTopoBasemapStyle;
+  }, [mapboxAccessToken]);
+
   return (
-    <MapContainer
+    <Map
       ref={mapRef}
-      center={[40.428655143949925, -86.9138040788386]}
-      preferCanvas={true}
-      zoom={8}
-      maxZoom={24}
-      scrollWheelZoom={true}
-      zoomControl={false}
-      worldCopyJump={true}
+      initialViewState={{
+        longitude: -86.9138040788386,
+        latitude: 40.428655143949925,
+        zoom: 8,
+      }}
+      style={{
+        width: '100%',
+        height: '100%',
+      }}
+      mapboxAccessToken={mapboxAccessToken || undefined}
+      mapStyle={mapStyle}
+      reuseMaps={true}
     >
-      {iforester && (
+      {filteredLocations && filteredLocations.length > 0 && (
+        <IForesterCluster geojsonData={filteredLocationsGeoJSON} />
+      )}
+      {/* {iforester && (
         <ClusterMarkers
           activeMarker={activeMarker}
           markers={filteredLocations}
           updateVisibleMarkers={updateVisibleMarkers}
         />
-      )}
-      <IForesterControl position="topright" />
-      <MapLayersControl />
-      <ZoomControl position="topleft" />
-    </MapContainer>
+      )} */}
+
+      {/* Filter control */}
+      <IForesterControl />
+
+      {/* General controls */}
+      <NavigationControl />
+      <ScaleControl />
+    </Map>
   );
 }
