@@ -1,5 +1,5 @@
-import { IForester } from '../Project';
 import IForesterCard from './IForesterCard';
+import { IForester } from '../Project';
 
 export default function IForesterList({ data }: { data: IForester[] }) {
   if (data.length === 0) return null;

@@ -29,6 +29,7 @@ import FlightData, {
 import FlightForm, {
   loader as flightFormLoader,
 } from './components/pages/projects/flights/FlightForm';
+import IForesterLayout from './components/pages/projects/iForester/IForesterLayout';
 import Landing from './components/Landing';
 import LoginForm from './components/pages/auth/LoginForm';
 import Logout from './components/pages/auth/Logout';
@@ -148,6 +149,10 @@ export const router = createBrowserRouter(
           element: <ProjectLayout />,
           children: [
             {
+              path: '/projects/:projectId/access',
+              element: <ProjectAccess />,
+            },
+            {
               path: '/projects/:projectId/campaigns/create',
               element: <FieldCampaignCreate />,
             },
@@ -167,13 +172,13 @@ export const router = createBrowserRouter(
               loader: flightFormLoader,
             },
             {
+              path: '/projects/:projectId/iforester',
+              element: <IForesterLayout />,
+            },
+            {
               path: '/projects/:projectId',
               element: <ProjectDetail />,
               loader: projectDetailLoader,
-            },
-            {
-              path: '/projects/:projectId/access',
-              element: <ProjectAccess />,
             },
             {
               path: '/projects',
