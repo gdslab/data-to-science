@@ -1,19 +1,19 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
+import { IForester } from '../Project';
 import { useIForesterControlContext } from './IForesterContext';
 import { getUniqueValues } from './IForesterMap';
 import { useProjectContext } from '../ProjectContext';
 import IForesterCard from './IForesterCard';
+import PaginationList from '../../../PaginationList';
 
 export default function IForesterCardView() {
+  const [pageData, setPageData] = useState<IForester[]>([]);
   const { state, dispatch } = useIForesterControlContext();
   const { dbhMin, dbhMax, speciesSelection, visibleMarkers } = state;
   const { iforester } = useProjectContext();
 
-  console.log(iforester);
-  console.log('visibleMarkers', visibleMarkers);
-
-  // set initial selected species
+  // Set initial selected species
   useEffect(() => {
     if (iforester && iforester.length > 0 && speciesSelection.length === 0) {
       dispatch({
@@ -25,7 +25,7 @@ export default function IForesterCardView() {
     }
   }, [iforester]);
 
-  // set initial DBH min and DBH max
+  // Set initial DBH min and DBH max
   useEffect(() => {
     if (iforester && iforester.length > 0) {
       if (dbhMin === -1) {
@@ -76,14 +76,23 @@ export default function IForesterCardView() {
       });
   }, [dbhMin, dbhMax, iforester, speciesSelection, visibleMarkers]);
 
+  const updatePageData = (pageData: IForester[]) => {
+    setPageData(pageData);
+  };
+
   return (
-    <div className="flex justify-center">
+    <div className="h-full flex justify-center">
       {sortedFilteredLocations.length > 0 ? (
-        <div className="w-full pb-2 pr-2.5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5 max-h-[calc(100vh_-_64px_-_52px_-_52px)] overflow-y-auto">
-          {sortedFilteredLocations.map((location) => (
-            <IForesterCard key={location.id} submission={location} />
-          ))}
-        </div>
+        <PaginationList
+          dataList={sortedFilteredLocations}
+          updatePageData={updatePageData}
+        >
+          <div className="w-full pb-2 pr-2.5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5 max-h-[calc(100vh_-_64px_-_52px_-_52px)]">
+            {pageData.map((location) => (
+              <IForesterCard key={location.id} submission={location} />
+            ))}
+          </div>
+        </PaginationList>
       ) : (
         <span>No cards to display. Check Filter Options on map.</span>
       )}

@@ -1,6 +1,7 @@
 import { FeatureCollection, Point } from 'geojson';
 import { useEffect } from 'react';
 import { GeoJSONSource, Layer, Source, useMap } from 'react-map-gl/maplibre';
+// @ts-ignore
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanContains from '@turf/boolean-contains';
 import { point } from '@turf/helpers';
@@ -9,18 +10,21 @@ import {
   clusterLayerInner,
   clusterLayerOuter,
   clusterCountLayer,
-  unclusteredPointLayer,
+  getUnclusteredPointLayer,
 } from './layerProps';
+import { useIForesterControlContext } from './IForesterContext';
 
 type IForesterClusterProps = { geojsonData: FeatureCollection };
 
 export default function IForesterCluster({
   geojsonData,
 }: IForesterClusterProps) {
+  const { dispatch, state } = useIForesterControlContext();
+
   const { current: map } = useMap();
 
-  // Update visible markers when map moves
-  useEffect(() => {
+  // Update visible markers
+  const updateVisibleMarkers = () => {
     if (!map) return;
 
     const bounds = map.getBounds();
@@ -41,7 +45,21 @@ export default function IForesterCluster({
         visibleMarkers.push(feature.properties.id);
       }
     });
-  });
+    dispatch({ type: 'SET_VISIBLE_MARKERS', payload: visibleMarkers });
+  };
+
+  // Update visible markers when map loads and moves
+  useEffect(() => {
+    if (!map) return;
+
+    map.on('load', updateVisibleMarkers);
+    map.on('moveend', updateVisibleMarkers);
+
+    return () => {
+      map.off('load', updateVisibleMarkers);
+      map.off('moveend', updateVisibleMarkers);
+    };
+  }, [map]);
 
   // Zoom and click events for cluster layers
   useEffect(() => {
@@ -70,12 +88,30 @@ export default function IForesterCluster({
 
     // Cluster events
     map.on('click', 'clusters-inner', handleClick);
-    map.on('click', 'clusters-outer', handleClick);
     map.on('mouseenter', 'clusters-inner', showCursorPointer);
     map.on('mouseenter', 'clusters-outer', showCursorPointer);
     map.on('mouseleave', 'clusters-inner', hideCursorPointer);
     map.on('mouseleave', 'clusters-outer', hideCursorPointer);
   }, [map]);
+
+  useEffect(() => {
+    if (!map) return;
+    // Zoom to extent of unclustered symbol when clicked
+    const handleClick = async (e) => {
+      const features = map.queryRenderedFeatures(e.point, {
+        layers: ['unclustered-point'],
+      });
+      const coordinates = (features[0].geometry as Point).coordinates;
+      map.easeTo({ center: [coordinates[0], coordinates[1]], zoom: 16 });
+      dispatch({
+        type: 'SET_ACTIVE_MARKER',
+        payload: features[0].properties.id,
+      });
+    };
+
+    // Unclustered point events
+    map.on('click', 'unclustered-point', handleClick);
+  }, []);
 
   return (
     <Source
@@ -89,7 +125,7 @@ export default function IForesterCluster({
       <Layer {...clusterLayerOuter} />
       <Layer {...clusterLayerInner} />
       <Layer {...clusterCountLayer} />
-      <Layer {...unclusteredPointLayer} />
+      <Layer {...getUnclusteredPointLayer(state.activeMarker)} />
     </Source>
   );
 }

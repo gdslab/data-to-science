@@ -1,5 +1,3 @@
-import './IForesterMap.css';
-import L from 'leaflet';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Map, {
   MapRef,
@@ -8,14 +6,10 @@ import Map, {
 } from 'react-map-gl/maplibre';
 import bbox from '@turf/bbox';
 import { point } from '@turf/helpers';
-// import { MapContainer } from 'react-leaflet/MapContainer';
-// import { ZoomControl } from 'react-leaflet/ZoomControl';
 
-import ClusterMarkers from './ClusterMarkers';
 import IForesterControl from './IForesterControl';
 import { useIForesterControlContext } from './IForesterContext';
 import { useProjectContext } from '../ProjectContext';
-import { IForester } from '../Project';
 
 import {
   getMapboxSatelliteBasemapStyle,
@@ -33,8 +27,7 @@ export function getUniqueValues(
 export default function IForesterMap() {
   const [mapboxAccessToken, setMapboxAccessToken] = useState<string>('');
   const { state, dispatch } = useIForesterControlContext();
-  const { activeMarker, activeMarkerZoom, dbhMin, dbhMax, speciesSelection } =
-    state;
+  const { activeMarkerZoom, dbhMin, dbhMax, speciesSelection } = state;
   const { iforester } = useProjectContext();
 
   const mapRef = useRef<MapRef | null>(null);
@@ -125,28 +118,21 @@ export default function IForesterMap() {
     }
   }, []);
 
+  // Zoom to active marker when activeMarkerZoom changes
   useEffect(() => {
     if (mapRef.current && activeMarkerZoom) {
       const zoomMarker = filteredLocations.filter(
         ({ id }) => id === activeMarkerZoom
       );
       if (zoomMarker.length > 0) {
-        const coords = L.latLng([
-          zoomMarker[0].latitude,
-          zoomMarker[0].longitude,
-        ]);
-        mapRef.current.flyTo(coords, 18);
+        mapRef.current.flyTo({
+          center: [zoomMarker[0].longitude, zoomMarker[0].latitude],
+          zoom: 18,
+        });
         dispatch({ type: 'SET_ACTIVE_MARKER_ZOOM', payload: '' });
       }
     }
   }, [activeMarkerZoom]);
-
-  function updateVisibleMarkers(markers) {
-    dispatch({
-      type: 'SET_VISIBLE_MARKERS',
-      payload: markers,
-    });
-  }
 
   const mapStyle = useMemo(() => {
     return mapboxAccessToken
@@ -170,16 +156,10 @@ export default function IForesterMap() {
       mapStyle={mapStyle}
       reuseMaps={true}
     >
+      {/* Cluster markers */}
       {filteredLocations && filteredLocations.length > 0 && (
         <IForesterCluster geojsonData={filteredLocationsGeoJSON} />
       )}
-      {/* {iforester && (
-        <ClusterMarkers
-          activeMarker={activeMarker}
-          markers={filteredLocations}
-          updateVisibleMarkers={updateVisibleMarkers}
-        />
-      )} */}
 
       {/* Filter control */}
       <IForesterControl />

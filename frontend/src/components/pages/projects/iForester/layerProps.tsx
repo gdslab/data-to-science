@@ -58,15 +58,22 @@ export const clusterCountLayer: LayerProps = {
   },
 };
 
-export const unclusteredPointLayer: LayerProps = {
-  id: 'unclustered-point',
-  type: 'circle',
-  source: 'iforester-source',
-  filter: ['!', ['has', 'point_count']],
-  paint: {
-    'circle-color': '#fff',
-    'circle-radius': 4,
-    'circle-stroke-width': 1,
-    'circle-stroke-color': '#000',
-  },
+export const getUnclusteredPointLayer = (activeLayer: string): LayerProps => {
+  return {
+    id: 'unclustered-point',
+    type: 'circle',
+    source: 'iforester-source',
+    filter: ['all', ['!', ['has', 'point_count']]],
+    paint: {
+      'circle-color': [
+        'case',
+        ['==', ['get', 'id'], activeLayer],
+        '#ffff00',
+        '#fff',
+      ],
+      'circle-radius': ['case', ['==', ['get', 'id'], activeLayer], 8, 4],
+      'circle-stroke-width': 1,
+      'circle-stroke-color': '#000',
+    },
+  };
 };

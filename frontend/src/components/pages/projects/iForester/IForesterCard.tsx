@@ -12,9 +12,15 @@ const PropertyLabel = ({ children }) => (
   <span className="text-xs font-semibold">{children}</span>
 );
 
-const PropertyValue = ({ children }) => <span className="text-xs">{children}</span>;
+const PropertyValue = ({ children }) => (
+  <span className="text-xs">{children}</span>
+);
 
-export default function IForesterCard({ submission }: { submission: IForester }) {
+export default function IForesterCard({
+  submission,
+}: {
+  submission: IForester;
+}) {
   const [depthViewVisible, setDepthViewVisible] = useState(false);
 
   const { dispatch, state } = useIForesterControlContext();
@@ -85,7 +91,9 @@ export default function IForesterCard({ submission }: { submission: IForester })
         <div className="absolute bottom-0 right-0 flex items-center justify-center h-6 w-6 bg-white/80 p-1">
           <button
             className="h-4 w-4 text-slate-600 hover:text-slate-800"
-            aria-label={!depthViewVisible ? 'View Depth Image' : 'View RGB Image'}
+            aria-label={
+              !depthViewVisible ? 'View Depth Image' : 'View RGB Image'
+            }
             onClick={flipImage}
           >
             <Square3Stack3DIcon className="h-4 w-4" />
