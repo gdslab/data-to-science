@@ -1,11 +1,10 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
 from app import crud
 from app.core.config import settings
-from app.schemas.data_product import DataProductUpdate
 from app.schemas.file_permission import FilePermissionUpdate
 from app.tests.utils.flight import create_flight
 from app.tests.utils.data_product import SampleDataProduct, test_stac_props_dsm
@@ -149,4 +148,6 @@ def test_deactivate_data_product(db: Session) -> None:
     assert data_product3.id == data_product.obj.id
     assert data_product3.is_active is False
     assert isinstance(data_product3.deactivated_at, datetime)
-    assert data_product3.deactivated_at < datetime.utcnow()
+    assert data_product3.deactivated_at.replace(tzinfo=timezone.utc) < datetime.now(
+        timezone.utc
+    )

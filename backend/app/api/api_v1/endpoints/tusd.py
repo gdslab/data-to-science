@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -106,7 +106,7 @@ def handle_tusd_http_hooks(
         if existing_upload:
             # update record to indicate upload has finished
             upload_update_in = UploadUpdate(
-                is_uploading=False, last_updated_at=datetime.utcnow()
+                is_uploading=False, last_updated_at=datetime.now(timezone.utc)
             )
             crud.upload.update(db, db_obj=existing_upload, obj_in=upload_update_in)
         else:

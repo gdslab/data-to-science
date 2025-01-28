@@ -1,5 +1,4 @@
-import requests
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 from fastapi import HTTPException, status
@@ -11,9 +10,7 @@ from app.api.deps import get_current_user
 from app.core.config import settings
 from app.schemas.user import UserUpdate
 from app.tests.utils.data_product import SampleDataProduct
-from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
-from app.tests.utils.flight import create_flight
 from app.tests.utils.user import create_user
 from app.utils.ProtectedStaticFiles import verify_api_key_static_file_access
 
@@ -143,7 +140,9 @@ def test_access_authorized_data_product_with_deactivated_api_key(
 
     # verify with deactivated api key
     assert not deactivated_api_key.is_active
-    assert deactivated_api_key.deactivated_at < datetime.utcnow()
+    assert deactivated_api_key.deactivated_at.replace(
+        tzinfo=timezone.utc
+    ) < datetime.now(timezone.utc)
     assert not verify_api_key_static_file_access(
         data_product=data_product.obj, api_key=current_user_api_key.api_key, db=db
     )

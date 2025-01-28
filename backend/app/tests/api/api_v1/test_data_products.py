@@ -1,12 +1,8 @@
-import json
-import os
-import shutil
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import patch, MagicMock
 
 from geojson_pydantic import Feature, FeatureCollection
 from fastapi import status
-from fastapi.encoders import jsonable_encoder
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -556,7 +552,7 @@ def test_deactivate_data_product_with_owner_role(
         deactivated_data_product.get("deactivated_at"), "%Y-%m-%dT%H:%M:%S.%f"
     )
     assert isinstance(deactivated_at, datetime)
-    assert deactivated_at < datetime.utcnow()
+    assert deactivated_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc)
 
 
 def test_deactivate_data_product_with_manager_role(
