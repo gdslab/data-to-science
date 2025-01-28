@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from random import randint
 
 from fastapi import status
@@ -624,7 +624,7 @@ def test_deactivate_flight_with_project_owner_role(
     except Exception:
         raise
     assert isinstance(deactivated_at, datetime)
-    assert deactivated_at < datetime.utcnow()
+    assert deactivated_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc)
 
 
 def test_deactivate_flight_with_project_manager_role(

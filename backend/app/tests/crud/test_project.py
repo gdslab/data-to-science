@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -6,7 +6,6 @@ from app import crud, schemas
 from app.schemas.project import ProjectUpdate
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.flight import create_flight
-from app.tests.utils.location import create_location
 from app.tests.utils.team import create_team
 from app.tests.utils.team_member import create_team_member
 from app.tests.utils.project import (
@@ -270,7 +269,9 @@ def test_deactivate_project(db: Session) -> None:
     assert project3.id == project.id
     assert project3.is_active is False
     assert isinstance(project3.deactivated_at, datetime)
-    assert project3.deactivated_at < datetime.utcnow()
+    assert project3.deactivated_at.replace(tzinfo=timezone.utc) < datetime.now(
+        timezone.utc
+    )
 
 
 def test_deactivate_project_deactivates_flights_and_data_products(db: Session) -> None:

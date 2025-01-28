@@ -1,8 +1,10 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 from uuid import UUID
 
 from fastapi import HTTPException, Request, status
+from starlette.types import Scope, Receive, Send
 from sqlalchemy.orm import Session
 
 from app.utils.staticfiles import RangedStaticFiles
@@ -12,7 +14,6 @@ from app.api.deps import decode_jwt, can_read_project
 from app.db.session import SessionLocal
 from app.models.data_product import DataProduct
 from app.schemas.api_key import APIKeyUpdate
-from app.schemas.file_permission import FilePermissionUpdate
 
 
 def verify_api_key_static_file_access(
@@ -45,10 +46,12 @@ def verify_api_key_static_file_access(
         # flight associated with data product
         flight = crud.flight.get(db, id=data_product.flight_id)
         # check if can read flight
-        if can_read_project(db=db, project_id=flight.project_id, current_user=user):
+        if flight and can_read_project(
+            db=db, project_id=flight.project_id, current_user=user
+        ):
             # update last accessed date and total requests
             api_key_in = APIKeyUpdate(
-                last_used_at=datetime.utcnow(),
+                last_used_at=datetime.now(timezone.utc),
                 total_requests=api_key_obj.total_requests + 1,
             )
             crud.api_key.update(db, db_obj=api_key_obj, obj_in=api_key_in)
@@ -94,6 +97,11 @@ async def verify_static_file_access(request: Request) -> None:
             data_product_id = UUID(request_path.parents[-2].name)
             data_product = crud.data_product.get(SessionLocal(), id=data_product_id)
         except (IndexError, ValueError):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="data product not found"
+            )
+
+        if not data_product:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="data product not found"
             )
@@ -163,10 +171,10 @@ async def verify_static_file_access(request: Request) -> None:
 class ProtectedStaticFiles(RangedStaticFiles):
     """Extend StatcFiles to include user access authorization."""
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
-    async def __call__(self, scope, receive, send) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         assert scope["type"] == "http"
 
         request = Request(scope, receive)
