@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timezone
 from typing import List
 
 from fastapi import status
@@ -169,11 +169,11 @@ def test_deactivate_team_extension(
     assert team_extension
     assert team_extension["extension_id"] == str(extension.id)
     assert team_extension["team_id"] == str(team.id)
-    deactivated_at = datetime.datetime.strptime(
-        team_extension.get("deactivated_at"), "%Y-%m-%dT%H:%M:%S.%f"
-    ).replace(tzinfo=datetime.timezone.utc)
-    assert isinstance(deactivated_at, datetime.datetime)
-    assert deactivated_at < datetime.datetime.now(datetime.UTC)
+    deactivated_at = datetime.strptime(
+        team_extension["deactivated_at"], "%Y-%m-%dT%H:%M:%S.%fZ"
+    ).replace(tzinfo=timezone.utc)
+    assert isinstance(deactivated_at, datetime)
+    assert deactivated_at < datetime.now(tz=timezone.utc)
 
 
 def test_deactivate_user_extension(
@@ -198,8 +198,8 @@ def test_deactivate_user_extension(
     assert user_extension
     assert user_extension["extension_id"] == str(extension.id)
     assert user_extension["user_id"] == str(user.id)
-    deactivated_at = datetime.datetime.strptime(
-        user_extension.get("deactivated_at"), "%Y-%m-%dT%H:%M:%S.%f"
-    ).replace(tzinfo=datetime.timezone.utc)
-    assert isinstance(deactivated_at, datetime.datetime)
-    assert deactivated_at < datetime.datetime.now(datetime.UTC)
+    deactivated_at = datetime.strptime(
+        user_extension["deactivated_at"], "%Y-%m-%dT%H:%M:%S.%fZ"
+    ).replace(tzinfo=timezone.utc)
+    assert isinstance(deactivated_at, datetime)
+    assert deactivated_at < datetime.now(tz=timezone.utc)

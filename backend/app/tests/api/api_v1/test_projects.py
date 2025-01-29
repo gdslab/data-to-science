@@ -697,7 +697,7 @@ def test_deactivate_project_with_owner_role(
     assert response_data.get("is_active", True) is False
     try:
         deactivated_at = datetime.strptime(
-            response_data.get("deactivated_at"), "%Y-%m-%dT%H:%M:%S.%f"
+            response_data.get("deactivated_at"), "%Y-%m-%dT%H:%M:%S.%fZ"
         )
     except Exception:
         raise

@@ -3,13 +3,10 @@ import logging
 import os
 import shutil
 import tempfile
-import time
-import urllib.parse
 import zipfile
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Sequence, Union
-from urllib.parse import urlencode, quote_plus
 from uuid import UUID
 
 import geopandas as gpd
@@ -23,7 +20,6 @@ from fastapi import (
     UploadFile,
 )
 from fastapi.responses import FileResponse, JSONResponse
-from geojson_pydantic import FeatureCollection
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
@@ -119,7 +115,7 @@ async def create_vector_layer(
         name="upload-vector-layer",
         state="PENDING",
         status="WAITING",
-        start_time=datetime.now(),
+        start_time=datetime.now(tz=timezone.utc),
     )
     job = crud.job.create_job(db, obj_in=job_in)
 

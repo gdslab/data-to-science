@@ -79,7 +79,7 @@ def get_token_hash(token: str, salt: str) -> str:
 
 def check_token_expired(token: SingleUseToken, minutes: int = 60) -> bool:
     """Check if token is older than value passed in minutes (defaults to 1 hour)."""
-    return datetime.now() > (token.created_at + timedelta(minutes))
+    return datetime.now(tz=timezone.utc) > (token.created_at + timedelta(minutes))
 
 
 class OAuth2PasswordBearerWithCookie(OAuth2):

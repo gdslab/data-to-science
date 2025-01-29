@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 from sqlalchemy.exc import IntegrityError
@@ -92,4 +92,4 @@ def test_deactivate_campaign(db: Session) -> None:
     assert campaign3.id == campaign.id
     assert not campaign3.is_active
     assert isinstance(campaign3.deactivated_at, datetime)
-    assert campaign3.deactivated_at < datetime.now()
+    assert campaign3.deactivated_at < datetime.now(tz=timezone.utc)

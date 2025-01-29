@@ -229,7 +229,7 @@ def test_deactivate_raw_data_with_owner_role(
     assert deactivated_raw_data.get("id", None) == str(raw_data.obj.id)
     assert deactivated_raw_data.get("is_active", True) is False
     deactivated_at = datetime.strptime(
-        deactivated_raw_data.get("deactivated_at"), "%Y-%m-%dT%H:%M:%S.%f"
+        deactivated_raw_data.get("deactivated_at"), "%Y-%m-%dT%H:%M:%S.%fZ"
     )
     assert isinstance(deactivated_at, datetime)
     assert deactivated_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc)

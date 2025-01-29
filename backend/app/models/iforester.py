@@ -7,7 +7,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base
-from app.models.utils.user import utcnow
+from app.models.utils.utcnow import utcnow
 
 
 if TYPE_CHECKING:
@@ -33,7 +33,7 @@ class IForester(Base):
     phoneID: Mapped[str] = mapped_column(String(63), nullable=True, default=None)
     species: Mapped[str] = mapped_column(String(31), nullable=True, default=None)
     timeStamp: Mapped[datetime] = mapped_column(
-        DateTime, server_default=utcnow(), nullable=False
+        DateTime(timezone=True), server_default=utcnow(), nullable=False
     )
     user: Mapped[str] = mapped_column(String(31), nullable=True, default=None)
     # foreign keys

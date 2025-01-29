@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
@@ -12,16 +12,14 @@ from app.api.utils import get_signature_for_data_product
 from app.core.config import settings
 from app.crud.base import CRUDBase
 from app.models.data_product import DataProduct
-from app.models.file_permission import FilePermission
 from app.models.job import Job
+from app.models.utils.utcnow import utcnow
 from app.schemas.data_product import (
-    DataProductBands,
     DataProductCreate,
     DataProductUpdate,
 )
+from app.schemas.job import Status
 from app.models.user_style import UserStyle
-from app.models.utils.user import utcnow
-from app.utils.ImageProcessor import STACProperties
 
 
 class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate]):
@@ -106,17 +104,12 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                 return None
 
     def get_multi_by_flight(
-        self,
-        db: Session,
-        flight_id: UUID,
-        upload_dir: str,
-        user_id: UUID,
-        skip: int = 0,
-        limit: int = 100,
+        self, db: Session, flight_id: UUID, upload_dir: str, user_id: UUID
     ) -> Sequence[DataProduct]:
         data_products_query = (
             select(DataProduct)
             .join(DataProduct.file_permission)
+            .join(DataProduct.jobs)
             .where(and_(DataProduct.flight_id == flight_id, DataProduct.is_active))
         )
         with db as session:
@@ -134,11 +127,15 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                     user_style = session.execute(user_style_query).scalar_one_or_none()
                     if user_style:
                         set_user_style_attr(data_product, user_style.settings)
+
+                # Set additional attributes to be returned by API
                 set_public_attr(data_product, data_product.file_permission.is_public)
                 set_signature_attr(data_product)
                 set_url_attr(data_product, upload_dir)
                 is_status_set = set_status_attr(data_product, data_product.jobs)
-                if is_status_set:
+
+                # Only include data product if a status was set
+                if is_status_set and hasattr(data_product, "status"):
                     updated_data_products.append(data_product)
 
             return updated_data_products
@@ -200,9 +197,9 @@ def set_status_attr(data_product_obj: DataProduct, jobs: List[Job]) -> bool:
     Returns:
         bool: Return True if able to set a status, return False if not status set.
     """
-    status = None
+    status: Optional[Status] = None
     if data_product_obj.is_initial_processing_completed:
-        status = "SUCCESS"
+        status = Status.SUCCESS
     else:
         accepted_job_names = ["upload-data-product", "exg-process", "nvdi-process"]
         for job in jobs:

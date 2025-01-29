@@ -23,6 +23,7 @@ from app.core import security
 from app.core.config import settings
 from app.models.vector_layer import VectorLayer
 from app.schemas.data_product_metadata import ZonalStatisticsProps
+from app.schemas.job import State, Status
 from app.tasks import (
     generate_zonal_statistics,
     generate_zonal_statistics_bulk,
@@ -104,7 +105,6 @@ def read_data_product(
 
 @router.get("", response_model=Sequence[schemas.DataProduct])
 def read_all_data_product(
-    flight_id: UUID,
     current_user: models.User = Depends(deps.get_current_approved_user),
     flight: models.Flight = Depends(deps.can_read_flight),
     db: Session = Depends(deps.get_db),
@@ -260,7 +260,7 @@ def process_data_product_from_external_storage(
     # check if token is valid
     if not token_db_obj:
         job_update_in = schemas.JobUpdate(
-            state="COMPLETED", status="FAILED", end_time=datetime.now()
+            state=State.COMPLETED, status=Status.FAILED, end_time=datetime.now()
         )
         crud.job.update(db, db_obj=job, obj_in=job_update_in)
         raise HTTPException(
@@ -271,7 +271,7 @@ def process_data_product_from_external_storage(
     user = crud.user.get(db, id=token_db_obj.user_id)
     if not user:
         job_update_in = schemas.JobUpdate(
-            state="COMPLETED", status="FAILED", end_time=datetime.now()
+            state=State.COMPLETED, status=Status.FAILED, end_time=datetime.now()
         )
         crud.job.update(db, db_obj=job, obj_in=job_update_in)
         raise HTTPException(
@@ -283,7 +283,7 @@ def process_data_product_from_external_storage(
         models.Project,
     ):
         job_update_in = schemas.JobUpdate(
-            state="COMPLETED", status="FAILED", end_time=datetime.now()
+            state=State.COMPLETED, status=Status.FAILED, end_time=datetime.now()
         )
         crud.job.update(db, db_obj=job, obj_in=job_update_in)
         raise HTTPException(
@@ -295,7 +295,7 @@ def process_data_product_from_external_storage(
     if not payload.status.code:
         # update job table to show it failed
         job_update_in = schemas.JobUpdate(
-            state="COMPLETED", status="FAILED", end_time=datetime.now()
+            state=State.COMPLETED, status=Status.FAILED, end_time=datetime.now()
         )
         crud.job.update(db, db_obj=job, obj_in=job_update_in)
     else:
@@ -303,7 +303,7 @@ def process_data_product_from_external_storage(
         for data_product in payload.products:
             if not os.path.exists(data_product.storage_path):
                 job_update_in = schemas.JobUpdate(
-                    state="COMPLETED", status="FAILED", end_time=datetime.now()
+                    state=State.COMPLETED, status=Status.FAILED, end_time=datetime.now()
                 )
                 crud.job.update(db, db_obj=job, obj_in=job_update_in)
                 raise HTTPException(
@@ -346,7 +346,7 @@ def process_data_product_from_external_storage(
 
         # data products successfully derived from raw data
         job_update_in = schemas.JobUpdate(
-            state="COMPLETED", status="SUCCESS", end_time=datetime.now()
+            state=State.COMPLETED, status=Status.SUCCESS, end_time=datetime.now()
         )
         crud.job.update(db, db_obj=job, obj_in=job_update_in)
 

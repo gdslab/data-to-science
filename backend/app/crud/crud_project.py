@@ -5,20 +5,18 @@ from uuid import UUID
 
 from fastapi import status
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import and_, func, select, update, or_
+from sqlalchemy import and_, func, select, update
 from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm import joinedload, Session
 
 from app import crud, schemas
 from app.crud.base import CRUDBase
-from app.models.data_product import DataProduct
-from app.models.flight import Flight
 from app.models.location import Location
 from app.models.project import Project
 from app.models.project_member import ProjectMember
 from app.models.team_member import TeamMember
 from app.models.user import User
-from app.models.utils.user import utcnow
+from app.models.utils.utcnow import utcnow
 from app.schemas.project import Centroid, ProjectCreate, ProjectUpdate, Projects
 
 

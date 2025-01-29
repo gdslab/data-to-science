@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Sequence, TypedDict
+from typing import List, Sequence, TypedDict
 from uuid import UUID
 
 from fastapi import status
@@ -21,9 +21,10 @@ from app.models.flight import Flight
 from app.models.job import Job
 from app.models.project import Project
 from app.models.user_style import UserStyle
-from app.models.utils.user import utcnow
+from app.models.utils.utcnow import utcnow
 from app.models.vector_layer import VectorLayer
 from app.schemas.flight import FlightCreate, FlightUpdate
+from app.schemas.job import State, Status
 
 
 class ReadFlight(TypedDict):
@@ -81,8 +82,6 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
         user_id: UUID,
         include_all: bool = False,
         has_raster: bool = False,
-        skip: int = 0,
-        limit: int = 100,
     ) -> Sequence[Flight]:
         statement = (
             select(Flight)
@@ -98,7 +97,7 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                 # remove data product if its upload job status is FAILED
                 # or its state is not COMPLETED
                 if not include_all:
-                    keep_data_products = []
+                    keep_data_products: List[DataProduct] = []
                     for data_product in flight.data_products:
                         job_query = select(Job).where(
                             and_(
@@ -111,7 +110,11 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                             )
                         )
                         job = session.execute(job_query).scalar_one_or_none()
-                        if job and job.state == "COMPLETED" and job.status == "SUCCESS":
+                        if (
+                            job
+                            and job.state == State.COMPLETED
+                            and job.status == Status.SUCCESS
+                        ):
                             keep_data_products.append(data_product)
                     flight.data_products = keep_data_products
 

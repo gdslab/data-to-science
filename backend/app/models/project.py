@@ -40,7 +40,9 @@ class Project(Base):
         ForeignKey("teams.id", ondelete="SET NULL"), nullable=True
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    deactivated_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    deactivated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     members: Mapped[list["ProjectMember"]] = relationship(
         back_populates="project", cascade="all, delete"
