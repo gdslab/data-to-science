@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timezone
 from typing import List
 
 import pytest
@@ -108,10 +108,10 @@ def test_deactivate_team_extension(db: Session) -> None:
     assert not team_extension.is_active
     assert team_extension.extension_id == extension.id
     assert team_extension.team_id == team.id
-    assert isinstance(team_extension.deactivated_at, datetime.datetime)
-    assert team_extension.deactivated_at.replace(
-        tzinfo=datetime.timezone.utc
-    ) < datetime.datetime.now(datetime.UTC)
+    assert isinstance(team_extension.deactivated_at, datetime)
+    assert team_extension.deactivated_at.replace(tzinfo=timezone.utc) < datetime.now(
+        tz=timezone.utc
+    )
 
 
 def test_deactivate_user_extension(db: Session) -> None:
@@ -129,10 +129,10 @@ def test_deactivate_user_extension(db: Session) -> None:
     assert not user_extension.is_active
     assert user_extension.extension_id == extension.id
     assert user_extension.user_id == user.id
-    assert isinstance(user_extension.deactivated_at, datetime.datetime)
-    assert user_extension.deactivated_at.replace(
-        tzinfo=datetime.timezone.utc
-    ) < datetime.datetime.now(datetime.UTC)
+    assert isinstance(user_extension.deactivated_at, datetime)
+    assert user_extension.deactivated_at.replace(tzinfo=timezone.utc) < datetime.now(
+        tz=timezone.utc
+    )
 
 
 def test_read_team_extension(db: Session) -> None:

@@ -8,7 +8,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base
 
-
 if TYPE_CHECKING:
     from .flight import Flight
     from .job import Job
@@ -29,7 +28,9 @@ class RawData(Base):
     is_initial_processing_completed: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False
     )
-    deactivated_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    deactivated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     flight: Mapped["Flight"] = relationship(back_populates="raw_data")
     jobs: Mapped[List["Job"]] = relationship(

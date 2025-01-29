@@ -6,7 +6,8 @@ from sqlalchemy import Boolean, DateTime, ForeignKey, String, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base
-from app.models.utils.user import utcnow
+from app.models.utils.utcnow import utcnow
+
 
 if TYPE_CHECKING:
     from .user import User
@@ -21,7 +22,7 @@ class Upload(Base):
     upload_id: Mapped[str] = mapped_column(String(32), nullable=False)
     is_uploading: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     last_updated_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=utcnow(), nullable=False
+        DateTime(timezone=True), server_default=utcnow(), nullable=False
     )
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
 

@@ -3,9 +3,9 @@ import os
 import secrets
 import shutil
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List
+from typing import Any, Dict, List
 from uuid import UUID
 
 import geopandas as gpd
@@ -24,7 +24,7 @@ from app.core.config import settings
 from app.core.security import get_token_hash
 from app.schemas.data_product import DataProductUpdate
 from app.schemas.data_product_metadata import ZonalStatisticsProps
-from app.schemas.job import JobUpdate
+from app.schemas.job import JobUpdate, State, Status
 from app.utils import gen_preview_from_pointcloud
 from app.utils.ImageProcessor import ImageProcessor
 from app.utils.RpcClient import RpcClient
@@ -330,15 +330,15 @@ def process_geotiff(
 
 
 @celery_app.task(name="point_cloud_preview_image_task")
-def create_point_cloud_preview_image(in_las: str) -> None:
+def create_point_cloud_preview_image(in_las_filepath: str) -> None:
     """Celery task for creating a preview image for a point cloud.
 
     Args:
-        in_las (str): Path to point cloud.
+        in_las_filepath (str): Path to point cloud.
     """
     # create preview image with uploaded point cloud
     try:
-        in_las = Path(in_las)
+        in_las = Path(in_las_filepath)
         if in_las.name.endswith(".copc.laz"):
             preview_out_path = in_las.parents[0] / in_las.name.replace(
                 ".copc.laz", ".png"
@@ -600,7 +600,9 @@ def run_raw_data_image_processing(
                     f"{project_id}/flights/{flight_id}/data_products/"
                     "create_from_ext_storage"
                 ),
-                "created_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+                "created_at": datetime.now(tz=timezone.utc).strftime(
+                    "%Y-%m-%dT%H:%M:%S"
+                ),
                 "flight_id": str(flight_id),
                 "original_filename": original_filename,
                 "project_id": str(project_id),
@@ -672,7 +674,7 @@ def generate_zonal_statistics(
 
 @celery_app.task(name="zonal_statistics_bulk_task")
 def generate_zonal_statistics_bulk(
-    input_raster: str, data_product_id: UUID, feature_collection: dict
+    input_raster: str, data_product_id: UUID, feature_collection_dict: Dict[str, Any]
 ) -> List[ZonalStatisticsProps]:
     # database session for updating data product and job tables
     db = next(get_db())
@@ -687,7 +689,9 @@ def generate_zonal_statistics_bulk(
 
     try:
         update_job_status(job=job, state="INPROGRESS")
-        all_zonal_stats = generate_zonal_statistics(input_raster, feature_collection)
+        all_zonal_stats = generate_zonal_statistics(
+            input_raster, feature_collection_dict
+        )
     except Exception:
         logger.exception("Unable to complete tool process")
         update_job_status(job=job, state="ERROR")
@@ -695,7 +699,9 @@ def generate_zonal_statistics_bulk(
 
     try:
         # deserialize feature collection
-        feature_collection = FeatureCollection(**feature_collection)
+        feature_collection: FeatureCollection = FeatureCollection(
+            **feature_collection_dict
+        )
         features = feature_collection.features
         # create metadata record for each zone
         for index, zstats in enumerate(all_zonal_stats):
@@ -715,7 +721,7 @@ def generate_zonal_statistics_bulk(
                     db,
                     category="zonal",
                     data_product_id=data_product_id,
-                    vector_layer_id=vector_layer_feature_id,
+                    vector_layer_feature_id=vector_layer_feature_id,
                 )
                 if len(existing_metadata) == 1:
                     crud.data_product_metadata.update(
@@ -744,7 +750,6 @@ def update_job_status(
     job: models.Job | None,
     state: str,
     data_product_id: UUID | None = None,
-    raw_data_id: UUID | None = None,
     name: str = "unknown",
     extra: dict | None = None,
 ) -> models.Job | None:
@@ -757,6 +762,7 @@ def update_job_status(
             Data product id (only required to create a job).
         name (str, optional): _description_. Defaults to "unknown".
             Tool name (if applicable).
+        extra (dict): Extra job details to be stored in db.
 
     Returns:
         models.Job: Job object that was created or updated.
@@ -767,9 +773,9 @@ def update_job_status(
         job_in = schemas.job.JobCreate(
             name=f"{name}-process",
             data_product_id=data_product_id,
-            state="PENDING",
-            status="WAITING",
-            start_time=datetime.now(),
+            state=State.PENDING,
+            status=Status.WAITING,
+            start_time=datetime.now(tz=timezone.utc),
         )
         job = crud.job.create_job(db, job_in)
 
@@ -778,11 +784,15 @@ def update_job_status(
             crud.job.update(
                 db,
                 db_obj=job,
-                obj_in=JobUpdate(state="STARTED", status="INPROGRESS", extra=extra),
+                obj_in=JobUpdate(
+                    state=State.STARTED, status=Status.INPROGRESS, extra=extra
+                ),
             )
         else:
             crud.job.update(
-                db, db_obj=job, obj_in=JobUpdate(state="STARTED", status="INPROGRESS")
+                db,
+                db_obj=job,
+                obj_in=JobUpdate(state=State.STARTED, status=Status.INPROGRESS),
             )
 
     if state == "ERROR" and job:
@@ -790,7 +800,9 @@ def update_job_status(
             db,
             db_obj=job,
             obj_in=schemas.job.JobUpdate(
-                state="COMPLETED", status="FAILED", end_time=datetime.now()
+                state=State.COMPLETED,
+                status=Status.FAILED,
+                end_time=datetime.now(tz=timezone.utc),
             ),
         )
 
@@ -799,7 +811,9 @@ def update_job_status(
             db,
             db_obj=job,
             obj_in=schemas.job.JobUpdate(
-                state="COMPLETED", status="SUCCESS", end_time=datetime.now()
+                state=State.COMPLETED,
+                status=Status.SUCCESS,
+                end_time=datetime.now(tz=timezone.utc),
             ),
         )
 

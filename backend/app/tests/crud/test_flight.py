@@ -12,6 +12,7 @@ from app.models.flight import PLATFORMS, SENSORS
 from app.models.vector_layer import VectorLayer
 from app.schemas.data_product import DataProductCreate
 from app.schemas.flight import FlightUpdate
+from app.schemas.job import State, Status
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.flight import create_flight
 from app.tests.utils.job import create_job
@@ -134,8 +135,8 @@ def test_get_flights_excluding_processing_or_failed_data_products(db: Session) -
     create_job(
         db,
         name="upload-data-product",
-        state="COMPLETED",
-        status="FAILED",
+        state=State.COMPLETED,
+        status=Status.FAILED,
         data_product_id=data_product1.obj.id,
     )
     data_product2 = SampleDataProduct(
@@ -144,8 +145,8 @@ def test_get_flights_excluding_processing_or_failed_data_products(db: Session) -
     create_job(
         db,
         name="upload-data-product",
-        state="COMPLETED",
-        status="SUCCESS",
+        state=State.COMPLETED,
+        status=Status.SUCCESS,
         data_product_id=data_product2.obj.id,
     )
     data_product3 = SampleDataProduct(
@@ -154,8 +155,8 @@ def test_get_flights_excluding_processing_or_failed_data_products(db: Session) -
     create_job(
         db,
         name="upload-data-product",
-        state="PENDING",
-        status="SUCCESS",
+        state=State.PENDING,
+        status=Status.SUCCESS,
         data_product_id=data_product3.obj.id,
     )
     upload_dir = settings.TEST_STATIC_DIR

@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String
+from sqlalchemy import Boolean, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -26,7 +26,9 @@ class Campaign(Base):
         ForeignKey("projects.id"), nullable=False, unique=True
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    deactivated_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    deactivated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     lead: Mapped["User"] = relationship(back_populates="campaigns")
     project: Mapped["Project"] = relationship(back_populates="campaigns")

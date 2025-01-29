@@ -8,7 +8,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import column_property, Mapped, mapped_column, relationship
 
 from app.db.base_class import Base
-from app.models.utils.user import utcnow
+from app.models.utils.utcnow import utcnow
 
 
 if TYPE_CHECKING:
@@ -45,7 +45,7 @@ class User(Base):
     )
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=utcnow(), nullable=False
+        DateTime(timezone=True), server_default=utcnow(), nullable=False
     )
 
     api_key: Mapped["APIKey"] = relationship(

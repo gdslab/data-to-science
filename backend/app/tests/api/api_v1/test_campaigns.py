@@ -11,10 +11,8 @@ from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
 from app.models.utils.campaign import is_uuid
-from app.schemas.campaign import CampaignUpdate
 from app.tests.utils.campaign import (
     create_campaign,
-    create_collection_date,
     get_filename_from_content_disposition_header,
 )
 from app.tests.utils.project import create_project
@@ -290,7 +288,7 @@ def test_deactivate_campaign_with_project_owner_role(
     assert response_data["is_active"] is False
     try:
         deactivated_at = datetime.strptime(
-            response_data["deactivated_at"], "%Y-%m-%dT%H:%M:%S.%f"
+            response_data["deactivated_at"], "%Y-%m-%dT%H:%M:%S.%fZ"
         )
         assert isinstance(deactivated_at, datetime)
     except Exception:

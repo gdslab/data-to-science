@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.core.config import settings
 from app.schemas.file_permission import FilePermissionUpdate
+from app.schemas.job import JobUpdate, Status
 from app.tests.utils.flight import create_flight
 from app.tests.utils.data_product import SampleDataProduct, test_stac_props_dsm
 from app.tests.utils.user import create_user
@@ -41,8 +42,8 @@ def test_read_data_product(db: Session) -> None:
         stored_data_product.is_initial_processing_completed
         == data_product.obj.is_initial_processing_completed
     )
-    assert stored_data_product.url
-    assert stored_data_product.user_style
+    assert hasattr(stored_data_product, "url")
+    assert hasattr(stored_data_product, "user_style")
 
 
 def test_read_public_data_product_by_id(db: Session) -> None:

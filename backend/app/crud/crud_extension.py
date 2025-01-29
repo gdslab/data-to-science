@@ -1,7 +1,8 @@
+from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import and_, select, update
+from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
 from app import crud
@@ -14,7 +15,6 @@ from app.models.user_extension import UserExtension
 from app.schemas.extension import ExtensionCreate, ExtensionUpdate
 from app.schemas.team_extension import TeamExtensionUpdate
 from app.schemas.user_extension import UserExtensionUpdate
-from app.models.utils.user import utcnow
 
 
 class CRUDExtension(CRUDBase[Extension, ExtensionCreate, ExtensionUpdate]):
@@ -59,7 +59,7 @@ class CRUDExtension(CRUDBase[Extension, ExtensionCreate, ExtensionUpdate]):
             existing_team_extension = session.scalar(select_statement)
             if existing_team_extension:
                 if not team_extension_in.is_active:
-                    team_extension_in.deactivated_at = utcnow()
+                    team_extension_in.deactivated_at = datetime.now(tz=timezone.utc)
                 team_extension = crud.extension.update(
                     db, db_obj=existing_team_extension, obj_in=team_extension_in
                 )
@@ -90,7 +90,7 @@ class CRUDExtension(CRUDBase[Extension, ExtensionCreate, ExtensionUpdate]):
             existing_user_extension = session.scalar(select_statement)
             if existing_user_extension:
                 if not user_extension_in.is_active:
-                    user_extension_in.deactivated_at = utcnow()
+                    user_extension_in.deactivated_at = datetime.now(tz=timezone.utc)
                 user_extension = crud.extension.update(
                     db, db_obj=existing_user_extension, obj_in=user_extension_in
                 )

@@ -1,31 +1,7 @@
 from fastapi import HTTPException, status
-from sqlalchemy.sql import expression
-from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.types import DateTime
 
 
-class utcnow(expression.FunctionElement):
-    type = DateTime()
-    inherit_cache = True
-
-
-class utcexpire(expression.FunctionElement):
-    # used to set default datetime 1 week from current datetime
-    type = DateTime()
-    inherit_cache = True
-
-
-@compiles(utcnow, "postgresql")
-def pg_utcnow(element, compiler, **kw):
-    return "TIMEZONE('utc', CURRENT_TIMESTAMP)"
-
-
-@compiles(utcexpire, "postgresql")
-def pg_utcnow(element, compiler, **kw):
-    return "TIMEZONE('utc', CURRENT_TIMESTAMP + INTERVAL '7 DAYS')"
-
-
-def more_than_two_repeating_chars_in_a_row(chars: str):
+def more_than_two_repeating_chars_in_a_row(chars: str) -> bool:
     count = 0
     prev_char = None
     for char in chars:
@@ -45,7 +21,7 @@ def more_than_two_repeating_chars_in_a_row(chars: str):
     return False
 
 
-def validate_password(pwd: str):
+def validate_password(pwd: str) -> None:
     # cannot repeat more than two characters in a row
     if more_than_two_repeating_chars_in_a_row(pwd):
         raise HTTPException(
