@@ -17,8 +17,11 @@ export default function ProjectLoader() {
       try {
         const response: AxiosResponse<FeatureCollection<Point>> =
           await axios.get(geojsonUrl);
-        projectGeojsonDispatch({ type: 'set', payload: response.data });
-        projectGeojsonLoadedDispatch({ type: 'set', payload: true });
+        // Only set if project features returned
+        if (response.data?.features.length > 0) {
+          projectGeojsonDispatch({ type: 'set', payload: response.data });
+          projectGeojsonLoadedDispatch({ type: 'set', payload: true });
+        }
       } catch (error) {
         // Clear any previously set data
         projectGeojsonDispatch({ type: 'set', payload: null });
