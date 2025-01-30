@@ -79,7 +79,7 @@ export default function DashboardMap() {
       onClick={handleMapClick}
     >
       {/* Display marker cluster for all project centroids */}
-      <ProjectCluster includeAll={true} />
+      <ProjectCluster fetchFromAPI={true} includeAll={true} />
 
       {/* Display popup when unclustered project marker clicked on */}
       {popupInfo && (
