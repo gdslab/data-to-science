@@ -61,3 +61,23 @@ def test_email_contact_message_with_too_many_characters(
     payload = {"subject": subject, "message": message}
     response = client.post(f"{settings.API_V1_STR}/contact", json=payload)
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+def test_email_contact_message_without_email_enabled_on_instance(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    subject = "Lorem ipsum odor amet, consectetuer adipiscing elit."
+    message = """Lorem ipsum odor amet, consectetuer adipiscing elit. Ultrices quis
+    facilisis pulvinar nunc taciti senectus dictumst arcu sapien. Porttitor mauris
+    posuere enim tempor aptent a eu id. Neque justo varius neque penatibus vulputate.
+    Facilisi nulla blandit ut maecenas ligula feugiat nibh. Nisi molestie class montes,
+    urna neque finibus. Interdum urna fermentum et nascetur eros sed. Convallis proin
+    porta convallis eleifend; quisque sociosqu."""
+
+    payload = {"topic": "bug_report", "subject": subject, "message": message}
+    if fm:
+        fm.config.SUPPRESS_SEND = 1
+        with fm.record_messages():
+            response = client.post(f"{settings.API_V1_STR}/contact", json=payload)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
