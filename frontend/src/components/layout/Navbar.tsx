@@ -11,7 +11,11 @@ import {
   MenuItems,
   Transition,
 } from '@headlessui/react';
-import { Bars3Icon, ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import {
+  Bars3Icon,
+  ChevronDownIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline';
 
 import AuthContext from '../../AuthContext';
 import ContactFormModal from '../ContactForm';
@@ -36,6 +40,8 @@ const styles = {
 export default function Navbar() {
   const location = useLocation();
   const { user } = useContext(AuthContext);
+  const showContact = import.meta.env.VITE_SHOW_CONTACT_FORM !== '0';
+
   return (
     <Disclosure as="nav" className="bg-primary">
       {({ open }) => (
@@ -44,7 +50,11 @@ export default function Navbar() {
             <div className="relative flex h-16 items-center justify-between">
               <div className="w-full flex flex-shrink-0 items-center justify-center md:hidden">
                 <Link to="/">
-                  <img className="h-8 w-auto" src={smallBrandLogo} alt="Brand logo" />
+                  <img
+                    className="h-8 w-auto"
+                    src={smallBrandLogo}
+                    alt="Brand logo"
+                  />
                 </Link>
               </div>
               {user ? (
@@ -62,35 +72,48 @@ export default function Navbar() {
                 </div>
               ) : null}
               <div className="h-full flex">
-                <Link className="min-w-40 flex items-center hidden md:flex" to="/">
-                  <img className="h-8 w-auto" src={brandLogo} alt="Brand logo" />
+                <Link
+                  className="min-w-40 flex items-center hidden md:flex"
+                  to="/"
+                >
+                  <img
+                    className="h-8 w-auto"
+                    src={brandLogo}
+                    alt="Brand logo"
+                  />
                 </Link>
                 {user ? (
                   <div className="h-full hidden md:ml-6 md:block">
                     <div className="h-full flex items-center space-x-4">
-                      {navigation.map((item) => {
-                        if (item.href) {
-                          return (
-                            <Link
-                              key={item.name}
-                              to={item.href}
-                              className={clsx(
-                                'rounded-md px-3 py-2 text-md text-white visited:text-white',
-                                location.pathname === item.href
-                                  ? 'font-semibold'
-                                  : 'hover:[text-shadow:_0px_8px_16px_rgb(0_0_0_/_70%)]'
-                              )}
-                              aria-current={
-                                location.pathname === item.href ? 'page' : undefined
-                              }
-                            >
-                              {item.name}
-                            </Link>
-                          );
-                        } else {
-                          return <div key={item.name}>{item.component}</div>;
-                        }
-                      })}
+                      {navigation
+                        .filter(
+                          (item) => showContact || item.name !== 'CONTACT US'
+                        )
+                        .map((item) => {
+                          if (item.href) {
+                            return (
+                              <Link
+                                key={item.name}
+                                to={item.href}
+                                className={clsx(
+                                  'rounded-md px-3 py-2 text-md text-white visited:text-white',
+                                  location.pathname === item.href
+                                    ? 'font-semibold'
+                                    : 'hover:[text-shadow:_0px_8px_16px_rgb(0_0_0_/_70%)]'
+                                )}
+                                aria-current={
+                                  location.pathname === item.href
+                                    ? 'page'
+                                    : undefined
+                                }
+                              >
+                                {item.name}
+                              </Link>
+                            );
+                          } else {
+                            return <div key={item.name}>{item.component}</div>;
+                          }
+                        })}
                     </div>
                   </div>
                 ) : null}
