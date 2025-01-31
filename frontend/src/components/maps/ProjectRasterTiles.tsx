@@ -37,21 +37,28 @@ function constructRasterTileUrl(
     queryParams.append('colormap_name', symbology.colorRamp);
     queryParams.append(
       'rescale',
-      getSingleBandMinMax(dataProduct.stac_properties, symbology).flat().join(',')
+      getSingleBandMinMax(dataProduct.stac_properties, symbology)
+        .flat()
+        .join(',')
     );
   } else {
     const symbology = symbologySettings as MultibandSymbology;
     queryParams.append('bidx', symbology.red.idx.toString());
     queryParams.append('bidx', symbology.green.idx.toString());
     queryParams.append('bidx', symbology.blue.idx.toString());
-    getMultibandMinMax(dataProduct.stac_properties, symbology).forEach((rescale) => {
-      queryParams.append('rescale', `${rescale}`);
-    });
+    getMultibandMinMax(dataProduct.stac_properties, symbology).forEach(
+      (rescale) => {
+        queryParams.append('rescale', `${rescale}`);
+      }
+    );
   }
 
   // add data product id and add signature
   queryParams.append('dataProductId', dataProduct.id);
-  queryParams.append('expires', (dataProduct.signature?.expires || 0).toString());
+  queryParams.append(
+    'expires',
+    (dataProduct.signature?.expires || 0).toString()
+  );
   queryParams.append('secure', dataProduct.signature?.secure || '');
 
   // add query params to base url
@@ -96,10 +103,13 @@ export default function ProjectRasterTiles({
         type="raster"
         source={dataProduct.id}
         paint={{
-          'raster-opacity': symbology.opacity ? symbology.opacity / 100 : 1,
+          'raster-opacity':
+            symbology.opacity != null ? symbology.opacity / 100 : 1,
         }}
         beforeId={
-          dataProduct.id !== activeDataProduct?.id ? activeDataProduct?.id : undefined
+          dataProduct.id !== activeDataProduct?.id
+            ? activeDataProduct?.id
+            : undefined
         }
       />
     </Source>
