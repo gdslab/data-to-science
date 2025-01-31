@@ -75,14 +75,18 @@ function getStartDate(data: User[]): string {
 /**
  * Return accumulative count of users by month.
  * @param data Array of users.
+ * @param currentYear Accumulative count will be for this year.
  * @returns Accumulative count of users by month.
  */
-function accumCountByMonth(data: User[]): { x: string; y: number }[] {
-  const currentYear = new Date().getFullYear();
+function accumCountByMonth(
+  data: User[],
+  currentYear: number
+): { x: string; y: number }[] {
+  // Construct array of user accounts created within currentYear
   const filteredByYear = data.filter(
     (item) => new Date(item.created_at).getFullYear() === currentYear
   );
-
+  // Count how many users were added each month in currentYear
   const monthCounts: { [key: string]: number } = {};
   for (const item of filteredByYear) {
     const date = new Date(item.created_at);
@@ -90,12 +94,15 @@ function accumCountByMonth(data: User[]): { x: string; y: number }[] {
     monthCounts[month] = (monthCounts[month] || 0) + 1;
   }
 
-  const lastMonth = new Date().getMonth() + 1;
+  // Calculate accumulative growth
   let accumCount = 0;
   const accumResult: { x: string; y: number }[] = [];
-  for (let month = 0; month < lastMonth; month++) {
+  for (let month = 0; month < 12; month++) {
     accumCount += monthCounts[month] || 0;
-    accumResult.push({ x: MONTH_ABBREVS[month], y: accumCount });
+    accumResult.push({
+      x: MONTH_ABBREVS[month],
+      y: accumCount,
+    });
   }
 
   return accumResult;
@@ -107,6 +114,30 @@ export default function DashboardCharts() {
   if (users.length === 0) {
     return <section className="w-full bg-white">No users</section>;
   }
+
+  const currentYear = new Date().getFullYear();
+
+  // Find earliest created_at year
+  const earliestYear = users.reduce(
+    (minYear, user) =>
+      Math.min(minYear, new Date(user.created_at).getFullYear()),
+    Infinity
+  );
+
+  // Create array of years starting with earliest year to current year
+  const years = Array.from(
+    { length: currentYear - earliestYear + 1 },
+    (_, i) => earliestYear + i
+  );
+
+  // Calculate accumulative user growth per month over every year
+  let allYears: { id: string; data: { x: string; y: number }[] }[] = [];
+  years.forEach((year) => {
+    allYears.push({
+      id: year.toString(),
+      data: accumCountByMonth(users, year),
+    });
+  });
 
   return (
     <section className="w-full h-full bg-white p-4">
@@ -138,9 +169,9 @@ export default function DashboardCharts() {
         />
       </div>
       <div className="h-1/2 py-8">
-        <h2>{`${new Date().getFullYear()} User Growth`}</h2>
+        <h2>{`${earliestYear} - ${currentYear} User Growth`}</h2>
         <ResponsiveLine
-          data={[{ id: 'users', data: accumCountByMonth(users) }]}
+          data={allYears}
           margin={{ top: 50, right: 110, bottom: 50, left: 60 }}
           xScale={{ type: 'point' }}
           yScale={{
@@ -157,7 +188,7 @@ export default function DashboardCharts() {
             tickSize: 5,
             tickPadding: 5,
             tickRotation: 0,
-            legend: 'month',
+            legend: 'Month',
             legendOffset: 36,
             legendPosition: 'middle',
             truncateTickAt: 0,
@@ -166,7 +197,7 @@ export default function DashboardCharts() {
             tickSize: 5,
             tickPadding: 5,
             tickRotation: 0,
-            legend: 'new users',
+            legend: 'Total Users',
             legendOffset: -40,
             legendPosition: 'middle',
             truncateTickAt: 0,
