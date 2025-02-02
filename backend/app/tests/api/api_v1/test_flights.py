@@ -19,6 +19,7 @@ from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.flight import create_flight, create_acquisition_date
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
+from app.tests.utils.raw_data import SampleRawData
 from app.tests.utils.user import create_user
 
 
@@ -450,6 +451,8 @@ def test_update_flight_project_with_ownership_role_for_both_projects(
     data_product = SampleDataProduct(
         db, project=src_project, flight=flight, skip_job=True
     )
+    # add raw data to flight
+    raw_data = SampleRawData(db, project=src_project, flight=flight)
     # create destination project add current user as owner (read/write/del)
     dst_project = create_project(db, owner_id=current_user.id)
     # request to move flight from source project to destination project
@@ -463,7 +466,8 @@ def test_update_flight_project_with_ownership_role_for_both_projects(
     assert response_data["read_only"] is False
     # confirm data product moved to new static file location
     updated_data_product = crud.data_product.get(db, id=data_product.obj.id)
-    new_static_location = os.path.join(
+    assert updated_data_product
+    new_data_product_location = os.path.join(
         settings.TEST_STATIC_DIR,
         "projects",
         str(dst_project.id),
@@ -474,8 +478,24 @@ def test_update_flight_project_with_ownership_role_for_both_projects(
         os.path.basename(data_product.obj.filepath),
     )
     assert not os.path.exists(data_product.obj.filepath)  # old location
-    assert os.path.exists(new_static_location)
-    assert updated_data_product.filepath == new_static_location
+    assert os.path.exists(new_data_product_location)
+    assert updated_data_product.filepath == new_data_product_location
+    # confirm raw data moved to new static file location
+    updated_raw_data = crud.raw_data.get(db, id=raw_data.obj.id)
+    assert updated_raw_data
+    new_raw_data_location = os.path.join(
+        settings.TEST_STATIC_DIR,
+        "projects",
+        str(dst_project.id),
+        "flights",
+        str(flight.id),
+        "raw_data",
+        str(updated_raw_data.id),
+        os.path.basename(raw_data.obj.filepath),
+    )
+    assert not os.path.exists(raw_data.obj.filepath)
+    assert os.path.exists(new_raw_data_location)
+    assert updated_raw_data.filepath == new_raw_data_location
 
 
 def test_update_flight_project_with_manager_role_for_both_projects(
