@@ -6,7 +6,7 @@ from typing import List, Tuple
 import geopandas as gpd
 from geojson_pydantic import Feature
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import and_, func, select, text
+from sqlalchemy import and_, delete, func, select, text, update
 from sqlalchemy.orm import Session
 
 from app import crud
@@ -234,17 +234,31 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
             project_id (UUID): Project ID.
             layer_id (str): Layer ID for feature collection.
         """
-        # Find all features associated with the layer feature collection
-        layer_id_features = self.get_vector_layer_by_id(
-            db, project_id=project_id, layer_id=layer_id
-        )
+        with db.begin():
+            # Step 1: Set all feature records as inactive
+            update_statement = (
+                update(VectorLayer)
+                .values(is_active=False)
+                .where(VectorLayer.layer_id == layer_id)
+            )
+            db.execute(update_statement)
 
-        for feature in layer_id_features:
-            # Unique UUID associated with the feature
-            if feature.properties and "feature_id" in feature.properties:
-                feature_id = feature.properties["feature_id"]
-                # Remove feature using feature's UUID
-                self.remove(db, id=feature_id)
+            # Step 2: Explicitly delete any associated metadata records
+            metadata_subquery = (
+                select(VectorLayer.feature_id)
+                .where(VectorLayer.layer_id == layer_id)
+                .scalar_subquery()
+            )
+            delete_metadata_statement = delete(DataProductMetadata).where(
+                DataProductMetadata.vector_layer_feature_id.in_(metadata_subquery)
+            )
+            db.execute(delete_metadata_statement)
+
+            # Step 3: Delete feature records that are inactive
+            delete_statement = delete(VectorLayer).where(
+                and_(VectorLayer.layer_id == layer_id, VectorLayer.is_active == False)
+            )
+            db.execute(delete_statement)
 
     def verify_user_access_to_vector_layer_by_id(
         self, db: Session, layer_id: str, user_id: UUID
