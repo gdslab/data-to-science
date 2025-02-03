@@ -1,12 +1,8 @@
-import json
-import os
-import shutil
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import patch, MagicMock
 
 from geojson_pydantic import Feature, FeatureCollection
 from fastapi import status
-from fastapi.encoders import jsonable_encoder
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -306,6 +302,140 @@ def test_read_data_products_without_project_access(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+def test_update_data_product_bands_with_project_owner_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # New band description
+    bands_in = [{"name": "b1", "description": "Blue"}]
+    # Create sample data product with user owned project
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id)
+    data_product = SampleDataProduct(db, project=project)
+    # Create payload for updating bands
+    payload = {"bands": bands_in}
+    # Send request to update bands
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}/bands",
+        json=payload,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_data_product = response.json()
+    assert response_data_product["id"] == str(data_product.obj.id)
+    assert response_data_product["stac_properties"]["eo"] == bands_in
+
+
+def test_update_data_product_bands_with_project_manager_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # New band description
+    bands_in = [{"name": "b1", "description": "Blue"}]
+    # Create sample data product with user in project manager role
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db)
+    create_project_member(
+        db, role="manager", member_id=current_user.id, project_id=project.id
+    )
+    data_product = SampleDataProduct(db, project=project)
+    # Create payload for updating bands
+    payload = {"bands": bands_in}
+    # Send request to update bands
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}/bands",
+        json=payload,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_data_product = response.json()
+    assert response_data_product["id"] == str(data_product.obj.id)
+    assert response_data_product["stac_properties"]["eo"] == bands_in
+
+
+def test_update_data_product_bands_with_project_viewer_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # New band description
+    bands_in = [{"name": "b1", "description": "Blue"}]
+    # Create sample data product with user in project viewer role
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db)
+    create_project_member(
+        db, role="viewer", member_id=current_user.id, project_id=project.id
+    )
+    data_product = SampleDataProduct(db, project=project)
+    # Create payload for updating bands
+    payload = {"bands": bands_in}
+    # Send request to update bands
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}/bands",
+        json=payload,
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_update_data_product_bands_without_project_role(
+    client: TestClient, db: Session
+) -> None:
+    # New band description
+    bands_in = [{"name": "b1", "description": "Blue"}]
+    # Create sample data product with user in no project role
+    project = create_project(db)
+    data_product = SampleDataProduct(db, project=project)
+    # Create payload for updating bands
+    payload = {"bands": bands_in}
+    # Send request to update bands
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}/bands",
+        json=payload,
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_update_data_product_bands_with_incorrect_band_name(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # New band description with incorrect band name (should be "b1")
+    bands_in = [{"name": "b3", "description": "Blue"}]
+    # Create sample data product with user owned project
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id)
+    data_product = SampleDataProduct(db, project=project)
+    # Create payload for updating bands
+    payload = {"bands": bands_in}
+    # Send request to update bands
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}/bands",
+        json=payload,
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_update_data_product_bands_with_too_many_band_names(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # New band description with incorrect band name (should be "b1")
+    bands_in = [
+        {"name": "b1", "description": "Alpha"},
+        {"name": "b2", "description": "Gray"},
+    ]
+    # Create sample data product with user owned project
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id)
+    data_product = SampleDataProduct(db, project=project)
+    # Create payload for updating bands
+    payload = {"bands": bands_in}
+    # Send request to update bands
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}/bands",
+        json=payload,
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
 def test_update_data_product_data_type_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -419,10 +549,10 @@ def test_deactivate_data_product_with_owner_role(
     assert deactivated_data_product.get("id", None) == str(data_product.obj.id)
     assert deactivated_data_product.get("is_active", True) is False
     deactivated_at = datetime.strptime(
-        deactivated_data_product.get("deactivated_at"), "%Y-%m-%dT%H:%M:%S.%f"
+        deactivated_data_product.get("deactivated_at"), "%Y-%m-%dT%H:%M:%S.%fZ"
     )
     assert isinstance(deactivated_at, datetime)
-    assert deactivated_at < datetime.utcnow()
+    assert deactivated_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc)
 
 
 def test_deactivate_data_product_with_manager_role(

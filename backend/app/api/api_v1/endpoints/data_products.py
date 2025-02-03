@@ -13,7 +13,7 @@ from geojson_pydantic import Feature, FeatureCollection, Polygon, MultiPolygon
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, UUID4
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -23,11 +23,13 @@ from app.core import security
 from app.core.config import settings
 from app.models.vector_layer import VectorLayer
 from app.schemas.data_product_metadata import ZonalStatisticsProps
+from app.schemas.job import State, Status
 from app.tasks import (
     generate_zonal_statistics,
     generate_zonal_statistics_bulk,
     run_toolbox_process,
 )
+from app.utils.STACProperties import STACEOProperties, STACProperties
 from app.utils.tusd.post_processing import process_data_product_uploaded_to_tusd
 
 
@@ -103,7 +105,6 @@ def read_data_product(
 
 @router.get("", response_model=Sequence[schemas.DataProduct])
 def read_all_data_product(
-    flight_id: UUID,
     current_user: models.User = Depends(deps.get_current_approved_user),
     flight: models.Flight = Depends(deps.can_read_flight),
     db: Session = Depends(deps.get_db),
@@ -118,6 +119,69 @@ def read_all_data_product(
         db, flight_id=flight.id, upload_dir=upload_dir, user_id=current_user.id
     )
     return all_data_product
+
+
+@router.put("/{data_product_id}/bands", response_model=schemas.DataProduct)
+def update_data_product_bands(
+    data_product_id: UUID4,
+    data_product_bands_in: schemas.DataProductBands,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    flight: schemas.Flight = Depends(deps.can_read_write_flight),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    # Raise exception if flight is not found
+    if not flight:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
+        )
+
+    # Get upload directory
+    upload_dir = get_static_dir()
+
+    # Get data product
+    data_product = crud.data_product.get_single_by_id(
+        db,
+        data_product_id=data_product_id,
+        upload_dir=upload_dir,
+        user_id=current_user.id,
+    )
+
+    # Check if data product exists
+    if not data_product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
+        )
+
+    # Check if data product STAC metadata exists
+    if not data_product.stac_properties:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Data product has no STAC metadata",
+        )
+
+    # Verify and update band metadata
+    current_metadata = data_product.stac_properties
+    current_eo_metadata = current_metadata.get("eo", [])
+    current_band_names = {band["name"]: band for band in current_eo_metadata}
+    for band_in in data_product_bands_in.bands:
+        if band_in.name not in current_band_names:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Band not found"
+            )
+        # Update band description
+        current_band_names[band_in.name]["description"] = band_in.description
+
+    # Update metadata
+    current_metadata["eo"] = list(current_band_names.values())
+
+    # Update data product bands
+    updated_data_product = crud.data_product.update_bands(
+        db,
+        data_product_id=data_product_id,
+        updated_metadata=current_metadata,
+    )
+
+    return updated_data_product
 
 
 @router.put("/{data_product_id}", response_model=schemas.DataProduct)
@@ -196,7 +260,7 @@ def process_data_product_from_external_storage(
     # check if token is valid
     if not token_db_obj:
         job_update_in = schemas.JobUpdate(
-            state="COMPLETED", status="FAILED", end_time=datetime.now()
+            state=State.COMPLETED, status=Status.FAILED, end_time=datetime.now()
         )
         crud.job.update(db, db_obj=job, obj_in=job_update_in)
         raise HTTPException(
@@ -207,7 +271,7 @@ def process_data_product_from_external_storage(
     user = crud.user.get(db, id=token_db_obj.user_id)
     if not user:
         job_update_in = schemas.JobUpdate(
-            state="COMPLETED", status="FAILED", end_time=datetime.now()
+            state=State.COMPLETED, status=Status.FAILED, end_time=datetime.now()
         )
         crud.job.update(db, db_obj=job, obj_in=job_update_in)
         raise HTTPException(
@@ -219,7 +283,7 @@ def process_data_product_from_external_storage(
         models.Project,
     ):
         job_update_in = schemas.JobUpdate(
-            state="COMPLETED", status="FAILED", end_time=datetime.now()
+            state=State.COMPLETED, status=Status.FAILED, end_time=datetime.now()
         )
         crud.job.update(db, db_obj=job, obj_in=job_update_in)
         raise HTTPException(
@@ -231,7 +295,7 @@ def process_data_product_from_external_storage(
     if not payload.status.code:
         # update job table to show it failed
         job_update_in = schemas.JobUpdate(
-            state="COMPLETED", status="FAILED", end_time=datetime.now()
+            state=State.COMPLETED, status=Status.FAILED, end_time=datetime.now()
         )
         crud.job.update(db, db_obj=job, obj_in=job_update_in)
     else:
@@ -239,7 +303,7 @@ def process_data_product_from_external_storage(
         for data_product in payload.products:
             if not os.path.exists(data_product.storage_path):
                 job_update_in = schemas.JobUpdate(
-                    state="COMPLETED", status="FAILED", end_time=datetime.now()
+                    state=State.COMPLETED, status=Status.FAILED, end_time=datetime.now()
                 )
                 crud.job.update(db, db_obj=job, obj_in=job_update_in)
                 raise HTTPException(
@@ -282,7 +346,7 @@ def process_data_product_from_external_storage(
 
         # data products successfully derived from raw data
         job_update_in = schemas.JobUpdate(
-            state="COMPLETED", status="SUCCESS", end_time=datetime.now()
+            state=State.COMPLETED, status=Status.SUCCESS, end_time=datetime.now()
         )
         crud.job.update(db, db_obj=job, obj_in=job_update_in)
 

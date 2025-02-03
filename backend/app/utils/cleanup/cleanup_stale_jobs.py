@@ -10,6 +10,7 @@ from app import crud
 from app.core.config import settings
 from app.models import DataProduct, Job, RawData
 from app.crud.crud_admin import get_static_directory_size
+from app.schemas.job import State, Status
 
 
 logger = logging.getLogger("__name__")
@@ -52,12 +53,12 @@ def cleanup_stale_jobs(db: Session, check_only: bool = False) -> Dict:
     # track jobs removed and space freed up
     stats = {"items_removed": 0, "space_freed_up": 0}
     # query for jobs that didn't finish and that are older than two weeks
-    two_weeks_ago = text("now() - interval '2 week'")
+    two_weeks_ago = text("now() AT TIME ZONE 'UTC' - interval '2 week'")
     stale_jobs_query = select(Job).where(
         and_(
             or_(Job.name == "upload-data-product", Job.name == "upload-raw-data"),
-            Job.state != "COMPLETED",
-            Job.status != "SUCCESS",
+            Job.state != State.COMPLETED,
+            Job.status != Status.SUCCESS,
             Job.start_time < two_weeks_ago,
         )
     )

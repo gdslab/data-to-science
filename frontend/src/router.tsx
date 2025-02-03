@@ -35,6 +35,7 @@ import IndoorProjectDetail, {
 import IndoorProjectPlant, {
   loader as indoorProjectPlantLoader,
 } from './components/pages/workspace/indoorProjects/IndoorProjectPlant';
+import IForesterLayout from './components/pages/workspace/projects/iForester/IForesterLayout';
 import Landing from './components/Landing';
 import LoginForm from './components/pages/auth/LoginForm';
 import Logout from './components/pages/auth/Logout';
@@ -57,7 +58,9 @@ import TeamCreate, {
 import TeamDetail, {
   loader as teamDetailLoader,
 } from './components/pages/teams/TeamDetail';
-import Workspace, { loader as workspaceLoader } from './components/pages/Workspace';
+import Workspace, {
+  loader as workspaceLoader,
+} from './components/pages/Workspace';
 
 import { RootPublic, RootProtected } from './components/layout/Root';
 import { RequireAdmin, RequireAuth } from './AuthContext';
@@ -154,6 +157,10 @@ export const router = createBrowserRouter(
           element: <ProjectLayout />,
           children: [
             {
+              path: '/projects/:projectId/access',
+              element: <ProjectAccess />,
+            },
+            {
               path: '/projects/:projectId/campaigns/create',
               element: <FieldCampaignCreate />,
             },
@@ -173,13 +180,13 @@ export const router = createBrowserRouter(
               loader: flightFormLoader,
             },
             {
+              path: '/projects/:projectId/iforester',
+              element: <IForesterLayout />,
+            },
+            {
               path: '/projects/:projectId',
               element: <ProjectDetail />,
               loader: projectDetailLoader,
-            },
-            {
-              path: '/projects/:projectId/access',
-              element: <ProjectAccess />,
             },
             {
               path: '/projects',

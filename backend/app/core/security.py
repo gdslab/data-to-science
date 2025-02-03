@@ -2,16 +2,15 @@ import base64
 import hmac
 import hashlib
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, cast, Dict, Optional, Tuple
-from urllib.parse import urlencode, quote_plus
 
 from fastapi import Request, status
 from fastapi.exceptions import HTTPException
 from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
 from fastapi.security import OAuth2
 from fastapi.security.utils import get_authorization_scheme_param
-from jose import jws, jwt
+from jose import jwt
 from passlib.context import CryptContext
 from passlib.hash import sha256_crypt
 
@@ -30,7 +29,7 @@ ALGORITHM = "HS256"
 def create_access_token(subject: str | Any, expire: datetime | None = None) -> str:
     """Create JWT access token with expiration defined in settings."""
     if not expire:
-        expire = datetime.utcnow() + timedelta(
+        expire = datetime.now(timezone.utc) + timedelta(
             minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
         )
     to_encode = {"exp": expire, "sub": str(subject)}
@@ -80,7 +79,7 @@ def get_token_hash(token: str, salt: str) -> str:
 
 def check_token_expired(token: SingleUseToken, minutes: int = 60) -> bool:
     """Check if token is older than value passed in minutes (defaults to 1 hour)."""
-    return datetime.now() > (token.created_at + timedelta(minutes))
+    return datetime.now(tz=timezone.utc) > (token.created_at + timedelta(minutes))
 
 
 class OAuth2PasswordBearerWithCookie(OAuth2):

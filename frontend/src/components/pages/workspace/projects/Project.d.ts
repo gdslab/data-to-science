@@ -212,5 +212,5 @@ export type IForester = {
   phoneID: string;
   species: string;
   user: string;
-  timeStamp: Date;
+  timeStamp: string;
 };

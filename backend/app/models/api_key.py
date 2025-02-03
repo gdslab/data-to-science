@@ -6,8 +6,7 @@ from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base
-from app.models.utils.user import utcnow
-
+from app.models.utils.utcnow import utcnow
 
 if TYPE_CHECKING:
     from .user import User
@@ -21,11 +20,15 @@ class APIKey(Base):
     )
     api_key: Mapped[str] = mapped_column(String(128), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=utcnow(), nullable=False
+        DateTime(timezone=True), server_default=utcnow(), nullable=False
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    deactivated_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
-    last_used_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    deactivated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_used_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     total_requests: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
 

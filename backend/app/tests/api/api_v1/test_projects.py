@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from fastapi import status
 from fastapi.encoders import jsonable_encoder
@@ -697,12 +697,12 @@ def test_deactivate_project_with_owner_role(
     assert response_data.get("is_active", True) is False
     try:
         deactivated_at = datetime.strptime(
-            response_data.get("deactivated_at"), "%Y-%m-%dT%H:%M:%S.%f"
+            response_data.get("deactivated_at"), "%Y-%m-%dT%H:%M:%S.%fZ"
         )
     except Exception:
         raise
     assert isinstance(deactivated_at, datetime)
-    assert deactivated_at < datetime.utcnow()
+    assert deactivated_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc)
 
 
 def test_deactivate_project_with_manager_role(

@@ -6,10 +6,10 @@ import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 import { IForester } from './Project';
 import ProjectCampaigns from './ProjectCampaigns';
 import ProjectFlights from './ProjectFlights';
-import ProjectIForester from './ProjectIForester';
 import ProjectVectorData from './ProjectVectorData';
 
-import iForesterLogo from '../../../../assets/iForester-logo.png';
+import iForesterLogo from '../../../assets/iForester-logo.png';
+import { LinkButton } from '../../../Buttons';
 
 export default function ProjectTabNav() {
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -83,7 +83,9 @@ export default function ProjectTabNav() {
         </TabPanel>
         {iforesterData.length > 0 && (
           <TabPanel>
-            <ProjectIForester iforesterData={iforesterData} />
+            <LinkButton url={`/projects/${params.projectId}/iforester`}>
+              Go to iForester page
+            </LinkButton>
           </TabPanel>
         )}
       </TabPanels>

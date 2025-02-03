@@ -5,7 +5,7 @@ from sqlalchemy import DateTime, ForeignKey, String, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base_class import Base
-from app.models.utils.user import utcnow
+from app.models.utils.utcnow import utcnow
 
 
 class SingleUseToken(Base):
@@ -15,7 +15,7 @@ class SingleUseToken(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=utcnow(), nullable=False
+        DateTime(timezone=True), server_default=utcnow(), nullable=False
     )
     token: Mapped[str] = mapped_column(String(128), nullable=False)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)

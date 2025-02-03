@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -61,4 +61,6 @@ def test_deactivate_raw_data(db: Session) -> None:
     assert raw_data3.id == raw_data.obj.id
     assert raw_data3.is_active is False
     assert isinstance(raw_data3.deactivated_at, datetime)
-    assert raw_data3.deactivated_at < datetime.utcnow()
+    assert raw_data3.deactivated_at.replace(tzinfo=timezone.utc) < datetime.now(
+        timezone.utc
+    )

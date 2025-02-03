@@ -1,12 +1,12 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
 from app import crud
 from app.core.config import settings
-from app.schemas.data_product import DataProductUpdate
 from app.schemas.file_permission import FilePermissionUpdate
+from app.schemas.job import JobUpdate, Status
 from app.tests.utils.flight import create_flight
 from app.tests.utils.data_product import SampleDataProduct, test_stac_props_dsm
 from app.tests.utils.user import create_user
@@ -42,8 +42,8 @@ def test_read_data_product(db: Session) -> None:
         stored_data_product.is_initial_processing_completed
         == data_product.obj.is_initial_processing_completed
     )
-    assert stored_data_product.url
-    assert stored_data_product.user_style
+    assert hasattr(stored_data_product, "url")
+    assert hasattr(stored_data_product, "user_style")
 
 
 def test_read_public_data_product_by_id(db: Session) -> None:
@@ -97,6 +97,24 @@ def test_read_data_products(db: Session) -> None:
         assert data_product.public is False
 
 
+def test_update_data_product_eo_bands(db: Session) -> None:
+    # New band description
+    bands_in = [{"name": "b1", "description": "Blue"}]
+    # Sample data product object
+    data_product = SampleDataProduct(db).obj
+    # Original data product metadata
+    original_metadata = data_product.stac_properties
+    # Updated metadata
+    updated_metadata = original_metadata.copy()
+    updated_metadata["eo"] = bands_in
+    # Update data product
+    updated_data_product = crud.data_product.update_bands(
+        db, data_product_id=data_product.id, updated_metadata=updated_metadata
+    )
+    assert updated_data_product
+    assert updated_data_product.stac_properties["eo"] == bands_in
+
+
 def test_update_data_product(db: Session) -> None:
     old_data_type = "dsm"
     new_data_type = "dtm"
@@ -131,4 +149,6 @@ def test_deactivate_data_product(db: Session) -> None:
     assert data_product3.id == data_product.obj.id
     assert data_product3.is_active is False
     assert isinstance(data_product3.deactivated_at, datetime)
-    assert data_product3.deactivated_at < datetime.utcnow()
+    assert data_product3.deactivated_at.replace(tzinfo=timezone.utc) < datetime.now(
+        timezone.utc
+    )

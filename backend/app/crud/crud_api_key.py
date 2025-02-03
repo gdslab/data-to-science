@@ -1,4 +1,3 @@
-from datetime import datetime
 from secrets import token_urlsafe
 from uuid import UUID
 
@@ -7,10 +6,8 @@ from sqlalchemy.orm import joinedload, Session
 
 from app import crud
 from app.crud.base import CRUDBase
-from app.db.session import SessionLocal
 from app.models.api_key import APIKey
-from app.models.data_product import DataProduct
-from app.models.utils.user import utcnow
+from app.models.utils.utcnow import utcnow
 from app.schemas.api_key import APIKeyCreate, APIKeyUpdate
 
 
@@ -21,7 +18,7 @@ class CRUDAPIKey(CRUDBase[APIKey, APIKeyCreate, APIKeyUpdate]):
         if existing_api_key:
             # deactivate existing key
             deactivated_api_key = self.deactivate(db, user_id=user_id)
-            if deactivated_api_key.is_active:
+            if not deactivated_api_key or deactivated_api_key.is_active:
                 raise Exception
         # generate new api key
         api_key_in = APIKeyCreate(api_key=token_urlsafe(), user_id=user_id)

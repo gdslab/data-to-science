@@ -10,6 +10,7 @@ from app.db.base_class import Base
 
 if TYPE_CHECKING:
     from .extension import Extension
+    from .user import User
 
 
 class UserExtension(Base):
@@ -18,7 +19,9 @@ class UserExtension(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    deactivated_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    deactivated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     # foreign keys
     extension_id: Mapped[uuid.UUID] = mapped_column(

@@ -1,12 +1,12 @@
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List
 
 import geopandas as gpd
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import crud, schemas
+from app import crud
 from app.api.utils import create_vector_layer_preview
 from app.core.config import settings
 from app.models.data_product import DataProduct
@@ -102,7 +102,9 @@ def test_deactivated_project_cleanup(db: Session) -> None:
                 assert project.is_active is False
                 assert os.path.isdir(project_dir)
                 # set deactivated_at date to more than two weeks ago
-                project.deactivated_at = datetime.now() - timedelta(weeks=3)
+                project.deactivated_at = datetime.now(tz=timezone.utc) - timedelta(
+                    weeks=3
+                )
                 session.commit()
                 # run cleanup script
                 cleanup_projects(db)
@@ -150,7 +152,9 @@ def test_deactivated_flight_cleanup(db: Session) -> None:
                 assert flight.is_active is False
                 assert os.path.isdir(flight_dir)
                 # set deactivated_at date to more than two weeks ago
-                flight.deactivated_at = datetime.now() - timedelta(weeks=3)
+                flight.deactivated_at = datetime.now(tz=timezone.utc) - timedelta(
+                    weeks=3
+                )
                 session.commit()
                 # run cleanup script
                 cleanup_flights(db)
@@ -200,7 +204,9 @@ def test_deactivated_data_product_cleanup(db: Session) -> None:
                 assert data_product.is_active is False
                 assert os.path.isdir(data_product_dir)
                 # set deactivated_at date to more than two weeks ago
-                data_product.deactivated_at = datetime.now() - timedelta(weeks=3)
+                data_product.deactivated_at = datetime.now(tz=timezone.utc) - timedelta(
+                    weeks=3
+                )
                 session.commit()
                 # run cleanup script
                 cleanup_data_products_and_raw_data(db)
@@ -232,7 +238,9 @@ def test_deactivated_data_product_cleanup(db: Session) -> None:
                 assert raw_data.is_active is False
                 assert os.path.isdir(raw_data_dir)
                 # set deactivated_at date to more than two weeks ago
-                raw_data.deactivated_at = datetime.now() - timedelta(weeks=3)
+                raw_data.deactivated_at = datetime.now(tz=timezone.utc) - timedelta(
+                    weeks=3
+                )
                 session.commit()
                 # run cleanup script
                 cleanup_data_products_and_raw_data(db)
@@ -255,7 +263,7 @@ def test_stale_job_cleanup(db: Session) -> None:
         db_obj=data_product1.job,
         obj_in=JobUpdate(
             name="upload-data-product",
-            start_time=datetime.now() - timedelta(weeks=3),
+            start_time=datetime.now(tz=timezone.utc) - timedelta(weeks=3),
         ),
     )
 
@@ -288,4 +296,6 @@ def test_stale_job_cleanup(db: Session) -> None:
                 )
                 assert data_product_in_db is None
             else:
-                assert job.start_time > datetime.now() - timedelta(weeks=2)
+                assert job.start_time.replace(tzinfo=timezone.utc) > datetime.now(
+                    tz=timezone.utc
+                ) - timedelta(weeks=2)

@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional, Sequence
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
@@ -10,11 +10,11 @@ from app.models.data_product import DataProduct
 from app.models.flight import Flight
 from app.models.job import Job
 from app.models.raw_data import RawData
-from app.schemas.job import JobCreate, JobUpdate
+from app.schemas.job import JobCreate, JobUpdate, State, Status
 
 
 class CRUDJob(CRUDBase[Job, JobCreate, JobUpdate]):
-    def create_job(self, db: Session, obj_in: JobCreate):
+    def create_job(self, db: Session, obj_in: JobCreate) -> Job:
         job_in = jsonable_encoder(obj_in)
         job = self.model(**job_in)
         with db as session:
@@ -25,18 +25,18 @@ class CRUDJob(CRUDBase[Job, JobCreate, JobUpdate]):
 
     def get_multi_by_flight(
         self, db: Session, flight_id: UUID, incomplete: bool = False
-    ) -> List[Job]:
+    ) -> Sequence[Job]:
         if incomplete:
             select_statement = (
                 select(Job)
                 .join(Job.data_product)
                 .join(DataProduct.flight)
-                .where(and_(Flight.id == flight_id, Job.state != "COMPLETED"))
+                .where(and_(Flight.id == flight_id, Job.state != State.COMPLETED))
                 .union(
                     select(Job)
                     .join(Job.raw_data)
                     .join(RawData.flight)
-                    .where(and_(Flight.id == flight_id, Job.state != "COMPLETED"))
+                    .where(and_(Flight.id == flight_id, Job.state != State.COMPLETED))
                 )
             )
         else:
@@ -65,7 +65,7 @@ class CRUDJob(CRUDBase[Job, JobCreate, JobUpdate]):
         job_name: str,
         raw_data_id: UUID,
         status: Optional[str] = None,
-    ) -> List[Job]:
+    ) -> Sequence[Job]:
         if status:
             select_statement = select(Job).where(
                 and_(
@@ -89,7 +89,7 @@ class CRUDJob(CRUDBase[Job, JobCreate, JobUpdate]):
         job_name: str,
         flight_id: UUID,
         processing: Optional[bool] = False,
-    ) -> List[Job]:
+    ) -> Sequence[Job]:
         """Returns raw data jobs that match job name, flight ID, and processing status.
 
         Args:
@@ -108,7 +108,10 @@ class CRUDJob(CRUDBase[Job, JobCreate, JobUpdate]):
                 .where(
                     and_(
                         Job.name == job_name,
-                        or_(Job.status == "WAITING", Job.status == "INPROGRESS"),
+                        or_(
+                            Job.status == Status.WAITING,
+                            Job.status == Status.INPROGRESS,
+                        ),
                         RawData.flight_id == flight_id,
                     )
                 )

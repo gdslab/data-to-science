@@ -9,7 +9,7 @@ from app.db.base_class import Base
 
 
 if TYPE_CHECKING:
-    from .user_style import UserStyle
+    from .data_product import DataProduct
 
 
 class UserStyle(Base):

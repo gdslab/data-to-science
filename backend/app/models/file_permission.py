@@ -8,7 +8,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.schema import UniqueConstraint
 
 from app.db.base_class import Base
-from app.models.utils.user import utcexpire, utcnow
+from app.models.utils.utcexpire import utcexpire
+from app.models.utils.utcnow import utcnow
 
 if TYPE_CHECKING:
     from .data_product import DataProduct
@@ -22,12 +23,18 @@ class FilePermission(Base):
     )
     is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=utcnow()
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow(),
     )
     expires_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=utcexpire()
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcexpire(),
     )
-    last_accessed_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    last_accessed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=utcnow(), nullable=True
+    )
 
     file_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("data_products.id"), nullable=True

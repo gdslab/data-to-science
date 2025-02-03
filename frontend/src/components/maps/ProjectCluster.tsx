@@ -1,7 +1,9 @@
-import axios, { AxiosResponse } from 'axios';
+import axios, { AxiosResponse, isAxiosError } from 'axios';
 import { FeatureCollection, Point } from 'geojson';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { GeoJSONSource, Layer, Source, useMap } from 'react-map-gl/maplibre';
+
+import { useMapContext } from './MapContext';
 
 import {
   clusterLayerInner,
@@ -12,13 +14,77 @@ import {
 
 import { calculateBoundsFromGeoJSON } from './utils';
 
-type ProjectClusterProps = { includeAll?: boolean };
+type ProjectClusterProps = { fetchFromAPI?: boolean; includeAll?: boolean };
 
-export default function ProjectCluster({ includeAll = false }: ProjectClusterProps) {
+export default function ProjectCluster({
+  fetchFromAPI = false,
+  includeAll = false,
+}: ProjectClusterProps) {
+  const { projectGeojson, projectGeojsonLoaded } = useMapContext();
+
+  const [geojsonData, setGeojsonData] =
+    useState<FeatureCollection<Point> | null>(null);
+  const [geojsonLoaded, setGeojsonLoaded] = useState(false);
+
   const { current: map } = useMap();
-  const geojsonUrl = `${
-    import.meta.env.VITE_API_V1_STR
-  }/projects?include_all=${includeAll}&format=geojson`;
+
+  // Use context to set project markers if fetchFromAPI is false
+  useEffect(() => {
+    if (!fetchFromAPI) {
+      setGeojsonData(projectGeojson);
+      setGeojsonLoaded(true);
+    }
+  }, [projectGeojsonLoaded]);
+
+  // Fetch project markers in geojson format from api when fetchFromAPI is true
+  useEffect(() => {
+    const fetchGeojson = async () => {
+      try {
+        const geojsonUrl = `${
+          import.meta.env.VITE_API_V1_STR
+        }/projects?include_all=${includeAll}&format=geojson`;
+        const response: AxiosResponse<FeatureCollection<Point>> =
+          await axios.get(geojsonUrl);
+        setGeojsonData(response.data);
+        setGeojsonLoaded(true);
+      } catch (error) {
+        if (isAxiosError(error)) {
+          // Axios-specific error handling
+          const status = error.response?.status || 500;
+          const message = error.response?.data?.message || error.message;
+
+          throw {
+            status,
+            message: `Failed to load project geojson: ${message}`,
+          };
+        } else {
+          // Generic error handling
+          throw {
+            status: 500,
+            message: 'An unexpected error occurred.',
+          };
+        }
+      }
+    };
+
+    if (fetchFromAPI) {
+      fetchGeojson();
+    }
+  }, []);
+
+  // Zoom to extent of project markers
+  useEffect(() => {
+    if (!map || !geojsonLoaded || !geojsonData) return;
+
+    // Fetch project GeoJSON data to calculate the bounds
+    const bounds = calculateBoundsFromGeoJSON(geojsonData);
+
+    // Fit the map to the bounds
+    map.fitBounds(bounds, {
+      padding: 20,
+      duration: 1000,
+    });
+  }, [map, geojsonData, geojsonLoaded]);
 
   useEffect(() => {
     if (!map) return;
@@ -53,38 +119,13 @@ export default function ProjectCluster({ includeAll = false }: ProjectClusterPro
     map.on('mouseleave', 'clusters-outer', hideCursorPointer);
   }, [map]);
 
-  useEffect(() => {
-    if (!map) return;
-
-    // Fetch project GeoJSON data to calculate the bounds
-    const fetchGeoJSONAndFitBounds = async () => {
-      try {
-        const response: AxiosResponse<FeatureCollection<Point>> = await axios.get(
-          geojsonUrl
-        );
-        const geojsonData = await response.data;
-
-        // Calculate the bounds of the GeoJSON features
-        const bounds = calculateBoundsFromGeoJSON(geojsonData);
-
-        // Fit the map to the bounds
-        map.fitBounds(bounds, {
-          padding: 20,
-          duration: 1000,
-        });
-      } catch (error) {
-        console.error('Error fetching or processing project GeoJSON data:', error);
-      }
-    };
-
-    fetchGeoJSONAndFitBounds();
-  }, [map, geojsonUrl]);
+  if (!geojsonLoaded || !geojsonData) return null;
 
   return (
     <Source
       id="projects"
       type="geojson"
-      data={geojsonUrl}
+      data={geojsonData}
       cluster={true}
       clusterMaxZoom={14}
       clusterRadius={50}

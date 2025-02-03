@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Sequence, TypedDict
+from typing import List, Optional, Sequence, TypedDict
 from uuid import UUID
 
 from fastapi import status
@@ -20,10 +20,12 @@ from app.models.data_product import DataProduct
 from app.models.flight import Flight
 from app.models.job import Job
 from app.models.project import Project
+from app.models.raw_data import RawData
 from app.models.user_style import UserStyle
-from app.models.utils.user import utcnow
+from app.models.utils.utcnow import utcnow
 from app.models.vector_layer import VectorLayer
 from app.schemas.flight import FlightCreate, FlightUpdate
+from app.schemas.job import State, Status
 
 
 class ReadFlight(TypedDict):
@@ -81,8 +83,6 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
         user_id: UUID,
         include_all: bool = False,
         has_raster: bool = False,
-        skip: int = 0,
-        limit: int = 100,
     ) -> Sequence[Flight]:
         statement = (
             select(Flight)
@@ -98,7 +98,7 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                 # remove data product if its upload job status is FAILED
                 # or its state is not COMPLETED
                 if not include_all:
-                    keep_data_products = []
+                    keep_data_products: List[DataProduct] = []
                     for data_product in flight.data_products:
                         job_query = select(Job).where(
                             and_(
@@ -111,7 +111,11 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                             )
                         )
                         job = session.execute(job_query).scalar_one_or_none()
-                        if job and job.state == "COMPLETED" and job.status == "SUCCESS":
+                        if (
+                            job
+                            and job.state == State.COMPLETED
+                            and job.status == Status.SUCCESS
+                        ):
                             keep_data_products.append(data_product)
                     flight.data_products = keep_data_products
 
@@ -153,7 +157,7 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
 
     def change_flight_project(
         self, db: Session, flight_id: UUID, dst_project_id: UUID
-    ) -> Flight:
+    ) -> Optional[Flight]:
         update_flight_statement = (
             update(Flight)
             .values(project_id=dst_project_id)
@@ -195,6 +199,27 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                             .where(DataProduct.id == data_product.id)
                         )
                         session.execute(update_data_product_statement)
+                session.commit()
+                session.refresh(updated_flight)
+
+            # update filepath for any raw data associated with flight
+            if updated_flight and len(updated_flight.raw_data) > 0:
+                for raw_data in updated_flight.raw_data:
+                    if raw_data.filepath:
+                        if os.environ.get("RUNNING_TESTS") == "1":
+                            project_uuid_index = 4
+                        else:
+                            project_uuid_index = 3
+                        # construct new filepath for raw data
+                        parts = list(Path(raw_data.filepath).parts)
+                        parts[project_uuid_index] = str(dst_project_id)
+                        new_filepath = str(Path(*parts))
+                        update_raw_data_statement = (
+                            update(RawData)
+                            .values(filepath=new_filepath)
+                            .where(RawData.id == raw_data.id)
+                        )
+                        session.execute(update_raw_data_statement)
                 session.commit()
                 session.refresh(updated_flight)
 

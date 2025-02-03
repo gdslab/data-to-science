@@ -1,6 +1,6 @@
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 from uuid import UUID
@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app import crud, models, schemas
 from app.api import deps
 from app.core.config import settings
+from app.schemas.job import State, Status
 from app.schemas.raw_data import ImageProcessingQueryParams
 from app.tasks import run_raw_data_image_processing
 from app.utils.RpcClient import RpcClient
@@ -199,7 +200,7 @@ def process_raw_data(
     )
     existing_job_still_working = False
     for job in existing_jobs:
-        if job.state != "COMPLETED":
+        if job.state != State.COMPLETED:
             existing_job_still_working = True
     if existing_job_still_working:
         raise HTTPException(
@@ -219,9 +220,9 @@ def process_raw_data(
     # create job
     job_in = schemas.job.JobCreate(
         name="processing-raw-data",
-        state="PENDING",
-        status="WAITING",
-        start_time=datetime.now(),
+        state=State.PENDING,
+        status=Status.WAITING,
+        start_time=datetime.now(tz=timezone.utc),
         raw_data_id=raw_data.id,
     )
     job = crud.job.create_job(db, obj_in=job_in)
@@ -253,7 +254,9 @@ def process_raw_data(
         )
         # update job
         job_update_in = schemas.JobUpdate(
-            state="COMPLETED", status="FAILED", end_time=datetime.now()
+            state=State.COMPLETED,
+            status=Status.FAILED,
+            end_time=datetime.now(tz=timezone.utc),
         )
         crud.job.update(db, db_obj=job, obj_in=job_update_in)
         raise HTTPException(
@@ -302,7 +305,9 @@ def check_raw_data_processing_progress(
 
     if not progress or float(progress) == -9999:
         job_update_in = schemas.JobUpdate(
-            state="COMPLETED", status="FAILED", end_time=datetime.now()
+            state=State.COMPLETED,
+            status=Status.FAILED,
+            end_time=datetime.now(tz=timezone.utc),
         )
         crud.job.update(db, db_obj=job, obj_in=job_update_in)
         raise HTTPException(

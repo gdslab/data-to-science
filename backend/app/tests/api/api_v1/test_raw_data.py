@@ -1,6 +1,5 @@
 import os
-import shutil
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -9,7 +8,6 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
-from app.schemas.file_permission import FilePermissionUpdate
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
 from app.tests.utils.flight import create_flight
@@ -231,10 +229,10 @@ def test_deactivate_raw_data_with_owner_role(
     assert deactivated_raw_data.get("id", None) == str(raw_data.obj.id)
     assert deactivated_raw_data.get("is_active", True) is False
     deactivated_at = datetime.strptime(
-        deactivated_raw_data.get("deactivated_at"), "%Y-%m-%dT%H:%M:%S.%f"
+        deactivated_raw_data.get("deactivated_at"), "%Y-%m-%dT%H:%M:%S.%fZ"
     )
     assert isinstance(deactivated_at, datetime)
-    assert deactivated_at < datetime.utcnow()
+    assert deactivated_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc)
 
 
 def test_deactivate_raw_data_with_manager_role(

@@ -1,8 +1,7 @@
 import logging
 import os
-import shutil
 import tempfile
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict
 from uuid import UUID, uuid4
@@ -10,9 +9,10 @@ from uuid import UUID, uuid4
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app import crud, models, schemas
+from app import crud, schemas
 from app.api.api_v1.endpoints.raw_data import get_raw_data_dir
 from app.api.utils import get_data_product_dir, get_indoor_project_data_dir
+from app.schemas.job import State, Status
 from app.tasks import (
     convert_las_to_copc,
     create_point_cloud_preview_image,
@@ -82,9 +82,9 @@ def process_data_product_uploaded_to_tusd(
     # create job to track task progress
     job_in = schemas.job.JobCreate(
         name="upload-data-product",
-        state="PENDING",
-        status="WAITING",
-        start_time=datetime.utcnow(),
+        state=State.PENDING,
+        status=Status.WAITING,
+        start_time=datetime.now(tz=timezone.utc),
         data_product_id=data_product.id,
     )
     job = crud.job.create_job(db, job_in)
@@ -183,9 +183,9 @@ def process_raw_data_uploaded_to_tusd(
     # create job to track task progress
     job_in = schemas.job.JobCreate(
         name="upload-raw-data",
-        state="PENDING",
-        status="WAITING",
-        start_time=datetime.utcnow(),
+        state=State.PENDING,
+        status=Status.WAITING,
+        start_time=datetime.now(tz=timezone.utc),
         raw_data_id=raw_data.id,
     )
     job = crud.job.create_job(db, job_in)
@@ -244,7 +244,7 @@ def process_indoor_data_uploaded_to_tusd(
                 file_path="null",
                 file_size=os.stat(storage_path).st_size,
                 file_type=suffix,
-                upload_date=datetime.utcnow(),
+                upload_date=datetime.now(tz=timezone.utc),
             )
         )
         indoor_project_data = crud.indoor_project_data.create_with_indoor_project(
@@ -269,9 +269,9 @@ def process_indoor_data_uploaded_to_tusd(
     # create job to track progress
     job_in = schemas.job.JobCreate(
         name="upload-indoor-data",
-        state="PENDING",
-        status="WAITING",
-        start_time=datetime.utcnow(),
+        state=State.PENDING,
+        status=Status.WAITING,
+        start_time=datetime.now(tz=timezone.utc),
         indoor_project_id=indoor_project_id,
     )
     job = crud.job.create_job(db, job_in)

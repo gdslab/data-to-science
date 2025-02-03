@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Any, List, Sequence
+from typing import List, Sequence
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
@@ -12,8 +12,8 @@ from app.core.config import settings
 from app.crud.base import CRUDBase
 from app.models.job import Job
 from app.models.raw_data import RawData
+from app.models.utils.utcnow import utcnow
 from app.schemas.raw_data import RawDataCreate, RawDataUpdate
-from app.models.utils.user import utcnow
 
 
 class CRUDRawData(CRUDBase[RawData, RawDataCreate, RawDataUpdate]):

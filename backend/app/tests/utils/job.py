@@ -1,20 +1,20 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
 from sqlalchemy.orm import Session
 
 from app import crud, models
-from app.schemas.job import JobCreate
+from app.schemas.job import JobCreate, State, Status
 
 
 def create_job(
     db: Session,
     extra: Optional[dict] = None,
     name: str = "test-job",
-    state: str = "PENDING",
-    status: str = "WAITING",
-    start_time: datetime = datetime.now(),
+    state: State = State.PENDING,
+    status: Status = Status.WAITING,
+    start_time: datetime = datetime.now(tz=timezone.utc),
     data_product_id: Optional[UUID] = None,
     raw_data_id: Optional[UUID] = None,
 ) -> models.Job:

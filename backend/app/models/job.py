@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING
 from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import ENUM, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.db.base_class import Base
 
-JOB_STATE = ["PENDING", "STARTED", "COMPLETED"]
-JOB_STATUS = ["WAITING", "INPROGRESS", "SUCCESS", "FAILED"]
+from app.db.base_class import Base
+from app.models.utils.utcnow import utcnow
+from app.schemas.job import State, Status
 
 
 if TYPE_CHECKING:
@@ -24,14 +24,16 @@ class Job(Base):
     )
     extra: Mapped[dict] = mapped_column(JSONB, nullable=True)
     name: Mapped[str] = mapped_column(String(30), nullable=False)
-    state: Mapped[enumerate] = mapped_column(
-        ENUM(*JOB_STATE, name="job_state"), nullable=False
+    state: Mapped[State] = mapped_column(ENUM(State, name="job_state"), nullable=False)
+    status: Mapped[Status] = mapped_column(
+        ENUM(Status, name="job_status", nullable=False)
     )
-    status: Mapped[enumerate] = mapped_column(
-        ENUM(*JOB_STATUS, name="job_status", nullable=False)
+    start_time: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=utcnow(), nullable=True
     )
-    start_time: Mapped[datetime] = mapped_column(DateTime, nullable=True)
-    end_time: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    end_time: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=utcnow(), nullable=True
+    )
 
     data_product_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("data_products.id"), nullable=True

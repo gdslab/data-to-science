@@ -86,6 +86,7 @@ services:
     environment:
       - POSTGRES_USER=d2s
       - POSTGRES_DB=d2s
+      - PGTZ=Etc/UTC
     deploy:
       restart_policy:
         condition: on-failure
@@ -211,7 +212,10 @@ services:
       - no-new-privileges=true
 
   varnish:
-    image: gdslab/d2s-varnish:latest
+    build:
+      context: ./varnish
+      dockerfile: varnish.dockerfile
+    image: d2s-varnish:latest
     tmpfs:
       - /var/lib/varnish/varnishd:exec
     command: "-p default_keep=300"

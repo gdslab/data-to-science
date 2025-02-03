@@ -4,8 +4,9 @@ import LayerPane from './LayerPane';
 
 import { MapContextProvider } from './MapContext';
 import { MapLayerProvider } from './MapLayersContext';
-import { RasterSymbologyProvider } from './RasterSymbologyContext';
 import MapViewMode from './MapViewMode';
+import ProjectLoader from './ProjectLoader';
+import { RasterSymbologyProvider } from './RasterSymbologyContext';
 
 function classNames(...classes: [string, string]) {
   return classes.filter(Boolean).join(' ');
@@ -16,6 +17,7 @@ export default function MapLayout() {
 
   return (
     <MapContextProvider>
+      <ProjectLoader />
       <MapLayerProvider>
         <RasterSymbologyProvider>
           {/* sidebar */}

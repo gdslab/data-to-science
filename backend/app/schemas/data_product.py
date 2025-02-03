@@ -68,3 +68,12 @@ class DataProductInDB(DataProductInDBBase):
 
 class DataProductBoundingBox(BaseModel):
     bounds: List[float]
+
+
+class DataProductBand(BaseModel):
+    name: str
+    description: str
+
+
+class DataProductBands(BaseModel):
+    bands: List[DataProductBand]

@@ -54,6 +54,7 @@ services:
     environment:
       - POSTGRES_USER=d2s
       - POSTGRES_DB=d2s
+      - PGTZ=Etc/UTC
     env_file:
       - db.env
 
