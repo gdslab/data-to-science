@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.crud.base import CRUDBase
 from app.models.indoor_project import IndoorProject
-from app.models.utils.user import utcnow
+from app.models.utils.utcnow import utcnow
 from app.schemas.indoor_project import IndoorProjectCreate, IndoorProjectUpdate
 
 

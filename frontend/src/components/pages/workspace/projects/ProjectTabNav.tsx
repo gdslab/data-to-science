@@ -8,7 +8,7 @@ import ProjectCampaigns from './ProjectCampaigns';
 import ProjectFlights from './ProjectFlights';
 import ProjectVectorData from './ProjectVectorData';
 
-import iForesterLogo from '../../../assets/iForester-logo.png';
+import iForesterLogo from '../../../../assets/iForester-logo.png';
 import { LinkButton } from '../../../Buttons';
 
 export default function ProjectTabNav() {
