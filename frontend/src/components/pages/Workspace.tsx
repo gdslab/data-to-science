@@ -1,11 +1,12 @@
 import axios, { AxiosResponse, isAxiosError } from 'axios';
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import {
   Await,
   isRouteErrorResponse,
   useLoaderData,
   useRouteError,
 } from 'react-router-dom';
+import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 
 import LoadingBars from '../LoadingBars';
 import ProjectList, { Project } from './workspace/projects/ProjectList';
@@ -71,31 +72,51 @@ function ErrorElement() {
 }
 
 export default function Workspace() {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
   const { indoorProjects, projects } = useLoaderData() as {
     indoorProjects: Promise<IndoorProjectAPIResponse>;
     projects: Promise<Project[]>;
   };
 
   return (
-    <Suspense
-      fallback={
-        <div className="h-full flex justify-center items-center">
-          <LoadingBars />
-        </div>
-      }
-    >
-      <Await
-        resolve={projects}
-        errorElement={<ErrorElement />}
-        children={(resolveProjects) => <ProjectList projects={resolveProjects.data} />}
-      />
-      <Await
-        resolve={indoorProjects}
-        errorElement={<ErrorElement />}
-        children={(resolveIndoorProjects) => (
-          <IndoorProjectList indoorProjects={resolveIndoorProjects.data} />
-        )}
-      />
-    </Suspense>
+    <TabGroup className="m-4" selectedIndex={selectedIndex} onChange={setSelectedIndex}>
+      <TabList>
+        <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-32 shrink-0 rounded-lg p-2 font-medium">
+          Projects
+        </Tab>
+        <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-32 shrink-0 rounded-lg p-2 font-medium">
+          Indoor Projects
+        </Tab>
+      </TabList>
+      <TabPanels>
+        <Suspense
+          fallback={
+            <div className="h-full flex justify-center items-center">
+              <LoadingBars />
+            </div>
+          }
+        >
+          <Await
+            resolve={projects}
+            errorElement={<ErrorElement />}
+            children={(resolveProjects) => (
+              <TabPanel>
+                <ProjectList projects={resolveProjects.data} />
+              </TabPanel>
+            )}
+          />
+          <Await
+            resolve={indoorProjects}
+            errorElement={<ErrorElement />}
+            children={(resolveIndoorProjects) => (
+              <TabPanel>
+                <IndoorProjectList indoorProjects={resolveIndoorProjects.data} />
+              </TabPanel>
+            )}
+          />
+        </Suspense>
+      </TabPanels>
+    </TabGroup>
   );
 }

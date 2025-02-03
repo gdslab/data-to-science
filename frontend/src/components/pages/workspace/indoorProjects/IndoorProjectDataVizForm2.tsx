@@ -1,14 +1,15 @@
 import axios, { AxiosResponse, isAxiosError } from 'axios';
-import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
+import { FormProvider, SubmitHandler, useForm, useWatch } from 'react-hook-form';
 import * as Yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 
 import { SelectField } from '../../../FormFields';
-import { IndoorProjectDataVizAPIResponse } from './IndoorProject';
+import { IndoorProjectDataViz2APIResponse, NumericColumns } from './IndoorProject';
 
 type CameraOrientation = 'top' | 'side';
 type Filter2Options = 'treatment' | 'description' | 'both' | 'none';
-type DateOptions = 'date' | 'dateAfterPlanting';
+type TargetTrait = string;
+type DateSelection = 'date' | 'dateAfterPlanting';
 
 const cameraOrientationOptions: { label: string; value: CameraOrientation }[] = [
   { label: 'Top', value: 'top' },
@@ -20,7 +21,7 @@ const filter2Options: { label: string; value: Filter2Options }[] = [
   { label: 'Treatment & Description', value: 'both' },
   { label: 'None', value: 'none' },
 ];
-const dateOptions: { label: string; value: DateOptions }[] = [
+const dateSelectionOptions: { label: string; value: DateSelection }[] = [
   { label: 'Date', value: 'date' },
   { label: 'Date after planting', value: 'dateAfterPlanting' },
 ];
@@ -28,13 +29,15 @@ const dateOptions: { label: string; value: DateOptions }[] = [
 type VizFormData = {
   cameraOrientation: CameraOrientation;
   filter2: Filter2Options;
-  date: DateOptions;
+  targetTrait: TargetTrait;
+  dateSelection: DateSelection;
 };
 
 const defaultValues: VizFormData = {
   cameraOrientation: 'top',
   filter2: 'treatment',
-  date: 'dateAfterPlanting',
+  targetTrait: '',
+  dateSelection: 'dateAfterPlanting',
 };
 
 const validationSchema = Yup.object({
@@ -44,20 +47,23 @@ const validationSchema = Yup.object({
   filter2: Yup.string()
     .oneOf(['treatment', 'description', 'both', 'none'], 'Invalid value')
     .required('Required field'),
-  date: Yup.string()
+  targetTrait: Yup.string().required('Required field'),
+  dateSelection: Yup.string()
     .oneOf(['date', 'dateAfterPlanting'], 'Invalid value')
     .required('Required field'),
 });
 
-export default function IndoorProjectDataVizForm({
+export default function IndoorProjectDataViz2Form({
   indoorProjectId,
   indoorProjectDataId,
-  setIndoorProjectDataVizData,
+  numericColumns,
+  setIndoorProjectDataViz2Data,
 }: {
   indoorProjectId: string;
   indoorProjectDataId: string | undefined;
-  setIndoorProjectDataVizData: React.Dispatch<
-    React.SetStateAction<IndoorProjectDataVizAPIResponse | null>
+  numericColumns: NumericColumns;
+  setIndoorProjectDataViz2Data: React.Dispatch<
+    React.SetStateAction<IndoorProjectDataViz2APIResponse | null>
   >;
 }) {
   const methods = useForm<VizFormData>({
@@ -66,29 +72,42 @@ export default function IndoorProjectDataVizForm({
   });
 
   const {
+    control,
     formState: { isSubmitting },
     handleSubmit,
+    getValues,
   } = methods;
 
+  const selectedCameraOrientation = useWatch({
+    control,
+    name: 'cameraOrientation',
+  });
+
+  const targetTraitOptions =
+    selectedCameraOrientation === 'top'
+      ? numericColumns.top.map((col) => ({ label: col, value: col }))
+      : numericColumns.side.map((col) => ({ label: col, value: col }));
+
   const onSubmit: SubmitHandler<VizFormData> = async (values) => {
-    setIndoorProjectDataVizData(null);
+    setIndoorProjectDataViz2Data(null);
 
     if (!indoorProjectDataId) return;
 
     let endpoint = `${import.meta.env.VITE_API_V1_STR}/indoor_projects/`;
-    endpoint += `${indoorProjectId}/uploaded/${indoorProjectDataId}/data_for_viz`;
+    endpoint += `${indoorProjectId}/uploaded/${indoorProjectDataId}/data_for_viz2`;
 
     try {
       const queryParams = {
         camera_orientation: values.cameraOrientation,
         group_by: values.filter2,
+        trait: values.targetTrait,
       };
       console.log(values);
-      const results: AxiosResponse<IndoorProjectDataVizAPIResponse> = await axios.get(
+      const results: AxiosResponse<IndoorProjectDataViz2APIResponse> = await axios.get(
         endpoint,
         { params: queryParams }
       );
-      setIndoorProjectDataVizData(results.data);
+      setIndoorProjectDataViz2Data(results.data);
     } catch (error) {
       if (isAxiosError(error)) {
         // Axios-specific error handling
@@ -123,15 +142,25 @@ export default function IndoorProjectDataVizForm({
           />
           {/* Filter2 */}
           <SelectField label="Filter 2" name="filter2" options={filter2Options} />
+          {/* Target Trait */}
+          <SelectField
+            label="Target Trait"
+            name="targetTrait"
+            options={targetTraitOptions}
+          />
           {/* Filter3 */}
-          <SelectField label="Date" name="date" options={dateOptions} />
+          <SelectField
+            label="Date Selection"
+            name="dateSelection"
+            options={dateSelectionOptions}
+          />
           {/* Submit button */}
           <button
             type="submit"
             disabled={isSubmitting}
             className="px-4 py-2 bg-blue-500 text-white font-medium rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:bg-blue-500/60 disabled:cursor-not-allowed"
           >
-            {!isSubmitting ? 'Create Graph 1' : 'Generating graph 1...'}
+            {!isSubmitting ? 'Create Graph 2' : 'Generating graph 2...'}
           </button>
         </form>
       </FormProvider>

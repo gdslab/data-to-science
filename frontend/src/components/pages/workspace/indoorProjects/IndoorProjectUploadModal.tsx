@@ -25,9 +25,13 @@ export default function IndoorProjectUploadModal({
   return (
     <div className="relative">
       <div className="flex">
-        <Button type="button" size="sm" onClick={handleClick}>
+        <button
+          type="button"
+          onClick={handleClick}
+          className="w-full px-4 py-2 bg-blue-500 text-white font-medium rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300"
+        >
           {btnLabel}
-        </Button>
+        </button>
       </div>
       <Modal open={isOpen} setOpen={setIsOpen}>
         <div className="relative flex flex-col p-4 gap-2 bg-[#FAFAFA]">

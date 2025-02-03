@@ -1,12 +1,10 @@
-export type IndoorProject = {
+export type IndoorProjectAPIResponse = {
   id: string;
   title: string;
   description: string;
   start_date?: Date;
   end_date?: Date;
 };
-
-export type IndoorProjectAPIResponse = IndoorProject[];
 
 export type IndoorProjectUploadInputProps = {
   indoorProjectId: string;
@@ -31,6 +29,11 @@ export type IndoorProjectDataAPIResponse = {
   upload_date: Date;
 };
 
+export type NumericColumns = {
+  top: string[];
+  side: string[];
+};
+
 export type IndoorProjectDataSpreadsheetAPIResponse = {
   records: {
     [key: number]: IndoorProjectDataPlantAPIResponse;
@@ -49,6 +52,7 @@ export type IndoorProjectDataSpreadsheetAPIResponse = {
     year: number[];
     pi: string[];
   };
+  numeric_columns: NumericColumns;
 };
 
 export type IndoorProjectDataPlantAPIResponse = {
@@ -137,4 +141,26 @@ export type IndoorProjectDataPlantAPIResponse = {
     intensity: number;
     fluorescence: number;
   }[];
+};
+
+export type IndoorProjectDataVizRecord = {
+  hue: number | null;
+  intensity: number | null;
+  interval_days: number;
+  saturation: number | null;
+  treatment: string;
+};
+
+export type IndoorProjectDataVizAPIResponse = {
+  results: IndoorProjectDataVizRecord[];
+};
+
+export type IndoorProjectDataViz2Record = {
+  interval_days: number;
+  treatment: string;
+  [key: string]: number;
+};
+
+export type IndoorProjectDataViz2APIResponse = {
+  results: IndoorProjectDataViz2Record[];
 };

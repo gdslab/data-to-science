@@ -1,14 +1,48 @@
+import { useEffect, useState } from 'react';
+
+import { Button } from '../../../Buttons';
 import { IndoorProjectAPIResponse } from './IndoorProject';
 import IndoorProjectCard from './IndoorProjectCard';
+import Modal from '../../../Modal';
+import PaginationList from '../PaginationList';
+import IndoorProjectForm from './IndoorProjectForm';
+
+import { useProjectContext } from '../projects/ProjectContext';
+
+function IndoorProjectListHeader() {
+  const [open, setOpen] = useState(false);
+
+  const { locationDispatch } = useProjectContext();
+
+  useEffect(() => {
+    locationDispatch({ type: 'clear', payload: null });
+  }, [open]);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <h1>Indoor Projects</h1>
+      <div className="flex gap-4 justify-between">
+        <div className="w-96">
+          <Button icon="folderplus" onClick={() => setOpen(true)}>
+            Create
+          </Button>
+          <Modal open={open} setOpen={setOpen}>
+            <IndoorProjectForm setModalOpen={setOpen} />
+          </Modal>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 type IndoorProjectListProps = {
-  indoorProjects: IndoorProjectAPIResponse;
+  indoorProjects: IndoorProjectAPIResponse[];
 };
 
 export default function IndoorProjectList({ indoorProjects }: IndoorProjectListProps) {
   return (
-    <div>
-      <h1>Indoor Projects</h1>
+    <PaginationList dataList={indoorProjects}>
+      <IndoorProjectListHeader />
       <div className="flex flex-1 flex-wrap gap-4 pb-24 overflow-y-auto">
         {indoorProjects.map((indoorProject) => (
           <div key={indoorProject.id} className="h-16 w-">
@@ -16,6 +50,6 @@ export default function IndoorProjectList({ indoorProjects }: IndoorProjectListP
           </div>
         ))}
       </div>
-    </div>
+    </PaginationList>
   );
 }

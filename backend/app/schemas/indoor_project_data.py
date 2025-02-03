@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from enum import Enum
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Extra, Field, field_validator, RootModel, UUID4
@@ -289,6 +290,11 @@ class IndoorProjectDataSpreadsheetData(RootModel[Dict[int, IndoorProjectDataPlan
     pass
 
 
+class NumericColumns(BaseModel):
+    top: List[str]
+    side: List[str]
+
+
 class IndoorProjectDataSpreadsheet(BaseModel):
     """
     API model for indoor project spreadsheet data.
@@ -296,3 +302,49 @@ class IndoorProjectDataSpreadsheet(BaseModel):
 
     records: IndoorProjectDataSpreadsheetData
     summary: IndoorProjectDataSpreadsheetSummary
+    numeric_columns: NumericColumns
+
+
+class CameraOrientation(str, Enum):
+    top = "top"
+    side = "side"
+
+
+class GroupBy(str, Enum):
+    treatment = "treatment"
+    description = "description"
+    both = "both"
+    none = "none"
+
+
+class IndoorProjectDataVizForm(BaseModel):
+    camera_orientation: CameraOrientation = CameraOrientation.top
+    group_by: GroupBy = GroupBy.treatment
+
+
+class IndoorProjectDataViz2Form(IndoorProjectDataVizForm):
+    trait: str
+
+
+class VizRecord(BaseModel):
+    treatment: str
+    interval_days: int
+    hue: Optional[float]
+    saturation: Optional[float]
+    intensity: Optional[float]
+
+
+class IndoorProjectDataVizResponse(BaseModel):
+    results: List[VizRecord]
+
+
+class VizRecord2(BaseModel):
+    treatment: str
+    interval_days: int
+
+    class Config:
+        extra = "allow"
+
+
+class IndoorProjectDataViz2Response(BaseModel):
+    results: List[VizRecord2]

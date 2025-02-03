@@ -1,5 +1,5 @@
 import axios, { AxiosResponse, isAxiosError } from 'axios';
-import { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import * as Yup from 'yup';
@@ -8,7 +8,6 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import Alert, { Status } from '../../../Alert';
 import { Button } from '../../../Buttons';
 import { InputField } from '../../../FormFields';
-import Modal from '../../../Modal';
 
 import { IndoorProjectAPIResponse } from './IndoorProject';
 
@@ -42,8 +41,11 @@ const validationSchema = Yup.object({
     .optional(),
 });
 
-export default function IndoorProjectForm() {
-  const [open, setOpen] = useState(false);
+export default function IndoorProjectForm({
+  setModalOpen,
+}: {
+  setModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
   const [status, setStatus] = useState<Status | null>(null);
 
   const navigate = useNavigate();
@@ -71,6 +73,7 @@ export default function IndoorProjectForm() {
 
       if (response && response.status == 201) {
         navigate(`/indoor_projects/${response.data.id}`);
+        setModalOpen(false);
       } else {
         setStatus({ type: 'error', msg: 'Unable to create indoor project' });
       }
@@ -86,38 +89,33 @@ export default function IndoorProjectForm() {
     }
   };
 
-  const handleClick = () => {
+  useEffect(() => {
     reset();
-    setStatus(null);
-    setOpen(!open);
-  };
+  }, []);
 
   return (
-    <div>
-      <Button type="button" onClick={handleClick}>
-        Create Indoor Project
-      </Button>
-      <Modal open={open} setOpen={setOpen}>
-        <div className="mx-4 my-2">
-          <h1>New Indoor Project</h1>
-          <FormProvider {...methods}>
-            <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
-              <InputField label="Title" name="title" />
-              <InputField label="Description" name="description" />
-              <InputField type="date" label="Start date" name="startDate" />
-              <InputField type="date" label="End date" name="endDate" />
-              <div className="mt-4 flex flex-col gap-2">
-                <Button type="submit" disabled={isSubmitting}>
-                  {!isSubmitting ? 'Create' : 'Creating...'}
-                </Button>
-                {status && status.type && status.msg && (
-                  <Alert alertType={status.type}>{status.msg}</Alert>
-                )}
-              </div>
-            </form>
-          </FormProvider>
-        </div>
-      </Modal>
+    <div className="my-8 mx-4">
+      <h1>New Indoor Project</h1>
+
+      <div className="mx-4 my-2">
+        <h1>New Indoor Project</h1>
+        <FormProvider {...methods}>
+          <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
+            <InputField label="Title" name="title" />
+            <InputField label="Description" name="description" />
+            <InputField type="date" label="Start date" name="startDate" />
+            <InputField type="date" label="End date" name="endDate" />
+            <div className="mt-4 flex flex-col gap-2">
+              <Button type="submit" disabled={isSubmitting}>
+                {!isSubmitting ? 'Create' : 'Creating...'}
+              </Button>
+              {status && status.type && status.msg && (
+                <Alert alertType={status.type}>{status.msg}</Alert>
+              )}
+            </div>
+          </form>
+        </FormProvider>
+      </div>
     </div>
   );
 }

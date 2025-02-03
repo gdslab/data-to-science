@@ -61,9 +61,6 @@ function ProjectListHeader() {
             <ProjectForm setModalOpen={setOpen} />
           </Modal>
         </div>
-        <div className="w-96">
-          <IndoorProjectForm />
-        </div>
       </div>
     </div>
   );
@@ -144,7 +141,7 @@ export default function ProjectList({ projects }: { projects: Project[] }) {
   const TOTAL_PAGES = Math.ceil(filterSearch(projects).length / MAX_ITEMS);
 
   return (
-    <div className="flex flex-col gap-4 p-4 h-full">
+    <div className="flex flex-col gap-4 my-4 h-full">
       {/* Project header and search */}
       <div className="flex flex-col gap-4">
         <ProjectListHeader />
