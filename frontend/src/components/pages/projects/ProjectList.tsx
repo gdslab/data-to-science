@@ -175,7 +175,7 @@ export default function ProjectList({ projects }: { projects: Project[] }) {
           () => filterAndSlice(sortProjects(projects, sortSelection)),
           [currentPage, projects, searchText, sortSelection]
         ).map((project) => (
-          <ProjectCard project={project} />
+          <ProjectCard key={project.id} project={project} />
         ))}
       </div>
       {/* Pagination */}
