@@ -769,7 +769,10 @@ def update_job_status(
     """
     db = next(get_db())
 
-    if state == "CREATE" and data_product_id:
+    # Normalize state
+    state = state.lower().strip()
+
+    if state == "create" and data_product_id:
         job_in = schemas.job.JobCreate(
             name=f"{name}-process",
             data_product_id=data_product_id,
@@ -779,7 +782,7 @@ def update_job_status(
         )
         job = crud.job.create_job(db, job_in)
 
-    if state == "INPROGRESS" and job:
+    if state == "inprogress" and job:
         if extra:
             crud.job.update(
                 db,
@@ -795,7 +798,7 @@ def update_job_status(
                 obj_in=JobUpdate(state=State.STARTED, status=Status.INPROGRESS),
             )
 
-    if state == "ERROR" and job:
+    if state == "error" and job:
         crud.job.update(
             db,
             db_obj=job,
@@ -806,7 +809,7 @@ def update_job_status(
             ),
         )
 
-    if state == "DONE" and job:
+    if state == "done" and job:
         crud.job.update(
             db,
             db_obj=job,
