@@ -9,7 +9,7 @@ import {
   Flight,
   MapLayerFeatureCollection,
 } from '../pages/workspace/projects/Project';
-import { Project } from '../pages/workspace/ProjectList';
+import { Project } from '../pages/workspace/projects/ProjectList';
 import {
   ActiveDataProductAction,
   ActiveMapToolAction,

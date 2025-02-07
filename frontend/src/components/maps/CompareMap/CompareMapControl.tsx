@@ -2,14 +2,16 @@ import clsx from 'clsx';
 import { useMemo } from 'react';
 
 import { MapComparisonState } from './CompareMap';
-import { Flight } from '../../pages/projects/Project';
+import { Flight } from '../../pages/workspace/projects/Project';
 
 import { sorter } from '../../utils';
 
 type ComparisonMapControlProps = {
   flights: Flight[];
   mapComparisonState: MapComparisonState;
-  setMapComparisonState: React.Dispatch<React.SetStateAction<MapComparisonState>>;
+  setMapComparisonState: React.Dispatch<
+    React.SetStateAction<MapComparisonState>
+  >;
   side: 'left' | 'right';
 };
 
@@ -34,7 +36,9 @@ export default function CompareMapControl({
   // create flight options for remaining flights that have raster data products
   const flightOptions = useMemo(() => {
     return flightsWithRasters.map((flight) => ({
-      label: `${flight.acquisition_date}${flight.name ? ` (${flight.name})` : ''}`,
+      label: `${flight.acquisition_date}${
+        flight.name ? ` (${flight.name})` : ''
+      }`,
       value: flight.id,
     }));
   }, [flightsWithRasters]);
@@ -47,7 +51,9 @@ export default function CompareMapControl({
   const findSelectedFlight = (flightId: string | undefined): Flight | null => {
     if (!flightId) return null;
 
-    const selectedFlight = flightsWithRasters.filter(({ id }) => id === flightId);
+    const selectedFlight = flightsWithRasters.filter(
+      ({ id }) => id === flightId
+    );
     if (selectedFlight.length > 0) {
       return selectedFlight[0];
     } else {
@@ -134,7 +140,10 @@ export default function CompareMapControl({
                 Select data product
               </option>
               {dataProductOptions.map((dataProductOption) => (
-                <option key={dataProductOption.value} value={dataProductOption.value}>
+                <option
+                  key={dataProductOption.value}
+                  value={dataProductOption.value}
+                >
                   {dataProductOption.label.toUpperCase()}
                 </option>
               ))}

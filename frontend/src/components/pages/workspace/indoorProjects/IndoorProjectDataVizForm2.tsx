@@ -1,30 +1,39 @@
 import axios, { AxiosResponse, isAxiosError } from 'axios';
-import { FormProvider, SubmitHandler, useForm, useWatch } from 'react-hook-form';
+import {
+  FormProvider,
+  SubmitHandler,
+  useForm,
+  useWatch,
+} from 'react-hook-form';
 import * as Yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 
 import { SelectField } from '../../../FormFields';
-import { IndoorProjectDataViz2APIResponse, NumericColumns } from './IndoorProject';
+import {
+  IndoorProjectDataViz2APIResponse,
+  NumericColumns,
+} from './IndoorProject';
 
 type CameraOrientation = 'top' | 'side';
 type Filter2Options = 'treatment' | 'description' | 'both' | 'none';
 type TargetTrait = string;
 type DateSelection = 'date' | 'dateAfterPlanting';
 
-const cameraOrientationOptions: { label: string; value: CameraOrientation }[] = [
-  { label: 'Top', value: 'top' },
-  { label: 'Side', value: 'side' },
-];
+const cameraOrientationOptions: { label: string; value: CameraOrientation }[] =
+  [
+    { label: 'Top', value: 'top' },
+    { label: 'Side', value: 'side' },
+  ];
 const filter2Options: { label: string; value: Filter2Options }[] = [
   { label: 'Treatment', value: 'treatment' },
   { label: 'Description', value: 'description' },
   { label: 'Treatment & Description', value: 'both' },
   { label: 'None', value: 'none' },
 ];
-const dateSelectionOptions: { label: string; value: DateSelection }[] = [
-  { label: 'Date', value: 'date' },
-  { label: 'Date after planting', value: 'dateAfterPlanting' },
-];
+// const dateSelectionOptions: { label: string; value: DateSelection }[] = [
+//   { label: 'Date', value: 'date' },
+//   { label: 'Date after planting', value: 'dateAfterPlanting' },
+// ];
 
 type VizFormData = {
   cameraOrientation: CameraOrientation;
@@ -75,7 +84,7 @@ export default function IndoorProjectDataViz2Form({
     control,
     formState: { isSubmitting },
     handleSubmit,
-    getValues,
+    // getValues,
   } = methods;
 
   const selectedCameraOrientation = useWatch({
@@ -102,11 +111,8 @@ export default function IndoorProjectDataViz2Form({
         group_by: values.filter2,
         trait: values.targetTrait,
       };
-      console.log(values);
-      const results: AxiosResponse<IndoorProjectDataViz2APIResponse> = await axios.get(
-        endpoint,
-        { params: queryParams }
-      );
+      const results: AxiosResponse<IndoorProjectDataViz2APIResponse> =
+        await axios.get(endpoint, { params: queryParams });
       setIndoorProjectDataViz2Data(results.data);
     } catch (error) {
       if (isAxiosError(error)) {
@@ -130,38 +136,45 @@ export default function IndoorProjectDataViz2Form({
 
   return (
     <div className="my-2">
-      <span className="block text-2xl font-bold text-center">Data Visualizaiton</span>
-      <span className="block font-bold">Graph Options</span>
+      <span className="block font-bold">Graph 2 Options</span>
       <FormProvider {...methods}>
-        <form className="flex flex-col gap-2" onSubmit={handleSubmit(onSubmit)}>
-          {/* Camera Orientation */}
-          <SelectField
-            label="Camera Orientation"
-            name="cameraOrientation"
-            options={cameraOrientationOptions}
-          />
-          {/* Filter2 */}
-          <SelectField label="Filter 2" name="filter2" options={filter2Options} />
-          {/* Target Trait */}
-          <SelectField
-            label="Target Trait"
-            name="targetTrait"
-            options={targetTraitOptions}
-          />
-          {/* Filter3 */}
-          <SelectField
+        <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
+          <div className="flex items-start gap-8">
+            {/* Camera Orientation */}
+            <SelectField
+              label="Camera Orientation"
+              name="cameraOrientation"
+              options={cameraOrientationOptions}
+            />
+            {/* Filter2 */}
+            <SelectField
+              label="Filter 2"
+              name="filter2"
+              options={filter2Options}
+            />
+            {/* Target Trait */}
+            <SelectField
+              label="Target Trait"
+              name="targetTrait"
+              options={targetTraitOptions}
+            />
+            {/* Filter3 */}
+            {/* <SelectField
             label="Date Selection"
             name="dateSelection"
             options={dateSelectionOptions}
-          />
+          /> */}
+          </div>
           {/* Submit button */}
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="px-4 py-2 bg-blue-500 text-white font-medium rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:bg-blue-500/60 disabled:cursor-not-allowed"
-          >
-            {!isSubmitting ? 'Create Graph 2' : 'Generating graph 2...'}
-          </button>
+          <div className="w-48">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-blue-500 text-white font-medium rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:bg-blue-500/60 disabled:cursor-not-allowed"
+            >
+              {!isSubmitting ? 'Create Graph 2' : 'Generating graph 2...'}
+            </button>
+          </div>
         </form>
       </FormProvider>
     </div>

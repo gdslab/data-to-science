@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useState } from 'react';
 
 import Pagination from './Pagination';
-import { IForester } from './pages/projects/Project';
+import { IForester } from './pages/workspace/projects/Project';
 
 export default function PaginationList({
   children,

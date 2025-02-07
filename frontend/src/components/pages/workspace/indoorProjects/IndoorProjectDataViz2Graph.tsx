@@ -1,6 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ResponsiveLine } from '@nivo/line';
+import { ColorSchemeId } from '@nivo/colors/dist/types/schemes/all';
 
+import ColorMapSelect from './ColorMapSelect';
 import {
   IndoorProjectDataViz2APIResponse,
   IndoorProjectDataViz2Record,
@@ -11,72 +13,39 @@ export default function IndoorProjectDataViz2Graph({
 }: {
   data: IndoorProjectDataViz2APIResponse;
 }) {
+  const [colorOption, setColorOption] = useState('nivo');
+
   const result: IndoorProjectDataViz2Record[][] = useMemo(() => {
     const groupedData = data.results.reduce((acc, item) => {
-      const { treatment } = item;
-      if (!acc[treatment]) {
-        acc[treatment] = [];
+      const { group } = item;
+      if (!acc[group]) {
+        acc[group] = [];
       }
-      acc[treatment].push(item);
+      acc[group].push(item);
       return acc;
     }, {});
 
     return Object.values(groupedData);
   }, []);
 
-  const findTrait = (record: IndoorProjectDataViz2Record): string | undefined => {
+  const findTrait = (
+    record: IndoorProjectDataViz2Record
+  ): string | undefined => {
     return Object.keys(record).find(
-      (key) => !['interval_days', 'treatment'].includes(key)
+      (key) => !['interval_days', 'group'].includes(key)
     );
   };
 
   const trait = findTrait(result[0][0]);
 
-  console.log(result);
-  console.log(`trait: ${trait}`);
-
   return (
     <div className="bg-white p-4">
-      {/* {result.map((group, i) => (
-        <div>
-          <span className="text-lg font-bold">{`Group ${i + 1}`}</span>
-          <div key={i} className="flex gap-2">
-            {group
-              .sort((a, b) => a.interval_days - b.interval_days)
-              .map((record, j) => (
-                <div
-                  key={j}
-                  className="w-60 p-2.5 flex flex-col bg-white border-2 border-gray-300 shadow-md"
-                >
-                  <div className="font-semibold">{record.treatment}</div>
-                  {trait && (
-                    <div className="flex justify-between gap-4">
-                      <span>{trait}</span>
-                      <span>{record?.[trait]?.toFixed(2) || 'NA'}</span>
-                    </div>
-                  )}
-                </div>
-              ))}
-          </div>
-        </div>
-      ))}
-      <div className="flex gap-2">
-        {result?.[0].map((record) => (
-          <div
-            key={`interval-${record.interval_days}`}
-            className="w-60 p-2.5 text-center text-lg font-bold"
-          >
-            {record.interval_days}
-          </div>
-        ))}
-      </div> */}
-      <div className="w-full text-center font-semibold">Day Intervals</div>
       {trait && (
         <div className="h-[400px] p-4">
           <ResponsiveLine
-            data={result.map((group, i) => {
+            data={result.map((group) => {
               return {
-                id: `Group ${i + 1}`,
+                id: group[0].group,
                 data: group
                   .sort((a, b) => a.interval_days - b.interval_days)
                   .map((record) => ({
@@ -85,13 +54,13 @@ export default function IndoorProjectDataViz2Graph({
                   })),
               };
             })}
-            margin={{ top: 50, right: 110, bottom: 50, left: 60 }}
-            xScale={{ type: 'point' }}
+            colors={{ scheme: colorOption as ColorSchemeId }}
+            margin={{ top: 50, right: 110, bottom: 50, left: 80 }}
+            xScale={{ type: 'linear', min: 'auto', max: 'auto' }}
             yScale={{
               type: 'linear',
               min: 'auto',
               max: 'auto',
-              // stacked: true,
               reverse: false,
             }}
             yFormat=" >-.2f"
@@ -102,7 +71,7 @@ export default function IndoorProjectDataViz2Graph({
               tickPadding: 5,
               tickRotation: 0,
               legend: 'Dates after planting',
-              legendOffset: 36,
+              legendOffset: 40,
               legendPosition: 'middle',
               truncateTickAt: 0,
             }}
@@ -111,7 +80,7 @@ export default function IndoorProjectDataViz2Graph({
               tickPadding: 5,
               tickRotation: 0,
               legend: trait || 'Trait',
-              legendOffset: -40,
+              legendOffset: -70,
               legendPosition: 'middle',
               truncateTickAt: 0,
             }}
@@ -152,6 +121,9 @@ export default function IndoorProjectDataViz2Graph({
           />
         </div>
       )}
+      <div className="w-96">
+        <ColorMapSelect setColorOption={setColorOption} />
+      </div>
     </div>
   );
 }

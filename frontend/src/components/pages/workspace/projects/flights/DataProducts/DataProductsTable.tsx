@@ -14,7 +14,7 @@ import { Status } from '../../../../../Alert';
 import { CopyURLButton } from '../../../../../Buttons';
 import DataProductDeleteModal from './DataProductDeleteModal';
 import { useProjectContext } from '../../ProjectContext';
-import { Project } from '../../../ProjectList';
+import { Project } from '../../ProjectList';
 import Table, { TableBody, TableHead } from '../../../../../Table';
 import ToolboxModal from './ToolboxModal';
 import DataProductShareModal from './DataProductShareModal';
@@ -48,7 +48,9 @@ function getDataProductActions(
   const getDeleteAction = (dataProduct: DataProduct) => ({
     key: `action-delete-${dataProduct.id}`,
     type: 'component',
-    component: <DataProductDeleteModal dataProduct={dataProduct} tableView={true} />,
+    component: (
+      <DataProductDeleteModal dataProduct={dataProduct} tableView={true} />
+    ),
     label: 'Delete',
   });
 
@@ -79,7 +81,9 @@ function getDataProductActions(
   const getShareAction = (dataProduct: DataProduct) => ({
     key: `action-share-${dataProduct.id}`,
     type: 'component',
-    component: <DataProductShareModal dataProduct={dataProduct} tableView={true} />,
+    component: (
+      <DataProductShareModal dataProduct={dataProduct} tableView={true} />
+    ),
     label: 'Share',
   });
 
@@ -186,7 +190,8 @@ export default function DataProductsTable({
                       key={`row-${dataset.id}-preview`}
                       className="h-full flex items-center justify-center"
                     >
-                      {dataset.status === 'SUCCESS' && isGeoTIFF(dataset.data_type) ? (
+                      {dataset.status === 'SUCCESS' &&
+                      isGeoTIFF(dataset.data_type) ? (
                         <div className="h-full">
                           <img
                             className="w-full max-h-28"
@@ -196,7 +201,9 @@ export default function DataProductsTable({
                         </div>
                       ) : isGeoTIFF(dataset.data_type) ? (
                         <div>
-                          <span className="sr-only">Preview photo not ready</span>
+                          <span className="sr-only">
+                            Preview photo not ready
+                          </span>
                           <PhotoIcon className="h-24 w-24" />
                         </div>
                       ) : (
@@ -250,7 +257,12 @@ export default function DataProductsTable({
                     ),
                   ],
                 }))}
-                actions={getDataProductActions(projectRole, data, navigate, project)}
+                actions={getDataProductActions(
+                  projectRole,
+                  data,
+                  navigate,
+                  project
+                )}
               />
             </div>
           </Table>

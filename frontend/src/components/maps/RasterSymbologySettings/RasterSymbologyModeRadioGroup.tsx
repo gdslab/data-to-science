@@ -1,4 +1,4 @@
-import { DataProduct } from '../../pages/projects/Project';
+import { DataProduct } from '../../pages/workspace/projects/Project';
 import {
   MultibandSymbology,
   SingleBandSymbology,
@@ -15,11 +15,15 @@ export default function RasterSymbologyModeRadioGroup({
 
   const symbology = state[dataProduct.id].symbology;
 
-  const isSingleBandSymbology = (symbology: any): symbology is SingleBandSymbology => {
+  const isSingleBandSymbology = (
+    symbology: any
+  ): symbology is SingleBandSymbology => {
     return 'colorRamp' in symbology;
   };
 
-  const isMultibandSymbology = (symbology: any): symbology is MultibandSymbology => {
+  const isMultibandSymbology = (
+    symbology: any
+  ): symbology is MultibandSymbology => {
     return 'red' in symbology;
   };
 
@@ -27,14 +31,20 @@ export default function RasterSymbologyModeRadioGroup({
     const value = event.target.value as SymbologyMode;
 
     if (isSingleBandSymbology(symbology)) {
-      const updatedSymbology: SingleBandSymbology = { ...symbology, mode: value };
+      const updatedSymbology: SingleBandSymbology = {
+        ...symbology,
+        mode: value,
+      };
       dispatch({
         type: 'SET_SYMBOLOGY',
         rasterId: dataProduct.id,
         payload: updatedSymbology,
       });
     } else if (isMultibandSymbology(symbology)) {
-      const updatedSymbology: MultibandSymbology = { ...symbology, mode: value };
+      const updatedSymbology: MultibandSymbology = {
+        ...symbology,
+        mode: value,
+      };
       dispatch({
         type: 'SET_SYMBOLOGY',
         rasterId: dataProduct.id,
@@ -74,7 +84,11 @@ export default function RasterSymbologyModeRadioGroup({
       role="group"
       aria-labelledby="modeGroup"
     >
-      <ModeRadioInput currentMode={symbology.mode} label="Min/Max" value="minMax" />
+      <ModeRadioInput
+        currentMode={symbology.mode}
+        label="Min/Max"
+        value="minMax"
+      />
       <ModeRadioInput
         currentMode={symbology.mode}
         label="User defined"

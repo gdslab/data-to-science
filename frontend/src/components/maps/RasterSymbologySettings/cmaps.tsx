@@ -107,7 +107,7 @@ export const qualitativeOptions: readonly ColorMapOption[] = [
   { value: 'tab20c', label: 'tab20c' },
 ];
 
-interface ColorMapGroupedOption {
+export interface ColorMapGroupedOption {
   readonly label: string;
   readonly options: readonly ColorMapOption[];
 }

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { Button } from '../../../Buttons';
-import IndoorProjectForm from '../indoorProjects/IndoorProjectForm';
 import Modal from '../../../Modal';
 import Pagination, { getPaginationResults } from '../../../Pagination';
 import ProjectCard from './ProjectCard';
@@ -148,8 +147,8 @@ export default function ProjectList({ projects }: { projects: Project[] }) {
         {!projects ||
           (projects.length === 0 && (
             <p>
-              Use the above button to create your first project. Your projects will
-              appear in the space below.
+              Use the above button to create your first project. Your projects
+              will appear in the space below.
             </p>
           ))}
       </div>
@@ -169,7 +168,10 @@ export default function ProjectList({ projects }: { projects: Project[] }) {
               filterAndSlice(projects).length,
               filterSearch(projects).length
             )}
-            <Sort sortSelection={sortSelection} setSortSelection={setSortSelection} />
+            <Sort
+              sortSelection={sortSelection}
+              setSortSelection={setSortSelection}
+            />
           </div>
         </div>
       )}

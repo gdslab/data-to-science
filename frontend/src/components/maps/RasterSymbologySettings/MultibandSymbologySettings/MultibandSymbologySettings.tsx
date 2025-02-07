@@ -1,4 +1,4 @@
-import { DataProduct } from '../../../pages/projects/Project';
+import { DataProduct } from '../../../pages/workspace/projects/Project';
 import DataProductShare from '../RasterSymbologySaveAndShare';
 import RasterSymbologyFieldSet from '../RasterSymbologyFieldset';
 import RasterSymbologyModeRadioGroup from '../RasterSymbologyModeRadioGroup';

@@ -14,7 +14,7 @@ import ProjectBoundary from './ProjectBoundary';
 import ProjectPopup from './ProjectPopup';
 import ProjectRasterTiles from './ProjectRasterTiles';
 import ProjectVectorTiles from './ProjectVectorTiles';
-import { MapLayer } from '../pages/projects/Project';
+import { MapLayer } from '../pages/workspace/projects/Project';
 
 import { useMapContext } from './MapContext';
 import { useMapLayerContext } from './MapLayersContext';
@@ -40,7 +40,8 @@ export default function HomeMap() {
   const [popupInfo, setPopupInfo] = useState<
     PopupInfoProps | { [key: string]: any } | null
   >(null);
-  const { activeDataProduct, activeProject, mapboxAccessToken } = useMapContext();
+  const { activeDataProduct, activeProject, mapboxAccessToken } =
+    useMapContext();
   const {
     state: { layers },
     dispatch,
@@ -54,7 +55,9 @@ export default function HomeMap() {
         import.meta.env.VITE_API_V1_STR
       }/projects/${projectId}/vector_layers`;
       try {
-        const response: AxiosResponse<MapLayer[]> = await axios.get(mapLayersUrl);
+        const response: AxiosResponse<MapLayer[]> = await axios.get(
+          mapLayersUrl
+        );
         dispatch({
           type: 'SET_LAYERS',
           payload: mapApiResponseToLayers(response.data),
@@ -67,7 +70,10 @@ export default function HomeMap() {
     if (activeProject) {
       // Remove any symbology settings for rasters from previously selected project
       for (const rasterId in symbologyContext.state) {
-        symbologyContext.dispatch({ type: 'REMOVE_RASTER', rasterId: rasterId });
+        symbologyContext.dispatch({
+          type: 'REMOVE_RASTER',
+          rasterId: rasterId,
+        });
       }
       // Fetch map layers for selected project
       fetchMapLayers(activeProject.id);
@@ -125,11 +131,14 @@ export default function HomeMap() {
       isSingleBand(activeDataProduct) &&
       symbologyContext.state[activeDataProduct.id]
     ) {
-      const activeDataProductSymbology = symbologyContext.state[activeDataProduct.id]
-        .symbology as SingleBandSymbology;
+      const activeDataProductSymbology = symbologyContext.state[
+        activeDataProduct.id
+      ].symbology as SingleBandSymbology;
       if (activeDataProductSymbology && activeDataProductSymbology.background) {
         return (
-          <ProjectRasterTiles dataProduct={activeDataProductSymbology.background} />
+          <ProjectRasterTiles
+            dataProduct={activeDataProductSymbology.background}
+          />
         );
       } else {
         return null;
@@ -166,12 +175,18 @@ export default function HomeMap() {
 
       {/* Display popup on click for project markers when no project is active */}
       {!activeProject && popupInfo && (
-        <ProjectPopup popupInfo={popupInfo} onClose={() => setPopupInfo(null)} />
+        <ProjectPopup
+          popupInfo={popupInfo}
+          onClose={() => setPopupInfo(null)}
+        />
       )}
 
       {/* Display popup on click on map layer feature */}
       {activeProject && popupInfo && (
-        <FeaturePopup popupInfo={popupInfo} onClose={() => setPopupInfo(null)} />
+        <FeaturePopup
+          popupInfo={popupInfo}
+          onClose={() => setPopupInfo(null)}
+        />
       )}
 
       {/* Display project raster tiles when project active and data product active */}
@@ -185,9 +200,14 @@ export default function HomeMap() {
       {activeProject && activeDataProduct && showBackgroundRaster()}
 
       {/* Display color bar when project active and single band data product active */}
-      {activeProject && activeDataProduct && isSingleBand(activeDataProduct) && (
-        <ColorBarControl dataProduct={activeDataProduct} projectId={activeProject.id} />
-      )}
+      {activeProject &&
+        activeDataProduct &&
+        isSingleBand(activeDataProduct) && (
+          <ColorBarControl
+            dataProduct={activeDataProduct}
+            projectId={activeProject.id}
+          />
+        )}
 
       {/* Display project vector layers when project active and layers selected */}
       {activeProject && <ProjectVectorTiles />}

@@ -2,9 +2,9 @@ import axios, { AxiosResponse } from 'axios';
 import { useState } from 'react';
 
 import { Button } from '../../Buttons';
-import { DataProduct } from '../../pages/projects/Project';
+import { DataProduct } from '../../pages/workspace/projects/Project';
 import Modal from '../../Modal';
-import { Project } from '../../pages/projects/ProjectList';
+import { Project } from '../../pages/workspace/projects/ProjectList';
 import RasterSymbologyAccessControls from './RasterSymbologyAccessControls';
 import { useMapContext } from '../MapContext';
 import {
@@ -25,7 +25,12 @@ function RasterSymbologyShare({
   const [open, setOpen] = useState(false);
   return (
     <div className="w-36">
-      <Button type="button" size="sm" icon="share2" onClick={() => setOpen(true)}>
+      <Button
+        type="button"
+        size="sm"
+        icon="share2"
+        onClick={() => setOpen(true)}
+      >
         Share
       </Button>
       <Modal open={open} setOpen={setOpen}>

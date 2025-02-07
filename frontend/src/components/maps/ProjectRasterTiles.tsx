@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Layer, Source, useMap } from 'react-map-gl/maplibre';
 
-import { DataProduct } from '../pages/projects/Project';
+import { DataProduct } from '../pages/workspace/projects/Project';
 import {
   SingleBandSymbology,
   MultibandSymbology,

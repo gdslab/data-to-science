@@ -1,4 +1,4 @@
-import { Project } from '../../pages/workspace/ProjectList';
+import { Project } from '../../pages/workspace/projects/ProjectList';
 
 /**
  * Takes a date in YYYY-mm-dd format and returns it in Day, Month Date, Year format.

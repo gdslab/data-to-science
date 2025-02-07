@@ -5,7 +5,7 @@ import { Popup } from 'react-map-gl/maplibre';
 import area from '@turf/area';
 
 import { PopupInfoProps } from './HomeMap';
-import { ZonalFeature } from '../pages/projects/Project';
+import { ZonalFeature } from '../pages/workspace/projects/Project';
 import { useMapContext } from './MapContext';
 import StripedTable from '../StripedTable';
 import {
@@ -21,7 +21,10 @@ type FeaturePopupProps = {
   onClose: () => void;
 };
 
-export default function FeaturePopup({ popupInfo, onClose }: FeaturePopupProps) {
+export default function FeaturePopup({
+  popupInfo,
+  onClose,
+}: FeaturePopupProps) {
   const [isCalculatingZonalStats, setIsCalculatingZonalStats] = useState(false);
   const [statistics, setStatistics] = useState<ZonalFeature | null>(null);
 
@@ -35,7 +38,9 @@ export default function FeaturePopup({ popupInfo, onClose }: FeaturePopupProps) 
     } else {
       return (
         <div className="flex flex-col">
-          <span className="text-lg font-bold">{feature.properties?.layer_name}</span>
+          <span className="text-lg font-bold">
+            {feature.properties?.layer_name}
+          </span>
           {feature.geometry.type === 'Polygon' ? (
             <span className="text-md text-slate-600">
               Area: {area(feature).toFixed(2)} m&sup2;
@@ -154,7 +159,10 @@ export default function FeaturePopup({ popupInfo, onClose }: FeaturePopupProps) 
               zonalFeature={statistics}
             />
           )}
-          <ZonalStatistics dataProduct={activeDataProduct} zonalFeature={statistics} />
+          <ZonalStatistics
+            dataProduct={activeDataProduct}
+            zonalFeature={statistics}
+          />
           {statistics && <DownloadZonalStatistic zonalFeature={statistics} />}
         </div>
       </article>

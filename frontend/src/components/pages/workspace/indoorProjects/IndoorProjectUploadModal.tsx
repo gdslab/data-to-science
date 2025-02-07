@@ -6,7 +6,6 @@ import Uppy from '@uppy/core';
 import Dashboard from '@uppy/react/lib/Dashboard';
 import Tus from '@uppy/tus';
 
-import { Button } from '../../../Buttons';
 import { IndoorProjectUploadInputProps } from './IndoorProject';
 import Modal from '../../../Modal';
 
@@ -56,7 +55,9 @@ function initUppyWithTus(indoorProjectId) {
   });
 }
 
-function IndoorProjectUploadInput({ indoorProjectId }: IndoorProjectUploadInputProps) {
+function IndoorProjectUploadInput({
+  indoorProjectId,
+}: IndoorProjectUploadInputProps) {
   const [uppy, _setUppy] = useState(() => initUppyWithTus(indoorProjectId));
 
   const restrictions = {

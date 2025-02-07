@@ -7,23 +7,30 @@ import { SelectField } from '../../../FormFields';
 import { IndoorProjectDataVizAPIResponse } from './IndoorProject';
 
 type CameraOrientation = 'top' | 'side';
-type Filter2Options = 'treatment' | 'description' | 'both' | 'none';
+type Filter2Options =
+  | 'treatment'
+  | 'description'
+  | 'treatment_description'
+  | 'all_pots'
+  | 'single_pot';
 type DateOptions = 'date' | 'dateAfterPlanting';
 
-const cameraOrientationOptions: { label: string; value: CameraOrientation }[] = [
-  { label: 'Top', value: 'top' },
-  { label: 'Side', value: 'side' },
-];
+const cameraOrientationOptions: { label: string; value: CameraOrientation }[] =
+  [
+    { label: 'Top', value: 'top' },
+    { label: 'Side', value: 'side' },
+  ];
 const filter2Options: { label: string; value: Filter2Options }[] = [
   { label: 'Treatment', value: 'treatment' },
   { label: 'Description', value: 'description' },
-  { label: 'Treatment & Description', value: 'both' },
-  { label: 'None', value: 'none' },
+  { label: 'Treatment & Description', value: 'treatment_description' },
+  { label: 'All Pots', value: 'all_pots' },
+  { label: 'Single Pot', value: 'single_pot' },
 ];
-const dateOptions: { label: string; value: DateOptions }[] = [
-  { label: 'Date', value: 'date' },
-  { label: 'Date after planting', value: 'dateAfterPlanting' },
-];
+// const dateOptions: { label: string; value: DateOptions }[] = [
+//   { label: 'Date', value: 'date' },
+//   { label: 'Date after planting', value: 'dateAfterPlanting' },
+// ];
 
 type VizFormData = {
   cameraOrientation: CameraOrientation;
@@ -42,7 +49,16 @@ const validationSchema = Yup.object({
     .oneOf(['top', 'side'], 'Invalid value')
     .required('Required field'),
   filter2: Yup.string()
-    .oneOf(['treatment', 'description', 'both', 'none'], 'Invalid value')
+    .oneOf(
+      [
+        'treatment',
+        'description',
+        'treatment_description',
+        'all_pots',
+        'single_pot',
+      ],
+      'Invalid value'
+    )
     .required('Required field'),
   date: Yup.string()
     .oneOf(['date', 'dateAfterPlanting'], 'Invalid value')
@@ -83,11 +99,8 @@ export default function IndoorProjectDataVizForm({
         camera_orientation: values.cameraOrientation,
         group_by: values.filter2,
       };
-      console.log(values);
-      const results: AxiosResponse<IndoorProjectDataVizAPIResponse> = await axios.get(
-        endpoint,
-        { params: queryParams }
-      );
+      const results: AxiosResponse<IndoorProjectDataVizAPIResponse> =
+        await axios.get(endpoint, { params: queryParams });
       setIndoorProjectDataVizData(results.data);
     } catch (error) {
       if (isAxiosError(error)) {
@@ -111,28 +124,35 @@ export default function IndoorProjectDataVizForm({
 
   return (
     <div className="my-2">
-      <span className="block text-2xl font-bold text-center">Data Visualizaiton</span>
-      <span className="block font-bold">Graph Options</span>
+      <span className="block font-bold">Graph 1 Options</span>
       <FormProvider {...methods}>
-        <form className="flex flex-col gap-2" onSubmit={handleSubmit(onSubmit)}>
-          {/* Camera Orientation */}
-          <SelectField
-            label="Camera Orientation"
-            name="cameraOrientation"
-            options={cameraOrientationOptions}
-          />
-          {/* Filter2 */}
-          <SelectField label="Filter 2" name="filter2" options={filter2Options} />
-          {/* Filter3 */}
-          <SelectField label="Date" name="date" options={dateOptions} />
+        <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
+          <div className="flex items-start gap-8">
+            {/* Camera Orientation */}
+            <SelectField
+              label="Camera Orientation"
+              name="cameraOrientation"
+              options={cameraOrientationOptions}
+            />
+            {/* Filter2 */}
+            <SelectField
+              label="Group pots by"
+              name="filter2"
+              options={filter2Options}
+            />
+            {/* Filter3 */}
+            {/* <SelectField label="Date" name="date" options={dateOptions} /> */}
+          </div>
           {/* Submit button */}
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="px-4 py-2 bg-blue-500 text-white font-medium rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:bg-blue-500/60 disabled:cursor-not-allowed"
-          >
-            {!isSubmitting ? 'Create Graph 1' : 'Generating graph 1...'}
-          </button>
+          <div className="w-48">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="max-h-12 px-4 py-2 bg-blue-500 text-white font-medium rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:bg-blue-500/60 disabled:cursor-not-allowed"
+            >
+              {!isSubmitting ? 'Create Graph 1' : 'Generating graph 1...'}
+            </button>
+          </div>
         </form>
       </FormProvider>
     </div>

@@ -11,7 +11,7 @@ import { InputField } from '../../../FormFields';
 
 import { IndoorProjectAPIResponse } from './IndoorProject';
 
-type IndoorProjectFormInput = {
+export type IndoorProjectFormInput = {
   title: string;
   description: string;
   startDate?: Date;
@@ -25,7 +25,7 @@ const defaultValues = {
   endDate: undefined,
 };
 
-const validationSchema = Yup.object({
+export const validationSchema = Yup.object({
   title: Yup.string()
     .max(255, 'Must be less than 255 characters')
     .required('Title is required'),
@@ -33,11 +33,15 @@ const validationSchema = Yup.object({
     .max(300, 'Must be less than 300 characters')
     .required('Description is required'),
   startDate: Yup.date()
-    .transform((value, originalValue) => (originalValue === '' ? undefined : value))
+    .transform((value, originalValue) =>
+      originalValue === '' ? undefined : value
+    )
     .optional(),
   endDate: Yup.date()
     .min(Yup.ref('startDate'), 'End date must be after start date')
-    .transform((value, originalValue) => (originalValue === '' ? undefined : value))
+    .transform((value, originalValue) =>
+      originalValue === '' ? undefined : value
+    )
     .optional(),
 });
 
@@ -64,12 +68,18 @@ export default function IndoorProjectForm({
   const onSubmit: SubmitHandler<IndoorProjectFormInput> = async (values) => {
     try {
       const { title, description, startDate, endDate } = values;
-      const payload = { title, description, start_date: startDate, end_date: endDate };
+      const payload = {
+        title,
+        description,
+        start_date: startDate,
+        end_date: endDate,
+      };
 
-      const response: AxiosResponse<IndoorProjectAPIResponse> = await axios.post(
-        `${import.meta.env.VITE_API_V1_STR}/indoor_projects`,
-        payload
-      );
+      const response: AxiosResponse<IndoorProjectAPIResponse> =
+        await axios.post(
+          `${import.meta.env.VITE_API_V1_STR}/indoor_projects`,
+          payload
+        );
 
       if (response && response.status == 201) {
         navigate(`/indoor_projects/${response.data.id}`);
@@ -100,7 +110,10 @@ export default function IndoorProjectForm({
       <div className="mx-4 my-2">
         <h1>New Indoor Project</h1>
         <FormProvider {...methods}>
-          <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
+          <form
+            className="flex flex-col gap-4"
+            onSubmit={handleSubmit(onSubmit)}
+          >
             <InputField label="Title" name="title" />
             <InputField label="Description" name="description" />
             <InputField type="date" label="Start date" name="startDate" />

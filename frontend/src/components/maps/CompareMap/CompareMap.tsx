@@ -6,7 +6,7 @@ import CompareModeControl from './CompareModeControl';
 import ProjectBoundary from '../ProjectBoundary';
 import { useMapContext } from '../MapContext';
 import ProjectRasterTiles from '../ProjectRasterTiles';
-import { DataProduct } from '../../pages/projects/Project';
+import { DataProduct } from '../../pages/workspace/projects/Project';
 import { useRasterSymbologyContext } from '../RasterSymbologyContext';
 
 import {
@@ -67,9 +67,8 @@ export default function CompareMap() {
 
   const [activeMap, setActiveMap] = useState<'left' | 'right'>('left');
 
-  const [mapComparisonState, setMapComparisonState] = useState<MapComparisonState>(
-    defaultMapComparisonState
-  );
+  const [mapComparisonState, setMapComparisonState] =
+    useState<MapComparisonState>(defaultMapComparisonState);
 
   const { activeProject, flights, mapboxAccessToken } = useMapContext();
 

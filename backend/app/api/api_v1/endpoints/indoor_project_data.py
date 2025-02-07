@@ -1,7 +1,7 @@
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, List, Sequence
+from typing import Any, List, Optional, Sequence, Tuple
 
 import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -240,48 +240,48 @@ def read_indoor_project_data_plant(
             detail="Spreadsheet missing 'PPEW' worksheet",
         )
 
-    try:
-        # read "TOP" worksheet into pandas dataframe
-        top_df = pd.read_excel(
-            spreadsheet_file.file_path, sheet_name="Top", dtype={"VARIETY": str}
-        )
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Spreadsheet missing 'Top' worksheet",
-        )
+    # try:
+    #     # read "TOP" worksheet into pandas dataframe
+    #     top_df = pd.read_excel(
+    #         spreadsheet_file.file_path, sheet_name="Top", dtype={"VARIETY": str}
+    #     )
+    # except ValueError:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST,
+    #         detail="Spreadsheet missing 'Top' worksheet",
+    #     )
 
-    try:
-        # read "Side All" worksheet into pandas dataframe
-        side_all_df = pd.read_excel(
-            spreadsheet_file.file_path,
-            sheet_name="Side all",
-            dtype={"VARIETY": str},
-        )
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Spreadsheet missing 'Side all' worksheet",
-        )
+    # try:
+    #     # read "Side All" worksheet into pandas dataframe
+    #     side_all_df = pd.read_excel(
+    #         spreadsheet_file.file_path,
+    #         sheet_name="Side all",
+    #         dtype={"VARIETY": str},
+    #     )
+    # except ValueError:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST,
+    #         detail="Spreadsheet missing 'Side all' worksheet",
+    #     )
 
-    try:
-        # read "Side Average" worksheet into pandas dataframe
-        side_avg_df = pd.read_excel(
-            spreadsheet_file.file_path,
-            sheet_name="Side average",
-            dtype={"VARIETY": str},
-        )
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Spreadsheet missing 'Side average' worksheet",
-        )
+    # try:
+    #     # read "Side Average" worksheet into pandas dataframe
+    #     side_avg_df = pd.read_excel(
+    #         spreadsheet_file.file_path,
+    #         sheet_name="Side average",
+    #         dtype={"VARIETY": str},
+    #     )
+    # except ValueError:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST,
+    #         detail="Spreadsheet missing 'Side average' worksheet",
+    #     )
 
     # search for row with matching pot barcode
     pot_ppew_df = ppew_df.query(f"POT_BARCODE == {plant_id}")
-    pot_top_df = top_df.query(f"POT_BARCODE == {plant_id}")
-    pot_side_all_df = side_all_df.query(f"POT_BARCODE == {plant_id}")
-    pot_side_avg_df = side_avg_df.query(f"POT_BARCODE == {plant_id}")
+    # pot_top_df = top_df.query(f"POT_BARCODE == {plant_id}")
+    # pot_side_all_df = side_all_df.query(f"POT_BARCODE == {plant_id}")
+    # pot_side_avg_df = side_avg_df.query(f"POT_BARCODE == {plant_id}")
 
     # raise exception if no records in PPEW worksheet
     if len(pot_ppew_df) == 0:
@@ -291,25 +291,25 @@ def read_indoor_project_data_plant(
         )
 
     # raise exception if no records in Top worksheet
-    if len(pot_top_df) == 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Top worksheet has zero records",
-        )
+    # if len(pot_top_df) == 0:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST,
+    #         detail="Top worksheet has zero records",
+    #     )
 
     # raise exception if no records in Side all worksheet
-    if len(pot_side_all_df) == 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Side all worksheet has zero records",
-        )
+    # if len(pot_side_all_df) == 0:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST,
+    #         detail="Side all worksheet has zero records",
+    #     )
 
     # raise exception if no records in Side average worksheet
-    if len(pot_side_avg_df) == 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Side average worksheet has zero records",
-        )
+    # if len(pot_side_avg_df) == 0:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST,
+    #         detail="Side average worksheet has zero records",
+    #     )
 
     # raise exception if more than one record found for pot barcode
     if len(pot_ppew_df) > 1:
@@ -320,15 +320,15 @@ def read_indoor_project_data_plant(
 
     # convert column names to all lowercase characters
     pot_ppew_df.columns = pot_ppew_df.columns.str.lower()
-    pot_top_df.columns = pot_top_df.columns.str.lower()
-    pot_side_all_df.columns = pot_side_all_df.columns.str.lower()
-    pot_side_avg_df.columns = pot_side_avg_df.columns.str.lower()
+    # pot_top_df.columns = pot_top_df.columns.str.lower()
+    # pot_side_all_df.columns = pot_side_all_df.columns.str.lower()
+    # pot_side_avg_df.columns = pot_side_avg_df.columns.str.lower()
 
     # replace any spaces in column names with underscores
     pot_ppew_df.columns = pot_ppew_df.columns.str.replace(" ", "_")
-    pot_top_df.columns = pot_top_df.columns.str.replace(" ", "_")
-    pot_side_all_df.columns = pot_side_all_df.columns.str.replace(" ", "_")
-    pot_side_avg_df.columns = pot_side_avg_df.columns.str.replace(" ", "_")
+    # pot_top_df.columns = pot_top_df.columns.str.replace(" ", "_")
+    # pot_side_all_df.columns = pot_side_all_df.columns.str.replace(" ", "_")
+    # pot_side_avg_df.columns = pot_side_avg_df.columns.str.replace(" ", "_")
 
     # convert planting date to datetime string YYYY-mm-dd HH:MM:SS
     pot_ppew_df["planting_date"] = pot_ppew_df["planting_date"].dt.strftime(
@@ -336,23 +336,23 @@ def read_indoor_project_data_plant(
     )
 
     # convert scan date to date string YYYY-mm-dd
-    pot_top_df["scan_date"] = pot_top_df["scan_date"].dt.strftime("%Y-%m-%d")
-    pot_side_all_df["scan_date"] = pot_side_all_df["scan_date"].dt.strftime("%Y-%m-%d")
-    pot_side_avg_df["scan_date"] = pot_side_avg_df["scan_date"].dt.strftime("%Y-%m-%d")
+    # pot_top_df["scan_date"] = pot_top_df["scan_date"].dt.strftime("%Y-%m-%d")
+    # pot_side_all_df["scan_date"] = pot_side_all_df["scan_date"].dt.strftime("%Y-%m-%d")
+    # pot_side_avg_df["scan_date"] = pot_side_avg_df["scan_date"].dt.strftime("%Y-%m-%d")
 
     # replace nan with "" for object columns and -9999 for numeric columns
     pot_ppew_df = pot_ppew_df.apply(
         lambda col: col.fillna("") if col.dtype == "object" else col.fillna(-9999)
     )
-    pot_top_df = pot_top_df.apply(
-        lambda col: col.fillna("") if col.dtype == "object" else col.fillna(-9999)
-    )
-    pot_side_all_df = pot_side_all_df.apply(
-        lambda col: col.fillna("") if col.dtype == "object" else col.fillna(-9999)
-    )
-    pot_side_avg_df = pot_side_avg_df.apply(
-        lambda col: col.fillna("") if col.dtype == "object" else col.fillna(-9999)
-    )
+    # pot_top_df = pot_top_df.apply(
+    #     lambda col: col.fillna("") if col.dtype == "object" else col.fillna(-9999)
+    # )
+    # pot_side_all_df = pot_side_all_df.apply(
+    #     lambda col: col.fillna("") if col.dtype == "object" else col.fillna(-9999)
+    # )
+    # pot_side_avg_df = pot_side_avg_df.apply(
+    #     lambda col: col.fillna("") if col.dtype == "object" else col.fillna(-9999)
+    # )
 
     # columns to send to client from ppew worksheet
     ppew_columns_of_interest = [
@@ -378,15 +378,15 @@ def read_indoor_project_data_plant(
         else:
             ppew_summary[column] = ""
 
-    top_records = pot_top_df.to_dict(orient="records")
-    side_all_records = pot_side_all_df.to_dict(orient="records")
-    side_avg_records = pot_side_avg_df.to_dict(orient="records")
+    # top_records = pot_top_df.to_dict(orient="records")
+    # side_all_records = pot_side_all_df.to_dict(orient="records")
+    # side_avg_records = pot_side_avg_df.to_dict(orient="records")
 
     payload = {
         "ppew": ppew_summary,
-        "top": top_records,
-        "side_all": side_all_records,
-        "side_avg": side_avg_records,
+        # "top": top_records,
+        # "side_all": side_all_records,
+        # "side_avg": side_avg_records,
     }
 
     try:
@@ -409,6 +409,7 @@ def read_indoor_project_data_plant_for_viz(
     indoor_project_data_id: UUID4,
     camera_orientation: schemas.indoor_project_data.CameraOrientation,
     group_by: schemas.indoor_project_data.GroupBy,
+    pot_barcode: Optional[int] = None,
     indoor_project: models.IndoorProject = Depends(
         deps.can_read_write_delete_indoor_project
     ),
@@ -421,216 +422,43 @@ def read_indoor_project_data_plant_for_viz(
         indoor_project_data_id=indoor_project_data_id,
     )
 
-    # Confirm file returned from database is a spreadsheet
-    if not spreadsheet_file or spreadsheet_file.file_type != ".xlsx":
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Spreadsheet not found"
-        )
-
-    # Confirm spreadsheet is for "RGB" images
-    if not is_data_type(spreadsheet_file.original_filename, "RGB"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only RGB data supported at this time",
-        )
-
+    # Confirm spreadsheet has required sheets and records
     try:
-        # Read "PPEW" worksheet into pandas dataframe
-        ppew_df = pd.read_excel(
-            spreadsheet_file.file_path,
-            sheet_name="PPEW",
-            dtype={"VARIETY": str, "PI": str},
+        ppew_df, img_df = validate_spreadsheet(
+            spreadsheet_file=spreadsheet_file,
+            camera_orientation=camera_orientation,
+            pot_barcode=pot_barcode,
         )
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Spreadsheet missing 'PPEW' worksheet",
-        )
+    except Exception as e:
+        raise e
 
-    # Read "top" or "side" worksheet into pandas dataframe
-    if camera_orientation == "top":
-        try:
-            img_df = pd.read_excel(
-                spreadsheet_file.file_path, sheet_name="Top", dtype={"VARIETY": str}
-            )
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Spreadsheet missing 'Top' worksheet",
-            )
-    else:
-        try:
-            img_df = pd.read_excel(
-                spreadsheet_file.file_path,
-                sheet_name="Side average",
-                dtype={"VARIETY": str},
-            )
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Spreadsheet missing 'Side average' worksheet",
-            )
+    # Lowercase column names and replace spaces
+    ppew_df = format_columns(ppew_df)
+    img_df = format_columns(img_df)
 
-    # Raise exception if no records in PPEW worksheet
-    if len(ppew_df) == 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="PPEW worksheet has zero records",
-        )
-
-    # Raise exception if no records in Top worksheet
-    if len(img_df) == 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"{camera_orientation.value.title()} worksheet has zero records",
-        )
-
-    # Convert column names to all lowercase characters
-    ppew_df.columns = ppew_df.columns.str.lower()
-    img_df.columns = img_df.columns.str.lower()
-
-    # Replace any spaces in column names with underscores
-    ppew_df.columns = ppew_df.columns.str.replace(" ", "_")
-    img_df.columns = img_df.columns.str.replace(" ", "_")
-
-    # Convert scan date from timestamp to date so we can compare with planting date
-    img_df["scan_date"] = img_df["scan_date"].dt.date
-
-    # Get planting date from PPEW
-    if len(ppew_df.planting_date.unique()) > 1:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Planting date in PPEW worksheet must be same for all records",
-        )
-    planting_date = ppew_df.planting_date[0].date()
-
-    # Equal interval date intervals for calculating color means
-    # 10 days after planting date, 20 days after planting date, etc.
-    date_intervals = [10, 20, 30, 40, 50]
-
-    # For each date interval, group records and find mean hue, saturation, and intensity
-    grouped_results = []
-    for days in date_intervals:
-        # End date for current interval
-        end_date = planting_date + timedelta(days=days)
-        # Select records within current date interval (e.g., planting_date to end_date)
-        selected_df = img_df[
-            (img_df["scan_date"] > planting_date) & (img_df["scan_date"] <= end_date)
-        ]
-
-        # Group selected records by user specified grouping criteria
-        if group_by.lower() == "treatment":
-            grouped_df = (
-                selected_df.groupby("treatment")[["hue", "saturation", "intensity"]]
-                .mean()
-                .reset_index()
-            )
-        elif group_by.lower() == "description" or group_by.lower() == "both":
-            # Merge PPEW dataframe with top/side dataframe
-            img_df = pd.merge(
-                img_df,
-                ppew_df[["pot_barcode", "description"]],
-                on="pot_barcode",
-                how="inner",
-            )
-            if group_by.lower() == "description":
-                grouped_df = (
-                    img_df.groupby("description")[["hue", "saturation", "intensity"]]
-                    .mean()
-                    .reset_index()
-                )
-            else:
-                grouped_df = (
-                    img_df.groupby(["treatment", "description"])[
-                        ["hue", "saturation", "intensity"]
-                    ]
-                    .mean()
-                    .reset_index()
-                )
-        elif group_by.lower() == "none":
-            grouped_df = (
-                selected_df[["hue", "saturation", "intensity"]].mean().reset_index()
-            )
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="`Treatment` is only supported grouping criteria at this time",
-            )
-
-        # Add interval value to dataframe
-        grouped_df["interval_days"] = days
-        grouped_results.append(grouped_df)
-
-    # Combine all interval results into a single dataframe
-    combined_df = pd.concat(grouped_results, ignore_index=True)
-
-    # Get unique treatments
-    treatments = ppew_df.treatment.unique()
-
-    # Get unique descriptions
-    descriptions = ppew_df.description.unique()
-
-    # Get unique combinations of treatment and description (list of tuples)
-    treatments_and_descriptions = list(
-        ppew_df[["treatment", "description"]]
-        .drop_duplicates()
-        .itertuples(index=False, name=None)
+    # Convert 'scan_date' to date, find planting date, and date intervals
+    img_df, planting_date, date_intervals = process_date_columns(
+        dataDf=img_df, refDf=ppew_df
     )
 
-    if group_by.lower() == "treatment":
-        # Create a dataframe with all group_by and interval combinations
-        all_combined_df = pd.DataFrame(
-            [
-                (treatment, interval)
-                for treatment in treatments
-                for interval in date_intervals
-            ],
-            columns=["treatment", "interval_days"],
-        )
+    # Merge "description" column from PPEW dataframe with top/side dataframe
+    img_df = pd.merge(
+        img_df,
+        ppew_df[["pot_barcode", "description"]],
+        on="pot_barcode",
+        how="inner",
+    )
 
-        # Merge dataframes together
-        final_df = all_combined_df.merge(
-            combined_df, on=["treatment", "interval_days"], how="left"
-        )
-    elif group_by.lower() == "description":
-        # Create a dataframe with all group_by and interval combinations
-        all_combined_df = pd.DataFrame(
-            [
-                (description, interval)
-                for description in descriptions
-                for interval in date_intervals
-            ],
-            columns=["description", "interval_days"],
-        )
-
-        # Merge dataframes together
-        final_df = all_combined_df.merge(
-            combined_df, on=["description", "interval_days"], how="left"
-        )
-    elif group_by.lower() == "both":
-        # Create a dataframe with all group_by and interval combinations
-        all_combined_df = pd.DataFrame(
-            [
-                (treat_and_desc[0], treat_and_desc[1], interval)
-                for treat_and_desc in treatments_and_descriptions
-                for interval in date_intervals
-            ],
-            columns=["treatment", "description", "interval_days"],
-        )
-
-        # Merge dataframes together
-        final_df = all_combined_df.merge(
-            combined_df, on=["treatment", "description", "interval_days"], how="left"
-        )
-
-    # Convert all columns to object type to allow None values
-    final_df = final_df.astype(object)
-
-    # Replace NaN with None
-    final_df = final_df.apply(lambda col: col.where(pd.notna(col), None))
+    # Groups records and computes mean hsv
+    grouped_mean_hsv_df = group_and_average_hsv(
+        df=img_df,
+        date_intervals=date_intervals,
+        group_by=normalize_group_by(group_by),
+        planting_date=planting_date,
+    )
 
     # Convert dataframe to dictionary
-    payload = final_df.to_dict(orient="records")
+    payload = grouped_mean_hsv_df.to_dict(orient="records")
 
     return {"results": payload}
 
@@ -658,77 +486,17 @@ def read_indoor_project_data_plant_for_viz2(
         indoor_project_data_id=indoor_project_data_id,
     )
 
-    # Confirm file returned from database is a spreadsheet
-    if not spreadsheet_file or spreadsheet_file.file_type != ".xlsx":
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Spreadsheet not found"
-        )
-
-    # Confirm spreadsheet is for "RGB" images
-    if not is_data_type(spreadsheet_file.original_filename, "RGB"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only RGB data supported at this time",
-        )
-
+    # Confirm spreadsheet has required sheets and records
     try:
-        # Read "PPEW" worksheet into pandas dataframe
-        ppew_df = pd.read_excel(
-            spreadsheet_file.file_path,
-            sheet_name="PPEW",
-            dtype={"VARIETY": str, "PI": str},
+        ppew_df, img_df = validate_spreadsheet(
+            spreadsheet_file=spreadsheet_file, camera_orientation=camera_orientation
         )
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Spreadsheet missing 'PPEW' worksheet",
-        )
+    except Exception as e:
+        raise e
 
-    # Read "top" or "side" worksheet into pandas dataframe
-    if camera_orientation == "top":
-        try:
-            img_df = pd.read_excel(
-                spreadsheet_file.file_path, sheet_name="Top", dtype={"VARIETY": str}
-            )
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Spreadsheet missing 'Top' worksheet",
-            )
-    else:
-        try:
-            img_df = pd.read_excel(
-                spreadsheet_file.file_path,
-                sheet_name="Side average",
-                dtype={"VARIETY": str},
-            )
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Spreadsheet missing 'Side average' worksheet",
-            )
-
-    # Raise exception if no records in PPEW worksheet
-    if len(ppew_df) == 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="PPEW worksheet has zero records",
-        )
-
-    # Raise exception if no records in Top worksheet
-    if len(img_df) == 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"{camera_orientation.value.title()} worksheet has zero records",
-        )
-
-    # Convert column names to all lowercase characters
-    ppew_df.columns = ppew_df.columns.str.lower()
-    img_df.columns = img_df.columns.str.lower()
-
-    # Replace any spaces in column names with underscores
-    ppew_df.columns = ppew_df.columns.str.replace(" ", "_")
-    img_df.columns = img_df.columns.str.replace(" ", "_")
+    # Lowercase column names and replace spaces
+    ppew_df = format_columns(ppew_df)
+    img_df = format_columns(img_df)
 
     # Confirm "trait" column exists
     if not trait.lower() in img_df.columns:
@@ -737,73 +505,30 @@ def read_indoor_project_data_plant_for_viz2(
             detail=f"{trait} is not present in worksheet",
         )
 
-    # Convert scan date from timestamp to date so we can compare with planting date
-    img_df["scan_date"] = img_df["scan_date"].dt.date
-
-    # Get planting date from PPEW
-    if len(ppew_df.planting_date.unique()) > 1:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Planting date in PPEW worksheet must be same for all records",
-        )
-    planting_date = ppew_df.planting_date[0].date()
-
-    # Date intervals for calculating color means
-    # 10 days after planting date, 20 days after planting date, etc.
-    date_intervals = [10, 20, 30, 40, 50]
-
-    # For each date interval, group records and find mean hue, saturation, and intensity
-    grouped_results = []
-    for days in date_intervals:
-        # End date for current interval
-        end_date = planting_date + timedelta(days=days)
-        # Select records within current date interval (e.g., planting_date to end_date)
-        selected_df = img_df[
-            (img_df["scan_date"] > planting_date) & (img_df["scan_date"] <= end_date)
-        ]
-
-        # Group selected records by user specified grouping criteria
-        if group_by.lower() == "treatment":
-            grouped_df = selected_df.groupby("treatment")[[trait]].mean().reset_index()
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="`Treatment` is only supported grouping criteria at this time",
-            )
-
-        # Add interval value to dataframe
-        grouped_df["interval_days"] = days
-        grouped_results.append(grouped_df)
-
-    # Combine all interval results into a single dataframe
-    combined_df = pd.concat(grouped_results, ignore_index=True)
-
-    # Get unique treatments
-    treatments = img_df.treatment.unique()
-
-    # Create a dataframe with all group_by and interval combinations
-    all_combined_df = pd.DataFrame(
-        [
-            (treatment, interval)
-            for treatment in treatments
-            for interval in date_intervals
-        ],
-        columns=["treatment", "interval_days"],
+    # Convert 'scan_date' to date, find planting date, and date intervals
+    img_df, planting_date, date_intervals = process_date_columns(
+        dataDf=img_df, refDf=ppew_df
     )
 
-    # Merge dataframes together
-    final_df = all_combined_df.merge(
-        combined_df, on=["treatment", "interval_days"], how="left"
+    # Merge "description" column from PPEW dataframe with top/side dataframe
+    img_df = pd.merge(
+        img_df,
+        ppew_df[["pot_barcode", "description"]],
+        on="pot_barcode",
+        how="inner",
     )
 
-    # Convert all columns to object type to allow None values
-    final_df = final_df.astype(object)
-
-    # Replace NaN with None
-    final_df = final_df.apply(lambda col: col.where(pd.notna(col), None))
+    # Groups records and computes mean hsv
+    grouped_mean_hsv_df = group_and_average_hsv(
+        df=img_df,
+        date_intervals=date_intervals,
+        group_by=normalize_group_by(group_by),
+        planting_date=planting_date,
+        trait=trait,
+    )
 
     # Convert dataframe to dictionary
-    payload = final_df.to_dict(orient="records")
+    payload = grouped_mean_hsv_df.to_dict(orient="records")
 
     return {"results": payload}
 
@@ -836,10 +561,281 @@ def filter_columns(columns: List[str], prefixes: List[str]) -> List[str]:
         prefixes (List[str]): Prefixes to exclude (e.g., "h", "s", "v").
 
     Returns:
-        List[str]: List of filtered column names.
+        Tuple[pd.DataFrame]: List of filtered column names.
     """
     return [
         col
         for col in columns
         if not any(col.startswith(prefix) and col[1:].isdigit() for prefix in prefixes)
     ]
+
+
+def validate_spreadsheet(
+    spreadsheet_file: Optional[models.IndoorProjectData],
+    camera_orientation: schemas.indoor_project_data.CameraOrientation,
+    pot_barcode: Optional[int] = None,
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """Raises exception if spreadsheet missing required data. Returns dataframe
+    for the "PPEW" worksheet and the "top" or "Side average" worksheet.
+
+    Args:
+        spreadsheet_file (Optional[models.IndoorProjectData]): Spreadsheet file from db.
+        camera_orientation (schemas.indoor_project_data.CameraOrientation): Camera orientation - "top" or "side".
+        pot_barcode (Optional[int]): Barcode for individual pot.
+
+    Raises:
+        HTTPException: Raised if spreadsheet with correct extension not found.
+        HTTPException: Raised if spreadsheet is not for RGB data.
+        HTTPException: Raised if "PPEW" worksheet is missing.
+        HTTPException: Raised if "top" worksheet is missing.
+        HTTPException: Raised if "Side average" worksheet is missing.
+        HTTPException: Raised if "PPEW" worksheet has zero records.
+        HTTPException: Raised if "top" or "Side average" worksheet has zero records.
+        HTTPException: Raised if records for the pot barcode could not be found.
+
+    Returns:
+        Tuple[pd.DataFrame]: Return dataframes for worksheets.
+    """
+    # Confirm file returned from database is a spreadsheet
+    if not spreadsheet_file or spreadsheet_file.file_type != ".xlsx":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Spreadsheet not found"
+        )
+
+    # Confirm spreadsheet is for "RGB" images
+    if not is_data_type(spreadsheet_file.original_filename, "RGB"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only RGB data supported at this time",
+        )
+
+    try:
+        # Read "PPEW" worksheet into pandas dataframe
+        ppew_df = pd.read_excel(
+            spreadsheet_file.file_path,
+            sheet_name="PPEW",
+            dtype={"VARIETY": str, "PI": str},
+        )
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Spreadsheet missing 'PPEW' worksheet",
+        )
+
+    # Read "top" or "side" worksheet into pandas dataframe
+    if camera_orientation == "top":
+        try:
+            img_df = pd.read_excel(
+                spreadsheet_file.file_path, sheet_name="Top", dtype={"VARIETY": str}
+            )
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Spreadsheet missing 'Top' worksheet",
+            )
+    else:
+        try:
+            img_df = pd.read_excel(
+                spreadsheet_file.file_path,
+                sheet_name="Side average",
+                dtype={"VARIETY": str},
+            )
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Spreadsheet missing 'Side average' worksheet",
+            )
+
+    # Raise exception if no records in PPEW worksheet
+    if len(ppew_df) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="PPEW worksheet has zero records",
+        )
+
+    # Raise exception if no records in Top worksheet
+    if len(img_df) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{camera_orientation.value.title()} worksheet has zero records",
+        )
+
+    # Filter records if a pot barcode was provided
+    if pot_barcode:
+        ppew_df = ppew_df[ppew_df["POT_BARCODE"] == pot_barcode]
+        img_df = img_df[img_df["POT_BARCODE"] == pot_barcode]
+        if len(ppew_df) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"PPEW worksheet has no records matching POT_BARCODE {pot_barcode}",
+            )
+        if len(img_df) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"{camera_orientation.value.title()} worksheet has no records matching POT_BARCODE {pot_barcode}",
+            )
+
+    return ppew_df, img_df
+
+
+def format_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Convert column name to all lowercase characters and replace
+    any space characters with underscores.
+
+    Args:
+        df (pd.DataFrame): _description_
+
+    Returns:
+        pd.DataFrame: _description_
+    """
+    # Convert column names to all lowercase characters
+    df.columns = df.columns.str.lower()
+
+    # Replace any spaces in column names with underscores
+    df.columns = df.columns.str.replace(" ", "_")
+
+    # Create str columns for pot_barcode and exp_id (may be used for grouping)
+    df["exp_id"] = df["exp_id"].astype(str)
+    df["pot_barcode"] = df["pot_barcode"].astype(str)
+
+    return df
+
+
+def group_and_average_hsv(
+    df: pd.DataFrame,
+    date_intervals: List[int],
+    group_by: str,
+    planting_date: datetime,
+    trait: Optional[str] = None,
+) -> pd.DataFrame:
+    """For each day measurements were collected, group records based on group_by
+    criteria (e.g., treatment, description, etc.) and compute the mean hue,
+    saturation, and value for the group. Returns single dataframe with each row
+    representing a unique group and measurement day.
+    Args:
+        df (pd.DataFrame): Measurements for all pots.
+        date_intervals (List[int]): Days after planting date when measurements were collected.
+        group_by (str): Grouping criteria such as 'treatment' or 'description.'
+        planting_date (datetime): Initial planting date.
+
+    Raises:
+        HTTPException: Raised if the grouping criteria is not recognized.
+
+    Returns:
+        pd.DataFrame: Dataframe with groups by grouping criteria and collection day.
+    """
+    # Define valid grouping options and a mapping to the corresponding columns
+    valid_groupings = {
+        "treatment": ["treatment"],
+        "description": ["description"],
+        "treatment_description": ["treatment", "description"],
+        "exp_id": ["exp_id"],
+        "pot_barcode": ["pot_barcode"],
+    }
+
+    # Verify current group_by value is valid
+    if group_by not in valid_groupings:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid group_by value: {group_by}",
+        )
+
+    # Pre-filter the dataframe: records after planting_date are used in every iteration
+    filtered_df = df[df["scan_date"] > planting_date].copy()
+
+    # If a specific trait is not provided, target hue, saturation, and intensity
+    if trait:
+        columns_of_interest = [trait]
+    else:
+        columns_of_interest = ["hue", "saturation", "intensity"]
+
+    grouped_results = []
+
+    for days in date_intervals:
+        # Compute end date for the current interval
+        end_date = planting_date + timedelta(days=days)
+
+        # Select records within the current date interval
+        # (filtered_df already has records > planting_date)
+        current_df = filtered_df[filtered_df["scan_date"] <= end_date]
+
+        # Group the current records by the user-specified criteria and compute mean values
+        grouped_df = (
+            current_df.groupby(valid_groupings[group_by])[columns_of_interest]
+            .mean()
+            .reset_index()
+        )
+
+        # Add the interval days to the results
+        grouped_df["interval_days"] = days
+        grouped_results.append(grouped_df)
+
+    # Merge list of dataframes into single dataframe
+    grouped_mean_hsv_df = pd.concat(grouped_results, ignore_index=True)
+
+    # Rename grouping criteria column(s) to 'group' for consistent output
+    if group_by in {"treatment", "description", "exp_id", "pot_barcode"}:
+        grouped_mean_hsv_df = grouped_mean_hsv_df.rename(columns={group_by: "group"})
+    elif group_by == "treatment_description":
+        grouped_mean_hsv_df = grouped_mean_hsv_df.assign(
+            group=grouped_mean_hsv_df["treatment"].astype(str)
+            + ": "
+            + grouped_mean_hsv_df["description"].astype(str)
+        ).drop(columns=["treatment", "description"])
+    else:
+        raise ValueError(f"Invalid group_by value: {group_by}")
+
+    return grouped_mean_hsv_df
+
+
+def process_date_columns(
+    dataDf: pd.DataFrame, refDf: pd.DataFrame
+) -> Tuple[pd.DataFrame, datetime, List[int]]:
+    # Convert scan date from timestamp to date so we can compare with planting date
+    dataDf["scan_date"] = dataDf["scan_date"].dt.date
+
+    # Get planting date from PPEW
+    if len(refDf.planting_date.unique()) > 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Planting date in PPEW worksheet must be same for all records",
+        )
+    planting_date = refDf.planting_date[0].date()
+
+    # Use "dfp" column (age of plants from planting time of imaging) for x-axis
+    date_intervals = sorted([int(n) for n in dataDf["dfp"].unique()])
+
+    return dataDf, planting_date, date_intervals
+
+
+def normalize_group_by(group_by: schemas.indoor_project_data.GroupBy) -> str:
+    """Convert 'group_by' to lowercase and update the value for 'all_pots' and
+    'single_pot.'
+
+    Args:
+        group_by (schemas.indoor_project_data.GroupBy): Grouping criteria.
+
+    Raises:
+        ValueError: Raise if unknown group_by value.
+
+    Returns:
+        str: Normalized 'group_by' value.
+    """
+    # Normalize the input once
+    group_by_value = group_by.value.lower()
+
+    # Mapping from valid group_by values to the desired output
+    mapping = {
+        "treatment": "treatment",
+        "description": "description",
+        "treatment_description": "treatment_description",
+        "all_pots": "exp_id",
+        "single_pot": "pot_barcode",
+    }
+
+    try:
+        group_by_lower = mapping[group_by_value]
+    except KeyError:
+        raise ValueError(f"Invalid group_by value: {group_by}")
+
+    return group_by_lower

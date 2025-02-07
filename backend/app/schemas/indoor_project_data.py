@@ -281,9 +281,9 @@ class IndoorProjectDataPlantTop(BaseModel):
 
 class IndoorProjectDataSpreadsheetPlantData(BaseModel):
     ppew: IndoorProjectDataPlant
-    top: List[IndoorProjectDataPlantTop]
-    side_all: List[IndoorProjectDataPlantSideAll]
-    side_avg: List[IndoorProjectDataPlantSideAvg]
+    # top: List[IndoorProjectDataPlantTop]
+    # side_all: List[IndoorProjectDataPlantSideAll]
+    # side_avg: List[IndoorProjectDataPlantSideAvg]
 
 
 class IndoorProjectDataSpreadsheetData(RootModel[Dict[int, IndoorProjectDataPlant]]):
@@ -313,8 +313,9 @@ class CameraOrientation(str, Enum):
 class GroupBy(str, Enum):
     treatment = "treatment"
     description = "description"
-    both = "both"
-    none = "none"
+    treatment_description = "treatment_description"
+    all_pots = "all_pots"
+    single_pot = "single_pot"
 
 
 class IndoorProjectDataVizForm(BaseModel):
@@ -327,7 +328,7 @@ class IndoorProjectDataViz2Form(IndoorProjectDataVizForm):
 
 
 class VizRecord(BaseModel):
-    treatment: str
+    group: str
     interval_days: int
     hue: Optional[float]
     saturation: Optional[float]
@@ -339,7 +340,7 @@ class IndoorProjectDataVizResponse(BaseModel):
 
 
 class VizRecord2(BaseModel):
-    treatment: str
+    group: str
     interval_days: int
 
     class Config:

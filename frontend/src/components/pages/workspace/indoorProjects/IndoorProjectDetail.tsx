@@ -15,15 +15,18 @@ import IndoorProjectDataVizGraph from './IndoorProjectDataVizGraph';
 import IndoorProjectDataViz2Graph from './IndoorProjectDataViz2Graph';
 import IndoorProjectDataVizForm from './IndoorProjectDataVizForm';
 import IndoorProjectDataViz2Form from './IndoorProjectDataVizForm2';
+import LoadingBars from '../../../LoadingBars';
+// import IndoorProjectDetailForm from './IndoorProjectDetailForm';
 
 export async function loader({ params }: { params: Params<string> }) {
   try {
     const indoorProjectResponse: AxiosResponse<IndoorProjectAPIResponse> =
       await axios.get(
-        `${import.meta.env.VITE_API_V1_STR}/indoor_projects/${params.indoorProjectId}`
+        `${import.meta.env.VITE_API_V1_STR}/indoor_projects/${
+          params.indoorProjectId
+        }`
       );
     if (indoorProjectResponse && indoorProjectResponse.status == 200) {
-      console.log('indoor project api response:', indoorProjectResponse.data);
       return {
         indoorProject: indoorProjectResponse.data,
       };
@@ -48,29 +51,31 @@ export default function IndoorProjectDetail() {
   const { indoorProject } = useLoaderData() as {
     indoorProject: IndoorProjectAPIResponse;
   };
-  const [showGraphs, setShowGraphs] = useState(false);
-  const [showIndoorProjectDetails, setShowIndoorProjectDetails] = useState(false);
-  const [showIndoorProjectPlants, setShowIndoorProjectPlants] = useState(false);
-  const [showUploadedData, setShowUploadedData] = useState(false);
+  // const [showGraphs, setShowGraphs] = useState(false);
+  // const [showIndoorProjectDetails, setShowIndoorProjectDetails] =
+  //   useState(false);
+  // const [showIndoorProjectPlants, setShowIndoorProjectPlants] = useState(false);
+  // const [showUploadedData, setShowUploadedData] = useState(false);
 
-  const toggleIndoorProjectDetails = () =>
-    setShowIndoorProjectDetails(!showIndoorProjectDetails);
+  // const toggleIndoorProjectDetails = () =>
+  //   setShowIndoorProjectDetails(!showIndoorProjectDetails);
 
-  const toggleIndoorProjectPlants = () =>
-    setShowIndoorProjectPlants(!showIndoorProjectPlants);
+  // const toggleIndoorProjectPlants = () =>
+  //   setShowIndoorProjectPlants(!showIndoorProjectPlants);
 
-  const toggleShowUploadedData = () => setShowUploadedData(!showUploadedData);
+  // const toggleShowUploadedData = () => setShowUploadedData(!showUploadedData);
 
-  const toggleShowGraphs = () => setShowGraphs(!showGraphs);
+  // const toggleShowGraphs = () => setShowGraphs(!showGraphs);
 
   useEffect(() => {
     const fetchIndoorProjectData = async (indoorProjectId: string) => {
       try {
-        const response: AxiosResponse<IndoorProjectDataAPIResponse[]> = await axios.get(
-          `${
-            import.meta.env.VITE_API_V1_STR
-          }/indoor_projects/${indoorProjectId}/uploaded`
-        );
+        const response: AxiosResponse<IndoorProjectDataAPIResponse[]> =
+          await axios.get(
+            `${
+              import.meta.env.VITE_API_V1_STR
+            }/indoor_projects/${indoorProjectId}/uploaded`
+          );
         setIndoorProjectData(response.data);
       } catch (error) {
         if (isAxiosError(error)) {
@@ -157,8 +162,6 @@ export default function IndoorProjectDetail() {
     return 'unknown';
   }
 
-  console.log('indoorProjectDataSpreadsheet', indoorProjectDataSpreadsheet);
-
   if (!indoorProject)
     return (
       <div>
@@ -168,119 +171,106 @@ export default function IndoorProjectDetail() {
 
   return (
     <IndoorProjectPageLayout>
-      <button
-        type="button"
-        onClick={toggleIndoorProjectDetails}
-        className="px-4 py-2 bg-blue-500 text-white font-medium rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300"
-      >
-        {showIndoorProjectDetails
-          ? 'Hide Indoor Project Details'
-          : 'Show Indoor Project Details'}
-      </button>
-      {showIndoorProjectDetails && (
-        <div>
-          <h1>Indoor Project Details</h1>
-          <pre className="whitespace-pre-wrap p-10 border-2 border-slate-600">
-            {JSON.stringify(indoorProject, null, 2)}
-          </pre>
+      <div className="flex flex-col gap-2">
+        <h2>{indoorProject.title}</h2>
+        <p className="text-gray-600 text-wrap break-all">
+          {indoorProject.description}
+        </p>
+      </div>
+
+      {indoorProjectData.length > 0 && (
+        <div className="py-4">
+          <h3>Previously Uploaded Data</h3>
+          <ul className="list-disc list-inside">
+            {indoorProjectData.map((uploadedFile) => (
+              <li key={uploadedFile.id}>
+                <span>
+                  {uploadedFile.original_filename}
+                  {uploadedFile.file_type}
+                </span>{' '}
+                <span className="italic text-gray-600">{`(Uploaded on ${new Date(
+                  uploadedFile.upload_date
+                ).toLocaleDateString()})`}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
-      <IndoorProjectUploadModal indoorProjectId={indoorProject.id} />
-      <button
-        type="button"
-        onClick={toggleShowUploadedData}
-        className="px-4 py-2 bg-blue-500 text-white font-medium rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300"
-      >
-        {showUploadedData ? 'Hide Uploaded Data' : 'Show Uploaded Data'}
-      </button>
-      {showUploadedData && (
-        <div>
-          <h2>Uploaded Data:</h2>
-          <pre className="whitespace-pre-wrap p-10 border-2 border-slate-600 h-60 overflow-y-auto">
-            {JSON.stringify(indoorProjectData, null, 2)}
-          </pre>
-        </div>
-      )}
-      {/* <h3>Spreadsheet Summary:</h3>
-      {indoorProjectDataSpreadsheet && indoorProjectDataSpreadsheet.summary && (
-        <pre className="whitespace-pre-wrap p-10 border-2 border-slate-600">
-          {JSON.stringify(indoorProjectDataSpreadsheet.summary, null, 2)}
-        </pre>
-      )} */}
-      <button
-        type="button"
-        onClick={toggleIndoorProjectPlants}
-        className="px-4 py-2 bg-blue-500 text-white font-medium rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300"
-      >
-        {showIndoorProjectPlants ? 'Hide Plants' : 'Show Plants'}
-      </button>
-      {showIndoorProjectPlants && (
-        <div>
-          <h3>Plants:</h3>
-          {indoorProjectDataSpreadsheet && (
-            <div className="grid grid-cols-4 gap-4">
-              {Object.keys(indoorProjectDataSpreadsheet.records).map((key) => (
-                <Link
-                  key={key}
-                  to={`/indoor_projects/${indoorProject.id}/uploaded/${indoorProjectDataSpreadsheet.summary.id}/plants/${key}`}
-                >
-                  <div className="p-4 flex flex-col gap-2 border-2 border-slate-600 bg-white shadow-md hover:shadow-lg text-center">
-                    <span className="font-bold">{key}</span>
-                    <div className="flex flex-col justify-between">
-                      <div className="flex justify-between">
-                        <span>Species name:</span>
-                        <span>{getRecord(key, 'species_name')}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Treatment:</span>
-                        <span>{getRecord(key, 'treatment')}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Planting date:</span>
-                        <span>{getRecord(key, 'planting_date').split('T')[0]}</span>
-                      </div>
+
+      <div className="w-48">
+        <IndoorProjectUploadModal
+          btnLabel="Add data"
+          indoorProjectId={indoorProject.id}
+        />
+      </div>
+
+      <div className="py-4">
+        <h3>
+          Pots
+          {indoorProjectDataSpreadsheet
+            ? ` (${Object.keys(indoorProjectDataSpreadsheet.records).length})`
+            : '0'}
+        </h3>
+        {indoorProjectDataSpreadsheet && (
+          <div className="flex flex-wrap gap-4 justify-start max-h-96 overflow-y-auto">
+            {Object.keys(indoorProjectDataSpreadsheet.records).map((key) => (
+              <Link
+                key={key}
+                to={`/indoor_projects/${indoorProject.id}/uploaded/${indoorProjectDataSpreadsheet.summary.id}/plants/${key}`}
+              >
+                <div className="min-w-48 flex flex-col gap-2 p-2 border-2 border-slate-400 hover:border-slate-600 bg-white shadow-sm hover:shadow-xl text-center">
+                  <span className="font-bold">{key}</span>
+                  <div className="flex flex-col justify-between">
+                    <div className="flex justify-between">
+                      <span>Species name:</span>
+                      <span>{getRecord(key, 'species_name')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Treatment:</span>
+                      <span>{getRecord(key, 'treatment')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Planting date:</span>
+                      <span>
+                        {getRecord(key, 'planting_date').split('T')[0]}
+                      </span>
                     </div>
                   </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-      <button
-        type="button"
-        onClick={toggleShowGraphs}
-        className="px-4 py-2 bg-blue-500 text-white font-medium rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300"
-      >
-        {showGraphs ? 'Hide Graphs' : 'Show Graphs'}
-      </button>
-      {showGraphs && (
-        <div>
-          <IndoorProjectDataVizForm
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+        {!indoorProjectDataSpreadsheet && <LoadingBars />}
+      </div>
+
+      <div className="py-4">
+        <h3>Graphs</h3>
+        <IndoorProjectDataVizForm
+          indoorProjectId={indoorProject.id}
+          indoorProjectDataId={
+            indoorProjectData.find(({ file_type }) => file_type === '.xlsx')?.id
+          }
+          setIndoorProjectDataVizData={setIndoorProjectDataVizData}
+        />
+        {indoorProjectDataVizData && (
+          <IndoorProjectDataVizGraph data={indoorProjectDataVizData} />
+        )}
+        {indoorProjectDataSpreadsheet && (
+          <IndoorProjectDataViz2Form
             indoorProjectId={indoorProject.id}
             indoorProjectDataId={
-              indoorProjectData.find(({ file_type }) => file_type === '.xlsx')?.id
+              indoorProjectData.find(({ file_type }) => file_type === '.xlsx')
+                ?.id
             }
-            setIndoorProjectDataVizData={setIndoorProjectDataVizData}
+            numericColumns={indoorProjectDataSpreadsheet.numeric_columns}
+            setIndoorProjectDataViz2Data={setIndoorProjectDataViz2Data}
           />
-          {indoorProjectDataVizData && (
-            <IndoorProjectDataVizGraph data={indoorProjectDataVizData} />
-          )}
-          {indoorProjectDataSpreadsheet && (
-            <IndoorProjectDataViz2Form
-              indoorProjectId={indoorProject.id}
-              indoorProjectDataId={
-                indoorProjectData.find(({ file_type }) => file_type === '.xlsx')?.id
-              }
-              numericColumns={indoorProjectDataSpreadsheet.numeric_columns}
-              setIndoorProjectDataViz2Data={setIndoorProjectDataViz2Data}
-            />
-          )}
-          {indoorProjectDataViz2Data && (
-            <IndoorProjectDataViz2Graph data={indoorProjectDataViz2Data} />
-          )}
-        </div>
-      )}
+        )}
+        {indoorProjectDataViz2Data && (
+          <IndoorProjectDataViz2Graph data={indoorProjectDataViz2Data} />
+        )}
+      </div>
     </IndoorProjectPageLayout>
   );
 }

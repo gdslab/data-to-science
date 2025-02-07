@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import Select, { SingleValue } from 'react-select';
 
-import { DataProduct } from '../../../pages/projects/Project';
+import { DataProduct } from '../../../pages/workspace/projects/Project';
 
 import { useMapContext } from '../../MapContext';
 
@@ -34,15 +34,16 @@ export default function BackgroundRasterSelect({
     );
   }, [dataProduct, flights]);
 
-  const backgroundRasterOptions: BackgroundRasterOption[] | undefined = useMemo(() => {
-    const options =
-      backgroundRasters?.map(({ data_type, id }) => ({
-        label: data_type,
-        value: id,
-      })) || [];
+  const backgroundRasterOptions: BackgroundRasterOption[] | undefined =
+    useMemo(() => {
+      const options =
+        backgroundRasters?.map(({ data_type, id }) => ({
+          label: data_type,
+          value: id,
+        })) || [];
 
-    return [{ label: 'None', value: '' }, ...options];
-  }, [dataProduct, flights]);
+      return [{ label: 'None', value: '' }, ...options];
+    }, [dataProduct, flights]);
 
   const handleChange = (
     backgroundRasterOption: SingleValue<BackgroundRasterOption>
@@ -85,7 +86,8 @@ export default function BackgroundRasterSelect({
         });
 
         // update active data product's background property
-        const symbology = state[dataProduct.id].symbology as SingleBandSymbology;
+        const symbology = state[dataProduct.id]
+          .symbology as SingleBandSymbology;
         dispatch({
           type: 'SET_SYMBOLOGY',
           rasterId: dataProduct.id,
@@ -96,7 +98,8 @@ export default function BackgroundRasterSelect({
           },
         });
       } else {
-        const symbology = state[dataProduct.id].symbology as SingleBandSymbology;
+        const symbology = state[dataProduct.id]
+          .symbology as SingleBandSymbology;
         dispatch({
           type: 'SET_SYMBOLOGY',
           rasterId: dataProduct.id,

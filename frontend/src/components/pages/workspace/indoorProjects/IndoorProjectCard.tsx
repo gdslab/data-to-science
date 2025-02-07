@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
-import { IndoorProject } from './IndoorProject';
+import { IndoorProjectAPIResponse } from './IndoorProject';
 
 type IndoorProjectCardProps = {
-  indoorProject: IndoorProject;
+  indoorProject: IndoorProjectAPIResponse;
 };
 
-export default function IndoorProjectCard({ indoorProject }: IndoorProjectCardProps) {
+export default function IndoorProjectCard({
+  indoorProject,
+}: IndoorProjectCardProps) {
   return (
     <Link to={`/indoor_projects/${indoorProject.id}`} className="block h-36">
       <article className="flex items-center justify-center w-96 h-36 shadow bg-white transition hover:shadow-xl">

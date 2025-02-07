@@ -3,7 +3,7 @@ services:
     build:
       context: ./frontend
       dockerfile: frontend.prod.dockerfile
-    image: d2s-app:latest
+    image: d2s-app:pheno
     platform: linux/x86_64
     depends_on:
       - backend
@@ -34,7 +34,7 @@ services:
       args:
         NUM_OF_WORKERS: 1
         LIMIT_MAX_REQUESTS: 10000
-    image: d2s-api:latest
+    image: d2s-api:pheno
     platform: linux/x86_64
     volumes:
       - external-data:/srv/external-data
@@ -119,7 +119,7 @@ services:
       - no-new-privileges=true
 
   celery_worker:
-    image: d2s-api:latest
+    image: d2s-api:pheno
     platform: linux/x86_64
     command: /app/celery/worker-start.sh
     volumes:
@@ -151,7 +151,7 @@ services:
       - db.env
 
   celery_beat:
-    image: d2s-api:latest
+    image: d2s-api:pheno
     platform: linux/x86_64
     command: /app/celery/beat-start.sh
     volumes:

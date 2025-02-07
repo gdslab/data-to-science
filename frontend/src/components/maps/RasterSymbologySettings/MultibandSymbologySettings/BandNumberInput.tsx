@@ -1,4 +1,4 @@
-import { DataProduct } from '../../../pages/projects/Project';
+import { DataProduct } from '../../../pages/workspace/projects/Project';
 import {
   ColorBand,
   MultibandSymbology,
@@ -40,7 +40,8 @@ export default function BandNumberInput({
   };
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value as MultibandSymbology[keyof MultibandSymbology];
+    const value = event.target
+      .value as MultibandSymbology[keyof MultibandSymbology];
     const valueAsNumber = typeof value === 'string' ? parseFloat(value) : value;
 
     const updatedSymbology = {
