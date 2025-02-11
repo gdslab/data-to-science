@@ -279,7 +279,7 @@ def check_raw_data_processing_progress(
 ) -> Any:
     # find job with name "processing-raw-data" for raw_data_id
     job = crud.job.get(db, id=job_id)
-    if not job or job.name != "processing-raw-data" or job.status != "INPROGRESS":
+    if not job or job.name != "processing-raw-data" or job.status != Status.INPROGRESS:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No active job found for processing this raw data",

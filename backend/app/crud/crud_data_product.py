@@ -113,7 +113,9 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             .where(and_(DataProduct.flight_id == flight_id, DataProduct.is_active))
         )
         with db as session:
-            data_products = session.execute(data_products_query).scalars().all()
+            data_products = (
+                session.execute(data_products_query).scalars().unique().all()
+            )
             updated_data_products = []
             for data_product in data_products:
                 # if not a point cloud, find user style settings for data product

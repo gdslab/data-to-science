@@ -51,8 +51,8 @@ export default function MoveFlightModal({
         return [];
       }
     }
-    getProjects();
-  }, []);
+    if (open) getProjects();
+  }, [open]);
 
   async function moveProject() {
     try {
@@ -78,7 +78,10 @@ export default function MoveFlightModal({
         } else if (typeof (err.response.status === 422)) {
           setStatus({ type: 'error', msg: err.response.data.detail[0].msg });
         } else {
-          setStatus({ type: 'error', msg: 'Unable to move flight at this time' });
+          setStatus({
+            type: 'error',
+            msg: 'Unable to move flight at this time',
+          });
         }
       } else {
         setStatus({ type: 'error', msg: 'Unable to move flight at this time' });
