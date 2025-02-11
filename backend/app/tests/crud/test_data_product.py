@@ -6,9 +6,10 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.core.config import settings
 from app.schemas.file_permission import FilePermissionUpdate
-from app.schemas.job import JobUpdate, Status
+from app.schemas.job import State, Status
 from app.tests.utils.flight import create_flight
 from app.tests.utils.data_product import SampleDataProduct, test_stac_props_dsm
+from app.tests.utils.job import create_job
 from app.tests.utils.user import create_user
 
 
@@ -95,6 +96,35 @@ def test_read_data_products(db: Session) -> None:
     for data_product in data_products:
         assert data_product.flight_id == flight.id
         assert data_product.public is False
+
+
+def test_read_data_products_with_multiple_jobs_for_single_data_product(
+    db: Session,
+) -> None:
+    """Test that a data product associated with multiple jobs is not
+    included multiple times in the returned results.
+    """
+    user = create_user(db)
+    flight = create_flight(db)
+    SampleDataProduct(db, flight=flight, user=user)
+    data_product = SampleDataProduct(
+        db, flight=flight, user=user, data_type="NDVI", skip_job=True
+    ).obj
+    # Create two jobs for NDVI data product
+    for job_name in ["ndvi-process", "zonal-process"]:
+        create_job(
+            db,
+            name=job_name,
+            state=State.COMPLETED,
+            status=Status.SUCCESS,
+            start_time=datetime.now(tz=timezone.utc),
+            data_product_id=data_product.id,
+        )
+    data_products = crud.data_product.get_multi_by_flight(
+        db, flight_id=flight.id, upload_dir=settings.TEST_STATIC_DIR, user_id=user.id
+    )
+    assert type(data_products) is list
+    assert len(data_products) == 2
 
 
 def test_update_data_product_eo_bands(db: Session) -> None:
