@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Map, {
   MapRef,

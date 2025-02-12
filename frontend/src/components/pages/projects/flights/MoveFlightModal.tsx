@@ -1,4 +1,4 @@
-import axios, { AxiosResponse, isAxiosError } from 'axios';
+import { AxiosResponse, isAxiosError } from 'axios';
 import { useEffect, useState } from 'react';
 import Select from 'react-select';
 import { useRevalidator } from 'react-router-dom';
@@ -8,6 +8,8 @@ import { AlertBar, Status } from '../../../Alert';
 import { Flight, Project } from '../Project';
 import Modal from '../../../Modal';
 import { Button } from '../../../Buttons';
+
+import api from '../../../../api';
 
 type ProjectOption = {
   label: string;
@@ -38,9 +40,7 @@ export default function MoveFlightModal({
 
   useEffect(() => {
     async function getProjects() {
-      const response: AxiosResponse<Project[]> = await axios.get(
-        `${import.meta.env.VITE_API_V1_STR}/projects`
-      );
+      const response: AxiosResponse<Project[]> = await api.get(`/projects`);
       if (response) {
         const ownedProjects = response.data
           .filter(({ id, role }) => role === 'owner' && id !== srcProjectId)
@@ -57,10 +57,8 @@ export default function MoveFlightModal({
   async function moveProject() {
     try {
       setIsMoving(true);
-      const response: AxiosResponse<Flight> = await axios.put(
-        `${
-          import.meta.env.VITE_API_V1_STR
-        }/projects/${srcProjectId}/flights/${flightId}/move_to_project/${dstProjectId}`
+      const response: AxiosResponse<Flight> = await api.put(
+        `/projects/${srcProjectId}/flights/${flightId}/move_to_project/${dstProjectId}`
       );
       if (response.status === 200) {
         revalidator.revalidate();

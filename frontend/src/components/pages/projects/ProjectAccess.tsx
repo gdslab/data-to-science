@@ -1,18 +1,20 @@
-import axios, { AxiosResponse, isAxiosError } from 'axios';
+import { AxiosResponse, isAxiosError } from 'axios';
 import { useContext, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { CheckIcon } from '@heroicons/react/24/outline';
 
 import { AlertBar } from '../../Alert';
 import { Button } from '../../Buttons';
-import Table, { TableBody, TableHead } from '../../Table';
-import { CheckIcon } from '@heroicons/react/24/outline';
-import SearchUsers, { UserSearch } from '../teams/SearchUsers';
-
 import { generateRandomProfileColor } from '../auth/Profile';
-import { classNames } from '../../utils';
-import { sorter } from '../../utils';
+import SearchUsers, { UserSearch } from '../teams/SearchUsers';
+import Table, { TableBody, TableHead } from '../../Table';
+
 import AuthContext from '../../../AuthContext';
 import { useProjectContext } from './ProjectContext';
+
+import api from '../../../api';
+import { classNames } from '../../utils';
+import { sorter } from '../../utils';
 
 export interface ProjectMember {
   id: string;
@@ -68,10 +70,8 @@ function AccessRoleRadioGroup({
           if (currentRole !== role) {
             try {
               const payload = { role: role };
-              const response: AxiosResponse<ProjectMember> = await axios.put(
-                `${import.meta.env.VITE_API_V1_STR}/projects/${
-                  params.projectId
-                }/members/${memberId}`,
+              const response: AxiosResponse<ProjectMember> = await api.put(
+                `/projects/${params.projectId}/members/${memberId}`,
                 payload
               );
               if (response) {
@@ -103,7 +103,8 @@ export default function ProjectAccess() {
   const [searchResults, setSearchResults] = useState<UserSearch[]>([]);
 
   const { user } = useContext(AuthContext);
-  const { projectMembers, projectMembersDispatch, projectRole } = useProjectContext();
+  const { projectMembers, projectMembersDispatch, projectRole } =
+    useProjectContext();
 
   const navigate = useNavigate();
   const params = useParams();
@@ -117,7 +118,10 @@ export default function ProjectAccess() {
     }
   }, []);
 
-  function updateProjectMemberRole(projectMemberId: string, newRole: string): void {
+  function updateProjectMemberRole(
+    projectMemberId: string,
+    newRole: string
+  ): void {
     if (projectMembers) {
       projectMembersDispatch({
         type: 'set',
@@ -137,10 +141,8 @@ export default function ProjectAccess() {
     projectMembers: ProjectMember[]
   ) {
     try {
-      const response = await axios.delete(
-        `${import.meta.env.VITE_API_V1_STR}/projects/${
-          params.projectId
-        }/members/${memberId}`
+      const response = await api.delete(
+        `/projects/${params.projectId}/members/${memberId}`
       );
       if (response) {
         projectMembersDispatch({
@@ -169,19 +171,25 @@ export default function ProjectAccess() {
           <h2>Access Role Descriptions</h2>
           <div className="grid grid-rows-3 gap-1.5">
             <div className="grid grid-cols-6 gap-4">
-              <span className="col-span-1 font-semibold text-slate-700">Owner:</span>
+              <span className="col-span-1 font-semibold text-slate-700">
+                Owner:
+              </span>
               <span className="col-span-5">
                 Can create, update, view, and remove project data.
               </span>
             </div>
             <div className="grid grid-cols-6 gap-4">
-              <span className="col-span-1 font-semibold text-slate-700">Manager:</span>
+              <span className="col-span-1 font-semibold text-slate-700">
+                Manager:
+              </span>
               <span className="col-span-5">
                 Can create, update, and view project data.
               </span>
             </div>
             <div className="grid grid-cols-6 gap-4">
-              <span className="col-span-1 font-semibold text-slate-700">Viewer:</span>
+              <span className="col-span-1 font-semibold text-slate-700">
+                Viewer:
+              </span>
               <span className="col-span-5">Can view project data.</span>
             </div>
           </div>
@@ -189,7 +197,10 @@ export default function ProjectAccess() {
         <div className="overflow-x-auto">
           <div className="grow min-h-0 min-w-[1000px]">
             <Table>
-              <TableHead align="left" columns={['Name', 'Email', 'Role', 'Actions']} />
+              <TableHead
+                align="left"
+                columns={['Name', 'Email', 'Role', 'Actions']}
+              />
               <div className="overflow-y-auto max-h-96 xl:max-h-[420px] 2xl:max-h-[512px]">
                 <TableBody
                   align="left"
@@ -201,7 +212,10 @@ export default function ProjectAccess() {
                         profile_url ? (
                           <div className="flex items-center justify-start gap-4 whitespace-nowrap">
                             <img
-                              key={profile_url.split('/').slice(-1)[0].slice(0, -4)}
+                              key={profile_url
+                                .split('/')
+                                .slice(-1)[0]
+                                .slice(0, -4)}
                               className="h-8 w-8 rounded-full"
                               src={profile_url}
                             />
@@ -231,7 +245,9 @@ export default function ProjectAccess() {
                         <button
                           className="text-sky-600"
                           type="button"
-                          onClick={() => removeProjectMember(id, projectMembers)}
+                          onClick={() =>
+                            removeProjectMember(id, projectMembers)
+                          }
                         >
                           Remove
                         </button>,
@@ -257,15 +273,20 @@ export default function ProjectAccess() {
                 size="sm"
                 onClick={(e) => {
                   e.preventDefault();
-                  const selectedMembers = searchResults.filter((u) => u.checked);
+                  const selectedMembers = searchResults.filter(
+                    (u) => u.checked
+                  );
                   if (selectedMembers.length > 0) {
-                    axios
+                    api
                       .post(
-                        `/api/v1/projects/${params.projectId}/members/multi`,
+                        `/projects/${params.projectId}/members/multi`,
                         selectedMembers.map(({ id }) => id)
                       )
                       .then((response: AxiosResponse<ProjectMember[]>) => {
-                        projectMembersDispatch({ type: 'set', payload: response.data });
+                        projectMembersDispatch({
+                          type: 'set',
+                          payload: response.data,
+                        });
                         setSearchResults([]);
                       })
                       .catch((err) => {

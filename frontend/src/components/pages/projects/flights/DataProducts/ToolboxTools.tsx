@@ -1,19 +1,19 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import { Field, useFormikContext } from 'formik';
 import Papa from 'papaparse';
 import { useEffect, useMemo, useState } from 'react';
+import { useParams } from 'react-router-dom';
 
 import HintText from '../../../../HintText';
 import { SelectField } from '../../../../InputFields';
-
 import { DataProduct, ZonalFeatureCollection } from '../../Project';
 import { ToolboxFields } from './ToolboxModal';
 import { removeKeysFromFeatureProperties } from '../../mapLayers/utils';
-
 import { useProjectContext } from '../../ProjectContext';
-import { useParams } from 'react-router-dom';
 import { downloadFile as downloadCSV } from '../../fieldCampaigns/utils';
 import { download as downloadGeoJSON } from '../../mapLayers/utils';
+
+import api from '../../../../../api';
 
 const EXGBandSelection = ({ dataProduct }: { dataProduct: DataProduct }) => {
   const bandOptions = dataProduct.stac_properties.eo.map((band, idx) => ({
@@ -107,7 +107,8 @@ const LidarTools = () => {
               htmlFor="chm-checkbox"
               className="ms-2 text-sm font-medium text-gray-900"
             >
-              Canopy Height Model (CHM) <span className="italic">Coming soon</span>
+              Canopy Height Model (CHM){' '}
+              <span className="italic">Coming soon</span>
             </label>
           </div>
         </div>
@@ -140,18 +141,21 @@ const DownloadZonalStatistics = ({
   useEffect(() => {
     async function fetchZonalStats() {
       try {
-        const response: AxiosResponse<ZonalFeatureCollection | null> = await axios.get(
-          `${
-            import.meta.env.VITE_API_V1_STR
-          }/projects/${projectId}/flights/${flightId}/data_products/${dataProductId}/zonal_statistics?layer_id=${layerId}`
-        );
+        const response: AxiosResponse<ZonalFeatureCollection | null> =
+          await api.get(
+            `/projects/${projectId}/flights/${flightId}/data_products/${dataProductId}/zonal_statistics?layer_id=${layerId}`
+          );
         if (response.status === 200) {
           setZonalFeatureCollection(response.data);
         } else {
-          console.log('Unable to check for previously calculated zonal statistics');
+          console.log(
+            'Unable to check for previously calculated zonal statistics'
+          );
         }
       } catch (_err) {
-        console.log('Unable to check for previously calculated zonal statistics');
+        console.log(
+          'Unable to check for previously calculated zonal statistics'
+        );
       }
     }
     if (projectId && flightId && dataProductId) {
@@ -223,29 +227,38 @@ const ZonalStatisticTools = ({ dataProductId }: { dataProductId: string }) => {
         <div className="flex flex-col gap-4">
           <div className="flex items-center">
             <Field id="zonal" type="checkbox" name="zonal" />
-            <label htmlFor="zonal" className="ms-2 text-sm font-medium text-gray-900">
+            <label
+              htmlFor="zonal"
+              className="ms-2 text-sm font-medium text-gray-900"
+            >
               Zonal Statistics
             </label>
           </div>
           {values.zonal && (
             <div>
               <span className="text-sm">Select Layer with Zonal Features:</span>
-              {filteredAndSortedMapLayers.map(({ layer_id, layer_name, geom_type }) => (
-                <label
-                  key={layer_id}
-                  className="block text-sm text-gray-600 font-bold pb-1"
-                >
-                  <Field type="radio" name="zonal_layer_id" value={layer_id} />
-                  <span className="ml-2">{layer_name}</span>
-                  {(geom_type.toLowerCase() === 'polygon' ||
-                    geom_type.toLowerCase() === 'multipolygon') && (
-                    <DownloadZonalStatistics
-                      dataProductId={dataProductId}
-                      layerId={layer_id}
+              {filteredAndSortedMapLayers.map(
+                ({ layer_id, layer_name, geom_type }) => (
+                  <label
+                    key={layer_id}
+                    className="block text-sm text-gray-600 font-bold pb-1"
+                  >
+                    <Field
+                      type="radio"
+                      name="zonal_layer_id"
+                      value={layer_id}
                     />
-                  )}
-                </label>
-              ))}
+                    <span className="ml-2">{layer_name}</span>
+                    {(geom_type.toLowerCase() === 'polygon' ||
+                      geom_type.toLowerCase() === 'multipolygon') && (
+                      <DownloadZonalStatistics
+                        dataProductId={dataProductId}
+                        layerId={layer_id}
+                      />
+                    )}
+                  </label>
+                )
+              )}
             </div>
           )}
         </div>

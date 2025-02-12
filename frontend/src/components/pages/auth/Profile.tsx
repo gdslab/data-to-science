@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse, isAxiosError } from 'axios';
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { Fragment, useContext, useEffect, useState } from 'react';
 import seedrandom from 'seedrandom';
@@ -18,6 +18,7 @@ import { InputField } from '../../FormFields';
 import HintText from '../../HintText';
 import AuthContext, { User } from '../../../AuthContext';
 
+import api from '../../../api';
 import { classNames } from '../../utils';
 import {
   passwordChangeValidationSchema,
@@ -98,14 +99,10 @@ function ChangePasswordForm({
         current_password: values.passwordCurrent,
         new_password: values.passwordNew,
       };
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_V1_STR}/auth/change-password`,
-        data,
-        {
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          withCredentials: true,
-        }
-      );
+      const response = await api.post('/auth/change-password', data, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        withCredentials: true,
+      });
       if (response) {
         if (response.status === 200) {
           setStatus({ type: 'success', msg: 'Password changed' });
@@ -115,7 +112,7 @@ function ChangePasswordForm({
         }
       }
     } catch (err) {
-      if (axios.isAxiosError(err)) {
+      if (isAxiosError(err)) {
         setStatus({ type: 'error', msg: err.response?.data.detail });
       } else {
         setStatus({ type: 'error', msg: 'Unable to change password' });
@@ -127,7 +124,11 @@ function ChangePasswordForm({
     <FormProvider {...methods}>
       <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
         <HintText>{passwordHintText}</HintText>
-        <InputField label="Current Password" name="passwordCurrent" type="password" />
+        <InputField
+          label="Current Password"
+          name="passwordCurrent"
+          type="password"
+        />
         <InputField label="New Password" name="passwordNew" type="password" />
         <InputField
           label="Retype New Password"
@@ -181,10 +182,7 @@ function ProfileForm({ setStatus, updateProfile, user }: ProfileProps) {
         first_name: values.firstName,
         last_name: values.lastName,
       };
-      const response = await axios.put(
-        `${import.meta.env.VITE_API_V1_STR}/users/${user.id}`,
-        data
-      );
+      const response = await api.put(`/users/${user.id}`, data);
       if (response) {
         if (response.status === 200) {
           updateProfile();
@@ -195,7 +193,7 @@ function ProfileForm({ setStatus, updateProfile, user }: ProfileProps) {
         }
       }
     } catch (err) {
-      if (axios.isAxiosError(err)) {
+      if (isAxiosError(err)) {
         setStatus({ type: 'error', msg: err.response?.data.detail });
       } else {
         setStatus({ type: 'error', msg: 'Unable to update profile' });
@@ -274,15 +272,16 @@ function EditProfilePicture({ setStatus, updateProfile }: EditProfilePicture) {
               role="menuitem"
               onClick={async () => {
                 try {
-                  const response = await axios.delete(
-                    `${import.meta.env.VITE_API_V1_STR}/users/profile`
-                  );
+                  const response = await api.delete('/users/profile');
                   if (response) {
                     toggleMenuVisibility(false);
                     updateProfile();
                   }
                 } catch (err) {
-                  setStatus({ type: 'error', msg: 'Unable to remove profile picture' });
+                  setStatus({
+                    type: 'error',
+                    msg: 'Unable to remove profile picture',
+                  });
                 }
               }}
             >
@@ -313,8 +312,8 @@ function APIAccessForm({ setStatus, updateProfile, user }: APIAccessForm) {
   async function revokeAPIKey() {
     setIsSending(true);
     try {
-      const response: AxiosResponse<User> = await axios.get(
-        `${import.meta.env.VITE_API_V1_STR}/auth/revoke-api-key`
+      const response: AxiosResponse<User> = await api.get(
+        '/auth/revoke-api-key'
       );
       if (response) {
         // display API key with COPY API Key button
@@ -338,8 +337,8 @@ function APIAccessForm({ setStatus, updateProfile, user }: APIAccessForm) {
   async function requestAPIKey() {
     setIsSending(true);
     try {
-      const response: AxiosResponse<User> = await axios.get(
-        `${import.meta.env.VITE_API_V1_STR}/auth/request-api-key`
+      const response: AxiosResponse<User> = await api.get(
+        '/auth/request-api-key'
       );
       if (response) {
         if (response) {
@@ -372,10 +371,11 @@ function APIAccessForm({ setStatus, updateProfile, user }: APIAccessForm) {
       <div className="flex flex-col gap-4">
         <div>
           <p className="text-sm">
-            Your API key is a sensitive credential that can be used to access your data
-            stored on {import.meta.env.VITE_BRAND_SHORT}. Please keep it secure and do
-            not share it with anyone. If you suspect unauthorized access using your API
-            key, you may revoke the key using this form and request a new one.
+            Your API key is a sensitive credential that can be used to access
+            your data stored on {import.meta.env.VITE_BRAND_SHORT}. Please keep
+            it secure and do not share it with anyone. If you suspect
+            unauthorized access using your API key, you may revoke the key using
+            this form and request a new one.
           </p>
           {user.api_access_token ? (
             <Fragment>
@@ -470,8 +470,12 @@ export default function Profile() {
                   updateProfile={updateProfile}
                   user={user}
                 />
-                <span className="text-xl font-semibold">Password Management</span>
-                <p>Update your current password by clicking the below button.</p>
+                <span className="text-xl font-semibold">
+                  Password Management
+                </span>
+                <p>
+                  Update your current password by clicking the below button.
+                </p>
                 {showChangePasswordForm ? (
                   <ChangePasswordForm
                     setShowChangePasswordForm={setShowChangePasswordForm}

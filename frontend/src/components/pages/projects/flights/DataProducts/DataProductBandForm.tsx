@@ -1,4 +1,4 @@
-import axios, { isAxiosError } from 'axios';
+import { isAxiosError } from 'axios';
 import { useState } from 'react';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { useParams } from 'react-router-dom';
@@ -8,6 +8,8 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import HintText from '../../../../HintText';
 import { DataProduct, EO } from '../../Project';
 import Alert, { Status } from '../../../../Alert';
+
+import api from '../../../../../api';
 
 type DataProductBandFormProps = { dataProduct: DataProduct };
 
@@ -49,11 +51,11 @@ export default function DataProductBandForm({
   });
 
   const onSubmit: SubmitHandler<DataProductBandForm> = async (data) => {
-    let endpoint = `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}`;
+    let endpoint = `/projects/${projectId}`;
     endpoint += `/flights/${flightId}/data_products/${dataProduct.id}/bands`;
 
     try {
-      const response = await axios.put(endpoint, data);
+      const response = await api.put(endpoint, data);
 
       if (response.status === 200) {
         setStatus({

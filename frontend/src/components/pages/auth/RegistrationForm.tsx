@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { isAxiosError } from 'axios';
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
@@ -17,7 +17,10 @@ import {
 } from './initialValues';
 import { registrationValidationSchema as validationSchema } from './validationSchema';
 
-export const passwordHintText = 'Your password must use at least 12 characters.';
+import api from '../../../api';
+
+export const passwordHintText =
+  'Your password must use at least 12 characters.';
 
 export default function RegistrationForm() {
   const [status, setStatus] = useState<Status | null>(null);
@@ -41,7 +44,7 @@ export default function RegistrationForm() {
         email: values.email,
         password: values.password,
       };
-      const response = await axios.post<User>('/api/v1/users', data);
+      const response = await api.post<User>('/users', data);
       if (response) {
         if (response.data.is_email_confirmed) {
           setStatus({
@@ -63,7 +66,7 @@ export default function RegistrationForm() {
         });
       }
     } catch (err) {
-      if (axios.isAxiosError(err)) {
+      if (isAxiosError(err)) {
         setStatus({
           type: err.response?.status === 409 ? 'warning' : 'error',
           msg: err.response?.data.detail,
@@ -80,7 +83,10 @@ export default function RegistrationForm() {
   return (
     <Layout pageTitle="Create your account">
       <FormProvider {...methods}>
-        <form className="grid grid-flow-row gap-4" onSubmit={handleSubmit(onSubmit)}>
+        <form
+          className="grid grid-flow-row gap-4"
+          onSubmit={handleSubmit(onSubmit)}
+        >
           <div className="grid md:grid-cols-2 grid-cols-1 gap-4">
             <InputField label="First Name" name="firstName" />
             <InputField label="Last Name" name="lastName" />

@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import clsx from 'clsx';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -8,11 +8,12 @@ import {
   ChevronUpIcon,
 } from '@heroicons/react/24/outline';
 
+import Alert, { Status } from '../../../Alert';
 import { Measurement } from './FieldCampaign';
 import { useFieldCampaignContext } from './FieldCampaignContext';
 
+import api from '../../../../api';
 import { downloadFile, getFilenameFromContentDisposition } from './utils';
-import Alert, { Status } from '../../../Alert';
 
 type FieldTimepoints = {
   campaignId: string;
@@ -89,10 +90,8 @@ function FieldTimepoints({
                         },
                       ],
                     };
-                    const response: AxiosResponse<Blob> = await axios.post(
-                      `${
-                        import.meta.env.VITE_API_V1_STR
-                      }/projects/${projectId}/campaigns/${campaignId}/download`,
+                    const response: AxiosResponse<Blob> = await api.post(
+                      `/projects/${projectId}/campaigns/${campaignId}/download`,
                       data,
                       { responseType: 'blob' }
                     );
@@ -235,17 +234,21 @@ export default function FieldCampaignTable() {
       <div className="flex flex-col justify-center gap-4">
         <table className="min-w-full border-separate border-spacing-1">
           <FieldCampaignHeaderRow
-            treatments={fieldCampaign.form_data.treatments.map(({ name }) => name)}
+            treatments={fieldCampaign.form_data.treatments.map(
+              ({ name }) => name
+            )}
           />
           <tbody>
             {/* add one row for each measurement */}
-            {fieldCampaign.form_data.measurements.map((measurement, measurementIdx) => (
-              <FieldCampaignRow
-                key={`fcr-${measurementIdx}`}
-                measurementIdx={measurementIdx}
-                measurement={measurement}
-              />
-            ))}
+            {fieldCampaign.form_data.measurements.map(
+              (measurement, measurementIdx) => (
+                <FieldCampaignRow
+                  key={`fcr-${measurementIdx}`}
+                  measurementIdx={measurementIdx}
+                  measurement={measurement}
+                />
+              )
+            )}
           </tbody>
         </table>
         <div className="h-10 flex justify-between gap-4">
@@ -261,14 +264,15 @@ export default function FieldCampaignTable() {
                 ) {
                   for (
                     let measurementIdx = 0;
-                    measurementIdx < fieldCampaign.form_data.measurements.length;
+                    measurementIdx <
+                    fieldCampaign.form_data.measurements.length;
                     measurementIdx++
                   ) {
                     for (
                       let timepointIdx = 0;
                       timepointIdx <
-                      fieldCampaign.form_data.measurements[measurementIdx].timepoints
-                        .length;
+                      fieldCampaign.form_data.measurements[measurementIdx]
+                        .timepoints.length;
                       timepointIdx++
                     ) {
                       allTimepoints.push(
@@ -313,10 +317,8 @@ export default function FieldCampaignTable() {
                         };
                       }),
                     };
-                    const response: AxiosResponse<Blob> = await axios.post(
-                      `${
-                        import.meta.env.VITE_API_V1_STR
-                      }/projects/${projectId}/campaigns/${fieldCampaign?.id}/download`,
+                    const response: AxiosResponse<Blob> = await api.post(
+                      `/projects/${projectId}/campaigns/${fieldCampaign?.id}/download`,
                       data,
                       { responseType: 'blob' }
                     );
@@ -342,7 +344,10 @@ export default function FieldCampaignTable() {
                     }
                   } catch {
                     setIsDownloading(false);
-                    setStatus({ type: 'error', msg: 'Unable to process request' });
+                    setStatus({
+                      type: 'error',
+                      msg: 'Unable to process request',
+                    });
                   }
                 }
                 fetchCsvTemplate();

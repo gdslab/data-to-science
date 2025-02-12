@@ -1,8 +1,8 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse, isAxiosError } from 'axios';
 import { createContext, useContext, useEffect, useReducer } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { GeoJSONFeature, IForester, MapLayer } from '../Project';
+import { Flight, GeoJSONFeature, IForester, MapLayer } from '../Project';
 import { Project } from '../ProjectList';
 import { ProjectMember } from '../ProjectAccess';
 import { User } from '../../../../AuthContext';
@@ -28,7 +28,7 @@ import {
   projectRoleReducer,
 } from './reducers';
 
-import { Flight } from '../Project';
+import api from '../../../../api';
 
 interface Context {
   iforester: IForester[] | null;
@@ -73,8 +73,8 @@ export async function getProjectMembers(
   projectMembersDispatch: React.Dispatch<ProjectMembersAction>
 ) {
   try {
-    const response: AxiosResponse<ProjectMember[]> = await axios.get(
-      `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/members`
+    const response: AxiosResponse<ProjectMember[]> = await api.get(
+      `/projects/${projectId}/members`
     );
     if (response) {
       projectMembersDispatch({ type: 'set', payload: response.data });
@@ -82,7 +82,7 @@ export async function getProjectMembers(
       projectMembersDispatch({ type: 'clear', payload: null });
     }
   } catch (err) {
-    if (axios.isAxiosError(err)) {
+    if (isAxiosError(err)) {
       console.log(err.response?.data);
     } else {
       console.error(err);
@@ -96,8 +96,8 @@ export async function getMapLayers(
   mapLayersDispatch: React.Dispatch<MapLayersAction>
 ) {
   try {
-    const response: AxiosResponse<MapLayer[]> = await axios.get(
-      `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/vector_layers`
+    const response: AxiosResponse<MapLayer[]> = await api.get(
+      `/projects/${projectId}/vector_layers`
     );
     if (response.status === 200) {
       mapLayersDispatch({ type: 'set', payload: response.data });
@@ -105,7 +105,7 @@ export async function getMapLayers(
       mapLayersDispatch({ type: 'clear' });
     }
   } catch (err) {
-    if (axios.isAxiosError(err)) {
+    if (isAxiosError(err)) {
       console.log(err.response?.data);
     } else {
       console.error(err);
@@ -134,17 +134,18 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
     projectMembersReducer,
     null
   );
-  const [projectRole, projectRoleDispatch] = useReducer(projectRoleReducer, undefined);
+  const [projectRole, projectRoleDispatch] = useReducer(
+    projectRoleReducer,
+    undefined
+  );
 
   const params = useParams();
 
   useEffect(() => {
     async function getLocation(project: Project) {
       try {
-        const response: AxiosResponse<GeoJSONFeature> = await axios.get(
-          `${import.meta.env.VITE_API_V1_STR}/locations/${project.id}/${
-            project.location_id
-          }`
+        const response: AxiosResponse<GeoJSONFeature> = await api.get(
+          `/locations/${project.id}/${project.location_id}`
         );
         if (response) {
           locationDispatch({ type: 'set', payload: response.data });
@@ -152,7 +153,7 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
           locationDispatch({ type: 'clear', payload: null });
         }
       } catch (err) {
-        if (axios.isAxiosError(err)) {
+        if (isAxiosError(err)) {
           console.log(err.response?.data);
         } else {
           console.error(err);
@@ -171,8 +172,8 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
   useEffect(() => {
     async function getFlights() {
       try {
-        const response: AxiosResponse<Flight[]> = await axios.get(
-          `${import.meta.env.VITE_API_V1_STR}/projects/${params.projectId}/flights`
+        const response: AxiosResponse<Flight[]> = await api.get(
+          `/projects/${params.projectId}/flights`
         );
         if (response) {
           flightsDispatch({ type: 'set', payload: response.data });
@@ -185,7 +186,7 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
           flightsFilterSelectionDispatch({ type: 'reset' });
         }
       } catch (err) {
-        if (axios.isAxiosError(err)) {
+        if (isAxiosError(err)) {
           console.log(err.response?.data);
         } else {
           console.error(err);
@@ -214,8 +215,8 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
   useEffect(() => {
     async function getProject() {
       try {
-        const response: AxiosResponse<Project> = await axios.get(
-          `${import.meta.env.VITE_API_V1_STR}/projects/${params.projectId}`
+        const response: AxiosResponse<Project> = await api.get(
+          `/projects/${params.projectId}`
         );
         if (response) {
           projectDispatch({ type: 'set', payload: response.data });
@@ -223,7 +224,7 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
           projectDispatch({ type: 'clear', payload: null });
         }
       } catch (err) {
-        if (axios.isAxiosError(err)) {
+        if (isAxiosError(err)) {
           console.log(err.response?.data);
         } else {
           console.error(err);
@@ -254,10 +255,8 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
         const user: User | null = profile ? JSON.parse(profile) : null;
         if (!user) throw new Error();
 
-        const response: AxiosResponse<ProjectMember> = await axios.get(
-          `${import.meta.env.VITE_API_V1_STR}/projects/${params.projectId}/members/${
-            user.id
-          }`
+        const response: AxiosResponse<ProjectMember> = await api.get(
+          `/projects/${params.projectId}/members/${user.id}`
         );
         if (response) {
           projectRoleDispatch({ type: 'set', payload: response.data.role });
@@ -265,7 +264,7 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
           projectRoleDispatch({ type: 'clear', payload: undefined });
         }
       } catch (err) {
-        if (axios.isAxiosError(err)) {
+        if (isAxiosError(err)) {
           console.log(err.response?.data);
         } else {
           console.error(err);

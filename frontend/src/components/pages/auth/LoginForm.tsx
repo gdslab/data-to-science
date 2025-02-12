@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { isAxiosError } from 'axios';
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { Fragment, useContext, useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
@@ -10,14 +10,25 @@ import { Button, OutlineButton } from '../../Buttons';
 import { InputField } from '../../FormFields';
 import Layout from './Layout';
 
-import { loginInitialValues as defaultValues, LoginFormData } from './initialValues';
+import {
+  loginInitialValues as defaultValues,
+  LoginFormData,
+} from './initialValues';
 import { loginValidationSchema as validationSchema } from './validationSchema';
 
-function SearchParamAlerts({ searchParams }: { searchParams: URLSearchParams }) {
+import api from '../../../api';
+
+function SearchParamAlerts({
+  searchParams,
+}: {
+  searchParams: URLSearchParams;
+}) {
   return (
     <Fragment>
       {searchParams.get('email_confirmed') === 'true' && (
-        <Alert alertType="success">Your email address has been confirmed.</Alert>
+        <Alert alertType="success">
+          Your email address has been confirmed.
+        </Alert>
       )}
       {searchParams.get('password_reset') === 'true' && (
         <Alert alertType="success">Your password has been reset.</Alert>
@@ -51,7 +62,7 @@ export default function LoginForm() {
       };
       await login(data).then(() => navigate('/home'));
     } catch (err) {
-      if (axios.isAxiosError(err)) {
+      if (isAxiosError(err)) {
         const errMsg = err.response?.data.detail;
         if (err.response?.status === 401) {
           setStatus({ type: 'warning', msg: errMsg });
@@ -67,8 +78,8 @@ export default function LoginForm() {
                     onClick={async (e) => {
                       e.preventDefault();
                       try {
-                        const response = await axios.get(
-                          '/api/v1/auth/request-email-confirmation',
+                        const response = await api.get(
+                          '/auth/request-email-confirmation',
                           { params: { email: values.email } }
                         );
                         if (response)
@@ -109,7 +120,10 @@ export default function LoginForm() {
     <Layout pageTitle="Sign in to your account">
       <SearchParamAlerts searchParams={searchParams} />
       <FormProvider {...methods}>
-        <form className="grid grid-flow-row gap-4" onSubmit={handleSubmit(onSubmit)}>
+        <form
+          className="grid grid-flow-row gap-4"
+          onSubmit={handleSubmit(onSubmit)}
+        >
           {/* Email input field */}
           <InputField label="Email" name="email" />
           {/* Password input field */}

@@ -1,15 +1,17 @@
-import axios, { AxiosResponse, isAxiosError } from 'axios';
+import { AxiosResponse, isAxiosError } from 'axios';
 import { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 
+import { LinkButton } from '../../Buttons';
 import { IForester } from './Project';
 import ProjectCampaigns from './ProjectCampaigns';
 import ProjectFlights from './ProjectFlights';
 import ProjectVectorData from './ProjectVectorData';
 
+import api from '../../../api';
+
 import iForesterLogo from '../../../assets/iForester-logo.png';
-import { LinkButton } from '../../Buttons';
 
 export default function ProjectTabNav() {
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -27,8 +29,8 @@ export default function ProjectTabNav() {
   useEffect(() => {
     async function fetchIForesterData(projectId: string) {
       try {
-        const response: AxiosResponse<IForester[]> = await axios.get(
-          `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/iforester`
+        const response: AxiosResponse<IForester[]> = await api.get(
+          `/projects/${projectId}/iforester`
         );
         if (response.status === 200) {
           setIForesterData(response.data);

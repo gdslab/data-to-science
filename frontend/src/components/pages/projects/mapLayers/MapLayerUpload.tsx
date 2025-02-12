@@ -1,4 +1,4 @@
-import axios, { isAxiosError, AxiosResponse } from 'axios';
+import { isAxiosError, AxiosResponse } from 'axios';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { XMarkIcon } from '@heroicons/react/24/outline';
@@ -8,6 +8,8 @@ import { Button } from '../../../Buttons';
 import MapLayerFileInput from './MapLayerFileInput';
 import Modal from '../../../Modal';
 import { MapLayerFeatureCollection } from '../Project';
+
+import api from '../../../../api';
 
 export default function MapLayerUpload() {
   const [isUploading, setIsUploading] = useState(false);
@@ -29,11 +31,10 @@ export default function MapLayerUpload() {
 
         const headers = { 'Content-Type': 'multipart/form-data' };
 
-        const response: AxiosResponse<MapLayerFeatureCollection> = await axios.post(
-          `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/vector_layers`,
-          formData,
-          { headers }
-        );
+        const response: AxiosResponse<MapLayerFeatureCollection> =
+          await api.post(`/projects/${projectId}/vector_layers`, formData, {
+            headers,
+          });
 
         if (response.status === 202) {
           setStatus({
@@ -89,7 +90,11 @@ export default function MapLayerUpload() {
         <div className="flex flex-col">
           <div className="flex items-center justify-between bg-gray-300 p-4">
             <span className="text-primary font-bold">Upload Vector Layer</span>
-            <button type="button" onClick={handleClick} title="Close upload popup">
+            <button
+              type="button"
+              onClick={handleClick}
+              title="Close upload popup"
+            >
               <XMarkIcon className="w-4 h-4 stroke-[3px]" />
             </button>
           </div>
@@ -113,7 +118,11 @@ export default function MapLayerUpload() {
               {/* Submit button */}
               <div className="w-full flex justify-end">
                 <div className="w-36">
-                  <Button type="submit" size="sm" disabled={isUploading || !uploadFile}>
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={isUploading || !uploadFile}
+                  >
                     {isUploading ? 'Uploading...' : 'Upload'}
                   </Button>
                 </div>

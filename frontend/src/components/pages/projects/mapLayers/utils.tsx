@@ -1,4 +1,4 @@
-import axios, { AxiosResponse, isAxiosError } from 'axios';
+import { AxiosResponse, isAxiosError } from 'axios';
 import { FeatureCollection } from 'geojson';
 import shpwrite, { DownloadOptions, ZipOptions } from '@mapbox/shp-write';
 import {
@@ -7,6 +7,8 @@ import {
   ZonalFeatureCollection,
   ZonalFeatureProperties,
 } from '../Project';
+
+import api from '../../../../api';
 
 interface MapboxZipOptions extends ZipOptions, DownloadOptions {}
 
@@ -22,15 +24,17 @@ export type MapLayerTableRow = {
  * @param file Zipped shapefile.
  * @returns GeoJSON extracted from zipped shapefile or null.
  */
-export async function shpToGeoJSON(file: File): Promise<FeatureCollection | null> {
+export async function shpToGeoJSON(
+  file: File
+): Promise<FeatureCollection | null> {
   try {
     const formData = new FormData();
     formData.append('files', file);
 
     const headers = { 'Content-Type': 'multipart/form-data' };
 
-    const response: AxiosResponse<FeatureCollection> = await axios.post(
-      `${import.meta.env.VITE_API_V1_STR}/locations/upload_vector_layer`,
+    const response: AxiosResponse<FeatureCollection> = await api.post(
+      '/locations/upload_vector_layer',
       formData,
       { headers }
     );
@@ -79,7 +83,9 @@ export function prepMapLayers(
       featureCollection.features.length > 0
     ) {
       const geomTypes = [
-        ...new Set(featureCollection.features.map((feature) => feature.geometry.type)),
+        ...new Set(
+          featureCollection.features.map((feature) => feature.geometry.type)
+        ),
       ];
       const id = featureCollection.features[0].properties?.layer_id;
       const name = featureCollection.features[0].properties?.layer_name;
@@ -153,7 +159,9 @@ export function download(
   if (downloadType === 'zip') {
     const options: MapboxZipOptions = {
       filename:
-        filename && typeof filename === 'string' ? filename : 'feature_collection',
+        filename && typeof filename === 'string'
+          ? filename
+          : 'feature_collection',
       outputType: 'blob',
       compression: 'DEFLATE',
     };
@@ -162,7 +170,9 @@ export function download(
       .then((zipData) => {
         if (zipData instanceof ArrayBuffer || zipData instanceof Blob) {
           const blob = new Blob([zipData], { type: 'application/zip' });
-          const downloadName = filename ? filename + '.zip' : 'feature_collection.zip';
+          const downloadName = filename
+            ? filename + '.zip'
+            : 'feature_collection.zip';
           createAndClickDownloadLink(blob, downloadName);
         } else {
           throw new Error('Unrecognized zip data type');
@@ -211,12 +221,16 @@ export function removeKeysFromFeatureProperties(
   featureCollection: ZonalFeatureCollection,
   unwantedKeys: string[]
 ): ZonalFeatureCollection {
-  const updatedFeatures: ZonalFeature[] = featureCollection.features.map((feature) => ({
-    ...feature,
-    properties: Object.fromEntries(
-      Object.entries(feature.properties).filter(([key]) => !unwantedKeys.includes(key))
-    ) as ZonalFeatureProperties,
-  }));
+  const updatedFeatures: ZonalFeature[] = featureCollection.features.map(
+    (feature) => ({
+      ...feature,
+      properties: Object.fromEntries(
+        Object.entries(feature.properties).filter(
+          ([key]) => !unwantedKeys.includes(key)
+        )
+      ) as ZonalFeatureProperties,
+    })
+  );
   featureCollection.features = updatedFeatures;
   return featureCollection;
 }

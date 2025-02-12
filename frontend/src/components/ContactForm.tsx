@@ -1,4 +1,4 @@
-import axios, { isAxiosError } from 'axios';
+import { isAxiosError } from 'axios';
 import clsx from 'clsx';
 import { useContext, useState } from 'react';
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
@@ -10,7 +10,10 @@ import { Button } from './Buttons';
 import Card from './Card';
 import { InputField, SelectField, styles, TextAreaField } from './FormFields';
 import Modal from './Modal';
+
 import AuthContext from '../AuthContext';
+
+import api from '../api';
 
 type ContactFormData = {
   topic: string;
@@ -63,7 +66,7 @@ function ContactForm() {
   const onSubmit: SubmitHandler<ContactFormData> = async (values) => {
     setStatus(null);
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_V1_STR}/contact`, {
+      const response = await api.post('/contact', {
         ...values,
       });
       if (response) {
@@ -90,7 +93,10 @@ function ContactForm() {
     <Card>
       <h1>Contact Us</h1>
       <FormProvider {...methods}>
-        <form className="grid grid-flow-row gap-4" onSubmit={handleSubmit(onSubmit)}>
+        <form
+          className="grid grid-flow-row gap-4"
+          onSubmit={handleSubmit(onSubmit)}
+        >
           <div>
             <SelectField label="Topic" name="topic" options={TOPIC_OPTIONS} />
           </div>
@@ -115,7 +121,9 @@ function ContactForm() {
             </span>
           </div>
           <div>
-            <span className={styles.label}>{`To: D2S Support <support@d2s.org>`}</span>
+            <span
+              className={styles.label}
+            >{`To: D2S Support <support@d2s.org>`}</span>
             <TextAreaField
               label="Message"
               name="message"
