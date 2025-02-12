@@ -1,9 +1,11 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import { DataProduct } from '../pages/projects/Project';
 import { AlertBar, Status } from '../Alert';
+
+import api from '../../api';
 
 function useQuery() {
   const { search } = useLocation();
@@ -21,8 +23,8 @@ export default function SharePotreeViewer() {
   useEffect(() => {
     async function fetchCOPC(fileID) {
       try {
-        const response: AxiosResponse<DataProduct> = await axios.get(
-          `${import.meta.env.VITE_API_V1_STR}/public?file_id=${fileID}`
+        const response: AxiosResponse<DataProduct> = await api.get(
+          `/public?file_id=${fileID}`
         );
         if (response.status === 200) {
           setCopcUrl(response.data.url);

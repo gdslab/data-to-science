@@ -1,13 +1,18 @@
-import axios from 'axios';
 import { useContext } from 'react';
 import { useLoaderData, useParams, useRevalidator } from 'react-router-dom';
 
 import AuthContext from '../../../AuthContext';
 import { generateRandomProfileColor } from '../auth/Profile';
 import { TeamData, TeamMember } from './TeamDetail';
+
+import api from '../../../api';
 import { sorter } from '../../utils';
 
-export default function TeamMemberList({ teamMembers }: { teamMembers: TeamMember[] }) {
+export default function TeamMemberList({
+  teamMembers,
+}: {
+  teamMembers: TeamMember[];
+}) {
   const { team } = useLoaderData() as TeamData;
   const { teamId } = useParams();
   const revalidator = useRevalidator();
@@ -15,9 +20,7 @@ export default function TeamMemberList({ teamMembers }: { teamMembers: TeamMembe
 
   async function removeTeamMember(memberId: string) {
     try {
-      const response = await axios.delete(
-        `/api/v1/teams/${teamId}/members/${memberId}`
-      );
+      const response = await api.delete(`/teams/${teamId}/members/${memberId}`);
       if (response) {
         revalidator.revalidate();
       }
@@ -70,7 +73,9 @@ export default function TeamMemberList({ teamMembers }: { teamMembers: TeamMembe
                       ) : (
                         <div
                           className="flex items-center justify-center h-8 w-8 text-white text-sm rounded-full"
-                          style={generateRandomProfileColor(teamMember.full_name)}
+                          style={generateRandomProfileColor(
+                            teamMember.full_name
+                          )}
                         >
                           <span className="indent-[0.1em] tracking-widest">
                             {teamMember.full_name[0] +

@@ -1,4 +1,4 @@
-import axios, { AxiosResponse, isAxiosError } from 'axios';
+import { AxiosResponse, isAxiosError } from 'axios';
 import { FeatureCollection, Point } from 'geojson';
 import { createContext, useContext, useEffect, useReducer } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -24,6 +24,8 @@ import {
   ProjectsVisibleAction,
   TileScaleAction,
 } from './Maps';
+
+import api from '../../api';
 
 function activeDataProductReducer(
   state: DataProduct | null,
@@ -343,10 +345,8 @@ export function MapContextProvider({
 
   async function getFlights(projectId) {
     try {
-      const response = await axios.get(
-        `${
-          import.meta.env.VITE_API_V1_STR
-        }/projects/${projectId}/flights?include_all=False`
+      const response = await api.get(
+        `/projects/${projectId}/flights?include_all=False`
       );
       if (response) {
         flightsDispatch({ type: 'set', payload: response.data });
@@ -358,9 +358,7 @@ export function MapContextProvider({
 
   async function getProjects() {
     try {
-      const response: AxiosResponse<Project[]> = await axios.get(
-        `${import.meta.env.VITE_API_V1_STR}/projects`
-      );
+      const response: AxiosResponse<Project[]> = await api.get('/projects');
       if (response) {
         projectsDispatch({ type: 'set', payload: response.data });
         projectsVisibleDispatch({

@@ -1,22 +1,22 @@
-import axios, { AxiosResponse, isAxiosError } from 'axios';
+import { AxiosResponse, isAxiosError } from 'axios';
 import { FeatureCollection, Point } from 'geojson';
 import { useEffect } from 'react';
 
 import { useMapContext } from './MapContext';
 
+import api from '../../api';
+
 export default function ProjectLoader() {
   const { projectGeojsonDispatch, projectGeojsonLoadedDispatch } =
     useMapContext();
 
-  const geojsonUrl = `${
-    import.meta.env.VITE_API_V1_STR
-  }/projects?include_all=${false}&format=geojson`;
-
   useEffect(() => {
     const fetchGeojson = async () => {
       try {
-        const response: AxiosResponse<FeatureCollection<Point>> =
-          await axios.get(geojsonUrl);
+        const geojsonUrl = `/projects?include_all=${false}&format=geojson`;
+        const response: AxiosResponse<FeatureCollection<Point>> = await api.get(
+          geojsonUrl
+        );
         // Only set if project features returned
         if (response.data?.features.length > 0) {
           projectGeojsonDispatch({ type: 'set', payload: response.data });

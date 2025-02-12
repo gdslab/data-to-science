@@ -1,7 +1,11 @@
-import axios from 'axios';
 import { Formik, Form } from 'formik';
 import { useContext, useState } from 'react';
-import { Params, useLoaderData, useNavigate, useRevalidator } from 'react-router-dom';
+import {
+  Params,
+  useLoaderData,
+  useNavigate,
+  useRevalidator,
+} from 'react-router-dom';
 
 import AuthContext from '../../../AuthContext';
 import { Button } from '../../Buttons';
@@ -12,6 +16,8 @@ import TeamMemberList from './TeamMemberList';
 
 import validationSchema from './validationSchema';
 import SearchUsers, { UserSearch } from './SearchUsers';
+
+import api from '../../../api';
 
 interface Team {
   id: string;
@@ -36,8 +42,8 @@ export interface TeamData {
 // fetches team details and team members prior to render
 export async function loader({ params }: { params: Params<string> }) {
   try {
-    const teamResponse = await axios.get(`/api/v1/teams/${params.teamId}`);
-    const teamMembers = await axios.get(`/api/v1/teams/${params.teamId}/members`);
+    const teamResponse = await api.get(`/${params.teamId}`);
+    const teamMembers = await api.get(`/${params.teamId}/members`);
     if (teamResponse && teamMembers) {
       return { team: teamResponse.data, members: teamMembers.data };
     } else {
@@ -68,8 +74,8 @@ export default function TeamDetail() {
           validationSchema={validationSchema}
           onSubmit={async (values) => {
             try {
-              const response = await axios.put(
-                `/api/v1/teams/${teamData.team.id}`,
+              const response = await api.put(
+                `/teams/${teamData.team.id}`,
                 values
               );
               if (response) {
@@ -101,7 +107,9 @@ export default function TeamDetail() {
                   setIsEditing={setIsEditing}
                 >
                   {!isEditing || isEditing.field !== 'description' ? (
-                    <span className="text-gray-600">{teamData.team.description}</span>
+                    <span className="text-gray-600">
+                      {teamData.team.description}
+                    </span>
                   ) : (
                     <TextField name="description" />
                   )}
@@ -148,9 +156,9 @@ export default function TeamDetail() {
                     );
 
                   if (selectedMembers.length > 0) {
-                    axios
+                    api
                       .post(
-                        `/api/v1/teams/${teamData.team.id}/members/multi`,
+                        `/teams/${teamData.team.id}/members/multi`,
                         selectedMembers.map(({ id }) => id)
                       )
                       .then(() => {
@@ -166,7 +174,12 @@ export default function TeamDetail() {
             ) : null}
           </div>
           <div className="w-48">
-            <Button type="button" size="sm" icon="trash" onClick={() => setOpen(true)}>
+            <Button
+              type="button"
+              size="sm"
+              icon="trash"
+              onClick={() => setOpen(true)}
+            >
               Delete team
             </Button>
             <Modal open={open} setOpen={setOpen}>
@@ -179,8 +192,8 @@ projects, flights, and data associated with the team."
                 setOpen={setOpen}
                 onConfirm={async () => {
                   try {
-                    const response = await axios.delete(
-                      `/api/v1/teams/${teamData.team.id}`
+                    const response = await api.delete(
+                      `/teams/${teamData.team.id}`
                     );
                     if (response) {
                       setOpen(false);

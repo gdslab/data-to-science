@@ -1,4 +1,4 @@
-import axios, { AxiosResponse, isAxiosError } from 'axios';
+import { AxiosResponse, isAxiosError } from 'axios';
 import { Suspense } from 'react';
 import {
   Await,
@@ -8,16 +8,17 @@ import {
 } from 'react-router-dom';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
-import StatCards from './StatCards';
-
 import { SiteStatistics } from './DashboardTypes';
+import StatCards from './StatCards';
 import StatCardsSkeleton from './StatCardsSkeleton';
 
+import api from '../../../api';
+
 export async function loader() {
-  const endpoint = `${import.meta.env.VITE_API_V1_STR}/admin/site_statistics`;
+  const endpoint = '/admin/site_statistics';
 
   try {
-    const stats: Promise<AxiosResponse<SiteStatistics>> = axios.get(endpoint);
+    const stats: Promise<AxiosResponse<SiteStatistics>> = api.get(endpoint);
 
     return { stats };
   } catch (error) {
@@ -52,7 +53,9 @@ function ErrorElement() {
     <div className="h-full w-full flex flex-col items-center justify-center">
       <ExclamationTriangleIcon className="h-10 w-10 text-red-600" />
       <span className="text-2xl font-semibold text-primary">
-        {isRouteErrorResponse(error) ? error.data.message : 'Something went wrong!'}
+        {isRouteErrorResponse(error)
+          ? error.data.message
+          : 'Something went wrong!'}
       </span>
     </div>
   );

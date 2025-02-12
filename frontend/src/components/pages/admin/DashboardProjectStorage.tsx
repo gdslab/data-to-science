@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import { Suspense } from 'react';
 import { Await, useLoaderData } from 'react-router-dom';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
@@ -7,9 +7,11 @@ import DashboardProjectStorageTable from './DashboardProjectStorageTable';
 import { ProjectStatistics } from './DashboardTypes';
 import DashboardProjectStorageTableSkeleton from './DashboardProjectStorageTableSkeleton';
 
+import api from '../../../api';
+
 export async function loader() {
-  const response: Promise<AxiosResponse<ProjectStatistics[]>> = axios.get(
-    `${import.meta.env.VITE_API_V1_STR}/admin/project_statistics`
+  const response: Promise<AxiosResponse<ProjectStatistics[]>> = api.get(
+    '/admin/project_statistics'
   );
   return { response };
 }
@@ -46,7 +48,9 @@ export default function DashboardProjectStorage() {
               errorElement={<ErrorElement />}
             >
               {(response) => (
-                <DashboardProjectStorageTable userProjectStats={response.data} />
+                <DashboardProjectStorageTable
+                  userProjectStats={response.data}
+                />
               )}
             </Await>
           </Suspense>

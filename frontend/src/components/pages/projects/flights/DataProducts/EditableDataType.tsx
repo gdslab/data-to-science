@@ -1,4 +1,4 @@
-import axios, { AxiosResponse, isAxiosError } from 'axios';
+import { AxiosResponse, isAxiosError } from 'axios';
 import { useState } from 'react';
 import { useParams, useRevalidator } from 'react-router-dom';
 import Createable from 'react-select/creatable';
@@ -8,6 +8,8 @@ import { DataProduct } from '../../Project';
 import { Status } from '../../../../Alert';
 
 import { useProjectContext } from '../../ProjectContext';
+
+import api from '../../../../../api';
 
 type DataTypeOption = {
   value: string;
@@ -21,7 +23,8 @@ function getDataTypeOptions(dataProduct: DataProduct): DataTypeOption[] {
   ];
   // check default options for data product's current data type
   let currentDataType = defaultOptions.findIndex(
-    (option) => option.value.toLowerCase() === dataProduct.data_type.toLowerCase()
+    (option) =>
+      option.value.toLowerCase() === dataProduct.data_type.toLowerCase()
   );
   // add current data type to options if not already present
   if (currentDataType > -1) {
@@ -79,10 +82,8 @@ export default function EditableDataType({
     if (!projectId && !flightId) return;
     if (selectedDataType === currentDataType) return;
     try {
-      const response: AxiosResponse<DataProduct> = await axios.put(
-        `${
-          import.meta.env.VITE_API_V1_STR
-        }/projects/${projectId}/flights/${flightId}/data_products/${dataProductId}`,
+      const response: AxiosResponse<DataProduct> = await api.put(
+        `/projects/${projectId}/flights/${flightId}/data_products/${dataProductId}`,
         { data_type: selectedDataType }
       );
       if (response.status === 200) {

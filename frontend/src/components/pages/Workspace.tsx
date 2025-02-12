@@ -1,4 +1,4 @@
-import axios, { AxiosResponse, isAxiosError } from 'axios';
+import { AxiosResponse, isAxiosError } from 'axios';
 import { Suspense } from 'react';
 import {
   Await,
@@ -10,12 +10,12 @@ import {
 import LoadingBars from '../LoadingBars';
 import ProjectList, { Project } from './projects/ProjectList';
 
-export async function loader() {
-  const endpoint = `${import.meta.env.VITE_API_V1_STR}/projects`;
+import api from '../../api';
 
+export async function loader() {
   try {
     // Fetch list of user's projects
-    const projects: Promise<AxiosResponse<Project[]>> = axios.get(endpoint);
+    const projects: Promise<AxiosResponse<Project[]>> = api.get('/projects');
 
     return { projects };
   } catch (error) {
@@ -79,7 +79,9 @@ export default function Workspace() {
       <Await
         resolve={projects}
         errorElement={<ErrorElement />}
-        children={(resolveProjects) => <ProjectList projects={resolveProjects.data} />}
+        children={(resolveProjects) => (
+          <ProjectList projects={resolveProjects.data} />
+        )}
       />
     </Suspense>
   );

@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import { useEffect, useState } from 'react';
 import { useLoaderData, useRevalidator } from 'react-router-dom';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
@@ -8,6 +8,7 @@ import { Team } from '../teams/Teams';
 import Alert, { Status } from '../../Alert';
 import { User } from '../../../AuthContext';
 
+import api from '../../../api';
 import { sorter } from '../../utils';
 
 type Extension = {
@@ -18,15 +19,11 @@ type Extension = {
 
 export async function loader() {
   try {
-    const extensions: AxiosResponse<Extension[]> = await axios.get(
-      `${import.meta.env.VITE_API_V1_STR}/admin/extensions`
+    const extensions: AxiosResponse<Extension[]> = await api.get(
+      '/admin/extensions'
     );
-    const teams: AxiosResponse<Team[]> = await axios.get(
-      `${import.meta.env.VITE_API_V1_STR}/teams`
-    );
-    const users: AxiosResponse<User[]> = await axios.get(
-      `${import.meta.env.VITE_API_V1_STR}/users`
-    );
+    const teams: AxiosResponse<Team[]> = await api.get('teams');
+    const users: AxiosResponse<User[]> = await api.get('/users');
     if (extensions && teams && users) {
       return {
         extensions: extensions.data,
@@ -77,10 +74,7 @@ function ExtensionList({
           extension_id: e.target.value,
           is_active: e.target.checked,
         };
-        const response = await axios.put(
-          `${import.meta.env.VITE_API_V1_STR}/admin/extensions/team`,
-          payload
-        );
+        const response = await api.put('/admin/extensions/team', payload);
         if (response.status === 200) {
           revalidator.revalidate();
         } else {
@@ -100,10 +94,7 @@ function ExtensionList({
           extension_id: e.target.value,
           is_active: e.target.checked,
         };
-        const response = await axios.put(
-          `${import.meta.env.VITE_API_V1_STR}/admin/extensions/user`,
-          payload
-        );
+        const response = await api.put('/admin/extensions/user', payload);
         if (response.status === 200) {
           revalidator.revalidate();
         } else {
@@ -181,7 +172,10 @@ export default function DashboardExtensions() {
    * @returns
    */
   function filterAndSlice(items: Team[] | User[]) {
-    return items.slice(currentPage * MAX_ITEMS, MAX_ITEMS + currentPage * MAX_ITEMS);
+    return items.slice(
+      currentPage * MAX_ITEMS,
+      MAX_ITEMS + currentPage * MAX_ITEMS
+    );
   }
 
   /**
@@ -293,7 +287,9 @@ export default function DashboardExtensions() {
         )}
         {extensions.length < 1 && (
           <div className="my-24 flex items-center justify-center">
-            <span className="text-lg font-semibold">No extensions to manage</span>
+            <span className="text-lg font-semibold">
+              No extensions to manage
+            </span>
           </div>
         )}
         {status && <Alert alertType={status.type}>{status.msg}</Alert>}

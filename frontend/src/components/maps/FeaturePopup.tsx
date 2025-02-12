@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import { Feature } from 'geojson';
 import { useState } from 'react';
 import { Popup } from 'react-map-gl/maplibre';
@@ -14,6 +14,7 @@ import {
   ZonalStatisticsLoading,
 } from './ZonalStatistics';
 
+import api from '../../api';
 import { isSingleBand } from './utils';
 
 type FeaturePopupProps = {
@@ -21,7 +22,10 @@ type FeaturePopupProps = {
   onClose: () => void;
 };
 
-export default function FeaturePopup({ popupInfo, onClose }: FeaturePopupProps) {
+export default function FeaturePopup({
+  popupInfo,
+  onClose,
+}: FeaturePopupProps) {
   const [isCalculatingZonalStats, setIsCalculatingZonalStats] = useState(false);
   const [statistics, setStatistics] = useState<ZonalFeature | null>(null);
 
@@ -35,7 +39,9 @@ export default function FeaturePopup({ popupInfo, onClose }: FeaturePopupProps) 
     } else {
       return (
         <div className="flex flex-col">
-          <span className="text-lg font-bold">{feature.properties?.layer_name}</span>
+          <span className="text-lg font-bold">
+            {feature.properties?.layer_name}
+          </span>
           {feature.geometry.type === 'Polygon' ? (
             <span className="text-md text-slate-600">
               Area: {area(feature).toFixed(2)} m&sup2;
@@ -81,10 +87,8 @@ export default function FeaturePopup({ popupInfo, onClose }: FeaturePopupProps) 
   ) {
     setIsCalculatingZonalStats(true);
     try {
-      const response: AxiosResponse<ZonalFeature> = await axios.post(
-        `${
-          import.meta.env.VITE_API_V1_STR
-        }/projects/${projectId}/flights/${flightId}/data_products/${dataProductId}/zonal_statistics`,
+      const response: AxiosResponse<ZonalFeature> = await api.post(
+        `/projects/${projectId}/flights/${flightId}/data_products/${dataProductId}/zonal_statistics`,
         zoneFeature
       );
       if (response.status === 200) {
@@ -154,7 +158,10 @@ export default function FeaturePopup({ popupInfo, onClose }: FeaturePopupProps) 
               zonalFeature={statistics}
             />
           )}
-          <ZonalStatistics dataProduct={activeDataProduct} zonalFeature={statistics} />
+          <ZonalStatistics
+            dataProduct={activeDataProduct}
+            zonalFeature={statistics}
+          />
           {statistics && <DownloadZonalStatistic zonalFeature={statistics} />}
         </div>
       </article>

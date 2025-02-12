@@ -1,6 +1,10 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import Map, { MapRef, NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
+import Map, {
+  MapRef,
+  NavigationControl,
+  ScaleControl,
+} from 'react-map-gl/maplibre';
 import { useLocation } from 'react-router-dom';
 
 import { AlertBar, Status } from '../Alert';
@@ -17,6 +21,8 @@ import {
   getMapboxSatelliteBasemapStyle,
   usgsImageryTopoBasemapStyle,
 } from './styles/basemapStyles';
+
+import api from '../../api';
 import { isSingleBand } from './utils';
 
 function useQuery() {
@@ -39,7 +45,9 @@ function parseSymbology(
 }
 
 export default function ShareMap() {
-  const [bounds, setBounds] = useState<[number, number, number, number] | null>(null);
+  const [bounds, setBounds] = useState<[number, number, number, number] | null>(
+    null
+  );
   const [dataProduct, setDataProduct] = useState<DataProduct | null>(null);
   const [status, setStatus] = useState<Status | null>(null);
 
@@ -70,9 +78,7 @@ export default function ShareMap() {
   useEffect(() => {
     async function fetchDataProduct(fileID) {
       try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_API_V1_STR}/public?file_id=${fileID}`
-        );
+        const response = await api.get(`/public?file_id=${fileID}`);
         if (response) {
           setDataProduct(response.data);
         } else {
@@ -102,12 +108,9 @@ export default function ShareMap() {
   useEffect(() => {
     async function getBounds(dataProductId) {
       try {
-        const response: AxiosResponse<{ bounds: [number, number, number, number] }> =
-          await axios.get(
-            `${
-              import.meta.env.VITE_API_V1_STR
-            }/public/bounds?data_product_id=${dataProductId}`
-          );
+        const response: AxiosResponse<{
+          bounds: [number, number, number, number];
+        }> = await api.get(`/public/bounds?data_product_id=${dataProductId}`);
         if (response) {
           setBounds(response.data.bounds);
         } else {
@@ -165,9 +168,11 @@ export default function ShareMap() {
       )}
 
       {/* Display color bar when single band data product */}
-      {dataProduct && isSingleBand(dataProduct) && state[dataProduct.id]?.symbology && (
-        <ColorBarControl dataProduct={dataProduct} />
-      )}
+      {dataProduct &&
+        isSingleBand(dataProduct) &&
+        state[dataProduct.id]?.symbology && (
+          <ColorBarControl dataProduct={dataProduct} />
+        )}
 
       {/* General controls */}
       <NavigationControl />

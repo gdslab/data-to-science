@@ -1,22 +1,34 @@
-import axios, { AxiosResponse, isAxiosError } from 'axios';
+import { AxiosResponse, isAxiosError } from 'axios';
 import { Formik, Form } from 'formik';
-import { Params, useLoaderData, useNavigate, useParams } from 'react-router-dom';
+import {
+  Params,
+  useLoaderData,
+  useNavigate,
+  useParams,
+} from 'react-router-dom';
 
 import Alert from '../../../Alert';
 import { Button, OutlineButton } from '../../../Buttons';
 import Card from '../../../Card';
 import { SelectField, TextField } from '../../../InputFields';
-
-import { classNames } from '../../../utils';
-import { getInitialValues, PLATFORM_OPTIONS, SENSOR_OPTIONS } from './initialValues';
-import validationSchema from './validationSchema';
 import FlightDeleteModal from './FlightDeleteModal';
 import { Flight } from '../Project';
+
+import {
+  getInitialValues,
+  PLATFORM_OPTIONS,
+  SENSOR_OPTIONS,
+} from './initialValues';
+import validationSchema from './validationSchema';
+
 import { useProjectContext } from '../ProjectContext';
 
+import api from '../../../../api';
+import { classNames } from '../../../utils';
+
 export async function loader({ params }: { params: Params<string> }) {
-  const flight = await axios.get(
-    `/api/v1/projects/${params.projectId}/flights/${params.flightId}`
+  const flight = await api.get(
+    `/projects/${params.projectId}/flights/${params.flightId}`
   );
 
   if (flight) {
@@ -66,18 +78,21 @@ export default function FlightForm({
                 };
                 let response: AxiosResponse | null = null;
                 if (editMode && flight) {
-                  response = await axios.put(
-                    `/api/v1/projects/${params.projectId}/flights/${flight.id}`,
+                  response = await api.put(
+                    `/projects/${params.projectId}/flights/${flight.id}`,
                     data
                   );
                 } else {
-                  response = await axios.post(
-                    `/api/v1/projects/${params.projectId}/flights`,
+                  response = await api.post(
+                    `/projects/${params.projectId}/flights`,
                     data
                   );
                 }
                 if (response) {
-                  setStatus({ type: 'success', msg: editMode ? 'Updated' : 'Created' });
+                  setStatus({
+                    type: 'success',
+                    msg: editMode ? 'Updated' : 'Created',
+                  });
                   if (setOpen) setOpen(false);
                   navigate(`/projects/${params.projectId}`);
                 } else {
@@ -87,7 +102,10 @@ export default function FlightForm({
                 if (isAxiosError(err)) {
                   setStatus({ type: 'error', msg: err.response?.data.detail });
                 } else {
-                  setStatus({ type: 'error', msg: 'Unable to complete request' });
+                  setStatus({
+                    type: 'error',
+                    msg: 'Unable to complete request',
+                  });
                 }
               }
               setSubmitting(false);
@@ -109,7 +127,11 @@ export default function FlightForm({
                 <TextField label="Altitude (m)" name="altitude" />
                 <TextField label="Side overlap (%)" name="sideOverlap" />
                 <TextField label="Forward overlap (%)" name="forwardOverlap" />
-                <SelectField label="Sensor" name="sensor" options={SENSOR_OPTIONS} />
+                <SelectField
+                  label="Sensor"
+                  name="sensor"
+                  options={SENSOR_OPTIONS}
+                />
                 <SelectField
                   label="Platform"
                   name="platform"

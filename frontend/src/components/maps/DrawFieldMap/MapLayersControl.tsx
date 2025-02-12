@@ -1,6 +1,7 @@
-import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { LayersControl, TileLayer } from 'react-leaflet';
+
+import api from '../../../api';
 
 export default function MapLayersControl() {
   const [mapboxAccessToken, setMapboxAccessToken] = useState('');
@@ -8,9 +9,7 @@ export default function MapLayersControl() {
   useEffect(() => {
     async function getMapboxAccessToken() {
       try {
-        const response = await axios.post(
-          `${import.meta.env.VITE_API_V1_STR}/auth/mapbox-access-token`
-        );
+        const response = await api.post(`/auth/mapbox-access-token`);
         if (response && response.data && response.data.token) {
           setMapboxAccessToken(response.data.token);
         }

@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { Form, Formik } from 'formik';
 import { useState } from 'react';
 import { useParams, useRevalidator } from 'react-router-dom';
@@ -6,9 +5,11 @@ import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 
 import Alert, { Status } from '../../../../Alert';
 import { Button } from '../../../../Buttons';
+import DataProductBandForm from './DataProductBandForm';
 import Modal from '../../../../Modal';
 import HintText from '../../../../HintText';
 import { useFlightContext } from '../../FlightContext/FlightContext';
+import { DataProduct } from '../../Project';
 import {
   RGBTools,
   MultiSpectralTools,
@@ -16,10 +17,8 @@ import {
   ZonalStatisticTools,
 } from './ToolboxTools';
 
-import { DataProduct } from '../../Project';
-
+import api from '../../../../../api';
 import { isSingleBand } from '../../../../maps/utils';
-import DataProductBandForm from './DataProductBandForm';
 
 export interface ToolboxFields {
   chm: boolean;
@@ -97,12 +96,8 @@ export default function ToolboxModal({
                 setStatus(null);
                 if (projectId && flightId && dataProduct.id) {
                   try {
-                    const response = await axios.post(
-                      `${
-                        import.meta.env.VITE_API_V1_STR
-                      }/projects/${projectId}/flights/${flightId}/data_products/${
-                        dataProduct.id
-                      }/tools`,
+                    const response = await api.post(
+                      `/projects/${projectId}/flights/${flightId}/data_products/${dataProduct.id}/tools`,
                       values
                     );
                     if (response) {

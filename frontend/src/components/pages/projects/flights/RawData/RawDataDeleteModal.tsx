@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { TrashIcon } from '@heroicons/react/24/outline';
@@ -9,6 +8,8 @@ import { ConfirmationPopup } from '../../../../ConfirmationPopup';
 import Modal from '../../../../Modal';
 
 import { RawDataProps } from './RawData.types';
+
+import api from '../../../../../api';
 
 export default function RawDataDeleteModal({
   rawData,
@@ -65,8 +66,8 @@ export default function RawDataDeleteModal({
           onConfirm={async () => {
             setStatus(null);
             try {
-              const response = await axios.delete(
-                `/api/v1/projects/${params.projectId}/flights/${params.flightId}/raw_data/${rawData.id}`
+              const response = await api.delete(
+                `/projects/${params.projectId}/flights/${params.flightId}/raw_data/${rawData.id}`
               );
               if (response) {
                 setOpenConfirmationPopup(false);
@@ -93,7 +94,9 @@ export default function RawDataDeleteModal({
           }}
         />
       </Modal>
-      {status ? <AlertBar alertType={status.type}>{status.msg}</AlertBar> : null}
+      {status ? (
+        <AlertBar alertType={status.type}>{status.msg}</AlertBar>
+      ) : null}
     </div>
   );
 }

@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,7 +6,12 @@ import { CopyURLButton } from '../../Buttons';
 import { DataProduct } from '../../pages/projects/Project';
 import { useMapContext } from '../MapContext';
 import { Project } from '../../pages/projects/ProjectList';
-import { MultibandSymbology, SingleBandSymbology } from '../RasterSymbologyContext';
+import {
+  MultibandSymbology,
+  SingleBandSymbology,
+} from '../RasterSymbologyContext';
+
+import api from '../../../api';
 
 export default function RasterSymbologyAccessControls({
   dataProduct,
@@ -29,15 +33,16 @@ export default function RasterSymbologyAccessControls({
 
   const updateAccess = async (newAccess: boolean) => {
     try {
-      const response = await axios.put(
-        `${import.meta.env.VITE_API_V1_STR}/projects/${project.id}/flights/${
-          dataProduct.flight_id
-        }/data_products/${dataProduct.id}/file_permission`,
+      const response = await api.put(
+        `/projects/${project.id}/flights/${dataProduct.flight_id}/data_products/${dataProduct.id}/file_permission`,
         { is_public: newAccess }
       );
       if (response) {
         setStatus({ type: 'success', msg: 'Access updated' });
-        activeDataProductDispatch({ type: 'update', payload: { public: newAccess } });
+        activeDataProductDispatch({
+          type: 'update',
+          payload: { public: newAccess },
+        });
         setTimeout(() => setStatus(null), 3000);
         if (refreshUrl) {
           navigate(refreshUrl, {
@@ -103,8 +108,8 @@ export default function RasterSymbologyAccessControls({
               <p className="text-gray-700">Restricted</p>
             </div>
             <p className="text-gray-900">
-              Only project members will be able to access shared links for this data
-              product. Must be signed in to platform to view shared link.
+              Only project members will be able to access shared links for this
+              data product. Must be signed in to platform to view shared link.
             </p>
           </label>
         </div>
@@ -140,8 +145,9 @@ export default function RasterSymbologyAccessControls({
                 <p className="text-gray-700">Anyone</p>
               </div>
               <p className="text-gray-900">
-                Anyone can access this data product. It can be downloaded, used outside
-                of the platform, and shared links can be viewed without signing in.
+                Anyone can access this data product. It can be downloaded, used
+                outside of the platform, and shared links can be viewed without
+                signing in.
               </p>
             </label>
           </div>
