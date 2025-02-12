@@ -1,9 +1,11 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import { useLoaderData } from 'react-router-dom';
 import { ResponsiveCalendar } from '@nivo/calendar';
 import { ResponsiveLine } from '@nivo/line';
 
 import { User } from '../../../AuthContext';
+
+import api from '../../../api';
 
 const MONTH_ABBREVS = {
   0: 'Jan',
@@ -21,9 +23,7 @@ const MONTH_ABBREVS = {
 };
 
 export async function loader() {
-  const response: AxiosResponse<User[]> = await axios.get(
-    `${import.meta.env.VITE_API_V1_STR}/users`
-  );
+  const response: AxiosResponse<User[]> = await api.get('/users');
   if (response) {
     return response.data;
   } else {

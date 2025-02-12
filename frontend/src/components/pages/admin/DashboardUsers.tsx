@@ -1,16 +1,15 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import { useLoaderData } from 'react-router-dom';
 
 import DashboardUserList from './DashboardUserList';
 import StatCard from './StatCard';
 import { User } from '../../../AuthContext';
 
+import api from '../../../api';
 import { sorter } from '../../utils';
 
 export async function loader() {
-  const response: AxiosResponse<User[]> = await axios.get(
-    `${import.meta.env.VITE_API_V1_STR}/users`
-  );
+  const response: AxiosResponse<User[]> = await api.get('/users');
   if (response) {
     return response.data;
   } else {
@@ -41,7 +40,9 @@ export default function DashboardUsers() {
     <section className="w-full bg-white">
       <div className="mx-auto max-w-screen-xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
-          <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">Users</h2>
+          <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
+            Users
+          </h2>
 
           <p className="mt-4 text-gray-500 sm:text-xl">
             List of registered users on this D2S instance.
@@ -52,7 +53,10 @@ export default function DashboardUsers() {
           <dl className="grid grid-cols-1 gap-4 sm:grid-cols-4">
             <StatCard title="Total users" value={users.length} />
             <StatCard title="Last 7 days" value={joinedInLastNDays(users, 7)} />
-            <StatCard title="Last 30 days" value={joinedInLastNDays(users, 30)} />
+            <StatCard
+              title="Last 30 days"
+              value={joinedInLastNDays(users, 30)}
+            />
           </dl>
         </div>
         <DashboardUserList
