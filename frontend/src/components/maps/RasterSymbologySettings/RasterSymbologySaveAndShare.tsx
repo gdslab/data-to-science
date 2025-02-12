@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import { useState } from 'react';
 
 import { Button } from '../../Buttons';
@@ -13,6 +13,8 @@ import {
   useRasterSymbologyContext,
 } from '../RasterSymbologyContext';
 
+import api from '../../../api';
+
 function RasterSymbologyShare({
   dataProduct,
   project,
@@ -25,7 +27,12 @@ function RasterSymbologyShare({
   const [open, setOpen] = useState(false);
   return (
     <div className="w-36">
-      <Button type="button" size="sm" icon="share2" onClick={() => setOpen(true)}>
+      <Button
+        type="button"
+        size="sm"
+        icon="share2"
+        onClick={() => setOpen(true)}
+      >
         Share
       </Button>
       <Modal open={open} setOpen={setOpen}>
@@ -61,11 +68,9 @@ function RasterSymbologySave({
 
   const saveSymbology = async (dataProduct, projectId, symbology) => {
     try {
-      const axiosRequest = dataProduct.user_style ? axios.put : axios.post;
+      const axiosRequest = dataProduct.user_style ? api.put : api.post;
       const response: AxiosResponse<StyleResponse> = await axiosRequest(
-        `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/flights/${
-          dataProduct.flight_id
-        }/data_products/${dataProduct.id}/style`,
+        `/projects/${projectId}/flights/${dataProduct.flight_id}/data_products/${dataProduct.id}/style`,
         { settings: symbology }
       );
       if (response) {

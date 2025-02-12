@@ -1,12 +1,13 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import { FeatureCollection, Polygon } from 'geojson';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Layer, Source, useMap } from 'react-map-gl/maplibre';
 import center from '@turf/center';
 
 import { projectBoundaryLayer } from './layerProps';
 import { useMapContext } from './MapContext';
 
+import api from '../../api';
 import { calculateBoundsFromGeoJSON } from './utils';
 
 type ProjectBoundaryProps = {
@@ -19,24 +20,29 @@ type ProjectBoundaryProps = {
   >;
 };
 
-export default function ProjectBoundary({ setViewState }: ProjectBoundaryProps) {
+export default function ProjectBoundary({
+  setViewState,
+}: ProjectBoundaryProps) {
+  const [projectBoundary, setProjectBoundary] =
+    useState<FeatureCollection<Polygon> | null>(null);
   const { current: map } = useMap();
-  const { activeMapTool, activeProject, mapViewProperties, mapViewPropertiesDispatch } =
-    useMapContext();
-  const geojsonUrl = `${import.meta.env.VITE_API_V1_STR}/projects/${
-    activeProject?.id
-  }?format=geojson`;
+  const {
+    activeMapTool,
+    activeProject,
+    mapViewProperties,
+    mapViewPropertiesDispatch,
+  } = useMapContext();
+  const geojsonUrl = `/projects/${activeProject?.id}?format=geojson`;
 
   useEffect(() => {
     if (!map) return;
     // Fetch project boundary GeoJSON to calculate the bounds
     const fetchGeoJSONAndFitBounds = async () => {
       try {
-        const response: AxiosResponse<FeatureCollection<Polygon>> = await axios.get(
-          geojsonUrl
-        );
+        const response: AxiosResponse<FeatureCollection<Polygon>> =
+          await api.get(geojsonUrl);
         const geojsonData = await response.data;
-
+        setProjectBoundary(geojsonData);
         // Calculate the bounds of the GeoJSON feature
         const bounds: [number, number, number, number] =
           calculateBoundsFromGeoJSON(geojsonData);
@@ -75,8 +81,10 @@ export default function ProjectBoundary({ setViewState }: ProjectBoundaryProps) 
     fetchGeoJSONAndFitBounds();
   }, [activeMapTool, map, geojsonUrl]);
 
+  if (!projectBoundary) return null;
+
   return (
-    <Source id="project-boundary" type="geojson" data={geojsonUrl}>
+    <Source id="project-boundary" type="geojson" data={projectBoundary}>
       <Layer {...projectBoundaryLayer} />
     </Source>
   );

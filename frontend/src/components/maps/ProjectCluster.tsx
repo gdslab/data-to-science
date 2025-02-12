@@ -1,4 +1,4 @@
-import axios, { AxiosResponse, isAxiosError } from 'axios';
+import { AxiosResponse, isAxiosError } from 'axios';
 import { FeatureCollection, Point } from 'geojson';
 import { useEffect, useState } from 'react';
 import { GeoJSONSource, Layer, Source, useMap } from 'react-map-gl/maplibre';
@@ -12,6 +12,7 @@ import {
   unclusteredPointLayer,
 } from './layerProps';
 
+import api from '../../api';
 import { calculateBoundsFromGeoJSON } from './utils';
 
 type ProjectClusterProps = { fetchFromAPI?: boolean; includeAll?: boolean };
@@ -40,11 +41,10 @@ export default function ProjectCluster({
   useEffect(() => {
     const fetchGeojson = async () => {
       try {
-        const geojsonUrl = `${
-          import.meta.env.VITE_API_V1_STR
-        }/projects?include_all=${includeAll}&format=geojson`;
-        const response: AxiosResponse<FeatureCollection<Point>> =
-          await axios.get(geojsonUrl);
+        const geojsonUrl = `/projects?include_all=${includeAll}&format=geojson`;
+        const response: AxiosResponse<FeatureCollection<Point>> = await api.get(
+          geojsonUrl
+        );
         setGeojsonData(response.data);
         setGeojsonLoaded(true);
       } catch (error) {
