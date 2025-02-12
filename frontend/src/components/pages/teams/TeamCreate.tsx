@@ -1,7 +1,12 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse, isAxiosError } from 'axios';
 import { Form, Formik } from 'formik';
 import { useContext, useEffect, useState } from 'react';
-import { Link, useLoaderData, useNavigate, useRevalidator } from 'react-router-dom';
+import {
+  Link,
+  useLoaderData,
+  useNavigate,
+  useRevalidator,
+} from 'react-router-dom';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 import Alert from '../../Alert';
@@ -15,12 +20,14 @@ import SearchUsers, { UserSearch } from './SearchUsers';
 import initialValues from './initialValues';
 import validationSchema from './validationSchema';
 
+import api from '../../../api';
+
 export async function loader() {
-  const response: AxiosResponse<Project[]> = await axios.get(
-    `${import.meta.env.VITE_API_V1_STR}/projects`
-  );
+  const response: AxiosResponse<Project[]> = await api.get('/projects');
   if (response) {
-    return response.data.filter(({ role }) => role === 'owner' || role === 'manager');
+    return response.data.filter(
+      ({ role }) => role === 'owner' || role === 'manager'
+    );
   } else {
     return [];
   }
@@ -41,7 +48,9 @@ export default function TeamCreate() {
 
   function addTeamMember(teamMember) {
     const uniqueIds = teamMembers.map((tm) => tm.id);
-    const newTeamMembers = teamMember.filter((tm) => uniqueIds.indexOf(tm.id) === -1);
+    const newTeamMembers = teamMember.filter(
+      (tm) => uniqueIds.indexOf(tm.id) === -1
+    );
 
     setTeamMembers([...teamMembers, ...newTeamMembers]);
     setSearchResults([]);
@@ -66,7 +75,7 @@ export default function TeamCreate() {
                 new_members: teamMembers.map((tm) => tm.id),
                 project: values.project,
               };
-              const response = await axios.post('/api/v1/teams', data);
+              const response = await api.post('/teams', data);
               if (response) {
                 revalidator.revalidate();
                 resetForm();
@@ -75,10 +84,13 @@ export default function TeamCreate() {
                 setStatus({ type: 'error', msg: 'Unable to create team' });
               }
             } catch (err) {
-              if (axios.isAxiosError(err)) {
+              if (isAxiosError(err)) {
                 setStatus({ type: 'error', msg: err.response?.data.detail });
               } else {
-                setStatus({ type: 'error', msg: 'Unexpected error has occurred' });
+                setStatus({
+                  type: 'error',
+                  msg: 'Unexpected error has occurred',
+                });
               }
             }
             setSubmitting(false);
@@ -141,7 +153,10 @@ export default function TeamCreate() {
                                 type="button"
                                 onClick={() => removeTeamMember(teamMember.id)}
                               >
-                                <XMarkIcon className="h-6 w-6" aria-hidden="true" />
+                                <XMarkIcon
+                                  className="h-6 w-6"
+                                  aria-hidden="true"
+                                />
                               </button>
                             ) : null}
                           </td>
