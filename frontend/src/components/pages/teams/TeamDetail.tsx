@@ -42,8 +42,8 @@ export interface TeamData {
 // fetches team details and team members prior to render
 export async function loader({ params }: { params: Params<string> }) {
   try {
-    const teamResponse = await api.get(`/${params.teamId}`);
-    const teamMembers = await api.get(`/${params.teamId}/members`);
+    const teamResponse = await api.get(`/teams/${params.teamId}`);
+    const teamMembers = await api.get(`/teams/${params.teamId}/members`);
     if (teamResponse && teamMembers) {
       return { team: teamResponse.data, members: teamMembers.data };
     } else {
