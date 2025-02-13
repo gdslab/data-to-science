@@ -1,7 +1,9 @@
 import { AxiosResponse } from 'axios';
+import { useMemo, useState } from 'react';
 import { useLoaderData } from 'react-router-dom';
 
 import DashboardUserList from './DashboardUserList';
+import SearchBar from './SearchBar';
 import StatCard from './StatCard';
 import { User } from '../../../AuthContext';
 
@@ -34,11 +36,40 @@ function joinedInLastNDays(users: User[], nDays: number): number {
 }
 
 export default function DashboardUsers() {
+  const [searchTerm, setSearchTerm] = useState<string>('');
+
   const users = useLoaderData() as User[];
+
+  const updateSearchTerm = (newSearchTerm: string): void =>
+    setSearchTerm(newSearchTerm);
+
+  const filteredUsers = useMemo(() => {
+    // If searchTerm is empty, return all users
+    if (searchTerm === '') {
+      return users
+        .slice()
+        .sort((a, b) =>
+          sorter(a.last_name.toLowerCase(), b.last_name.toLowerCase())
+        );
+    }
+
+    const lowerSearchTerm = searchTerm.toLowerCase();
+
+    return users
+      .filter(
+        (user) =>
+          user.first_name.toLowerCase().includes(lowerSearchTerm) ||
+          user.last_name.toLowerCase().includes(lowerSearchTerm) ||
+          user.email.toLowerCase().includes(searchTerm)
+      )
+      .sort((a, b) =>
+        sorter(a.last_name.toLowerCase(), b.last_name.toLowerCase())
+      );
+  }, [searchTerm, users]);
 
   return (
     <section className="w-full bg-white">
-      <div className="mx-auto max-w-screen-xl px-4 py-12 sm:px-6 lg:px-8">
+      <div className="flex flex-col gap-8 mx-auto max-w-screen-xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
             Users
@@ -49,8 +80,8 @@ export default function DashboardUsers() {
           </p>
         </div>
 
-        <div className="mt-8 sm:mt-12">
-          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+        <div>
+          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <StatCard title="Total users" value={users.length} />
             <StatCard title="Last 7 days" value={joinedInLastNDays(users, 7)} />
             <StatCard
@@ -59,9 +90,13 @@ export default function DashboardUsers() {
             />
           </dl>
         </div>
-        <DashboardUserList
-          users={users.sort((a, b) => sorter(a.last_name, b.last_name))}
+
+        <SearchBar
+          searchTerm={searchTerm}
+          updateSearchTerm={updateSearchTerm}
         />
+
+        <DashboardUserList users={filteredUsers} />
       </div>
     </section>
   );
