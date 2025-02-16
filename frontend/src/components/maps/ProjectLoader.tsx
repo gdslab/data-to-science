@@ -1,51 +1,53 @@
 import { AxiosResponse, isAxiosError } from 'axios';
-import { FeatureCollection, Point } from 'geojson';
 import { useEffect } from 'react';
 
 import { useMapContext } from './MapContext';
+import { Project } from '../pages/projects/ProjectList';
 
 import api from '../../api';
+import { areProjectsEqual, getLocalStorageProjects } from './utils';
 
 export default function ProjectLoader() {
-  const { projectGeojsonDispatch, projectGeojsonLoadedDispatch } =
+  const { projectsDispatch, projectsLoadedDispatch, projects } =
     useMapContext();
 
   useEffect(() => {
-    const fetchGeojson = async () => {
+    const fetchProjects = async () => {
       try {
-        const geojsonUrl = `/projects?include_all=${false}&format=geojson`;
-        const response: AxiosResponse<FeatureCollection<Point>> = await api.get(
-          geojsonUrl
-        );
-        // Only set if project features returned
-        if (response.data?.features.length > 0) {
-          projectGeojsonDispatch({ type: 'set', payload: response.data });
-          projectGeojsonLoadedDispatch({ type: 'set', payload: true });
+        const geojsonUrl = `/projects?include_all=${false}`;
+        const response: AxiosResponse<Project[]> = await api.get(geojsonUrl);
+
+        // Only update projects if they are new or differ from the current state
+        if (!projects || !areProjectsEqual(projects, response.data)) {
+          projectsDispatch({ type: 'set', payload: response.data });
         }
+        projectsLoadedDispatch({ type: 'set', payload: true });
       } catch (error) {
-        // Clear any previously set data
-        projectGeojsonDispatch({ type: 'set', payload: null });
-        projectGeojsonLoadedDispatch({ type: 'set', payload: false });
+        // Clear any previously set data and update loading state
+        projectsDispatch({ type: 'set', payload: null });
+        projectsLoadedDispatch({ type: 'set', payload: false });
         if (isAxiosError(error)) {
-          // Axios-specific error handling
           const status = error.response?.status || 500;
           const message = error.response?.data?.message || error.message;
-
-          throw {
-            status,
-            message: `Failed to load project geojson: ${message}`,
-          };
+          console.error(
+            `Failed to load project geojson: ${status} -- ${message}`
+          );
+          // Optionally, display an error message instead of rethrowing
         } else {
-          // Generic error handling
-          throw {
-            status: 500,
-            message: 'An unexpected error occurred.',
-          };
+          console.error('An unexpected error occurred.');
         }
       }
     };
-    fetchGeojson();
-  }, []);
+
+    // Check for cached projects in local storage
+    const localStorageProjects = getLocalStorageProjects();
+    if (localStorageProjects) {
+      projectsDispatch({ type: 'set', payload: localStorageProjects });
+      projectsLoadedDispatch({ type: 'set', payload: true });
+    }
+    // Always fetch latest projects from the backend
+    fetchProjects();
+  }, []); // Consider dependencies if projects can change elsewhere
 
   return null;
 }

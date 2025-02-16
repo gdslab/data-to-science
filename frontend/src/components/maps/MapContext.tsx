@@ -1,7 +1,5 @@
-import { AxiosResponse, isAxiosError } from 'axios';
-import { FeatureCollection, Point } from 'geojson';
+import axios from 'axios';
 import { createContext, useContext, useEffect, useReducer } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 
 import {
@@ -19,13 +17,10 @@ import {
   MapboxAccessTokenAction,
   MapTool,
   ProjectsAction,
-  ProjectGeojsonAction,
-  ProjectGeojsonLoadedAction,
+  ProjectsLoadedAction,
   ProjectsVisibleAction,
   TileScaleAction,
 } from './Maps';
-
-import api from '../../api';
 
 function activeDataProductReducer(
   state: DataProduct | null,
@@ -163,38 +158,6 @@ function projectLayersReducer(
   }
 }
 
-type ProjectGeojsonState = FeatureCollection<Point> | null;
-
-function projectGeojsonReducer(
-  state: ProjectGeojsonState,
-  action: ProjectGeojsonAction
-) {
-  switch (action.type) {
-    case 'set': {
-      return action.payload;
-    }
-    default: {
-      return state;
-    }
-  }
-}
-
-type ProjectGeojsonLoadedState = boolean;
-
-function projectGeojsonLoadedReducer(
-  state: ProjectGeojsonLoadedState,
-  action: ProjectGeojsonLoadedAction
-) {
-  switch (action.type) {
-    case 'set': {
-      return action.payload;
-    }
-    default: {
-      return state;
-    }
-  }
-}
-
 function projectsReducer(state: Project[] | null, action: ProjectsAction) {
   switch (action.type) {
     case 'set': {
@@ -202,6 +165,22 @@ function projectsReducer(state: Project[] | null, action: ProjectsAction) {
     }
     case 'clear': {
       return null;
+    }
+    default: {
+      return state;
+    }
+  }
+}
+
+type ProjectsLoadedState = boolean;
+
+function projectsLoadedReducer(
+  state: ProjectsLoadedState,
+  action: ProjectsLoadedAction
+) {
+  switch (action.type) {
+    case 'set': {
+      return action.payload;
     }
     default: {
       return state;
@@ -256,12 +235,10 @@ const context: {
   mapViewPropertiesDispatch: React.Dispatch<MapViewPropertiesAction>;
   projectLayers: MapLayerFeatureCollection[];
   projectLayersDispatch: React.Dispatch<ProjectLayersAction>;
-  projectGeojson: ProjectGeojsonState;
-  projectGeojsonDispatch: React.Dispatch<ProjectGeojsonAction>;
-  projectGeojsonLoaded: ProjectGeojsonLoadedState;
-  projectGeojsonLoadedDispatch: React.Dispatch<ProjectGeojsonLoadedAction>;
   projects: Project[] | null;
   projectsDispatch: React.Dispatch<ProjectsAction>;
+  projectsLoaded: ProjectsLoadedState;
+  projectsLoadedDispatch: React.Dispatch<ProjectsLoadedAction>;
   projectsVisible: string[];
   projectsVisibleDispatch: React.Dispatch<ProjectsVisibleAction>;
   tileScale: number;
@@ -282,12 +259,10 @@ const context: {
   mapViewPropertiesDispatch: () => {},
   projectLayers: [],
   projectLayersDispatch: () => {},
-  projectGeojson: null,
-  projectGeojsonDispatch: () => {},
-  projectGeojsonLoaded: false,
-  projectGeojsonLoadedDispatch: () => {},
   projects: null,
   projectsDispatch: () => {},
+  projectsLoaded: false,
+  projectsLoadedDispatch: () => {},
   projectsVisible: [],
   projectsVisibleDispatch: () => {},
   tileScale: 2,
@@ -301,7 +276,6 @@ export function MapContextProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const navigate = useNavigate();
   const [activeDataProduct, activeDataProductDispatch] = useReducer(
     activeDataProductReducer,
     null
@@ -328,15 +302,11 @@ export function MapContextProvider({
     projectLayersReducer,
     []
   );
-  const [projectGeojson, projectGeojsonDispatch] = useReducer(
-    projectGeojsonReducer,
-    null
-  );
-  const [projectGeojsonLoaded, projectGeojsonLoadedDispatch] = useReducer(
-    projectGeojsonLoadedReducer,
+  const [projects, projectsDispatch] = useReducer(projectsReducer, null);
+  const [projectsLoaded, projectsLoadedDispatch] = useReducer(
+    projectsLoadedReducer,
     false
   );
-  const [projects, projectsDispatch] = useReducer(projectsReducer, null);
   const [projectsVisible, projectsVisibleDispatch] = useReducer(
     projectsVisibleReducer,
     []
@@ -345,40 +315,16 @@ export function MapContextProvider({
 
   async function getFlights(projectId) {
     try {
-      const response = await api.get(
-        `/projects/${projectId}/flights?include_all=False`
+      const response = await axios.get(
+        `${
+          import.meta.env.VITE_API_V1_STR
+        }/projects/${projectId}/flights?include_all=False`
       );
       if (response) {
         flightsDispatch({ type: 'set', payload: response.data });
       }
     } catch (err) {
       console.log('Unable to fetch flights');
-    }
-  }
-
-  async function getProjects() {
-    try {
-      const response: AxiosResponse<Project[]> = await api.get('/projects');
-      if (response) {
-        projectsDispatch({ type: 'set', payload: response.data });
-        projectsVisibleDispatch({
-          type: 'set',
-          payload: response.data.map(({ id }) => id),
-        });
-        // add projects to local storage
-        if (response.data.length > 0) {
-          localStorage.setItem('projects', JSON.stringify(response.data));
-        }
-      } else {
-        projectsDispatch({ type: 'clear', payload: null });
-      }
-    } catch (err) {
-      if (isAxiosError(err)) {
-        if (err.response?.status === 401) {
-          navigate('/auth/login');
-        }
-      }
-      projectsDispatch({ type: 'clear', payload: null });
     }
   }
 
@@ -395,10 +341,6 @@ export function MapContextProvider({
       getFlights(activeProject.id);
     }
   }, [activeDataProduct]);
-
-  useEffect(() => {
-    getProjects();
-  }, []);
 
   return (
     <MapContext.Provider
@@ -418,12 +360,10 @@ export function MapContextProvider({
         mapViewPropertiesDispatch,
         projectLayers,
         projectLayersDispatch,
-        projectGeojson,
-        projectGeojsonDispatch,
-        projectGeojsonLoaded,
-        projectGeojsonLoadedDispatch,
         projects,
         projectsDispatch,
+        projectsLoaded,
+        projectsLoadedDispatch,
         projectsVisible,
         projectsVisibleDispatch,
         tileScale,

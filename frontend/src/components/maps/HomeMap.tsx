@@ -2,6 +2,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import './HomeMap.css';
 import { AxiosResponse } from 'axios';
 import { Feature } from 'geojson';
+import maplibregl from 'maplibre-gl';
 import { useEffect, useMemo, useState } from 'react';
 import Map, { NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
 
@@ -38,11 +39,18 @@ export type PopupInfoProps = {
 };
 
 export default function HomeMap() {
+  const [clusterLayersReady, setClusterLayersReady] = useState(false);
   const [popupInfo, setPopupInfo] = useState<
     PopupInfoProps | { [key: string]: any } | null
   >(null);
-  const { activeDataProduct, activeProject, mapboxAccessToken } =
-    useMapContext();
+
+  const {
+    activeDataProduct,
+    activeProject,
+    mapboxAccessToken,
+    projects,
+    projectsVisibleDispatch,
+  } = useMapContext();
   const {
     state: { layers },
     dispatch,
@@ -76,6 +84,12 @@ export default function HomeMap() {
       fetchMapLayers(activeProject.id);
     }
   }, [activeProject]);
+
+  useEffect(() => {
+    if (projects && projects.length === 0) {
+      setClusterLayersReady(true);
+    }
+  }, [projects]);
 
   const handleMapClick = (event) => {
     const map: maplibregl.Map = event.target;
@@ -122,6 +136,29 @@ export default function HomeMap() {
     }
   };
 
+  const handleMoveEnd = (event) => {
+    if (!projects?.length) return;
+
+    const mapInstance = event.target;
+    const mapBounds = mapInstance.getBounds();
+
+    // Filter projects to those whose marker is inside the current map bounds,
+    // then extract their IDs
+    const visibleProjectMarkers = projects
+      .filter((project) => {
+        const { x, y } = project.centroid;
+        const markerLocation = new maplibregl.LngLat(x, y);
+        return mapBounds.contains(markerLocation);
+      })
+      .map((project) => project.id);
+
+    // Update state with visible project marker IDs
+    projectsVisibleDispatch({
+      type: 'set',
+      payload: visibleProjectMarkers,
+    });
+  };
+
   const showBackgroundRaster = () => {
     if (
       activeDataProduct &&
@@ -156,19 +193,25 @@ export default function HomeMap() {
       initialViewState={{
         longitude: -86.9138040788386,
         latitude: 40.428655143949925,
-        zoom: 8,
       }}
       style={{
         width: '100%',
         height: '100%',
+        opacity: clusterLayersReady ? 1 : 0,
       }}
       mapboxAccessToken={mapboxAccessToken || undefined}
       mapStyle={mapStyle}
       reuseMaps={true}
       onClick={handleMapClick}
+      onMoveEnd={handleMoveEnd}
     >
       {/* Display marker cluster for project centroids when no project is active */}
-      {!activeProject && <ProjectCluster />}
+      {!activeProject && (
+        <ProjectCluster
+          clusterLayersReady={clusterLayersReady}
+          setClusterLayersReady={setClusterLayersReady}
+        />
+      )}
 
       {/* Display popup on click for project markers when no project is active */}
       {!activeProject && popupInfo && (
