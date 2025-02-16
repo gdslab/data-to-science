@@ -1,9 +1,12 @@
 import { AxiosResponse, isAxiosError } from 'axios';
-import { FeatureCollection, Point } from 'geojson';
-import { useEffect, useState } from 'react';
+import { Point } from 'geojson';
+import { useEffect, useMemo, useState } from 'react';
 import { GeoJSONSource, Layer, Source, useMap } from 'react-map-gl/maplibre';
 
-import { useMapContext } from './MapContext';
+import {
+  ProjectFeatureCollection,
+  ProjectPointFeature,
+} from '../pages/projects/Project';
 
 import {
   clusterLayerInner,
@@ -11,38 +14,67 @@ import {
   clusterCountLayer,
   unclusteredPointLayer,
 } from './layerProps';
+import { useMapContext } from './MapContext';
 
 import api from '../../api';
 import { calculateBoundsFromGeoJSON } from './utils';
 
-type ProjectClusterProps = { fetchFromAPI?: boolean; includeAll?: boolean };
+type ProjectClusterProps = {
+  clusterLayersReady?: boolean;
+  fetchFromAPI?: boolean;
+  includeAll?: boolean;
+  setClusterLayersReady?: React.Dispatch<React.SetStateAction<boolean>>;
+};
 
 export default function ProjectCluster({
+  clusterLayersReady,
   fetchFromAPI = false,
   includeAll = false,
+  setClusterLayersReady,
 }: ProjectClusterProps) {
-  const { projectGeojson, projectGeojsonLoaded } = useMapContext();
+  const { projects, projectsLoaded } = useMapContext();
 
   const [geojsonData, setGeojsonData] =
-    useState<FeatureCollection<Point> | null>(null);
+    useState<ProjectFeatureCollection | null>(null);
   const [geojsonLoaded, setGeojsonLoaded] = useState(false);
 
   const { current: map } = useMap();
 
+  const projectsFeatureCollection = useMemo(() => {
+    if (!projects) return null;
+    const features: ProjectPointFeature[] = projects.map((project) => ({
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: [project.centroid.x, project.centroid.y],
+      },
+      properties: {
+        id: project.id,
+        title: project.title,
+        description: project.description,
+      },
+    }));
+    const featureCollection: ProjectFeatureCollection = {
+      type: 'FeatureCollection',
+      features: features,
+    };
+    return featureCollection;
+  }, [projects]);
+
   // Use context to set project markers if fetchFromAPI is false
   useEffect(() => {
-    if (!fetchFromAPI) {
-      setGeojsonData(projectGeojson);
+    if (!fetchFromAPI && projects) {
+      setGeojsonData(projectsFeatureCollection);
       setGeojsonLoaded(true);
     }
-  }, [projectGeojsonLoaded]);
+  }, [projectsLoaded]);
 
   // Fetch project markers in geojson format from api when fetchFromAPI is true
   useEffect(() => {
     const fetchGeojson = async () => {
       try {
         const geojsonUrl = `/projects?include_all=${includeAll}&format=geojson`;
-        const response: AxiosResponse<FeatureCollection<Point>> = await api.get(
+        const response: AxiosResponse<ProjectFeatureCollection> = await api.get(
           geojsonUrl
         );
         setGeojsonData(response.data);
@@ -79,10 +111,22 @@ export default function ProjectCluster({
     // Fetch project GeoJSON data to calculate the bounds
     const bounds = calculateBoundsFromGeoJSON(geojsonData);
 
+    // Determine animation duration based on whether it's the first load
+    const duration =
+      clusterLayersReady === undefined || clusterLayersReady ? 1000 : 1;
+
+    // Set cluster layers as ready after first fitBounds event finishes
+    const onMoveEnd = () => {
+      if (setClusterLayersReady) {
+        setClusterLayersReady(true);
+      }
+    };
+    map.once('moveend', onMoveEnd);
+
     // Fit the map to the bounds
     map.fitBounds(bounds, {
       padding: 20,
-      duration: 1000,
+      duration: duration,
     });
   }, [map, geojsonData, geojsonLoaded]);
 

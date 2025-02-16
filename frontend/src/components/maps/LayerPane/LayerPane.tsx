@@ -23,19 +23,17 @@ import Sort, {
   sortProjects,
 } from '../../Sort';
 
-import { getLocalStorageProjects } from './utils';
+type LayerPaneProps = {
+  hidePane: boolean;
+  toggleHidePane: React.Dispatch<React.SetStateAction<boolean>>;
+};
 
 export default function LayerPane({
   hidePane,
   toggleHidePane,
-}: {
-  hidePane: boolean;
-  toggleHidePane: React.Dispatch<React.SetStateAction<boolean>>;
-}) {
+}: LayerPaneProps) {
   const [currentPage, setCurrentPage] = useState(0);
-  const [mapProjects, setMapProjects] = useState<Project[] | null>(
-    getLocalStorageProjects()
-  );
+  const [mapProjects, setMapProjects] = useState<Project[]>([]);
   const [searchText, setSearchText] = useState('');
   const [sortSelection, setSortSelection] = useState<SortSelection>(
     getSortPreferenceFromLocalStorage('sortPreference')
@@ -127,7 +125,9 @@ export default function LayerPane({
    * @param newPage Index of new page.
    */
   function updateCurrentPage(newPage: number): void {
-    const total_pages = Math.ceil(mapProjects ? mapProjects.length : 0 / MAX_ITEMS);
+    const total_pages = Math.ceil(
+      mapProjects ? mapProjects.length : 0 / MAX_ITEMS
+    );
 
     if (newPage + 1 > total_pages) {
       setCurrentPage(total_pages - 1);
@@ -275,8 +275,14 @@ export default function LayerPane({
                       <LayerCard hover={true}>
                         <div
                           onClick={() => {
-                            activeDataProductDispatch({ type: 'clear', payload: null });
-                            activeProjectDispatch({ type: 'set', payload: project });
+                            activeDataProductDispatch({
+                              type: 'clear',
+                              payload: null,
+                            });
+                            activeProjectDispatch({
+                              type: 'set',
+                              payload: project,
+                            });
                           }}
                           title={project.title}
                         >
@@ -324,9 +330,9 @@ export default function LayerPane({
               ) : mapProjects && mapProjects.length === 0 ? (
                 <div>
                   <p className="mb-4">
-                    You do not have any projects to display on the map. Use the below
-                    button to navigate to the Projects page and create your first
-                    project.
+                    You do not have any projects to display on the map. Use the
+                    below button to navigate to the Projects page and create
+                    your first project.
                   </p>
                   <Link to="/projects">
                     <Button>My Projects</Button>
