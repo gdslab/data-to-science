@@ -7,35 +7,55 @@ import {
   useRouteError,
 } from 'react-router-dom';
 
-import LoadingBars from '../LoadingBars';
 import ProjectList, { Project } from './projects/ProjectList';
 
 import api from '../../api';
+import { getLocalStorageProjects } from '../maps/utils';
 
 export async function loader() {
+  // Fetch projects from localStorage
+  let cachedProjects: Project[] = [];
   try {
-    // Fetch list of user's projects
-    const projects: Promise<AxiosResponse<Project[]>> = api.get('/projects');
-
-    return { projects };
-  } catch (error) {
-    if (isAxiosError(error)) {
-      // Axios-specific error handling
-      const status = error.response?.status || 500;
-      const message = error.response?.data?.message || error.message;
-
-      throw {
-        status,
-        message: `Failed to load projects: ${message}`,
-      };
-    } else {
-      // Generic error handling
-      throw {
-        status: 500,
-        message: 'An unexpected error occurred.',
-      };
+    // Check local storage for projects
+    const projectsFromCache = getLocalStorageProjects();
+    if (projectsFromCache) {
+      cachedProjects = projectsFromCache;
     }
+  } catch (error) {
+    console.error('Error reading projects from localStorage', error);
   }
+
+  // Fetch list of user's projects
+  const freshProjects = api
+    .get('/projects')
+    .then((response: AxiosResponse<Project[]>) => {
+      // Update localStorage with latest projects
+      localStorage.setItem('projects', JSON.stringify(response.data));
+      return response;
+    })
+    .catch((error) => {
+      if (isAxiosError(error)) {
+        // Axios-specific error handling
+        const status = error.response?.status || 500;
+        const message = error.response?.data?.message || error.message;
+
+        throw {
+          status,
+          message: `Failed to load projects: ${message}`,
+        };
+      } else {
+        // Generic error handling
+        throw {
+          status: 500,
+          message: 'An unexpected error occurred.',
+        };
+      }
+    });
+
+  return {
+    cachedProjects,
+    freshProjects,
+  };
 }
 
 type LoaderError = {
@@ -66,18 +86,15 @@ function ErrorElement() {
 }
 
 export default function Workspace() {
-  const { projects } = useLoaderData() as { projects: Promise<Project[]> };
+  const { cachedProjects, freshProjects } = useLoaderData() as {
+    cachedProjects: Project[];
+    freshProjects: Promise<AxiosResponse<Project[]>>;
+  };
 
   return (
-    <Suspense
-      fallback={
-        <div className="h-full flex justify-center items-center">
-          <LoadingBars />
-        </div>
-      }
-    >
+    <Suspense fallback={<ProjectList projects={cachedProjects} />}>
       <Await
-        resolve={projects}
+        resolve={freshProjects}
         errorElement={<ErrorElement />}
         children={(resolveProjects) => (
           <ProjectList projects={resolveProjects.data} />
