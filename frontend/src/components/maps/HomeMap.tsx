@@ -43,6 +43,7 @@ export default function HomeMap() {
   const [popupInfo, setPopupInfo] = useState<
     PopupInfoProps | { [key: string]: any } | null
   >(null);
+
   const {
     activeDataProduct,
     activeProject,
@@ -83,6 +84,12 @@ export default function HomeMap() {
       fetchMapLayers(activeProject.id);
     }
   }, [activeProject]);
+
+  useEffect(() => {
+    if (projects && projects.length === 0) {
+      setClusterLayersReady(true);
+    }
+  }, [projects]);
 
   const handleMapClick = (event) => {
     const map: maplibregl.Map = event.target;

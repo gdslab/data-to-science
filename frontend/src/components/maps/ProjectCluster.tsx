@@ -41,7 +41,7 @@ export default function ProjectCluster({
   const { current: map } = useMap();
 
   const projectsFeatureCollection = useMemo(() => {
-    if (!projects) return null;
+    if (!projects || projects.length === 0) return null;
     const features: ProjectPointFeature[] = projects.map((project) => ({
       type: 'Feature',
       geometry: {
@@ -127,6 +127,7 @@ export default function ProjectCluster({
     map.fitBounds(bounds, {
       padding: 20,
       duration: duration,
+      maxZoom: 16,
     });
   }, [map, geojsonData, geojsonLoaded]);
 

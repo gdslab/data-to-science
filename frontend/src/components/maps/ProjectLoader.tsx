@@ -17,15 +17,11 @@ export default function ProjectLoader() {
         const geojsonUrl = `/projects?include_all=${false}`;
         const response: AxiosResponse<Project[]> = await api.get(geojsonUrl);
 
-        if (response.data.length > 0) {
-          // Only update projects if they are new or differ from the current state
-          if (!projects || !areProjectsEqual(projects, response.data)) {
-            projectsDispatch({ type: 'set', payload: response.data });
-          }
-          projectsLoadedDispatch({ type: 'set', payload: true });
-        } else {
-          projectsDispatch({ type: 'set', payload: null });
+        // Only update projects if they are new or differ from the current state
+        if (!projects || !areProjectsEqual(projects, response.data)) {
+          projectsDispatch({ type: 'set', payload: response.data });
         }
+        projectsLoadedDispatch({ type: 'set', payload: true });
       } catch (error) {
         // Clear any previously set data and update loading state
         projectsDispatch({ type: 'set', payload: null });
