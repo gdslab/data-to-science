@@ -20,17 +20,17 @@ import api from '../../api';
 import { calculateBoundsFromGeoJSON } from './utils';
 
 type ProjectClusterProps = {
-  clusterLayersReady?: boolean;
+  isMapReady?: boolean;
   fetchFromAPI?: boolean;
   includeAll?: boolean;
-  setClusterLayersReady?: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsMapReady?: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 export default function ProjectCluster({
-  clusterLayersReady,
+  isMapReady,
   fetchFromAPI = false,
   includeAll = false,
-  setClusterLayersReady,
+  setIsMapReady,
 }: ProjectClusterProps) {
   const { projects, projectsLoaded } = useMapContext();
 
@@ -112,13 +112,12 @@ export default function ProjectCluster({
     const bounds = calculateBoundsFromGeoJSON(geojsonData);
 
     // Determine animation duration based on whether it's the first load
-    const duration =
-      clusterLayersReady === undefined || clusterLayersReady ? 1000 : 1;
+    const duration = isMapReady === undefined || isMapReady ? 1000 : 1;
 
     // Set cluster layers as ready after first fitBounds event finishes
     const onMoveEnd = () => {
-      if (setClusterLayersReady) {
-        setClusterLayersReady(true);
+      if (setIsMapReady) {
+        setIsMapReady(true);
       }
     };
     map.once('moveend', onMoveEnd);

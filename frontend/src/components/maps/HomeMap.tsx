@@ -5,6 +5,7 @@ import { Feature } from 'geojson';
 import maplibregl from 'maplibre-gl';
 import { useEffect, useMemo, useState } from 'react';
 import Map, { NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
+import { useLocation } from 'react-router-dom';
 
 import ColorBarControl from './ColorBarControl';
 import GeocoderControl from './GeocoderControl';
@@ -39,7 +40,7 @@ export type PopupInfoProps = {
 };
 
 export default function HomeMap() {
-  const [clusterLayersReady, setClusterLayersReady] = useState(false);
+  const [isMapReady, setIsMapReady] = useState(false);
   const [popupInfo, setPopupInfo] = useState<
     PopupInfoProps | { [key: string]: any } | null
   >(null);
@@ -56,6 +57,8 @@ export default function HomeMap() {
     dispatch,
   } = useMapLayerContext();
   const symbologyContext = useRasterSymbologyContext();
+
+  const { state } = useLocation();
 
   // Fetch map layers when a project is activated
   useEffect(() => {
@@ -87,9 +90,16 @@ export default function HomeMap() {
 
   useEffect(() => {
     if (projects && projects.length === 0) {
-      setClusterLayersReady(true);
+      setIsMapReady(true);
     }
   }, [projects]);
+
+  // Set to ready state if home map was navigated to from a data product card
+  useEffect(() => {
+    if (state?.navContext === 'dataProductCard') {
+      setIsMapReady(true);
+    }
+  }, [state]);
 
   const handleMapClick = (event) => {
     const map: maplibregl.Map = event.target;
@@ -197,7 +207,7 @@ export default function HomeMap() {
       style={{
         width: '100%',
         height: '100%',
-        opacity: clusterLayersReady ? 1 : 0,
+        opacity: isMapReady ? 1 : 0,
       }}
       mapboxAccessToken={mapboxAccessToken || undefined}
       mapStyle={mapStyle}
@@ -207,10 +217,7 @@ export default function HomeMap() {
     >
       {/* Display marker cluster for project centroids when no project is active */}
       {!activeProject && (
-        <ProjectCluster
-          clusterLayersReady={clusterLayersReady}
-          setClusterLayersReady={setClusterLayersReady}
-        />
+        <ProjectCluster isMapReady={isMapReady} setIsMapReady={setIsMapReady} />
       )}
 
       {/* Display popup on click for project markers when no project is active */}

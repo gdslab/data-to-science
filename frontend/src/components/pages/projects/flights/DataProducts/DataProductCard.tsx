@@ -48,7 +48,8 @@ export default function DataProductCard({
           <div className="grid grid-flow-row auto-rows-max gap-2">
             {/* preview image */}
             <div className="relative flex items-center justify-center bg-accent3/20">
-              {dataProduct.status === 'SUCCESS' && isGeoTIFF(dataProduct.data_type) ? (
+              {dataProduct.status === 'SUCCESS' &&
+              isGeoTIFF(dataProduct.data_type) ? (
                 <div className="flex items-center justify-center w-full h-48">
                   <img
                     className="object-scale-down h-full"
@@ -77,7 +78,10 @@ export default function DataProductCard({
                       src={dataProduct.url.replace('copc.laz', 'png')}
                       alt="Preview of data product"
                       onError={() => {
-                        setInvalidPreviews([...invalidPreviews, dataProduct.id]);
+                        setInvalidPreviews([
+                          ...invalidPreviews,
+                          dataProduct.id,
+                        ]);
                       }}
                     />
                   ) : (
@@ -146,7 +150,11 @@ export default function DataProductCard({
                 className="flex items-center gap-2 text-sky-600 cursor-pointer"
                 onClick={() => {
                   navigate('/home', {
-                    state: { project: project, dataProduct: dataProduct },
+                    state: {
+                      project: project,
+                      dataProduct: dataProduct,
+                      navContext: 'dataProductCard',
+                    },
                   });
                 }}
               >
@@ -163,7 +171,8 @@ export default function DataProductCard({
             </div>
           </div>
         </Card>
-        {dataProduct.status === 'INPROGRESS' || dataProduct.status === 'WAITING' ? (
+        {dataProduct.status === 'INPROGRESS' ||
+        dataProduct.status === 'WAITING' ? (
           <div className="w-full absolute bottom-0">
             <ProgressBar />
           </div>
