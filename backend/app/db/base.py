@@ -5,6 +5,7 @@ from app.models.api_key import APIKey
 from app.models.campaign import Campaign
 from app.models.data_product_metadata import DataProductMetadata
 from app.models.data_product import DataProduct
+from app.models.disk_usage_stats import DiskUsageStats
 from app.models.extension import Extension
 from app.models.file_permission import FilePermission
 from app.models.flight import Flight
