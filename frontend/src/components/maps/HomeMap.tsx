@@ -1,6 +1,5 @@
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './HomeMap.css';
-import { AxiosResponse } from 'axios';
 import { Feature } from 'geojson';
 import maplibregl from 'maplibre-gl';
 import { useEffect, useMemo, useState } from 'react';
@@ -17,11 +16,10 @@ import ProjectBoundary from './ProjectBoundary';
 import ProjectPopup from './ProjectPopup';
 import ProjectRasterTiles from './ProjectRasterTiles';
 import ProjectVectorTiles from './ProjectVectorTiles';
-import { MapLayer } from '../pages/projects/Project';
 
 import { BBox } from './Maps';
 import { useMapContext } from './MapContext';
-import { useMapLayerContext } from './MapLayersContext';
+import { MapLayerProps } from './MapLayersContext';
 import {
   SingleBandSymbology,
   useRasterSymbologyContext,
@@ -32,8 +30,7 @@ import {
   usgsImageryTopoBasemapStyle,
 } from './styles/basemapStyles';
 
-import api from '../../api';
-import { isSingleBand, mapApiResponseToLayers } from './utils';
+import { isSingleBand } from './utils';
 
 export type PopupInfoProps = {
   feature: Feature;
@@ -41,7 +38,7 @@ export type PopupInfoProps = {
   longitude: number;
 };
 
-export default function HomeMap() {
+export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
   const [isMapReady, setIsMapReady] = useState(false);
   const [popupInfo, setPopupInfo] = useState<
     PopupInfoProps | { [key: string]: any } | null
@@ -54,42 +51,11 @@ export default function HomeMap() {
     projects,
     projectsVisibleDispatch,
   } = useMapContext();
-  const {
-    state: { layers },
-    dispatch,
-  } = useMapLayerContext();
   const symbologyContext = useRasterSymbologyContext();
 
   const { state } = useLocation();
 
-  // Fetch map layers when a project is activated
-  useEffect(() => {
-    const fetchMapLayers = async (projectId: string) => {
-      const mapLayersUrl = `/projects/${projectId}/vector_layers`;
-      try {
-        const response: AxiosResponse<MapLayer[]> = await api.get(mapLayersUrl);
-        dispatch({
-          type: 'SET_LAYERS',
-          payload: mapApiResponseToLayers(response.data),
-        });
-      } catch (error) {
-        console.error('Error fetching project map layers:', error);
-        dispatch({ type: 'SET_LAYERS', payload: [] });
-      }
-    };
-    if (activeProject) {
-      // Remove any symbology settings for rasters from previously selected project
-      for (const rasterId in symbologyContext.state) {
-        symbologyContext.dispatch({
-          type: 'REMOVE_RASTER',
-          rasterId: rasterId,
-        });
-      }
-      // Fetch map layers for selected project
-      fetchMapLayers(activeProject.id);
-    }
-  }, [activeProject]);
-
+  // Set map state to ready if user has zero projects
   useEffect(() => {
     if (projects && projects.length === 0) {
       setIsMapReady(true);
@@ -102,6 +68,13 @@ export default function HomeMap() {
       setIsMapReady(true);
     }
   }, [state]);
+
+  // Set map state to ready if a project is activated
+  useEffect(() => {
+    if (activeProject && !isMapReady) {
+      setIsMapReady(true);
+    }
+  }, [activeProject]);
 
   const handleMapClick = (event) => {
     const map: maplibregl.Map = event.target;
