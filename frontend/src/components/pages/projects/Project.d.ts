@@ -141,6 +141,7 @@ export interface DataProduct {
   filepath: string;
   url: string;
   flight_id: string;
+  bbox?: [number, number, number, number];
   public: boolean;
   signature?: {
     secure: string;
