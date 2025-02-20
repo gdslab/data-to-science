@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { Button } from '../../Buttons';
-import Modal from '../../Modal';
 import Pagination, { getPaginationResults } from '../../Pagination';
-import ProjectForm from './ProjectForm';
 import { useProjectContext } from './ProjectContext';
+import ProjectListHeader from './ProjectListHeader';
 import ProjectSearch from './ProjectSearch';
 import Sort, {
   SortSelection,
@@ -37,30 +35,6 @@ export interface Project {
   role: string;
   team_id: string;
   title: string;
-}
-
-function ProjectListHeader() {
-  const [open, setOpen] = useState(false);
-
-  const { locationDispatch } = useProjectContext();
-
-  useEffect(() => {
-    locationDispatch({ type: 'clear', payload: null });
-  }, [open]);
-
-  return (
-    <div className="flex flex-col gap-4">
-      <h1>Projects</h1>
-      <div className="w-96">
-        <Button icon="folderplus" onClick={() => setOpen(true)}>
-          Create
-        </Button>
-        <Modal open={open} setOpen={setOpen}>
-          <ProjectForm setModalOpen={setOpen} />
-        </Modal>
-      </div>
-    </div>
-  );
 }
 
 export default function ProjectList({ projects }: { projects: Project[] }) {
@@ -145,8 +119,8 @@ export default function ProjectList({ projects }: { projects: Project[] }) {
         {!projects ||
           (projects.length === 0 && (
             <p>
-              Use the above button to create your first project. Your projects will
-              appear in the space below.
+              Use the above button to create your first project. Your projects
+              will appear in the space below.
             </p>
           ))}
       </div>
@@ -166,7 +140,10 @@ export default function ProjectList({ projects }: { projects: Project[] }) {
               filterAndSlice(projects).length,
               filterSearch(projects).length
             )}
-            <Sort sortSelection={sortSelection} setSortSelection={setSortSelection} />
+            <Sort
+              sortSelection={sortSelection}
+              setSortSelection={setSortSelection}
+            />
           </div>
         </div>
       )}
