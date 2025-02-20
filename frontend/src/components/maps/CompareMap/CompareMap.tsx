@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Map, { NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
+import { bbox } from '@turf/bbox';
 
 import CompareMapControl from './CompareMapControl';
 import CompareModeControl from './CompareModeControl';
@@ -9,6 +10,7 @@ import ProjectRasterTiles from '../ProjectRasterTiles';
 import { DataProduct } from '../../pages/projects/Project';
 import { useRasterSymbologyContext } from '../RasterSymbologyContext';
 
+import { BBox } from '../Maps';
 import {
   getMapboxSatelliteBasemapStyle,
   usgsImageryTopoBasemapStyle,
@@ -67,9 +69,8 @@ export default function CompareMap() {
 
   const [activeMap, setActiveMap] = useState<'left' | 'right'>('left');
 
-  const [mapComparisonState, setMapComparisonState] = useState<MapComparisonState>(
-    defaultMapComparisonState
-  );
+  const [mapComparisonState, setMapComparisonState] =
+    useState<MapComparisonState>(defaultMapComparisonState);
 
   const { activeProject, flights, mapboxAccessToken } = useMapContext();
 
@@ -215,7 +216,13 @@ export default function CompareMap() {
         {activeProject &&
           selectedLeftDataProduct &&
           symbologyState[selectedLeftDataProduct.id]?.isLoaded && (
-            <ProjectRasterTiles dataProduct={selectedLeftDataProduct} />
+            <ProjectRasterTiles
+              boundingBox={
+                selectedLeftDataProduct.bbox ||
+                (bbox(activeProject.field) as BBox)
+              }
+              dataProduct={selectedLeftDataProduct}
+            />
           )}
 
         {/* Toggle compare mode */}
@@ -248,7 +255,13 @@ export default function CompareMap() {
         {activeProject &&
           selectedRightDataProduct &&
           symbologyState[selectedRightDataProduct.id]?.isLoaded && (
-            <ProjectRasterTiles dataProduct={selectedRightDataProduct} />
+            <ProjectRasterTiles
+              boundingBox={
+                selectedRightDataProduct.bbox ||
+                (bbox(activeProject.field) as BBox)
+              }
+              dataProduct={selectedRightDataProduct}
+            />
           )}
 
         {/* General controls */}

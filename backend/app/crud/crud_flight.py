@@ -11,6 +11,7 @@ from sqlalchemy.orm import joinedload, Session
 from app import crud
 from app.crud.base import CRUDBase
 from app.crud.crud_data_product import (
+    set_bbox_attr,
     set_public_attr,
     set_signature_attr,
     set_url_attr,
@@ -130,6 +131,7 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                         ):
                             # do not include geotiffs without stac props
                             available_data_products.append(data_product)
+                            set_bbox_attr(data_product)
                             set_public_attr(
                                 data_product, data_product.file_permission.is_public
                             )
