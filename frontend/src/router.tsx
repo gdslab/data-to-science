@@ -52,7 +52,9 @@ import TeamCreate, {
 import TeamDetail, {
   loader as teamDetailLoader,
 } from './components/pages/teams/TeamDetail';
-import Workspace, { loader as workspaceLoader } from './components/pages/Workspace';
+import Workspace, {
+  loader as workspaceLoader,
+} from './components/pages/Workspace';
 
 import { RootPublic, RootProtected } from './components/layout/Root';
 import { RequireAdmin, RequireAuth } from './AuthContext';

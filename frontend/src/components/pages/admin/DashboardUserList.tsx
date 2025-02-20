@@ -1,5 +1,5 @@
 import Papa from 'papaparse';
-import { ReactNode, useState } from 'react';
+import { useState } from 'react';
 
 import { generateRandomProfileColor } from '../auth/Profile';
 import { Button } from '../../Buttons';
@@ -8,33 +8,27 @@ import { User } from '../../../AuthContext';
 
 import { downloadFile as downloadCSV } from '../projects/fieldCampaigns/utils';
 
-const HeaderRow = ({ children }: { children?: ReactNode }) => (
-  <th className="whitespace-nowrap px-4 py-2 font-medium text-sm text-gray-900">
-    {children}
-  </th>
-);
-
-const BodyRow = ({ children }: { children: ReactNode }) => (
-  <th className="whitespace-nowrap px-4 py-2 font-medium text-sm text-gray-700">
-    {children}
-  </th>
-);
-
 const UserProfilePicture = ({ user }: { user: User }) =>
   user.profile_url ? (
-    <img
-      key={user.profile_url.split('/').slice(-1)[0].slice(0, -4)}
-      className="h-8 w-8 rounded-full"
-      src={user.profile_url}
-    />
+    <div className="w-full flex items-center justify-center">
+      <img
+        key={user.profile_url.split('/').slice(-1)[0].slice(0, -4)}
+        className="h-8 w-8 rounded-full"
+        src={user.profile_url}
+      />
+    </div>
   ) : (
-    <div
-      className="flex items-center justify-center h-8 w-8 text-white text-sm rounded-full"
-      style={generateRandomProfileColor(`${user.first_name} ${user.last_name}`)}
-    >
-      <span className="indent-[0.1em] tracking-widest">
-        {user.first_name[0] + user.last_name[0]}
-      </span>
+    <div className="w-full flex items-center justify-center">
+      <div
+        className="flex items-center justify-center h-8 w-8 text-white text-sm rounded-full"
+        style={generateRandomProfileColor(
+          `${user.first_name} ${user.last_name}`
+        )}
+      >
+        <span className="indent-[0.1em] tracking-widest">
+          {user.first_name[0] + user.last_name[0]}
+        </span>
+      </div>
     </div>
   );
 
@@ -51,7 +45,7 @@ export default function DashboardUserList({ users }: { users: User[] }) {
     'profile_url',
   ];
 
-  const MAX_ITEMS = 5; // max number of users per page
+  const MAX_ITEMS = 10; // max number of users per page
   const TOTAL_PAGES = Math.ceil(users.length / MAX_ITEMS);
 
   /**
@@ -76,7 +70,10 @@ export default function DashboardUserList({ users }: { users: User[] }) {
    * @returns
    */
   function filterAndSlice(users: User[]) {
-    return users.slice(currentPage * MAX_ITEMS, MAX_ITEMS + currentPage * MAX_ITEMS);
+    return users.slice(
+      currentPage * MAX_ITEMS,
+      MAX_ITEMS + currentPage * MAX_ITEMS
+    );
   }
 
   /**
@@ -89,31 +86,37 @@ export default function DashboardUserList({ users }: { users: User[] }) {
   }
 
   return (
-    <div>
-      <table className="w-full border-separate border-spacing-1">
+    <div className="max-h-[40vh] w-full flex flex-col gap-4">
+      <table className="relative w-full border-separate border-spacing-y-1 border-spacing-x-1">
         <thead>
-          <tr className="font-semibold text-md text-slate-600">
-            <HeaderRow></HeaderRow>
-            <HeaderRow>Name</HeaderRow>
-            <HeaderRow>Email</HeaderRow>
-            <HeaderRow>Date Joined</HeaderRow>
+          <tr className="h-12 sticky top-0 text-slate-700 bg-slate-300">
+            <th className="w-1/12"></th>
+            <th className="w-4/12">Name</th>
+            <th className="w-4/12">Email</th>
+            <th className="w-3/12">Date Joined</th>
           </tr>
         </thead>
-        <tbody>
-          {getAvailableUsers(users).map((user) => (
-            <tr key={user.id}>
-              <BodyRow>
-                <UserProfilePicture user={user} />
-              </BodyRow>
-              <HeaderRow>
-                {user.first_name} {user.last_name}
-              </HeaderRow>
-              <BodyRow>{user.email}</BodyRow>
-              <BodyRow>{new Date(user.created_at).toLocaleDateString()}</BodyRow>
-            </tr>
-          ))}
-        </tbody>
       </table>
+      <div className="md:max-h-96 max-h-60 overflow-y-auto">
+        <table className="relative w-full border-separate border-spacing-y-1 border-spacing-x-1">
+          <tbody>
+            {getAvailableUsers(users).map((user) => (
+              <tr key={user.id} className="text-center">
+                <td className="w-1/12 p-1.5 bg-white">
+                  <UserProfilePicture user={user} />
+                </td>
+                <td className="w-4/12 p-1.5 bg-white">
+                  {user.first_name} {user.last_name}
+                </td>
+                <td className="w-4/12 p-1.5 bg-white">{user.email}</td>
+                <td className="w-3/12 p-1.5 bg-white">
+                  {new Date(user.created_at).toLocaleDateString()}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <div className="flex flex-cols justify-between gap-4">
         <div></div>
         <Pagination
@@ -129,7 +132,9 @@ export default function DashboardUserList({ users }: { users: User[] }) {
             const csvData = Papa.unparse(
               users.map((user) =>
                 Object.fromEntries(
-                  Object.entries(user).filter(([key]) => !keysToSkip.includes(key))
+                  Object.entries(user).filter(
+                    ([key]) => !keysToSkip.includes(key)
+                  )
                 )
               )
             );
