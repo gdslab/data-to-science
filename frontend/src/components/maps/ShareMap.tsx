@@ -121,7 +121,11 @@ export default function ShareMap() {
       }
     }
     if (dataProduct) {
-      getBounds(dataProduct.id);
+      if (dataProduct.bbox) {
+        setBounds(dataProduct.bbox);
+      } else {
+        getBounds(dataProduct.id);
+      }
     }
   }, [dataProduct]);
 
@@ -164,7 +168,10 @@ export default function ShareMap() {
     >
       {/* Display raster tiles */}
       {dataProduct && state[dataProduct.id]?.symbology && (
-        <ProjectRasterTiles dataProduct={dataProduct} />
+        <ProjectRasterTiles
+          boundingBox={dataProduct.bbox}
+          dataProduct={dataProduct}
+        />
       )}
 
       {/* Display color bar when single band data product */}

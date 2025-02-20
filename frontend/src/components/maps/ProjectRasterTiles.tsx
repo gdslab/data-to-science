@@ -68,8 +68,10 @@ function constructRasterTileUrl(
 }
 
 export default function ProjectRasterTiles({
+  boundingBox = undefined,
   dataProduct,
 }: {
+  boundingBox?: [number, number, number, number];
   dataProduct: DataProduct;
 }) {
   const { current: map } = useMap();
@@ -96,6 +98,7 @@ export default function ProjectRasterTiles({
       maxzoom={24}
       minzoom={0}
       tileSize={256}
+      bounds={boundingBox}
     >
       <Layer
         key={`${dataProduct.id}-layer`}

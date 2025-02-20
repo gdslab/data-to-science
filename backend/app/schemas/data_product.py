@@ -55,6 +55,7 @@ class DataProductSignature(BaseModel):
 
 
 class DataProduct(DataProductInDBBase):
+    bbox: Optional[List[float]] = None
     public: bool = False
     signature: Optional[DataProductSignature] = None
     status: Optional[str] = None

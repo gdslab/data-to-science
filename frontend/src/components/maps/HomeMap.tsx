@@ -6,6 +6,7 @@ import maplibregl from 'maplibre-gl';
 import { useEffect, useMemo, useState } from 'react';
 import Map, { NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
 import { useLocation } from 'react-router-dom';
+import { bbox } from '@turf/bbox';
 
 import ColorBarControl from './ColorBarControl';
 import GeocoderControl from './GeocoderControl';
@@ -18,6 +19,7 @@ import ProjectRasterTiles from './ProjectRasterTiles';
 import ProjectVectorTiles from './ProjectVectorTiles';
 import { MapLayer } from '../pages/projects/Project';
 
+import { BBox } from './Maps';
 import { useMapContext } from './MapContext';
 import { useMapLayerContext } from './MapLayersContext';
 import {
@@ -171,6 +173,7 @@ export default function HomeMap() {
 
   const showBackgroundRaster = () => {
     if (
+      activeProject &&
       activeDataProduct &&
       isSingleBand(activeDataProduct) &&
       symbologyContext.state[activeDataProduct.id]
@@ -179,8 +182,11 @@ export default function HomeMap() {
         activeDataProduct.id
       ].symbology as SingleBandSymbology;
       if (activeDataProductSymbology && activeDataProductSymbology.background) {
+        const boundingBox =
+          activeDataProduct.bbox || (bbox(activeProject.field) as BBox);
         return (
           <ProjectRasterTiles
+            boundingBox={boundingBox}
             dataProduct={activeDataProductSymbology.background}
           />
         );
@@ -240,6 +246,9 @@ export default function HomeMap() {
       {activeProject && activeDataProduct && (
         <ProjectRasterTiles
           key={activeDataProduct.id}
+          boundingBox={
+            activeDataProduct.bbox || (bbox(activeProject.field) as BBox)
+          }
           dataProduct={activeDataProduct}
         />
       )}
