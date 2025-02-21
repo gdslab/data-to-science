@@ -38,7 +38,10 @@ export function getSortPreferenceFromLocalStorage(key: string): SortSelection {
  * @param key Local storage key for sort preference.
  * @param sortOption Sort option.
  */
-function setSortPreferenceInLocalStorage(key: string, sortOption: SortSelection) {
+function setSortPreferenceInLocalStorage(
+  key: string,
+  sortOption: SortSelection
+) {
   localStorage.setItem(key, sortOption);
 }
 
@@ -77,8 +80,16 @@ export default function Sort({
   setSortSelection: SetSortSelection;
 }) {
   const categories = [
-    { key: 'atoz', label: 'Title A-Z', title: 'Sort by title in ascending order' },
-    { key: 'ztoa', label: 'Title Z-A', title: 'Sort by title in descending order' },
+    {
+      key: 'atoz',
+      label: 'Title A-Z',
+      title: 'Sort by title in ascending order',
+    },
+    {
+      key: 'ztoa',
+      label: 'Title Z-A',
+      title: 'Sort by title in descending order',
+    },
     {
       key: 'recent',
       label: 'Recent Flights',
@@ -166,7 +177,7 @@ export default function Sort({
           </summary>
 
           <div className="z-50 group-open:absolute group-open:start-0 group-open:top-auto group-open:mt-2">
-            <div className="w-96 rounded border border-gray-200 bg-white">
+            <div className="rounded border border-gray-200 bg-white">
               <ul className="space-y-1 border-t border-gray-200 p-4">
                 {categories.map(({ key, label, title }) => (
                   <li key={key}>
@@ -184,7 +195,9 @@ export default function Sort({
                         checked={sortSelection === key}
                         onChange={onChange}
                       />
-                      <span className="text-sm font-medium text-gray-700">{label}</span>
+                      <span className="text-sm font-medium text-gray-700">
+                        {label}
+                      </span>
                     </label>
                   </li>
                 ))}
