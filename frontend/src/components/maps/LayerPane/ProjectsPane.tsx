@@ -92,8 +92,8 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
   }, [filteredVisibleProjects]);
 
   return (
-    <div>
-      <article className="h-[calc(100%_-_44px)] p-4">
+    <div className="h-[calc(100%_-_44px)] p-4">
+      <article className="h-full">
         <div className="h-36">
           <h1>Projects</h1>
           {projects && projects.length > 0 && (
