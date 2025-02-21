@@ -21,11 +21,11 @@ export default function ProjectLoader() {
         if (!projects || !areProjectsEqual(projects, response.data)) {
           projectsDispatch({ type: 'set', payload: response.data });
         }
-        projectsLoadedDispatch({ type: 'set', payload: true });
+        projectsLoadedDispatch({ type: 'set', payload: 'loaded' });
       } catch (error) {
         // Clear any previously set data and update loading state
         projectsDispatch({ type: 'set', payload: null });
-        projectsLoadedDispatch({ type: 'set', payload: false });
+        projectsLoadedDispatch({ type: 'set', payload: 'error' });
         if (isAxiosError(error)) {
           const status = error.response?.status || 500;
           const message = error.response?.data?.message || error.message;
@@ -43,7 +43,9 @@ export default function ProjectLoader() {
     const localStorageProjects = getLocalStorageProjects();
     if (localStorageProjects) {
       projectsDispatch({ type: 'set', payload: localStorageProjects });
-      projectsLoadedDispatch({ type: 'set', payload: true });
+      projectsLoadedDispatch({ type: 'set', payload: 'loaded' });
+    } else {
+      projectsLoadedDispatch({ type: 'set', payload: 'loading' });
     }
     // Always fetch latest projects from the backend
     fetchProjects();

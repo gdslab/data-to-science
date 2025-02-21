@@ -9,7 +9,7 @@ import { getLocalStorageProjects } from '../maps/utils';
 
 export async function loader() {
   // Fetch projects from localStorage
-  let cachedProjects: Project[] = [];
+  let cachedProjects: Project[] | null = null;
   try {
     const projectsFromCache = getLocalStorageProjects();
     if (projectsFromCache) {
@@ -45,12 +45,12 @@ export async function loader() {
 
 export default function Workspace() {
   const { cachedProjects, freshProjects } = useLoaderData() as {
-    cachedProjects: Project[];
+    cachedProjects: Project[] | null;
     freshProjects: Promise<AxiosResponse<Project[]>>;
   };
 
   // Immediately display cached projects
-  const [projects, setProjects] = useState<Project[]>(cachedProjects);
+  const [projects, setProjects] = useState<Project[] | null>(cachedProjects);
   // Prevent interrupting user interactions with useTransition
   const [_isPending, startTransition] = useTransition();
 

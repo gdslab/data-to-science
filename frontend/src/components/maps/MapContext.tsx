@@ -172,7 +172,7 @@ function projectsReducer(state: Project[] | null, action: ProjectsAction) {
   }
 }
 
-type ProjectsLoadedState = boolean;
+export type ProjectsLoadedState = 'initial' | 'loading' | 'loaded' | 'error';
 
 function projectsLoadedReducer(
   state: ProjectsLoadedState,
@@ -261,7 +261,7 @@ const context: {
   projectLayersDispatch: () => {},
   projects: null,
   projectsDispatch: () => {},
-  projectsLoaded: false,
+  projectsLoaded: 'initial',
   projectsLoadedDispatch: () => {},
   projectsVisible: [],
   projectsVisibleDispatch: () => {},
@@ -305,7 +305,7 @@ export function MapContextProvider({
   const [projects, projectsDispatch] = useReducer(projectsReducer, null);
   const [projectsLoaded, projectsLoadedDispatch] = useReducer(
     projectsLoadedReducer,
-    false
+    'initial'
   );
   const [projectsVisible, projectsVisibleDispatch] = useReducer(
     projectsVisibleReducer,
