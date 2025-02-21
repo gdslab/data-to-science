@@ -28,6 +28,11 @@ export default function LayerControl() {
 
   const toggleVisibility = () => setVisible(!visible);
 
+  // Only display layer control if there are layers available for the project
+  if (layers.length === 0) {
+    return null;
+  }
+
   return (
     <div className="absolute top-0 left-0 max-w-80 bg-white rounded-md shadow-md px-3 py-6 m-2.5 leading-3 text-slate-600 outline-none">
       <h3>Map Layers</h3>
