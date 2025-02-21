@@ -190,7 +190,6 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
       }}
       mapboxAccessToken={mapboxAccessToken || undefined}
       mapStyle={mapStyle}
-      reuseMaps={true}
       onClick={handleMapClick}
       onMoveEnd={handleMoveEnd}
     >

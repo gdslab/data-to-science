@@ -14,7 +14,7 @@ export default function CompareModeControl(props: {
   );
 
   return (
-    <div className="absolute bottom-12 left-2.5 font-semibold text-gray-600 border-2 border-gray-300 rounded-md">
+    <div className="absolute bottom-2 left-32 font-semibold text-gray-600 border-2 border-gray-300 rounded-md">
       <select className="rounded-md" value={props.mode} onChange={onModeChange}>
         <option value="side-by-side">Side by side</option>
         <option value="split-screen">Split screen</option>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Map, { NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
 import { bbox } from '@turf/bbox';
 
+import ColorBarControl from '../ColorBarControl';
 import CompareMapControl from './CompareMapControl';
 import CompareModeControl from './CompareModeControl';
 import ProjectBoundary from '../ProjectBoundary';
@@ -225,6 +226,16 @@ export default function CompareMap() {
             />
           )}
 
+        {/* Display color bar when project active and single band data product active */}
+        {activeProject &&
+          selectedLeftDataProduct &&
+          isSingleBand(selectedLeftDataProduct) && (
+            <ColorBarControl
+              dataProduct={selectedLeftDataProduct}
+              projectId={activeProject.id}
+            />
+          )}
+
         {/* Toggle compare mode */}
         <CompareModeControl mode={mode} onModeChange={setMode} />
 
@@ -261,6 +272,17 @@ export default function CompareMap() {
                 (bbox(activeProject.field) as BBox)
               }
               dataProduct={selectedRightDataProduct}
+            />
+          )}
+
+        {/* Display color bar when project active and single band data product active */}
+        {activeProject &&
+          selectedRightDataProduct &&
+          isSingleBand(selectedRightDataProduct) && (
+            <ColorBarControl
+              dataProduct={selectedRightDataProduct}
+              position="right"
+              projectId={activeProject.id}
             />
           )}
 

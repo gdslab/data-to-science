@@ -12,11 +12,13 @@ import {
 import api from '../../api';
 
 export default function ColorBarControl({
-  projectId,
   dataProduct,
+  position = 'left',
+  projectId,
 }: {
-  projectId?: string;
   dataProduct: DataProduct;
+  position?: 'left' | 'right';
+  projectId?: string;
 }) {
   const [isRefreshing, toggleIsRefreshing] = useState(false);
   const [url, setURL] = useState('');
@@ -86,7 +88,12 @@ export default function ColorBarControl({
 
   if (url) {
     return (
-      <div className="absolute left-0 bottom-8 bg-white/75 rounded-md shadow-md px-3 py-6 m-2.5 leading-3 text-slate-600 outline-none">
+      <div
+        className={clsx(
+          'absolute bottom-8 bg-white/75 rounded-md shadow-md px-3 py-6 m-2.5 leading-3 text-slate-600 outline-none',
+          { 'start-0': position === 'left', 'end-0': position === 'right' }
+        )}
+      >
         <img src={url} className="h-80" />
         <button
           type="button"
