@@ -58,8 +58,9 @@ export default function LayerPane({
   // out of the active project pane
   const handleReturnClick = useCallback(() => {
     activeMapToolDispatch({ type: 'set', payload: 'map' });
+    activeDataProductDispatch({ type: 'clear', payload: null });
     activeProjectDispatch({ type: 'clear', payload: null });
-  }, [activeMapToolDispatch, activeProjectDispatch]);
+  }, [activeDataProductDispatch, activeMapToolDispatch, activeProjectDispatch]);
 
   // Toggle the left pane
   const handleToggleClick = useCallback(() => {
