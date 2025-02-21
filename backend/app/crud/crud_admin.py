@@ -145,9 +145,9 @@ def get_site_statistics(db: Session) -> SiteStatistics:
     if disk_usage:
         # Convert from bytes to gigabytes
         storage_availability = {
-            "total": bytes_to_gigabytes(disk_usage.disk_total),
-            "used": bytes_to_gigabytes(disk_usage.disk_used),
-            "free": bytes_to_gigabytes(disk_usage.disk_free),
+            "total": disk_usage.disk_total,
+            "used": disk_usage.disk_used,
+            "free": disk_usage.disk_free,
         }
     else:
         storage_availability = {"total": 0, "used": 0, "free": 0}
