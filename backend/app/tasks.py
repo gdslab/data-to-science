@@ -62,7 +62,7 @@ def calculate_and_update_disk_usage() -> None:
 
     # Get disk usage stats
     try:
-        total, free, used = get_disk_usage(settings.STATIC_DIR)
+        total, used, free = get_disk_usage(settings.STATIC_DIR)
     except Exception:
         logger.exception("Unable to calculate disk usage")
         update_job_status(job=job, state="ERROR")
