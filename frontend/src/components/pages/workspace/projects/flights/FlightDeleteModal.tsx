@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { TrashIcon } from '@heroicons/react/24/outline';
@@ -8,6 +7,8 @@ import { Button } from '../../../../Buttons';
 import { ConfirmationPopup } from '../../../../ConfirmationPopup';
 import Modal from '../../../../Modal';
 import { Flight } from '../Project';
+
+import api from '../../../../../api';
 
 export default function FlightDeleteModal({
   flight,
@@ -64,8 +65,8 @@ export default function FlightDeleteModal({
           onConfirm={async () => {
             setStatus(null);
             try {
-              const response = await axios.delete(
-                `/api/v1/projects/${params.projectId}/flights/${flight.id}`
+              const response = await api.delete(
+                `/projects/${params.projectId}/flights/${flight.id}`
               );
               if (response) {
                 setOpenConfirmationPopup(false);
@@ -89,7 +90,9 @@ export default function FlightDeleteModal({
           }}
         />
       </Modal>
-      {status ? <AlertBar alertType={status.type}>{status.msg}</AlertBar> : null}
+      {status ? (
+        <AlertBar alertType={status.type}>{status.msg}</AlertBar>
+      ) : null}
     </div>
   );
 }

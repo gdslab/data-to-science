@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Map, { NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
+import { bbox } from '@turf/bbox';
 
+import ColorBarControl from '../ColorBarControl';
 import CompareMapControl from './CompareMapControl';
 import CompareModeControl from './CompareModeControl';
 import ProjectBoundary from '../ProjectBoundary';
@@ -9,6 +11,7 @@ import ProjectRasterTiles from '../ProjectRasterTiles';
 import { DataProduct } from '../../pages/workspace/projects/Project';
 import { useRasterSymbologyContext } from '../RasterSymbologyContext';
 
+import { BBox } from '../Maps';
 import {
   getMapboxSatelliteBasemapStyle,
   usgsImageryTopoBasemapStyle,
@@ -214,7 +217,23 @@ export default function CompareMap() {
         {activeProject &&
           selectedLeftDataProduct &&
           symbologyState[selectedLeftDataProduct.id]?.isLoaded && (
-            <ProjectRasterTiles dataProduct={selectedLeftDataProduct} />
+            <ProjectRasterTiles
+              boundingBox={
+                selectedLeftDataProduct.bbox ||
+                (bbox(activeProject.field) as BBox)
+              }
+              dataProduct={selectedLeftDataProduct}
+            />
+          )}
+
+        {/* Display color bar when project active and single band data product active */}
+        {activeProject &&
+          selectedLeftDataProduct &&
+          isSingleBand(selectedLeftDataProduct) && (
+            <ColorBarControl
+              dataProduct={selectedLeftDataProduct}
+              projectId={activeProject.id}
+            />
           )}
 
         {/* Toggle compare mode */}
@@ -247,7 +266,24 @@ export default function CompareMap() {
         {activeProject &&
           selectedRightDataProduct &&
           symbologyState[selectedRightDataProduct.id]?.isLoaded && (
-            <ProjectRasterTiles dataProduct={selectedRightDataProduct} />
+            <ProjectRasterTiles
+              boundingBox={
+                selectedRightDataProduct.bbox ||
+                (bbox(activeProject.field) as BBox)
+              }
+              dataProduct={selectedRightDataProduct}
+            />
+          )}
+
+        {/* Display color bar when project active and single band data product active */}
+        {activeProject &&
+          selectedRightDataProduct &&
+          isSingleBand(selectedRightDataProduct) && (
+            <ColorBarControl
+              dataProduct={selectedRightDataProduct}
+              position="right"
+              projectId={activeProject.id}
+            />
           )}
 
         {/* General controls */}

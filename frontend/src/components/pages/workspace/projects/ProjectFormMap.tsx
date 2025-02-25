@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { ErrorMessage, useFormikContext } from 'formik';
 import { FeatureCollection } from 'geojson';
 import { useState } from 'react';
@@ -9,6 +8,8 @@ import { GeoJSONFeature } from './Project';
 import HintText from '../../../HintText';
 import { useProjectContext } from './ProjectContext';
 import ShapefileUpload from './ShapefileUpload';
+
+import api from '../../../../api';
 
 interface Props {
   isUpdate?: boolean;
@@ -22,9 +23,8 @@ export default function ProjectFormMap({
   projectId = '',
 }: Props) {
   const [open, setOpen] = useState(false);
-  const [featureCollection, setFeatureCollection] = useState<FeatureCollection | null>(
-    null
-  );
+  const [featureCollection, setFeatureCollection] =
+    useState<FeatureCollection | null>(null);
 
   const { setFieldTouched, setFieldValue, setStatus } = useFormikContext();
 
@@ -48,8 +48,8 @@ export default function ProjectFormMap({
         {featureCollection && featureCollection.features.length > 1 ? (
           <div className="mb-2">
             <span className="font-semibold text-slate-700">
-              Multiple boundaries detected. Click on the boundary you would like to
-              associate with this project.
+              Multiple boundaries detected. Click on the boundary you would like
+              to associate with this project.
             </span>
           </div>
         ) : (
@@ -85,10 +85,8 @@ export default function ProjectFormMap({
               setStatus(null);
               if (location) {
                 try {
-                  const response = await axios.put<GeoJSONFeature>(
-                    `${
-                      import.meta.env.VITE_API_V1_STR
-                    }/locations/${projectId}/${locationId}`,
+                  const response = await api.put<GeoJSONFeature>(
+                    `/locations/${projectId}/${locationId}`,
                     location
                   );
                   if (response) {

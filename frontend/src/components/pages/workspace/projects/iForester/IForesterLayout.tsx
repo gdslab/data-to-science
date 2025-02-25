@@ -1,4 +1,4 @@
-import axios, { AxiosResponse, isAxiosError } from 'axios';
+import { AxiosResponse, isAxiosError } from 'axios';
 import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -8,6 +8,8 @@ import { IForesterControlProvider } from './IForesterContext';
 import { useProjectContext } from '../ProjectContext';
 import IForesterCardView from './IForesterCardView';
 
+import api from '../../../../../api';
+
 export default function IForesterLayout() {
   const { iforesterDispatch } = useProjectContext();
 
@@ -16,8 +18,8 @@ export default function IForesterLayout() {
   useEffect(() => {
     async function fetchIForesterData(projectId: string) {
       try {
-        const response: AxiosResponse<IForester[]> = await axios.get(
-          `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/iforester`
+        const response: AxiosResponse<IForester[]> = await api.get(
+          `/projects/${projectId}/iforester`
         );
         if (response.status === 200) {
           iforesterDispatch({ type: 'set', payload: response.data });

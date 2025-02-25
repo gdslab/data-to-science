@@ -12,7 +12,8 @@ export default function StatCards({ stats }: { stats: SiteStatistics }) {
           </h2>
 
           <p className="mt-4 text-gray-500 sm:text-xl">
-            Summary of overall activity on this Data to Science application instance.
+            Summary of overall activity on this Data to Science application
+            instance.
           </p>
         </div>
 
@@ -22,7 +23,10 @@ export default function StatCards({ stats }: { stats: SiteStatistics }) {
             <StatCard title="Total Users" value={stats.user_count} />
             <StatCard title="Total Projects" value={stats.project_count} />
             <StatCard title="Total Flights" value={stats.flight_count} />
-            <StatCard title="Total Data Products" value={stats.data_product_count} />
+            <StatCard
+              title="Total Data Products"
+              value={stats.data_product_count}
+            />
           </dl>
         </div>
 
@@ -65,7 +69,7 @@ export default function StatCards({ stats }: { stats: SiteStatistics }) {
         <div className="mt-8 sm:mt-12">
           <dl className="grid grid-cols-1 gap-4 sm:grid-cols-4">
             <StatStorageCard
-              title="Storage (GB)"
+              title="Storage"
               storage={stats.storage_availability}
             />
           </dl>

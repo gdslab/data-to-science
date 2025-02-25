@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { Button, LinkButton } from '../../../Buttons';
@@ -6,6 +6,8 @@ import { useFieldCampaignContext } from './fieldCampaigns/FieldCampaignContext';
 import FieldCampaignTable from './fieldCampaigns/FieldCampaignTable';
 import { FieldCampaign } from './Project';
 import { useProjectContext } from './ProjectContext';
+
+import api from '../../../../api';
 
 export default function ProjectCampaigns() {
   const navigate = useNavigate();
@@ -39,12 +41,13 @@ export default function ProjectCampaigns() {
             size="sm"
             onClick={async () => {
               try {
-                const response: AxiosResponse<FieldCampaign | null> = await axios.post(
-                  `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/campaigns`
-                );
+                const response: AxiosResponse<FieldCampaign | null> =
+                  await api.post(`/projects/${projectId}/campaigns`);
                 if (response && response.data) {
                   updateFieldCampaign(response.data);
-                  navigate(`/projects/${projectId}/campaigns/${response.data.id}`);
+                  navigate(
+                    `/projects/${projectId}/campaigns/${response.data.id}`
+                  );
                 }
               } catch (_err) {
                 console.log('unable to retrieve campaign');

@@ -1,21 +1,27 @@
-import axios from 'axios';
 import { Form, Formik } from 'formik';
 import { useState } from 'react';
 import { useRevalidator } from 'react-router-dom';
 import { MapIcon } from '@heroicons/react/24/outline';
 
 import Alert from '../../../Alert';
-import { EditField, Editing, SelectField, TextField } from '../../../InputFields';
+import { LinkButton } from '../../../Buttons';
+import {
+  EditField,
+  Editing,
+  SelectField,
+  TextField,
+} from '../../../InputFields';
 import Modal from '../../../Modal';
 import { Project } from './Project';
 import { useProjectContext } from './ProjectContext';
 import ProjectDeleteModal from './ProjectDeleteModal';
 import ProjectFormMap from './ProjectFormMap';
 import Table, { TableBody, TableHead } from '../../../Table';
+import { Team } from '../../teams/Teams';
 
 import { projectUpdateValidationSchema } from './validationSchema';
-import { Team } from '../../teams/Teams';
-import { LinkButton } from '../../../Buttons';
+
+import api from '../../../../api';
 
 interface ProjectDetailEditForm {
   project: Project;
@@ -33,7 +39,9 @@ export default function ProjectDetailEditForm({
 
   const { projectRole } = useProjectContext();
 
-  const currentTeam = teams ? teams.filter(({ id }) => project.team_id === id) : null;
+  const currentTeam = teams
+    ? teams.filter(({ id }) => project.team_id === id)
+    : null;
 
   return (
     <Formik
@@ -56,7 +64,7 @@ export default function ProjectDetailEditForm({
             ...(values.plantingDate && { planting_date: values.plantingDate }),
             ...(values.harvestDate && { harvest_date: values.harvestDate }),
           };
-          const response = await axios.put(`/api/v1/projects/${project.id}`, data);
+          const response = await api.put(`/projects/${project.id}`, data);
           if (response) {
             revalidator.revalidate();
           }
@@ -76,7 +84,9 @@ export default function ProjectDetailEditForm({
                 setIsEditing={setIsEditing}
               >
                 {!isEditing || isEditing.field !== 'title' ? (
-                  <span className="text-lg font-bold mb-0">{project.title}</span>
+                  <span className="text-lg font-bold mb-0">
+                    {project.title}
+                  </span>
                 ) : (
                   <TextField name="title" />
                 )}
@@ -98,7 +108,12 @@ export default function ProjectDetailEditForm({
           </div>
           <Table>
             <TableHead
-              columns={['Start of project', 'End of project', 'Team', 'Location']}
+              columns={[
+                'Start of project',
+                'End of project',
+                'Team',
+                'Location',
+              ]}
             />
             <TableBody
               rows={[
@@ -113,7 +128,9 @@ export default function ProjectDetailEditForm({
                       >
                         {!isEditing || isEditing.field !== 'plantingDate' ? (
                           <span>
-                            {project.planting_date ? project.planting_date : 'N/A'}
+                            {project.planting_date
+                              ? project.planting_date
+                              : 'N/A'}
                           </span>
                         ) : (
                           <TextField type="date" name="plantingDate" />
@@ -128,7 +145,9 @@ export default function ProjectDetailEditForm({
                       >
                         {!isEditing || isEditing.field !== 'harvestDate' ? (
                           <span>
-                            {project.harvest_date ? project.harvest_date : 'N/A'}
+                            {project.harvest_date
+                              ? project.harvest_date
+                              : 'N/A'}
                           </span>
                         ) : (
                           <TextField type="date" name="harvestDate" />

@@ -1,9 +1,11 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { FieldCampaign } from '../../Project';
 import { useProjectContext } from '../../ProjectContext';
+
+import api from '../../../../../../api';
 
 type Context = {
   fieldCampaign: FieldCampaign | null;
@@ -40,8 +42,8 @@ export function FieldCampaignContextProvider({ children }: ContextProvider) {
   useEffect(() => {
     async function fetchFieldCampaign() {
       try {
-        const response: AxiosResponse<FieldCampaign | null> = await axios.get(
-          `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/campaigns`
+        const response: AxiosResponse<FieldCampaign | null> = await api.get(
+          `/projects/${projectId}/campaigns`
         );
         if (response) {
           updateFieldCampaign(response.data);
@@ -73,7 +75,9 @@ export function FieldCampaignContextProvider({ children }: ContextProvider) {
 
   function removeSelectedTimepoint(removeSelectedTimepoint: string) {
     const currentSelectedTimepoints = selectedTimepoints.slice();
-    const removeIdx = currentSelectedTimepoints.indexOf(removeSelectedTimepoint);
+    const removeIdx = currentSelectedTimepoints.indexOf(
+      removeSelectedTimepoint
+    );
     // if index found, use filter to remove it from selected timepoints array
     if (removeIdx > -1) {
       setSelectedTimepoints([

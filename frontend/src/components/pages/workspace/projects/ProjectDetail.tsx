@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import { useEffect } from 'react';
 import { Params, useLoaderData } from 'react-router-dom';
 
@@ -11,26 +11,24 @@ import ProjectTabNav from './ProjectTabNav';
 import { Team } from '../../teams/Teams';
 import { getProjectMembers } from './ProjectContext/ProjectContext';
 
+import api from '../../../../api';
+
 export async function loader({ params }: { params: Params<string> }) {
   const profile = localStorage.getItem('userProfile');
   const user: User | null = profile ? JSON.parse(profile) : null;
   if (!user) return null;
 
   try {
-    const project: AxiosResponse<Project> = await axios.get(
-      `${import.meta.env.VITE_API_V1_STR}/projects/${params.projectId}`
+    const project: AxiosResponse<Project> = await api.get(
+      `/projects/${params.projectId}`
     );
-    const project_member: AxiosResponse<ProjectMember> = await axios.get(
-      `${import.meta.env.VITE_API_V1_STR}/projects/${params.projectId}/members/${
-        user.id
-      }`
+    const project_member: AxiosResponse<ProjectMember> = await api.get(
+      `/projects/${params.projectId}/members/${user.id}`
     );
-    const flights: AxiosResponse<Flight[]> = await axios.get(
-      `${import.meta.env.VITE_API_V1_STR}/projects/${params.projectId}/flights`
+    const flights: AxiosResponse<Flight[]> = await api.get(
+      `/projects/${params.projectId}/flights`
     );
-    const teams: AxiosResponse<Team[]> = await axios.get(
-      `${import.meta.env.VITE_API_V1_STR}/teams`
-    );
+    const teams: AxiosResponse<Team[]> = await api.get('/teams');
 
     if (project && project_member && flights && teams) {
       const teamsf = teams.data;
@@ -66,7 +64,8 @@ export async function loader({ params }: { params: Params<string> }) {
 }
 
 export default function ProjectDetail() {
-  const { project, role, flights, teams } = useLoaderData() as ProjectLoaderData;
+  const { project, role, flights, teams } =
+    useLoaderData() as ProjectLoaderData;
 
   const {
     projectRole,
@@ -131,7 +130,9 @@ export default function ProjectDetail() {
           <ProjectDetailEditForm project={project} teams={teams} />
         ) : (
           <div>
-            <span className="block text-lg font-bold mb-0">{project.title}</span>
+            <span className="block text-lg font-bold mb-0">
+              {project.title}
+            </span>
             <span className="block my-1 mx-0 text-gray-600 text-wrap break-all">
               {project.description}
             </span>

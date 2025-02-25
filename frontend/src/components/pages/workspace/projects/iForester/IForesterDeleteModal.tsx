@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { TrashIcon } from '@heroicons/react/24/outline';
@@ -8,6 +7,8 @@ import { Button } from '../../../../Buttons';
 import { ConfirmationPopup } from '../../../../ConfirmationPopup';
 import Modal from '../../../../Modal';
 import { IForester } from '../Project';
+
+import api from '../../../../api';
 
 export default function IForesterDeleteModal({
   iforester,
@@ -64,10 +65,8 @@ export default function IForesterDeleteModal({
           onConfirm={async () => {
             setStatus(null);
             try {
-              const response = await axios.delete(
-                `${import.meta.env.VITE_API_V1_STR}/projects/${
-                  params.projectId
-                }/iforester/${iforester.id}`
+              const response = await api.delete(
+                `/projects/${params.projectId}/iforester/${iforester.id}`
               );
               if (response) {
                 setOpenConfirmationPopup(false);
@@ -91,7 +90,9 @@ export default function IForesterDeleteModal({
           }}
         />
       </Modal>
-      {status ? <AlertBar alertType={status.type}>{status.msg}</AlertBar> : null}
+      {status ? (
+        <AlertBar alertType={status.type}>{status.msg}</AlertBar>
+      ) : null}
     </div>
   );
 }

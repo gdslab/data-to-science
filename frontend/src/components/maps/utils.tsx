@@ -4,9 +4,14 @@ import {
   DataProduct,
   Flight,
   MapLayer,
+  ProjectFeatureCollection,
   STACProperties,
 } from '../pages/workspace/projects/Project';
-import { SingleBandSymbology, MultibandSymbology } from './RasterSymbologyContext';
+import { Project } from '../pages/workspace/projects/ProjectList';
+import {
+  SingleBandSymbology,
+  MultibandSymbology,
+} from './RasterSymbologyContext';
 
 type Bounds = [number, number, number, number];
 
@@ -17,7 +22,7 @@ type Bounds = [number, number, number, number];
  * @returns Bounding box array.
  */
 function calculateBoundsFromGeoJSON(
-  geojsonData: FeatureCollection<Point | Polygon>
+  geojsonData: ProjectFeatureCollection | FeatureCollection<Point | Polygon>
 ): Bounds {
   const bounds: Bounds = geojsonData.features.reduce(
     (bounds, feature) => {
@@ -25,7 +30,9 @@ function calculateBoundsFromGeoJSON(
 
       if (feature.geometry.type === 'Polygon') {
         // Flatten the coordinates array into single array of coordinates
-        const coordinates = feature.geometry.coordinates.flat(Infinity) as number[];
+        const coordinates = feature.geometry.coordinates.flat(
+          Infinity
+        ) as number[];
 
         for (let i = 0; i < coordinates.length; i += 2) {
           const lng = coordinates[i];
@@ -125,11 +132,15 @@ function getHillshade(
   const filteredFlights = flights.filter(
     ({ id }) => id === activeDataProduct.flight_id
   );
-  if (filteredFlights.length > 0 && filteredFlights[0].data_products.length > 1) {
+  if (
+    filteredFlights.length > 0 &&
+    filteredFlights[0].data_products.length > 1
+  ) {
     const dataProducts = filteredFlights[0].data_products;
     const dataProductHillshade = dataProducts.filter(
       (dataProduct) =>
-        dataProduct.data_type.toLowerCase().split(' hs')[0] === dataProductName &&
+        dataProduct.data_type.toLowerCase().split(' hs')[0] ===
+          dataProductName &&
         dataProduct.data_type.toLowerCase().split(' hs').length > 1
     );
     return dataProductHillshade.length > 0 ? dataProductHillshade[0] : null;
@@ -144,7 +155,10 @@ function getHillshade(
  * @returns True if single band, otherwise False.
  */
 function isSingleBand(dataProduct: DataProduct): boolean {
-  return dataProduct.stac_properties && dataProduct.stac_properties.raster.length === 1;
+  return (
+    dataProduct.stac_properties &&
+    dataProduct.stac_properties.raster.length === 1
+  );
 }
 
 /**
@@ -247,14 +261,17 @@ const getMultibandMinMax = (
   stacProps: STACProperties,
   symbology: MultibandSymbology
 ): [[number, number], [number, number], [number, number]] => {
-  const defaultMinMax: [[number, number], [number, number], [number, number]] = [
-    [0, 255],
-    [0, 255],
-    [0, 255],
-  ];
+  const defaultMinMax: [[number, number], [number, number], [number, number]] =
+    [
+      [0, 255],
+      [0, 255],
+      [0, 255],
+    ];
 
   const validateBands = (key: 'min' | 'max' | 'userMin' | 'userMax') =>
-    ['red', 'green', 'blue'].every((band) => symbology[band]?.[key] !== undefined);
+    ['red', 'green', 'blue'].every(
+      (band) => symbology[band]?.[key] !== undefined
+    );
 
   const getStats = (index: number) => stacProps.raster?.[index - 1]?.stats;
 
@@ -290,7 +307,9 @@ const getMultibandMinMax = (
     case 'meanStdDev':
       // verify we have a band index for RGB
       if (
-        !['red', 'green', 'blue'].every((band) => symbology[band]?.idx !== undefined)
+        !['red', 'green', 'blue'].every(
+          (band) => symbology[band]?.idx !== undefined
+        )
       ) {
         console.warn(
           'Missing index for at least one band, falling back to default min/max.'
@@ -303,7 +322,9 @@ const getMultibandMinMax = (
 
         // verify we have a mean, std. dev. for each band and a meanStdDev mult factor
         if (
-          stats.some((s) => !s || s.mean === undefined || s.stddev === undefined) ||
+          stats.some(
+            (s) => !s || s.mean === undefined || s.stddev === undefined
+          ) ||
           symbology.meanStdDev === undefined
         ) {
           console.warn(
@@ -323,14 +344,81 @@ const getMultibandMinMax = (
   }
 };
 
+/**
+ * Checks local storage for previously stored projects.
+ * @returns Array of projects retrieved from local storage.
+ */
+function getLocalStorageProjects(): Project[] | null {
+  if ('projects' in localStorage) {
+    const lsProjectsString = localStorage.getItem('projects');
+    if (lsProjectsString) {
+      const lsProjects: Project[] = JSON.parse(lsProjectsString);
+      if (lsProjects && lsProjects.length > 0) {
+        return lsProjects;
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Sort projects by unique UUID string.
+ * @param projects Array of projects with unique `id` strings.
+ * @returns Array of sorted projects.
+ */
+function sortProjects(projects: Project[]): Project[] {
+  return projects.slice().sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/**
+ * Compare projects currently stored in local storage with new projects returned
+ * from API request.
+ * @param oldProjects Array of projects currently in local storage.
+ * @param newProjects Array of projects returned from API request.
+ * @returns True if both arrays match, otherwise false.
+ */
+function areProjectsEqual(
+  oldProjects: Project[],
+  newProjects: Project[]
+): boolean {
+  const sortedOld = sortProjects(oldProjects);
+  const sortedNew = sortProjects(newProjects);
+  return JSON.stringify(sortedOld) === JSON.stringify(sortedNew);
+}
+
+/**
+ * Sets projects returned from API in local storage. If projects already exist
+ * in local storage, they will only be replaced if the projects returned from
+ * the API differ.
+ * @param projects Projects returned from API.
+ */
+function setLocalStorageProjects(projects: Project[]): void {
+  const projectsString = JSON.stringify(projects);
+  const storedProjects = getLocalStorageProjects();
+
+  if (storedProjects) {
+    // Compare stored data with the new projects
+    if (!areProjectsEqual(storedProjects, projects)) {
+      localStorage.setItem('projects', projectsString);
+    }
+  } else {
+    // If nothing is stored, set the projects
+    localStorage.setItem('projects', projectsString);
+  }
+}
+
 export {
+  areProjectsEqual,
   calculateBoundsFromGeoJSON,
   createDefaultSingleBandSymbology,
   createDefaultMultibandSymbology,
   getDefaultStyle,
   getHillshade,
+  getLocalStorageProjects,
   getSingleBandMinMax,
   getMultibandMinMax,
   isSingleBand,
   mapApiResponseToLayers,
+  setLocalStorageProjects,
 };

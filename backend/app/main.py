@@ -1,5 +1,6 @@
 import logging
 import time
+from typing import Awaitable, Callable
 
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -34,13 +35,13 @@ app.mount("/potree", StaticFiles(directory=settings.POTREE_DIR), name="potree")
 
 
 @app.exception_handler(HTTPException)
-def http_exception_handler(request: Request, exc: HTTPException):
+def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
     logger.error(f"HTTPException", exc_info=exc)
 
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 
-def write_access_log(request: Request, response: Response, process_time: float):
+def write_access_log(request: Request, response: Response, process_time: float) -> None:
     http_info = get_http_info(request, response)
     http_info["res"]["process_time"] = f"{process_time:.3f}"
     logger.info(
@@ -50,7 +51,9 @@ def write_access_log(request: Request, response: Response, process_time: float):
 
 
 @app.middleware("http")
-async def log_http_request(request: Request, call_next):
+async def log_http_request(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
     start_time = time.time()
     response = await call_next(request)
     process_time = time.time() - start_time

@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,6 +10,8 @@ import {
   MultibandSymbology,
   SingleBandSymbology,
 } from '../RasterSymbologyContext';
+
+import api from '../../../api';
 
 export default function RasterSymbologyAccessControls({
   dataProduct,
@@ -32,10 +33,8 @@ export default function RasterSymbologyAccessControls({
 
   const updateAccess = async (newAccess: boolean) => {
     try {
-      const response = await axios.put(
-        `${import.meta.env.VITE_API_V1_STR}/projects/${project.id}/flights/${
-          dataProduct.flight_id
-        }/data_products/${dataProduct.id}/file_permission`,
+      const response = await api.put(
+        `/projects/${project.id}/flights/${dataProduct.flight_id}/data_products/${dataProduct.id}/file_permission`,
         { is_public: newAccess }
       );
       if (response) {

@@ -1,4 +1,4 @@
-import { Project } from '../../pages/workspace/projects/ProjectList';
+import { Flight } from '../../pages/workspace/projects/Project';
 
 /**
  * Takes a date in YYYY-mm-dd format and returns it in Day, Month Date, Year format.
@@ -17,21 +17,19 @@ function formatDate(datestring) {
 }
 
 /**
- * Checks local storage for previously stored projects.
- * @returns Array of projects retrieved from local storage.
+ * Sorts flights first by date and then by id if the dates are the same.
+ * @param flights Flights associated with project.
+ * @returns Sorted flights by date and id.
  */
-function getLocalStorageProjects(): Project[] | null {
-  if ('projects' in localStorage) {
-    const lsProjectsString = localStorage.getItem('projects');
-    if (lsProjectsString) {
-      const lsProjects: Project[] = JSON.parse(lsProjectsString);
-      if (lsProjects && lsProjects.length > 0) {
-        return lsProjects;
-      }
-    }
-  }
-
-  return null;
+function sortedFlightsByDateAndId(flights: Flight[]): Flight[] {
+  return [...flights].sort((a, b) => {
+    const dateDiff =
+      new Date(a.acquisition_date).getTime() -
+      new Date(b.acquisition_date).getTime();
+    if (dateDiff !== 0) return dateDiff;
+    // For alphanumeric UUIDs, localeCompare is appropriate.
+    return a.id.localeCompare(b.id);
+  });
 }
 
-export { formatDate, getLocalStorageProjects };
+export { formatDate, sortedFlightsByDateAndId };

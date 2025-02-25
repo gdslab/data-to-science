@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { useEffect } from 'react';
 import {
   Link,
@@ -10,6 +9,7 @@ import {
 } from 'react-router-dom';
 import { PlusCircleIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 
+import api from '../../../api';
 import { classNames } from '../../utils';
 
 export interface Team {
@@ -21,7 +21,7 @@ export interface Team {
 }
 
 export async function loader() {
-  const response = await axios.get('/api/v1/teams');
+  const response = await api.get('/teams');
   if (response) {
     return response.data;
   } else {
@@ -92,8 +92,8 @@ export default function SidebarPage() {
         {location.pathname === '/teams' && teams.length < 1 ? (
           <span>
             You do not currently belong to any teams. Use the{' '}
-            <strong className="font-bold">Add a New Team</strong> button in the side
-            menu to create your first team.
+            <strong className="font-bold">Add a New Team</strong> button in the
+            side menu to create your first team.
           </span>
         ) : null}
         <Outlet />

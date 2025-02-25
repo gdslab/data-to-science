@@ -1,4 +1,4 @@
-import axios, { AxiosResponse, isAxiosError } from 'axios';
+import { AxiosResponse, isAxiosError } from 'axios';
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { PhotoIcon } from '@heroicons/react/24/outline';
@@ -9,6 +9,8 @@ import ConfirmationModal from '../../../../ConfirmationModal';
 import { getMapLayers, useProjectContext } from '../ProjectContext';
 import { AlertBar, Status } from '../../../../Alert';
 import { useInterval } from '../../../../hooks';
+
+import api from '../../../../../api';
 
 import pointIcon from '../../../../../assets/point-icon.svg';
 import lineIcon from '../../../../../assets/line-icon.svg';
@@ -71,7 +73,9 @@ export default function ProjectLayersTable() {
   );
 
   const sortedMapLayers = useMemo(() => {
-    return [...mapLayers].sort((a, b) => a.layer_name.localeCompare(b.layer_name));
+    return [...mapLayers].sort((a, b) =>
+      a.layer_name.localeCompare(b.layer_name)
+    );
   }, [mapLayers, projectId]);
 
   return (
@@ -132,10 +136,8 @@ export default function ProjectLayersTable() {
                         if (projectId) {
                           try {
                             const response: AxiosResponse<MapLayerFeatureCollection> =
-                              await axios.delete(
-                                `${
-                                  import.meta.env.VITE_API_V1_STR
-                                }/projects/${projectId}/vector_layers/${layer.layer_id}`
+                              await api.delete(
+                                `/projects/${projectId}/vector_layers/${layer.layer_id}`
                               );
                             if (response.status === 200) {
                               mapLayersDispatch({

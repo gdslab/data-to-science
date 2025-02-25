@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import axios, { isAxiosError } from 'axios';
+import { isAxiosError } from 'axios';
 import { Formik, Form } from 'formik';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import Alert from '../../../Alert';
@@ -13,8 +13,10 @@ import initialValues from './initialValues';
 import { projectCreateValidationSchema } from './validationSchema';
 import { useProjectContext } from './ProjectContext';
 
+import api from '../../../../api';
+
 export async function loader() {
-  const response = await axios.get('/api/v1/teams');
+  const response = await api.get('/teams');
   if (response) {
     const teams = response.data;
     teams.unshift({ title: 'No team', id: '' });
@@ -63,10 +65,12 @@ export default function ProjectForm({
               description: values.description,
               location: values.location,
               team_id: values.teamId ? values.teamId : null,
-              ...(values.plantingDate && { planting_date: values.plantingDate }),
+              ...(values.plantingDate && {
+                planting_date: values.plantingDate,
+              }),
               ...(values.harvestDate && { harvest_date: values.harvestDate }),
             };
-            const response = await axios.post('/api/v1/projects', data);
+            const response = await api.post('/projects', data);
             if (response && response.status === 201) {
               navigate('/projects');
               setModalOpen(false);

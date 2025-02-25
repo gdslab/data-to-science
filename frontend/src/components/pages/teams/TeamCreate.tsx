@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse, isAxiosError } from 'axios';
 import { Form, Formik } from 'formik';
 import { useContext, useEffect, useState } from 'react';
 import {
@@ -20,10 +20,10 @@ import SearchUsers, { UserSearch } from './SearchUsers';
 import initialValues from './initialValues';
 import validationSchema from './validationSchema';
 
+import api from '../../../api';
+
 export async function loader() {
-  const response: AxiosResponse<Project[]> = await axios.get(
-    `${import.meta.env.VITE_API_V1_STR}/projects`
-  );
+  const response: AxiosResponse<Project[]> = await api.get('/projects');
   if (response) {
     return response.data.filter(
       ({ role }) => role === 'owner' || role === 'manager'
@@ -75,7 +75,7 @@ export default function TeamCreate() {
                 new_members: teamMembers.map((tm) => tm.id),
                 project: values.project,
               };
-              const response = await axios.post('/api/v1/teams', data);
+              const response = await api.post('/teams', data);
               if (response) {
                 revalidator.revalidate();
                 resetForm();
@@ -84,7 +84,7 @@ export default function TeamCreate() {
                 setStatus({ type: 'error', msg: 'Unable to create team' });
               }
             } catch (err) {
-              if (axios.isAxiosError(err)) {
+              if (isAxiosError(err)) {
                 setStatus({ type: 'error', msg: err.response?.data.detail });
               } else {
                 setStatus({

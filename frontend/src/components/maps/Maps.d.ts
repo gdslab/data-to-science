@@ -2,6 +2,7 @@ import { FeatureCollection, Point } from 'geojson';
 
 import { DataProduct, Flight } from '../pages/projects/Project';
 import { Project } from '../pages/projects/ProjectList';
+import { ProjectsLoadedState } from './MapContext';
 
 export type MapTool = 'map' | 'compare' | 'timeline';
 
@@ -14,18 +15,15 @@ export type ActiveMapToolAction = { type: string; payload: MapTool };
 
 export type ActiveProjectAction = { type: string; payload: Project | null };
 
+export type BBox = [number, number, number, number];
+
 export type FlightsAction = { type: string; payload: Flight[] };
 
 export type ProjectsAction = { type: string; payload: Project[] | null };
 
-export type ProjectGeojsonAction = {
+export type ProjectsLoadedAction = {
   type: string;
-  payload: FeatureCollection<Point> | null;
-};
-
-export type ProjectGeojsonLoadedAction = {
-  type: string;
-  payload: boolean;
+  payload: ProjectsLoadedState;
 };
 
 export type ProjectsVisibleAction = { type: string; payload: string[] };

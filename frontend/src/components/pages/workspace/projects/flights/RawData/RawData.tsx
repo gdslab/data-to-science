@@ -2,14 +2,19 @@ import { isAxiosError } from 'axios';
 import { useEffect, useState } from 'react';
 import { useParams, useRevalidator } from 'react-router-dom';
 
-import RawDataDeleteModal from './RawDataDeleteModal';
-import RawDataDownloadLink, { RawDataReportDownloadLink } from './RawDataDownloadLink';
-import RawDataUploadModal from './RawDataUploadModal';
-import { ErrorIcon, PendingIcon, ProgressIcon } from './RawDataStatusIcons';
-import { useProjectContext } from '../../ProjectContext';
 import { AlertBar, Status } from '../../../../../Alert';
 import { Button } from '../../../../../Buttons';
+import RawDataDeleteModal from './RawDataDeleteModal';
+import RawDataDownloadLink, {
+  RawDataReportDownloadLink,
+} from './RawDataDownloadLink';
+import RawDataUploadModal from './RawDataUploadModal';
+import { ErrorIcon, PendingIcon, ProgressIcon } from './RawDataStatusIcons';
+import ProgressBar from '../../../../../ProgressBar';
+import RawDataImageProcessingModal from './RawDataImageProcessingModal';
 
+import { useInterval } from '../../../../../hooks';
+import { useProjectContext } from '../../ProjectContext';
 import {
   ImageProcessingJobProps,
   ImageProcessingSettings,
@@ -22,9 +27,6 @@ import {
   fetchUserExtensions,
   startImageProcessingJob,
 } from './utils';
-import { useInterval } from '../../../../../hooks';
-import ProgressBar from '../../../../../ProgressBar';
-import RawDataImageProcessingModal from './RawDataImageProcessingModal';
 
 export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
   const [hasImageProcessingExt, setHasImageProcessingExt] = useState(false);
@@ -74,8 +76,9 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
       revalidator.revalidate();
     },
     rawData.length > 0 &&
-      rawData.filter(({ status }) => status === 'INPROGRESS' || status === 'WAITING')
-        .length > 0
+      rawData.filter(
+        ({ status }) => status === 'INPROGRESS' || status === 'WAITING'
+      ).length > 0
       ? 5000 // check every 5 seconds while initial processing in progress
       : 30000 // check every 30 seconds for new raw data
   );
@@ -116,7 +119,9 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
                 // check progress starts return 404 once batch id no longer exists
                 // filter out any objects with job id for completed job (no batch id)
                 setImageProcessingJobStatus(
-                  imageProcessingJobStatus.filter((job) => job.jobId !== status.jobId)
+                  imageProcessingJobStatus.filter(
+                    (job) => job.jobId !== status.jobId
+                  )
                 );
               }
             });
@@ -150,7 +155,8 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
   }
 
   const isProcessing = (rawDataId: string): boolean =>
-    imageProcessingJobStatus.findIndex((job) => job.rawDataId === rawDataId) > -1;
+    imageProcessingJobStatus.findIndex((job) => job.rawDataId === rawDataId) >
+    -1;
 
   const getProgressBarProps = (
     rawDataId: string
@@ -194,10 +200,13 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
                 {dataset.status === 'SUCCESS' && (
                   <RawDataDownloadLink rawDataId={dataset.id} />
                 )}
-                {dataset.report && <RawDataReportDownloadLink url={dataset.report} />}
+                {dataset.report && (
+                  <RawDataReportDownloadLink url={dataset.report} />
+                )}
                 {/* display button for removing processed raw data zip file */}
                 {projectRole === 'owner' &&
-                  (dataset.status === 'SUCCESS' || dataset.status === 'FAILED') && (
+                  (dataset.status === 'SUCCESS' ||
+                    dataset.status === 'FAILED') && (
                     <RawDataDeleteModal rawData={dataset} iconOnly={true} />
                   )}
                 {/* display progress for ongoing image processing jobs */}

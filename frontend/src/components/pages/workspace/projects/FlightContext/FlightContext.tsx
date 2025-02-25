@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse, isAxiosError } from 'axios';
 import { createContext, useContext, useEffect, useReducer } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -6,6 +6,8 @@ import { FlightAction } from './actions';
 import { flightReducer } from './reducers';
 
 import { Flight } from '../Project';
+
+import api from '../../../../../api';
 
 interface Context {
   flight: Flight | null;
@@ -33,10 +35,8 @@ export function FlightContextProvider({ children }: FlightContextProvider) {
   useEffect(() => {
     async function getFlight() {
       try {
-        const response: AxiosResponse<Flight> = await axios.get(
-          `${import.meta.env.VITE_API_V1_STR}/projects/${params.projectId}/flights/${
-            params.flightId
-          }`
+        const response: AxiosResponse<Flight> = await api.get(
+          `/projects/${params.projectId}/flights/${params.flightId}`
         );
         if (response) {
           flightDispatch({ type: 'set', payload: response.data });
@@ -44,7 +44,7 @@ export function FlightContextProvider({ children }: FlightContextProvider) {
           flightDispatch({ type: 'clear', payload: null });
         }
       } catch (err) {
-        if (axios.isAxiosError(err)) {
+        if (isAxiosError(err)) {
           console.error(err.response?.data.detail);
         } else {
           console.error(err);

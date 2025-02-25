@@ -1,4 +1,4 @@
-import axios, { AxiosResponse, isAxiosError } from 'axios';
+import { AxiosResponse, isAxiosError } from 'axios';
 import { Formik, Form } from 'formik';
 import { useNavigate } from 'react-router-dom';
 import * as Yup from 'yup';
@@ -6,9 +6,10 @@ import * as Yup from 'yup';
 import Alert from '../../../../Alert';
 import { Button } from '../../../../Buttons';
 import { TextField, SelectField } from '../../../../InputFields';
+import { FieldCampaignResponse } from './FieldCampaign';
 import { useProjectContext } from '../ProjectContext';
 
-import { FieldCampaignResponse } from './FieldCampaign';
+import api from '../../../../../api';
 
 const initialValues: { title: string; leadId: string } = {
   title: '',
@@ -39,10 +40,8 @@ export default function FieldCampaignCreate() {
                 title: values.title,
                 lead_id: values.leadId,
               };
-              const response: AxiosResponse<FieldCampaignResponse> = await axios.post(
-                `${import.meta.env.VITE_API_V1_STR}/projects/${project.id}/campaigns`,
-                data
-              );
+              const response: AxiosResponse<FieldCampaignResponse> =
+                await api.post(`/projects/${project.id}/campaigns`, data);
               if (response) {
                 setSubmitting(false);
                 navigate(

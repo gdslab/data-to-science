@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -8,6 +7,8 @@ import { ConfirmationPopup } from '../../../ConfirmationPopup';
 import Modal from '../../../Modal';
 import { Project } from './Project';
 
+import api from '../../../../api';
+
 export default function ProjectDeleteModal({ project }: { project: Project }) {
   const [openConfirmationPopup, setOpenConfirmationPopup] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
@@ -16,7 +17,11 @@ export default function ProjectDeleteModal({ project }: { project: Project }) {
   return (
     <div>
       <div className="w-48">
-        <Button type="button" size="sm" onClick={() => setOpenConfirmationPopup(true)}>
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => setOpenConfirmationPopup(true)}
+        >
           Deactivate project
         </Button>
       </div>
@@ -30,7 +35,7 @@ export default function ProjectDeleteModal({ project }: { project: Project }) {
           onConfirm={async () => {
             setStatus(null);
             try {
-              const response = await axios.delete(`/api/v1/projects/${project.id}`);
+              const response = await api.delete(`/projects/${project.id}`);
               if (response) {
                 setOpenConfirmationPopup(false);
                 navigate('/projects', {
@@ -53,7 +58,9 @@ export default function ProjectDeleteModal({ project }: { project: Project }) {
           }}
         />
       </Modal>
-      {status ? <AlertBar alertType={status.type}>{status.msg}</AlertBar> : null}
+      {status ? (
+        <AlertBar alertType={status.type}>{status.msg}</AlertBar>
+      ) : null}
     </div>
   );
 }

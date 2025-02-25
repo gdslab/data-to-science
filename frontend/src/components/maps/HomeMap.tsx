@@ -1,9 +1,11 @@
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './HomeMap.css';
-import axios, { AxiosResponse } from 'axios';
 import { Feature } from 'geojson';
+import maplibregl from 'maplibre-gl';
 import { useEffect, useMemo, useState } from 'react';
 import Map, { NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
+import { useLocation } from 'react-router-dom';
+import { bbox } from '@turf/bbox';
 
 import ColorBarControl from './ColorBarControl';
 import GeocoderControl from './GeocoderControl';
@@ -14,10 +16,10 @@ import ProjectBoundary from './ProjectBoundary';
 import ProjectPopup from './ProjectPopup';
 import ProjectRasterTiles from './ProjectRasterTiles';
 import ProjectVectorTiles from './ProjectVectorTiles';
-import { MapLayer } from '../pages/workspace/projects/Project';
 
+import { BBox } from './Maps';
 import { useMapContext } from './MapContext';
-import { useMapLayerContext } from './MapLayersContext';
+import { MapLayerProps } from './MapLayersContext';
 import {
   SingleBandSymbology,
   useRasterSymbologyContext,
@@ -28,7 +30,7 @@ import {
   usgsImageryTopoBasemapStyle,
 } from './styles/basemapStyles';
 
-import { isSingleBand, mapApiResponseToLayers } from './utils';
+import { isSingleBand } from './utils';
 
 export type PopupInfoProps = {
   feature: Feature;
@@ -36,47 +38,41 @@ export type PopupInfoProps = {
   longitude: number;
 };
 
-export default function HomeMap() {
+export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
+  const [isMapReady, setIsMapReady] = useState(false);
   const [popupInfo, setPopupInfo] = useState<
     PopupInfoProps | { [key: string]: any } | null
   >(null);
-  const { activeDataProduct, activeProject, mapboxAccessToken } =
-    useMapContext();
+
   const {
-    state: { layers },
-    dispatch,
-  } = useMapLayerContext();
+    activeDataProduct,
+    activeProject,
+    mapboxAccessToken,
+    projects,
+    projectsVisibleDispatch,
+  } = useMapContext();
   const symbologyContext = useRasterSymbologyContext();
 
-  // Fetch map layers when a project is activated
+  const { state } = useLocation();
+
+  // Set map state to ready if user has zero projects
   useEffect(() => {
-    const fetchMapLayers = async (projectId: string) => {
-      const mapLayersUrl = `${
-        import.meta.env.VITE_API_V1_STR
-      }/projects/${projectId}/vector_layers`;
-      try {
-        const response: AxiosResponse<MapLayer[]> = await axios.get(
-          mapLayersUrl
-        );
-        dispatch({
-          type: 'SET_LAYERS',
-          payload: mapApiResponseToLayers(response.data),
-        });
-      } catch (error) {
-        console.error('Error fetching project map layers:', error);
-        dispatch({ type: 'SET_LAYERS', payload: [] });
-      }
-    };
-    if (activeProject) {
-      // Remove any symbology settings for rasters from previously selected project
-      for (const rasterId in symbologyContext.state) {
-        symbologyContext.dispatch({
-          type: 'REMOVE_RASTER',
-          rasterId: rasterId,
-        });
-      }
-      // Fetch map layers for selected project
-      fetchMapLayers(activeProject.id);
+    if (projects && projects.length === 0) {
+      setIsMapReady(true);
+    }
+  }, [projects]);
+
+  // Set to ready state if home map was navigated to from a data product card
+  useEffect(() => {
+    if (state?.navContext === 'dataProductCard') {
+      setIsMapReady(true);
+    }
+  }, [state]);
+
+  // Set map state to ready if a project is activated
+  useEffect(() => {
+    if (activeProject && !isMapReady) {
+      setIsMapReady(true);
     }
   }, [activeProject]);
 
@@ -125,8 +121,32 @@ export default function HomeMap() {
     }
   };
 
+  const handleMoveEnd = (event) => {
+    if (!projects?.length) return;
+
+    const mapInstance = event.target;
+    const mapBounds = mapInstance.getBounds();
+
+    // Filter projects to those whose marker is inside the current map bounds,
+    // then extract their IDs
+    const visibleProjectMarkers = projects
+      .filter((project) => {
+        const { x, y } = project.centroid;
+        const markerLocation = new maplibregl.LngLat(x, y);
+        return mapBounds.contains(markerLocation);
+      })
+      .map((project) => project.id);
+
+    // Update state with visible project marker IDs
+    projectsVisibleDispatch({
+      type: 'set',
+      payload: visibleProjectMarkers,
+    });
+  };
+
   const showBackgroundRaster = () => {
     if (
+      activeProject &&
       activeDataProduct &&
       isSingleBand(activeDataProduct) &&
       symbologyContext.state[activeDataProduct.id]
@@ -135,8 +155,11 @@ export default function HomeMap() {
         activeDataProduct.id
       ].symbology as SingleBandSymbology;
       if (activeDataProductSymbology && activeDataProductSymbology.background) {
+        const boundingBox =
+          activeDataProduct.bbox || (bbox(activeProject.field) as BBox);
         return (
           <ProjectRasterTiles
+            boundingBox={boundingBox}
             dataProduct={activeDataProductSymbology.background}
           />
         );
@@ -159,19 +182,21 @@ export default function HomeMap() {
       initialViewState={{
         longitude: -86.9138040788386,
         latitude: 40.428655143949925,
-        zoom: 8,
       }}
       style={{
         width: '100%',
         height: '100%',
+        opacity: isMapReady ? 1 : 0,
       }}
       mapboxAccessToken={mapboxAccessToken || undefined}
       mapStyle={mapStyle}
-      reuseMaps={true}
       onClick={handleMapClick}
+      onMoveEnd={handleMoveEnd}
     >
       {/* Display marker cluster for project centroids when no project is active */}
-      {!activeProject && <ProjectCluster />}
+      {!activeProject && (
+        <ProjectCluster isMapReady={isMapReady} setIsMapReady={setIsMapReady} />
+      )}
 
       {/* Display popup on click for project markers when no project is active */}
       {!activeProject && popupInfo && (
@@ -193,6 +218,9 @@ export default function HomeMap() {
       {activeProject && activeDataProduct && (
         <ProjectRasterTiles
           key={activeDataProduct.id}
+          boundingBox={
+            activeDataProduct.bbox || (bbox(activeProject.field) as BBox)
+          }
           dataProduct={activeDataProduct}
         />
       )}

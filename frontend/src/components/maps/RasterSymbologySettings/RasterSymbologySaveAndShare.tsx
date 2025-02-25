@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import { useState } from 'react';
 
 import { Button } from '../../Buttons';
@@ -12,6 +12,8 @@ import {
   SingleBandSymbology,
   useRasterSymbologyContext,
 } from '../RasterSymbologyContext';
+
+import api from '../../../api';
 
 function RasterSymbologyShare({
   dataProduct,
@@ -66,11 +68,9 @@ function RasterSymbologySave({
 
   const saveSymbology = async (dataProduct, projectId, symbology) => {
     try {
-      const axiosRequest = dataProduct.user_style ? axios.put : axios.post;
+      const axiosRequest = dataProduct.user_style ? api.put : api.post;
       const response: AxiosResponse<StyleResponse> = await axiosRequest(
-        `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/flights/${
-          dataProduct.flight_id
-        }/data_products/${dataProduct.id}/style`,
+        `/projects/${projectId}/flights/${dataProduct.flight_id}/data_products/${dataProduct.id}/style`,
         { settings: symbology }
       );
       if (response) {

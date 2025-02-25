@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import { Feature } from 'geojson';
 import { useState } from 'react';
 import { Popup } from 'react-map-gl/maplibre';
@@ -14,6 +14,7 @@ import {
   ZonalStatisticsLoading,
 } from './ZonalStatistics';
 
+import api from '../../api';
 import { isSingleBand } from './utils';
 
 type FeaturePopupProps = {
@@ -86,10 +87,8 @@ export default function FeaturePopup({
   ) {
     setIsCalculatingZonalStats(true);
     try {
-      const response: AxiosResponse<ZonalFeature> = await axios.post(
-        `${
-          import.meta.env.VITE_API_V1_STR
-        }/projects/${projectId}/flights/${flightId}/data_products/${dataProductId}/zonal_statistics`,
+      const response: AxiosResponse<ZonalFeature> = await api.post(
+        `/projects/${projectId}/flights/${flightId}/data_products/${dataProductId}/zonal_statistics`,
         zoneFeature
       );
       if (response.status === 200) {

@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { Params, useLoaderData } from 'react-router-dom';
 
 import FlightDataNav from './FlightDataNav';
@@ -8,17 +7,15 @@ import FlightDataTabNav from './FlightDataTabNav';
 
 import { RawDataProps } from './RawData/RawData.types';
 
+import api from '../../../../../api';
+
 export async function loader({ params }: { params: Params<string> }) {
   try {
-    const dataProducts = await axios.get(
-      `${import.meta.env.VITE_API_V1_STR}/projects/${params.projectId}/flights/${
-        params.flightId
-      }/data_products`
+    const dataProducts = await api.get(
+      `/projects/${params.projectId}/flights/${params.flightId}/data_products`
     );
-    const rawData = await axios.get(
-      `${import.meta.env.VITE_API_V1_STR}/projects/${params.projectId}/flights/${
-        params.flightId
-      }/raw_data`
+    const rawData = await api.get(
+      `/projects/${params.projectId}/flights/${params.flightId}/raw_data`
     );
     if (dataProducts && rawData) {
       return {

@@ -3,9 +3,10 @@ import logging
 import os
 import sys
 from functools import lru_cache
+from io import TextIOBase
 from http import HTTPStatus
 from pathlib import Path
-from traceback import print_exception
+from typing import Any, Dict, List
 
 from fastapi import Request, Response
 from pydantic import BaseModel
@@ -30,7 +31,7 @@ class LoggerConfig(BaseModel):
     level: int = logging.INFO
 
 
-def get_app_json_log(record: logging.LogRecord):
+def get_app_json_log(record: logging.LogRecord) -> Dict:
     record_format = {
         "levelname": record.levelname,
         "type": "app",
@@ -45,7 +46,7 @@ def get_app_json_log(record: logging.LogRecord):
     return record_format
 
 
-def get_access_json_log(record: logging.LogRecord):
+def get_access_json_log(record: logging.LogRecord) -> Dict:
     req = ""
     res = ""
     if hasattr(record, "extra_info"):
@@ -69,7 +70,7 @@ def get_access_json_log(record: logging.LogRecord):
 
 
 class CustomJsonFormatter(logging.Formatter):
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         record.message = record.getMessage()  # Ensure message is formatted
         if hasattr(record, "extra_info"):
             return json.dumps(
@@ -88,14 +89,16 @@ class CustomJsonFormatter(logging.Formatter):
 
 
 @lru_cache
-def get_logger_config(nofile=False):
+def get_logger_config(nofile: bool = False) -> LoggerConfig:
     # stdout handler
     stdout_handler_format = logging.Formatter(LOGGER_FORMAT, datefmt=DATE_FORMAT)
     stdout_handler = logging.StreamHandler(sys.stdout)
     stdout_handler.setFormatter(stdout_handler_format)
     stdout_handler.setLevel(logging.DEBUG)
 
-    handlers = [stdout_handler]
+    handlers: List[logging.StreamHandler[TextIOBase | Any] | logging.FileHandler] = [
+        stdout_handler
+    ]
     if not nofile:
         # file handler
         output_file_handler = logging.FileHandler(API_LOGFILE)
@@ -112,40 +115,49 @@ def get_logger_config(nofile=False):
     )
 
 
-def get_http_info(request: Request, response: Response):
+def get_http_info(request: Request, response: Response) -> Dict:
     return {
         "req": {
             "url": request.url.path,
+            "query_params": dict(request.query_params),
             "headers": {
                 "host": request.headers.get("host"),
                 "user-agent": request.headers.get("user-agent"),
                 "accept": request.headers.get("accept"),
+                "content-type": request.headers.get("content-type"),
+                "content-length": request.headers.get("content-length"),
             },
             "method": request.method,
         },
         "res": {
             "status_code": response.status_code,
             "status_detail": http_status_lookup.get(response.status_code),
+            "headers": {
+                "content-type": response.headers.get("content-type"),
+                "content-length": response.headers.get("content-length"),
+            },
         },
     }
 
 
-def setup_logger():
-    if not os.path.exists(API_LOGDIR):
-        os.makedirs(API_LOGDIR)
+def setup_logger() -> None:
+    os.makedirs(API_LOGDIR, exist_ok=True)
 
-    for name in logging.root.manager.loggerDict.keys():
-        logging.getLogger(name).handlers = []
-        logging.getLogger(name).propagate = True
+    for logger in list(logging.root.manager.loggerDict.values()):
+        if isinstance(logger, logging.Logger):
+            logger.handlers.clear()
+            logger.propagate = True
 
     try:
-        logger_config = get_logger_config()
+        logger_config: Any = get_logger_config()
     except PermissionError:
         logger_config = get_logger_config(nofile=True)
 
+    logger_format = logger_config.format or ""
+
     logging.basicConfig(
         level=logger_config.level,
-        format=logger_config.format,
+        format=logger_format,
         datefmt=logger_config.date_format,
         handlers=logger_config.handlers,
     )

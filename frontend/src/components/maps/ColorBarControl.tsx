@@ -9,12 +9,16 @@ import {
   useRasterSymbologyContext,
 } from './RasterSymbologyContext';
 
+import api from '../../api';
+
 export default function ColorBarControl({
-  projectId,
   dataProduct,
+  position = 'left',
+  projectId,
 }: {
-  projectId?: string;
   dataProduct: DataProduct;
+  position?: 'left' | 'right';
+  projectId?: string;
 }) {
   const [isRefreshing, toggleIsRefreshing] = useState(false);
   const [url, setURL] = useState('');
@@ -23,17 +27,20 @@ export default function ColorBarControl({
 
   const symbology = state[dataProduct.id]?.symbology;
 
-  async function fetchColorBar(symbology: SingleBandSymbology, refresh = false) {
+  async function fetchColorBar(
+    symbology: SingleBandSymbology,
+    refresh = false
+  ) {
     const stats = dataProduct.stac_properties.raster[0].stats;
 
     try {
       if (!projectId) {
-        projectId = dataProduct.filepath.split('/projects/')[1].split('/flights/')[0];
+        projectId = dataProduct.filepath
+          .split('/projects/')[1]
+          .split('/flights/')[0];
       }
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_V1_STR}/projects/${projectId}/flights/${
-          dataProduct.flight_id
-        }/data_products/${dataProduct.id}/utils/colorbar`,
+      const response = await api.get(
+        `/projects/${projectId}/flights/${dataProduct.flight_id}/data_products/${dataProduct.id}/utils/colorbar`,
         {
           params: {
             cmin:
@@ -81,7 +88,12 @@ export default function ColorBarControl({
 
   if (url) {
     return (
-      <div className="absolute left-0 bottom-8 bg-white/75 rounded-md shadow-md px-3 py-6 m-2.5 leading-3 text-slate-600 outline-none">
+      <div
+        className={clsx(
+          'absolute bottom-8 bg-white/75 rounded-md shadow-md px-3 py-6 m-2.5 leading-3 text-slate-600 outline-none',
+          { 'start-0': position === 'left', 'end-0': position === 'right' }
+        )}
+      >
         <img src={url} className="h-80" />
         <button
           type="button"
@@ -92,7 +104,9 @@ export default function ColorBarControl({
           }}
         >
           <ArrowPathIcon
-            className={clsx('h-4 w-4 inline mr-2', { 'animate-spin': isRefreshing })}
+            className={clsx('h-4 w-4 inline mr-2', {
+              'animate-spin': isRefreshing,
+            })}
           />
           <span>Refresh</span>
         </button>

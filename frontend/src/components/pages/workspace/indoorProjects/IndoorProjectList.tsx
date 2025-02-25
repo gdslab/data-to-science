@@ -36,10 +36,14 @@ function IndoorProjectListHeader() {
 }
 
 type IndoorProjectListProps = {
-  indoorProjects: IndoorProjectAPIResponse[];
+  indoorProjects: IndoorProjectAPIResponse[] | null;
 };
 
-export default function IndoorProjectList({ indoorProjects }: IndoorProjectListProps) {
+export default function IndoorProjectList({
+  indoorProjects,
+}: IndoorProjectListProps) {
+  if (!indoorProjects) return null;
+
   return (
     <PaginationList dataList={indoorProjects}>
       <IndoorProjectListHeader />

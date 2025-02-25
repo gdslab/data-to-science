@@ -1,10 +1,11 @@
-import axios from 'axios';
 import { useState } from 'react';
 
 import { User } from '../../../AuthContext';
 import { generateRandomProfileColor } from '../auth/Profile';
-import { sorter } from '../../utils';
 import { TeamMember } from './TeamDetail';
+
+import api from '../../../api';
+import { sorter } from '../../utils';
 
 export interface UserSearch extends User {
   checked: boolean;
@@ -25,7 +26,7 @@ function SearchUsersBar({
 
   async function searchUsers() {
     try {
-      const response = await axios.get('/api/v1/users', { params: { q: searchValue } });
+      const response = await api.get('/users', { params: { q: searchValue } });
       if (response) {
         const users = response.data
           .filter((u) => u.id !== user?.id)
@@ -118,15 +119,17 @@ function SearchUsersResults({
                     <span
                       className="text-sky-600 cursor-pointer"
                       onClick={() => {
-                        const updatedSearchResults = searchResults.map((user) => {
-                          return {
-                            ...user,
-                            checked:
-                              currentMembers
-                                .map((currentMember) => currentMember.email)
-                                .indexOf(user.email) < 0,
-                          };
-                        });
+                        const updatedSearchResults = searchResults.map(
+                          (user) => {
+                            return {
+                              ...user,
+                              checked:
+                                currentMembers
+                                  .map((currentMember) => currentMember.email)
+                                  .indexOf(user.email) < 0,
+                            };
+                          }
+                        );
                         setSearchResults(updatedSearchResults);
                       }}
                     >
@@ -143,7 +146,10 @@ function SearchUsersResults({
                       <td className="flex items-center justify-start gap-4 whitespace-nowrap px-4 py-2 font-medium text-gray-900">
                         {user.profile_url ? (
                           <img
-                            key={user.profile_url.split('/').slice(-1)[0].slice(0, -4)}
+                            key={user.profile_url
+                              .split('/')
+                              .slice(-1)[0]
+                              .slice(0, -4)}
                             className="h-8 w-8 rounded-full"
                             src={user.profile_url}
                           />
@@ -162,9 +168,12 @@ function SearchUsersResults({
                         <span>{`${user.first_name} ${user.last_name}`}</span>
                       </td>
                       <td className="text-center">
-                        {currentMembers.filter(({ email }) => email === user.email)
-                          .length > 0 ? (
-                          <span className="italic text-slate-700">Already member</span>
+                        {currentMembers.filter(
+                          ({ email }) => email === user.email
+                        ).length > 0 ? (
+                          <span className="italic text-slate-700">
+                            Already member
+                          </span>
                         ) : (
                           <label
                             htmlFor="AcceptConditions"
@@ -180,7 +189,10 @@ function SearchUsersResults({
                                 const updatedSearchResults = searchResults.map(
                                   (user) => {
                                     if (user.id === e.target.value)
-                                      return { ...user, checked: !user.checked };
+                                      return {
+                                        ...user,
+                                        checked: !user.checked,
+                                      };
                                     return user;
                                   }
                                 );

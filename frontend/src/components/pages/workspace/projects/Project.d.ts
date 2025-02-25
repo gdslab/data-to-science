@@ -38,8 +38,10 @@ type MapLayerProperties = {
   properties?: { [key: string]: any };
 };
 
-interface MapLayerFeature<G extends Geometry | null = Geometry, P = MapLayerProperties>
-  extends Feature<G, P> {}
+interface MapLayerFeature<
+  G extends Geometry | null = Geometry,
+  P = MapLayerProperties
+> extends Feature<G, P> {}
 
 export interface MapLayerFeatureCollection<
   G extends Geometry | null = Geometry,
@@ -139,6 +141,7 @@ export interface DataProduct {
   filepath: string;
   url: string;
   flight_id: string;
+  bbox?: [number, number, number, number];
   public: boolean;
   signature?: {
     secure: string;
@@ -214,3 +217,16 @@ export type IForester = {
   user: string;
   timeStamp: string;
 };
+
+// Properties for a project point feature
+export interface ProjectPointFeatureProperties {
+  id: string;
+  title: string;
+  description: string;
+}
+
+// Project point feature with custom properties
+export type ProjectPointFeature = Feature<Point, ProjectPointFeatureProperties>;
+
+// Feature collection of project point features with custom properties
+export type ProjectFeatureCollection = FeatureCollection<ProjectPointFeature>;

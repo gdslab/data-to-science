@@ -1,9 +1,10 @@
-import os
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence
 from uuid import UUID
 
+import rasterio
 from fastapi.encoders import jsonable_encoder
+from rasterio.warp import transform_bounds
 from sqlalchemy import and_, func, select, update
 from sqlalchemy.orm import joinedload, Session
 
@@ -51,6 +52,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             data_product = session.execute(data_product_query).scalar_one_or_none()
             user_style = session.execute(user_style_query).scalar_one_or_none()
             if data_product:
+                set_bbox_attr(data_product)
                 set_url_attr(data_product, upload_dir)
                 is_status_set = set_status_attr(data_product, data_product.jobs)
                 if user_style:
@@ -86,6 +88,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
         with db as session:
             data_product = session.scalar(data_product_query)
             if data_product and data_product.file_permission.is_public:
+                set_bbox_attr(data_product)
                 set_signature_attr(data_product)
                 set_url_attr(data_product, upload_dir)
                 return data_product
@@ -95,6 +98,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                     db, project_id=project_id, member_id=user_id
                 )
                 if project_member:
+                    set_bbox_attr(data_product)
                     set_signature_attr(data_product)
                     set_url_attr(data_product, upload_dir)
                     return data_product
@@ -131,6 +135,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                         set_user_style_attr(data_product, user_style.settings)
 
                 # Set additional attributes to be returned by API
+                set_bbox_attr(data_product)
                 set_public_attr(data_product, data_product.file_permission.is_public)
                 set_signature_attr(data_product)
                 set_url_attr(data_product, upload_dir)
@@ -215,6 +220,33 @@ def set_status_attr(data_product_obj: DataProduct, jobs: List[Job]) -> bool:
     else:
         setattr(data_product_obj, "status", status)
         return True
+
+
+def set_bbox_attr(data_product: DataProduct) -> None:
+    """Sets WGS84 bounding box as an attribute on the data product object.
+
+    Args:
+        data_product (DataProduct): Data product object.
+    """
+    # Skip if not a raster data product
+    if (
+        data_product.data_type != "point_cloud"
+        and Path(data_product.filepath).suffix == ".tif"
+    ):
+        with rasterio.open(data_product.filepath) as src:
+            # Get bounds in original crs
+            bounds = src.bounds
+            # Project bounds from original crs to WGS84 (EPSG:4326)
+            wgs84_bbox = transform_bounds(
+                src.crs,
+                "EPSG:4326",
+                bounds.left,
+                bounds.bottom,
+                bounds.right,
+                bounds.top,
+            )
+            # Set bounding box as attribute on data product object
+            setattr(data_product, "bbox", wgs84_bbox)
 
 
 def set_public_attr(data_product_obj: DataProduct, is_public: bool) -> None:

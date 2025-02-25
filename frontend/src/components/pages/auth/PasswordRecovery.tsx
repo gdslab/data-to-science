@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { useState } from 'react';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -6,6 +5,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import Alert, { Status } from '../../Alert';
 import { Button } from '../../Buttons';
 import { InputField } from '../../FormFields';
+import HintText from '../../HintText';
 import Layout from './Layout';
 
 import {
@@ -13,7 +13,8 @@ import {
   RecoveryFormData,
 } from './initialValues';
 import { recoveryValidationSchema as validationSchema } from './validationSchema';
-import HintText from '../../HintText';
+
+import api from '../../../api';
 
 export default function PasswordRecovery() {
   const [status, setStatus] = useState<Status | null>(null);
@@ -31,7 +32,7 @@ export default function PasswordRecovery() {
     setStatus(null);
     try {
       const data = { email: values.email };
-      const response = await axios.get('/api/v1/auth/reset-password', {
+      const response = await api.get('/auth/reset-password', {
         params: data,
       });
       if (response) {
@@ -56,11 +57,15 @@ export default function PasswordRecovery() {
   return (
     <Layout pageTitle="Password Recovery Request">
       <FormProvider {...methods}>
-        <form className="grid grid-flow-row gap-4" onSubmit={handleSubmit(onSubmit)}>
+        <form
+          className="grid grid-flow-row gap-4"
+          onSubmit={handleSubmit(onSubmit)}
+        >
           <HintText>
-            Enter the email you used to sign up on {import.meta.env.VITE_BRAND_FULL}. A
-            one-time password reset link will be sent to the address. The link will
-            expire in 1 hour. Return here to request a new link if needed.
+            Enter the email you used to sign up on{' '}
+            {import.meta.env.VITE_BRAND_FULL}. A one-time password reset link
+            will be sent to the address. The link will expire in 1 hour. Return
+            here to request a new link if needed.
           </HintText>
           <InputField label="Email" name="email" type="email" />
           <Button type="submit" disabled={isSubmitting}>

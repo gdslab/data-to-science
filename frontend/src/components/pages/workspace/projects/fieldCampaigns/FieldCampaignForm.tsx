@@ -1,7 +1,11 @@
-import axios from 'axios';
 import Papa from 'papaparse';
 import { useEffect, useState } from 'react';
-import { Params, useLoaderData, useNavigate, useParams } from 'react-router-dom';
+import {
+  Params,
+  useLoaderData,
+  useNavigate,
+  useParams,
+} from 'react-router-dom';
 
 import { Status } from '../../../../Alert';
 import { FieldCampaign } from '../Project';
@@ -16,9 +20,11 @@ import {
   step3ValidationSchema,
 } from './validationSchemas';
 
+import api from '../../../../../api';
+
 export async function loader({ params }: { params: Params<string> }) {
-  const fieldCampaign = await axios.get(
-    `/api/v1/projects/${params.projectId}/campaigns/${params.campaignId}`
+  const fieldCampaign = await api.get(
+    `/projects/${params.projectId}/campaigns/${params.campaignId}`
   );
 
   if (fieldCampaign) {
@@ -55,7 +61,9 @@ export default function FieldCampaignForm() {
       fieldCampaign.form_data &&
       fieldCampaign.form_data.treatments.length > 0
     ) {
-      setCsvErrors(new Array(fieldCampaign.form_data.treatments.length).fill([]));
+      setCsvErrors(
+        new Array(fieldCampaign.form_data.treatments.length).fill([])
+      );
     }
   }, []);
 
@@ -88,8 +96,8 @@ export default function FieldCampaignForm() {
 
   const handleSubmit = (extra) => async (values, _actions) => {
     try {
-      const response = await axios.put(
-        `/api/v1/projects/${projectId}/campaigns/${campaignId}`,
+      const response = await api.put(
+        `/projects/${projectId}/campaigns/${campaignId}`,
         { form_data: values }
       );
       if (response) {

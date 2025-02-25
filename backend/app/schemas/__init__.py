@@ -13,6 +13,7 @@ from .data_product_metadata import (
     DataProductMetadataCreate,
     DataProductMetadataUpdate,
 )
+from .disk_usage_stats import DiskUsageStats, DiskUsageStatsCreate, DiskUsageStatsUpdate
 from .extension import Extension, ExtensionCreate, ExtensionUpdate
 from .file_permission import FilePermission, FilePermissionCreate, FilePermissionUpdate
 from .flight import Flight, FlightCreate, FlightUpdate
