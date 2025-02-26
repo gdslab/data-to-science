@@ -8,7 +8,7 @@ import {
   useRasterSymbologyContext,
 } from './RasterSymbologyContext';
 
-import { getMultibandMinMax, getSingleBandMinMax, isSingleBand } from './utils';
+import { getTitilerQueryParams } from './utils';
 import { useMapContext } from './MapContext';
 
 function constructRasterTileUrl(
@@ -26,41 +26,11 @@ function constructRasterTileUrl(
   // parts of path for fetching tiles
   const resourcePath = `/cog/tiles/${tms}/{z}/{x}/{y}@2x`;
   const basePath = window.location.origin;
-
-  const queryParams = new URLSearchParams();
-  queryParams.append('url', cogUrl);
-
-  if (isSingleBand(dataProduct)) {
-    const symbology = symbologySettings as SingleBandSymbology;
-
-    queryParams.append('bidx', '1');
-    queryParams.append('colormap_name', symbology.colorRamp);
-    queryParams.append(
-      'rescale',
-      getSingleBandMinMax(dataProduct.stac_properties, symbology)
-        .flat()
-        .join(',')
-    );
-  } else {
-    const symbology = symbologySettings as MultibandSymbology;
-    queryParams.append('bidx', symbology.red.idx.toString());
-    queryParams.append('bidx', symbology.green.idx.toString());
-    queryParams.append('bidx', symbology.blue.idx.toString());
-    getMultibandMinMax(dataProduct.stac_properties, symbology).forEach(
-      (rescale) => {
-        queryParams.append('rescale', `${rescale}`);
-      }
-    );
-  }
-
-  // add data product id and add signature
-  queryParams.append('dataProductId', dataProduct.id);
-  queryParams.append(
-    'expires',
-    (dataProduct.signature?.expires || 0).toString()
+  const queryParams = getTitilerQueryParams(
+    cogUrl,
+    dataProduct,
+    symbologySettings
   );
-  queryParams.append('secure', dataProduct.signature?.secure || '');
-
   // add query params to base url
   const url = `${basePath}${resourcePath}?${queryParams.toString()}`;
 

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Popup } from 'react-map-gl/maplibre';
 import area from '@turf/area';
 
+import FeaturePreviewImage from './FeaturePreviewImage';
 import { PopupInfoProps } from './HomeMap';
 import { ZonalFeature } from '../pages/projects/Project';
 import { useMapContext } from './MapContext';
@@ -16,6 +17,7 @@ import {
 
 import api from '../../api';
 import { isSingleBand } from './utils';
+import { useRasterSymbologyContext } from './RasterSymbologyContext';
 
 type FeaturePopupProps = {
   popupInfo: PopupInfoProps | { [key: string]: any };
@@ -30,6 +32,9 @@ export default function FeaturePopup({
   const [statistics, setStatistics] = useState<ZonalFeature | null>(null);
 
   const { activeDataProduct, activeProject } = useMapContext();
+  const { state } = useRasterSymbologyContext();
+
+  const { symbology } = activeDataProduct ? state[activeDataProduct.id] : {};
 
   const FeatureHeader = ({ feature }: { feature: Feature }) => {
     const attrs = feature.properties;
@@ -113,7 +118,11 @@ export default function FeaturePopup({
       // clear out previous statistics
       setStatistics(null);
       // check if zonal statistics available in local storage for active data product
-      if (activeDataProduct && activeProject) {
+      if (
+        activeDataProduct &&
+        activeProject &&
+        isSingleBand(activeDataProduct)
+      ) {
         const precalculatedStats = localStorage.getItem(
           `${activeDataProduct.id}::${btoa(
             popupInfo.feature.geometry.coordinates.join('|')
@@ -146,12 +155,17 @@ export default function FeaturePopup({
       <article className="p-2">
         <div className="flex flex-col gap-4">
           <FeatureHeader feature={popupInfo.feature} />
+          {activeDataProduct &&
+            (popupInfo.feature_type === 'polygon' ||
+              popupInfo.feature_type === 'multipolygon') &&
+            symbology && (
+              <FeaturePreviewImage
+                dataProduct={activeDataProduct}
+                feature={popupInfo.feature}
+                symbology={symbology}
+              />
+            )}
           <FeatureAttributes feature={popupInfo.feature} />
-          {!activeDataProduct || !isSingleBand(activeDataProduct) ? (
-            <div className="h-full flex flex-col items-center justify-center gap-2 text-lg">
-              Select single band data product to view statistics for this zone.
-            </div>
-          ) : null}
           {isCalculatingZonalStats && (
             <ZonalStatisticsLoading
               dataProduct={activeDataProduct}
