@@ -363,6 +363,51 @@ function getLocalStorageProjects(): Project[] | null {
 }
 
 /**
+ * Returns query parameters for titiler /cog endpoint.
+ * @param dataProduct Active data product.
+ * @param symbology Symbology for active data product.
+ * @param queryParams Current query parameters.
+ * @returns Query parameters updated with symbology.
+ */
+function getTitilerQueryParams(
+  cogUrl: string,
+  dataProduct: DataProduct,
+  symbology: SingleBandSymbology | MultibandSymbology
+): URLSearchParams {
+  const queryParams = new URLSearchParams();
+  queryParams.append('url', cogUrl);
+
+  if (isSingleBand(dataProduct)) {
+    const s = symbology as SingleBandSymbology;
+
+    queryParams.append('bidx', '1');
+    queryParams.append('colormap_name', s.colorRamp);
+    queryParams.append(
+      'rescale',
+      getSingleBandMinMax(dataProduct.stac_properties, s).flat().join(',')
+    );
+  } else {
+    const s = symbology as MultibandSymbology;
+    queryParams.append('bidx', s.red.idx.toString());
+    queryParams.append('bidx', s.green.idx.toString());
+    queryParams.append('bidx', s.blue.idx.toString());
+    getMultibandMinMax(dataProduct.stac_properties, s).forEach((rescale) => {
+      queryParams.append('rescale', `${rescale}`);
+    });
+  }
+
+  // add data product id and add signature
+  queryParams.append('dataProductId', dataProduct.id);
+  queryParams.append(
+    'expires',
+    (dataProduct.signature?.expires || 0).toString()
+  );
+  queryParams.append('secure', dataProduct.signature?.secure || '');
+
+  return queryParams;
+}
+
+/**
  * Sort projects by unique UUID string.
  * @param projects Array of projects with unique `id` strings.
  * @returns Array of sorted projects.
@@ -416,8 +461,9 @@ export {
   getDefaultStyle,
   getHillshade,
   getLocalStorageProjects,
-  getSingleBandMinMax,
   getMultibandMinMax,
+  getSingleBandMinMax,
+  getTitilerQueryParams,
   isSingleBand,
   mapApiResponseToLayers,
   setLocalStorageProjects,
