@@ -1,10 +1,5 @@
 import { AxiosResponse } from 'axios';
-import {
-  Feature,
-  FeatureCollection,
-  GeoJsonProperties,
-  Polygon,
-} from 'geojson';
+import { FeatureCollection, Polygon } from 'geojson';
 import { useEffect, useState } from 'react';
 import { Layer, Source, useMap } from 'react-map-gl/maplibre';
 import bbox from '@turf/bbox';
