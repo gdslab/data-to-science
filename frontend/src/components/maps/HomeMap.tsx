@@ -5,7 +5,7 @@ import maplibregl from 'maplibre-gl';
 import { useEffect, useMemo, useState } from 'react';
 import Map, { NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
 import { useLocation } from 'react-router-dom';
-import { bbox } from '@turf/bbox';
+// import { bbox } from '@turf/bbox';
 
 import ColorBarControl from './ColorBarControl';
 import GeocoderControl from './GeocoderControl';
@@ -17,7 +17,7 @@ import ProjectPopup from './ProjectPopup';
 import ProjectRasterTiles from './ProjectRasterTiles';
 import ProjectVectorTiles from './ProjectVectorTiles';
 
-import { BBox } from './Maps';
+// import { BBox } from './Maps';
 import { useMapContext } from './MapContext';
 import { MapLayerProps } from './MapLayersContext';
 import {
@@ -31,6 +31,7 @@ import {
 } from './styles/basemapStyles';
 
 import { isSingleBand } from './utils';
+import { BBox } from './Maps';
 
 export type PopupInfoProps = {
   feature: Feature;
@@ -40,6 +41,7 @@ export type PopupInfoProps = {
 };
 
 export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
+  const [activeProjectBBox, setActiveProjectBBox] = useState<BBox | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
   const [popupInfo, setPopupInfo] = useState<
     PopupInfoProps | { [key: string]: any } | null
@@ -161,7 +163,7 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
       ].symbology as SingleBandSymbology;
       if (activeDataProductSymbology && activeDataProductSymbology.background) {
         const boundingBox =
-          activeDataProduct.bbox || (bbox(activeProject.field) as BBox);
+          activeDataProduct.bbox || activeProjectBBox || undefined;
         return (
           <ProjectRasterTiles
             boundingBox={boundingBox}
@@ -223,9 +225,7 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
       {activeProject && activeDataProduct && (
         <ProjectRasterTiles
           key={activeDataProduct.id}
-          boundingBox={
-            activeDataProduct.bbox || (bbox(activeProject.field) as BBox)
-          }
+          boundingBox={activeDataProduct.bbox || activeProjectBBox || undefined}
           dataProduct={activeDataProduct}
         />
       )}
@@ -246,7 +246,9 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
       {activeProject && <ProjectVectorTiles />}
 
       {/* Display project boundary when project activated */}
-      {activeProject && <ProjectBoundary />}
+      {activeProject && (
+        <ProjectBoundary setActiveProjectBBox={setActiveProjectBBox} />
+      )}
 
       {/* Project map layer controls */}
       {activeProject && <LayerControl />}
