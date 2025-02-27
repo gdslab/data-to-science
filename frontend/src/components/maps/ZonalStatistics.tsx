@@ -23,8 +23,12 @@ export const ZonalStatistics = ({
 }: {
   dataProduct: DataProduct | null;
   zonalFeature: ZonalFeature | null;
-}) =>
-  dataProduct && isSingleBand(dataProduct) && zonalFeature ? (
+}) => {
+  if (!dataProduct || !isSingleBand(dataProduct) || !zonalFeature) {
+    return null;
+  }
+
+  return (
     <div className="grid grid-flow-row auto-rows-max">
       <span className="text-base font-semibold">Zonal Statistics Result</span>
       <div className="overflow-x-auto rounded-lg border border-gray-200">
@@ -34,14 +38,18 @@ export const ZonalStatistics = ({
             { label: 'Min', value: zonalFeature.properties.min.toFixed(2) },
             { label: 'Max', value: zonalFeature.properties.max.toFixed(2) },
             { label: 'Mean', value: zonalFeature.properties.mean.toFixed(2) },
-            { label: 'Median', value: zonalFeature.properties.median.toFixed(2) },
+            {
+              label: 'Median',
+              value: zonalFeature.properties.median.toFixed(2),
+            },
             { label: 'StDev', value: zonalFeature.properties.std.toFixed(2) },
             { label: 'Count', value: zonalFeature.properties.count.toString() },
           ]}
         />
       </div>
     </div>
-  ) : null;
+  );
+};
 
 export const ZonalStatisticsLoading = ({
   dataProduct,
@@ -63,7 +71,9 @@ export const DownloadZonalStatistic = ({
   zonalFeature: ZonalFeature;
 }) => (
   <div>
-    <span className="text-base font-semibold">Download Zonal Statistic Result</span>
+    <span className="text-base font-semibold">
+      Download Zonal Statistic Result
+    </span>
     <div>
       <button
         type="button"

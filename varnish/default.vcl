@@ -98,6 +98,11 @@ sub vcl_recv {
         set req.url = regsuball(req.url, "[&?](expires|secure)=[^&]*", "");
     }
 
+    # Do not attempt to cache POST requests
+    if (req.method == "POST") {
+        return (pass);
+    }
+
     # Unset authorization related headers
     unset req.http.secure;
     unset req.http.expires;
@@ -125,8 +130,8 @@ sub vcl_recv {
         return (purge);
     }
 
-    # Limit HTTP methods to GET and HEAD
-    if (req.method != "GET" && req.method != "HEAD") {
+    # Limit HTTP methods to GET, HEAD, and POST
+    if (req.method != "GET" && req.method != "HEAD" && req.method != "POST") {
         return (synth(405, "Method Not Allowed"));
     }
 
@@ -149,7 +154,7 @@ sub vcl_recv {
 
 sub vcl_synth {
     if (resp.status == 405) {
-        set resp.http.Allow = "GET, HEAD";
+        set resp.http.Allow = "GET, HEAD, POST";
         set resp.body = "Method not allowed";
         return (deliver);
     }

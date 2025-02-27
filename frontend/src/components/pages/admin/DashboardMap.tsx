@@ -40,12 +40,14 @@ export default function DashboardMap() {
 
       if (features.length > 0) {
         const clickedFeature = features[0];
+        const clickedFeatureType = clickedFeature.geometry.type.toLowerCase();
 
         if (clickedFeature.geometry.type === 'Point') {
           const coordinates = clickedFeature.geometry.coordinates;
 
           setPopupInfo({
             feature: clickedFeature,
+            feature_type: clickedFeatureType,
             latitude: coordinates[1],
             longitude: coordinates[0],
           });
