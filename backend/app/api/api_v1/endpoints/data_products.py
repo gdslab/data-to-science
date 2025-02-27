@@ -3,17 +3,16 @@ import logging
 import os
 import shutil
 from datetime import datetime
-from io import BytesIO
 from pathlib import Path
-from typing import Annotated, Any, List, Optional, Sequence, Union
+from typing import Annotated, Any, Optional, Sequence, Union
+from urllib.parse import urlparse, parse_qs
 from uuid import UUID, uuid4
 
 import httpx
 from geojson_pydantic import Feature, FeatureCollection, Polygon, MultiPolygon
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field, UUID4
+from pydantic import BaseModel, UUID4
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -29,7 +28,7 @@ from app.tasks import (
     generate_zonal_statistics_bulk,
     run_toolbox_process,
 )
-from app.utils.STACProperties import STACEOProperties, STACProperties
+from app.schemas.shortened_url import ShortenedUrlApiResponse, UrlPayload
 from app.utils.tusd.post_processing import process_data_product_uploaded_to_tusd
 
 
@@ -78,6 +77,65 @@ def update_feature_properties(
             zonal_feature.properties = {**zonal_feature.properties, "fid": id_prop}
 
     return zonal_feature
+
+
+@router.post("/{data_product_id}/utils/shorten")
+def get_shortened_url(
+    data_product_id: UUID,
+    payload: UrlPayload,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+    flight: models.Flight = Depends(deps.can_read_flight),
+) -> ShortenedUrlApiResponse:
+    """Generates shortened URL for share URL received in payload.
+
+    Args:
+        data_product_id (UUID): ID of data product being shared.
+        payload (UrlPayload): Share URL to be shortened.
+        current_user (models.User, optional): Current logged in user. Defaults to Depends(deps.get_current_approved_user).
+        db (Session, optional): Database session. Defaults to Depends(deps.get_db).
+        flight (models.Flight, optional): Flight associated with data product. Defaults to Depends(deps.can_read_flight).
+
+    Raises:
+        HTTPException: Raised if unable to parse share URL in payload.
+        HTTPException: Raised if data product ID and file ID in share URL do not match.
+        HTTPException: Raised if we fail to create/fetch shortened URL.
+
+    Returns:
+        ShortenedUrlApiResponse: Shortened URL.
+    """
+    # Get share url from payload
+    share_url = payload.url
+
+    # Parse out data product id from the share url
+    try:
+        parsed_url = urlparse(share_url)
+        query_params = parse_qs(parsed_url.query)
+        file_id = query_params.get("file_id", [None])[0]
+    except Exception as e:
+        logger.error(f"Unable to parse URL: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid URL"
+        )
+
+    # Raise exception if the data product id in the url
+    # does not match the data product id in the share url
+    if str(data_product_id) != file_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Data product ID mismatch"
+        )
+
+    # Create shortened url or fetch existing shortened url
+    shortened_url = crud.shortened_url.create_with_unique_short_id(
+        db, original_url=share_url, user_id=current_user.id
+    )
+    if not shortened_url:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to shorten URL"
+        )
+    url = f"{settings.SHORTENED_URL_BASE}/{shortened_url.short_id}"
+
+    return schemas.ShortenedUrlApiResponse(shortened_url=url)
 
 
 @router.get("/{data_product_id}", response_model=schemas.DataProduct)

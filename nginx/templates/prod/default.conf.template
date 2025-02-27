@@ -76,6 +76,13 @@ server {
         keepalive_timeout 600s;
     }
 
+    location /sl {
+        proxy_set_header Host $host;
+
+        # forward incoming requests to FastAPI backend container
+        proxy_pass http://backend;
+    }
+
     location /developer {
         proxy_set_header Host $host;
 

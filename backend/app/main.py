@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.background import BackgroundTask
 
 from app.api.api_v1.api import api_router
+from app.api.extras import extra_router
 from app.core.config import settings
 from app.core.logging import get_http_info, setup_logger
 from app.utils.ProtectedStaticFiles import ProtectedStaticFiles
@@ -29,6 +30,7 @@ setup_logger()
 logger = logging.getLogger(__name__)
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
+app.include_router(extra_router, tags=["extras"])
 
 app.mount("/static", ProtectedStaticFiles(directory=settings.STATIC_DIR), name="static")
 app.mount("/potree", StaticFiles(directory=settings.POTREE_DIR), name="potree")

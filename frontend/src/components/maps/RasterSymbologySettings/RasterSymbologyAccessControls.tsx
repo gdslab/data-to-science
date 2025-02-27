@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import Alert, { Status } from '../../Alert';
-import { CopyURLButton } from '../../Buttons';
+import { CopyShortURLButton, CopyURLButton } from '../../Buttons';
 import { DataProduct } from '../../pages/projects/Project';
 import { useMapContext } from '../MapContext';
 import { Project } from '../../pages/projects/ProjectList';
@@ -162,7 +162,7 @@ export default function RasterSymbologyAccessControls({
             title="Copy link that can be used to directly access the data product"
           />
         </div>
-        {symbology ? (
+        {symbology && (
           <div className="col-span-2">
             <CopyURLButton
               copyText="Copy Share URL"
@@ -175,8 +175,8 @@ export default function RasterSymbologyAccessControls({
               title="Copy link that can be used to share the current map and selected data product"
             />
           </div>
-        ) : null}
-        {dataProduct.data_type === 'point_cloud' ? (
+        )}
+        {dataProduct.data_type === 'point_cloud' && (
           <div className="col-span-2">
             <CopyURLButton
               copyText="Copy Share URL"
@@ -185,7 +185,24 @@ export default function RasterSymbologyAccessControls({
               title="Copy link that can be used to share the point cloud with potree"
             />
           </div>
-        ) : null}
+        )}
+        {symbology && (
+          <div className="col-span-2">
+            <CopyShortURLButton
+              copyText="Copy Short URL"
+              copiedText="Copied"
+              dataProduct={dataProduct}
+              project={project}
+              setStatus={setStatus}
+              url={
+                window.origin +
+                `/sharemap?file_id=${dataProduct.id}&symbology=${btoa(
+                  JSON.stringify(symbology)
+                )}`
+              }
+            />
+          </div>
+        )}
       </div>
       {status ? <Alert alertType={status.type}>{status.msg}</Alert> : null}
     </div>

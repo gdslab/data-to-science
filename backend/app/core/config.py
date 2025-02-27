@@ -31,6 +31,18 @@ class Settings(BaseSettings):
 
     API_LOGDIR: str = "/app/logs"
 
+    # Provide a base URL for shortened URLs (e.g., "http://localhost:8000/s")
+    SHORTENED_URL_BASE: str = API_DOMAIN + "/sl"
+
+    @field_validator("SHORTENED_URL_BASE", mode="before")
+    def validate_shortened_url_base(cls, v: str | None, info: ValidationInfo) -> str:
+        values = info.data
+        api_domain = values.get("API_DOMAIN")
+        if not api_domain:
+            raise ValueError("API_DOMAIN must be set to validate SHORTENED_URL_BASE")
+
+        return api_domain + v
+
     # Provide mapbox token for worldwide satellite imagery (optional)
     MAPBOX_ACCESS_TOKEN: str | None = None
 

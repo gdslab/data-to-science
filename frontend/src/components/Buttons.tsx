@@ -9,6 +9,12 @@ import {
   TrashIcon,
 } from '@heroicons/react/24/outline';
 
+import { DataProduct } from './pages/projects/Project';
+import { Project } from './pages/projects/ProjectList';
+import { Status } from './Alert';
+
+import api from '../api';
+
 interface Button extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
   icon?: string;
@@ -22,7 +28,8 @@ interface LinkButton extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   url: string;
 }
 
-interface LinkOutlineButton extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface LinkOutlineButton
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
   target?: string;
   size?: string;
@@ -106,7 +113,12 @@ export function LinkOutlineButton({
   );
 }
 
-export function LinkButton({ children, icon, url, size = 'normal' }: LinkButton) {
+export function LinkButton({
+  children,
+  icon,
+  url,
+  size = 'normal',
+}: LinkButton) {
   return (
     <div className="relative">
       {icon ? getIcon(icon) : null}
@@ -193,7 +205,12 @@ type CopyURLButton = {
   title?: string;
   url: string;
 };
-export function CopyURLButton({ copyText, copiedText, title, url }: CopyURLButton) {
+export function CopyURLButton({
+  copyText,
+  copiedText,
+  title,
+  url,
+}: CopyURLButton) {
   const [buttonText, setButtonText] = useState(copyText);
 
   return (
@@ -207,6 +224,64 @@ export function CopyURLButton({ copyText, copiedText, title, url }: CopyURLButto
       title={title ? title : 'Click to copy URL'}
     >
       {buttonText}
+    </Button>
+  );
+}
+
+interface CopyShortenURLButton extends CopyURLButton {
+  dataProduct: DataProduct;
+  project: Project;
+  setStatus: React.Dispatch<React.SetStateAction<Status | null>>;
+}
+
+export function CopyShortURLButton({
+  copyText,
+  copiedText,
+  dataProduct,
+  project,
+  setStatus,
+  title,
+  url,
+}: CopyShortenURLButton) {
+  const [buttonText, setButtonText] = useState(copyText);
+  const [isFetchingShortUrl, setIsFetchingShortUrl] = useState(false);
+
+  const onShortenButtonClick = async () => {
+    setIsFetchingShortUrl(true);
+
+    try {
+      const endpoint = `/projects/${project.id}/flights/${dataProduct.flight_id}/data_products/${dataProduct.id}/utils/shorten`;
+      const response = await api.post(endpoint, { url: url });
+      if (response.data?.shortened_url) {
+        navigator.clipboard.writeText(response.data.shortened_url);
+        setIsFetchingShortUrl(false);
+        setButtonText(copiedText);
+        setTimeout(() => setButtonText(copyText), 2000);
+      } else {
+        setIsFetchingShortUrl(false);
+        setButtonText(copyText);
+        setStatus({
+          type: 'error',
+          msg: 'Failed to copy short URL',
+        });
+      }
+    } catch (error) {
+      setIsFetchingShortUrl(false);
+      setButtonText(copyText);
+      setStatus({
+        type: 'error',
+        msg: 'Failed to copy short URL',
+      });
+    }
+  };
+
+  return (
+    <Button
+      size="sm"
+      onClick={onShortenButtonClick}
+      title={title ? title : 'Click to copy shortened URL'}
+    >
+      {isFetchingShortUrl ? 'Generating....' : buttonText}
     </Button>
   );
 }
