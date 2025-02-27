@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Map, { NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
-import { bbox } from '@turf/bbox';
+// import { bbox } from '@turf/bbox';
 
 import ColorBarControl from '../ColorBarControl';
 import CompareMapControl from './CompareMapControl';
@@ -66,12 +66,11 @@ export default function CompareMap() {
     latitude: 40.428655143949925,
     zoom: 8,
   });
-  const [mode, setMode] = useState<Mode>('split-screen');
-
   const [activeMap, setActiveMap] = useState<'left' | 'right'>('left');
-
   const [mapComparisonState, setMapComparisonState] =
     useState<MapComparisonState>(defaultMapComparisonState);
+  const [mode, setMode] = useState<Mode>('split-screen');
+  const [activeProjectBBox, setActiveProjectBBox] = useState<BBox | null>(null);
 
   const { activeProject, flights, mapboxAccessToken } = useMapContext();
 
@@ -205,7 +204,12 @@ export default function CompareMap() {
         reuseMaps={true}
       >
         {/* Display project boundary when project activated */}
-        {activeProject && <ProjectBoundary setViewState={setViewState} />}
+        {activeProject && (
+          <ProjectBoundary
+            setActiveProjectBBox={setActiveProjectBBox}
+            setViewState={setViewState}
+          />
+        )}
 
         <CompareMapControl
           flights={flights}
@@ -219,8 +223,7 @@ export default function CompareMap() {
           symbologyState[selectedLeftDataProduct.id]?.isLoaded && (
             <ProjectRasterTiles
               boundingBox={
-                selectedLeftDataProduct.bbox ||
-                (bbox(activeProject.field) as BBox)
+                selectedLeftDataProduct.bbox || activeProjectBBox || undefined
               }
               dataProduct={selectedLeftDataProduct}
             />
@@ -268,8 +271,7 @@ export default function CompareMap() {
           symbologyState[selectedRightDataProduct.id]?.isLoaded && (
             <ProjectRasterTiles
               boundingBox={
-                selectedRightDataProduct.bbox ||
-                (bbox(activeProject.field) as BBox)
+                selectedRightDataProduct.bbox || activeProjectBBox || undefined
               }
               dataProduct={selectedRightDataProduct}
             />
