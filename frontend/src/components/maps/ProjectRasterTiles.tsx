@@ -68,7 +68,7 @@ export default function ProjectRasterTiles({
       maxzoom={24}
       minzoom={0}
       tileSize={256}
-      bounds={boundingBox}
+      {...(boundingBox ? { bounds: boundingBox } : {})}
     >
       <Layer
         key={`${dataProduct.id}-layer`}

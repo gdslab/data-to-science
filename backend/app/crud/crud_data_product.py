@@ -1,9 +1,11 @@
+import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence
 from uuid import UUID
 
 import rasterio
 from fastapi.encoders import jsonable_encoder
+from rasterio.errors import CRSError
 from rasterio.warp import transform_bounds
 from sqlalchemy import and_, func, select, update
 from sqlalchemy.orm import joinedload, Session
@@ -21,6 +23,8 @@ from app.schemas.data_product import (
 )
 from app.schemas.job import Status
 from app.models.user_style import UserStyle
+
+logger = logging.getLogger("__name__")
 
 
 class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate]):
@@ -233,20 +237,29 @@ def set_bbox_attr(data_product: DataProduct) -> None:
         data_product.data_type != "point_cloud"
         and Path(data_product.filepath).suffix == ".tif"
     ):
-        with rasterio.open(data_product.filepath) as src:
-            # Get bounds in original crs
-            bounds = src.bounds
-            # Project bounds from original crs to WGS84 (EPSG:4326)
-            wgs84_bbox = transform_bounds(
-                src.crs,
-                "EPSG:4326",
-                bounds.left,
-                bounds.bottom,
-                bounds.right,
-                bounds.top,
+        try:
+            with rasterio.open(data_product.filepath) as src:
+                # Get bounds in original crs
+                bounds = src.bounds
+                # Project bounds from original crs to WGS84 (EPSG:4326)
+                wgs84_bbox = transform_bounds(
+                    src.crs,
+                    "EPSG:4326",
+                    bounds.left,
+                    bounds.bottom,
+                    bounds.right,
+                    bounds.top,
+                )
+                # Set bounding box as attribute on data product object
+                setattr(data_product, "bbox", wgs84_bbox)
+        except CRSError:
+            logger.exception(
+                f"Unable to transform bounds for data product: {data_product.id}"
             )
-            # Set bounding box as attribute on data product object
-            setattr(data_product, "bbox", wgs84_bbox)
+        except Exception:
+            logger.exception(
+                f"Failed to set bbox attribute for data product: {data_product.id}"
+            )
 
 
 def set_public_attr(data_product_obj: DataProduct, is_public: bool) -> None:

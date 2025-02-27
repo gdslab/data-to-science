@@ -1,16 +1,23 @@
 import { AxiosResponse } from 'axios';
-import { FeatureCollection, Polygon } from 'geojson';
+import {
+  Feature,
+  FeatureCollection,
+  GeoJsonProperties,
+  Polygon,
+} from 'geojson';
 import { useEffect, useState } from 'react';
 import { Layer, Source, useMap } from 'react-map-gl/maplibre';
+import bbox from '@turf/bbox';
 import center from '@turf/center';
 
 import { projectBoundaryLayer } from './layerProps';
+import { BBox } from './Maps';
 import { useMapContext } from './MapContext';
 
 import api from '../../api';
-import { calculateBoundsFromGeoJSON } from './utils';
 
 type ProjectBoundaryProps = {
+  setActiveProjectBBox?: React.Dispatch<React.SetStateAction<BBox | null>>;
   setViewState?: React.Dispatch<
     React.SetStateAction<{
       longitude: number;
@@ -21,6 +28,7 @@ type ProjectBoundaryProps = {
 };
 
 export default function ProjectBoundary({
+  setActiveProjectBBox,
   setViewState,
 }: ProjectBoundaryProps) {
   const [projectBoundary, setProjectBoundary] =
@@ -44,8 +52,10 @@ export default function ProjectBoundary({
         const geojsonData = await response.data;
         setProjectBoundary(geojsonData);
         // Calculate the bounds of the GeoJSON feature
-        const bounds: [number, number, number, number] =
-          calculateBoundsFromGeoJSON(geojsonData);
+        const bounds = bbox(geojsonData) as BBox;
+        if (setActiveProjectBBox) {
+          setActiveProjectBBox(bounds);
+        }
 
         if (!setViewState) {
           // Fit the map to the bounds
