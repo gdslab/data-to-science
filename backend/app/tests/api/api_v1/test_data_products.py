@@ -149,9 +149,30 @@ def test_generate_data_product_colorbar_with_viewer_role(
     )
 
 
+def test_fetching_shortened_url_for_data_product(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # Create data product owned by current user
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(
+        db, data_type="dsm", create_style=True, user=current_user
+    )
+    # Example share map URL
+    original_url = f"http://localhost:8000/sharemap?file_id={data_product.obj.id}&symbology=eyJtYXgiOjUyLjUxNCwibWluIjotNC4xMDcsIm1vZGUiOiJtaW5NYXgiLCJ1c2VyTWF4Ijo1Mi41MTQsInVzZXJNaW4iOi00LjEwNywiY29sb3JSYW1wIjoicmFpbmJvdyIsIm1lYW5TdGREZXYiOjIsIm9wYWNpdHkiOjEwMH0="
+    # Send request to shorten URL
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{data_product.project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}/utils/shorten",
+        json={"url": original_url},
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert "shortened_url" in response_data
+
+
 def test_generate_data_product_colorbar_with_invalid_parameters(
     client: TestClient, db: Session, normal_user_access_token: str
-):
+) -> None:
     current_user = get_current_user(db, normal_user_access_token)
     data_product = SampleDataProduct(db, data_type="dsm", create_style=True)
     create_project_member(
