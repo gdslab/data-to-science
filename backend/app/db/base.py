@@ -17,6 +17,7 @@ from app.models.location import Location
 from app.models.project import Project
 from app.models.project_member import ProjectMember
 from app.models.raw_data import RawData
+from app.models.shortened_url import ShortenedUrl
 from app.models.single_use_token import SingleUseToken
 from app.models.team import Team
 from app.models.team_extension import TeamExtension

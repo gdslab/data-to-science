@@ -14,6 +14,7 @@ from .location import Location
 from .project import Project
 from .project_member import ProjectMember
 from .raw_data import RawData
+from .shortened_url import ShortenedUrl
 from .single_use_token import SingleUseToken
 from .team import Team
 from .team_extension import TeamExtension

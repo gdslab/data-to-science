@@ -32,6 +32,12 @@ from .location import Location, LocationCreate, LocationUpdate
 from .project import Project, ProjectCreate, ProjectUpdate
 from .project_member import ProjectMember, ProjectMemberCreate, ProjectMemberUpdate
 from .raw_data import RawData, RawDataCreate, RawDataUpdate, RawDataMetadata
+from .shortened_url import (
+    ShortenedUrl,
+    ShortenedUrlCreate,
+    ShortenedUrlUpdate,
+    ShortenedUrlApiResponse,
+)
 from .single_use_token import SingleUseToken, SingleUseTokenCreate
 from .team import Team, TeamCreate, TeamUpdate
 from .team_extension import TeamExtension, TeamExtensionCreate, TeamExtensionUpdate
