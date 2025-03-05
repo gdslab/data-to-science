@@ -1,17 +1,19 @@
-from typing import TYPE_CHECKING
+from enum import Enum
+from typing import Optional
 from uuid import UUID
 
-from pydantic import AnyHttpUrl, BaseModel
+from pydantic import AnyHttpUrl, BaseModel, EmailStr
 
-if TYPE_CHECKING:
-    EmailStr = str
-else:
-    from pydantic import EmailStr
+
+class Role(Enum):
+    OWNER = "owner"
+    MEMBER = "member"
 
 
 # shared properties
 class TeamMemberBase(BaseModel):
-    email: EmailStr | None
+    email: Optional[EmailStr] = None
+    role: Optional[Role] = None
 
 
 # properties to receive via API on creation
@@ -27,17 +29,18 @@ class TeamMemberUpdate(TeamMemberBase):
 # properties shared by models stored in DB
 class TeamMemberInDBBase(TeamMemberBase, from_attributes=True):
     id: UUID
-    member_id: UUID
+    role: Role
 
+    member_id: UUID
     team_id: UUID
 
 
 # additional properties to return via API
 class TeamMember(TeamMemberInDBBase):
-    full_name: str | None = None
-    email: EmailStr | None = None
-    profile_url: AnyHttpUrl | None = None
-    role: str | None = None
+    full_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    profile_url: Optional[AnyHttpUrl] = None
+    role: Role
 
 
 # additional properties stored in DB

@@ -59,15 +59,12 @@ def create_team_members(
 
 @router.get("", response_model=list[schemas.TeamMember])
 def read_team_members(
-    skip: int = 0,
-    limit: int = 100,
     db: Session = Depends(deps.get_db),
     team: models.Team = Depends(deps.can_read_team),
 ) -> Any:
     """Retrieve list of team members."""
-    team_members = crud.team_member.get_list_of_team_members(
-        db, team_id=team.id, skip=skip, limit=limit
-    )
+    team_members = crud.team_member.get_list_of_team_members(db, team_id=team.id)
+
     return team_members
 
 

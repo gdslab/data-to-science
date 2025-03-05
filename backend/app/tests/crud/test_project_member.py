@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app import crud
 from app.schemas.project_member import ProjectMemberUpdate
+from app.schemas.team_member import Role
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
 from app.tests.utils.team import create_team
@@ -47,13 +48,13 @@ def test_create_project_members_with_different_roles(db: Session) -> None:
 def test_create_project_members(db: Session) -> None:
     project_owner = create_user(db)
     team = create_team(db, owner_id=project_owner.id)
-    team_member_ids = []
+    team_members = []
     for i in range(0, 5):
         team_member = create_team_member(db, team_id=team.id)
-        team_member_ids.append(team_member.member_id)
+        team_members.append((team_member.member_id, Role.MEMBER))
     project = create_project(db, owner_id=project_owner.id, team_id=team.id)
     project_members = crud.project_member.create_multi_with_project(
-        db, member_ids=team_member_ids, project_id=project.id
+        db, new_members=team_members, project_id=project.id
     )
     assert isinstance(project_members, list)
     assert len(project_members) == 6  # owner + five added project members

@@ -2,11 +2,12 @@ import uuid
 from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import ENUM, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.schema import UniqueConstraint
 
 from app.db.base_class import Base
+from app.schemas.team_member import Role
 
 
 if TYPE_CHECKING:
@@ -20,6 +21,9 @@ class TeamMember(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
+    role: Mapped[Role] = mapped_column(
+        ENUM(Role, name="member_role"), nullable=False, default=Role.MEMBER
+    )
     member_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
     team_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("teams.id"), nullable=False)
 
@@ -30,6 +34,6 @@ class TeamMember(Base):
 
     def __repr__(self) -> str:
         return (
-            f"TeamMember(id={self.id!r}, member_id={self.member_id!r}, "
-            f"team_id={self.team_id})"
+            f"TeamMember(id={self.id!r}, role={self.role}, "
+            f"member_id={self.member_id!r}, team_id={self.team_id})"
         )

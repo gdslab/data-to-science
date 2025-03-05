@@ -262,7 +262,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         project_obj: Project,
         project_in: ProjectUpdate,
         user_id: UUID,
-    ):
+    ) -> ReadProject:
         project_in_data = jsonable_encoder(project_in)
         # if team association is being updated, check that user has team permission
         if (
@@ -285,11 +285,13 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 db, team_id=project_in_data["team_id"]
             )
             if len(team_members) > 0:
-                team_member_ids = [
-                    team_member.member_id for team_member in team_members
-                ]
                 crud.project_member.create_multi_with_project(
-                    db, member_ids=team_member_ids, project_id=project_id
+                    db,
+                    new_members=[
+                        (team_member.member_id, team_member.role)
+                        for team_member in team_members
+                    ],
+                    project_id=project_id,
                 )
         # adding new team
         if not project_obj.team_id and project_in_data.get("team_id") is not None:
@@ -298,11 +300,13 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 db, team_id=project_in_data["team_id"]
             )
             if len(team_members) > 0:
-                team_member_ids = [
-                    team_member.member_id for team_member in team_members
-                ]
                 crud.project_member.create_multi_with_project(
-                    db, member_ids=team_member_ids, project_id=project_id
+                    db,
+                    new_members=[
+                        (team_member.member_id, team_member.role)
+                        for team_member in team_members
+                    ],
+                    project_id=project_id,
                 )
 
         # finish updating project

@@ -3,6 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
+from app.schemas.team_member import Role
 from app.tests.utils.project import create_project
 from app.tests.utils.team import create_team
 from app.tests.utils.team_member import create_team_member
@@ -18,6 +19,18 @@ def test_create_team_member(db: Session) -> None:
     assert team_member
     assert user.id == team_member.member_id
     assert team.id == team_member.team_id
+    assert team_member.role == Role.MEMBER
+
+
+def test_create_team_member_with_owner_role(db: Session) -> None:
+    """Verify a new team member can be added with "owner" role."""
+    user = create_user(db)
+    team = create_team(db, owner_id=user.id)
+    team_member = crud.team_member.get_team_member_by_id(
+        db, user_id=user.id, team_id=team.id
+    )
+    assert team_member
+    assert team_member.role == Role.OWNER
 
 
 def test_create_duplicate_team_member(db: Session) -> None:
@@ -31,6 +44,7 @@ def test_create_duplicate_team_member(db: Session) -> None:
 
 
 def test_create_multi_team_members(db: Session) -> None:
+    """Verify multiple team members can be added to a team."""
     team_owner = create_user(db)
     team = create_team(db, owner_id=team_owner.id)
     user1 = create_user(db)
@@ -59,23 +73,23 @@ def test_create_mutli_team_members_with_existing_member(db: Session) -> None:
 
 
 def test_create_multi_team_members_adds_project_members(db: Session) -> None:
-    # create team
+    # Create team
     team_owner = create_user(db)
     team = create_team(db, owner_id=team_owner.id)
-    # create project and assign team to it
+    # Create project and assign team to it
     project1 = create_project(db, owner_id=team_owner.id, team_id=team.id)
     project2 = create_project(db, owner_id=team_owner.id, team_id=team.id)
-    # create three new team members
+    # Create three new team members
     user1 = create_user(db)
     user2 = create_user(db)
     user3 = create_user(db)
-    # add new team members
+    # Add new team members
     new_team_members = crud.team_member.create_multi_with_team(
         db,
         team_members=[user1.id, user2.id, user3.id, user3.id, team_owner.id],
         team_id=team.id,
     )
-    # fetch project members
+    # Fetch project members
     project_members1 = crud.project_member.get_list_of_project_members(
         db, project_id=project1.id
     )
@@ -83,9 +97,9 @@ def test_create_multi_team_members_adds_project_members(db: Session) -> None:
         db, project_id=project2.id
     )
     assert new_team_members
-    assert len(new_team_members) == 4  # three new team members plus owner
+    assert len(new_team_members) == 4  # Three new team members plus owner
     assert project_members1 and project_members2
-    # four team members * two projects
+    # Four team members * two projects
     assert len(project_members1) + len(project_members2) == len(new_team_members) * 2
     for project_member in project_members1:
         assert project_member.member_id in [team_owner.id, user1.id, user2.id, user3.id]
@@ -161,9 +175,11 @@ def test_get_team_member_by_email(db: Session) -> None:
     assert member
     assert member.member_id == user.id
     assert member.team_id == team.id
+    assert hasattr(member, "full_name")
     assert member.full_name == f"{user.first_name} {user.last_name}"
+    assert hasattr(member, "email")
     assert member.email == user.email
-    assert member.role == "member"
+    assert member.role == Role.MEMBER
     assert hasattr(member, "profile_url")  # url to profile image or None
 
 
@@ -178,9 +194,11 @@ def test_get_team_member_by_id(db: Session) -> None:
     assert member
     assert member.member_id == user.id
     assert member.team_id == team.id
+    assert hasattr(member, "full_name")
     assert member.full_name == f"{user.first_name} {user.last_name}"
+    assert hasattr(member, "email")
     assert member.email == user.email
-    assert member.role == "member"
+    assert member.role == Role.MEMBER
     assert hasattr(member, "profile_url")  # url to profile image or None
 
 
@@ -199,9 +217,26 @@ def test_get_list_of_team_members(db: Session) -> None:
             or member2.member_id == team_member.member_id
         )
         if team.owner_id == team_member.member_id:
-            assert team_member.role == "owner"
+            assert team_member.role == Role.OWNER
         else:
-            assert team_member.role == "member"
+            assert team_member.role == Role.MEMBER
+
+
+def test_update_team_member_role(db: Session) -> None:
+    """Elevate team member from "member" role to "owner" role."""
+    team_creator = create_user(db)
+    team = create_team(db, owner_id=team_creator.id)
+    member = create_team_member(db, team_id=team.id)
+    assert member.role == Role.MEMBER
+    team_member_in = schemas.TeamMemberUpdate(role=Role.OWNER)
+    member_updated = crud.team_member.update(db, db_obj=member, obj_in=team_member_in)
+    team_creator_member = crud.team_member.get_team_member_by_id(
+        db, user_id=team_creator.id, team_id=team.id
+    )
+    assert team_creator_member
+    assert team_creator_member.role == Role.OWNER
+    assert member_updated
+    assert member_updated.role == Role.OWNER
 
 
 def test_remove_team_member_by_id(db: Session) -> None:

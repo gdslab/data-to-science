@@ -1,19 +1,16 @@
-from typing import Sequence
+from typing import List, Optional, Sequence
 from uuid import UUID
 
-from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
-from sqlalchemy.orm import joinedload, Session
+from sqlalchemy.orm import Session
 
 from app import crud
 from app.crud.base import CRUDBase
-from app.models.project import Project
-from app.models.project_member import ProjectMember
 from app.models.team import Team
-from app.models.team_extension import TeamExtension
 from app.models.team_member import TeamMember
 from app.schemas.project import ProjectUpdate
 from app.schemas.team import TeamCreate, TeamUpdate
+from app.schemas.team_member import Role
 
 
 class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
@@ -21,55 +18,73 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
         self, db: Session, *, obj_in: TeamCreate, owner_id: UUID
     ) -> Team:
         """Create new team and add user as team member."""
-        # separate out team object, team member ids, and project id
-        obj_in_data = jsonable_encoder(obj_in)
+        # Separate out team object, team member ids, and project id
         team_in_data = {
-            "title": obj_in_data.get("title"),
-            "description": obj_in_data.get("description"),
+            "title": obj_in.title,
+            "description": obj_in.description,
         }
-        team_member_ids = obj_in_data.get("new_members")
-        project_id = obj_in_data.get("project")
-        # add team object
-        team_db_obj = self.model(**team_in_data, owner_id=owner_id)
+        team_member_ids = obj_in.new_members
+        project_id = obj_in.project
+
+        # Add team object
         with db as session:
+            team_db_obj = Team(**team_in_data, owner_id=owner_id)
             session.add(team_db_obj)
             session.commit()
             session.refresh(team_db_obj)
-        # add team member objects
+
+        # Add team member objects
         new_team_members = []
-        # create empty list if new_members not provided by obj_in
+
+        # Create empty list if new_members not provided by obj_in
         if not team_member_ids:
-            team_member_ids = []
-        # confirm owner_id is present in team_members ids and add it if not
-        if str(owner_id) not in team_member_ids:
-            team_member_ids.append(str(owner_id))
-        # iterate over team member ids and create team member objects
-        if len(team_member_ids) > 0:
-            for user_id in team_member_ids:
+            team_member_ids_str: List[str] = []
+        else:
+            team_member_ids_str = [str(mid) for mid in team_member_ids]
+
+        # Confirm owner_id is present in team_members ids and add it if not
+        if str(owner_id) not in team_member_ids_str:
+            team_member_ids_str.append(str(owner_id))
+
+        # Create team member objects
+        if len(team_member_ids_str) > 0:
+            for user_id in team_member_ids_str:
+                if user_id == str(owner_id):
+                    role = Role.OWNER
+                else:
+                    role = Role.MEMBER
                 new_team_members.append(
-                    TeamMember(member_id=user_id, team_id=team_db_obj.id)
+                    TeamMember(member_id=user_id, team_id=team_db_obj.id, role=role)
                 )
+            # Add team members to database
             with db as session:
                 session.add_all(new_team_members)
                 session.commit()
-                for team_member in new_team_members:
-                    session.refresh(team_member)
-        # add project object (if any)
+
+        # Add project
         if project_id:
-            project_obj = crud.project.get(db, id=project_id)
-            if project_obj and not project_obj.team_id:
+            # Convert to UUID if project ID is string
+            if isinstance(project_id, str):
+                project_id = UUID(project_id)
+
+            # Get project object
+            project = crud.project.get(db, id=project_id)
+
+            # Update project with team_id
+            if project and not project.team_id:
                 crud.project.update_project(
                     db,
-                    project_obj=project_obj,
-                    project_in=ProjectUpdate(team_id=team_db_obj.id),
                     project_id=project_id,
+                    project_in=ProjectUpdate(team_id=team_db_obj.id),
+                    project_obj=project,
                     user_id=owner_id,
                 )
+
         return team_db_obj
 
     def get_team(
-        self, db: Session, *, user_id: UUID, team_id: UUID, permission="read"
-    ) -> Team | None:
+        self, db: Session, *, user_id: UUID, team_id: UUID, permission: str = "read"
+    ) -> Optional[Team]:
         """Retrieve team by id. User must be member of team."""
         if permission == "readwrite":
             stmt = (
