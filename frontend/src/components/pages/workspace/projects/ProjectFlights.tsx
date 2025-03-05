@@ -154,7 +154,9 @@ export default function ProjectFlights() {
                         <div className="bg-white p-4">{flight.sensor}</div>
                       </td>
                       <td className="p-1">
-                        <div className="bg-white p-4">{flight.acquisition_date}</div>
+                        <div className="bg-white p-4">
+                          {flight.acquisition_date}
+                        </div>
                       </td>
                       <td className="p-1">
                         <div className="bg-white p-4">
@@ -162,7 +164,14 @@ export default function ProjectFlights() {
                             className="!text-sky-600 visited:text-sky-600"
                             to={`/projects/${project.id}/flights/${flight.id}/data`}
                           >
-                            Manage
+                            <div className="flex items-center justify-between gap-2">
+                              Manage
+                              <div className="flex items-center justify-center rounded-full bg-accent2 text-white font-semibold h-6 w-6">
+                                {flight.data_products.length > 5
+                                  ? '5+'
+                                  : flight.data_products.length}
+                              </div>
+                            </div>
                           </Link>
                         </div>
                       </td>
@@ -186,7 +195,10 @@ export default function ProjectFlights() {
                               />
                             )}
                             {projectRole === 'owner' && (
-                              <FlightDeleteModal flight={flight} tableView={true} />
+                              <FlightDeleteModal
+                                flight={flight}
+                                tableView={true}
+                              />
                             )}
                           </div>
                         </td>
@@ -199,11 +211,14 @@ export default function ProjectFlights() {
           </div>
         )}
 
-        {project && flights && flights.length > 0 && tableView === 'carousel' && (
-          <div className="h-full min-h-96 mx-4">
-            <FlightCarousel flights={sortedFlights || []} />
-          </div>
-        )}
+        {project &&
+          flights &&
+          flights.length > 0 &&
+          tableView === 'carousel' && (
+            <div className="h-full min-h-96 mx-4">
+              <FlightCarousel flights={sortedFlights || []} />
+            </div>
+          )}
 
         {projectRole !== 'viewer' ? (
           <div className="my-4 flex justify-center">

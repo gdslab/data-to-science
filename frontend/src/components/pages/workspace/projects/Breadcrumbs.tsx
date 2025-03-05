@@ -32,7 +32,7 @@ export default function ProjectBreadcrumbs() {
       if (flights && flights.length > 0) {
         const currentFlight = flights.filter(({ id }) => id === flightId);
         if (currentFlight && currentFlight.length > 0) {
-          const sensorPlatformDate = `${currentFlight[0].sensor} | ${currentFlight[0].platform} | ${currentFlight[0].acquisition_date}`;
+          const sensorPlatformDate = `${currentFlight[0].name ? currentFlight[0].name + ' | ' : ''}${currentFlight[0].sensor} | ${currentFlight[0].platform} | ${currentFlight[0].acquisition_date}`;
           setFlightCrumb(sensorPlatformDate);
           localStorage.setItem(currentFlight[0].id, sensorPlatformDate);
         }
