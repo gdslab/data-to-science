@@ -1,3 +1,4 @@
+import pytest
 from sqlalchemy.orm import Session
 
 from app import crud
@@ -26,7 +27,7 @@ def test_create_team_with_project(db: Session) -> None:
     """
     user = create_user(db)
     project = create_project(db, owner_id=user.id)
-    # create team with two team members plus the owner
+    # Create team with two team members plus the owner
     team_member1 = create_user(db)
     team_member2 = create_user(db)
     team = create_team(
@@ -35,16 +36,34 @@ def test_create_team_with_project(db: Session) -> None:
         new_members=[team_member1.id, team_member2.id],
         owner_id=user.id,
     )
-    # verify project is associated with team
+    # Verify project is associated with team
     stored_project = crud.project.get(db, id=project.id)
+    assert stored_project
     assert stored_project.team_id == team.id
-    # verify project members table includes team members
+    # Verify project members table includes team members
     project_members = crud.project_member.get_list_of_project_members(
         db, project_id=stored_project.id
     )
     assert len(project_members) == 3  # project/team owner plus two team members
     for project_member in project_members:
         assert project_member.member_id in [user.id, team_member1.id, team_member2.id]
+        if project_member.member_id == user.id:
+            assert project_member.role == "owner"
+
+
+def test_create_team_with_project_not_owned_by_team_creator(db: Session) -> None:
+    user = create_user(db)
+    project = create_project(db)
+    # Create team with two team members plus the owner
+    team_member1 = create_user(db)
+    team_member2 = create_user(db)
+    with pytest.raises(ValueError):
+        create_team(
+            db,
+            project=project.id,
+            new_members=[team_member1.id, team_member2.id],
+            owner_id=user.id,
+        )
 
 
 def test_get_team(db: Session) -> None:
@@ -75,11 +94,25 @@ def test_update_team(db: Session) -> None:
     team = create_team(db)
     new_description = random_team_description()
     team_in_update = TeamUpdate(description=new_description)
-    team_update = crud.team.update(db, db_obj=team, obj_in=team_in_update)
+    team_update = crud.team.update_team(
+        db, team_in=team_in_update, team_id=team.id, user_id=team.owner_id
+    )
+    assert team_update
     assert team.id == team_update.id
     assert team.title == team_update.title
     assert new_description == team_update.description
     assert team.owner_id == team_update.owner_id
+
+
+def test_update_team_with_project_not_owned_by_user(db: Session) -> None:
+    project = create_project(db)
+    team = create_team(db, owner_id=project.owner_id, project=project.id)
+    new_project = create_project(db)
+    team_in_update = TeamUpdate(project=new_project.id)
+    team_update = crud.team.update_team(
+        db, team_in=team_in_update, team_id=team.id, user_id=team.owner_id
+    )
+    assert team_update is None
 
 
 def test_delete_team(db: Session) -> None:

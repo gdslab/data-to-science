@@ -4,52 +4,16 @@ import { useLoaderData, useParams, useRevalidator } from 'react-router-dom';
 import AuthContext from '../../../AuthContext';
 import { generateRandomProfileColor } from '../auth/Profile';
 import { TeamData, TeamMember } from './TeamDetail';
+import TeamMemberRoleRadioGroup from './TeamMemberRoleRadioGroup';
 
 import api from '../../../api';
 import { sorter } from '../../utils';
 
-function TeamMemberRole({
-  disabled = true,
-  teamMember,
-}: {
-  disabled?: boolean;
-  teamMember: TeamMember;
-}) {
-  const handleOnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Send API request to update team member role
-  };
-
-  return (
-    <div className="flex gap-4">
-      <input
-        className="form-radio h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-        type="radio"
-        id={`owner-${teamMember.id}`}
-        name={`role-${teamMember.id}`}
-        value="owner"
-        checked={teamMember.role === 'owner'}
-        onChange={handleOnChange}
-        disabled={disabled}
-      />
-      <label htmlFor={`owner-${teamMember.id}`}>Owner</label>
-      <input
-        className="form-radio h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-        type="radio"
-        id={`member-${teamMember.id}`}
-        name={`role-${teamMember.id}`}
-        value="member"
-        checked={teamMember.role === 'member'}
-        onChange={handleOnChange}
-        disabled={disabled}
-      />
-      <label htmlFor={`member-${teamMember.id}`}>Member</label>
-    </div>
-  );
-}
-
 export default function TeamMemberList({
+  isOwner = false,
   teamMembers,
 }: {
+  isOwner?: boolean;
   teamMembers: TeamMember[];
 }) {
   const { team } = useLoaderData() as TeamData;
@@ -78,9 +42,17 @@ export default function TeamMemberList({
   } else {
     return (
       <div className="h-full overflow-y-auto">
-        <div className="h-1/2">
+        <div className="h-3/4">
+          {isOwner && (
+            <span className="italic text-sm text-gray-500">
+              Note: Assigning a team member the "owner" role will also elevate
+              their project member role to "owner" in any projects associated
+              with this team. Changing the project member role will not affect
+              the team member role.
+            </span>
+          )}
           <table className="min-w-full divide-y-2 divide-gray-200 bg-white text-sm">
-            <thead className="text-left">
+            <thead className="text-left sticky top-0 z-10 bg-white border-b-2 border-gray-200">
               <tr>
                 <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
                   Name
@@ -91,71 +63,80 @@ export default function TeamMemberList({
                 <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
                   Role
                 </th>
-                {team.is_owner ? (
+                {isOwner && (
                   <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
                     Actions
                   </th>
-                ) : null}
+                )}
               </tr>
             </thead>
-
-            <tbody className="divide-y divide-gray-200">
-              {sortedTeamMembers.map((teamMember) => (
-                <tr key={teamMember.id} className="odd:bg-gray-50">
-                  <td className="flex items-center justify-start gap-4 whitespace-nowrap px-4 py-2 font-medium text-gray-900">
-                    {teamMember.profile_url ? (
-                      <img
-                        key={teamMember.profile_url
-                          .split('/')
-                          .slice(-1)[0]
-                          .slice(0, -4)}
-                        className="h-8 w-8 rounded-full"
-                        src={teamMember.profile_url}
-                      />
-                    ) : (
-                      <div
-                        className="flex items-center justify-center h-8 w-8 text-white text-sm rounded-full"
-                        style={generateRandomProfileColor(teamMember.full_name)}
-                      >
-                        <span className="indent-[0.1em] tracking-widest">
-                          {teamMember.full_name[0] +
-                            teamMember.full_name.split(' ').slice(-1)[0][0]}
-                        </span>
-                      </div>
-                    )}
-                    <span>{teamMember.full_name}</span>
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-2 text-gray-700">
-                    {teamMember.email}
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-2 text-gray-700">
-                    {team.is_owner ? (
-                      <TeamMemberRole
-                        disabled={!team.is_owner}
-                        teamMember={teamMember}
-                      />
-                    ) : (
-                      teamMember.role.slice(0, 1).toUpperCase() +
-                      teamMember.role.slice(1)
-                    )}
-                  </td>
-                  {team.is_owner ? (
-                    <td className="px-4 py-2">
-                      {user && teamMember.email !== user.email ? (
-                        <button
-                          className="text-sky-600"
-                          type="button"
-                          onClick={() => removeTeamMember(teamMember.id)}
-                        >
-                          Remove
-                        </button>
-                      ) : null}
-                    </td>
-                  ) : null}
-                </tr>
-              ))}
-            </tbody>
           </table>
+          <div className="h-full overflow-y-auto">
+            <table className="min-w-full divide-y-2 divide-gray-200 bg-white text-sm">
+              <tbody className="divide-y divide-gray-200">
+                {sortedTeamMembers.map((teamMember) => (
+                  <tr key={teamMember.id} className="odd:bg-gray-50">
+                    <td className="flex items-center justify-start gap-4 whitespace-nowrap px-4 py-2 font-medium text-gray-900">
+                      {teamMember.profile_url ? (
+                        <img
+                          key={teamMember.profile_url
+                            .split('/')
+                            .slice(-1)[0]
+                            .slice(0, -4)}
+                          className="h-8 w-8 rounded-full"
+                          src={teamMember.profile_url}
+                        />
+                      ) : (
+                        <div
+                          className="flex items-center justify-center h-8 w-8 text-white text-sm rounded-full"
+                          style={generateRandomProfileColor(
+                            teamMember.full_name
+                          )}
+                        >
+                          <span className="indent-[0.1em] tracking-widest">
+                            {teamMember.full_name[0] +
+                              teamMember.full_name.split(' ').slice(-1)[0][0]}
+                          </span>
+                        </div>
+                      )}
+                      <span>{teamMember.full_name}</span>
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-2 text-gray-700">
+                      {teamMember.email}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-2 text-gray-700">
+                      {isOwner ? (
+                        <TeamMemberRoleRadioGroup
+                          teamId={team.id}
+                          teamMember={teamMember}
+                          disabled={
+                            team.is_owner && teamMember.member_id === user?.id
+                          }
+                          isCurrentUser={teamMember.member_id === user?.id}
+                        />
+                      ) : (
+                        teamMember.role.slice(0, 1).toUpperCase() +
+                        teamMember.role.slice(1)
+                      )}
+                    </td>
+                    {isOwner && (
+                      <td className="px-4 py-2">
+                        {user && teamMember.email !== user.email && (
+                          <button
+                            className="text-sky-600"
+                            type="button"
+                            onClick={() => removeTeamMember(teamMember.id)}
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     );

@@ -1,4 +1,5 @@
-import { useContext, useState } from 'react';
+import { AxiosResponse } from 'axios';
+import { useContext, useMemo, useState } from 'react';
 import {
   Params,
   useLoaderData,
@@ -26,10 +27,12 @@ interface Team {
 
 export interface TeamMember {
   id: string;
-  full_name: string;
   email: string;
+  full_name: string;
+  member_id: string;
   profile_url: string | null;
-  role: string;
+  role: 'owner' | 'member';
+  team_id: string;
 }
 
 export interface TeamData {
@@ -40,8 +43,12 @@ export interface TeamData {
 // fetches team details and team members prior to render
 export async function loader({ params }: { params: Params<string> }) {
   try {
-    const teamResponse = await api.get(`/teams/${params.teamId}`);
-    const teamMembers = await api.get(`/teams/${params.teamId}/members`);
+    const teamResponse: AxiosResponse<Team> = await api.get(
+      `/teams/${params.teamId}`
+    );
+    const teamMembers: AxiosResponse<TeamMember[]> = await api.get(
+      `/teams/${params.teamId}/members`
+    );
     if (teamResponse && teamMembers) {
       return { team: teamResponse.data, members: teamMembers.data };
     } else {
@@ -60,10 +67,18 @@ export default function TeamDetail() {
   const teamData = useLoaderData() as TeamData;
   const [searchResults, setSearchResults] = useState<UserSearch[]>([]);
 
+  const isOwner = useMemo(
+    () =>
+      teamData.members
+        .find((member) => member.member_id === user?.id)
+        ?.role.toLowerCase() === 'owner',
+    [teamData.members, user]
+  );
+
   return (
     <div className="flex flex-col gap-4 h-full overflow-hidden">
       <div className="flex-none flex flex-col gap-4">
-        {teamData.team.is_owner ? (
+        {isOwner ? (
           <TeamEditForm teamData={teamData} />
         ) : (
           <div className="grid rows-auto gap-2">
@@ -75,9 +90,9 @@ export default function TeamDetail() {
       </div>
       <div className="flex-grow overflow-hidden">
         <h2>{teamData.team.title} Members</h2>
-        <TeamMemberList teamMembers={teamData.members} />
+        <TeamMemberList teamMembers={teamData.members} isOwner={isOwner} />
       </div>
-      {teamData.team.is_owner ? (
+      {isOwner ? (
         <div className="flex-none">
           <h3>Find new team members</h3>
           <div className="mb-4 grid grid-flow-row gap-4">

@@ -3,6 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
+from app.models.project import Project
 from app.schemas.team_member import Role
 from app.tests.utils.project import create_project
 from app.tests.utils.team import create_team
@@ -58,6 +59,7 @@ def test_create_multi_team_members(db: Session) -> None:
 
 
 def test_create_mutli_team_members_with_existing_member(db: Session) -> None:
+
     team_owner = create_user(db)
     team = create_team(db, owner_id=team_owner.id)
     user1 = create_user(db)
@@ -115,10 +117,11 @@ def test_no_duplicate_project_members_when_multiple_teams_assigned(db: Session) 
     current project members that are in the new team assignment should
     not be added again.
     """
+    # Create two teams owned by same user
     team_owner = create_user(db)
     team1 = create_team(db, owner_id=team_owner.id)
     team2 = create_team(db, owner_id=team_owner.id)
-    # add same team members to both teams
+    # Add same team members to both teams starting with team owner
     duplicate_team_members = []
     duplicate_team_members.append(team_owner.id)
     for i in range(0, 5):
@@ -126,18 +129,18 @@ def test_no_duplicate_project_members_when_multiple_teams_assigned(db: Session) 
         duplicate_team_members.append(user.id)
         create_team_member(db, email=user.email, team_id=team1.id)
         create_team_member(db, email=user.email, team_id=team2.id)
-    # add one additional team member to team2
+    # Add one additional team member to team2
     extra_team_member = create_user(db)
     create_team_member(db, email=extra_team_member.email, team_id=team2.id)
-    # create project with team1 association initially
-    project = create_project(db, team_id=team1.id, owner_id=user.id)
+    # Create project with team1 association initially
+    project = create_project(db, team_id=team1.id, owner_id=team_owner.id)
     project_members = crud.project_member.get_list_of_project_members(
         db, project_id=project.id
     )
     assert len(project_members) == 6
     for project_member in project_members:
         assert project_member.member_id in duplicate_team_members
-    # remove team1 association from project
+    # Remove team1 association from project
     updated_project = crud.project.update(
         db, db_obj=project, obj_in=schemas.ProjectUpdate(team_id=None)
     )
@@ -146,18 +149,18 @@ def test_no_duplicate_project_members_when_multiple_teams_assigned(db: Session) 
         crud.project_member.get_list_of_project_members(db, project_id=project.id)
     )
     assert len(project_members_after_team_removal) == 6
-    # assign team2 to the project
-    updated_project2 = crud.project.update_project(
+    # Assign team2 to the project
+    crud.project.update_project(
         db,
         project_obj=project,
         project_in=schemas.ProjectUpdate(team_id=team2.id),
         project_id=project.id,
-        user_id=user.id,
+        user_id=team_owner.id,
     )
     project_members_after_new_team_assignment = (
         crud.project_member.get_list_of_project_members(db, project_id=project.id)
     )
-    team_members = crud.team_member.get_list_of_team_members(db, team_id=team2.id)
+    crud.team_member.get_list_of_team_members(db, team_id=team2.id)
     assert len(project_members_after_new_team_assignment) == 7
     duplicate_team_members.append(extra_team_member.id)
     for project_member in project_members_after_new_team_assignment:
@@ -237,6 +240,52 @@ def test_update_team_member_role(db: Session) -> None:
     assert team_creator_member.role == Role.OWNER
     assert member_updated
     assert member_updated.role == Role.OWNER
+
+
+def test_update_team_member_role_also_updates_project_member_role(db: Session) -> None:
+    team_owner = create_user(db)
+    team = create_team(db, owner_id=team_owner.id)
+    # Create team member with "member" role
+    team_member = create_team_member(db, team_id=team.id)
+    # Create project and assign team to it
+    project = create_project(db, owner_id=team_owner.id, team_id=team.id)
+    # Update team member role to "owner"
+    team_member_in = schemas.TeamMemberUpdate(role=Role.OWNER)
+    member_updated = crud.team_member.update_team_member(
+        db, team_member_in=team_member_in, team_member_id=team_member.id
+    )
+    # Fetch project members
+    project_members = crud.project_member.get_list_of_project_members(
+        db, project_id=project.id
+    )
+    assert member_updated
+    assert member_updated.role == Role.OWNER
+    assert project_members
+    assert len(project_members) == 2
+    # Project should have two members with "owner" role - creator and updated team member
+    for project_member in project_members:
+        assert project_member.role == Role.OWNER.value
+
+
+def test_update_team_member_role_of_team_creator(db: Session) -> None:
+    """Verify team creator cannot be demoted to "member" role."""
+    team_owner = create_user(db)
+    team = create_team(db, owner_id=team_owner.id)
+    team_member = crud.team_member.get_team_member_by_id(
+        db, user_id=team_owner.id, team_id=team.id
+    )
+    assert team_member
+    assert team_member.role == Role.OWNER
+    team_member_in = schemas.TeamMemberUpdate(role=Role.MEMBER)
+    member_updated = crud.team_member.update_team_member(
+        db, team_member_in=team_member_in, team_member_id=team_member.id
+    )
+    assert member_updated is None
+    team_member_after_update = crud.team_member.get_team_member_by_id(
+        db, user_id=team_owner.id, team_id=team.id
+    )
+    assert team_member_after_update
+    assert team_member_after_update.role == Role.OWNER
 
 
 def test_remove_team_member_by_id(db: Session) -> None:

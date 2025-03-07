@@ -68,6 +68,30 @@ def read_team_members(
     return team_members
 
 
+@router.put(
+    "/{team_member_id}",
+    response_model=schemas.TeamMember,
+    status_code=status.HTTP_200_OK,
+)
+def update_team_member(
+    team_member_id: UUID,
+    team_member_in: schemas.TeamMemberUpdate,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+    team: models.Team = Depends(deps.can_read_write_delete_team),
+) -> Any:
+    updated_team_member = crud.team_member.update_team_member(
+        db, team_member_in=team_member_in, team_member_id=team_member_id
+    )
+
+    if not updated_team_member:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Team member not found"
+        )
+
+    return updated_team_member
+
+
 @router.delete(
     "/{member_id}",
     response_model=schemas.TeamMember,

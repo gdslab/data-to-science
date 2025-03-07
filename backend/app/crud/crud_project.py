@@ -1,6 +1,6 @@
 import logging
 import json
-from typing import List, Sequence, TypedDict
+from typing import List, Optional, Sequence, TypedDict
 from uuid import UUID
 
 from fastapi import status
@@ -18,31 +18,16 @@ from app.models.team_member import TeamMember
 from app.models.user import User
 from app.models.utils.utcnow import utcnow
 from app.schemas.project import Centroid, ProjectCreate, ProjectUpdate, Projects
+from app.schemas.team_member import Role
 
 
 logger = logging.getLogger("__name__")
 
 
-def is_team_member(user_id: UUID, team_members: Sequence[TeamMember]) -> bool:
-    """Returns True if user_id matches a user on a team.
-
-    Args:
-        user_id (UUID): User ID to check for on a team.
-        team_members (Sequence[TeamMember]): List of team members.
-
-    Returns:
-        bool: True if the user ID matches a user in the team member list, otherwise False.
-    """
-    for team_member in team_members:
-        if team_member.member_id == user_id:
-            return True
-    return False
-
-
 class ReadProject(TypedDict):
     response_code: int
     message: str
-    result: schemas.Project | None
+    result: Project | None
 
 
 class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
@@ -54,8 +39,8 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
     ) -> ReadProject:
         """Create new project and add user as project member."""
         obj_in_data = jsonable_encoder(obj_in)
-        # check if team was included and if user is team member
-        team_members = []
+        # Check if team was included and if user has the team member "owner" role
+        team_members: Sequence[TeamMember] = []
         if obj_in_data.get("team_id"):
             team_members = crud.team_member.get_list_of_team_members(
                 db, team_id=obj_in_data.get("team_id")
@@ -66,10 +51,10 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     "message": "Team does not have any members",
                     "result": None,
                 }
-            if not is_team_member(owner_id, team_members):
+            if not is_team_owner(owner_id, team_members):
                 return {
                     "response_code": status.HTTP_403_FORBIDDEN,
-                    "message": "Only team member can perform this action",
+                    "message": 'Only team member with "owner" role can perform this action',
                     "result": None,
                 }
         # add location to db
@@ -102,6 +87,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             session.add(member_db_obj)
             session.commit()
             session.refresh(member_db_obj)
+
         # add team members as project members
         if len(team_members) > 0:
             project_members = []
@@ -272,7 +258,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             team_members = crud.team_member.get_list_of_team_members(
                 db, team_id=project_in_data["team_id"]
             )
-            if len(team_members) == 0 or not is_team_member(user_id, team_members):
+            if len(team_members) == 0 or not is_team_owner(user_id, team_members):
                 return {
                     "response_code": status.HTTP_403_FORBIDDEN,
                     "message": "Only team owner can perform this action",
@@ -319,37 +305,36 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
 
     def deactivate(
         self, db: Session, project_id: UUID, user_id: UUID
-    ) -> Project | None:
-        # update project's active status
-        update_project_sql = (
-            update(Project)
-            .where(and_(Project.id == project_id, Project.owner_id == user_id))
-            .values(is_active=False, deactivated_at=utcnow())
-        )
+    ) -> Optional[Project]:
+        """Deactivate project and associated flights."""
         with db as session:
+            # Update project to be inactive
+            update_project_sql = (
+                update(Project)
+                .where(and_(Project.id == project_id, Project.owner_id == user_id))
+                .values(is_active=False, deactivated_at=utcnow())
+            )
             session.execute(update_project_sql)
             session.commit()
 
-        # get deactivated project that will be deactivated
-        get_project_sql = (
-            select(Project)
-            .options(joinedload(Project.flights))
-            .where(Project.id == project_id, Project.owner_id == user_id)
-        )
-        with db as session:
+            # Get deactivated project
+            get_project_sql = (
+                select(Project)
+                .options(joinedload(Project.flights))
+                .where(Project.id == project_id, Project.owner_id == user_id)
+            )
             deactivated_project = session.execute(get_project_sql).scalar()
 
-        # deactivate flights associated with project
+        # Deactivate flights associated with project
         if deactivated_project:
             if len(deactivated_project.flights) > 0:
                 for flight in deactivated_project.flights:
-                    with db as session:
-                        crud.flight.deactivate(db, flight_id=flight.id)
+                    crud.flight.deactivate(db, flight_id=flight.id)
 
-            # add owner role to deactivated project
-            setattr(deactivated_project, "role", "owner")
+        # Add owner role to deactivated project (necessary for validation)
+        setattr(deactivated_project, "role", "owner")
 
-            return deactivated_project
+        return deactivated_project
 
 
 def get_flight_count_and_most_recent_flight(project: Project) -> int:
@@ -395,6 +380,39 @@ def has_flight_with_raster_data_project(project: Project) -> bool:
                     has_at_least_one_raster_data_product = True
 
     return has_at_least_one_raster_data_product
+
+
+def is_team_member(user_id: UUID, team_members: Sequence[TeamMember]) -> bool:
+    """Returns True if user_id matches a user on a team.
+
+    Args:
+        user_id (UUID): User ID to check for on a team.
+        team_members (Sequence[TeamMember]): List of team members.
+
+    Returns:
+        bool: True if the user ID matches a user in the team member list, otherwise False.
+    """
+    for team_member in team_members:
+        if team_member.member_id == user_id:
+            return True
+    return False
+
+
+def is_team_owner(user_id: UUID, team_members: Sequence[TeamMember]) -> bool:
+    """Returns True if user_id matches a user on a team and is the team owner.
+
+    Args:
+        user_id (UUID): User ID to check for on a team.
+        team_members (Sequence[TeamMember]): List of team members.
+
+    Returns:
+        bool: True if the user ID matches a user in the team member list and is the team owner,
+        otherwise False.
+    """
+    for team_member in team_members:
+        if team_member.member_id == user_id and team_member.role == Role.OWNER:
+            return True
+    return False
 
 
 project = CRUDProject(Project)

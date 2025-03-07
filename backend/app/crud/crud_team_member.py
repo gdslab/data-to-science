@@ -3,7 +3,7 @@ from typing import List, Optional, Sequence, Union
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import select
+from sqlalchemy import update, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Bundle, Session
 from sqlalchemy.sql.selectable import Select
@@ -14,6 +14,7 @@ from app.crud.base import CRUDBase
 from app.crud.crud_user import find_profile_img
 from app.models.project import Project
 from app.models.project_member import ProjectMember
+from app.models.team import Team
 from app.models.team_member import TeamMember
 from app.models.user import User
 from app.schemas.project_member import ProjectMemberCreate
@@ -273,6 +274,50 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
 
             # Return list of team members
             return team_members
+
+    def update_team_member(
+        self, db: Session, team_member_in: TeamMemberUpdate, team_member_id: UUID
+    ) -> Optional[TeamMember]:
+        # Select team member by team member id
+        with db as session:
+            statement = select(TeamMember).where(TeamMember.id == team_member_id)
+            team_member = session.scalar(statement)
+            if team_member:
+                previous_team_member_role = team_member.role
+                team = session.scalar(
+                    select(Team).where(Team.id == team_member.team_id)
+                )
+                # Return None if team not found or team member is the team creator
+                if not team or team.owner_id == team_member.member_id:
+                    return None
+
+                # Update team member
+                updated_team_member = crud.team_member.update(
+                    db, db_obj=team_member, obj_in=team_member_in
+                )
+                # Check if team member role changed from "member" to "owner"
+                if (
+                    previous_team_member_role == Role.MEMBER
+                    and updated_team_member.role == Role.OWNER
+                ):
+                    # Find all projects associated with team
+                    project_ids = session.scalars(
+                        select(Project.id).where(Project.team_id == team_member.team_id)
+                    ).all()
+                    if project_ids:
+                        bulk_update_project_members = (
+                            update(ProjectMember)
+                            .where(ProjectMember.project_id.in_(project_ids))
+                            .where(ProjectMember.member_id == team_member.member_id)
+                            .values(role="owner")
+                        )
+                        session.execute(bulk_update_project_members)
+
+                session.commit()
+
+                return updated_team_member
+            else:
+                return None
 
     def remove_team_member(
         self, db: Session, member_id: UUID, team_id: UUID

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api.deps import get_current_user, get_current_approved_user
 from app.core.config import settings
-from app.tests.utils.project import create_project
+from app.schemas.team_member import Role
 from app.tests.utils.team import create_team
 from app.tests.utils.team_member import create_team_member
 from app.tests.utils.user import create_user
@@ -122,6 +122,69 @@ def test_get_team_members(
     assert len(fetched_team_members) == 4  # 3 added members + owner (current user)
     for tm in fetched_team_members:
         assert tm["id"] in team_member_ids
+
+
+def test_update_team_member(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    team = create_team(db, owner_id=current_user.id)
+    team_member = create_team_member(db, team_id=team.id)
+    data = {"role": "owner"}
+    response = client.put(
+        f"{settings.API_V1_STR}/teams/{team.id}/members/{team_member.id}",
+        json=jsonable_encoder(data),
+    )
+    assert response.status_code == status.HTTP_200_OK
+    updated_team_member = response.json()
+    assert updated_team_member["role"] == "owner"
+
+
+def test_non_creator_owner_can_update_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # Create team with owner and two additional members
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    team_owner = create_user(db)
+    team = create_team(db, owner_id=team_owner.id)
+    team_member = create_team_member(db, email=current_user.email, team_id=team.id)
+    team_member2 = create_team_member(db, team_id=team.id)
+    # Update role of current user to owner
+    crud.team_member.update(db, db_obj=team_member, obj_in={"role": Role.OWNER})
+    # Attempt to update role of second team member to owner
+    data = {"role": "owner"}
+    response = client.put(
+        f"{settings.API_V1_STR}/teams/{team.id}/members/{team_member2.id}",
+        json=jsonable_encoder(data),
+    )
+    assert response.status_code == status.HTTP_200_OK
+    updated_team_member = response.json()
+    assert updated_team_member["member_id"] == str(team_member2.member_id)
+    assert updated_team_member["role"] == "owner"
+
+
+def test_non_creator_member_cannot_update_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # Create team with owner and two additional members
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    team_owner = create_user(db)
+    team = create_team(db, owner_id=team_owner.id)
+    create_team_member(db, email=current_user.email, team_id=team.id)
+    team_member2 = create_team_member(db, team_id=team.id)
+    # Attempt to update role of second team member to owner
+    data = {"role": "owner"}
+    response = client.put(
+        f"{settings.API_V1_STR}/teams/{team.id}/members/{team_member2.id}",
+        json=jsonable_encoder(data),
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_remove_team_member(

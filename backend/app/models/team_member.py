@@ -22,7 +22,10 @@ class TeamMember(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     role: Mapped[Role] = mapped_column(
-        ENUM(Role, name="member_role"), nullable=False, default=Role.MEMBER
+        ENUM(Role, name="member_role"),
+        nullable=False,
+        default=Role.MEMBER,
+        server_default="MEMBER",
     )
     member_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
     team_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("teams.id"), nullable=False)

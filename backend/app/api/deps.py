@@ -1,5 +1,6 @@
 import logging
 import os
+from collections.abc import Generator
 from typing import Optional
 from uuid import UUID
 
@@ -31,7 +32,7 @@ reusable_oauth2_optional = security.OAuth2PasswordBearerWithCookie(
 )
 
 
-def get_db():
+def get_db() -> Generator:
     """Create database session with lifespan of a single request."""
     db = SessionLocal()
     try:
@@ -78,7 +79,7 @@ def send_email(
     recipients: list[EmailStr],
     body: str,
     background_tasks: BackgroundTasks,
-):
+) -> None:
     message = MessageSchema(
         subject=subject, recipients=recipients, body=body, subtype=MessageType.html
     )
@@ -250,7 +251,7 @@ def can_read_project(
     project_id: UUID,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_approved_user),
-) -> Optional[schemas.Project]:
+) -> Optional[models.Project]:
     """Return project is current user is project owner, manager, or viewer."""
     project = crud.project.get_user_project(
         db, user_id=current_user.id, project_id=project_id, permission="r"

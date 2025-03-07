@@ -25,9 +25,7 @@ import api from '../../../api';
 export async function loader() {
   const response: AxiosResponse<Project[]> = await api.get('/projects');
   if (response) {
-    return response.data.filter(
-      ({ role }) => role === 'owner' || role === 'manager'
-    );
+    return response.data.filter(({ role }) => role === 'owner');
   } else {
     return [];
   }

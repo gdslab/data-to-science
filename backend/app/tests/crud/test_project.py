@@ -1,9 +1,12 @@
 from datetime import datetime, timezone
 
+import pytest
+from fastapi import status
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
 from app.schemas.project import ProjectUpdate
+from app.schemas.team_member import TeamMemberUpdate, Role
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.flight import create_flight
 from app.tests.utils.team import create_team
@@ -55,6 +58,21 @@ def test_create_project_with_team(db: Session) -> None:
     )
     assert project.owner_id == user.id
     assert project.team_id == team.id
+
+
+def test_create_project_with_team_not_owned_by_user(db: Session) -> None:
+    user = create_user(db)
+    other_user = create_user(db)
+    team = create_team(db, owner_id=other_user.id)
+    # Add user as team member with default "member" role
+    create_team_member(db, email=user.email, team_id=team.id)
+    # Create project with team not owned by user
+    with pytest.raises(ValueError):
+        create_project(
+            db,
+            owner_id=user.id,
+            team_id=team.id,
+        )
 
 
 def test_create_project_creates_project_member_for_owner(db: Session) -> None:
@@ -202,13 +220,83 @@ def test_update_project(db: Session) -> None:
     new_title = random_team_name()
     new_planting_date = random_planting_date()
     project_in_update = ProjectUpdate(title=new_title, planting_date=new_planting_date)
-    project_update = crud.project.update(db, db_obj=project, obj_in=project_in_update)
-    assert project.id == project_update.id
-    assert new_title == project_update.title
-    assert new_planting_date == project_update.planting_date
-    assert project.planting_date == project_update.planting_date
-    assert project.description == project_update.description
-    assert project.owner_id == project_update.owner_id
+    project_update = crud.project.update_project(
+        db,
+        project_id=project.id,
+        project_obj=project,
+        project_in=project_in_update,
+        user_id=project.owner_id,
+    )
+
+    assert project_update.get("response_code") == status.HTTP_200_OK
+    assert project_update.get("message") == "Project updated successfully"
+    updated_project = project_update.get("result")
+    assert updated_project
+    assert project.id == updated_project.id
+    assert new_title == updated_project.title
+    assert new_planting_date == updated_project.planting_date
+    assert project.planting_date == updated_project.planting_date
+    assert project.description == updated_project.description
+    assert project.owner_id == updated_project.owner_id
+
+
+def test_update_project_with_team(db: Session) -> None:
+    team_owner = create_user(db)
+    team = create_team(db, owner_id=team_owner.id)
+    # Create team member and update role to owner
+    team_member = create_team_member(db, team_id=team.id)
+    updated_team_member = crud.team_member.update(
+        db,
+        db_obj=team_member,
+        obj_in=TeamMemberUpdate(role=Role.OWNER),
+    )
+    assert updated_team_member.role == Role.OWNER
+
+    # Create project owned by team member and update it with the team
+    project = create_project(db, owner_id=team_member.member_id)
+    project_in_update = ProjectUpdate(team_id=team.id)
+    project_update = crud.project.update_project(
+        db,
+        project_id=project.id,
+        project_obj=project,
+        project_in=project_in_update,
+        user_id=project.owner_id,
+    )
+    assert project_update.get("response_code") == status.HTTP_200_OK
+    assert project_update.get("message") == "Project updated successfully"
+    updated_project = project_update.get("result")
+    assert updated_project
+    assert project.id == updated_project.id
+    assert project.team_id == updated_project.team_id
+
+    # Get project members
+    project_members = crud.project_member.get_list_of_project_members(
+        db, project_id=project.id
+    )
+    assert project_members
+    assert len(project_members) == 2  # Original project owner and team owner
+    # Both project members should be owners
+    for project_member in project_members:
+        assert project_member.role == "owner"
+
+
+def test_update_project_with_team_not_owned_by_user(db: Session) -> None:
+    team_owner = create_user(db)
+    team = create_team(db, owner_id=team_owner.id)
+    # Create team member with default "member" role
+    team_member = create_team_member(db, team_id=team.id)
+
+    # Create project owned by team member and update it with the team
+    project = create_project(db, owner_id=team_member.member_id)
+    project_in_update = ProjectUpdate(team_id=team.id)
+    project_update = crud.project.update_project(
+        db,
+        project_id=project.id,
+        project_obj=project,
+        project_in=project_in_update,
+        user_id=project.owner_id,
+    )
+    assert project_update.get("response_code") == status.HTTP_403_FORBIDDEN
 
 
 def test_get_project_flight_count(db: Session) -> None:

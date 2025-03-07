@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Dict
+from typing import Dict, Union
 from uuid import UUID
 
 from faker import Faker
@@ -7,8 +7,7 @@ from geojson_pydantic import Feature, Polygon
 from sqlalchemy.orm import Session
 
 from app import crud, models
-from app.schemas.project import ProjectCreate
-from app.tests.utils.location import create_location
+from app.schemas.project import Project, ProjectCreate
 from app.tests.utils.user import create_user
 from app.tests.utils.utils import (
     get_geojson_feature_collection,
@@ -55,11 +54,18 @@ def create_project(
         team_id=team_id,
     )
 
-    return crud.project.create_with_owner(
+    project = crud.project.create_with_owner(
         db,
         obj_in=project_in,
         owner_id=owner_id,
-    )["result"]
+    )
+
+    if project["response_code"] != 201:
+        raise ValueError(project["message"])
+    elif project["result"]:
+        return project["result"]
+    else:
+        raise ValueError("Unable to create project")
 
 
 def random_harvest_date() -> date:

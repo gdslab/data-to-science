@@ -32,7 +32,7 @@ API_URL = f"{settings.API_V1_STR}/projects"
 def test_create_project(
     client: TestClient, normal_user_access_token: str, db: Session
 ) -> None:
-    location = create_location(db)
+    create_location(db)
     data = jsonable_encoder(
         {
             "title": random_team_name(),
@@ -60,7 +60,7 @@ def test_create_project_with_team_with_team_owner_role(
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
     team = create_team(db, owner_id=current_user.id)
-    location = create_location(db)
+    create_location(db)
     data = jsonable_encoder(
         {
             "title": random_team_name(),
@@ -79,13 +79,13 @@ def test_create_project_with_team_with_team_owner_role(
     assert response_data["team_id"] == str(team.id)
 
 
-def test_create_project_with_team_with_team_viewer_role(
+def test_create_project_with_team_with_team_member_role(
     client: TestClient, normal_user_access_token: str, db: Session
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
     team = create_team(db)
     create_team_member(db, email=current_user.email, team_id=team.id)
-    location = create_location(db)
+    create_location(db)
     data = jsonable_encoder(
         {
             "title": random_team_name(),
@@ -99,16 +99,15 @@ def test_create_project_with_team_with_team_viewer_role(
         }
     )
     response = client.post(API_URL, json=data)
-    assert response.status_code == status.HTTP_201_CREATED
-    response_data = response.json()
-    assert response_data["team_id"] == str(team.id)
+    # User must be team owner to create project with team
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_create_project_with_team_without_team_role(
     client: TestClient, normal_user_access_token: str, db: Session
 ) -> None:
     team = create_team(db)
-    location = create_location(db)
+    create_location(db)
     data = jsonable_encoder(
         {
             "title": random_team_name(),
