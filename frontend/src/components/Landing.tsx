@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import AuthContext from '../AuthContext';
 import { Button, LandingButton } from './Buttons';
 
-import brandLogo from '../assets/d2s-logo-white-without-text.png';
+import brandLogo from '../assets/d2s-logo-amber-text-white-symbol.svg';
 import landingVideo from '../assets/landing.mp4';
 
 export default function Landing() {
@@ -20,13 +20,16 @@ export default function Landing() {
       {/* video pane */}
       <div className="h-screen">
         <div className="z-10 absolute w-full px-4 text-center top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-          <div className="grid grid-rows-auto gap-4">
-            <div className="flex items-center justify-center">
-              <img className="h-24" src={brandLogo} alt="Brand Logo" />
-            </div>
+          <div className="grid grid-rows-auto gap-6">
             <div className="inline text-6xl text-white [text-shadow:_2px_2px_2px_rgb(0_0_0_/_70%)]">
               <span>Welcome to </span>
-              <span className="text-amber-400">{import.meta.env.VITE_BRAND_FULL}</span>
+            </div>
+            <div className="flex items-center justify-center">
+              <img
+                className="h-24 text-amber-400"
+                src={brandLogo}
+                alt="Brand Logo"
+              />
             </div>
             <div className="flex items-center justify-center">
               <span className="text-white font-semibold">
@@ -47,9 +50,16 @@ export default function Landing() {
             </div>
           </div>
         </div>
-        <video className="w-full h-full object-cover opacity-80" autoPlay loop muted>
+        <video
+          className="w-full h-full object-cover opacity-80"
+          autoPlay
+          loop
+          muted
+        >
           <source src={landingVideo} type="video/mp4" />
-          <div className="sr-only">Overhead video of field captured by a UAS</div>
+          <div className="sr-only">
+            Overhead video of field captured by a UAS
+          </div>
         </video>
       </div>
       {/* sign up pane */}
