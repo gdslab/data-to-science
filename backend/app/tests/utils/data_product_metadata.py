@@ -12,7 +12,7 @@ from app import crud
 from app.models.data_product_metadata import DataProductMetadata
 from app.models.vector_layer import VectorLayer
 from app.schemas.data_product_metadata import DataProductMetadataCreate, ZonalStatistics
-from app.tasks import generate_zonal_statistics
+from app.tasks.toolbox_tasks import calculate_zonal_statistics
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.project import create_project
 from app.tests.utils.vector_layers import (
@@ -33,7 +33,7 @@ def get_zonal_statistics(
     Returns:
         list[ZonalStatistics]: List of zonal statistic dictionaries for each zone.
     """
-    stats = generate_zonal_statistics(in_raster, feature_collection.__dict__)
+    stats = calculate_zonal_statistics(in_raster, feature_collection.__dict__)
 
     return stats
 

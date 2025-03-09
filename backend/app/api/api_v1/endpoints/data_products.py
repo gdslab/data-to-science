@@ -23,10 +23,10 @@ from app.core.config import settings
 from app.models.vector_layer import VectorLayer
 from app.schemas.data_product_metadata import ZonalStatisticsProps
 from app.schemas.job import State, Status
-from app.tasks import (
-    generate_zonal_statistics,
-    generate_zonal_statistics_bulk,
-    run_toolbox_process,
+from app.tasks.toolbox_tasks import (
+    calculate_zonal_statistics,
+    calculate_bulk_zonal_statistics,
+    run_toolbox,
 )
 from app.schemas.shortened_url import ShortenedUrlApiResponse, UrlPayload
 from app.utils.tusd.post_processing import process_data_product_uploaded_to_tusd
@@ -46,7 +46,7 @@ def get_static_dir() -> str:
 
 
 def update_feature_properties(
-    zonal_feature: Feature[Polygon, ZonalStatisticsProps]
+    zonal_feature: Feature[Polygon, ZonalStatisticsProps],
 ) -> Feature[Polygon, ZonalStatisticsProps]:
     """Updates the Feature properties returned by the zonal statistics endpoint. The
     updated properties will include only the zonal statistics stats that were calculated
@@ -500,7 +500,7 @@ async def run_processing_tool(
             "red_band_idx": toolbox_in.ndviRed,
             "nir_band_idx": toolbox_in.ndviNIR,
         }
-        run_toolbox_process.apply_async(
+        run_toolbox.apply_async(
             args=(
                 "ndvi",
                 data_product.filepath,
@@ -535,7 +535,7 @@ async def run_processing_tool(
             "green_band_idx": toolbox_in.exgGreen,
             "blue_band_idx": toolbox_in.exgBlue,
         }
-        run_toolbox_process.apply_async(
+        run_toolbox.apply_async(
             args=(
                 "exg",
                 data_product.filepath,
@@ -553,7 +553,7 @@ async def run_processing_tool(
         feature_collection = FeatureCollection(
             **{"type": "FeatureCollection", "features": features}
         )
-        generate_zonal_statistics_bulk.apply_async(
+        calculate_bulk_zonal_statistics.apply_async(
             args=(
                 data_product.filepath,
                 data_product_id,
@@ -637,7 +637,7 @@ async def create_zonal_statistics(
                     crud.data_product_metadata.remove(db, id=metadata[0].id)
 
     # send request to celery task queue
-    result = generate_zonal_statistics.apply_async(
+    result = calculate_zonal_statistics.apply_async(
         args=(data_product.filepath, {"features": [zone_in.model_dump()]})
     )
 

@@ -27,7 +27,7 @@ from app.api import deps
 from app.api.utils import sanitize_file_name, get_tile_url_with_signed_payload
 from app.core.config import settings
 from app.core.security import sign_map_tile_payload
-from app.tasks import process_vector_layer
+from app.tasks.upload_tasks import upload_vector_layer
 
 router = APIRouter()
 
@@ -123,8 +123,8 @@ async def create_vector_layer(
     original_file_name = sanitize_file_name(file.filename)
     logger.info(temp_file_path)
     # Start celery task for processing and adding uploaded vector file to database
-    process_vector_layer.apply_async(
-        args=(temp_file_path, original_file_name, project.id, current_user.id, job.id)
+    upload_vector_layer.apply_async(
+        args=(temp_file_path, original_file_name, project.id, job.id)
     )
 
 
