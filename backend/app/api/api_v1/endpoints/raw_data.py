@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 from uuid import UUID
 
+from celery import chain
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
@@ -15,6 +16,7 @@ from app.schemas.job import State, Status
 from app.schemas.raw_data import ImageProcessingQueryParams
 from app.tasks.raw_image_processing_tasks import (
     process_raw_data as process_raw_data_task,
+    transfer_raw_data,
 )
 from app.utils.job_manager import JobManager
 from app.utils.RpcClient import RpcClient
@@ -229,8 +231,8 @@ def process_raw_data(
 
     # only start this workflow if external storage and rabbitmq host are provided
     if external_storage_dir and os.path.isdir(external_storage_dir) and rabbitmq_host:
-        process_raw_data_task.apply_async(
-            args=(
+        chain(
+            transfer_raw_data.s(
                 external_storage_dir,
                 storage_path,
                 raw_data.original_filename,
@@ -241,7 +243,8 @@ def process_raw_data(
                 processing_job.job_id,
                 ip_settings.model_dump(),
             )
-        )
+            | process_raw_data_task.s(),
+        ).apply_async()
     else:
         logger.error(
             "Unable to start raw data processing due to unavailable external storage or RabbitMQ service"

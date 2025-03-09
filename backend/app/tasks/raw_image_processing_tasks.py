@@ -1,9 +1,9 @@
+import asyncio
 import json
 import os
 import secrets
-import shutil
 from datetime import datetime, timezone
-from typing import Dict
+from typing import Dict, Optional, Tuple
 from uuid import UUID
 
 from celery.utils.log import get_task_logger
@@ -15,6 +15,7 @@ from app.core.config import settings
 from app.core.security import get_token_hash
 from app.utils.job_manager import JobManager
 from app.schemas.job import Status
+from app.utils.job_manager import JobManager
 from app.utils.RpcClient import RpcClient
 from app.utils.unique_id import generate_unique_id
 
@@ -22,26 +23,16 @@ from app.utils.unique_id import generate_unique_id
 logger = get_task_logger(__name__)
 
 
-@celery_app.task(name="transfer_raw_data_task")
-async def transfer_raw_data(job_id: UUID) -> None:
-    logger.info("Raw data file transfer task started.")
-
-    # Get database session
-    db = next(get_db())
-
-    # Look up job in database
-    job = crud.job.get(db, id=job_id)
-
-    # If job not found, log error and return
-    if not job:
-        logger.error(f"Job with ID {job_id} not found.")
-        return
-
-    # Update job state
+def cleanup_on_external(destination_path: str) -> None:
+    try:
+        os.remove(destination_path)
+    except Exception:
+        logger.exception(
+            f"Error while cleaning up external storage: {destination_path}"
+        )
 
 
-@celery_app.task(name="process_raw_data_task")
-def process_raw_data(
+async def async_transfer(
     external_storage_dir: str,
     storage_path: str,
     original_filename: str,
@@ -51,48 +42,37 @@ def process_raw_data(
     user_id: UUID,
     job_id: UUID,
     ip_settings: Dict,
-) -> None:
-    """Starts job on external server to process raw data.
+) -> Tuple[UUID, Optional[str]]:
+    logger.info(f"Transferring raw data to external storage for job {job_id}")
 
-    Args:
-        external_storage_dir (str): Root directory of external storage.
-        storage_path (str): Current location of raw data zip file.
-        original_filename (str): Raw data's original filename.
-        project_id (UUID): ID for project associated with raw data.
-        flight_id (UUID): ID for flight associated with raw data.
-        raw_data_id (UUID): ID for raw data.
-        user_id (UUID): ID for user associated with raw data processing request.
-        ip_settings (ImageProcessingQueryParams): User defined processing settings.
-
-    Raises:
-        HTTPException: Raised if copying raw data to external storage fails.
-        HTTPException: Raised if unable to start job on remote server.
-    """
-    # get database session
+    # Create database session
     db = next(get_db())
 
-    # retrieve job associated with this task
     try:
+        # Start current job
         job = JobManager(job_id=job_id)
-    except ValueError:
-        logger.error("Could not find job in DB for upload process")
-        return None
+        job.start()
 
-    # update job status to indicate process has started
-    job.start()
+        # Construct fullpath for raw data file on external storage
+        destination_dir = os.path.join(external_storage_dir, "raw_data")
+        if not os.path.exists(destination_dir):
+            os.makedirs(destination_dir)
 
-    try:
-        # destination for raw data zips
-        external_raw_data_dir = os.path.join(external_storage_dir, "raw_data")
-        if not os.path.exists(external_raw_data_dir):
-            os.makedirs(external_raw_data_dir)
-
-        # create unique id for raw data and copy file to external storage
+        # Create unique id for raw data and copy file to external storage
         raw_data_identifier = generate_unique_id()
-        shutil.copyfile(
+        destination_path = os.path.join(destination_dir, f"{raw_data_identifier}.zip")
+
+        # Transfer raw data to external storage
+        process = await asyncio.create_subprocess_exec(
+            "rsync",
+            "-avz",
             storage_path,
-            os.path.join(external_raw_data_dir, raw_data_identifier + ".zip"),
+            destination_path,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
         )
+
+        _, stderr = await process.communicate()
 
         # create one time token
         token = secrets.token_urlsafe()
@@ -105,7 +85,7 @@ def process_raw_data(
         )
 
         with open(
-            os.path.join(external_raw_data_dir, raw_data_identifier + ".info"), "w"
+            os.path.join(destination_dir, raw_data_identifier + ".info"), "w"
         ) as info_file:
             raw_data_meta = {
                 "callback_url": (
@@ -127,16 +107,76 @@ def process_raw_data(
                 "settings": ip_settings,
             }
             info_file.write(json.dumps(raw_data_meta))
-    except Exception:
-        logger.exception(
-            "Error while moving raw data to external storage and creating metadata"
-        )
-        # update job
-        job.update(status=Status.FAILED)
-        return None
 
-    rpc_client = None
+        if process.returncode != 0:
+            job.update(status=Status.FAILED)
+            logger.error(f"Transfer failed for job {job_id}")
+            cleanup_on_external(destination_path)
+            raise Exception(f"Transfer failed: {stderr.decode()}")
+
+    except Exception:
+        logger.exception("Transfer failed for job {job_id}")
+        job.update(status=Status.FAILED)
+        cleanup_on_external(destination_path)
+        return job_id, None
+
+    logger.info(f"Transfer successful for job {job_id}")
+
+    return job_id, raw_data_identifier
+
+
+@celery_app.task(name="transfer_raw_data_task")
+def transfer_raw_data(
+    external_storage_dir: str,
+    storage_path: str,
+    original_filename: str,
+    project_id: UUID,
+    flight_id: UUID,
+    raw_data_id: UUID,
+    user_id: UUID,
+    job_id: UUID,
+    ip_settings: Dict,
+) -> Tuple[UUID, str]:
+    job_id, raw_data_identifier = asyncio.run(
+        async_transfer(
+            external_storage_dir,
+            storage_path,
+            original_filename,
+            project_id,
+            flight_id,
+            raw_data_id,
+            user_id,
+            job_id,
+            ip_settings,
+        )
+    )
+
+    if not raw_data_identifier:
+        job = JobManager(job_id=job_id)
+        job.update(status=Status.FAILED)
+        logger.error(f"Error while transferring raw data for job {job_id}")
+        raise Exception("Error while transferring raw data")
+
+    return job_id, raw_data_identifier
+
+
+@celery_app.task(name="process_raw_data_task")
+def process_raw_data(task_data: Tuple[UUID, str]) -> None:
+    """Starts job on external server to process raw data.
+
+    Args:
+        job_id (UUID): Unique identifier for job.
+        raw_data_identifier (str): Unique identifier for raw data.
+
+    Raises:
+        HTTPException: Raised if unable to start job on remote server.
+    """
+    job_id, raw_data_identifier = task_data
+
     try:
+        # Get job manager for current job
+        job = JobManager(job_id=job_id)
+
         # publish message to external server
         rpc_client = RpcClient(routing_key="raw-data-start-process-queue")
         batch_id = rpc_client.call(raw_data_identifier)
@@ -155,5 +195,3 @@ def process_raw_data(
     finally:
         if isinstance(rpc_client, RpcClient):
             rpc_client.connection.close()
-
-    return None
