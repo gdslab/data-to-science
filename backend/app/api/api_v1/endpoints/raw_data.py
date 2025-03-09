@@ -14,7 +14,9 @@ from app.api import deps
 from app.core.config import settings
 from app.schemas.job import State, Status
 from app.schemas.raw_data import ImageProcessingQueryParams
-from app.tasks import run_raw_data_image_processing
+from app.tasks.raw_image_processing_tasks import (
+    process_raw_data as process_raw_data_task,
+)
 from app.utils.RpcClient import RpcClient
 
 router = APIRouter()
@@ -235,7 +237,7 @@ def process_raw_data(
 
     # only start this workflow if external storage and rabbitmq host are provided
     if external_storage_dir and os.path.isdir(external_storage_dir) and rabbitmq_host:
-        run_raw_data_image_processing.apply_async(
+        process_raw_data_task.apply_async(
             args=(
                 external_storage_dir,
                 storage_path,

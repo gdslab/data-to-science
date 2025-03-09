@@ -671,7 +671,9 @@ def test_get_zonal_statistics(
         project_id=project.id,
     )
     # mock the celery task initiated by the endpoint
-    with patch("app.tasks.generate_zonal_statistics.apply_async") as mock_apply_async:
+    with patch(
+        "app.tasks.toolbox_tasks.calculate_zonal_statistics.apply_async"
+    ) as mock_apply_async:
         mock_task = MagicMock()
         mock_task.id = "mock_task_id"
         mock_task.get.return_value = [
