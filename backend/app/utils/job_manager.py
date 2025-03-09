@@ -17,6 +17,7 @@ class JobManager:
         data_product_id: Optional[UUID] = None,
         job_id: Optional[UUID] = None,
         job_name: Optional[str] = None,
+        raw_data_id: Optional[UUID] = None,
     ) -> None:
         """Initialize the JobManager instance.
 
@@ -24,11 +25,13 @@ class JobManager:
             data_product_id (Optional[UUID], optional): ID of the associated data product.
             job_id (Optional[UUID], optional): Existing jbo ID to lookup. If provided, the job will be retrieved from the DB.
             job_name (Optional[str], optional): Name of the job. If not provided, defaults to 'default-job'.
+            raw_data_id (Optional[UUID], optional): ID of the raw data associated with the job.
 
         Raises:
             ValueError: Raised if a job_id is provided but the job is not found in the database.
         """
         self.data_product_id = data_product_id
+        self.raw_data_id = raw_data_id
 
         # Retrieve a database session from the dependency injection.
         self.db = next(get_db())
@@ -54,25 +57,19 @@ class JobManager:
         """
         # Use provided job_name or default to 'default-job'
         job_name = self.job_name or "default-job"
-        data_product_id = self.data_product_id
 
-        if data_product_id:
-            # If data_product_id is provided, include it in the creation payload
-            job_obj_in = JobCreate(
-                data_product_id=data_product_id,
-                name=job_name,
-                start_time=datetime.now(tz=timezone.utc),
-                state=State.PENDING,
-                status=Status.WAITING,
-            )
-        else:
-            # If no data_product_id is provided, create the job without it
-            job_obj_in = JobCreate(
-                name=job_name,
-                start_time=datetime.now(tz=timezone.utc),
-                state=State.PENDING,
-                status=Status.WAITING,
-            )
+        job_obj_in = JobCreate(
+            name=job_name,
+            start_time=datetime.now(tz=timezone.utc),
+            state=State.PENDING,
+            status=Status.WAITING,
+        )
+
+        if self.data_product_id:
+            job_obj_in.data_product_id = self.data_product_id
+
+        if self.raw_data_id:
+            job_obj_in.raw_data_id = self.raw_data_id
 
         # Create the job using the CRUD utility and update the job_id attribute
         job = crud.job.create(self.db, obj_in=job_obj_in)

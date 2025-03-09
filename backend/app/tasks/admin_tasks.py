@@ -7,7 +7,7 @@ from app.core.celery_app import celery_app
 from app.core.config import settings
 from app.crud.crud_admin import get_disk_usage
 from app.schemas.disk_usage_stats import DiskUsageStatsCreate
-from app.tasks.job_manager import JobManager, Status
+from app.utils.job_manager import JobManager, Status
 
 logger = get_task_logger(__name__)
 

@@ -3,7 +3,7 @@ from pathlib import Path
 from celery.utils.log import get_task_logger
 
 from app.core.celery_app import celery_app
-from app.tasks.job_manager import JobManager, Status
+from app.utils.job_manager import JobManager, Status
 from app.utils import gen_preview_from_pointcloud
 
 

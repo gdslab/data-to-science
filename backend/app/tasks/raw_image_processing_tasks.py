@@ -13,7 +13,7 @@ from app.api.deps import get_db
 from app.core.celery_app import celery_app
 from app.core.config import settings
 from app.core.security import get_token_hash
-from app.tasks.job_manager import JobManager
+from app.utils.job_manager import JobManager
 from app.schemas.job import Status
 from app.utils.RpcClient import RpcClient
 from app.utils.unique_id import generate_unique_id
