@@ -2,7 +2,6 @@ import json
 import logging
 import os
 import shutil
-from datetime import datetime
 from pathlib import Path
 from typing import Annotated, Any, Optional, Sequence, Union
 from urllib.parse import urlparse, parse_qs
@@ -10,7 +9,7 @@ from uuid import UUID, uuid4
 
 import httpx
 from geojson_pydantic import Feature, FeatureCollection, Polygon, MultiPolygon
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, UUID4
 from sqlalchemy import func, select
@@ -22,13 +21,14 @@ from app.core import security
 from app.core.config import settings
 from app.models.vector_layer import VectorLayer
 from app.schemas.data_product_metadata import ZonalStatisticsProps
-from app.schemas.job import State, Status
+from app.schemas.job import Status
 from app.tasks.toolbox_tasks import (
     calculate_zonal_statistics,
     calculate_bulk_zonal_statistics,
     run_toolbox,
 )
 from app.schemas.shortened_url import ShortenedUrlApiResponse, UrlPayload
+from app.utils.job_manager import JobManager
 from app.utils.tusd.post_processing import process_data_product_uploaded_to_tusd
 
 
@@ -309,18 +309,16 @@ def process_data_product_from_external_storage(
         db, token_hash=security.get_token_hash(payload.token, salt="rawdata")
     )
     # find job associated with task
-    job = crud.job.get(db, id=payload.job_id)
-    if not job:
+    try:
+        job = JobManager(job_id=payload.job_id)
+    except ValueError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Unable to find processing job",
         )
     # check if token is valid
     if not token_db_obj:
-        job_update_in = schemas.JobUpdate(
-            state=State.COMPLETED, status=Status.FAILED, end_time=datetime.now()
-        )
-        crud.job.update(db, db_obj=job, obj_in=job_update_in)
+        job.update(status=Status.FAILED)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
         )
@@ -328,10 +326,7 @@ def process_data_product_from_external_storage(
     # check if user has write permission for project
     user = crud.user.get(db, id=token_db_obj.user_id)
     if not user:
-        job_update_in = schemas.JobUpdate(
-            state=State.COMPLETED, status=Status.FAILED, end_time=datetime.now()
-        )
-        crud.job.update(db, db_obj=job, obj_in=job_update_in)
+        job.update(status=Status.FAILED)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
@@ -340,10 +335,7 @@ def process_data_product_from_external_storage(
         deps.can_read_write_project(project_id=project_id, db=db, current_user=user),
         models.Project,
     ):
-        job_update_in = schemas.JobUpdate(
-            state=State.COMPLETED, status=Status.FAILED, end_time=datetime.now()
-        )
-        crud.job.update(db, db_obj=job, obj_in=job_update_in)
+        job.update(status=Status.FAILED)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not allowed to add data products to project",
@@ -352,18 +344,12 @@ def process_data_product_from_external_storage(
     # check if job failed
     if not payload.status.code:
         # update job table to show it failed
-        job_update_in = schemas.JobUpdate(
-            state=State.COMPLETED, status=Status.FAILED, end_time=datetime.now()
-        )
-        crud.job.update(db, db_obj=job, obj_in=job_update_in)
+        job.update(status=Status.FAILED)
     else:
         # iterate over each new data product and start post processing celery task
         for data_product in payload.products:
             if not os.path.exists(data_product.storage_path):
-                job_update_in = schemas.JobUpdate(
-                    state=State.COMPLETED, status=Status.FAILED, end_time=datetime.now()
-                )
-                crud.job.update(db, db_obj=job, obj_in=job_update_in)
+                job.update(status=Status.FAILED)
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Unable to locate data product on disk",
@@ -403,10 +389,7 @@ def process_data_product_from_external_storage(
             logger.exception(f"Unable to copy report to raw data directory: {e}")
 
         # data products successfully derived from raw data
-        job_update_in = schemas.JobUpdate(
-            state=State.COMPLETED, status=Status.SUCCESS, end_time=datetime.now()
-        )
-        crud.job.update(db, db_obj=job, obj_in=job_update_in)
+        job.update(status=Status.SUCCESS)
 
         # new jobs will be spawned for each data product as its processed further
         for data_product in payload.products:

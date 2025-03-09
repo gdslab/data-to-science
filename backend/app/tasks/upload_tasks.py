@@ -14,7 +14,7 @@ from app import crud, schemas
 from app.api.deps import get_db
 from app.api.utils import is_geometry_match
 from app.core.celery_app import celery_app
-from app.tasks.job_manager import JobManager
+from app.utils.job_manager import JobManager
 from app.schemas.data_product import DataProductUpdate
 from app.schemas.job import Status
 from app.utils.ImageProcessor import ImageProcessor
