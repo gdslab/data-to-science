@@ -138,7 +138,6 @@ def handle_tusd_http_hooks(
                         user_id=current_user.id,
                         storage_path=Path(storage.Path),
                         original_filename=Path(payload.Event.Upload.MetaData.filename),
-                        dtype=data_type,
                         project_id=project.id,
                         flight_id=flight.id,
                     )
