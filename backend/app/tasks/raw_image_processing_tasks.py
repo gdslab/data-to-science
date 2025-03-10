@@ -2,10 +2,12 @@ import asyncio
 import json
 import os
 import secrets
+import shutil
 from datetime import datetime, timezone
-from typing import Dict, Optional, Tuple
+from typing import Dict, Tuple
 from uuid import UUID
 
+from celery import Task
 from celery.utils.log import get_task_logger
 
 from app import crud, schemas
@@ -23,16 +25,78 @@ from app.utils.unique_id import generate_unique_id
 logger = get_task_logger(__name__)
 
 
-def cleanup_on_external(destination_path: str) -> None:
-    try:
-        os.remove(destination_path)
-    except Exception:
-        logger.exception(
-            f"Error while cleaning up external storage: {destination_path}"
-        )
+def cleanup_on_external(destination_dir: str, raw_data_identifier: str) -> None:
+    """Remove file from external storage.
+
+    Args:
+        destination_dir (str): Destination directory.
+        raw_data_identifier (str): Unique identifier for raw data.
+    """
+    raw_data_zip = os.path.join(destination_dir, f"{raw_data_identifier}.zip")
+    raw_data_info = os.path.join(destination_dir, f"{raw_data_identifier}.info")
+    raw_data_partial_dir = os.path.join(
+        destination_dir, f".rsync-partial-{raw_data_identifier}"
+    )
+
+    if os.path.exists(raw_data_zip):
+        try:
+            os.remove(raw_data_zip)
+        except Exception:
+            logger.exception(
+                f"Error while cleaning up external storage: {raw_data_zip}"
+            )
+
+    if os.path.exists(raw_data_info):
+        try:
+            os.remove(raw_data_info)
+        except Exception:
+            logger.exception(
+                f"Error while cleaning up external storage: {raw_data_info}"
+            )
+
+    if os.path.exists(raw_data_partial_dir):
+        try:
+            shutil.rmtree(raw_data_partial_dir)
+        except Exception:
+            logger.exception(
+                f"Error while cleaning up external storage: {raw_data_partial_dir}"
+            )
 
 
 async def async_transfer(
+    source_path: str,
+    destination_path: str,
+    raw_data_identifier: str,
+) -> None:
+    """Transfer raw data to external storage using rsync.
+
+    Args:
+        source_path (str): Path to raw data on local server.
+        destination_path (str): Destination for raw data on remote server.
+        raw_data_identifier (str): Unique identifier for raw data.
+    """
+    process = await asyncio.create_subprocess_exec(
+        "rsync",
+        "-az",
+        "--partial",  # keep partially transferred files
+        f"--partial-dir=.rsync-partial-{raw_data_identifier}",
+        source_path,
+        destination_path,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+
+    _, stderr = await process.communicate()
+
+    if process.returncode != 0:
+        raise Exception(f"Transfer failed: {stderr.decode()}")
+
+
+@celery_app.task(
+    name="transfer_raw_data_task", bind=True, max_retries=3, default_retry_delay=60
+)
+def transfer_raw_data(
+    self: Task,
     external_storage_dir: str,
     storage_path: str,
     original_filename: str,
@@ -42,51 +106,70 @@ async def async_transfer(
     user_id: UUID,
     job_id: UUID,
     ip_settings: Dict,
-) -> Tuple[UUID, Optional[str]]:
+) -> Tuple[UUID, str]:
+    """Transfer raw data to external storage using rsync.
+
+    Args:
+        self (Task): Celery task instance.
+        external_storage_dir (str): External storage directory.
+        storage_path (str): Raw data storage path.
+        original_filename (str): Original filename of raw data.
+        project_id (UUID): Project ID.
+        flight_id (UUID): Flight ID.
+        raw_data_id (UUID): Raw data ID.
+        user_id (UUID): User ID.
+        job_id (UUID): Job ID.
+        ip_settings (Dict): Image processing settings.
+
+    Raises:
+        Exception: Raised if transfer fails.
+
+    Returns:
+        Tuple[UUID, Optional[str]]: Job ID and generated raw data identifier.
+    """
     logger.info(f"Transferring raw data to external storage for job {job_id}")
 
-    # Create database session
+    # Create database session and start job
     db = next(get_db())
+    job = JobManager(job_id=job_id)
+    job.start()
 
+    # Construct destination directory and path
+    destination_dir = os.path.join(external_storage_dir, "raw_data")
+    if not os.path.exists(destination_dir):
+        os.makedirs(destination_dir)
+    raw_data_identifier = generate_unique_id()
+    destination_path = os.path.join(destination_dir, f"{raw_data_identifier}.zip")
+
+    # Attempt to transfer raw data with up to 3 retries
     try:
-        # Start current job
-        job = JobManager(job_id=job_id)
-        job.start()
+        asyncio.run(async_transfer(storage_path, destination_path, raw_data_identifier))
+    except Exception as exc:
+        logger.exception(f"Error while transferring raw data for job {job_id}")
+        # Check if we've reached max retries
+        if self.request.retries >= self.max_retries:
+            logger.error(f"Max retries reached for job {job_id}")
+            job.update(status=Status.FAILED)
+            cleanup_on_external(destination_dir, raw_data_identifier)
+            raise exc
+        else:
+            logger.info(f"Retrying transfer for job {job_id}")
+            raise self.retry(exc=exc)
 
-        # Construct fullpath for raw data file on external storage
-        destination_dir = os.path.join(external_storage_dir, "raw_data")
-        if not os.path.exists(destination_dir):
-            os.makedirs(destination_dir)
+    # Create one time token
+    token = secrets.token_urlsafe()
+    crud.user.create_single_use_token(
+        db,
+        obj_in=schemas.SingleUseTokenCreate(
+            token=get_token_hash(token, salt="rawdata")
+        ),
+        user_id=user_id,
+    )
 
-        # Create unique id for raw data and copy file to external storage
-        raw_data_identifier = generate_unique_id()
-        destination_path = os.path.join(destination_dir, f"{raw_data_identifier}.zip")
-
-        # Transfer raw data to external storage
-        process = await asyncio.create_subprocess_exec(
-            "rsync",
-            "-avz",
-            storage_path,
-            destination_path,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-
-        _, stderr = await process.communicate()
-
-        # create one time token
-        token = secrets.token_urlsafe()
-        crud.user.create_single_use_token(
-            db,
-            obj_in=schemas.SingleUseTokenCreate(
-                token=get_token_hash(token, salt="rawdata")
-            ),
-            user_id=user_id,
-        )
-
-        with open(
-            os.path.join(destination_dir, raw_data_identifier + ".info"), "w"
-        ) as info_file:
+    # Write metadata to info file on remote server
+    try:
+        info_path = os.path.join(destination_dir, raw_data_identifier + ".info")
+        with open(info_path, "w") as info_file:
             raw_data_meta = {
                 "callback_url": (
                     f"{settings.API_DOMAIN}{settings.API_V1_STR}/projects/"
@@ -107,55 +190,12 @@ async def async_transfer(
                 "settings": ip_settings,
             }
             info_file.write(json.dumps(raw_data_meta))
-
-        if process.returncode != 0:
-            job.update(status=Status.FAILED)
-            logger.error(f"Transfer failed for job {job_id}")
-            cleanup_on_external(destination_path)
-            raise Exception(f"Transfer failed: {stderr.decode()}")
-
     except Exception:
-        logger.exception("Transfer failed for job {job_id}")
+        logger.exception("Error while writing metadata to info file")
         job.update(status=Status.FAILED)
-        cleanup_on_external(destination_path)
-        return job_id, None
+        cleanup_on_external(destination_dir, raw_data_identifier)
 
     logger.info(f"Transfer successful for job {job_id}")
-
-    return job_id, raw_data_identifier
-
-
-@celery_app.task(name="transfer_raw_data_task")
-def transfer_raw_data(
-    external_storage_dir: str,
-    storage_path: str,
-    original_filename: str,
-    project_id: UUID,
-    flight_id: UUID,
-    raw_data_id: UUID,
-    user_id: UUID,
-    job_id: UUID,
-    ip_settings: Dict,
-) -> Tuple[UUID, str]:
-    job_id, raw_data_identifier = asyncio.run(
-        async_transfer(
-            external_storage_dir,
-            storage_path,
-            original_filename,
-            project_id,
-            flight_id,
-            raw_data_id,
-            user_id,
-            job_id,
-            ip_settings,
-        )
-    )
-
-    if not raw_data_identifier:
-        job = JobManager(job_id=job_id)
-        job.update(status=Status.FAILED)
-        logger.error(f"Error while transferring raw data for job {job_id}")
-        raise Exception("Error while transferring raw data")
 
     return job_id, raw_data_identifier
 
