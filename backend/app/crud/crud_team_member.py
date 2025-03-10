@@ -336,8 +336,10 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
             # Select team member by id
             statement = (
                 select(TeamMember)
+                .join(TeamMember.team)
                 .where(TeamMember.member_id == member_id)
                 .where(TeamMember.team_id == team_id)
+                .where(Team.owner_id != member_id)
             )
             team_member = session.scalar(statement)
             # Delete team member if found

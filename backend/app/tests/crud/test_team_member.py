@@ -304,3 +304,20 @@ def test_remove_team_member_by_id(db: Session) -> None:
     assert member_in_db_after_removed is None
     assert member_removed.id == member.id
     assert member_removed.member_id == member.member_id
+
+
+def test_remove_team_creator(db: Session) -> None:
+    """Verify attempt to remove team creator fails."""
+    team_owner = create_user(db)
+    team = create_team(db, owner_id=team_owner.id)
+    # Attempt to remove team creator
+    removed_member = crud.team_member.remove_team_member(
+        db, member_id=team_owner.id, team_id=team.id
+    )
+    assert removed_member is None
+    # Verify team creator still exists
+    team_owner_after_remove = crud.team_member.get_team_member_by_id(
+        db, user_id=team_owner.id, team_id=team.id
+    )
+    assert team_owner_after_remove
+    assert team_owner_after_remove.role == Role.OWNER
