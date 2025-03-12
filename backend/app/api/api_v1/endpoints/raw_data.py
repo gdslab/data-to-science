@@ -1,5 +1,6 @@
 import logging
 import os
+from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List
 from uuid import UUID
@@ -18,6 +19,7 @@ from app.tasks.raw_image_processing_tasks import (
     process_raw_data as process_raw_data_task,
     transfer_raw_data,
 )
+from app.tasks.utils import is_valid_filename
 from app.utils.job_manager import JobManager
 from app.utils.RpcClient import RpcClient
 
@@ -229,6 +231,23 @@ def process_raw_data(
     external_storage_dir = os.environ.get("EXTERNAL_STORAGE")
     rabbitmq_host = os.environ.get("RABBITMQ_HOST")
 
+    # create name for processing project on remote server
+    if isinstance(flight.sensor, Enum):
+        sensor = flight.sensor.value
+    else:
+        sensor = flight.sensor
+
+    prj_name = (
+        project.title[:10].strip().replace(" ", "_")
+        + "_"
+        + flight.acquisition_date.strftime("%Y%m%d")
+        + "_"
+        + sensor
+    )
+
+    if not is_valid_filename(prj_name):
+        prj_name = "d2s-project"
+
     # only start this workflow if external storage and rabbitmq host are provided
     if external_storage_dir and os.path.isdir(external_storage_dir) and rabbitmq_host:
         chain(
@@ -236,6 +255,7 @@ def process_raw_data(
                 external_storage_dir,
                 storage_path,
                 raw_data.original_filename,
+                prj_name,
                 project.id,
                 raw_data.flight_id,
                 raw_data.id,

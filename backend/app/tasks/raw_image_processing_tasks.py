@@ -15,7 +15,6 @@ from app.api.deps import get_db
 from app.core.celery_app import celery_app
 from app.core.config import settings
 from app.core.security import get_token_hash
-from app.utils.job_manager import JobManager
 from app.schemas.job import Status
 from app.utils.job_manager import JobManager
 from app.utils.RpcClient import RpcClient
@@ -100,6 +99,7 @@ def transfer_raw_data(
     external_storage_dir: str,
     storage_path: str,
     original_filename: str,
+    prj_name: str,
     project_id: UUID,
     flight_id: UUID,
     raw_data_id: UUID,
@@ -179,6 +179,7 @@ def transfer_raw_data(
                 "created_at": datetime.now(tz=timezone.utc).strftime(
                     "%Y-%m-%dT%H:%M:%S"
                 ),
+                "prj_name": prj_name,
                 "flight_id": str(flight_id),
                 "original_filename": original_filename,
                 "project_id": str(project_id),
