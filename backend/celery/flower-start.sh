@@ -13,4 +13,4 @@ until worker_ready; do
 done
 echo 'Celery workers are available'
 
-celery -A app.core.celery_app -b "${CELERY_BROKER_URL}" flower
+celery -A app.core.celery_app -b "${CELERY_BROKER_URL}" flower --url_prefix=/celery
