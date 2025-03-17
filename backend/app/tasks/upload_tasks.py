@@ -22,6 +22,9 @@ from app.utils.ImageProcessor import ImageProcessor
 
 logger = get_task_logger(__name__)
 
+# 32 MB buffer size for copying files
+BUFFER_SIZE = 32 * 1024 * 1024
+
 
 @celery_app.task(name="upload_geotiff_task")
 def upload_geotiff(
@@ -42,8 +45,9 @@ def upload_geotiff(
     """
     in_raster = Path(geotiff_filepath)
 
-    # copy uploaded point cloud to static files
-    shutil.copyfile(storage_path, in_raster)
+    # copy uploaded GeoTIFF to static files
+    with open(storage_path, "rb") as src, open(in_raster, "wb") as dst:
+        shutil.copyfileobj(src, dst, length=BUFFER_SIZE)
 
     # get database session
     db = next(get_db())
@@ -153,7 +157,8 @@ def upload_point_cloud(
     in_las = Path(las_filepath)
 
     # copy uploaded point cloud to static files
-    shutil.copyfile(storage_path, in_las)
+    with open(storage_path, "rb") as src, open(in_las, "wb") as dst:
+        shutil.copyfileobj(src, dst, length=BUFFER_SIZE)
 
     # get database session
     db = next(get_db())
@@ -258,6 +263,9 @@ def upload_raw_data(
         project_ID (UUID): ID for project associated with raw data.
         user_id (UUID): ID for user associated with raw data upload.
     """
+    # 128 MB buffer size for copying files
+    BUFFER_SIZE = 128 * 1024 * 1024
+
     # get database session
     db = next(get_db())
 
@@ -278,7 +286,8 @@ def upload_raw_data(
     job.start()
     try:
         # copy uploaded raw data to static files and update record
-        shutil.copyfile(storage_path, destination_filepath)
+        with open(storage_path, "rb") as src, open(destination_filepath, "wb") as dst:
+            shutil.copyfileobj(src, dst, length=BUFFER_SIZE)
 
         # add filepath to raw data object
         crud.raw_data.update(
