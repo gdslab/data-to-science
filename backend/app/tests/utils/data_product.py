@@ -74,7 +74,12 @@ class SampleDataProduct:
         if not skip_job:
             self.job = create_job(db, data_product_id=self.obj.id)
 
-    def copy_test_data_product_to_test_directory(self) -> tuple[str, str]:
+    def copy_test_data_product_to_test_directory(self) -> str:
+        """Copy test data product to test directory.
+
+        Returns:
+            str: Filepath of the copied data product.
+        """
         src_filepath = self.test_data_product
         dest_filepath = os.path.join(
             f"{settings.TEST_STATIC_DIR}/projects/{self.project.id}"
@@ -87,7 +92,17 @@ class SampleDataProduct:
 
     def create_data_product_in_database(
         self, db: Session, filename: str, filepath: str
-    ):
+    ) -> models.DataProduct:
+        """Create data product in database.
+
+        Args:
+            db (Session): Database session.
+            filename (str): Filename of the data product.
+            filepath (str): Filepath of the data product.
+
+        Returns:
+            models.DataProduct: Data product object.
+        """
         data_product_in = DataProductCreate(
             data_type=self.data_type,
             filepath=filepath,
@@ -99,7 +114,18 @@ class SampleDataProduct:
         )
         return data_product_in_db
 
-    def update_data_product_filepath_in_database(self, db: Session, filepath: str):
+    def update_data_product_filepath_in_database(
+        self, db: Session, filepath: str
+    ) -> models.DataProduct:
+        """Update data product filepath in database.
+
+        Args:
+            db (Session): Database session.
+            filepath (str): Filepath of the data product.
+
+        Returns:
+            models.DataProduct: Data product object.
+        """
         data_product_in = DataProductUpdate(
             filepath=filepath, is_initial_processing_completed=True
         )

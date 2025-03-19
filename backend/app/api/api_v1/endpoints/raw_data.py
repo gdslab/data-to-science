@@ -15,6 +15,7 @@ from app.api import deps
 from app.core.config import settings
 from app.schemas.job import State, Status
 from app.schemas.raw_data import ImageProcessingQueryParams
+from app.schemas.role import Role
 from app.tasks.raw_image_processing_tasks import (
     process_raw_data as process_raw_data_task,
     transfer_raw_data,
@@ -130,21 +131,13 @@ def read_all_raw_data(
 @router.delete("/{raw_data_id}", response_model=schemas.RawData)
 def deactivate_raw_data(
     raw_data_id: UUID,
-    project: models.Project = Depends(deps.can_read_write_project),
+    project: schemas.Project = Depends(deps.can_read_write_project),
     flight: models.Flight = Depends(deps.can_read_write_flight),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    if not project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
-        )
-    if not hasattr(project, "role") or project.role != "owner":
+    if not hasattr(project, "role") or project.role != Role.OWNER:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Access forbidden"
-        )
-    if not flight:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
     deactivated_raw_data = crud.raw_data.deactivate(db, raw_data_id=raw_data_id)
     if not deactivated_raw_data:
@@ -158,7 +151,7 @@ def deactivate_raw_data(
 def process_raw_data(
     raw_data_id: UUID,
     ip_settings: ImageProcessingQueryParams = Depends(),
-    project: models.Project = Depends(deps.can_read_write_project),
+    project: schemas.Project = Depends(deps.can_read_write_project),
     flight: models.Flight = Depends(deps.can_read_write_flight),
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
@@ -283,7 +276,7 @@ def process_raw_data(
 def check_raw_data_processing_progress(
     raw_data_id: UUID,
     job_id: UUID,
-    project: models.Project = Depends(deps.can_read_write_project),
+    project: schemas.Project = Depends(deps.can_read_write_project),
     flight: models.Flight = Depends(deps.can_read_write_flight),
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),

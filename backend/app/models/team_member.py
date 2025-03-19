@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.schema import UniqueConstraint
 
 from app.db.base_class import Base
-from app.schemas.team_member import Role
+from app.schemas.role import Role
 
 
 if TYPE_CHECKING:
@@ -24,15 +24,17 @@ class TeamMember(Base):
     role: Mapped[Role] = mapped_column(
         ENUM(Role, name="member_role"),
         nullable=False,
-        default=Role.MEMBER,
-        server_default="MEMBER",
+        default=Role.VIEWER,
+        server_default="VIEWER",
     )
     member_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
     team_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("teams.id"), nullable=False)
 
+    # Define relationships
     member: Mapped["User"] = relationship(back_populates="team_memberships")
     team: Mapped["Team"] = relationship(back_populates="members")
 
+    # Ensure that a user can only be a member of a team once
     __table_args__ = (UniqueConstraint("member_id", "team_id", name="unique_to_team"),)
 
     def __repr__(self) -> str:

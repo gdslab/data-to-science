@@ -18,7 +18,8 @@ from app.models.team import Team
 from app.models.team_member import TeamMember
 from app.models.user import User
 from app.schemas.project_member import ProjectMemberCreate
-from app.schemas.team_member import Role, TeamMemberCreate, TeamMemberUpdate
+from app.schemas.role import Role
+from app.schemas.team_member import TeamMemberCreate, TeamMemberUpdate
 
 
 logger = logging.getLogger("__name__")
@@ -70,7 +71,7 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
             if is_team_owner:
                 role = Role.OWNER
             else:
-                role = Role.MEMBER
+                role = Role.VIEWER
             team_member = TeamMember(member_id=user_obj.id, team_id=team_id, role=role)
             session.add(team_member)
             session.commit()
@@ -104,7 +105,7 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
                 else:
                     # Elevate project member role to "owner" if user is team owner
                     if is_team_owner:
-                        project_member.role = "owner"
+                        project_member.role = Role.OWNER
                         session.commit()
 
         return team_member
@@ -297,7 +298,7 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
                 )
                 # Check if team member role changed from "member" to "owner"
                 if (
-                    previous_team_member_role == Role.MEMBER
+                    previous_team_member_role == Role.VIEWER
                     and updated_team_member.role == Role.OWNER
                 ):
                     # Find all projects associated with team
@@ -309,7 +310,7 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
                             update(ProjectMember)
                             .where(ProjectMember.project_id.in_(project_ids))
                             .where(ProjectMember.member_id == team_member.member_id)
-                            .values(role="owner")
+                            .values(role=Role.OWNER)
                         )
                         session.execute(bulk_update_project_members)
 

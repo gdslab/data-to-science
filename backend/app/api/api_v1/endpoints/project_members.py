@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
-
+from app.schemas.role import Role
 
 router = APIRouter()
 
@@ -47,10 +47,7 @@ def create_project_members(
     _ = project, current_user  # noqa: F841
 
     # Create list of tuples with project member and role
-    new_members = [
-        (project_member, schemas.team_member.Role.MEMBER)
-        for project_member in project_members
-    ]
+    new_members = [(project_member, Role.VIEWER) for project_member in project_members]
     # Create project member objects
     project_member_objs = crud.project_member.create_multi_with_project(
         db, new_members=new_members, project_id=project_id

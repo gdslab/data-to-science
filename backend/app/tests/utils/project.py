@@ -1,13 +1,14 @@
 from datetime import date
-from typing import Dict, Union
+from typing import Dict
 from uuid import UUID
 
 from faker import Faker
 from geojson_pydantic import Feature, Polygon
 from sqlalchemy.orm import Session
 
-from app import crud, models
-from app.schemas.project import Project, ProjectCreate
+from app import crud
+from app.models.project import Project
+from app.schemas.project import ProjectCreate
 from app.tests.utils.user import create_user
 from app.tests.utils.utils import (
     get_geojson_feature_collection,
@@ -28,7 +29,7 @@ def create_project(
     location: Feature[Polygon, Dict] | None = None,
     owner_id: UUID | None = None,
     team_id: UUID | None = None,
-) -> models.Project:
+) -> Project:
     """Create random project with no team association."""
     if owner_id is None:
         user = create_user(db)
@@ -63,22 +64,49 @@ def create_project(
     if project["response_code"] != 201:
         raise ValueError(project["message"])
     elif project["result"]:
-        return project["result"]
+        project_obj = crud.project.get(db, id=project["result"].id)
+        if project_obj is None:
+            raise ValueError("Unable to create project")
+        return project_obj
     else:
         raise ValueError("Unable to create project")
 
 
 def random_harvest_date() -> date:
-    """Create random harvest datetime between Sep. and Oct. of current year."""
-    return faker.date_between(
+    """Create random harvest datetime between Sep. and Oct. of current year.
+
+    Raises:
+        TypeError: If faker returns anything other than a date object
+
+    Returns:
+        date: A random date between Sept 1 and Oct 31 of current year
+    """
+    harvest_date = faker.date_between(
         start_date=date(date.today().year, 9, 1),
         end_date=date(date.today().year, 10, 31),
     )
 
+    if not isinstance(harvest_date, date):
+        raise TypeError(f"Expected date object but got {type(harvest_date)}")
+
+    return harvest_date
+
 
 def random_planting_date() -> date:
-    """Create random planting datetime between Apr. and May of current year."""
-    return faker.date_between(
+    """Create random planting datetime between Apr. and May of current year.
+
+    Raises:
+        TypeError: If faker returns anything other than a date object
+
+    Returns:
+        date: A random date between Apr 1 and May 31 of current year
+    """
+    planting_date = faker.date_between(
         start_date=date(date.today().year, 4, 1),
         end_date=date(date.today().year, 5, 31),
     )
+
+    if not isinstance(planting_date, date):
+        raise TypeError(f"Expected date object but got {type(planting_date)}")
+
+    return planting_date

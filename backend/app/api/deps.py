@@ -1,7 +1,7 @@
 import logging
 import os
 from collections.abc import Generator
-from typing import Optional
+from typing import Any, Optional, Union
 from uuid import UUID
 
 from fastapi import BackgroundTasks, Depends, HTTPException, status
@@ -16,6 +16,8 @@ from app import crud, models, schemas
 from app.core import security
 from app.core.config import settings
 from app.core.mail import fm
+from app.crud.crud_flight import ReadFlight
+from app.crud.crud_project import ReadProject
 from app.db.session import SessionLocal
 from app.api.utils import is_valid_api_key, str_to_bool
 
@@ -247,141 +249,137 @@ def can_read_write_delete_team(
     return team
 
 
+def verify_resource_response(
+    response: Union[dict, ReadProject, ReadFlight], resource_name: str
+) -> Any:
+    """Common verification logic for resource responses."""
+    if response["response_code"] != status.HTTP_200_OK:
+        raise HTTPException(
+            status_code=response["response_code"],
+            detail=response["message"],
+        )
+    result = response["result"]
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"{resource_name} not found"
+        )
+    return result
+
+
 def can_read_project(
     project_id: UUID,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_approved_user),
-) -> Optional[models.Project]:
+) -> schemas.Project:
     """Return project is current user is project owner, manager, or viewer."""
-    project = crud.project.get_user_project(
+    project_response = crud.project.get_user_project(
         db, user_id=current_user.id, project_id=project_id, permission="r"
     )
-    if project["response_code"] != status.HTTP_200_OK:
-        raise HTTPException(
-            status_code=project["response_code"], detail=project["message"]
-        )
-    return project["result"]
+    project = verify_resource_response(project_response, "Project")
+    return project
 
 
 def can_read_write_project(
     project_id: UUID,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_approved_user),
-) -> Optional[models.Project]:
+) -> schemas.Project:
     """Return project if current user is project owner or manager."""
     if current_user.is_demo:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
         )
-    project = crud.project.get_user_project(
+    project_response = crud.project.get_user_project(
         db, user_id=current_user.id, project_id=project_id, permission="rw"
     )
-    if project["response_code"] != status.HTTP_200_OK:
-        raise HTTPException(
-            status_code=project["response_code"], detail=project["message"]
-        )
-    return project["result"]
+    project = verify_resource_response(project_response, "Project")
+    return project
 
 
 def can_read_write_project_with_jwt_or_api_key(
     project_id: UUID,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_approved_user_by_jwt_or_api_key),
-) -> Optional[models.Project]:
+) -> schemas.Project:
     """Return project if current user is project owner or manager."""
     if current_user.is_demo:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
         )
-    project = crud.project.get_user_project(
+    project_response = crud.project.get_user_project(
         db, user_id=current_user.id, project_id=project_id, permission="rw"
     )
-    if project["response_code"] != status.HTTP_200_OK:
-        raise HTTPException(
-            status_code=project["response_code"], detail=project["message"]
-        )
-    return project["result"]
+    project = verify_resource_response(project_response, "Project")
+    return project
 
 
 def can_read_write_delete_project(
     project_id: UUID,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_approved_user),
-) -> Optional[models.Project]:
+) -> schemas.Project:
     """Return project if current user is project owner."""
     if current_user.is_demo:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
         )
-    project = crud.project.get_user_project(
+    project_response = crud.project.get_user_project(
         db, user_id=current_user.id, project_id=project_id, permission="rwd"
     )
-    if project["response_code"] != status.HTTP_200_OK:
-        raise HTTPException(
-            status_code=project["response_code"], detail=project["message"]
-        )
-    return project["result"]
+    project = verify_resource_response(project_response, "Project")
+    return project
 
 
 def can_read_flight(
     flight_id: UUID,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_approved_user),
-    project: models.Project = Depends(can_read_project),
-) -> Optional[models.Flight]:
+    project: schemas.Project = Depends(can_read_project),
+) -> models.Flight:
     """Return flight if current user is project owner, manager, or viewer."""
-    flight = crud.flight.get_flight_by_id(
+    flight_response = crud.flight.get_flight_by_id(
         db, project_id=project.id, flight_id=flight_id
     )
-    if flight["response_code"] != status.HTTP_200_OK:
-        raise HTTPException(
-            status_code=flight["response_code"], detail=flight["message"]
-        )
-    return flight["result"]
+    flight = verify_resource_response(flight_response, "Flight")
+    return flight
 
 
 def can_read_write_flight(
     flight_id: UUID,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_approved_user),
-    project: models.Project = Depends(can_read_write_project),
-) -> Optional[models.Flight]:
+    project: schemas.Project = Depends(can_read_write_project),
+) -> models.Flight:
     """Return flight if current user is project owner or manager."""
     if current_user.is_demo:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
         )
-    flight = crud.flight.get_flight_by_id(
+    flight_response = crud.flight.get_flight_by_id(
         db, project_id=project.id, flight_id=flight_id
     )
-    if flight["response_code"] != status.HTTP_200_OK:
-        raise HTTPException(
-            status_code=flight["response_code"], detail=flight["message"]
-        )
-    if flight["result"] and flight["result"].read_only:
+    flight = verify_resource_response(flight_response, "Flight")
+    if flight and flight.read_only:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Flight currently locked. Please try again later.",
         )
-    return flight["result"]
+    return flight
 
 
 def can_read_write_delete_flight(
     flight_id: UUID,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_approved_user),
-    project: models.Project = Depends(can_read_write_delete_project),
-) -> Optional[models.Flight]:
+    project: schemas.Project = Depends(can_read_write_delete_project),
+) -> models.Flight:
     """Return flight if current user is project owner."""
     if current_user.is_demo:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
         )
-    flight = crud.flight.get_flight_by_id(
+    flight_response = crud.flight.get_flight_by_id(
         db, project_id=project.id, flight_id=flight_id
     )
-    if flight["response_code"] != status.HTTP_200_OK:
-        raise HTTPException(
-            status_code=flight["response_code"], detail=flight["message"]
-        )
-    return flight["result"]
+    flight = verify_resource_response(flight_response, "Flight")
+    return flight

@@ -82,7 +82,7 @@ def test_create_project_creates_project_member_for_owner(db: Session) -> None:
         db, project_id=project.id, member_id=user.id
     )
     assert project_member
-    assert project_member.role == "owner"
+    assert project_member.role == Role.OWNER
     assert user.id == project_member.member_id
     assert project.id == project_member.project_id
 
@@ -180,12 +180,10 @@ def test_get_projects_with_data_products_by_type(db: Session) -> None:
         flight = create_flight(db, project_id=project.id)
         # add raster data product to first project
         if project_idx == 0:
-            raster_data_product = SampleDataProduct(
-                db, data_type="ortho", flight=flight, project=project
-            )
+            SampleDataProduct(db, data_type="ortho", flight=flight, project=project)
         # add point cloud data product to second project
         if project_idx == 1:
-            point_cloud_data_product = crud.data_product.create_with_flight(
+            crud.data_product.create_with_flight(
                 db,
                 obj_in=schemas.DataProductCreate(
                     data_type="point_cloud",
@@ -277,7 +275,7 @@ def test_update_project_with_team(db: Session) -> None:
     assert len(project_members) == 2  # Original project owner and team owner
     # Both project members should be owners
     for project_member in project_members:
-        assert project_member.role == "owner"
+        assert project_member.role == Role.OWNER
 
 
 def test_update_project_with_team_not_owned_by_user(db: Session) -> None:
@@ -397,5 +395,5 @@ def test_get_projects_ignores_deactivated_projects(db: Session) -> None:
     assert projects
     assert isinstance(projects, list)
     assert len(projects) == 2
-    for project in projects:
-        assert project.id in [project.id, project2.id]
+    for project_obj in projects:
+        assert project_obj.id in [project.id, project2.id]

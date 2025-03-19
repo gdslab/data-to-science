@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.schemas.data_product import DataProductCreate
 from app.schemas.project import ProjectUpdate
 from app.schemas.project_member import ProjectMemberCreate
+from app.schemas.role import Role
 from app.schemas.user import UserUpdate
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.flight import create_flight
@@ -257,7 +258,7 @@ def test_get_project_with_manager_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
     create_project_member(
-        db, email=current_user.email, project_id=project.id, role="manager"
+        db, email=current_user.email, project_id=project.id, role=Role.MANAGER
     )
     response = client.get(f"{API_URL}/{project.id}")
     assert response.status_code == status.HTTP_200_OK
@@ -269,7 +270,7 @@ def test_get_project_with_viewer_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
     create_project_member(
-        db, email=current_user.email, project_id=project.id, role="viewer"
+        db, email=current_user.email, project_id=project.id, role=Role.VIEWER
     )
     response = client.get(f"{API_URL}/{project.id}")
     assert response.status_code == status.HTTP_200_OK
@@ -416,13 +417,17 @@ def test_update_project_with_owner_role(
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db, owner_id=current_user.id)
+    location = create_location(db)
+    assert hasattr(location, "properties")
+    assert isinstance(location.properties, dict)
+    assert "id" in location.properties
     project_in = jsonable_encoder(
         ProjectUpdate(
             title=random_team_name(),
             description=random_team_description(),
             planting_date=random_planting_date(),
             harvest_date=random_harvest_date(),
-            location_id=create_location(db).properties["id"],
+            location_id=location.properties["id"],
         ).model_dump()
     )
     response = client.put(f"{API_URL}/{project.id}", json=project_in)
@@ -443,17 +448,23 @@ def test_update_project_with_manager_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
     # add current user to project
-    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="manager")
-    proj_mem = crud.project_member.create_with_project(
+    project_member_in = ProjectMemberCreate(
+        member_id=current_user.id, role=Role.MANAGER
+    )
+    crud.project_member.create_with_project(
         db, obj_in=project_member_in, project_id=project.id
     )
+    location = create_location(db)
+    assert hasattr(location, "properties")
+    assert isinstance(location.properties, dict)
+    assert "id" in location.properties
     update_data = jsonable_encoder(
         {
             "title": random_team_name(),
             "description": random_team_description(),
             "planting_date": random_planting_date(),
             "harvest_date": random_harvest_date(),
-            "location_id": create_location(db).properties["id"],
+            "location_id": location.properties["id"],
         }
     )
     response = client.put(f"{API_URL}/{project.id}", json=update_data)
@@ -478,13 +489,17 @@ def test_update_project_with_viewer_role(
     crud.project_member.create_with_project(
         db, obj_in=project_member_in, project_id=project.id
     )
+    location = create_location(db)
+    assert hasattr(location, "properties")
+    assert isinstance(location.properties, dict)
+    assert "id" in location.properties
     update_data = jsonable_encoder(
         {
             "title": random_team_name(),
             "description": random_team_description(),
             "planting_date": random_planting_date(),
             "harvest_date": random_harvest_date(),
-            "location_id": create_location(db).properties["id"],
+            "location_id": location.properties["id"],
         }
     )
     response = client.put(f"{API_URL}/{project.id}", json=update_data)
@@ -495,13 +510,17 @@ def test_update_project_with_non_project_member(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     project = create_project(db)
+    location = create_location(db)
+    assert hasattr(location, "properties")
+    assert isinstance(location.properties, dict)
+    assert "id" in location.properties
     update_data = jsonable_encoder(
         {
             "title": random_team_name(),
             "description": random_team_description(),
             "planting_date": random_planting_date(),
             "harvest_date": random_harvest_date(),
-            "location_id": create_location(db).properties["id"],
+            "location_id": location.properties["id"],
         }
     )
     response = client.put(f"{API_URL}/{project.id}", json=update_data)
@@ -536,7 +555,7 @@ def test_update_project_without_team_with_a_team(
         db, project_id=project.id
     )
     for project_member in project_members:
-        if project_member.role != "owner":
+        if project_member.role != Role.OWNER:
             assert project_member.member_id in team_member_ids
 
 
@@ -569,7 +588,7 @@ def test_update_project_with_new_team_replacing_old_team(
     )
     assert len(project_members) == 11  # ten team members plus owner
     for project_member in project_members:
-        if project_member.role != "owner":
+        if project_member.role != Role.OWNER:
             assert (
                 project_member.member_id in new_team_member_ids
                 or project_member.member_id in current_team_member_ids
@@ -713,7 +732,7 @@ def test_deactivate_project_with_manager_role(
     )
     project = create_project(db, owner_id=owner.id)
     create_project_member(
-        db, email=current_user.email, project_id=project.id, role="readwrite"
+        db, email=current_user.email, project_id=project.id, role=Role.MANAGER
     )
     response = client.delete(f"{API_URL}/{project.id}")
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -791,7 +810,9 @@ def test_deactivate_project_deactivates_flights_and_data_products(
     assert response_data.get("is_active", True) is False
     for flight_id in flight_ids:
         deactivated_flight = crud.flight.get(db, id=flight_id)
+        assert deactivated_flight is not None
         assert deactivated_flight.is_active is False
     for data_product_id in data_product_ids:
         deactivated_data_product = crud.data_product.get(db, id=data_product_id)
+        assert deactivated_data_product is not None
         assert deactivated_data_product.is_active is False

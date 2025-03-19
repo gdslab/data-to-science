@@ -3,8 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
-from app.models.project import Project
-from app.schemas.team_member import Role
+from app.schemas.role import Role
 from app.tests.utils.project import create_project
 from app.tests.utils.team import create_team
 from app.tests.utils.team_member import create_team_member
@@ -20,7 +19,7 @@ def test_create_team_member(db: Session) -> None:
     assert team_member
     assert user.id == team_member.member_id
     assert team.id == team_member.team_id
-    assert team_member.role == Role.MEMBER
+    assert team_member.role == Role.VIEWER
 
 
 def test_create_team_member_with_owner_role(db: Session) -> None:
@@ -182,7 +181,7 @@ def test_get_team_member_by_email(db: Session) -> None:
     assert member.full_name == f"{user.first_name} {user.last_name}"
     assert hasattr(member, "email")
     assert member.email == user.email
-    assert member.role == Role.MEMBER
+    assert member.role == Role.VIEWER
     assert hasattr(member, "profile_url")  # url to profile image or None
 
 
@@ -201,7 +200,7 @@ def test_get_team_member_by_id(db: Session) -> None:
     assert member.full_name == f"{user.first_name} {user.last_name}"
     assert hasattr(member, "email")
     assert member.email == user.email
-    assert member.role == Role.MEMBER
+    assert member.role == Role.VIEWER
     assert hasattr(member, "profile_url")  # url to profile image or None
 
 
@@ -222,15 +221,15 @@ def test_get_list_of_team_members(db: Session) -> None:
         if team.owner_id == team_member.member_id:
             assert team_member.role == Role.OWNER
         else:
-            assert team_member.role == Role.MEMBER
+            assert team_member.role == Role.VIEWER
 
 
 def test_update_team_member_role(db: Session) -> None:
-    """Elevate team member from "member" role to "owner" role."""
+    """Elevate team member from "viewer" role to "owner" role."""
     team_creator = create_user(db)
     team = create_team(db, owner_id=team_creator.id)
     member = create_team_member(db, team_id=team.id)
-    assert member.role == Role.MEMBER
+    assert member.role == Role.VIEWER
     team_member_in = schemas.TeamMemberUpdate(role=Role.OWNER)
     member_updated = crud.team_member.update(db, db_obj=member, obj_in=team_member_in)
     team_creator_member = crud.team_member.get_team_member_by_id(
@@ -245,7 +244,7 @@ def test_update_team_member_role(db: Session) -> None:
 def test_update_team_member_role_also_updates_project_member_role(db: Session) -> None:
     team_owner = create_user(db)
     team = create_team(db, owner_id=team_owner.id)
-    # Create team member with "member" role
+    # Create team member with "viewer" role
     team_member = create_team_member(db, team_id=team.id)
     # Create project and assign team to it
     project = create_project(db, owner_id=team_owner.id, team_id=team.id)
@@ -264,11 +263,11 @@ def test_update_team_member_role_also_updates_project_member_role(db: Session) -
     assert len(project_members) == 2
     # Project should have two members with "owner" role - creator and updated team member
     for project_member in project_members:
-        assert project_member.role == Role.OWNER.value
+        assert project_member.role == Role.OWNER
 
 
 def test_update_team_member_role_of_team_creator(db: Session) -> None:
-    """Verify team creator cannot be demoted to "member" role."""
+    """Verify team creator cannot be demoted to "viewer" role."""
     team_owner = create_user(db)
     team = create_team(db, owner_id=team_owner.id)
     team_member = crud.team_member.get_team_member_by_id(
@@ -276,7 +275,7 @@ def test_update_team_member_role_of_team_creator(db: Session) -> None:
     )
     assert team_member
     assert team_member.role == Role.OWNER
-    team_member_in = schemas.TeamMemberUpdate(role=Role.MEMBER)
+    team_member_in = schemas.TeamMemberUpdate(role=Role.VIEWER)
     member_updated = crud.team_member.update_team_member(
         db, team_member_in=team_member_in, team_member_id=team_member.id
     )

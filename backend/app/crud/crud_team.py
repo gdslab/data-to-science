@@ -37,7 +37,7 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
                 raise ValueError("Project not found")
             # Create list of project owner ids
             project_owners = crud.project_member.get_list_of_project_members(
-                db, project_id=project.id, role="owner"
+                db, project_id=project.id, role=Role.OWNER
             )
             project_owner_ids = [str(po.member_id) for po in project_owners]
             # Check if user is an owner of the project
@@ -70,7 +70,7 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
                 if user_id == str(owner_id):
                     role = Role.OWNER
                 else:
-                    role = Role.MEMBER
+                    role = Role.VIEWER
                 new_team_members.append(
                     TeamMember(member_id=user_id, team_id=team_db_obj.id, role=role)
                 )
@@ -183,7 +183,7 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
                 if not project:
                     return None
                 project_owners = crud.project_member.get_list_of_project_members(
-                    db, project_id=project.id, role="owner"
+                    db, project_id=project.id, role=Role.OWNER
                 )
                 project_owner_ids = [str(po.member_id) for po in project_owners]
                 if str(user_id) not in project_owner_ids:

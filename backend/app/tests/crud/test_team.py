@@ -2,6 +2,7 @@ import pytest
 from sqlalchemy.orm import Session
 
 from app import crud
+from app.schemas.role import Role
 from app.schemas.team import TeamUpdate
 from app.tests.utils.project import create_project
 from app.tests.utils.team import create_team
@@ -48,7 +49,7 @@ def test_create_team_with_project(db: Session) -> None:
     for project_member in project_members:
         assert project_member.member_id in [user.id, team_member1.id, team_member2.id]
         if project_member.member_id == user.id:
-            assert project_member.role == "owner"
+            assert project_member.role == Role.OWNER
 
 
 def test_create_team_with_project_not_owned_by_team_creator(db: Session) -> None:

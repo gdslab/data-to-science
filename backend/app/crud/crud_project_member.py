@@ -1,4 +1,4 @@
-from typing import List, Sequence, Tuple, TypedDict
+from typing import List, Optional, Sequence, Tuple, TypedDict
 from uuid import UUID
 
 from fastapi import status
@@ -14,7 +14,6 @@ from app.crud.crud_team_member import set_name_and_email_attr, set_url_attr
 from app.models.project import Project
 from app.models.project_member import ProjectMember
 from app.models.team import Team
-from app.models.team_member import TeamMember
 from app.models.user import User
 from app.schemas.project_member import ProjectMemberCreate, ProjectMemberUpdate
 from app.schemas.team_member import Role
@@ -31,34 +30,50 @@ class CRUDProjectMember(
 ):
     def create_with_project(
         self, db: Session, *, obj_in: ProjectMemberCreate, project_id: UUID
-    ) -> ProjectMember | None:
-        obj_in_data = jsonable_encoder(obj_in)
-        if "email" in obj_in_data and obj_in_data.get("email"):
-            statement = select(User).filter_by(email=obj_in_data.get("email"))
-            with db as session:
-                user_obj = session.scalars(statement).one_or_none()
-                if user_obj:
-                    db_obj = self.model(
-                        role=obj_in_data.get("role", "viewer"),
-                        member_id=user_obj.id,
-                        project_id=project_id,
-                    )
-                    session.add(db_obj)
-                    session.commit()
-                    session.refresh(db_obj)
-                else:
-                    db_obj = None
-        elif "member_id" in obj_in_data:
-            with db as session:
-                db_obj = self.model(
-                    member_id=obj_in_data.get("member_id"),
-                    role=obj_in_data.get("role", "viewer"),
-                    project_id=project_id,
-                )
-                session.add(db_obj)
-                session.commit()
-                session.refresh(db_obj)
-        return db_obj
+    ) -> Optional[ProjectMember]:
+        if obj_in.email:
+            statement = select(User).where(
+                User.email == obj_in.email, User.is_approved, User.is_email_confirmed
+            )
+        elif obj_in.member_id:
+            statement = select(User).where(
+                User.id == obj_in.member_id, User.is_approved, User.is_email_confirmed
+            )
+        else:
+            raise ValueError("Either email or member_id must be provided")
+
+        # Get user obj
+        with db as session:
+            user_obj = session.scalar(statement)
+            if not user_obj:
+                return None
+
+        # Query project by id
+        with db as session:
+            project = crud.project.get(db, id=project_id)
+            if not project:
+                return None
+
+        # Check if user is project owner
+        is_project_owner = project.owner_id == user_obj.id
+
+        # Add project member
+        with db as session:
+            if is_project_owner:
+                role = Role.OWNER
+            elif obj_in.role:
+                role = obj_in.role
+            else:
+                role = Role.VIEWER
+            project_member = ProjectMember(
+                member_id=user_obj.id, project_id=project_id, role=role
+            )
+            session.add(project_member)
+            session.commit()
+            session.refresh(project_member)
+            set_name_and_email_attr(project_member, user_obj)
+
+        return project_member
 
     def create_multi_with_project(
         self, db: Session, new_members: List[Tuple[UUID, Role]], project_id: UUID
@@ -70,9 +85,9 @@ class CRUDProjectMember(
             if project_member[0] not in current_member_ids:
                 # Set project member role based on team member role
                 if project_member[1] == Role.OWNER:
-                    project_member_role = "owner"
+                    project_member_role = Role.OWNER
                 else:
-                    project_member_role = "viewer"
+                    project_member_role = Role.VIEWER
                 project_members.append(
                     {
                         "member_id": project_member[0],
@@ -103,7 +118,7 @@ class CRUDProjectMember(
         return None
 
     def get_list_of_project_members(
-        self, db: Session, *, project_id: UUID, role: str = ""
+        self, db: Session, *, project_id: UUID, role: Optional[Role] = None
     ) -> Sequence[ProjectMember]:
         statement: Select = (
             select(
@@ -134,7 +149,7 @@ class CRUDProjectMember(
     ) -> UpdateProjectMember:
         # only update if there will still be at least one owner for the project
         project_owners = self.get_list_of_project_members(
-            db, project_id=project_member_obj.project_id, role="owner"
+            db, project_id=project_member_obj.project_id, role=Role.OWNER
         )
         # deny update action if there is only one owner and its the member being updated
         if len(project_owners) == 1 and project_owners[0].id == project_member_obj.id:
@@ -161,7 +176,7 @@ class CRUDProjectMember(
             .join(Team)
             .where(Project.id == project_id)
             .where(Team.id == team_id)
-            .where(ProjectMember.role != "owner")
+            .where(ProjectMember.role != Role.OWNER)
         )
         with db as session:
             project_members = session.scalars(statement).all()

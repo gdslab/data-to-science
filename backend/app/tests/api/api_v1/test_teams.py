@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api.deps import get_current_user, get_current_approved_user
 from app.core.config import settings
+from app.schemas.role import Role
 from app.schemas.team import TeamUpdate
 from app.schemas.team_member import TeamMemberCreate
 from app.schemas.user import UserUpdate
@@ -100,7 +101,7 @@ def test_create_team_with_project_by_project_manager(
     project = create_project(db, owner_id=project_owner.id)
     # Add current user as project member with manager role
     create_project_member(
-        db, role="manager", member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
     )
     data = {
         "title": random_team_name(),
@@ -330,4 +331,5 @@ def test_remove_team_with_project(
     assert len(project_members_after_team_deleted) == 6
     # verify team_id is now null in project record
     project_after_team_deleted = crud.project.get(db, id=project.id)
+    assert project_after_team_deleted is not None
     assert project_after_team_deleted.team_id is None
