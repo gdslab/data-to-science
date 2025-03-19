@@ -26,17 +26,11 @@ def test_create_project_member_by_email_with_project_owner_role(
         get_current_user(db, normal_user_access_token),
     )
     project = create_project(db, owner_id=current_user.id)
-    print(
-        crud.project_member.get_by_project_and_member_id(
-            db, project_id=project.id, member_id=current_user.id
-        )
-    )
     new_member = create_user(db)
     data = {"email": new_member.email, "member_id": None}
     response = client.post(f"{API_URL}/{project.id}/members", json=data)
     response.status_code == 201
     response_data = response.json()
-    print(response_data)
     new_member.id == response_data["member_id"]
     project.id == response_data["project_id"]
 

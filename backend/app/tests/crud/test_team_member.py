@@ -244,26 +244,43 @@ def test_update_team_member_role(db: Session) -> None:
 def test_update_team_member_role_also_updates_project_member_role(db: Session) -> None:
     team_owner = create_user(db)
     team = create_team(db, owner_id=team_owner.id)
-    # Create team member with "viewer" role
-    team_member = create_team_member(db, team_id=team.id)
+    # Create two team members with "viewer" role
+    team_member_viewer_to_owner = create_team_member(db, team_id=team.id)
+    team_member_viewer_to_manager = create_team_member(db, team_id=team.id)
     # Create project and assign team to it
     project = create_project(db, owner_id=team_owner.id, team_id=team.id)
     # Update team member role to "owner"
-    team_member_in = schemas.TeamMemberUpdate(role=Role.OWNER)
-    member_updated = crud.team_member.update_team_member(
-        db, team_member_in=team_member_in, team_member_id=team_member.id
+    team_member_owner_in = schemas.TeamMemberUpdate(role=Role.OWNER)
+    member_owner_updated = crud.team_member.update_team_member(
+        db,
+        team_member_in=team_member_owner_in,
+        team_member_id=team_member_viewer_to_owner.id,
+    )
+    # Update team member role to "manager"
+    team_member_manager_in = schemas.TeamMemberUpdate(role=Role.MANAGER)
+    member_manager_updated = crud.team_member.update_team_member(
+        db,
+        team_member_in=team_member_manager_in,
+        team_member_id=team_member_viewer_to_manager.id,
     )
     # Fetch project members
     project_members = crud.project_member.get_list_of_project_members(
         db, project_id=project.id
     )
-    assert member_updated
-    assert member_updated.role == Role.OWNER
+    assert member_owner_updated
+    assert member_owner_updated.role == Role.OWNER
+    assert member_manager_updated
+    assert member_manager_updated.role == Role.MANAGER
     assert project_members
-    assert len(project_members) == 2
-    # Project should have two members with "owner" role - creator and updated team member
+    assert len(project_members) == 3
+    # Project should have two members with "owner" role and one with "manager" role
     for project_member in project_members:
-        assert project_member.role == Role.OWNER
+        if project_member.member_id == team_owner.id:
+            assert project_member.role == Role.OWNER
+        elif project_member.member_id == team_member_viewer_to_owner.id:
+            assert project_member.role == Role.OWNER
+        elif project_member.member_id == team_member_viewer_to_manager.id:
+            assert project_member.role == Role.MANAGER
 
 
 def test_update_team_member_role_of_team_creator(db: Session) -> None:

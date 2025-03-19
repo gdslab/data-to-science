@@ -18,6 +18,8 @@ import SearchUsers, { UserSearch } from './SearchUsers';
 
 import api from '../../../api';
 
+export type Role = 'owner' | 'manager' | 'viewer';
+
 interface Team {
   id: string;
   is_owner: boolean;
@@ -31,7 +33,7 @@ export interface TeamMember {
   full_name: string;
   member_id: string;
   profile_url: string | null;
-  role: 'owner' | 'member';
+  role: Role;
   team_id: string;
 }
 
@@ -67,7 +69,18 @@ export default function TeamDetail() {
   const teamData = useLoaderData() as TeamData;
   const [searchResults, setSearchResults] = useState<UserSearch[]>([]);
 
-  const isOwner = useMemo(
+  const hasWriteAccess = useMemo(
+    () =>
+      teamData.members
+        .find((member) => member.member_id === user?.id)
+        ?.role.toLowerCase() === 'owner' ||
+      teamData.members
+        .find((member) => member.member_id === user?.id)
+        ?.role.toLowerCase() === 'manager',
+    [teamData.members, user]
+  );
+
+  const hasDeleteAccess = useMemo(
     () =>
       teamData.members
         .find((member) => member.member_id === user?.id)
@@ -78,7 +91,7 @@ export default function TeamDetail() {
   return (
     <div className="flex flex-col gap-4 h-full overflow-hidden">
       <div className="flex-none flex flex-col gap-4">
-        {isOwner ? (
+        {hasWriteAccess ? (
           <TeamEditForm teamData={teamData} />
         ) : (
           <div className="grid rows-auto gap-2">
@@ -90,9 +103,13 @@ export default function TeamDetail() {
       </div>
       <div className="flex-grow overflow-hidden">
         <h2>{teamData.team.title} Members</h2>
-        <TeamMemberList teamMembers={teamData.members} isOwner={isOwner} />
+        <TeamMemberList
+          teamMembers={teamData.members}
+          hasDeleteAccess={hasDeleteAccess}
+          hasWriteAccess={hasWriteAccess}
+        />
       </div>
-      {isOwner ? (
+      {hasWriteAccess ? (
         <div className="flex-none">
           <h3>Find new team members</h3>
           <div className="mb-4 grid grid-flow-row gap-4">

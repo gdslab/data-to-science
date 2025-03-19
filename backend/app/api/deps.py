@@ -229,6 +229,26 @@ def can_read_team(
     return team
 
 
+def can_read_write_team(
+    team_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_approved_user),
+) -> Optional[models.Team]:
+    """Return team only if current user is manager of the team."""
+    if current_user.is_demo:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+        )
+    team = crud.team.get_team(
+        db, user_id=current_user.id, team_id=team_id, permission="readwrite"
+    )
+    if not team:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+        )
+    return team
+
+
 def can_read_write_delete_team(
     team_id: UUID,
     db: Session = Depends(get_db),
@@ -240,7 +260,7 @@ def can_read_write_delete_team(
             status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
         )
     team = crud.team.get_team(
-        db, user_id=current_user.id, team_id=team_id, permission="readwrite"
+        db, user_id=current_user.id, team_id=team_id, permission="readwritedelete"
     )
     if not team:
         raise HTTPException(

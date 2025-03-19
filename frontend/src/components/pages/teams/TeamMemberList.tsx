@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { useContext, useMemo } from 'react';
 import { useLoaderData, useParams, useRevalidator } from 'react-router-dom';
 
@@ -10,10 +11,12 @@ import api from '../../../api';
 import { sorter } from '../../utils';
 
 export default function TeamMemberList({
-  isOwner = false,
+  hasWriteAccess = false,
+  hasDeleteAccess = false,
   teamMembers,
 }: {
-  isOwner?: boolean;
+  hasDeleteAccess?: boolean;
+  hasWriteAccess?: boolean;
   teamMembers: TeamMember[];
 }) {
   const { team } = useLoaderData() as TeamData;
@@ -37,13 +40,22 @@ export default function TeamMemberList({
     [teamMembers]
   );
 
+  const userRole = useMemo(() => {
+    return teamMembers.find((member) => member.member_id === user?.id)?.role;
+  }, [teamMembers, user]);
+
   if (teamMembers.length < 1) {
     return <div>No team members</div>;
   } else {
     return (
       <div className="h-full overflow-y-auto">
-        <div className="h-3/4">
-          {isOwner && (
+        <div
+          className={clsx(
+            hasWriteAccess && 'h-3/4',
+            !hasWriteAccess && 'h-full'
+          )}
+        >
+          {hasWriteAccess && (
             <span className="italic text-sm text-gray-500">
               Note: Assigning a team member the "owner" role will also elevate
               their project member role to "owner" in any projects associated
@@ -52,19 +64,35 @@ export default function TeamMemberList({
             </span>
           )}
           <table className="min-w-full divide-y-2 divide-gray-200 bg-white text-sm">
-            <thead className="text-left sticky top-0 z-10 bg-white border-b-2 border-gray-200">
+            <thead className="sticky top-0 z-10 bg-white border-b-2 border-gray-200">
               <tr>
-                <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
+                <th
+                  className={clsx(
+                    'whitespace-nowrap px-4 py-2 font-medium text-gray-900 text-left',
+                    hasWriteAccess && 'w-[30%]',
+                    !hasWriteAccess && 'w-[40%]'
+                  )}
+                >
                   Name
                 </th>
-                <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
+                <th
+                  className={clsx(
+                    'whitespace-nowrap px-4 py-2 font-medium text-gray-900 text-left',
+                    hasWriteAccess && 'w-[30%]',
+                    !hasWriteAccess && 'w-[40%]'
+                  )}
+                >
                   Email
                 </th>
-                <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
+                <th
+                  className={
+                    'whitespace-nowrap px-4 py-2 font-medium text-gray-900 text-center w-[20%]'
+                  }
+                >
                   Role
                 </th>
-                {isOwner && (
-                  <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
+                {hasWriteAccess && (
+                  <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900 text-center w-[20%]">
                     Actions
                   </th>
                 )}
@@ -76,36 +104,50 @@ export default function TeamMemberList({
               <tbody className="divide-y divide-gray-200">
                 {sortedTeamMembers.map((teamMember) => (
                   <tr key={teamMember.id} className="odd:bg-gray-50">
-                    <td className="flex items-center justify-start gap-4 whitespace-nowrap px-4 py-2 font-medium text-gray-900">
-                      {teamMember.profile_url ? (
-                        <img
-                          key={teamMember.profile_url
-                            .split('/')
-                            .slice(-1)[0]
-                            .slice(0, -4)}
-                          className="h-8 w-8 rounded-full"
-                          src={teamMember.profile_url}
-                        />
-                      ) : (
-                        <div
-                          className="flex items-center justify-center h-8 w-8 text-white text-sm rounded-full"
-                          style={generateRandomProfileColor(
-                            teamMember.full_name
-                          )}
-                        >
-                          <span className="indent-[0.1em] tracking-widest">
-                            {teamMember.full_name[0] +
-                              teamMember.full_name.split(' ').slice(-1)[0][0]}
-                          </span>
-                        </div>
+                    <td
+                      className={clsx(
+                        'gap-4 whitespace-nowrap px-4 py-2 font-medium text-gray-900 text-left',
+                        hasWriteAccess && 'w-[30%]',
+                        !hasWriteAccess && 'w-[40%]'
                       )}
-                      <span>{teamMember.full_name}</span>
+                    >
+                      <div className="flex items-center justify-start gap-4">
+                        {teamMember.profile_url ? (
+                          <img
+                            key={teamMember.profile_url
+                              .split('/')
+                              .slice(-1)[0]
+                              .slice(0, -4)}
+                            className="h-8 w-8 rounded-full"
+                            src={teamMember.profile_url}
+                          />
+                        ) : (
+                          <div
+                            className="flex items-center justify-center h-8 w-8 text-white text-sm rounded-full"
+                            style={generateRandomProfileColor(
+                              teamMember.full_name
+                            )}
+                          >
+                            <span className="indent-[0.1em] tracking-widest">
+                              {teamMember.full_name[0] +
+                                teamMember.full_name.split(' ').slice(-1)[0][0]}
+                            </span>
+                          </div>
+                        )}
+                        <span>{teamMember.full_name}</span>
+                      </div>
                     </td>
-                    <td className="whitespace-nowrap px-4 py-2 text-gray-700">
+                    <td
+                      className={clsx(
+                        'whitespace-nowrap px-4 py-2 text-gray-700 text-left',
+                        hasWriteAccess && 'w-[30%]',
+                        !hasWriteAccess && 'w-[40%]'
+                      )}
+                    >
                       {teamMember.email}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-2 text-gray-700">
-                      {isOwner ? (
+                    <td className="whitespace-nowrap px-4 py-2 text-gray-700 text-center w-[20%]">
+                      {hasWriteAccess ? (
                         <TeamMemberRoleRadioGroup
                           teamId={team.id}
                           teamMember={teamMember}
@@ -113,14 +155,15 @@ export default function TeamMemberList({
                             team.is_owner && teamMember.member_id === user?.id
                           }
                           isCurrentUser={teamMember.member_id === user?.id}
+                          userRole={userRole}
                         />
                       ) : (
                         teamMember.role.slice(0, 1).toUpperCase() +
                         teamMember.role.slice(1)
                       )}
                     </td>
-                    {isOwner && (
-                      <td className="px-4 py-2">
+                    {hasDeleteAccess && hasWriteAccess && (
+                      <td className="px-4 py-2 text-center w-[20%]">
                         {user && teamMember.email !== user.email && (
                           <button
                             className="text-sky-600"

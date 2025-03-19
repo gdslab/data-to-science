@@ -8,7 +8,7 @@ from app.api.deps import get_current_user, get_current_approved_user
 from app.core.config import settings
 from app.schemas.role import Role
 from app.schemas.team import TeamUpdate
-from app.schemas.team_member import TeamMemberCreate
+from app.schemas.team_member import TeamMemberCreate, TeamMemberUpdate
 from app.schemas.user import UserUpdate
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
@@ -265,7 +265,7 @@ def test_update_team_current_user_does_not_belong_to(
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_remove_team_by_owner(
+def test_remove_team_by_team_creator(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_approved_user(

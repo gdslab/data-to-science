@@ -1,7 +1,7 @@
 from typing import List, Optional, Sequence
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
 from app import crud
@@ -16,7 +16,7 @@ from app.schemas.team_member import Role
 class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
     def create_with_owner(
         self, db: Session, *, obj_in: TeamCreate, owner_id: UUID
-    ) -> Optional[Team]:
+    ) -> Team:
         """Create new team and add user as team member."""
         # Separate out team object, team member ids, and project id
         team_in_data = {
@@ -109,23 +109,40 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
         self, db: Session, *, user_id: UUID, team_id: UUID, permission: str = "read"
     ) -> Optional[Team]:
         """Retrieve team by id. User must be member of team."""
-        if permission == "readwrite":
-            stmt = (
+        if permission == "readwritedelete":
+            statement = (
                 select(Team)
                 .join(TeamMember.team)
-                .where(TeamMember.member_id == user_id)
-                .where(TeamMember.team_id == team_id)
-                .where(TeamMember.role == Role.OWNER)
+                .where(
+                    and_(
+                        TeamMember.member_id == user_id,
+                        TeamMember.team_id == team_id,
+                        TeamMember.role == Role.OWNER,
+                    )
+                )
+            )
+        elif permission == "readwrite":
+            statement = (
+                select(Team)
+                .join(TeamMember.team)
+                .where(
+                    and_(
+                        TeamMember.member_id == user_id,
+                        TeamMember.team_id == team_id,
+                        TeamMember.role.in_([Role.MANAGER, Role.OWNER]),
+                    )
+                )
             )
         else:
-            stmt = (
+            statement = (
                 select(Team)
                 .join(TeamMember.team)
-                .where(TeamMember.member_id == user_id)
-                .where(TeamMember.team_id == team_id)
+                .where(
+                    and_(TeamMember.member_id == user_id, TeamMember.team_id == team_id)
+                )
             )
         with db as session:
-            team = session.scalar(stmt)
+            team = session.scalar(statement)
             if team:
                 setattr(
                     team,
@@ -144,8 +161,12 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
             statement = (
                 select(Team)
                 .join(TeamMember.team)
-                .where(TeamMember.member_id == user_id)
-                .where(TeamMember.role == Role.OWNER)
+                .where(
+                    and_(
+                        TeamMember.member_id == user_id,
+                        TeamMember.role == Role.OWNER,
+                    )
+                )
             )
         else:
             statement = (

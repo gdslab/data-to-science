@@ -279,11 +279,22 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
     def update_team_member(
         self, db: Session, team_member_in: TeamMemberUpdate, team_member_id: UUID
     ) -> Optional[TeamMember]:
-        # Select team member by team member id
+        """Update team member role. If the team member role is changed, the
+        project members role is also updated.
+
+        Args:
+            db (Session): Database session.
+            team_member_in (TeamMemberUpdate): Team member update object.
+            team_member_id (UUID): Team member ID.
+
+        Returns:
+            Optional[TeamMember]: Updated team member or None.
+        """
         with db as session:
             statement = select(TeamMember).where(TeamMember.id == team_member_id)
             team_member = session.scalar(statement)
             if team_member:
+                # Get previous team member role
                 previous_team_member_role = team_member.role
                 team = session.scalar(
                     select(Team).where(Team.id == team_member.team_id)
@@ -296,21 +307,19 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
                 updated_team_member = crud.team_member.update(
                     db, db_obj=team_member, obj_in=team_member_in
                 )
-                # Check if team member role changed from "member" to "owner"
-                if (
-                    previous_team_member_role == Role.VIEWER
-                    and updated_team_member.role == Role.OWNER
-                ):
+                # Check if team member role changed
+                if previous_team_member_role != updated_team_member.role:
                     # Find all projects associated with team
                     project_ids = session.scalars(
                         select(Project.id).where(Project.team_id == team_member.team_id)
                     ).all()
                     if project_ids:
+                        # Update project members role
                         bulk_update_project_members = (
                             update(ProjectMember)
                             .where(ProjectMember.project_id.in_(project_ids))
                             .where(ProjectMember.member_id == team_member.member_id)
-                            .values(role=Role.OWNER)
+                            .values(role=updated_team_member.role)
                         )
                         session.execute(bulk_update_project_members)
 
