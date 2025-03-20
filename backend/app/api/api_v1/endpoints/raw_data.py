@@ -1,10 +1,11 @@
 import logging
 import os
-from datetime import datetime, timezone
+from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List
 from uuid import UUID
 
+from celery import chain
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
@@ -14,7 +15,12 @@ from app.api import deps
 from app.core.config import settings
 from app.schemas.job import State, Status
 from app.schemas.raw_data import ImageProcessingQueryParams
-from app.tasks import run_raw_data_image_processing
+from app.tasks.raw_image_processing_tasks import (
+    process_raw_data as process_raw_data_task,
+    transfer_raw_data,
+)
+from app.tasks.utils import is_valid_filename
+from app.utils.job_manager import JobManager
 from app.utils.RpcClient import RpcClient
 
 router = APIRouter()
@@ -218,54 +224,59 @@ def process_raw_data(
         )
 
     # create job
-    job_in = schemas.job.JobCreate(
-        name="processing-raw-data",
-        state=State.PENDING,
-        status=Status.WAITING,
-        start_time=datetime.now(tz=timezone.utc),
-        raw_data_id=raw_data.id,
-    )
-    job = crud.job.create_job(db, obj_in=job_in)
+    processing_job = JobManager(job_name="processing-raw-data", raw_data_id=raw_data.id)
 
     # get required paths from raw data object and environment variables
-    upload_dir = get_upload_dir()
     storage_path = raw_data.filepath
     external_storage_dir = os.environ.get("EXTERNAL_STORAGE")
     rabbitmq_host = os.environ.get("RABBITMQ_HOST")
 
+    # create name for processing project on remote server
+    if isinstance(flight.sensor, Enum):
+        sensor = flight.sensor.value
+    else:
+        sensor = flight.sensor
+
+    prj_name = (
+        project.title[:10].strip().replace(" ", "_")
+        + "_"
+        + flight.acquisition_date.strftime("%Y%m%d")
+        + "_"
+        + sensor
+    )
+
+    if not is_valid_filename(prj_name):
+        prj_name = "d2s-project"
+
     # only start this workflow if external storage and rabbitmq host are provided
     if external_storage_dir and os.path.isdir(external_storage_dir) and rabbitmq_host:
-        run_raw_data_image_processing.apply_async(
-            args=(
+        chain(
+            transfer_raw_data.s(
                 external_storage_dir,
                 storage_path,
                 raw_data.original_filename,
+                prj_name,
                 project.id,
                 raw_data.flight_id,
                 raw_data.id,
                 current_user.id,
-                job.id,
+                processing_job.job_id,
                 ip_settings.model_dump(),
             )
-        )
+            | process_raw_data_task.s(),
+        ).apply_async()
     else:
         logger.error(
             "Unable to start raw data processing due to unavailable external storage or RabbitMQ service"
         )
-        # update job
-        job_update_in = schemas.JobUpdate(
-            state=State.COMPLETED,
-            status=Status.FAILED,
-            end_time=datetime.now(tz=timezone.utc),
-        )
-        crud.job.update(db, db_obj=job, obj_in=job_update_in)
+        processing_job.update(status=Status.FAILED)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to start request",
         )
 
     # send response back to client
-    return {"job_id": job.id}
+    return {"job_id": processing_job.job_id}
 
 
 @router.get("/{raw_data_id}/check_progress/{job_id}")
@@ -278,38 +289,33 @@ def check_raw_data_processing_progress(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     # find job with name "processing-raw-data" for raw_data_id
-    job = crud.job.get(db, id=job_id)
-    if not job or job.name != "processing-raw-data" or job.status != Status.INPROGRESS:
+    try:
+        job = JobManager(job_id=job_id)
+        job_db_obj = job.job
+        assert job_db_obj
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="No active job found for processing this raw data",
+            detail="Job not found",
         )
 
     # if job exists, check "extra" for key "batch_id"
-    if (
-        not job.extra
-        or not isinstance(job.extra, Dict)
-        or not "batch_id" in job.extra.keys()
-    ):
+    extra = job_db_obj.extra
+    if not extra or not isinstance(extra, Dict) or not "batch_id" in extra.keys():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Job does not have required Batch ID",
         )
 
     # if batch_id exists, use rpcclient to check for progress %
-    batch_id = job.extra["batch_id"]
+    batch_id = extra["batch_id"]
     logger.info(f"Requesting progress for Batch ID: {batch_id}")
     rpc_client = RpcClient(routing_key="raw-data-check-progress-queue")
     progress = rpc_client.call(batch_id)
     rpc_client.connection.close()
 
     if not progress or float(progress) == -9999:
-        job_update_in = schemas.JobUpdate(
-            state=State.COMPLETED,
-            status=Status.FAILED,
-            end_time=datetime.now(tz=timezone.utc),
-        )
-        crud.job.update(db, db_obj=job, obj_in=job_update_in)
+        job.update(status=Status.FAILED)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error occurred while running job",

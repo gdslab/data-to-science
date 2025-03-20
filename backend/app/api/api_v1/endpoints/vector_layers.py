@@ -4,7 +4,6 @@ import os
 import shutil
 import tempfile
 import zipfile
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Sequence, Union
 from uuid import UUID
@@ -26,8 +25,8 @@ from app import crud, models, schemas
 from app.api import deps
 from app.api.utils import sanitize_file_name, get_tile_url_with_signed_payload
 from app.core.config import settings
-from app.core.security import sign_map_tile_payload
-from app.tasks import process_vector_layer
+from app.tasks.upload_tasks import upload_vector_layer
+from app.utils.job_manager import JobManager
 
 router = APIRouter()
 
@@ -111,20 +110,22 @@ async def create_vector_layer(
         )
 
     # Create job for processing task
-    job_in = schemas.JobCreate(
-        name="upload-vector-layer",
-        state="PENDING",
-        status="WAITING",
-        start_time=datetime.now(tz=timezone.utc),
-    )
-    job = crud.job.create_job(db, obj_in=job_in)
+    job = JobManager(job_name="upload-vector-layer")
+    try:
+        job_db_obj = job.job
+        assert job_db_obj is not None
+    except AssertionError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to create job for processing task",
+        )
 
     # Sanitize original file name
     original_file_name = sanitize_file_name(file.filename)
-    logger.info(temp_file_path)
+
     # Start celery task for processing and adding uploaded vector file to database
-    process_vector_layer.apply_async(
-        args=(temp_file_path, original_file_name, project.id, current_user.id, job.id)
+    upload_vector_layer.apply_async(
+        args=(temp_file_path, original_file_name, project.id, job.job_id)
     )
 
 

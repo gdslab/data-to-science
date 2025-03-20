@@ -13,14 +13,13 @@ from app import crud, schemas
 from app.api.api_v1.endpoints.raw_data import get_raw_data_dir
 from app.api.utils import get_data_product_dir, get_indoor_project_data_dir
 from app.schemas.job import State, Status
-from app.tasks import (
-    convert_las_to_copc,
-    create_point_cloud_preview_image,
-    process_geotiff,
-    process_indoor_project_data,
-    process_raw_data,
+from app.tasks.post_upload_tasks import generate_point_cloud_preview
+from app.tasks.upload_tasks import (
+    upload_geotiff,
+    upload_indoor_project_data,
+    upload_point_cloud,
+    upload_raw_data,
 )
-
 
 logger = logging.getLogger("__name__")
 
@@ -91,28 +90,22 @@ def process_data_product_uploaded_to_tusd(
 
     if dtype == "point_cloud":
         # start point cloud process in background
-        res = convert_las_to_copc.apply_async(
+        upload_point_cloud.apply_async(
             args=(
-                original_filename.name,
                 str(storage_path),
                 destination_filepath,
-                project_id,
-                flight_id,
                 job.id,
                 data_product.id,
             ),
-            link=create_point_cloud_preview_image.s(),
+            link=generate_point_cloud_preview.s(),
         )
     else:
         # start geotiff process in background
-        process_geotiff.apply_async(
+        upload_geotiff.apply_async(
             args=(
-                original_filename.name,
                 str(storage_path),
                 destination_filepath,
                 user_id,
-                project_id,
-                flight_id,
                 job.id,
                 data_product.id,
             ),
@@ -126,7 +119,6 @@ def process_raw_data_uploaded_to_tusd(
     user_id: UUID,
     storage_path: Path,
     original_filename: Path,
-    dtype: str,
     project_id: UUID,
     flight_id: UUID,
 ) -> Dict:
@@ -136,12 +128,11 @@ def process_raw_data_uploaded_to_tusd(
 
     Args:
         db (Session): Database session.
-        user_id (UUID): User ID for uploaded the data product.
+        user_id (UUID): User ID for uploaded the raw data.
         storage_path (Path): Location of data product on tus file server.
-        original_filename (Path): Original name of uploaded data product.
-        dtype (str): Type of data product (e.g., ortho, dsm, etc.)
-        project_id (UUID): Project ID for data product's project.
-        flight_id (UUID): Flight ID for data product's flight.
+        original_filename (Path): Original name of uploaded raw data.
+        project_id (UUID): Project ID for raw data's project.
+        flight_id (UUID): Flight ID for raw data's flight.
 
     Raises:
         HTTPException: Raised if file extension is not supported.
@@ -191,7 +182,7 @@ def process_raw_data_uploaded_to_tusd(
     job = crud.job.create_job(db, job_in)
 
     # start copying raw data from tusd to static files in background
-    process_raw_data.apply_async(
+    upload_raw_data.apply_async(
         args=(
             raw_data.id,
             str(storage_path),
@@ -277,14 +268,12 @@ def process_indoor_data_uploaded_to_tusd(
     job = crud.job.create_job(db, job_in)
 
     # start async process copying file from tusd to static files in background
-    process_indoor_project_data.apply_async(
+    upload_indoor_project_data.apply_async(
         args=(
             indoor_project_data.id,
             str(storage_path),
             str(destination_filepath),
             job.id,
-            indoor_project_id,
-            user_id,
         )
     )
 

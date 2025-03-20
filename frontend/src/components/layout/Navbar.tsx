@@ -21,8 +21,8 @@ import AuthContext from '../../AuthContext';
 import ContactFormModal from '../ContactForm';
 import { generateRandomProfileColor } from '../pages/auth/Profile';
 
-import brandLogo from '../../assets/d2s-logo-white-horizontal.png';
-import smallBrandLogo from '../../assets/d2s-logo-white-without-text.png';
+import brandLogo from '../../assets/d2s-logo-white.svg';
+import smallBrandLogo from '../../assets/d2s-logo-white.svg';
 
 const navigation = [
   { name: 'HOMEPAGE', href: '/home' },
@@ -51,7 +51,7 @@ export default function Navbar() {
               <div className="w-full flex flex-shrink-0 items-center justify-center md:hidden">
                 <Link to="/">
                   <img
-                    className="h-8 w-auto"
+                    className="max-h-8 max-w-full h-auto object-contain"
                     src={smallBrandLogo}
                     alt="Brand logo"
                   />

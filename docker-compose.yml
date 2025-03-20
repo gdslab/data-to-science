@@ -89,6 +89,8 @@ services:
     env_file:
       - backend.env
       - db.env
+    environment:
+      - CELERY_WORKERS=4
 
   celery_beat:
     image: d2s-api:dev

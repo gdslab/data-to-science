@@ -2,7 +2,6 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -14,7 +13,7 @@ from app.utils.tusd.post_processing import (
     process_indoor_data_uploaded_to_tusd,
     process_raw_data_uploaded_to_tusd,
 )
-from app.schemas import TUSDHook, UploadCreate, UploadUpdate
+from app.schemas import TUSDHook, UploadUpdate
 
 
 router = APIRouter()
@@ -148,7 +147,6 @@ def handle_tusd_http_hooks(
                             original_filename=Path(
                                 payload.Event.Upload.MetaData.filename
                             ),
-                            dtype=data_type,
                             project_id=project.id,
                             flight_id=flight.id,
                         )
@@ -157,6 +155,7 @@ def handle_tusd_http_hooks(
                         status_code=status.HTTP_404_NOT_FOUND,
                         detail="Uploaded file not found",
                     )
+
     else:
         # check if user has permission to read/write to indoor project
         indoor_project_id = x_indoor_project_id[0]
