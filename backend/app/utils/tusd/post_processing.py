@@ -51,7 +51,7 @@ def process_data_product_uploaded_to_tusd(
     new_filename = str(uuid4())
     # check if uploaded file has supported extension
     suffix = original_filename.suffix
-    if suffix not in [".tif", ".las", ".laz"]:
+    if suffix.lower() not in [".tif", ".las", ".laz"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported file extension"
         )
