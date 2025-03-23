@@ -66,7 +66,7 @@ class IndoorProjectData(IndoorProjectDataInDBBase):
     additional API exclusive attributes.
     """
 
-    pass
+    directory_structure: Optional[Dict] = Field(exclude=True)
 
 
 class IndoorProjectDataSpreadsheetSummary(BaseModel):

@@ -6,7 +6,7 @@ import { GeoJSONSource, Layer, Source, useMap } from 'react-map-gl/maplibre';
 import {
   ProjectFeatureCollection,
   ProjectPointFeature,
-} from '../pages/projects/Project';
+} from '../pages/workspace/projects/Project';
 
 import {
   clusterLayerInner,

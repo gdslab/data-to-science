@@ -2,7 +2,7 @@ import { AxiosResponse } from 'axios';
 import { useEffect } from 'react';
 
 import { useMapContext } from './MapContext';
-import { MapLayer } from '../pages/projects/Project';
+import { MapLayer } from '../pages/workspace/projects/Project';
 import CompareMap from './CompareMap';
 import HomeMap from './HomeMap';
 import PotreeViewer from './PotreeViewer';

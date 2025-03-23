@@ -91,34 +91,17 @@ export default function IndoorProjectDataVizForm({
 
     if (!indoorProjectDataId) return;
 
-    let endpoint = `${import.meta.env.VITE_API_V1_STR}/indoor_projects/`;
-    endpoint += `${indoorProjectId}/uploaded/${indoorProjectDataId}/data_for_viz`;
-
     try {
-      const queryParams = {
-        camera_orientation: values.cameraOrientation,
-        group_by: values.filter2,
-      };
-      const results: AxiosResponse<IndoorProjectDataVizAPIResponse> =
-        await axios.get(endpoint, { params: queryParams });
-      setIndoorProjectDataVizData(results.data);
+      const data = await fetchIndoorProjectVizData(
+        indoorProjectId,
+        indoorProjectDataId,
+        values.cameraOrientation,
+        values.filter2
+      );
+      setIndoorProjectDataVizData(data);
     } catch (error) {
-      if (isAxiosError(error)) {
-        // Axios-specific error handling
-        const status = error.response?.status || 500;
-        const message = error.response?.data?.message || error.message;
-
-        throw {
-          status,
-          message: `Failed to generate chart data: ${message}`,
-        };
-      } else {
-        // Generic error handling
-        throw {
-          status: 500,
-          message: 'An unexpected error occurred.',
-        };
-      }
+      // Re-throw the error to be handled by the form's error handling
+      throw error;
     }
   };
 
@@ -157,4 +140,41 @@ export default function IndoorProjectDataVizForm({
       </FormProvider>
     </div>
   );
+}
+
+export async function fetchIndoorProjectVizData(
+  indoorProjectId: string,
+  indoorProjectDataId: string,
+  cameraOrientation: CameraOrientation,
+  groupBy: Filter2Options
+): Promise<IndoorProjectDataVizAPIResponse> {
+  let endpoint = `${import.meta.env.VITE_API_V1_STR}/indoor_projects/`;
+  endpoint += `${indoorProjectId}/uploaded/${indoorProjectDataId}/data_for_viz`;
+
+  try {
+    const queryParams = {
+      camera_orientation: cameraOrientation,
+      group_by: groupBy,
+    };
+    const results: AxiosResponse<IndoorProjectDataVizAPIResponse> =
+      await axios.get(endpoint, { params: queryParams });
+    return results.data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      // Axios-specific error handling
+      const status = error.response?.status || 500;
+      const message = error.response?.data?.message || error.message;
+
+      throw {
+        status,
+        message: `Failed to generate chart data: ${message}`,
+      };
+    } else {
+      // Generic error handling
+      throw {
+        status: 500,
+        message: 'An unexpected error occurred.',
+      };
+    }
+  }
 }

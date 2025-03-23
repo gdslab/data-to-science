@@ -45,7 +45,7 @@ export type IndoorProjectDataSpreadsheetAPIResponse = {
     species_name: string[];
     entry: string[];
     pot_barcode: number[];
-    planting_date: Date[];
+    planting_date: Date;
     pottype: string[];
     ct_configuration: string[];
     variety: string[];

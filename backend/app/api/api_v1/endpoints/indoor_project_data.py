@@ -1,10 +1,9 @@
 import logging
 from datetime import datetime, timedelta
-from enum import Enum
 from typing import Any, List, Optional, Sequence, Tuple
 
 import pandas as pd
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import UUID4, ValidationError
 from sqlalchemy.orm import Session
 

@@ -9,8 +9,8 @@ import {
   TrashIcon,
 } from '@heroicons/react/24/outline';
 
-import { DataProduct } from './pages/projects/Project';
-import { Project } from './pages/projects/ProjectList';
+import { DataProduct } from './pages/workspace/projects/Project';
+import { Project } from './pages/workspace/projects/ProjectList';
 import { Status } from './Alert';
 
 import api from '../api';

@@ -12,6 +12,8 @@ export default function IndoorProjectDataVizGraph({
 }: {
   data: IndoorProjectDataVizAPIResponse;
 }) {
+  console.log(data);
+
   const result: IndoorProjectDataVizRecord[][] = useMemo(() => {
     const groupedData = data.results.reduce((acc, item) => {
       const { group } = item;
@@ -25,18 +27,22 @@ export default function IndoorProjectDataVizGraph({
     return Object.values(groupedData);
   }, []);
 
+  console.log(result);
+
   return (
-    <div className="max-h-96 flex flex-col gap-4 py-4 border-2 border-gray-300 bg-white rounded-md overflow-auto">
+    <div className="max-h-96 flex flex-col gap-1.5 py-4 border-2 border-gray-300 bg-white rounded-md overflow-auto">
       {result.map((group, i) => (
-        <div key={i} className="min-w-max px-4">
-          <span className="text-lg font-bold">{group[0].group}</span>
-          <div className="flex justify-between gap-2">
+        <div key={i} className="flex items-center px-4 gap-4">
+          <span className="text-sm truncate font-bold w-32">
+            {group[0].group}
+          </span>
+          <div className="flex justify-between gap-0.5">
             {group
               .sort((a, b) => a.interval_days - b.interval_days)
               .map((record, j) => (
                 <div
                   key={j}
-                  className={`min-w-44 w-44 p-2.5 flex flex-col border-2 border-gray-300 shadow-md ${getTextColor(
+                  className={`w-28 h-8 p-2.5 flex flex-col ${getTextColor(
                     record.hue,
                     record.saturation,
                     record.intensity
@@ -58,12 +64,13 @@ export default function IndoorProjectDataVizGraph({
           </div>
         </div>
       ))}
-      <div className="min-w-max px-4">
-        <div className="flex justify-between gap-2">
+      <div className="min-w-max px-4 flex items-center px-4 py-4">
+        <div className="flex justify-between gap-0.5">
+          <div className="relative w-36 p-2.5 flex flex-col text-center text-lg font-bold"></div>
           {result?.[0].map((record) => (
             <div
               key={`interval-${record.interval_days}`}
-              className="relative min-w-44 w-44 p-2.5 flex flex-col text-center text-lg font-bold"
+              className="relative w-28 p-2.5 flex flex-col text-center text-lg font-bold"
             >
               {/* Tick mark */}
               <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 h-3 w-0.5 bg-black"></div>

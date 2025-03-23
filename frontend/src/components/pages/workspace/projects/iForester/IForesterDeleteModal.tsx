@@ -8,7 +8,7 @@ import { ConfirmationPopup } from '../../../../ConfirmationPopup';
 import Modal from '../../../../Modal';
 import { IForester } from '../Project';
 
-import api from '../../../../api';
+import api from '../../../../../api';
 
 export default function IForesterDeleteModal({
   iforester,

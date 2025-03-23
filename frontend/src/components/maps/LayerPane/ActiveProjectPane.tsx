@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import FlightCard from './FlightCard';
 import { useMapContext } from '../MapContext';
 import MapToolbar from '../MapToolbar';
-import { Project } from '../../pages/projects/ProjectList';
+import { Project } from '../../pages/workspace/projects/ProjectList';
 
 import { sortedFlightsByDateAndId } from './utils';
 

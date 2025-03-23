@@ -1,7 +1,9 @@
 import axios, { AxiosResponse, isAxiosError } from 'axios';
 import { useEffect, useState } from 'react';
 import { Link, Params, useLoaderData } from 'react-router-dom';
+import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 
+import Alert, { Status } from '../../../Alert';
 import {
   IndoorProjectAPIResponse,
   IndoorProjectDataAPIResponse,
@@ -13,10 +15,12 @@ import IndoorProjectUploadModal from './IndoorProjectUploadModal';
 import IndoorProjectPageLayout from './IndoorProjectPageLayout';
 import IndoorProjectDataVizGraph from './IndoorProjectDataVizGraph';
 import IndoorProjectDataViz2Graph from './IndoorProjectDataViz2Graph';
-import IndoorProjectDataVizForm from './IndoorProjectDataVizForm';
+import IndoorProjectDataVizForm, {
+  fetchIndoorProjectVizData,
+} from './IndoorProjectDataVizForm';
 import IndoorProjectDataViz2Form from './IndoorProjectDataVizForm2';
 import LoadingBars from '../../../LoadingBars';
-// import IndoorProjectDetailForm from './IndoorProjectDetailForm';
+import PotOverview from './PotOverview';
 
 export async function loader({ params }: { params: Params<string> }) {
   try {
@@ -39,6 +43,8 @@ export async function loader({ params }: { params: Params<string> }) {
 }
 
 export default function IndoorProjectDetail() {
+  const [potOverviewData, setPotOverviewData] =
+    useState<IndoorProjectDataVizAPIResponse | null>(null);
   const [indoorProjectData, setIndoorProjectData] = useState<
     IndoorProjectDataAPIResponse[]
   >([]);
@@ -51,21 +57,10 @@ export default function IndoorProjectDetail() {
   const { indoorProject } = useLoaderData() as {
     indoorProject: IndoorProjectAPIResponse;
   };
-  // const [showGraphs, setShowGraphs] = useState(false);
-  // const [showIndoorProjectDetails, setShowIndoorProjectDetails] =
-  //   useState(false);
-  // const [showIndoorProjectPlants, setShowIndoorProjectPlants] = useState(false);
-  // const [showUploadedData, setShowUploadedData] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [status, setStatus] = useState<Status | null>(null);
 
-  // const toggleIndoorProjectDetails = () =>
-  //   setShowIndoorProjectDetails(!showIndoorProjectDetails);
-
-  // const toggleIndoorProjectPlants = () =>
-  //   setShowIndoorProjectPlants(!showIndoorProjectPlants);
-
-  // const toggleShowUploadedData = () => setShowUploadedData(!showUploadedData);
-
-  // const toggleShowGraphs = () => setShowGraphs(!showGraphs);
+  console.log(indoorProjectDataSpreadsheet);
 
   useEffect(() => {
     const fetchIndoorProjectData = async (indoorProjectId: string) => {
@@ -149,18 +144,65 @@ export default function IndoorProjectDetail() {
     }
   }, [indoorProject, indoorProjectData]);
 
-  function getRecord(key: string, attr: string): string {
-    if (
-      indoorProjectDataSpreadsheet &&
-      indoorProjectDataSpreadsheet.records &&
-      Number(key)
-    ) {
-      if (key in indoorProjectDataSpreadsheet.records) {
-        return indoorProjectDataSpreadsheet.records[Number(key)][attr];
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadVizData() {
+      // Reset states at the start of each fetch
+      setStatus(null);
+      setIsLoading(true);
+      setPotOverviewData(null);
+
+      // Find the indoor project data id of the first spreadsheet
+      const indoorProjectDataId = indoorProjectData.find(
+        ({ file_type }) => file_type === '.xlsx'
+      )?.id;
+
+      // If no indoor project or indoor project data id, return early
+      if (!indoorProject || !indoorProjectDataId) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const data = await fetchIndoorProjectVizData(
+          indoorProject.id,
+          indoorProjectDataId,
+          'side',
+          'single_pot'
+        );
+
+        // Check if component is still mounted before updating state
+        if (isMounted) {
+          setPotOverviewData(data);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setStatus({
+            type: 'error',
+            msg:
+              error instanceof Error
+                ? error.message
+                : 'Failed to load visualization data',
+          });
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     }
-    return 'unknown';
-  }
+
+    loadVizData();
+
+    // Cleanup function to prevent setting state on unmounted component
+    return () => {
+      isMounted = false;
+    };
+  }, [indoorProject, indoorProjectData, setPotOverviewData]);
+
+  const formattedDate = (uploadedFile: IndoorProjectDataAPIResponse): string =>
+    new Date(uploadedFile.upload_date).toLocaleDateString();
 
   if (!indoorProject)
     return (
@@ -171,78 +213,84 @@ export default function IndoorProjectDetail() {
 
   return (
     <IndoorProjectPageLayout>
-      <div className="flex flex-col gap-2">
-        <h2>{indoorProject.title}</h2>
-        <p className="text-gray-600 text-wrap break-all">
-          {indoorProject.description}
-        </p>
-      </div>
+      <div className="flex flex-col sm:flex-row gap-4">
+        {/* Left column */}
+        <div className="w-full md:w-2/5 flex flex-col gap-8">
+          <div className="flex flex-col gap-2">
+            <h2 className="truncate" title={indoorProject.title}>
+              {indoorProject.title}
+            </h2>
+            <p className="text-gray-600 line-clamp-3">
+              {indoorProject.description}
+            </p>
+          </div>
 
-      {indoorProjectData.length > 0 && (
-        <div className="py-4">
-          <h3>Previously Uploaded Data</h3>
-          <ul className="list-disc list-inside">
-            {indoorProjectData.map((uploadedFile) => (
-              <li key={uploadedFile.id}>
-                <span>
-                  {uploadedFile.original_filename}
-                  {uploadedFile.file_type}
-                </span>{' '}
-                <span className="italic text-gray-600">{`(Uploaded on ${new Date(
-                  uploadedFile.upload_date
-                ).toLocaleDateString()})`}</span>
-              </li>
-            ))}
-          </ul>
+          {indoorProjectData.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <h3>Previously Uploaded Data</h3>
+              <ul className="list-disc list-inside">
+                {indoorProjectData.map((uploadedFile) => (
+                  <li key={uploadedFile.id} className="flex items-center gap-2">
+                    <span
+                      className="truncate max-w-[200px]"
+                      title={uploadedFile.original_filename}
+                    >
+                      {uploadedFile.original_filename}
+                      {uploadedFile.file_type &&
+                        ` (${uploadedFile.file_type.toUpperCase()})`}
+                    </span>{' '}
+                    <span className="italic text-gray-600">{`(Uploaded on ${formattedDate(
+                      uploadedFile
+                    )})`}</span>
+                    <a href={uploadedFile.file_path} download>
+                      <ArrowDownTrayIcon className="w-4 h-4" />
+                      <span className="sr-only">Download</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="w-48">
+            <IndoorProjectUploadModal
+              btnLabel="Add data"
+              indoorProjectId={indoorProject.id}
+            />
+          </div>
         </div>
-      )}
-
-      <div className="w-48">
-        <IndoorProjectUploadModal
-          btnLabel="Add data"
-          indoorProjectId={indoorProject.id}
-        />
       </div>
 
-      <div className="py-4">
-        <h3>
+      <div className="w-full flex flex-col gap-4">
+        <span className="text-lg font-bold">
           Pots
           {indoorProjectDataSpreadsheet
             ? ` (${Object.keys(indoorProjectDataSpreadsheet.records).length})`
-            : '0'}
-        </h3>
-        {indoorProjectDataSpreadsheet && (
-          <div className="flex flex-wrap gap-4 justify-start max-h-96 overflow-y-auto">
-            {Object.keys(indoorProjectDataSpreadsheet.records).map((key) => (
-              <Link
-                key={key}
-                to={`/indoor_projects/${indoorProject.id}/uploaded/${indoorProjectDataSpreadsheet.summary.id}/plants/${key}`}
-              >
-                <div className="min-w-48 flex flex-col gap-2 p-2 border-2 border-slate-400 hover:border-slate-600 bg-white shadow-sm hover:shadow-xl text-center">
-                  <span className="font-bold">{key}</span>
-                  <div className="flex flex-col justify-between">
-                    <div className="flex justify-between">
-                      <span>Species name:</span>
-                      <span>{getRecord(key, 'species_name')}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Treatment:</span>
-                      <span>{getRecord(key, 'treatment')}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Planting date:</span>
-                      <span>
-                        {getRecord(key, 'planting_date').split('T')[0]}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
+            : ''}
+        </span>
+        <span>
+          Planting date:{' '}
+          {indoorProjectDataSpreadsheet?.summary?.planting_date
+            ? new Date(
+                indoorProjectDataSpreadsheet.summary.planting_date
+              ).toLocaleDateString()
+            : 'Not available'}
+        </span>
+        {isLoading || !indoorProjectDataSpreadsheet || !potOverviewData ? (
+          <LoadingBars />
+        ) : (
+          <div className="max-h-96 flex flex-wrap justify-start p-4 gap-4">
+            <PotOverview
+              data={potOverviewData}
+              indoorProjectDataSpreadsheet={indoorProjectDataSpreadsheet}
+              indoorProjectId={indoorProject.id}
+            />
           </div>
         )}
-        {!indoorProjectDataSpreadsheet && <LoadingBars />}
       </div>
+      {status && <Alert alertType={status.type}>{status.msg}</Alert>}
+
+      <div className="border-b-2 border-gray-300" />
 
       <div className="py-4">
         <h3>Graphs</h3>
