@@ -1,7 +1,9 @@
+import { isAxiosError } from 'axios';
 import clsx from 'clsx';
-import { useContext, useMemo } from 'react';
+import { useContext, useMemo, useState } from 'react';
 import { useLoaderData, useParams, useRevalidator } from 'react-router-dom';
 
+import Alert, { Status } from '../../Alert';
 import AuthContext from '../../../AuthContext';
 import { generateRandomProfileColor } from '../auth/Profile';
 import { TeamData, TeamMember } from './TeamDetail';
@@ -19,19 +21,35 @@ export default function TeamMemberList({
   hasWriteAccess?: boolean;
   teamMembers: TeamMember[];
 }) {
+  const [status, setStatus] = useState<Status | null>(null);
   const { team } = useLoaderData() as TeamData;
   const { teamId } = useParams();
   const revalidator = useRevalidator();
   const { user } = useContext(AuthContext);
 
   async function removeTeamMember(memberId: string) {
+    setStatus(null);
     try {
-      const response = await api.delete(`/teams/${teamId}/members/${memberId}`);
-      if (response) {
-        revalidator.revalidate();
+      await api.delete(`/teams/${teamId}/members/${memberId}`);
+      revalidator.revalidate();
+    } catch (error) {
+      if (isAxiosError(error)) {
+        const statusCode = error.response?.status || 500;
+        const message = error.response?.data?.message || error.message;
+        console.error(
+          `Failed to remove team member: ${statusCode} -- ${message}`
+        );
+        setStatus({
+          type: 'error',
+          msg: message,
+        });
+      } else {
+        console.error('An unexpected error occurred.');
+        setStatus({
+          type: 'error',
+          msg: 'An unexpected error occurred.',
+        });
       }
-    } catch (err) {
-      console.error(err);
     }
   }
 
@@ -49,20 +67,7 @@ export default function TeamMemberList({
   } else {
     return (
       <div className="h-full overflow-y-auto">
-        <div
-          className={clsx(
-            hasWriteAccess && 'h-3/4',
-            !hasWriteAccess && 'h-full'
-          )}
-        >
-          {hasWriteAccess && (
-            <span className="italic text-sm text-gray-500">
-              Note: Assigning a team member the "owner" role will also elevate
-              their project member role to "owner" in any projects associated
-              with this team. Changing the project member role will not affect
-              the team member role.
-            </span>
-          )}
+        <div className="h-3/4">
           <table className="min-w-full divide-y-2 divide-gray-200 bg-white text-sm">
             <thead className="sticky top-0 z-10 bg-white border-b-2 border-gray-200">
               <tr>
@@ -155,6 +160,7 @@ export default function TeamMemberList({
                             team.is_owner && teamMember.member_id === user?.id
                           }
                           isCurrentUser={teamMember.member_id === user?.id}
+                          setStatus={setStatus}
                           userRole={userRole}
                         />
                       ) : (
@@ -180,6 +186,11 @@ export default function TeamMemberList({
               </tbody>
             </table>
           </div>
+          {status && (
+            <div className="mt-4">
+              <Alert alertType={status.type}>{status.msg}</Alert>
+            </div>
+          )}
         </div>
       </div>
     );

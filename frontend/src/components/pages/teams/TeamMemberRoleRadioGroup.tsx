@@ -1,6 +1,7 @@
-import { isAxiosError, AxiosResponse } from 'axios';
+import { isAxiosError } from 'axios';
 import { useRevalidator } from 'react-router-dom';
 
+import { Status } from '../../Alert';
 import { confirm } from '../../ConfirmationDialog';
 import { Role, TeamMember } from './TeamDetail';
 
@@ -11,29 +12,25 @@ export default function TeamMemberRoleRadioGroup({
   isCurrentUser = false,
   teamId,
   teamMember,
+  setStatus,
   userRole = 'viewer',
 }: {
   disabled?: boolean;
   isCurrentUser?: boolean;
   teamId: string;
   teamMember: TeamMember;
+  setStatus: React.Dispatch<React.SetStateAction<Status | null>>;
   userRole?: Role;
 }) {
   const revalidator = useRevalidator();
 
   const updateTeamMemberRole = async (newRole: string) => {
+    setStatus(null);
     try {
-      const response: AxiosResponse<TeamMember> = await api.put(
-        `/teams/${teamId}/members/${teamMember.id}`,
-        {
-          role: newRole,
-        }
-      );
-      if (response.status === 200) {
-        revalidator.revalidate();
-      } else {
-        console.error('An unexpected error occurred.');
-      }
+      await api.put(`/teams/${teamId}/members/${teamMember.id}`, {
+        role: newRole,
+      });
+      revalidator.revalidate();
     } catch (error) {
       if (isAxiosError(error)) {
         const status = error.response?.status || 500;
@@ -41,21 +38,28 @@ export default function TeamMemberRoleRadioGroup({
         console.error(
           `Failed to update team member role: ${status} -- ${message}`
         );
+        setStatus({
+          type: 'error',
+          msg: message,
+        });
       } else {
         console.error('An unexpected error occurred.');
+        setStatus({
+          type: 'error',
+          msg: 'An unexpected error occurred.',
+        });
       }
     }
   };
 
   const handleOnChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const newRole = e.target.value;
-    if (isCurrentUser && newRole === 'viewer') {
+    if (isCurrentUser) {
       if (
         await confirm({
           title: 'Change Role',
-          description:
-            'You are about to change your role to Viewer. You will not be able to reverse this action.',
-          confirmation: 'Are you sure you want to change your role to Viewer?',
+          description: `You are about to change your role to <strong>${newRole}</strong>. You will not be able to reverse this action.`,
+          confirmation: `Are you sure you want to change your role to <strong>${newRole}</strong>?`,
         })
       ) {
         updateTeamMemberRole(newRole);
@@ -66,7 +70,7 @@ export default function TeamMemberRoleRadioGroup({
           title: 'Change Role',
           description:
             "You are about to change a team member's role. This will affect their access to the team and any associated projects. Their role in those projects will be updated to match their new team member role.",
-          confirmation: `Are you sure you want to change ${teamMember.full_name}'s role to ${newRole}?`,
+          confirmation: `Are you sure you want to change <strong>${teamMember.full_name}</strong>'s role to <strong>${newRole}</strong>?  `,
         })
       ) {
         updateTeamMemberRole(newRole);

@@ -111,7 +111,7 @@ export default function TeamCreate() {
                     name="description"
                   />
                 </div>
-                <div className="mb-4">
+                <div className="mb-4 max-h-[25vh] overflow-y-auto">
                   <span className="block font-bold pt-2 pb-1">
                     Who will be your team member?
                   </span>

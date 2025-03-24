@@ -17,6 +17,7 @@ import api from '../api';
 
 interface Button extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
+  cancel?: boolean;
   icon?: string;
   size?: string;
 }
@@ -142,7 +143,13 @@ export function LinkButton({
   );
 }
 
-export function Button({ children, icon, size = 'normal', ...props }: Button) {
+export function Button({
+  children,
+  icon,
+  cancel = false,
+  size = 'normal',
+  ...props
+}: Button) {
   return (
     <div className="relative">
       {icon ? getIcon(icon) : null}
@@ -157,6 +164,8 @@ export function Button({ children, icon, size = 'normal', ...props }: Button) {
               ? classNames(
                   icon === 'trash'
                     ? 'bg-red-600 hover:bg-red-700 border-red-700 hover:border-red-800'
+                    : cancel === true
+                    ? 'text-gray-700 bg-gray-200 hover:bg-gray-300 border-gray-300 hover:border-gray-400'
                     : 'bg-accent3 hover:bg-accent3-dark border-accent3 hover:border-accent3-dark',
                   'border-2 rounded-md w-full'
                 )
