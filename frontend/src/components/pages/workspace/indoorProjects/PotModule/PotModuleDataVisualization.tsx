@@ -1,19 +1,20 @@
 import { useMemo, useState } from 'react';
-import Box from '@mui/material/Box';
 import Slider from '@mui/material/Slider';
 
 import CircleItem from './CircleItem';
-import { IndoorProjectDataVizRecord } from '../IndoorProject';
+import {
+  IndoorProjectDataVizRecord,
+  PotModuleDataVisualizationProps,
+} from '../IndoorProject';
 import Legend from './Legend';
 
 import { customSliderStyles } from './sliderStyles';
-import { PotOverviewProps } from './types';
 
-export default function PotOverview({
+export default function PotModuleDataVisualization({
   data,
   indoorProjectDataSpreadsheet,
   indoorProjectId,
-}: PotOverviewProps) {
+}: PotModuleDataVisualizationProps) {
   // Memoize the grouped data
   const result: IndoorProjectDataVizRecord[][] = useMemo(() => {
     const groupedData = data.results.reduce((acc, item) => {
@@ -56,14 +57,11 @@ export default function PotOverview({
   const potsOnDayInterval = result.map((group) =>
     group.filter((g) => g.interval_days === selectedDayInterval)
   );
-  console.log(indoorProjectDataSpreadsheet);
-  console.log(potsOnDayInterval);
+
   return (
-    <Box sx={{ display: 'flex', gap: 2 }}>
-      <Box
-        sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}
-      >
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, width: '100%' }}>
+    <div className="flex gap-4 p-4">
+      <div className="flex flex-col gap-4 w-full">
+        <div className="flex flex-wrap gap-4 w-full">
           {potsOnDayInterval.map((group, index) => (
             <CircleItem
               key={index}
@@ -79,8 +77,8 @@ export default function PotOverview({
               }}
             />
           ))}
-        </Box>
-        <Box sx={{ display: 'flex', gap: 2, width: '100%' }}>
+        </div>
+        <div className="flex gap-4 w-full">
           <Slider
             aria-label="Custom marks"
             value={selectedDayInterval}
@@ -93,11 +91,11 @@ export default function PotOverview({
             sx={customSliderStyles}
           />
           <span>Days</span>
-        </Box>
-      </Box>
-      <Box>
+        </div>
+      </div>
+      <div>
         <Legend />
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 }

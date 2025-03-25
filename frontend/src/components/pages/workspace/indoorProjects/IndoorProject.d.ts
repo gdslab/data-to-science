@@ -1,3 +1,4 @@
+// Types for indoor project API responses
 export type IndoorProjectAPIResponse = {
   id: string;
   title: string;
@@ -164,3 +165,92 @@ export type IndoorProjectDataViz2Record = {
 export type IndoorProjectDataViz2APIResponse = {
   results: IndoorProjectDataViz2Record[];
 };
+
+// Types for data visualization forms
+export type CameraOrientation = 'top' | 'side';
+
+export type CameraOrientationOptions = {
+  label: string;
+  value: CameraOrientation;
+}[];
+
+export type GroupBy =
+  | 'treatment'
+  | 'description'
+  | 'treatment_description'
+  | 'all_pots'
+  | 'single_pot';
+
+export type GroupByOptions = {
+  label: string;
+  value: GroupBy;
+}[];
+
+// Generic type for form data
+type FormData = {
+  cameraOrientation: CameraOrientation;
+  groupBy: GroupBy;
+};
+
+interface FetchVisualizationParams {
+  indoorProjectId: string;
+  indoorProjectDataId: string;
+  cameraOrientation: string;
+  groupBy: string;
+}
+
+// Types for trait visualization form
+export type TargetTrait = string;
+
+export interface TraitModuleFormData extends FormData {
+  targetTrait: TargetTrait;
+}
+
+export interface TraitModuleFormProps {
+  indoorProjectId: string;
+  indoorProjectDataId: string;
+  numericColumns: NumericColumns;
+  setVisualizationData: React.Dispatch<
+    React.SetStateAction<IndoorProjectDataViz2APIResponse | null>
+  >;
+}
+
+export interface FetchTraitModuleParams extends FetchVisualizationParams {
+  targetTrait: string;
+}
+
+// Types for pot group visualization form
+export interface PotGroupModuleFormData extends FormData {}
+
+export interface PotGroupModuleFormProps {
+  indoorProjectId: string;
+  indoorProjectDataId: string;
+  setVisualizationData: React.Dispatch<
+    React.SetStateAction<IndoorProjectDataVizAPIResponse | null>
+  >;
+}
+
+export interface FetchPotGroupModuleParams extends FetchVisualizationParams {}
+
+// Types for pot visualization
+export interface CircleItemProps {
+  group: IndoorProjectDataVizRecord;
+  treatment: string;
+  hsvColor: {
+    hue: number;
+    saturation: number;
+    intensity: number;
+  };
+  url: string;
+}
+
+export interface PotModuleDataVisualizationProps {
+  data: IndoorProjectDataVizAPIResponse;
+  indoorProjectDataSpreadsheet: IndoorProjectDataSpreadsheetAPIResponse;
+  indoorProjectId: string;
+}
+
+export interface SliderMark {
+  value: number;
+  label: string;
+}

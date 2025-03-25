@@ -3,17 +3,15 @@ import { useMemo } from 'react';
 import {
   IndoorProjectDataVizAPIResponse,
   IndoorProjectDataVizRecord,
-} from './IndoorProject';
+} from '../IndoorProject';
 
-import { getTextColor, hsvToHex } from './utils';
+import { getTextColor, hsvToHex } from '../utils';
 
-export default function IndoorProjectDataVizGraph({
+export default function PotGroupModuleDataVisualization({
   data,
 }: {
   data: IndoorProjectDataVizAPIResponse;
 }) {
-  console.log(data);
-
   const result: IndoorProjectDataVizRecord[][] = useMemo(() => {
     const groupedData = data.results.reduce((acc, item) => {
       const { group } = item;
@@ -26,8 +24,6 @@ export default function IndoorProjectDataVizGraph({
 
     return Object.values(groupedData);
   }, []);
-
-  console.log(result);
 
   return (
     <div className="max-h-96 flex flex-col gap-1.5 py-4 border-2 border-gray-300 bg-white rounded-md overflow-auto">

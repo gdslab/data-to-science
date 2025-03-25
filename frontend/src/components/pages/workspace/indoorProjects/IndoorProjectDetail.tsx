@@ -1,6 +1,6 @@
 import axios, { AxiosResponse, isAxiosError } from 'axios';
 import { useEffect, useState } from 'react';
-import { Link, Params, useLoaderData } from 'react-router-dom';
+import { Params, useLoaderData } from 'react-router-dom';
 import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 
 import Alert, { Status } from '../../../Alert';
@@ -13,14 +13,14 @@ import {
 } from './IndoorProject';
 import IndoorProjectUploadModal from './IndoorProjectUploadModal';
 import IndoorProjectPageLayout from './IndoorProjectPageLayout';
-import IndoorProjectDataVizGraph from './IndoorProjectDataVizGraph';
-import IndoorProjectDataViz2Graph from './IndoorProjectDataViz2Graph';
-import IndoorProjectDataVizForm, {
-  fetchIndoorProjectVizData,
-} from './IndoorProjectDataVizForm';
-import IndoorProjectDataViz2Form from './IndoorProjectDataVizForm2';
 import LoadingBars from '../../../LoadingBars';
-import PotOverview from './PotOverview';
+
+import PotModuleDataVisualization from './PotModule/PotModuleDataVisualization';
+import { fetchPotGroupModuleVisualizationData } from './PotGroupModule/service';
+import PotGroupModuleForm from './PotGroupModule/PotGroupModuleForm';
+import PotGroupModuleDataVisualization from './PotGroupModule/PotGroupModuleDataVisualization';
+import TraitModuleForm from './TraitModule/TraitModuleForm';
+import TraitModuleDataVisualization from './TraitModule/TraitModuleDataVisualization';
 
 export async function loader({ params }: { params: Params<string> }) {
   try {
@@ -43,24 +43,24 @@ export async function loader({ params }: { params: Params<string> }) {
 }
 
 export default function IndoorProjectDetail() {
-  const [potOverviewData, setPotOverviewData] =
-    useState<IndoorProjectDataVizAPIResponse | null>(null);
+  // Indoor project data from database
   const [indoorProjectData, setIndoorProjectData] = useState<
     IndoorProjectDataAPIResponse[]
   >([]);
-  const [indoorProjectDataVizData, setIndoorProjectDataVizData] =
-    useState<IndoorProjectDataVizAPIResponse | null>(null);
-  const [indoorProjectDataViz2Data, setIndoorProjectDataViz2Data] =
-    useState<IndoorProjectDataViz2APIResponse | null>(null);
   const [indoorProjectDataSpreadsheet, setIndoorProjectDataSpreadsheet] =
     useState<IndoorProjectDataSpreadsheetAPIResponse | null>(null);
+  // Visualization data
+  const [potModuleVisualizationData, setPotModuleVisualizationData] =
+    useState<IndoorProjectDataVizAPIResponse | null>(null);
+  const [potGroupModuleVisualizationData, setPotGroupModuleVisualizationData] =
+    useState<IndoorProjectDataVizAPIResponse | null>(null);
+  const [traitModuleVisualizationData, setTraitModuleVisualizationData] =
+    useState<IndoorProjectDataViz2APIResponse | null>(null);
   const { indoorProject } = useLoaderData() as {
     indoorProject: IndoorProjectAPIResponse;
   };
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
-
-  console.log(indoorProjectDataSpreadsheet);
 
   useEffect(() => {
     const fetchIndoorProjectData = async (indoorProjectId: string) => {
@@ -96,6 +96,8 @@ export default function IndoorProjectDetail() {
       fetchIndoorProjectData(indoorProject.id);
     }
   }, [indoorProject]);
+
+  console.log(indoorProjectData);
 
   useEffect(() => {
     const fetchIndoorProjectSpreadsheet = async (
@@ -151,7 +153,7 @@ export default function IndoorProjectDetail() {
       // Reset states at the start of each fetch
       setStatus(null);
       setIsLoading(true);
-      setPotOverviewData(null);
+      setPotModuleVisualizationData(null);
 
       // Find the indoor project data id of the first spreadsheet
       const indoorProjectDataId = indoorProjectData.find(
@@ -165,16 +167,16 @@ export default function IndoorProjectDetail() {
       }
 
       try {
-        const data = await fetchIndoorProjectVizData(
-          indoorProject.id,
+        const data = await fetchPotGroupModuleVisualizationData({
+          indoorProjectId: indoorProject.id,
           indoorProjectDataId,
-          'side',
-          'single_pot'
-        );
+          cameraOrientation: 'side',
+          groupBy: 'single_pot',
+        });
 
         // Check if component is still mounted before updating state
         if (isMounted) {
-          setPotOverviewData(data);
+          setPotModuleVisualizationData(data);
         }
       } catch (error) {
         if (isMounted) {
@@ -199,10 +201,14 @@ export default function IndoorProjectDetail() {
     return () => {
       isMounted = false;
     };
-  }, [indoorProject, indoorProjectData, setPotOverviewData]);
+  }, [indoorProject, indoorProjectData, setPotModuleVisualizationData]);
 
   const formattedDate = (uploadedFile: IndoorProjectDataAPIResponse): string =>
     new Date(uploadedFile.upload_date).toLocaleDateString();
+
+  const indoorProjectDataId = indoorProjectData.find(
+    ({ file_type }) => file_type === '.xlsx'
+  )?.id;
 
   if (!indoorProject)
     return (
@@ -276,12 +282,14 @@ export default function IndoorProjectDetail() {
               ).toLocaleDateString()
             : 'Not available'}
         </span>
-        {isLoading || !indoorProjectDataSpreadsheet || !potOverviewData ? (
+        {isLoading ||
+        !indoorProjectDataSpreadsheet ||
+        !potModuleVisualizationData ? (
           <LoadingBars />
         ) : (
-          <div className="max-h-96 flex flex-wrap justify-start p-4 gap-4">
-            <PotOverview
-              data={potOverviewData}
+          <div className="max-h-[450px] flex flex-wrap justify-start p-4 gap-4 overflow-auto">
+            <PotModuleDataVisualization
+              data={potModuleVisualizationData}
               indoorProjectDataSpreadsheet={indoorProjectDataSpreadsheet}
               indoorProjectId={indoorProject.id}
             />
@@ -293,30 +301,29 @@ export default function IndoorProjectDetail() {
       <div className="border-b-2 border-gray-300" />
 
       <div className="py-4">
-        <h3>Graphs</h3>
-        <IndoorProjectDataVizForm
-          indoorProjectId={indoorProject.id}
-          indoorProjectDataId={
-            indoorProjectData.find(({ file_type }) => file_type === '.xlsx')?.id
-          }
-          setIndoorProjectDataVizData={setIndoorProjectDataVizData}
-        />
-        {indoorProjectDataVizData && (
-          <IndoorProjectDataVizGraph data={indoorProjectDataVizData} />
-        )}
-        {indoorProjectDataSpreadsheet && (
-          <IndoorProjectDataViz2Form
+        <h3>Visualizations</h3>
+        {indoorProjectDataId && (
+          <PotGroupModuleForm
             indoorProjectId={indoorProject.id}
-            indoorProjectDataId={
-              indoorProjectData.find(({ file_type }) => file_type === '.xlsx')
-                ?.id
-            }
-            numericColumns={indoorProjectDataSpreadsheet.numeric_columns}
-            setIndoorProjectDataViz2Data={setIndoorProjectDataViz2Data}
+            indoorProjectDataId={indoorProjectDataId}
+            setVisualizationData={setPotGroupModuleVisualizationData}
           />
         )}
-        {indoorProjectDataViz2Data && (
-          <IndoorProjectDataViz2Graph data={indoorProjectDataViz2Data} />
+        {potGroupModuleVisualizationData && (
+          <PotGroupModuleDataVisualization
+            data={potGroupModuleVisualizationData}
+          />
+        )}
+        {indoorProjectDataSpreadsheet && indoorProjectDataId && (
+          <TraitModuleForm
+            indoorProjectId={indoorProject.id}
+            indoorProjectDataId={indoorProjectDataId}
+            numericColumns={indoorProjectDataSpreadsheet.numeric_columns}
+            setVisualizationData={setTraitModuleVisualizationData}
+          />
+        )}
+        {traitModuleVisualizationData && (
+          <TraitModuleDataVisualization data={traitModuleVisualizationData} />
         )}
       </div>
     </IndoorProjectPageLayout>

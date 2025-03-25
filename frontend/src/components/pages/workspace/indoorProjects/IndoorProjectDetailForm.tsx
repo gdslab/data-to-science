@@ -1,4 +1,4 @@
-import axios, { AxiosResponse, isAxiosError } from 'axios';
+import axios, { isAxiosError } from 'axios';
 import { useState } from 'react';
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -26,11 +26,12 @@ export default function IndoorProjectDetailForm({
 
   const {
     formState: { isSubmitting },
-    // reset,
     handleSubmit,
   } = methods;
 
   const onSubmit: SubmitHandler<IndoorProjectFormInput> = async (values) => {
+    setStatus(null);
+
     try {
       const { title, description, startDate, endDate } = values;
       const payload = {
@@ -40,12 +41,14 @@ export default function IndoorProjectDetailForm({
         end_date: endDate,
       };
 
-      const response: AxiosResponse<IndoorProjectAPIResponse> = await axios.put(
+      await axios.put(
         `${import.meta.env.VITE_API_V1_STR}/indoor_projects`,
         payload
       );
-      const data = response.data;
-      console.log(data);
+      setStatus({
+        type: 'success',
+        msg: 'Indoor project updated successfully',
+      });
     } catch (err) {
       if (isAxiosError(err)) {
         setStatus({

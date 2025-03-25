@@ -1,15 +1,17 @@
 import Select, { SingleValue } from 'react-select';
 
-import { ColorMapOption } from '../../../maps/RasterSymbologySettings/cmaps';
+import { ColorMapOption } from '../../../../maps/RasterSymbologySettings/cmaps';
 import { nivoColorSchemeMap } from './nivoColorSchemeMap';
-import { nivoCategoricalColors, nivoColorMapGroupedOptions } from './utils';
+import { nivoCategoricalColors, nivoColorMapGroupedOptions } from '../utils';
 
 type ColorMapSelectProps = {
+  colorPreviewCount?: number;
   setColorOption: React.Dispatch<React.SetStateAction<string>>;
 };
 
 export default function ColorMapSelect({
   setColorOption,
+  colorPreviewCount,
 }: ColorMapSelectProps) {
   const handleChange = (colorOption: SingleValue<ColorMapOption>) => {
     if (colorOption) {
@@ -34,17 +36,19 @@ export default function ColorMapSelect({
         </div>
         {colors.length > 0 && (
           <div style={{ display: 'flex', marginLeft: '8px' }}>
-            {colors.map((color, index) => (
-              <div
-                key={index}
-                style={{
-                  width: '15px',
-                  height: '15px',
-                  backgroundColor: color,
-                  marginRight: '2px',
-                }}
-              />
-            ))}
+            {colors
+              .slice(0, colorPreviewCount || colors.length)
+              .map((color, index) => (
+                <div
+                  key={index}
+                  style={{
+                    width: '15px',
+                    height: '15px',
+                    backgroundColor: color,
+                    marginRight: '2px',
+                  }}
+                />
+              ))}
           </div>
         )}
       </div>

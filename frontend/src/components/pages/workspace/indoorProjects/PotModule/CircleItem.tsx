@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { Link } from 'react-router-dom';
 
-import { CircleItemProps } from './types';
+import { CircleItemProps } from '../IndoorProject';
 import { hsvToHex } from '../utils';
 
 export default function CircleItem({

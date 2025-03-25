@@ -1,15 +1,12 @@
 import axios, { AxiosResponse, isAxiosError } from 'axios';
-// import { useMemo, useState } from 'react';
 import { Link, Params, useLoaderData, useParams } from 'react-router-dom';
-// import { ResponsiveBar } from '@nivo/bar';
 
 import IndoorProjectPageLayout from './IndoorProjectPageLayout';
 import {
   IndoorProjectDataPlantAPIResponse,
   IndoorProjectDataVizAPIResponse,
 } from './IndoorProject';
-// import Modal from '../../../Modal';
-import IndoorProjectDataVizGraph from './IndoorProjectDataVizGraph';
+import PotGroupModuleDataVisualization from './PotGroupModule/PotGroupModuleDataVisualization';
 
 export async function loader({ params }: { params: Params<string> }) {
   try {
@@ -219,14 +216,14 @@ export default function IndoorProjectPlantDetail() {
 
   const { indoorProjectId } = useParams();
 
-  console.log(indoorProjectPlant);
-
   if (
     !indoorProjectPlant.ppew ||
     !indoorProjectPlant.topChart ||
     !indoorProjectPlant.sideChart
   )
     return null;
+
+  console.log(indoorProjectPlant);
 
   return (
     <IndoorProjectPageLayout>
@@ -258,12 +255,14 @@ export default function IndoorProjectPlantDetail() {
         {/* Top chart */}
         <div>
           <h2>Top</h2>
-          <IndoorProjectDataVizGraph data={indoorProjectPlant.topChart} />
+          <PotGroupModuleDataVisualization data={indoorProjectPlant.topChart} />
         </div>
         {/* Side chart */}
         <div>
           <h2>Side average</h2>
-          <IndoorProjectDataVizGraph data={indoorProjectPlant.sideChart} />
+          <PotGroupModuleDataVisualization
+            data={indoorProjectPlant.sideChart}
+          />
         </div>
         <Link to={`/indoor_projects/${indoorProjectId}`}>
           <button
