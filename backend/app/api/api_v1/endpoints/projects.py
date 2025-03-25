@@ -153,7 +153,6 @@ def update_project(
                     }
                 ],
             )
-
     updated_project = crud.project.update_project(
         db,
         project_id=project_id,

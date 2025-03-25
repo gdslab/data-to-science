@@ -250,6 +250,24 @@ def test_update_project_with_team(db: Session) -> None:
     )
     assert updated_team_member.role == Role.OWNER
 
+    # Add another team member with manager role
+    team_member2 = create_team_member(db, team_id=team.id)
+    updated_team_member2 = crud.team_member.update(
+        db,
+        db_obj=team_member2,
+        obj_in=TeamMemberUpdate(role=Role.MANAGER),
+    )
+    assert updated_team_member2.role == Role.MANAGER
+
+    # Add another team member with viewer role
+    team_member3 = create_team_member(db, team_id=team.id)
+    updated_team_member3 = crud.team_member.update(
+        db,
+        db_obj=team_member3,
+        obj_in=TeamMemberUpdate(role=Role.VIEWER),
+    )
+    assert updated_team_member3.role == Role.VIEWER
+
     # Create project owned by team member and update it with the team
     project = create_project(db, owner_id=team_member.member_id)
     project_in_update = ProjectUpdate(team_id=team.id)
@@ -272,10 +290,18 @@ def test_update_project_with_team(db: Session) -> None:
         db, project_id=project.id
     )
     assert project_members
-    assert len(project_members) == 2  # Original project owner and team owner
-    # Both project members should be owners
+    # Team owner, team manager, team viewer, and project owner
+    assert len(project_members) == 4
+    # Team member and project member roles should match
     for project_member in project_members:
-        assert project_member.role == Role.OWNER
+        if project_member.member_id == team_owner.id:
+            assert project_member.role == Role.OWNER
+        elif project_member.member_id == team_member2.member_id:
+            assert project_member.role == Role.MANAGER
+        elif project_member.member_id == team_member3.member_id:
+            assert project_member.role == Role.VIEWER
+        else:
+            assert project_member.role == Role.OWNER
 
 
 def test_update_project_with_team_not_owned_by_user(db: Session) -> None:

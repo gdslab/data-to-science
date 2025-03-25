@@ -84,14 +84,10 @@ class CRUDProjectMember(
         for project_member in new_members:
             if project_member[0] not in current_member_ids:
                 # Set project member role based on team member role
-                if project_member[1] == Role.OWNER:
-                    project_member_role = Role.OWNER
-                else:
-                    project_member_role = Role.VIEWER
                 project_members.append(
                     {
                         "member_id": project_member[0],
-                        "role": project_member_role,
+                        "role": project_member[1],
                         "project_id": project_id,
                     }
                 )

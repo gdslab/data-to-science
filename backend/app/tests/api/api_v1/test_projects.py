@@ -12,6 +12,7 @@ from app.schemas.data_product import DataProductCreate
 from app.schemas.project import ProjectUpdate
 from app.schemas.project_member import ProjectMemberCreate
 from app.schemas.role import Role
+from app.schemas.team_member import TeamMemberUpdate
 from app.schemas.user import UserUpdate
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.flight import create_flight
@@ -594,6 +595,52 @@ def test_update_project_with_new_team_replacing_old_team(
                 or project_member.member_id in current_team_member_ids
                 or project_member.id == current_user.id
             )
+
+
+def test_update_project_with_team_by_team_member_with_manager_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # Get current user
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    # Create team owned by another user
+    team_owner = create_user(db)
+    team = create_team(db, owner_id=team_owner.id)
+    # Add current user to team as manager
+    team_member = create_team_member(db, email=current_user.email, team_id=team.id)
+    team_member_in = TeamMemberUpdate(role=Role.MANAGER)
+    updated_team_member = crud.team_member.update(
+        db, db_obj=team_member, obj_in=team_member_in
+    )
+    assert updated_team_member.role == Role.MANAGER
+    # Create project owned by current user
+    project = create_project(db, owner_id=current_user.id)
+    # Update project with team
+    response = client.put(f"{API_URL}/{project.id}", json={"team_id": str(team.id)})
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["team_id"] == str(team.id)
+
+
+def test_update_project_with_team_by_team_member_with_viewer_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # Get current user
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    # Create team owned by another user
+    team_owner = create_user(db)
+    team = create_team(db, owner_id=team_owner.id)
+    # Add current user to team as viewer
+    team_member = create_team_member(db, email=current_user.email, team_id=team.id)
+    assert team_member.role == Role.VIEWER
+    # Create project owned by current user
+    project = create_project(db, owner_id=current_user.id)
+    # Update project with team
+    response = client.put(f"{API_URL}/{project.id}", json={"team_id": str(team.id)})
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_update_project_date_validation(

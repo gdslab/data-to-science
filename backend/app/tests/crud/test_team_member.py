@@ -58,7 +58,7 @@ def test_create_multi_team_members(db: Session) -> None:
 
 
 def test_create_mutli_team_members_with_existing_member(db: Session) -> None:
-
+    """Verify duplicate team members are not added to the team when adding multiple members."""
     team_owner = create_user(db)
     team = create_team(db, owner_id=team_owner.id)
     user1 = create_user(db)
@@ -74,6 +74,7 @@ def test_create_mutli_team_members_with_existing_member(db: Session) -> None:
 
 
 def test_create_multi_team_members_adds_project_members(db: Session) -> None:
+    """Verify new team members are added to projects when a team is assigned to them."""
     # Create team
     team_owner = create_user(db)
     team = create_team(db, owner_id=team_owner.id)
@@ -111,11 +112,7 @@ def test_create_multi_team_members_adds_project_members(db: Session) -> None:
 
 
 def test_no_duplicate_project_members_when_multiple_teams_assigned(db: Session) -> None:
-    """
-    If a project is edited to have a different team assignment, any
-    current project members that are in the new team assignment should
-    not be added again.
-    """
+    """Verify no duplicate project members when multiple teams are assigned to a project."""
     # Create two teams owned by same user
     team_owner = create_user(db)
     team1 = create_team(db, owner_id=team_owner.id)
