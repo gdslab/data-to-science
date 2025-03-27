@@ -74,126 +74,6 @@ export async function loader({ params }: { params: Params<string> }) {
   }
 }
 
-// const ImageModal = ({
-//   filename,
-//   indoorProjectId,
-//   indoorProjectDataId,
-// }: {
-//   filename: string;
-//   indoorProjectId: string;
-//   indoorProjectDataId: string;
-// }) => {
-//   const [isOpen, setIsOpen] = useState(false);
-
-//   const toggleIsOpen = () => setIsOpen(!isOpen);
-
-//   const degs = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330];
-
-//   const parts = filename.split('_');
-
-//   return (
-//     <div className="relative">
-//       <button onClick={toggleIsOpen}>Images</button>
-//       <Modal open={isOpen} setOpen={setIsOpen}>
-//         <div className="p-4 h-[400px]">
-//           <h3>Images</h3>
-//           <h4>RGB</h4>
-//           <ul className="list-disc list-inside">
-//             {degs.map((deg) => (
-//               <li key={deg}>
-//                 <a
-//                   href={`/static/indoor_projects/${indoorProjectId}/uploaded/${indoorProjectDataId}/Saturated/${
-//                     parts[0]
-//                   }_R_${parts[2]}_${parts[3]}_RGB-SideFull-${deg}-PNG_${
-//                     parts[5]
-//                   }_${parts[6]}_${parts[7].slice(0, -4)}.png`}
-//                   target="_blank"
-//                 >
-//                   {`${parts[0]}_R_${parts[2]}_${
-//                     parts[3]
-//                   }_RGB-SideFull-${deg}-PNG_${parts[5]}_${
-//                     parts[6]
-//                   }_${parts[7].slice(0, -4)}.png`}
-//                 </a>
-//               </li>
-//             ))}
-//           </ul>
-//         </div>
-//       </Modal>
-//     </div>
-//   );
-// };
-
-// const ChartModal = ({
-//   data,
-// }: {
-//   data: { btnLabel: string; label: string; values: [string, number][] };
-// }) => {
-//   const [isOpen, setIsOpen] = useState(false);
-
-//   const toggleIsOpen = () => setIsOpen(!isOpen);
-
-//   return (
-//     <div className="relative">
-//       <button onClick={toggleIsOpen}>{data.btnLabel}</button>
-//       <Modal open={isOpen} setOpen={setIsOpen}>
-//         <div className="p-4 h-[400px]">
-//           <ResponsiveBar
-//             data={data.values.map((row, index) => ({
-//               index: index + 1,
-//               [data.label]: row[1],
-//             }))}
-//             keys={[data.label]}
-//             indexBy="index"
-//             margin={{ top: 50, right: 15, bottom: 50, left: 60 }}
-//             padding={0.3}
-//             valueScale={{ type: 'linear' }}
-//             indexScale={{ type: 'band', round: true }}
-//             colors={{ scheme: 'nivo' }}
-//             borderColor={{
-//               from: 'color',
-//               modifiers: [['darker', 1.6]],
-//             }}
-//             axisTop={null}
-//             axisRight={null}
-//             axisBottom={{
-//               tickSize: 5,
-//               tickPadding: 5,
-//               tickRotation: 0,
-//               tickValues:
-//                 data.values.length <= 100
-//                   ? [0, 25, 50, 75, 100]
-//                   : [0, 50, 100, 150, 200, 250, 300, 350],
-//               legend: data.label,
-//               legendPosition: 'middle',
-//               legendOffset: 35,
-//               truncateTickAt: 0,
-//             }}
-//             axisLeft={{
-//               tickSize: 5,
-//               tickPadding: 5,
-//               tickRotation: 0,
-//               legend: 'count',
-//               legendPosition: 'middle',
-//               legendOffset: -50,
-//               truncateTickAt: 0,
-//             }}
-//             labelSkipWidth={12}
-//             labelSkipHeight={12}
-//             labelTextColor={{
-//               from: 'color',
-//               modifiers: [['darker', 1.6]],
-//             }}
-//             role="application"
-//             ariaLabel={`${data.label} Bar Chart`}
-//             barAriaLabel={(e) => e.id + ': ' + e.formattedValue}
-//           />
-//         </div>
-//       </Modal>
-//     </div>
-//   );
-// };
-
 const HeaderCell = ({ children }: { children: React.ReactNode }) => (
   <th className="p-2">{children}</th>
 );
@@ -223,7 +103,22 @@ export default function IndoorProjectPlantDetail() {
   )
     return null;
 
-  console.log(indoorProjectPlant);
+  const topImages: Record<string, string[]> = indoorProjectPlant.top.reduce(
+    (acc, { dfp, images }) => ({
+      ...acc,
+      [dfp]: images,
+    }),
+    {}
+  );
+
+  const sideImages: Record<string, string[]> =
+    indoorProjectPlant.side_avg.reduce(
+      (acc, { dfp, images }) => ({
+        ...acc,
+        [dfp]: images,
+      }),
+      {}
+    );
 
   return (
     <IndoorProjectPageLayout>
@@ -255,13 +150,17 @@ export default function IndoorProjectPlantDetail() {
         {/* Top chart */}
         <div>
           <h2>Top</h2>
-          <PotGroupModuleDataVisualization data={indoorProjectPlant.topChart} />
+          <PotGroupModuleDataVisualization
+            data={indoorProjectPlant.topChart}
+            images={topImages}
+          />
         </div>
         {/* Side chart */}
         <div>
           <h2>Side average</h2>
           <PotGroupModuleDataVisualization
             data={indoorProjectPlant.sideChart}
+            images={sideImages}
           />
         </div>
         <Link to={`/indoor_projects/${indoorProjectId}`}>

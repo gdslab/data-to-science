@@ -6,6 +6,8 @@ import ColorMapSelect from './ColorMapSelect';
 
 import { IndoorProjectDataViz2APIResponse } from '../IndoorProject';
 
+import { titleCaseConversion } from '../utils';
+
 export default function TraitModuleDataVisualization({
   data,
 }: {
@@ -51,8 +53,33 @@ export default function TraitModuleDataVisualization({
             indexBy="interval_days"
             enableLabel={false}
             colors={{ scheme: colorOption as ColorSchemeId }}
-            margin={{ top: 50, right: 110, bottom: 50, left: 80 }}
+            margin={{ top: 50, right: 110, bottom: 60, left: 100 }}
             groupMode="grouped"
+            theme={{
+              text: {
+                fontSize: 16,
+              },
+              legends: {
+                text: {
+                  fontSize: 16,
+                  fontFamily: 'inherit',
+                  fill: '#333333',
+                },
+              },
+              axis: {
+                legend: {
+                  text: {
+                    fontSize: 16,
+                    fontWeight: 500,
+                  },
+                },
+                ticks: {
+                  text: {
+                    fontSize: 16,
+                  },
+                },
+              },
+            }}
             axisTop={null}
             axisRight={null}
             axisBottom={{
@@ -60,7 +87,7 @@ export default function TraitModuleDataVisualization({
               tickPadding: 5,
               tickRotation: 0,
               legend: 'Dates after planting',
-              legendOffset: 40,
+              legendOffset: 50,
               legendPosition: 'middle',
               truncateTickAt: 0,
             }}
@@ -68,8 +95,8 @@ export default function TraitModuleDataVisualization({
               tickSize: 5,
               tickPadding: 5,
               tickRotation: 0,
-              legend: trait || 'Trait',
-              legendOffset: -70,
+              legend: titleCaseConversion(trait || 'Trait'),
+              legendOffset: -80,
               legendPosition: 'middle',
               truncateTickAt: 0,
             }}

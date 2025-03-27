@@ -66,7 +66,8 @@ class IndoorProjectData(IndoorProjectDataInDBBase):
     additional API exclusive attributes.
     """
 
-    directory_structure: Optional[Dict] = Field(exclude=True)
+    # directory_structure: Optional[Dict] = Field(exclude=True)
+    pass
 
 
 class IndoorProjectDataSpreadsheetSummary(BaseModel):
@@ -129,6 +130,7 @@ class IndoorProjectDataPlantSideAll(BaseModel):
 
 class IndoorProjectDataPlantSideAvg(BaseModel):
     filename: str
+    images: Optional[List[str]] = None
     exp_id: int
     pot_barcode: int
     variety: str
@@ -151,7 +153,8 @@ class IndoorProjectDataPlantSideAvg(BaseModel):
     fluorescence: int
 
     class Config:
-        extra = Extra.allow  # allows h0, h1, h2, etc. fields to be dynamically added
+        # extra = Extra.allow  # allows h0, h1, h2, etc. fields to be dynamically added
+        pass
 
     @classmethod
     def validate_dynamic_hue_fields(cls, values: Dict[str, int]) -> Dict[str, int]:
@@ -206,6 +209,7 @@ class IndoorProjectDataPlantSideAvg(BaseModel):
 
 class IndoorProjectDataPlantTop(BaseModel):
     filename: str
+    images: Optional[List[str]] = None
     exp_id: int
     pot_barcode: int
     variety: str
@@ -226,7 +230,8 @@ class IndoorProjectDataPlantTop(BaseModel):
     fluorescence: int
 
     class Config:
-        extra = Extra.allow  # allows h0, h1, h2, etc. fields to be dynamically added
+        # extra = Extra.allow  # allows h0, h1, h2, etc. fields to be dynamically added
+        pass
 
     @classmethod
     def validate_dynamic_hue_fields(cls, values: Dict[str, int]) -> Dict[str, int]:
@@ -281,9 +286,9 @@ class IndoorProjectDataPlantTop(BaseModel):
 
 class IndoorProjectDataSpreadsheetPlantData(BaseModel):
     ppew: IndoorProjectDataPlant
-    # top: List[IndoorProjectDataPlantTop]
+    top: List[IndoorProjectDataPlantTop]
     # side_all: List[IndoorProjectDataPlantSideAll]
-    # side_avg: List[IndoorProjectDataPlantSideAvg]
+    side_avg: List[IndoorProjectDataPlantSideAvg]
 
 
 class IndoorProjectDataSpreadsheetData(RootModel[Dict[int, IndoorProjectDataPlant]]):

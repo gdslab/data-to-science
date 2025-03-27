@@ -78,7 +78,7 @@ export default function PotModuleDataVisualization({
             />
           ))}
         </div>
-        <div className="flex gap-4 w-full">
+        <div className="flex gap-8 w-full">
           <Slider
             aria-label="Custom marks"
             value={selectedDayInterval}
@@ -90,7 +90,7 @@ export default function PotModuleDataVisualization({
             onChange={handleOnChange}
             sx={customSliderStyles}
           />
-          <span>Days</span>
+          <span className="min-w-40">Days after planting</span>
         </div>
       </div>
       <div>

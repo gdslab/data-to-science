@@ -1,8 +1,8 @@
+import chroma from 'chroma-js';
 import clsx from 'clsx';
 import { Link } from 'react-router-dom';
 
 import { CircleItemProps } from '../IndoorProject';
-import { hsvToHex } from '../utils';
 
 export default function CircleItem({
   group,
@@ -11,7 +11,7 @@ export default function CircleItem({
   url,
 }: CircleItemProps) {
   const { hue, saturation, intensity } = hsvColor;
-  const color = hsvToHex(hue, saturation, intensity);
+  const color = chroma.hsv(hue, saturation / 100, intensity / 100).hex();
   const isSaturated = treatment.toLowerCase() === 'saturated';
 
   return (

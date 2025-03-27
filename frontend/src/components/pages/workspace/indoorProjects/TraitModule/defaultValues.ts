@@ -1,6 +1,6 @@
-import { TraitFormData } from '../IndoorProject';
+import { TraitModuleFormData } from '../IndoorProject';
 
-const defaultValues: TraitFormData = {
+const defaultValues: TraitModuleFormData = {
   cameraOrientation: 'top',
   groupBy: 'treatment',
   targetTrait: '',

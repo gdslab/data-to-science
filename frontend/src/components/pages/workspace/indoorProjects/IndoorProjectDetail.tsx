@@ -1,26 +1,22 @@
-import axios, { AxiosResponse, isAxiosError } from 'axios';
-import { useEffect, useState } from 'react';
+import axios, { AxiosResponse } from 'axios';
 import { Params, useLoaderData } from 'react-router-dom';
 import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 
-import Alert, { Status } from '../../../Alert';
+import Alert from '../../../Alert';
 import {
   IndoorProjectAPIResponse,
   IndoorProjectDataAPIResponse,
-  IndoorProjectDataSpreadsheetAPIResponse,
-  IndoorProjectDataVizAPIResponse,
-  IndoorProjectDataViz2APIResponse,
 } from './IndoorProject';
 import IndoorProjectUploadModal from './IndoorProjectUploadModal';
 import IndoorProjectPageLayout from './IndoorProjectPageLayout';
 import LoadingBars from '../../../LoadingBars';
 
 import PotModuleDataVisualization from './PotModule/PotModuleDataVisualization';
-import { fetchPotGroupModuleVisualizationData } from './PotGroupModule/service';
 import PotGroupModuleForm from './PotGroupModule/PotGroupModuleForm';
 import PotGroupModuleDataVisualization from './PotGroupModule/PotGroupModuleDataVisualization';
 import TraitModuleForm from './TraitModule/TraitModuleForm';
 import TraitModuleDataVisualization from './TraitModule/TraitModuleDataVisualization';
+import { useIndoorProjectData } from './hooks/useIndoorProjectData';
 
 export async function loader({ params }: { params: Params<string> }) {
   try {
@@ -43,168 +39,24 @@ export async function loader({ params }: { params: Params<string> }) {
 }
 
 export default function IndoorProjectDetail() {
-  // Indoor project data from database
-  const [indoorProjectData, setIndoorProjectData] = useState<
-    IndoorProjectDataAPIResponse[]
-  >([]);
-  const [indoorProjectDataSpreadsheet, setIndoorProjectDataSpreadsheet] =
-    useState<IndoorProjectDataSpreadsheetAPIResponse | null>(null);
-  // Visualization data
-  const [potModuleVisualizationData, setPotModuleVisualizationData] =
-    useState<IndoorProjectDataVizAPIResponse | null>(null);
-  const [potGroupModuleVisualizationData, setPotGroupModuleVisualizationData] =
-    useState<IndoorProjectDataVizAPIResponse | null>(null);
-  const [traitModuleVisualizationData, setTraitModuleVisualizationData] =
-    useState<IndoorProjectDataViz2APIResponse | null>(null);
   const { indoorProject } = useLoaderData() as {
     indoorProject: IndoorProjectAPIResponse;
   };
-  const [isLoading, setIsLoading] = useState(false);
-  const [status, setStatus] = useState<Status | null>(null);
 
-  useEffect(() => {
-    const fetchIndoorProjectData = async (indoorProjectId: string) => {
-      try {
-        const response: AxiosResponse<IndoorProjectDataAPIResponse[]> =
-          await axios.get(
-            `${
-              import.meta.env.VITE_API_V1_STR
-            }/indoor_projects/${indoorProjectId}/uploaded`
-          );
-        setIndoorProjectData(response.data);
-      } catch (error) {
-        if (isAxiosError(error)) {
-          // Axios-specific error handling
-          const status = error.response?.status || 500;
-          const message = error.response?.data?.message || error.message;
-
-          throw {
-            status,
-            message: `Failed to load uploaded data: ${message}`,
-          };
-        } else {
-          // Generic error handling
-          throw {
-            status: 500,
-            message: 'An unexpected error occurred.',
-          };
-        }
-      }
-    };
-
-    if (indoorProject) {
-      fetchIndoorProjectData(indoorProject.id);
-    }
-  }, [indoorProject]);
-
-  console.log(indoorProjectData);
-
-  useEffect(() => {
-    const fetchIndoorProjectSpreadsheet = async (
-      indoorProjectId: string,
-      indoorProjectDataId: string
-    ) => {
-      try {
-        const response: AxiosResponse<IndoorProjectDataSpreadsheetAPIResponse> =
-          await axios.get(
-            `${
-              import.meta.env.VITE_API_V1_STR
-            }/indoor_projects/${indoorProjectId}/uploaded/${indoorProjectDataId}`
-          );
-        setIndoorProjectDataSpreadsheet({
-          records: response.data.records,
-          summary: { id: indoorProjectDataId, ...response.data.summary },
-          numeric_columns: response.data.numeric_columns,
-        });
-      } catch (error) {
-        if (isAxiosError(error)) {
-          // Axios-specific error handling
-          const status = error.response?.status || 500;
-          const message = error.response?.data?.message || error.message;
-
-          throw {
-            status,
-            message: `Failed to load spreadsheet data: ${message}`,
-          };
-        } else {
-          // Generic error handling
-          throw {
-            status: 500,
-            message: 'An unexpected error occurred.',
-          };
-        }
-      }
-    };
-
-    if (indoorProject && indoorProjectData.length > 0) {
-      const spreadsheets = indoorProjectData.filter(
-        ({ file_type }) => file_type === '.xlsx'
-      );
-      if (spreadsheets.length > 0) {
-        fetchIndoorProjectSpreadsheet(indoorProject.id, spreadsheets[0].id);
-      }
-    }
-  }, [indoorProject, indoorProjectData]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadVizData() {
-      // Reset states at the start of each fetch
-      setStatus(null);
-      setIsLoading(true);
-      setPotModuleVisualizationData(null);
-
-      // Find the indoor project data id of the first spreadsheet
-      const indoorProjectDataId = indoorProjectData.find(
-        ({ file_type }) => file_type === '.xlsx'
-      )?.id;
-
-      // If no indoor project or indoor project data id, return early
-      if (!indoorProject || !indoorProjectDataId) {
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const data = await fetchPotGroupModuleVisualizationData({
-          indoorProjectId: indoorProject.id,
-          indoorProjectDataId,
-          cameraOrientation: 'side',
-          groupBy: 'single_pot',
-        });
-
-        // Check if component is still mounted before updating state
-        if (isMounted) {
-          setPotModuleVisualizationData(data);
-        }
-      } catch (error) {
-        if (isMounted) {
-          setStatus({
-            type: 'error',
-            msg:
-              error instanceof Error
-                ? error.message
-                : 'Failed to load visualization data',
-          });
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    loadVizData();
-
-    // Cleanup function to prevent setting state on unmounted component
-    return () => {
-      isMounted = false;
-    };
-  }, [indoorProject, indoorProjectData, setPotModuleVisualizationData]);
+  const {
+    indoorProjectData,
+    indoorProjectDataSpreadsheet,
+    potModuleVisualizationData,
+    potGroupModuleVisualizationData,
+    traitModuleVisualizationData,
+    isLoading,
+    error,
+    setPotGroupModuleVisualizationData,
+    setTraitModuleVisualizationData,
+  } = useIndoorProjectData({ indoorProjectId: indoorProject.id });
 
   const formattedDate = (uploadedFile: IndoorProjectDataAPIResponse): string =>
-    new Date(uploadedFile.upload_date).toLocaleDateString();
+    new Date(uploadedFile.upload_date.toString()).toLocaleDateString();
 
   const indoorProjectDataId = indoorProjectData.find(
     ({ file_type }) => file_type === '.xlsx'
@@ -296,7 +148,7 @@ export default function IndoorProjectDetail() {
           </div>
         )}
       </div>
-      {status && <Alert alertType={status.type}>{status.msg}</Alert>}
+      {error && <Alert alertType="error">{error.message}</Alert>}
 
       <div className="border-b-2 border-gray-300" />
 

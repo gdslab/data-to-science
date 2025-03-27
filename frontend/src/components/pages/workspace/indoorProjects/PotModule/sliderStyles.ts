@@ -14,7 +14,7 @@ export const customSliderStyles = {
     },
   },
   '& .MuiSlider-markLabel': {
-    fontSize: '10px',
+    fontSize: '16px',
     color: 'black',
     left: '30px',
   },

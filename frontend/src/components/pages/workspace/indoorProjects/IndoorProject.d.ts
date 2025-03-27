@@ -56,6 +56,58 @@ export type IndoorProjectDataSpreadsheetAPIResponse = {
   numeric_columns: NumericColumns;
 };
 
+export type IndoorProjectDataSpreadsheetTop = {
+  filename: string;
+  images: string[];
+  exp_id: number;
+  pot_barcode: number;
+  variety: string;
+  treatment: string;
+  scan_time: string;
+  scan_date: string;
+  dfp: number;
+  angle: number;
+  surface: number;
+  convex_hull: number;
+  roundness: number;
+  center_of_mass_distance: number;
+  center_of_mass_x: number;
+  center_of_mass_y: number;
+  hue: number;
+  saturation: number;
+  intensity: number;
+  fluorescence: number;
+  // [key: `h${number}`]: number;
+  // [key: `s${number}`]: number;
+  // [key: `v${number}`]: number;
+  // [key: `f${number}`]: number;
+}[];
+
+export type IndoorProjectDataSpreadsheetSideAvg = {
+  filename: string;
+  images: string[];
+  exp_id: number;
+  pot_barcode: number;
+  variety: string;
+  treatment: string;
+  scan_time: string;
+  scan_date: string;
+  dfp: number;
+  view: string;
+  width: number;
+  height: number;
+  surface: number;
+  convex_hull: number;
+  roundness: number;
+  center_of_mass_distance: number;
+  center_of_mass_x: number;
+  center_of_mass_y: number;
+  hue: number;
+  saturation: number;
+  intensity: number;
+  fluorescence: number;
+}[];
+
 export type IndoorProjectDataPlantAPIResponse = {
   ppew: {
     exp_id: number;
@@ -70,31 +122,7 @@ export type IndoorProjectDataPlantAPIResponse = {
     year: number;
     pi: string;
   };
-  // top: {
-  //   filename: string;
-  //   exp_id: number;
-  //   pot_barcode: number;
-  //   variety: string;
-  //   treatment: string;
-  //   scan_time: string;
-  //   scan_date: string;
-  //   dfp: number;
-  //   angle: number;
-  //   surface: number;
-  //   convex_hull: number;
-  //   roundness: number;
-  //   center_of_mass_distance: number;
-  //   center_of_mass_x: number;
-  //   center_of_mass_y: number;
-  //   hue: number;
-  //   saturation: number;
-  //   intensity: number;
-  //   fluorescence: number;
-  //   [key: `h${number}`]: number;
-  //   [key: `s${number}`]: number;
-  //   [key: `v${number}`]: number;
-  //   [key: `f${number}`]: number;
-  // }[];
+  top: IndoorProjectDataSpreadsheetTop;
   // side_all: {
   //   filename: string;
   //   exp_id: number;
@@ -119,29 +147,7 @@ export type IndoorProjectDataPlantAPIResponse = {
   //   intensity: number;
   //   fluorescence: number;
   // }[];
-  // side_avg: {
-  //   filename: string;
-  //   exp_id: number;
-  //   pot_barcode: number;
-  //   variety: string;
-  //   treatment: string;
-  //   scan_time: string;
-  //   scan_date: string;
-  //   dfp: number;
-  //   view: string;
-  //   width: number;
-  //   height: number;
-  //   surface: number;
-  //   convex_hull: number;
-  //   roundness: number;
-  //   center_of_mass_distance: number;
-  //   center_of_mass_x: number;
-  //   center_of_mass_y: number;
-  //   hue: number;
-  //   saturation: number;
-  //   intensity: number;
-  //   fluorescence: number;
-  // }[];
+  side_avg: IndoorProjectDataSpreadsheetSideAvg;
 };
 
 export type IndoorProjectDataVizRecord = {

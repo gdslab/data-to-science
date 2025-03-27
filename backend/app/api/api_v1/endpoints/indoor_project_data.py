@@ -1,6 +1,7 @@
 import logging
+import os
 from datetime import datetime, timedelta
-from typing import Any, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Union, Sequence, Tuple
 
 import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -9,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
-
+from app.api.api_v1.endpoints.data_products import get_static_dir
 
 logger = logging.getLogger("__name__")
 
@@ -34,7 +35,6 @@ def read_indoor_project_data(
     indoor_project_data = crud.indoor_project_data.read_multi_by_id(
         db, indoor_project_id=indoor_project_id
     )
-
     return indoor_project_data
 
 
@@ -226,6 +226,22 @@ def read_indoor_project_data_plant(
             detail="Only RGB data supported at this time",
         )
 
+    # Check if we have images for this experiment
+    indoor_project_files = crud.indoor_project_data.read_multi_by_id(
+        db, indoor_project_id=indoor_project_id
+    )
+    image_file_id: Union[UUID4, None] = None
+    image_directory_structure: Union[Dict, None] = None
+    if len(indoor_project_files) > 0:
+        for file in indoor_project_files:
+            if file.file_type == ".tar":
+                if (
+                    file.directory_structure.get("name")
+                    and file.directory_structure.get("children")
+                    and len(file.directory_structure["children"]) > 0
+                ):
+                    image_directory_structure = file.directory_structure
+                    image_file_id = file.id
     try:
         # read "PPEW" worksheet into pandas dataframe
         ppew_df = pd.read_excel(
@@ -239,16 +255,16 @@ def read_indoor_project_data_plant(
             detail="Spreadsheet missing 'PPEW' worksheet",
         )
 
-    # try:
-    #     # read "TOP" worksheet into pandas dataframe
-    #     top_df = pd.read_excel(
-    #         spreadsheet_file.file_path, sheet_name="Top", dtype={"VARIETY": str}
-    #     )
-    # except ValueError:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_400_BAD_REQUEST,
-    #         detail="Spreadsheet missing 'Top' worksheet",
-    #     )
+    try:
+        # read "TOP" worksheet into pandas dataframe
+        top_df = pd.read_excel(
+            spreadsheet_file.file_path, sheet_name="Top", dtype={"VARIETY": str}
+        )
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Spreadsheet missing 'Top' worksheet",
+        )
 
     # try:
     #     # read "Side All" worksheet into pandas dataframe
@@ -263,24 +279,24 @@ def read_indoor_project_data_plant(
     #         detail="Spreadsheet missing 'Side all' worksheet",
     #     )
 
-    # try:
-    #     # read "Side Average" worksheet into pandas dataframe
-    #     side_avg_df = pd.read_excel(
-    #         spreadsheet_file.file_path,
-    #         sheet_name="Side average",
-    #         dtype={"VARIETY": str},
-    #     )
-    # except ValueError:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_400_BAD_REQUEST,
-    #         detail="Spreadsheet missing 'Side average' worksheet",
-    #     )
+    try:
+        # read "Side Average" worksheet into pandas dataframe
+        side_avg_df = pd.read_excel(
+            spreadsheet_file.file_path,
+            sheet_name="Side average",
+            dtype={"VARIETY": str},
+        )
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Spreadsheet missing 'Side average' worksheet",
+        )
 
     # search for row with matching pot barcode
     pot_ppew_df = ppew_df.query(f"POT_BARCODE == {plant_id}")
-    # pot_top_df = top_df.query(f"POT_BARCODE == {plant_id}")
+    pot_top_df = top_df.query(f"POT_BARCODE == {plant_id}")
     # pot_side_all_df = side_all_df.query(f"POT_BARCODE == {plant_id}")
-    # pot_side_avg_df = side_avg_df.query(f"POT_BARCODE == {plant_id}")
+    pot_side_avg_df = side_avg_df.query(f"POT_BARCODE == {plant_id}")
 
     # raise exception if no records in PPEW worksheet
     if len(pot_ppew_df) == 0:
@@ -290,11 +306,11 @@ def read_indoor_project_data_plant(
         )
 
     # raise exception if no records in Top worksheet
-    # if len(pot_top_df) == 0:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_400_BAD_REQUEST,
-    #         detail="Top worksheet has zero records",
-    #     )
+    if len(pot_top_df) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Top worksheet has zero records",
+        )
 
     # raise exception if no records in Side all worksheet
     # if len(pot_side_all_df) == 0:
@@ -304,11 +320,11 @@ def read_indoor_project_data_plant(
     #     )
 
     # raise exception if no records in Side average worksheet
-    # if len(pot_side_avg_df) == 0:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_400_BAD_REQUEST,
-    #         detail="Side average worksheet has zero records",
-    #     )
+    if len(pot_side_avg_df) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Side average worksheet has zero records",
+        )
 
     # raise exception if more than one record found for pot barcode
     if len(pot_ppew_df) > 1:
@@ -319,15 +335,15 @@ def read_indoor_project_data_plant(
 
     # convert column names to all lowercase characters
     pot_ppew_df.columns = pot_ppew_df.columns.str.lower()
-    # pot_top_df.columns = pot_top_df.columns.str.lower()
+    pot_top_df.columns = pot_top_df.columns.str.lower()
     # pot_side_all_df.columns = pot_side_all_df.columns.str.lower()
-    # pot_side_avg_df.columns = pot_side_avg_df.columns.str.lower()
+    pot_side_avg_df.columns = pot_side_avg_df.columns.str.lower()
 
     # replace any spaces in column names with underscores
     pot_ppew_df.columns = pot_ppew_df.columns.str.replace(" ", "_")
-    # pot_top_df.columns = pot_top_df.columns.str.replace(" ", "_")
+    pot_top_df.columns = pot_top_df.columns.str.replace(" ", "_")
     # pot_side_all_df.columns = pot_side_all_df.columns.str.replace(" ", "_")
-    # pot_side_avg_df.columns = pot_side_avg_df.columns.str.replace(" ", "_")
+    pot_side_avg_df.columns = pot_side_avg_df.columns.str.replace(" ", "_")
 
     # convert planting date to datetime string YYYY-mm-dd HH:MM:SS
     pot_ppew_df["planting_date"] = pot_ppew_df["planting_date"].dt.strftime(
@@ -335,23 +351,23 @@ def read_indoor_project_data_plant(
     )
 
     # convert scan date to date string YYYY-mm-dd
-    # pot_top_df["scan_date"] = pot_top_df["scan_date"].dt.strftime("%Y-%m-%d")
+    pot_top_df["scan_date"] = pot_top_df["scan_date"].dt.strftime("%Y-%m-%d")
     # pot_side_all_df["scan_date"] = pot_side_all_df["scan_date"].dt.strftime("%Y-%m-%d")
-    # pot_side_avg_df["scan_date"] = pot_side_avg_df["scan_date"].dt.strftime("%Y-%m-%d")
+    pot_side_avg_df["scan_date"] = pot_side_avg_df["scan_date"].dt.strftime("%Y-%m-%d")
 
     # replace nan with "" for object columns and -9999 for numeric columns
     pot_ppew_df = pot_ppew_df.apply(
         lambda col: col.fillna("") if col.dtype == "object" else col.fillna(-9999)
     )
-    # pot_top_df = pot_top_df.apply(
-    #     lambda col: col.fillna("") if col.dtype == "object" else col.fillna(-9999)
-    # )
+    pot_top_df = pot_top_df.apply(
+        lambda col: col.fillna("") if col.dtype == "object" else col.fillna(-9999)
+    )
     # pot_side_all_df = pot_side_all_df.apply(
     #     lambda col: col.fillna("") if col.dtype == "object" else col.fillna(-9999)
     # )
-    # pot_side_avg_df = pot_side_avg_df.apply(
-    #     lambda col: col.fillna("") if col.dtype == "object" else col.fillna(-9999)
-    # )
+    pot_side_avg_df = pot_side_avg_df.apply(
+        lambda col: col.fillna("") if col.dtype == "object" else col.fillna(-9999)
+    )
 
     # columns to send to client from ppew worksheet
     ppew_columns_of_interest = [
@@ -377,15 +393,74 @@ def read_indoor_project_data_plant(
         else:
             ppew_summary[column] = ""
 
-    # top_records = pot_top_df.to_dict(orient="records")
-    # side_all_records = pot_side_all_df.to_dict(orient="records")
-    # side_avg_records = pot_side_avg_df.to_dict(orient="records")
+    top_records = pot_top_df.to_dict(orient="records")
+    side_avg_records = pot_side_avg_df.to_dict(orient="records")
 
+    if image_directory_structure and image_file_id:
+        for record in top_records:
+            record["images"] = []
+            search_term_parts = record["filename"].split("_")
+            if len(search_term_parts) < 4:
+                break
+            search_term = (
+                search_term_parts[0]
+                + "_"
+                + "R"
+                + "_"
+                + search_term_parts[2]
+                + "_"
+                + search_term_parts[3]
+                + "_"
+                + "RGB-Top"
+            )
+            for image_file in image_directory_structure["children"]:
+                # print(f"image_file: {image_file}")
+                # print(f"search_term: {search_term}")
+                if search_term in image_file["name"]:
+                    record["images"].append(
+                        construct_image_path(
+                            indoor_project_id=str(indoor_project_id),
+                            indoor_project_data_id=str(image_file_id),
+                            root_name=image_directory_structure["name"],
+                            filename=image_file["name"],
+                        )
+                    )
+
+        print("SIDE AVERAGE")
+        for record in side_avg_records:
+            record["images"] = []
+            search_term_parts = record["filename"].split("_")
+            if len(search_term_parts) < 4:
+                break
+            search_term = (
+                search_term_parts[0]
+                + "_"
+                + "R"
+                + "_"
+                + search_term_parts[2]
+                + "_"
+                + search_term_parts[3]
+                + "_"
+                + "RGB-Side"
+            )
+            for image_file in image_directory_structure["children"]:
+                # print(f"image_file: {image_file}")
+                # print(f"search_term: {search_term}")
+                if search_term in image_file["name"]:
+                    record["images"].append(
+                        construct_image_path(
+                            indoor_project_id=str(indoor_project_id),
+                            indoor_project_data_id=str(image_file_id),
+                            root_name=image_directory_structure["name"],
+                            filename=image_file["name"],
+                        )
+                    )
+    print(side_avg_records)
     payload = {
         "ppew": ppew_summary,
-        # "top": top_records,
+        "top": top_records,
         # "side_all": side_all_records,
-        # "side_avg": side_avg_records,
+        "side_avg": side_avg_records,
     }
 
     try:
@@ -838,3 +913,37 @@ def normalize_group_by(group_by: schemas.indoor_project_data.GroupBy) -> str:
         raise ValueError(f"Invalid group_by value: {group_by}")
 
     return group_by_lower
+
+
+def construct_image_path(
+    indoor_project_id: str,
+    indoor_project_data_id: str,
+    root_name: str,
+    filename: str,
+) -> str:
+    """Construct the path to an image file in the static directory.
+
+    Args:
+        indoor_project_id (str): Indoor project ID.
+        indoor_project_data_id (str): Indoor project data ID.
+        root_name (str): Root name of the image file.
+        filename (str): Filename of the image file.
+
+    Returns:
+        str: Path to the image file.
+    """
+    static_dir = get_static_dir()
+    image_path = os.path.join(
+        static_dir,
+        "indoor_projects",
+        indoor_project_id,
+        "uploaded",
+        indoor_project_data_id,
+        root_name,
+        filename,
+    )
+
+    if os.path.exists(image_path):
+        return image_path
+    else:
+        return ""

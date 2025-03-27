@@ -74,6 +74,7 @@ async def verify_static_file_access(request: Request) -> None:
         HTTPException: User associated with access token not found
         HTTPException: User does not have access to project
     """
+    print("VERIFYING STATIC FILE ACCESS")
     # check if access to color bar's data product is restricted or public
     if "colorbars" in request.url.path:
         try:
@@ -136,7 +137,28 @@ async def verify_static_file_access(request: Request) -> None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="user not found"
         )
-    if "projects" in request.url.path:
+    if "indoor_projects" in request.url.path:
+        try:
+            indoor_project_id = request.url.path.split("/indoor_projects/")[1].split(
+                "/"
+            )[0]
+            indoor_project_id_uuid = UUID(indoor_project_id)
+        except (IndexError, ValueError):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="indoor project not found"
+            )
+        try:
+            indoor_project = crud.indoor_project.read_by_user_id(
+                SessionLocal(),
+                user_id=user.id,
+                indoor_project_id=indoor_project_id_uuid,
+            )
+            assert indoor_project
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="indoor project not found"
+            )
+    elif "projects" in request.url.path:
         try:
             project_id = request.url.path.split("/projects/")[1].split("/")[0]
             project_id_uuid = UUID(project_id)
