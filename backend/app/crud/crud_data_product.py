@@ -252,13 +252,16 @@ def set_bbox_attr(data_product: DataProduct) -> None:
                 )
                 # Set bounding box as attribute on data product object
                 setattr(data_product, "bbox", wgs84_bbox)
+                # Set CRS and resolution as attributes on data product object
+                setattr(data_product, "crs", {"epsg": src.crs.to_epsg()})
+                setattr(data_product, "resolution", {"x": src.res[0], "y": src.res[1]})
         except CRSError:
             logger.exception(
                 f"Unable to transform bounds for data product: {data_product.id}"
             )
         except Exception:
             logger.exception(
-                f"Failed to set bbox attribute for data product: {data_product.id}"
+                f"Failed to set bbox and other attributes for data product: {data_product.id}"
             )
 
 
