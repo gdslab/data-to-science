@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Dict, List, Optional
 from uuid import UUID
 
 from pydantic import AnyHttpUrl, BaseModel, Field
@@ -56,6 +56,8 @@ class DataProductSignature(BaseModel):
 
 class DataProduct(DataProductInDBBase):
     bbox: Optional[List[float]] = None
+    crs: Optional[Dict] = None
+    resolution: Optional[Dict] = None
     public: bool = False
     signature: Optional[DataProductSignature] = None
     status: Optional[str] = None
