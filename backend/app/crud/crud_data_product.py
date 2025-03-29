@@ -253,7 +253,7 @@ def set_bbox_attr(data_product: DataProduct) -> None:
                 # Set bounding box as attribute on data product object
                 setattr(data_product, "bbox", wgs84_bbox)
                 # Set CRS and resolution as attributes on data product object
-                setattr(data_product, "crs", {"epsg": src.crs.to_epsg()})
+                setattr(data_product, "crs", {"epsg": src.crs.to_epsg(), "unit": src.crs.linear_units})
                 setattr(data_product, "resolution", {"x": src.res[0], "y": src.res[1]})
         except CRSError:
             logger.exception(
