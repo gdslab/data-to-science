@@ -15,6 +15,7 @@ from app.api.deps import get_db
 from app.core.celery_app import celery_app
 from app.core.config import settings
 from app.core.security import get_token_hash
+from app.schemas.image_processing_backend import ImageProcessingBackend
 from app.schemas.job import Status
 from app.utils.job_manager import JobManager
 from app.utils.RpcClient import RpcClient
@@ -105,6 +106,7 @@ def transfer_raw_data(
     raw_data_id: UUID,
     user_id: UUID,
     job_id: UUID,
+    backend: ImageProcessingBackend,
     ip_settings: Dict,
 ) -> Tuple[UUID, str]:
     """Transfer raw data to external storage using rsync.
@@ -119,6 +121,7 @@ def transfer_raw_data(
         raw_data_id (UUID): Raw data ID.
         user_id (UUID): User ID.
         job_id (UUID): Job ID.
+        backend (ImageProcessingBackend): Backend to use.
         ip_settings (Dict): Image processing settings.
 
     Raises:
@@ -188,6 +191,7 @@ def transfer_raw_data(
                 "token": token,
                 "user_id": str(user_id),
                 "job_id": str(job_id),
+                "backend": backend.value,
                 "settings": ip_settings,
             }
             info_file.write(json.dumps(raw_data_meta))
@@ -201,8 +205,8 @@ def transfer_raw_data(
     return job_id, raw_data_identifier
 
 
-@celery_app.task(name="process_raw_data_task")
-def process_raw_data(task_data: Tuple[UUID, str]) -> None:
+@celery_app.task(name="start_raw_data_processing_task")
+def start_raw_data_processing(task_data: Tuple[UUID, str]) -> None:
     """Starts job on external server to process raw data.
 
     Args:

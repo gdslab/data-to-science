@@ -13,10 +13,11 @@ from sqlalchemy.orm import Session
 from app import crud, models, schemas
 from app.api import deps
 from app.core.config import settings
+from app.schemas.image_processing_backend import ImageProcessingBackend
 from app.schemas.job import State, Status
 from app.schemas.raw_data import ImageProcessingQueryParams
 from app.tasks.raw_image_processing_tasks import (
-    process_raw_data as process_raw_data_task,
+    start_raw_data_processing,
     transfer_raw_data,
 )
 from app.tasks.utils import is_valid_filename
@@ -169,36 +170,31 @@ def process_raw_data(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Must accept conditions to use this feature",
         )
+    # set default image processing backend to ODM
+    image_processing_backend = ImageProcessingBackend.ODM
 
     # check for "image_processing" extension
     required_extension = "image_processing"
     extension = crud.extension.get_extension_by_name(
         db, extension_name=required_extension
     )
-    if not extension:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f'Required "{required_extension}" extension not installed',
-        )
-    # check if user has permission to run this endpoint (by user.extensions or team.extensions)
-    user_has_active_extension = False
-    user_extension = crud.extension.get_user_extension(
-        db, extension_id=extension.id, user_id=current_user.id
-    )
-    if user_extension:
-        user_has_active_extension = True
-    if not user_has_active_extension:
-        team_extension_by_user = crud.extension.get_team_extension_by_user(
+    if extension:
+        # check if user has permission to run this endpoint (by user.extensions or team.extensions)
+        user_has_active_extension = False
+        user_extension = crud.extension.get_user_extension(
             db, extension_id=extension.id, user_id=current_user.id
         )
-        if team_extension_by_user:
+        if user_extension:
             user_has_active_extension = True
+        if not user_has_active_extension:
+            team_extension_by_user = crud.extension.get_team_extension_by_user(
+                db, extension_id=extension.id, user_id=current_user.id
+            )
+            if team_extension_by_user:
+                user_has_active_extension = True
 
-    if not user_has_active_extension:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Missing required extension for this operation",
-        )
+        if user_has_active_extension:
+            image_processing_backend = ImageProcessingBackend.METASHAPE
 
     # check if a job processing raw data is currently ongoing
     existing_jobs = crud.job.get_by_raw_data_id(
@@ -261,9 +257,10 @@ def process_raw_data(
                 raw_data.id,
                 current_user.id,
                 processing_job.job_id,
+                image_processing_backend,
                 ip_settings.model_dump(),
             )
-            | process_raw_data_task.s(),
+            | start_raw_data_processing.s(),
         ).apply_async()
     else:
         logger.error(
