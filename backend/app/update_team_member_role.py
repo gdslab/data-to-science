@@ -1,8 +1,6 @@
 import logging
 from sqlalchemy import select, update
 from app.db.session import SessionLocal
-from app.models.project import Project
-from app.models.project_member import ProjectMember
 from app.models.team import Team
 from app.models.team_member import TeamMember
 
@@ -15,7 +13,7 @@ def load() -> None:
         try:
             with session.begin():
                 """
-                # STEP 1: Update team owners to have the role "OWNER" in the team_member table
+                # Update team owners to have the role "OWNER" in the team_member table
                 # This is necessary because the team_member table was created with the role "MEMBER" for all team members
                 # and we need to update the role for team owners to "OWNER"
                 """
@@ -47,25 +45,6 @@ def load() -> None:
                     # No explicit commit needed because of session.begin()
                 else:
                     logger.info("No team owners need updating.")
-
-                """
-                # Step 2: Update team owners to project owners in the project_member table
-                # This is necessary because team owners were originally added as project members with the role "viewer"
-                # and we need to update the role for team owners to "owner"
-                """
-                # Check if we need to update project owners
-                # project_members_to_update = (
-                #     session.execute(
-                #         select(ProjectMember)
-                #         .join(Team, TeamMember.team_id == Team.id)
-                #         .filter(
-                #             Team.owner_id == TeamMember.member_id,
-                #             TeamMember.role == "OWNER",
-                #         )
-                #     )
-                #     .scalars()
-                #     .all()
-                # )
         except Exception as e:
             logger.error(f"Error during update: {e}")
             raise

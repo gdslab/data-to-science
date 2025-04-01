@@ -148,6 +148,22 @@ def test_update_project_member(db: Session) -> None:
     assert result.role == Role.MANAGER
 
 
+def test_update_project_owner_member_role(db: Session) -> None:
+    project_owner = create_user(db)
+    project = create_project(db, owner_id=project_owner.id)
+    project_member = crud.project_member.get_by_project_and_member_id(
+        db, project_id=project.id, member_id=project_owner.id
+    )
+    assert project_member
+    project_member_in_update = ProjectMemberUpdate(role=Role.MANAGER)
+    project_member_update = crud.project_member.update_project_member(
+        db,
+        project_member_obj=project_member,
+        project_member_in=project_member_in_update,
+    )
+    assert project_member_update["result"] is None
+
+
 def test_update_role_for_only_project_owner(db: Session) -> None:
     owner = create_user(db)
     project = create_project(db, owner_id=owner.id)

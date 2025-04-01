@@ -1,7 +1,7 @@
 from typing import List, Optional, Sequence
 from uuid import UUID
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
 from app import crud
@@ -164,7 +164,10 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamUpdate]):
                 .where(
                     and_(
                         TeamMember.member_id == user_id,
-                        TeamMember.role == Role.OWNER,
+                        or_(
+                            TeamMember.role == Role.OWNER,
+                            TeamMember.role == Role.MANAGER,
+                        ),
                     )
                 )
             )

@@ -2,10 +2,9 @@ from typing import List, Optional, Sequence, Tuple, TypedDict
 from uuid import UUID
 
 from fastapi import status
-from fastapi.encoders import jsonable_encoder
-from sqlalchemy import select
+from sqlalchemy import select, true
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import Bundle, Session
+from sqlalchemy.orm import Bundle, Session, joinedload
 from sqlalchemy.sql.selectable import Select
 
 from app import crud
@@ -143,25 +142,67 @@ class CRUDProjectMember(
         project_member_obj: ProjectMember,
         project_member_in: ProjectMemberUpdate,
     ) -> UpdateProjectMember:
-        # only update if there will still be at least one owner for the project
-        project_owners = self.get_list_of_project_members(
-            db, project_id=project_member_obj.project_id, role=Role.OWNER
-        )
-        # deny update action if there is only one owner and its the member being updated
-        if len(project_owners) == 1 and project_owners[0].id == project_member_obj.id:
+        """Update project member role. Reject update action if:
+        - The member being updated is the project creator.
+        - The member being updated is the only owner of the project.
+        Args:
+            db (Session): Database session.
+            project_member_obj (ProjectMember): Project member object.
+            project_member_in (ProjectMemberUpdate): Project member update.
+
+        Returns:
+            UpdateProjectMember: Update project member response.
+        """
+        with db as session:
+            # Get project
+            project_statement = (
+                select(Project)
+                .where(Project.id == project_member_obj.project_id)
+                .where(Project.is_active == true())
+            )
+            project = session.execute(project_statement).scalar_one_or_none()
+            if not project:
+                return {
+                    "response_code": status.HTTP_404_NOT_FOUND,
+                    "message": "Project not found",
+                    "result": None,
+                }
+
+            # Get all project owners
+            owners_statement = (
+                select(ProjectMember)
+                .where(ProjectMember.project_id == project.id)
+                .where(ProjectMember.role == Role.OWNER)
+            )
+            project_owners = session.execute(owners_statement).scalars().all()
+
+            # Reject update action if the member being updated is the project creator
+            if project_member_obj.member_id == project.owner_id:
+                return {
+                    "response_code": status.HTTP_400_BAD_REQUEST,
+                    "message": "Cannot change project creator role",
+                    "result": None,
+                }
+            # Reject update action if there is only one owner and its the member being updated
+            if (
+                len(project_owners) == 1
+                and project_owners[0].id == project_member_obj.id
+            ):
+                return {
+                    "response_code": status.HTTP_400_BAD_REQUEST,
+                    "message": "Must have at least one project owner",
+                    "result": None,
+                }
+            # Update project member role
+            updated_project_member = crud.project_member.update(
+                db, db_obj=project_member_obj, obj_in=project_member_in
+            )
+            # Return success response
             return {
-                "response_code": status.HTTP_400_BAD_REQUEST,
-                "message": "Must have at least one project owner",
-                "result": None,
+                "response_code": status.HTTP_200_OK,
+                "message": "Project member updated",
+                "result": updated_project_member,
             }
-        updated_project_member = crud.project_member.update(
-            db, db_obj=project_member_obj, obj_in=project_member_in
-        )
-        return {
-            "response_code": status.HTTP_200_OK,
-            "message": "Project member updated",
-            "result": updated_project_member,
-        }
 
     def delete_multi(
         self, db: Session, project_id: UUID, team_id: UUID

@@ -17,6 +17,8 @@ class TeamMemberBase(BaseModel):
 
 # properties to receive via API on creation
 class TeamMemberCreate(TeamMemberBase):
+    role: Role = Role.VIEWER
+
     @model_validator(mode="after")
     def check_email_or_member_id(self) -> Self:
         if not self.email and not self.member_id:

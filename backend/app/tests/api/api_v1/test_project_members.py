@@ -268,50 +268,39 @@ def test_get_project_members_without_project_access(
 def test_update_project_member_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
+    # Create project owned by current user
     current_user = get_current_approved_user(
         get_current_user(db, normal_user_access_token),
     )
     project = create_project(db, owner_id=current_user.id)
+    # Create project member with viewer role
     project_member = create_project_member(db, role=Role.VIEWER)
+    # Update project member role to manager
     project_member_in = {"role": "manager"}
     response = client.put(
         f"{API_URL}/{project.id}/members/{project_member.id}", json=project_member_in
     )
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     updated_project_member = response.json()
     assert updated_project_member["id"] == str(project_member.id)
     assert updated_project_member["role"] == "manager"
 
 
-def test_update_demo_project_member_with_project_owner_role(
-    client: TestClient, db: Session, normal_user_access_token: str
-) -> None:
-    current_user = get_current_approved_user(
-        get_current_user(db, normal_user_access_token),
-    )
-    project = create_project(db, owner_id=current_user.id)
-    project_member = create_project_member(db, role=Role.VIEWER)
-    demo_user = crud.user.get(db, id=project_member.member_id)
-    assert demo_user is not None
-    crud.user.update(db, db_obj=demo_user, obj_in=UserUpdate(is_demo=True))
-    project_member_in = {"role": "manager"}
-    response = client.put(
-        f"{API_URL}/{project.id}/members/{project_member.id}", json=project_member_in
-    )
-    assert response.status_code == 403
-
-
 def test_update_project_member_with_project_manager_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
+    # Create project not owned by current user
+    project = create_project(db)
+    # Add current user as manager to project
     current_user = get_current_approved_user(
         get_current_user(db, normal_user_access_token),
     )
-    project = create_project(db)
     create_project_member(
         db, email=current_user.email, project_id=project.id, role=Role.MANAGER
     )
+    # Create project member with viewer role
     project_member = create_project_member(db, role=Role.VIEWER)
+    # Update project member role to manager
     project_member_in = {"role": "manager"}
     response = client.put(
         f"{API_URL}/{project.id}/members/{project_member.id}", json=project_member_in
@@ -319,17 +308,21 @@ def test_update_project_member_with_project_manager_role(
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_update_project_member_with_project_viewer_owner_role(
+def test_update_project_member_with_project_viewer_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
+    # Create project not owned by current user
+    project = create_project(db)
+    # Add current user as viewer to project
     current_user = get_current_approved_user(
         get_current_user(db, normal_user_access_token),
     )
-    project = create_project(db)
     create_project_member(
         db, email=current_user.email, project_id=project.id, role=Role.VIEWER
     )
+    # Create project member with viewer role
     project_member = create_project_member(db, role=Role.VIEWER)
+    # Update project member role to manager
     project_member_in = {"role": "manager"}
     response = client.put(
         f"{API_URL}/{project.id}/members/{project_member.id}", json=project_member_in
@@ -340,14 +333,40 @@ def test_update_project_member_with_project_viewer_owner_role(
 def test_update_project_member_without_process_access(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
+    # Create project not owned by current user
     project_owner = create_user(db)
     project = create_project(db, owner_id=project_owner.id)
+    # Create project member with viewer role
     project_member = create_project_member(db, member_id=project_owner.id)
+    # Update project member role to owner
     project_member_in = {"role": "owner"}
     response = client.put(
         f"{API_URL}/{project.id}/members/{project_member.id}", json=project_member_in
     )
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_update_demo_project_member_with_project_owner_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # Create project owned by current user
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
+    project = create_project(db, owner_id=current_user.id)
+    # Create project member with viewer role
+    project_member = create_project_member(db, role=Role.VIEWER)
+    # Get demo user instance
+    demo_user = crud.user.get(db, id=project_member.member_id)
+    assert demo_user is not None
+    # Update project member to demo user
+    crud.user.update(db, db_obj=demo_user, obj_in=UserUpdate(is_demo=True))
+
+    project_member_in = {"role": "manager"}
+    response = client.put(
+        f"{API_URL}/{project.id}/members/{project_member.id}", json=project_member_in
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_remove_project_member_with_project_owner_role(

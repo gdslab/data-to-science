@@ -58,7 +58,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     "message": "Team does not have any members",
                     "result": None,
                 }
-            if not is_team_owner(owner_id, team_members):
+            if not is_team_owner(owner_id, team_members, include_manager=True):
                 return {
                     "response_code": status.HTTP_403_FORBIDDEN,
                     "message": 'Only team member with "owner" role can perform this action',
@@ -104,7 +104,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                         ProjectMember(
                             member_id=team_member.member_id,
                             project_id=project_db_obj.id,
-                            role=Role.VIEWER,
+                            role=team_member.role,
                         )
                     )
             if len(project_members) > 0:

@@ -49,15 +49,33 @@ def test_create_project_without_team(db: Session) -> None:
 
 
 def test_create_project_with_team(db: Session) -> None:
-    user = create_user(db)
-    team = create_team(db, owner_id=user.id)
+    # Create team with owner, manager, and viewer
+    team_owner = create_user(db)
+    team = create_team(db, owner_id=team_owner.id)
+    team_manager = create_user(db)
+    team_viewer = create_user(db)
+    create_team_member(db, email=team_manager.email, team_id=team.id, role=Role.MANAGER)
+    create_team_member(db, email=team_viewer.email, team_id=team.id, role=Role.VIEWER)
+    # Create project with team
     project = create_project(
         db,
-        owner_id=user.id,
+        owner_id=team_owner.id,
         team_id=team.id,
     )
-    assert project.owner_id == user.id
+    assert project.owner_id == team_owner.id
     assert project.team_id == team.id
+    # Get project members
+    project_members = crud.project_member.get_list_of_project_members(
+        db, project_id=project.id
+    )
+    assert len(project_members) == 3
+    for project_member in project_members:
+        if project_member.member_id == team_owner.id:
+            assert project_member.role == Role.OWNER
+        elif project_member.member_id == team_manager.id:
+            assert project_member.role == Role.MANAGER
+        elif project_member.member_id == team_viewer.id:
+            assert project_member.role == Role.VIEWER
 
 
 def test_create_project_with_team_not_owned_by_user(db: Session) -> None:

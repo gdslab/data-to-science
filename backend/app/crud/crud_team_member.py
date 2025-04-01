@@ -71,7 +71,7 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
             if is_team_owner:
                 role = Role.OWNER
             else:
-                role = Role.VIEWER
+                role = obj_in.role
             team_member = TeamMember(member_id=user_obj.id, team_id=team_id, role=role)
             session.add(team_member)
             session.commit()
