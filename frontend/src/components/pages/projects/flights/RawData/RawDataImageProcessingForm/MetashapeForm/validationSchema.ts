@@ -8,6 +8,10 @@ const schema = yup.object({
       'Alignment accuracy must be "low", "medium", or "high"'
     )
     .required('Alignment accuracy is required'),
+  backend: yup
+    .string()
+    .oneOf(['metashape'], 'Backend must be "metashape"')
+    .required('Backend is required'),
   buildDepthQuality: yup
     .string()
     .oneOf(

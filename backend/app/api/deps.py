@@ -1,9 +1,8 @@
 import logging
-import os
-from typing import Optional
+from typing import Optional, Union
 from uuid import UUID
 
-from fastapi import BackgroundTasks, Depends, HTTPException, status
+from fastapi import BackgroundTasks, Depends, HTTPException, Request, status
 from fastapi.security import APIKeyHeader
 from fastapi_mail import MessageSchema, MessageType
 from jose import jwt
@@ -16,7 +15,8 @@ from app.core import security
 from app.core.config import settings
 from app.core.mail import fm
 from app.db.session import SessionLocal
-from app.api.utils import is_valid_api_key, str_to_bool
+from app.api.utils import is_valid_api_key
+from app.schemas.raw_data import MetashapeQueryParams, ODMQueryParams
 
 logger = logging.getLogger("__name__")
 
@@ -384,3 +384,26 @@ def can_read_write_delete_flight(
             status_code=flight["response_code"], detail=flight["message"]
         )
     return flight["result"]
+
+
+def get_ip_settings(request: Request) -> Union[MetashapeQueryParams, ODMQueryParams]:
+    """Get IP settings based on backend value from request query params.
+
+    Args:
+        request (Request): Request object containing query parameters.
+
+    Raises:
+        HTTPException: If backend value is invalid.
+
+    Returns:
+        Union[MetashapeQueryParams, ODMQueryParams]: IP settings.
+    """
+    params = dict(request.query_params)
+    backend = params.get("backend")
+
+    if backend == "odm":
+        return ODMQueryParams(**params)
+    elif backend == "metashape":
+        return MetashapeQueryParams(**params)
+    else:
+        raise HTTPException(status_code=422, detail="Invalid backend value")

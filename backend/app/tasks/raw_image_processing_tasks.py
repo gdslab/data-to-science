@@ -4,7 +4,7 @@ import os
 import secrets
 import shutil
 from datetime import datetime, timezone
-from typing import Dict, Tuple
+from typing import Literal, Tuple, Union
 from uuid import UUID
 
 from celery import Task
@@ -17,6 +17,7 @@ from app.core.config import settings
 from app.core.security import get_token_hash
 from app.schemas.image_processing_backend import ImageProcessingBackend
 from app.schemas.job import Status
+from app.schemas.raw_data import MetashapeQueryParams, ODMQueryParams
 from app.utils.job_manager import JobManager
 from app.utils.RpcClient import RpcClient
 from app.utils.unique_id import generate_unique_id
@@ -106,8 +107,8 @@ def transfer_raw_data(
     raw_data_id: UUID,
     user_id: UUID,
     job_id: UUID,
-    backend: ImageProcessingBackend,
-    ip_settings: Dict,
+    backend: Literal["metashape", "odm"],
+    ip_settings: Union[MetashapeQueryParams, ODMQueryParams],
 ) -> Tuple[UUID, str]:
     """Transfer raw data to external storage using rsync.
 
@@ -121,8 +122,8 @@ def transfer_raw_data(
         raw_data_id (UUID): Raw data ID.
         user_id (UUID): User ID.
         job_id (UUID): Job ID.
-        backend (ImageProcessingBackend): Backend to use.
-        ip_settings (Dict): Image processing settings.
+        backend (Literal["metashape", "odm"]): Backend to use.
+        ip_settings (Union[MetashapeQueryParams, ODMQueryParams]): Image processing settings.
 
     Raises:
         Exception: Raised if transfer fails.
@@ -131,7 +132,7 @@ def transfer_raw_data(
         Tuple[UUID, Optional[str]]: Job ID and generated raw data identifier.
     """
     logger.info(f"Transferring raw data to external storage for job {job_id}")
-
+    logger.info(f"backend: {backend}")
     # Create database session and start job
     db = next(get_db())
     job = JobManager(job_id=job_id)
@@ -191,7 +192,7 @@ def transfer_raw_data(
                 "token": token,
                 "user_id": str(user_id),
                 "job_id": str(job_id),
-                "backend": backend.value,
+                "backend": backend,
                 "settings": ip_settings,
             }
             info_file.write(json.dumps(raw_data_meta))

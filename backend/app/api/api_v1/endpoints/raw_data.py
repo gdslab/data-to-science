@@ -2,7 +2,7 @@ import logging
 import os
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 from uuid import UUID
 
 from celery import chain
@@ -15,7 +15,7 @@ from app.api import deps
 from app.core.config import settings
 from app.schemas.image_processing_backend import ImageProcessingBackend
 from app.schemas.job import State, Status
-from app.schemas.raw_data import ImageProcessingQueryParams
+from app.schemas.raw_data import MetashapeQueryParams, ODMQueryParams
 from app.tasks.raw_image_processing_tasks import (
     start_raw_data_processing,
     transfer_raw_data,
@@ -158,45 +158,62 @@ def deactivate_raw_data(
 @router.get("/{raw_data_id}/process")
 def process_raw_data(
     raw_data_id: UUID,
-    ip_settings: ImageProcessingQueryParams = Depends(),
+    ip_settings: Union[MetashapeQueryParams, ODMQueryParams] = Depends(
+        deps.get_ip_settings
+    ),
     project: models.Project = Depends(deps.can_read_write_project),
     flight: models.Flight = Depends(deps.can_read_write_flight),
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    # must accept disclaimer
+    # Raise error if user does not accept disclaimer
     if ip_settings.disclaimer is False:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Must accept conditions to use this feature",
         )
-    # set default image processing backend to ODM
-    image_processing_backend = ImageProcessingBackend.ODM
 
-    # check for "image_processing" extension
-    required_extension = "image_processing"
+    # Set image processing backend based on query params
+    if ip_settings.backend == "metashape":
+        image_processing_backend = ImageProcessingBackend.METASHAPE
+    elif ip_settings.backend == "odm":
+        image_processing_backend = ImageProcessingBackend.ODM
+
+    # Verify user has permission to use this backend
+    if image_processing_backend == ImageProcessingBackend.METASHAPE:
+        required_extension = "metashape"
+    elif image_processing_backend == ImageProcessingBackend.ODM:
+        required_extension = "odm"
     extension = crud.extension.get_extension_by_name(
         db, extension_name=required_extension
     )
-    if extension:
-        # check if user has permission to run this endpoint (by user.extensions or team.extensions)
-        user_has_active_extension = False
-        user_extension = crud.extension.get_user_extension(
+    if not extension:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"User does not have permission to use {required_extension}",
+        )
+
+    # Check if user has permission through user.extensions or team.extensions
+    user_has_active_extension = False
+    user_extension = crud.extension.get_user_extension(
+        db, extension_id=extension.id, user_id=current_user.id
+    )
+    if user_extension:
+        user_has_active_extension = True
+    if not user_has_active_extension:
+        team_extension_by_user = crud.extension.get_team_extension_by_user(
             db, extension_id=extension.id, user_id=current_user.id
         )
-        if user_extension:
+        if team_extension_by_user:
             user_has_active_extension = True
-        if not user_has_active_extension:
-            team_extension_by_user = crud.extension.get_team_extension_by_user(
-                db, extension_id=extension.id, user_id=current_user.id
-            )
-            if team_extension_by_user:
-                user_has_active_extension = True
 
-        if user_has_active_extension:
-            image_processing_backend = ImageProcessingBackend.METASHAPE
+    if not user_has_active_extension:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"User does not have permission to use {required_extension}",
+        )
 
-    # check if a job processing raw data is currently ongoing
+    # Check if a job processing raw data is currently ongoing
     existing_jobs = crud.job.get_by_raw_data_id(
         db, job_name="processing-raw-data", raw_data_id=raw_data_id
     )
