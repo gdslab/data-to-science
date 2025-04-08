@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.project import create_project
 from app.tests.utils.STACCollectionHelper import STACCollectionHelper
+from app.tests.utils.TestSTACCollection import TestSTACCollection
 from app.utils.STACCollectionManager import STACCollectionManager
 from app.utils.STACGenerator import STACGenerator
 
@@ -41,8 +42,11 @@ def stac_collection_unpublished(
     tsc.destroy()
 
 
-def test_fetch_public_metadata(stac_collection_published: STACCollectionHelper) -> None:
-    collection_id = stac_collection_published.collection_id
+def test_fetch_public_metadata(db: Session) -> None:
+    # Create STAC Collection on STAC API
+    tsc = TestSTACCollection(db)
+    tsc.create()
+    collection_id = tsc.collection_id
 
     assert collection_id is not None
 

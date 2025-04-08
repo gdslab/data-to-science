@@ -1,7 +1,7 @@
 import logging
 import os
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import requests
 from fastapi.encoders import jsonable_encoder
@@ -11,6 +11,7 @@ from pystac_client.exceptions import APIError
 
 from app.core.config import settings
 from app.schemas import STACReport, ItemStatus, STACError
+
 
 logger = logging.getLogger(__name__)
 
