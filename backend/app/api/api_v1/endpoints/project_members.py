@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
-
+from app.schemas.role import Role
 
 router = APIRouter()
 
@@ -43,10 +43,17 @@ def create_project_members(
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    project_members = crud.project_member.create_multi_with_project(
-        db, member_ids=project_members, project_id=project.id
+    # Ensure that dependency injections for project and current user are used
+    _ = project, current_user  # noqa: F841
+
+    # Create list of tuples with project member and role
+    new_members = [(project_member, Role.VIEWER) for project_member in project_members]
+    # Create project member objects
+    project_member_objs = crud.project_member.create_multi_with_project(
+        db, new_members=new_members, project_id=project_id
     )
-    return project_members
+
+    return project_member_objs
 
 
 @router.get("/{project_member_id}", response_model=schemas.ProjectMember)
@@ -67,14 +74,13 @@ def read_project_member(
 
 @router.get("", response_model=list[schemas.ProjectMember])
 def read_project_members(
-    skip: int = 0,
-    limit: int = 100,
     db: Session = Depends(deps.get_db),
     project: models.Project = Depends(deps.can_read_project),
 ) -> Any:
     project_members = crud.project_member.get_list_of_project_members(
-        db, project_id=project.id, skip=skip, limit=limit
+        db, project_id=project.id
     )
+
     return project_members
 
 

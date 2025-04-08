@@ -15,6 +15,7 @@ from app.models.flight import Flight, SENSORS, PLATFORMS
 from app.schemas.data_product import DataProductCreate
 from app.schemas.flight import FlightUpdate
 from app.schemas.project_member import ProjectMemberCreate
+from app.schemas.role import Role
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.flight import create_flight, create_acquisition_date
 from app.tests.utils.project import create_project
@@ -30,9 +31,11 @@ def test_create_flight_with_project_owner_role(
     project = create_project(db)
     current_user = get_current_user(db, normal_user_access_token)
     create_project_member(
-        db, role="owner", member_id=current_user.id, project_id=project.id
+        db, role=Role.OWNER, member_id=current_user.id, project_id=project.id
     )
-    create_project_member(db, role="viewer", member_id=pilot.id, project_id=project.id)
+    create_project_member(
+        db, role=Role.VIEWER, member_id=pilot.id, project_id=project.id
+    )
     data = {
         "name": "Test Flight",
         "acquisition_date": create_acquisition_date(),
@@ -65,9 +68,11 @@ def test_create_flight_with_project_manager_role(
     pilot = create_user(db)
     project = create_project(db)
     current_user = get_current_user(db, normal_user_access_token)
-    create_project_member(db, role="viewer", member_id=pilot.id, project_id=project.id)
     create_project_member(
-        db, role="manager", member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=pilot.id, project_id=project.id
+    )
+    create_project_member(
+        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
     )
     data = {
         "acquisition_date": create_acquisition_date(),
@@ -91,9 +96,11 @@ def test_create_flight_with_project_viewer_role(
     pilot = create_user(db)
     project = create_project(db)
     current_user = get_current_user(db, normal_user_access_token)
-    create_project_member(db, role="viewer", member_id=pilot.id, project_id=project.id)
     create_project_member(
-        db, role="viewer", member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=pilot.id, project_id=project.id
+    )
+    create_project_member(
+        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
     )
     data = {
         "acquisition_date": create_acquisition_date(),
@@ -118,7 +125,9 @@ def test_create_flight_with_non_project_member(
 ) -> None:
     pilot = create_user(db)
     project = create_project(db)
-    create_project_member(db, role="viewer", member_id=pilot.id, project_id=project.id)
+    create_project_member(
+        db, role=Role.VIEWER, member_id=pilot.id, project_id=project.id
+    )
     data = {
         "acquisition_date": create_acquisition_date(),
         "altitude": randint(0, 500),
@@ -142,11 +151,11 @@ def test_create_flight_with_pilot_that_does_not_exist(
     pilot = create_user(db)
     project = create_project(db)
     pilot_project_member = create_project_member(
-        db, role="viewer", member_id=pilot.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=pilot.id, project_id=project.id
     )
     current_user = get_current_user(db, normal_user_access_token)
     create_project_member(
-        db, role="owner", member_id=current_user.id, project_id=project.id
+        db, role=Role.OWNER, member_id=current_user.id, project_id=project.id
     )
     # remove pilot
     crud.project_member.remove(db, id=pilot_project_member.id)
@@ -174,7 +183,7 @@ def test_create_flight_with_pilot_that_does_not_belong_to_project(
     project = create_project(db)
     current_user = get_current_user(db, normal_user_access_token)
     create_project_member(
-        db, role="owner", member_id=current_user.id, project_id=project.id
+        db, role=Role.OWNER, member_id=current_user.id, project_id=project.id
     )
     data = {
         "acquisition_date": create_acquisition_date(),
@@ -198,7 +207,7 @@ def test_get_flight_with_project_owner_role(
     project = create_project(db)
     flight = create_flight(db, project_id=project.id)
     current_user = get_current_user(db, normal_user_access_token)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="owner")
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role=Role.OWNER)
     crud.project_member.create_with_project(
         db, obj_in=project_member_in, project_id=project.id
     )
@@ -216,7 +225,9 @@ def test_get_flight_with_project_manager_role(
     project = create_project(db)
     flight = create_flight(db, project_id=project.id)
     current_user = get_current_user(db, normal_user_access_token)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="manager")
+    project_member_in = ProjectMemberCreate(
+        member_id=current_user.id, role=Role.MANAGER
+    )
     crud.project_member.create_with_project(
         db, obj_in=project_member_in, project_id=project.id
     )
@@ -232,7 +243,7 @@ def test_get_flight_with_project_viewer_role(
     project = create_project(db)
     flight = create_flight(db, project_id=project.id)
     current_user = get_current_user(db, normal_user_access_token)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="viewer")
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role=Role.VIEWER)
     crud.project_member.create_with_project(
         db, obj_in=project_member_in, project_id=project.id
     )
@@ -261,7 +272,7 @@ def test_get_flights_with_project_owner_role(
     create_flight(db, project_id=project.id)
     create_flight(db, project_id=project.id)
     current_user = get_current_user(db, normal_user_access_token)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="owner")
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role=Role.OWNER)
     crud.project_member.create_with_project(
         db, obj_in=project_member_in, project_id=project.id
     )
@@ -283,7 +294,9 @@ def test_get_flights_with_project_manager_role(
     create_flight(db, project_id=project.id)
     create_flight(db, project_id=project.id)
     current_user = get_current_user(db, normal_user_access_token)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="manager")
+    project_member_in = ProjectMemberCreate(
+        member_id=current_user.id, role=Role.MANAGER
+    )
     crud.project_member.create_with_project(
         db, obj_in=project_member_in, project_id=project.id
     )
@@ -299,7 +312,7 @@ def test_get_flights_with_project_viewer_role(
     create_flight(db, project_id=project.id)
     create_flight(db, project_id=project.id)
     current_user = get_current_user(db, normal_user_access_token)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="viewer")
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role=Role.VIEWER)
     crud.project_member.create_with_project(
         db, obj_in=project_member_in, project_id=project.id
     )
@@ -326,7 +339,7 @@ def test_get_flights_with_raster_data(
     flight2 = create_flight(db, project_id=project.id)
     flight3 = create_flight(db, project_id=project.id)
     current_user = get_current_user(db, normal_user_access_token)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="viewer")
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role=Role.VIEWER)
     crud.project_member.create_with_project(
         db, obj_in=project_member_in, project_id=project.id
     )
@@ -361,7 +374,7 @@ def test_update_flight_with_project_owner_role(
     project = create_project(db)
     flight = create_flight(db, altitude=50, project_id=project.id)
     current_user = get_current_user(db, normal_user_access_token)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="owner")
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role=Role.OWNER)
     crud.project_member.create_with_project(
         db,
         obj_in=project_member_in,
@@ -387,7 +400,9 @@ def test_update_flight_with_project_manager_role(
     project = create_project(db)
     flight = create_flight(db, altitude=50, project_id=project.id)
     current_user = get_current_user(db, normal_user_access_token)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="manager")
+    project_member_in = ProjectMemberCreate(
+        member_id=current_user.id, role=Role.MANAGER
+    )
     crud.project_member.create_with_project(
         db,
         obj_in=project_member_in,
@@ -409,7 +424,7 @@ def test_update_flight_with_project_viewer_role(
     project = create_project(db)
     flight = create_flight(db, altitude=50, project_id=project.id)
     current_user = get_current_user(db, normal_user_access_token)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="viewer")
+    project_member_in = ProjectMemberCreate(member_id=current_user.id, role=Role.VIEWER)
     crud.project_member.create_with_project(
         db,
         obj_in=project_member_in,
@@ -505,7 +520,9 @@ def test_update_flight_project_with_manager_role_for_both_projects(
     current_user = get_current_user(db, normal_user_access_token)
     src_project = create_project(db)
     flight = create_flight(db, altitude=50, project_id=src_project.id)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="manager")
+    project_member_in = ProjectMemberCreate(
+        member_id=current_user.id, role=Role.MANAGER
+    )
     crud.project_member.create_with_project(
         db,
         obj_in=project_member_in,
@@ -517,7 +534,9 @@ def test_update_flight_project_with_manager_role_for_both_projects(
     )
     # create destination project add current user as manager (read/write)
     dst_project = create_project(db)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="manager")
+    project_member_in = ProjectMemberCreate(
+        member_id=current_user.id, role=Role.MANAGER
+    )
     crud.project_member.create_with_project(
         db,
         obj_in=project_member_in,
@@ -539,7 +558,9 @@ def test_update_flight_project_with_owner_role_for_src_project_and_manager_role_
     flight = create_flight(db, altitude=50, project_id=src_project.id)
     # create destination project add current user as manager (read/write)
     dst_project = create_project(db)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="manager")
+    project_member_in = ProjectMemberCreate(
+        member_id=current_user.id, role=Role.MANAGER
+    )
     crud.project_member.create_with_project(
         db,
         obj_in=project_member_in,
@@ -559,7 +580,9 @@ def test_update_flight_project_with_manager_role_for_src_project_and_owner_role_
     current_user = get_current_user(db, normal_user_access_token)
     src_project = create_project(db)
     flight = create_flight(db, altitude=50, project_id=src_project.id)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="manager")
+    project_member_in = ProjectMemberCreate(
+        member_id=current_user.id, role=Role.MANAGER
+    )
     crud.project_member.create_with_project(
         db,
         obj_in=project_member_in,
@@ -581,7 +604,9 @@ def test_update_flight_project_with_manager_role_for_both_src_and_dst_projects(
     current_user = get_current_user(db, normal_user_access_token)
     src_project = create_project(db)
     flight = create_flight(db, altitude=50, project_id=src_project.id)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="manager")
+    project_member_in = ProjectMemberCreate(
+        member_id=current_user.id, role=Role.MANAGER
+    )
     crud.project_member.create_with_project(
         db,
         obj_in=project_member_in,
@@ -589,7 +614,9 @@ def test_update_flight_project_with_manager_role_for_both_src_and_dst_projects(
     )
     # create destination project add current user as manager (read/write)
     dst_project = create_project(db)
-    project_member_in = ProjectMemberCreate(member_id=current_user.id, role="manager")
+    project_member_in = ProjectMemberCreate(
+        member_id=current_user.id, role=Role.MANAGER
+    )
     crud.project_member.create_with_project(
         db,
         obj_in=project_member_in,
@@ -654,7 +681,7 @@ def test_deactivate_flight_with_project_manager_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db, owner_id=project_owner.id)
     create_project_member(
-        db, member_id=current_user.id, project_id=project.id, role="manager"
+        db, member_id=current_user.id, project_id=project.id, role=Role.MANAGER
     )
     flight = create_flight(db, project_id=project.id)
     response = client.delete(
@@ -670,7 +697,7 @@ def test_deactivate_flight_with_project_viewer_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db, owner_id=project_owner.id)
     create_project_member(
-        db, member_id=current_user.id, project_id=project.id, role="viewer"
+        db, member_id=current_user.id, project_id=project.id, role=Role.VIEWER
     )
     flight = create_flight(db, project_id=project.id)
     response = client.delete(

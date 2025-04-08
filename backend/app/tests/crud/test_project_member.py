@@ -1,9 +1,11 @@
 import pytest
+from pydantic import ValidationError
 from sqlalchemy.exc import DataError
 from sqlalchemy.orm import Session
 
 from app import crud
 from app.schemas.project_member import ProjectMemberUpdate
+from app.schemas.role import Role
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
 from app.tests.utils.team import create_team
@@ -19,7 +21,7 @@ def test_create_project_member(db: Session) -> None:
     assert project_member
     assert user.id == project_member.member_id
     assert project.id == project_member.project_id
-    assert project_member.role == "viewer"  # default role
+    assert project_member.role == Role.VIEWER  # default role
 
 
 def test_create_project_members_with_different_roles(db: Session) -> None:
@@ -28,7 +30,10 @@ def test_create_project_members_with_different_roles(db: Session) -> None:
     project_viewer = create_user(db)
     project = create_project(db, owner_id=project_owner.id)
     manager_role = create_project_member(
-        db, member_id=project_manager.id, project_id=project.id, role="manager"
+        db, member_id=project_manager.id, project_id=project.id
+    )
+    crud.project_member.update_project_member(
+        db, manager_role, ProjectMemberUpdate(role=Role.MANAGER)
     )
     viewer_role = create_project_member(
         db, member_id=project_viewer.id, project_id=project.id
@@ -39,21 +44,21 @@ def test_create_project_members_with_different_roles(db: Session) -> None:
     manager_in_db = crud.project_member.get(db, id=manager_role.id)
     viewer_in_db = crud.project_member.get(db, id=viewer_role.id)
     assert owner_in_db and manager_in_db and viewer_in_db
-    assert owner_in_db.role == "owner"
-    assert manager_in_db.role == "manager"
-    assert viewer_in_db.role == "viewer"
+    assert owner_in_db.role == Role.OWNER
+    assert manager_in_db.role == Role.MANAGER
+    assert viewer_in_db.role == Role.VIEWER
 
 
 def test_create_project_members(db: Session) -> None:
     project_owner = create_user(db)
     team = create_team(db, owner_id=project_owner.id)
-    team_member_ids = []
+    team_members = []
     for i in range(0, 5):
         team_member = create_team_member(db, team_id=team.id)
-        team_member_ids.append(team_member.member_id)
+        team_members.append((team_member.member_id, Role.VIEWER))
     project = create_project(db, owner_id=project_owner.id, team_id=team.id)
     project_members = crud.project_member.create_multi_with_project(
-        db, member_ids=team_member_ids, project_id=project.id
+        db, new_members=team_members, project_id=project.id
     )
     assert isinstance(project_members, list)
     assert len(project_members) == 6  # owner + five added project members
@@ -67,7 +72,7 @@ def test_get_project_member(db: Session) -> None:
     )
     assert owner_in_db
     assert owner_in_db.member_id == owner.id
-    assert owner_in_db.role == "owner"
+    assert owner_in_db.role == Role.OWNER
 
 
 def test_get_list_of_project_members(db: Session) -> None:
@@ -88,9 +93,9 @@ def test_get_list_of_project_members(db: Session) -> None:
         )
         assert (
             project_member.member_id == owner.id
-            and project_member.role == "owner"
+            and project_member.role == Role.OWNER
             or project_member.member_id != owner.id
-            and project_member.role == "viewer"
+            and project_member.role == Role.VIEWER
         )
         assert project_member.full_name
         assert project_member.email
@@ -99,16 +104,22 @@ def test_get_list_of_project_members(db: Session) -> None:
 def test_get_list_of_project_members_with_specific_role(db: Session) -> None:
     owner = create_user(db)
     project = create_project(db, owner_id=owner.id)
-    member1 = create_project_member(db, project_id=project.id, role="manager")
-    member2 = create_project_member(db, project_id=project.id, role="manager")
-    member3 = create_project_member(db, project_id=project.id, role="viewer")
+    member1 = create_project_member(db, project_id=project.id)
+    crud.project_member.update_project_member(
+        db, member1, ProjectMemberUpdate(role=Role.MANAGER)
+    )
+    member2 = create_project_member(db, project_id=project.id)
+    crud.project_member.update_project_member(
+        db, member2, ProjectMemberUpdate(role=Role.MANAGER)
+    )
+    member3 = create_project_member(db, project_id=project.id)
     project_members = crud.project_member.get_list_of_project_members(
-        db, project_id=project.id, role="manager"
+        db, project_id=project.id, role=Role.MANAGER
     )
     assert type(project_members) is list
     assert len(project_members) == 2
     for project_member in project_members:
-        assert project_member.role == "manager"
+        assert project_member.role == Role.MANAGER
 
 
 def test_get_list_of_project_members_from_deactivated_project(db: Session) -> None:
@@ -124,16 +135,33 @@ def test_get_list_of_project_members_from_deactivated_project(db: Session) -> No
 
 
 def test_update_project_member(db: Session) -> None:
-    project_member = create_project_member(db, role="viewer")
-    project_member_in_update = ProjectMemberUpdate(role="manager")
+    project_member = create_project_member(db)
+    project_member_in_update = ProjectMemberUpdate(role=Role.MANAGER)
     project_member_update = crud.project_member.update_project_member(
         db,
         project_member_obj=project_member,
         project_member_in=project_member_in_update,
     )
-    project_member_update = project_member_update["result"]
-    assert project_member_update.id == project_member.id
-    assert project_member_update.role == "manager"
+    result = project_member_update.get("result")
+    assert result
+    assert result.id == project_member.id
+    assert result.role == Role.MANAGER
+
+
+def test_update_project_owner_member_role(db: Session) -> None:
+    project_owner = create_user(db)
+    project = create_project(db, owner_id=project_owner.id)
+    project_member = crud.project_member.get_by_project_and_member_id(
+        db, project_id=project.id, member_id=project_owner.id
+    )
+    assert project_member
+    project_member_in_update = ProjectMemberUpdate(role=Role.MANAGER)
+    project_member_update = crud.project_member.update_project_member(
+        db,
+        project_member_obj=project_member,
+        project_member_in=project_member_in_update,
+    )
+    assert project_member_update["result"] is None
 
 
 def test_update_role_for_only_project_owner(db: Session) -> None:
@@ -142,7 +170,8 @@ def test_update_role_for_only_project_owner(db: Session) -> None:
     project_owner = crud.project_member.get_by_project_and_member_id(
         db, project_id=project.id, member_id=owner.id
     )
-    project_owner_in_update = ProjectMemberUpdate(role="manager")
+    assert project_owner
+    project_owner_in_update = ProjectMemberUpdate(role=Role.MANAGER)
     project_owner_update = crud.project_member.update_project_member(
         db, project_member_obj=project_owner, project_member_in=project_owner_in_update
     )
@@ -150,7 +179,7 @@ def test_update_role_for_only_project_owner(db: Session) -> None:
 
 
 def test_delete_project_member(db: Session) -> None:
-    project_member = create_project_member(db, role="viewer")
+    project_member = create_project_member(db)
     project_member2 = crud.project_member.remove(db, id=project_member.id)
     project_member3 = crud.project_member.get(db, id=project_member.id)
     assert project_member3 is None
@@ -179,4 +208,4 @@ def test_delete_project_members(db: Session) -> None:
 
 def test_assign_project_member_invalid_role(db: Session) -> None:
     with pytest.raises(DataError):
-        create_project_member(db, role="invalid-role")
+        create_project_member(db, role="invalid-role")  # type: ignore

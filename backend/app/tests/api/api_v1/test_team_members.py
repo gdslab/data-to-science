@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api.deps import get_current_user, get_current_approved_user
 from app.core.config import settings
+from app.schemas.team_member import Role, TeamMemberUpdate
 from app.tests.utils.project import create_project
 from app.tests.utils.team import create_team
 from app.tests.utils.team_member import create_team_member
@@ -124,6 +125,399 @@ def test_get_team_members(
         assert tm["id"] in team_member_ids
 
 
+def test_update_team_member(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    team = create_team(db, owner_id=current_user.id)
+    team_member = create_team_member(db, team_id=team.id)
+    data = {"role": "owner"}
+    response = client.put(
+        f"{settings.API_V1_STR}/teams/{team.id}/members/{team_member.id}",
+        json=jsonable_encoder(data),
+    )
+    assert response.status_code == status.HTTP_200_OK
+    updated_team_member = response.json()
+    assert updated_team_member["role"] == "owner"
+
+
+def test_update_team_member_role_to_viewer(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    team = create_team(db, owner_id=current_user.id)
+    team_member = create_team_member(db, team_id=team.id)
+    data = {"role": "viewer"}
+    response = client.put(
+        f"{settings.API_V1_STR}/teams/{team.id}/members/{team_member.id}",
+        json=jsonable_encoder(data),
+    )
+    assert response.status_code == status.HTTP_200_OK
+    updated_team_member = response.json()
+    assert updated_team_member["role"] == "viewer"
+
+
+def test_update_team_member_role_to_manager(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    team = create_team(db, owner_id=current_user.id)
+    team_member = create_team_member(db, team_id=team.id)
+    data = {"role": "manager"}
+    response = client.put(
+        f"{settings.API_V1_STR}/teams/{team.id}/members/{team_member.id}",
+        json=jsonable_encoder(data),
+    )
+    assert response.status_code == status.HTTP_200_OK
+    updated_team_member = response.json()
+    assert updated_team_member["role"] == "manager"
+
+
+def test_update_team_member_role_to_owner(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    team = create_team(db, owner_id=current_user.id)
+    team_member = create_team_member(db, team_id=team.id)
+    data = {"role": "owner"}
+    response = client.put(
+        f"{settings.API_V1_STR}/teams/{team.id}/members/{team_member.id}",
+        json=jsonable_encoder(data),
+    )
+    assert response.status_code == status.HTTP_200_OK
+    updated_team_member = response.json()
+    assert updated_team_member["role"] == "owner"
+
+
+def test_update_team_member_role_to_manager_by_manager(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    # Create team not owned by current user
+    team_owner = create_user(db)
+    team = create_team(db, owner_id=team_owner.id)
+    # Add current user to team as manager
+    current_user_team_member = create_team_member(
+        db, email=current_user.email, team_id=team.id
+    )
+    update_team_member_in = TeamMemberUpdate(role=Role.MANAGER)
+    crud.team_member.update_team_member(
+        db,
+        team_member_in=update_team_member_in,
+        team_member_id=current_user_team_member.id,
+    )
+    # Add new team member to team
+    team_member = create_team_member(db, team_id=team.id)
+    data = {"role": "manager"}
+    # Attempt to update role of new team member to owner
+    response = client.put(
+        f"{settings.API_V1_STR}/teams/{team.id}/members/{team_member.id}",
+        json=jsonable_encoder(data),
+    )
+    assert response.status_code == status.HTTP_200_OK
+    updated_team_member = response.json()
+    assert updated_team_member["role"] == "manager"
+
+
+def test_update_team_member_role_to_viewer_by_manager(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    # Create team not owned by current user
+    team_owner = create_user(db)
+    team = create_team(db, owner_id=team_owner.id)
+    # Add current user to team as manager
+    current_user_team_member = create_team_member(
+        db, email=current_user.email, team_id=team.id
+    )
+    update_team_member_in = TeamMemberUpdate(role=Role.MANAGER)
+    crud.team_member.update_team_member(
+        db,
+        team_member_in=update_team_member_in,
+        team_member_id=current_user_team_member.id,
+    )
+    # Add new team member to team
+    team_member = create_team_member(db, team_id=team.id)
+    data = {"role": "viewer"}
+    # Attempt to update role of new team member to owner
+    response = client.put(
+        f"{settings.API_V1_STR}/teams/{team.id}/members/{team_member.id}",
+        json=jsonable_encoder(data),
+    )
+    assert response.status_code == status.HTTP_200_OK
+    updated_team_member = response.json()
+    assert updated_team_member["role"] == "viewer"
+
+
+def test_update_team_member_role_to_owner_by_manager_fails(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    # Create team not owned by current user
+    team_owner = create_user(db)
+    team = create_team(db, owner_id=team_owner.id)
+    # Add current user to team as manager
+    current_user_team_member = create_team_member(
+        db, email=current_user.email, team_id=team.id
+    )
+    update_team_member_in = TeamMemberUpdate(role=Role.MANAGER)
+    crud.team_member.update_team_member(
+        db,
+        team_member_in=update_team_member_in,
+        team_member_id=current_user_team_member.id,
+    )
+    # Add new team member to team
+    team_member = create_team_member(db, team_id=team.id)
+    data = {"role": "owner"}
+    # Attempt to update role of new team member to owner
+    response = client.put(
+        f"{settings.API_V1_STR}/teams/{team.id}/members/{team_member.id}",
+        json=jsonable_encoder(data),
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_downgrade_team_member_with_owner_role_to_manager_by_owner(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    # Create team owned by current user
+    team = create_team(db, owner_id=current_user.id)
+    # Add new team member to team and update role to owner
+    team_member = create_team_member(db, team_id=team.id)
+    update_team_member_in = TeamMemberUpdate(role=Role.OWNER)
+    crud.team_member.update_team_member(
+        db,
+        team_member_in=update_team_member_in,
+        team_member_id=team_member.id,
+    )
+    # Attempt to downgrade team member with owner role to manager
+    data = {"role": "manager"}
+    response = client.put(
+        f"{settings.API_V1_STR}/teams/{team.id}/members/{team_member.id}",
+        json=jsonable_encoder(data),
+    )
+    assert response.status_code == status.HTTP_200_OK
+    updated_team_member = response.json()
+    assert updated_team_member["role"] == "manager"
+
+
+def test_downgrade_team_member_with_owner_role_to_viewer_by_owner(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    # Create team owned by current user
+    team = create_team(db, owner_id=current_user.id)
+    # Add new team member to team and update role to owner
+    team_member = create_team_member(db, team_id=team.id)
+    update_team_member_in = TeamMemberUpdate(role=Role.OWNER)
+    crud.team_member.update_team_member(
+        db,
+        team_member_in=update_team_member_in,
+        team_member_id=team_member.id,
+    )
+    # Attempt to downgrade team member with owner role to manager
+    data = {"role": "viewer"}
+    response = client.put(
+        f"{settings.API_V1_STR}/teams/{team.id}/members/{team_member.id}",
+        json=jsonable_encoder(data),
+    )
+    assert response.status_code == status.HTTP_200_OK
+    updated_team_member = response.json()
+    assert updated_team_member["role"] == "viewer"
+
+
+def test_downgrade_team_member_with_owner_role_to_manager_by_manager_fails(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    # Create team not owned by current user
+    team_owner = create_user(db)
+    team = create_team(db, owner_id=team_owner.id)
+    # Add current user to team and update role to manager
+    team_member = create_team_member(db, email=current_user.email, team_id=team.id)
+    update_team_member_in = TeamMemberUpdate(role=Role.MANAGER)
+    crud.team_member.update_team_member(
+        db,
+        team_member_in=update_team_member_in,
+        team_member_id=team_member.id,
+    )
+    # Add new team member to team and update role to owner
+    team_member2 = create_team_member(db, team_id=team.id)
+    update_team_member2_in = TeamMemberUpdate(role=Role.OWNER)
+    crud.team_member.update_team_member(
+        db,
+        team_member_in=update_team_member2_in,
+        team_member_id=team_member2.id,
+    )
+    # Attempt to downgrade team member with owner role to manager
+    data = {"role": "manager"}
+    response = client.put(
+        f"{settings.API_V1_STR}/teams/{team.id}/members/{team_member2.id}",
+        json=jsonable_encoder(data),
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_downgrade_team_member_with_manager_role_to_viewer_by_manager(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    # Create team not owned by current user
+    team_owner = create_user(db)
+    team = create_team(db, owner_id=team_owner.id)
+    # Add current user to team and update role to manager
+    team_member = create_team_member(db, email=current_user.email, team_id=team.id)
+    update_team_member_in = TeamMemberUpdate(role=Role.MANAGER)
+    crud.team_member.update_team_member(
+        db,
+        team_member_in=update_team_member_in,
+        team_member_id=team_member.id,
+    )
+    # Add new team member to team and update role to manager
+    team_member2 = create_team_member(db, team_id=team.id)
+    update_team_member2_in = TeamMemberUpdate(role=Role.MANAGER)
+    crud.team_member.update_team_member(
+        db,
+        team_member_in=update_team_member2_in,
+        team_member_id=team_member2.id,
+    )
+    # Attempt to downgrade team member with manager role to viewer
+    data = {"role": "viewer"}
+    response = client.put(
+        f"{settings.API_V1_STR}/teams/{team.id}/members/{team_member2.id}",
+        json=jsonable_encoder(data),
+    )
+    assert response.status_code == status.HTTP_200_OK
+    updated_team_member = response.json()
+    assert updated_team_member["role"] == "viewer"
+
+
+def test_downgrade_team_creator_with_owner_role_by_owner_fails(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    # Create team not owned by current user
+    team_owner = create_user(db)
+    team = create_team(db, owner_id=team_owner.id)
+    team_owner_team_member = crud.team_member.get_team_member_by_id(
+        db, user_id=team_owner.id, team_id=team.id
+    )
+    assert team_owner_team_member is not None
+    # Add current user to team and update role to owner
+    team_member = create_team_member(db, email=current_user.email, team_id=team.id)
+    update_team_member_in = TeamMemberUpdate(role=Role.OWNER)
+    crud.team_member.update_team_member(
+        db,
+        team_member_in=update_team_member_in,
+        team_member_id=team_member.id,
+    )
+    # Attempt to downgrade team creator with owner role to manager
+    data = {"role": "manager"}
+    response = client.put(
+        f"{settings.API_V1_STR}/teams/{team.id}/members/{team_owner_team_member.id}",
+        json=jsonable_encoder(data),
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_downgrade_team_member_with_project_creator_role_fails(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    team = create_team(db, owner_id=current_user.id)
+    team_manager = create_user(db)
+    team_manager_team_member = create_team_member(
+        db, email=team_manager.email, team_id=team.id, role=Role.MANAGER
+    )
+    # Create project with team manager as creator
+    project = create_project(db, owner_id=team_manager.id, team_id=team.id)
+    # Downgrade team member with project creator role to team viewer role
+    data = {"role": "viewer"}
+    response = client.put(
+        f"{settings.API_V1_STR}/teams/{team.id}/members/{team_manager_team_member.id}",
+        json=jsonable_encoder(data),
+    )
+    assert response.status_code == status.HTTP_200_OK
+    # Confirm project member role remains "owner"
+    project_member = crud.project_member.get_by_project_and_member_id(
+        db, project_id=project.id, member_id=team_manager.id
+    )
+    assert project_member
+    assert project_member.role == Role.OWNER
+
+
+def test_non_creator_owner_can_update_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # Create team with owner and two additional members
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    team_owner = create_user(db)
+    team = create_team(db, owner_id=team_owner.id)
+    team_member = create_team_member(db, email=current_user.email, team_id=team.id)
+    team_member2 = create_team_member(db, team_id=team.id)
+    # Update role of current user to owner
+    crud.team_member.update(db, db_obj=team_member, obj_in={"role": Role.OWNER})
+    # Attempt to update role of second team member to owner
+    data = {"role": "owner"}
+    response = client.put(
+        f"{settings.API_V1_STR}/teams/{team.id}/members/{team_member2.id}",
+        json=jsonable_encoder(data),
+    )
+    assert response.status_code == status.HTTP_200_OK
+    updated_team_member = response.json()
+    assert updated_team_member["member_id"] == str(team_member2.member_id)
+    assert updated_team_member["role"] == "owner"
+
+
+def test_non_creator_member_cannot_update_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # Create team with owner and two additional members
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    team_owner = create_user(db)
+    team = create_team(db, owner_id=team_owner.id)
+    create_team_member(db, email=current_user.email, team_id=team.id)
+    team_member2 = create_team_member(db, team_id=team.id)
+    # Attempt to update role of second team member to owner
+    data = {"role": "owner"}
+    response = client.put(
+        f"{settings.API_V1_STR}/teams/{team.id}/members/{team_member2.id}",
+        json=jsonable_encoder(data),
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
 def test_remove_team_member(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -148,4 +542,32 @@ def test_remove_team_member_by_unauthorized_user(
     team = create_team(db, owner_id=owner.id)
     team_member = create_team_member(db, team_id=team.id)
     r = client.delete(f"{settings.API_V1_STR}/teams/{team.id}/members/{team_member.id}")
+    assert r.status_code == 403
+
+
+def test_remove_team_creator_by_team_member_with_owner_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # Create team owned by other user
+    team_owner = create_user(db)
+    team = create_team(db, owner_id=team_owner.id)
+    team_owner_team_member = crud.team_member.get_team_member_by_id(
+        db, user_id=team_owner.id, team_id=team.id
+    )
+    assert team_owner_team_member is not None
+    # Add current user to team and update role to owner
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    team_member = create_team_member(db, email=current_user.email, team_id=team.id)
+    update_team_member_in = TeamMemberUpdate(role=Role.OWNER)
+    crud.team_member.update_team_member(
+        db,
+        team_member_in=update_team_member_in,
+        team_member_id=team_member.id,
+    )
+    # Attempt to remove team creator
+    r = client.delete(
+        f"{settings.API_V1_STR}/teams/{team.id}/members/{team_owner_team_member.id}"
+    )
     assert r.status_code == 403

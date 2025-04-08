@@ -15,7 +15,7 @@ const styles = {
     'focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none border border-gray-400 rounded py-1 px-4 block w-full appearance-none',
   rangeField: 'w-full m-0 accent-accent2',
   selectField:
-    'focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none border border-gray-400 rounded py-1 px-4 block w-full',
+    'focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none border border-gray-400 rounded py-1 px-4 pr-10 block w-full',
   disabled:
     'bg-gray-200 border border-gray-400 rounded py-1 px-4 block w-full appearance-none',
 };
@@ -66,14 +66,21 @@ const InputField = ({
 }: InputField) => (
   <div className="relative">
     {label ? (
-      <label className={altLabel ? altLabelClass : defaultLabelClass} htmlFor={name}>
+      <label
+        className={altLabel ? altLabelClass : defaultLabelClass}
+        htmlFor={name}
+      >
         {label}
         {required && !altLabel ? '*' : ''}
       </label>
     ) : null}
     {children}
     {showError ? (
-      <ErrorMessage className="text-red-500 text-sm" name={name} component="span" />
+      <ErrorMessage
+        className="text-red-500 text-sm"
+        name={name}
+        component="span"
+      />
     ) : null}
   </div>
 );
@@ -196,7 +203,12 @@ interface EditField {
   setIsEditing: React.Dispatch<React.SetStateAction<Editing>>;
 }
 
-export function EditField({ children, fieldName, isEditing, setIsEditing }: EditField) {
+export function EditField({
+  children,
+  fieldName,
+  isEditing,
+  setIsEditing,
+}: EditField) {
   return (
     <div className="flex items-center gap-8">
       <div className="block my-1 mx-0">{children}</div>
@@ -257,7 +269,12 @@ export function SelectField({
   ...props
 }: SelectField) {
   return (
-    <InputField altLabel={altLabel} label={label} name={name} required={required}>
+    <InputField
+      altLabel={altLabel}
+      label={label}
+      name={name}
+      required={required}
+    >
       <Field
         as="select"
         className={disabled ? styles.disabled : styles.selectField}
@@ -304,7 +321,10 @@ export function TextArrayField({ btnLabel, name, values }: TextFieldArray) {
                 <div className="flex gap-4">
                   <TextField name={`${name}.${index}`} />
                   <div className="flex flex gap-4">
-                    <button type="button" onClick={() => arrayHelpers.remove(index)}>
+                    <button
+                      type="button"
+                      onClick={() => arrayHelpers.remove(index)}
+                    >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
@@ -344,7 +364,11 @@ export function TextArrayField({ btnLabel, name, values }: TextFieldArray) {
               </div>
             ))
           ) : (
-            <Button type="button" size="sm" onClick={() => arrayHelpers.push('')}>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => arrayHelpers.push('')}
+            >
               {btnLabel}
             </Button>
           )}
@@ -378,7 +402,10 @@ export function SelectFieldArray({
                 <div className="flex gap-4">
                   <SelectField name={`${name}.${index}`} options={options} />
                   <div className="flex flex gap-4">
-                    <button type="button" onClick={() => arrayHelpers.remove(index)}>
+                    <button
+                      type="button"
+                      onClick={() => arrayHelpers.remove(index)}
+                    >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
@@ -418,7 +445,11 @@ export function SelectFieldArray({
               </div>
             ))
           ) : (
-            <Button type="button" size="sm" onClick={() => arrayHelpers.push('')}>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => arrayHelpers.push('')}
+            >
               {btnLabel}
             </Button>
           )}

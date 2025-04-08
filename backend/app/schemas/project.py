@@ -5,6 +5,7 @@ from geojson_pydantic import Feature, Polygon
 from pydantic import BaseModel, Field, field_validator, ValidationInfo, UUID4
 
 from app.schemas.location import LocationCreate
+from app.schemas.role import Role
 
 
 # shared properties
@@ -63,7 +64,7 @@ class Project(ProjectInDBBase):
     field: Optional[Feature[Polygon, Dict]] = None
     flight_count: int = 0
     most_recent_flight: Optional[date] = None
-    role: Literal["owner", "manager", "viewer"]
+    role: Role
 
 
 # project boundary centroid
@@ -81,7 +82,8 @@ class Projects(BaseModel):
     harvest_date: Optional[date] = None
     most_recent_flight: Optional[date] = None
     planting_date: Optional[date] = None
-    role: Literal["owner", "manager", "viewer"]
+    owner_id: UUID4 = Field(exclude=True)
+    role: Role
     title: str
 
 

@@ -1,21 +1,21 @@
-from typing import Sequence, TypedDict
+from typing import List, Optional, Sequence, Tuple, TypedDict
 from uuid import UUID
 
 from fastapi import status
-from fastapi.encoders import jsonable_encoder
-from sqlalchemy import select
+from sqlalchemy import select, true
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import Bundle, Session
+from sqlalchemy.orm import Bundle, Session, joinedload
 from sqlalchemy.sql.selectable import Select
 
 from app import crud
 from app.crud.base import CRUDBase
-from app.crud.crud_team_member import set_url_attr
+from app.crud.crud_team_member import set_name_and_email_attr, set_url_attr
 from app.models.project import Project
 from app.models.project_member import ProjectMember
 from app.models.team import Team
 from app.models.user import User
 from app.schemas.project_member import ProjectMemberCreate, ProjectMemberUpdate
+from app.schemas.team_member import Role
 
 
 class UpdateProjectMember(TypedDict):
@@ -29,45 +29,66 @@ class CRUDProjectMember(
 ):
     def create_with_project(
         self, db: Session, *, obj_in: ProjectMemberCreate, project_id: UUID
-    ) -> ProjectMember | None:
-        obj_in_data = jsonable_encoder(obj_in)
-        if "email" in obj_in_data and obj_in_data.get("email"):
-            statement = select(User).filter_by(email=obj_in_data.get("email"))
-            with db as session:
-                user_obj = session.scalars(statement).one_or_none()
-                if user_obj:
-                    db_obj = self.model(
-                        role=obj_in_data.get("role", "viewer"),
-                        member_id=user_obj.id,
-                        project_id=project_id,
-                    )
-                    session.add(db_obj)
-                    session.commit()
-                    session.refresh(db_obj)
-                else:
-                    db_obj = None
-        elif "member_id" in obj_in_data:
-            with db as session:
-                db_obj = self.model(
-                    member_id=obj_in_data.get("member_id"),
-                    role=obj_in_data.get("role", "viewer"),
-                    project_id=project_id,
-                )
-                session.add(db_obj)
-                session.commit()
-                session.refresh(db_obj)
-        return db_obj
+    ) -> Optional[ProjectMember]:
+        if obj_in.email:
+            statement = select(User).where(
+                User.email == obj_in.email, User.is_approved, User.is_email_confirmed
+            )
+        elif obj_in.member_id:
+            statement = select(User).where(
+                User.id == obj_in.member_id, User.is_approved, User.is_email_confirmed
+            )
+        else:
+            raise ValueError("Either email or member_id must be provided")
+
+        # Get user obj
+        with db as session:
+            user_obj = session.scalar(statement)
+            if not user_obj:
+                return None
+
+        # Query project by id
+        with db as session:
+            project = crud.project.get(db, id=project_id)
+            if not project:
+                return None
+
+        # Check if user is project owner
+        is_project_owner = project.owner_id == user_obj.id
+
+        # Add project member
+        with db as session:
+            if is_project_owner:
+                role = Role.OWNER
+            elif obj_in.role:
+                role = obj_in.role
+            else:
+                role = Role.VIEWER
+            project_member = ProjectMember(
+                member_id=user_obj.id, project_id=project_id, role=role
+            )
+            session.add(project_member)
+            session.commit()
+            session.refresh(project_member)
+            set_name_and_email_attr(project_member, user_obj)
+
+        return project_member
 
     def create_multi_with_project(
-        self, db: Session, member_ids: [UUID], project_id: UUID
+        self, db: Session, new_members: List[Tuple[UUID, Role]], project_id: UUID
     ) -> Sequence[ProjectMember]:
         current_members = self.get_list_of_project_members(db, project_id=project_id)
         current_member_ids = [cm.member_id for cm in current_members]
         project_members = []
-        for member_id in member_ids:
-            if member_id not in current_member_ids:
+        for project_member in new_members:
+            if project_member[0] not in current_member_ids:
+                # Set project member role based on team member role
                 project_members.append(
-                    {"member_id": member_id, "role": "viewer", "project_id": project_id}
+                    {
+                        "member_id": project_member[0],
+                        "role": project_member[1],
+                        "project_id": project_id,
+                    }
                 )
         if len(project_members) > 0:
             with db as session:
@@ -92,13 +113,7 @@ class CRUDProjectMember(
         return None
 
     def get_list_of_project_members(
-        self,
-        db: Session,
-        *,
-        project_id: UUID,
-        role: str = "",
-        skip: int = 0,
-        limit: int = 100,
+        self, db: Session, *, project_id: UUID, role: Optional[Role] = None
     ) -> Sequence[ProjectMember]:
         statement: Select = (
             select(
@@ -109,8 +124,6 @@ class CRUDProjectMember(
             .join(ProjectMember.member)
             .where(ProjectMember.project_id == project_id)
             .where(Project.is_active)
-            .offset(skip)
-            .limit(limit)
         )
         if role:
             statement = statement.where(ProjectMember.role == role)
@@ -129,25 +142,69 @@ class CRUDProjectMember(
         project_member_obj: ProjectMember,
         project_member_in: ProjectMemberUpdate,
     ) -> UpdateProjectMember:
-        # only update if there will still be at least one owner for the project
-        project_owners = self.get_list_of_project_members(
-            db, project_id=project_member_obj.project_id, role="owner"
-        )
-        # deny update action if there is only one owner and its the member being updated
-        if len(project_owners) == 1 and project_owners[0].id == project_member_obj.id:
+        """Update project member role. Reject update action if:
+        - The member being updated is the project creator.
+        - The member being updated is the only owner of the project.
+        Args:
+            db (Session): Database session.
+            project_member_obj (ProjectMember): Project member object.
+            project_member_in (ProjectMemberUpdate): Project member update.
+
+        Returns:
+            UpdateProjectMember: Update project member response.
+        """
+        with db as session:
+            # Merge project member obj into session
+            project_member_obj = session.merge(project_member_obj)
+
+            # Get project
+            project_statement = (
+                select(Project)
+                .where(Project.id == project_member_obj.project_id)
+                .where(Project.is_active == true())
+            )
+            project = session.execute(project_statement).scalar_one_or_none()
+            if not project:
+                return {
+                    "response_code": status.HTTP_404_NOT_FOUND,
+                    "message": "Project not found",
+                    "result": None,
+                }
+
+            # Get all project owners
+            owners_statement = (
+                select(ProjectMember)
+                .where(ProjectMember.project_id == project.id)
+                .where(ProjectMember.role == Role.OWNER)
+            )
+            project_owners = session.execute(owners_statement).scalars().all()
+            # Reject update action if the member being updated is the project creator
+            if project_member_obj.member_id == project.owner_id:
+                return {
+                    "response_code": status.HTTP_400_BAD_REQUEST,
+                    "message": "Cannot change project creator role",
+                    "result": None,
+                }
+            # Reject update action if there is only one owner and its the member being updated
+            if (
+                len(project_owners) == 1
+                and project_owners[0].id == project_member_obj.id
+            ):
+                return {
+                    "response_code": status.HTTP_400_BAD_REQUEST,
+                    "message": "Must have at least one project owner",
+                    "result": None,
+                }
+            # Update project member role
+            updated_project_member = crud.project_member.update(
+                db, db_obj=project_member_obj, obj_in=project_member_in
+            )
+            # Return success response
             return {
-                "response_code": status.HTTP_400_BAD_REQUEST,
-                "message": "Must have at least one project owner",
-                "result": None,
+                "response_code": status.HTTP_200_OK,
+                "message": "Project member updated",
+                "result": updated_project_member,
             }
-        updated_project_member = crud.project_member.update(
-            db, db_obj=project_member_obj, obj_in=project_member_in
-        )
-        return {
-            "response_code": status.HTTP_200_OK,
-            "message": "Project member updated",
-            "result": updated_project_member,
-        }
 
     def delete_multi(
         self, db: Session, project_id: UUID, team_id: UUID
@@ -158,7 +215,7 @@ class CRUDProjectMember(
             .join(Team)
             .where(Project.id == project_id)
             .where(Team.id == team_id)
-            .where(ProjectMember.role != "owner")
+            .where(ProjectMember.role != Role.OWNER)
         )
         with db as session:
             project_members = session.scalars(statement).all()
@@ -167,13 +224,6 @@ class CRUDProjectMember(
                     session.delete(project_member)
                 session.commit()
         return project_members
-
-
-def set_name_and_email_attr(project_member_obj: ProjectMember, user_obj: User):
-    setattr(
-        project_member_obj, "full_name", f"{user_obj.first_name} {user_obj.last_name}"
-    )
-    setattr(project_member_obj, "email", user_obj.email)
 
 
 project_member = CRUDProjectMember(ProjectMember)

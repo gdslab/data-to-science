@@ -1,5 +1,5 @@
-import { Formik, Form } from 'formik';
-import { useContext, useState } from 'react';
+import { AxiosResponse } from 'axios';
+import { useContext, useMemo, useState } from 'react';
 import {
   Params,
   useLoaderData,
@@ -10,14 +10,15 @@ import {
 import AuthContext from '../../../AuthContext';
 import { Button } from '../../Buttons';
 import { ConfirmationPopup } from '../../ConfirmationPopup';
-import { Editing, EditField, TextField } from '../../InputFields';
 import Modal from '../../Modal';
+import TeamEditForm from './TeamEditForm';
 import TeamMemberList from './TeamMemberList';
 
-import validationSchema from './validationSchema';
 import SearchUsers, { UserSearch } from './SearchUsers';
 
 import api from '../../../api';
+
+export type Role = 'owner' | 'manager' | 'viewer';
 
 interface Team {
   id: string;
@@ -28,10 +29,12 @@ interface Team {
 
 export interface TeamMember {
   id: string;
-  full_name: string;
   email: string;
+  full_name: string;
+  member_id: string;
   profile_url: string | null;
-  role: string;
+  role: Role;
+  team_id: string;
 }
 
 export interface TeamData {
@@ -42,8 +45,12 @@ export interface TeamData {
 // fetches team details and team members prior to render
 export async function loader({ params }: { params: Params<string> }) {
   try {
-    const teamResponse = await api.get(`/teams/${params.teamId}`);
-    const teamMembers = await api.get(`/teams/${params.teamId}/members`);
+    const teamResponse: AxiosResponse<Team> = await api.get(
+      `/teams/${params.teamId}`
+    );
+    const teamMembers: AxiosResponse<TeamMember[]> = await api.get(
+      `/teams/${params.teamId}/members`
+    );
     if (teamResponse && teamMembers) {
       return { team: teamResponse.data, members: teamMembers.data };
     } else {
@@ -60,77 +67,50 @@ export default function TeamDetail() {
   const revalidator = useRevalidator();
   const [open, setOpen] = useState(false);
   const teamData = useLoaderData() as TeamData;
-  const [isEditing, setIsEditing] = useState<Editing>(null);
   const [searchResults, setSearchResults] = useState<UserSearch[]>([]);
 
+  const hasWriteAccess = useMemo(
+    () =>
+      teamData.members
+        .find((member) => member.member_id === user?.id)
+        ?.role.toLowerCase() === 'owner' ||
+      teamData.members
+        .find((member) => member.member_id === user?.id)
+        ?.role.toLowerCase() === 'manager',
+    [teamData.members, user]
+  );
+
+  const hasDeleteAccess = useMemo(
+    () =>
+      teamData.members
+        .find((member) => member.member_id === user?.id)
+        ?.role.toLowerCase() === 'owner',
+    [teamData.members, user]
+  );
+
   return (
-    <div>
-      {teamData.team.is_owner ? (
-        <Formik
-          initialValues={{
-            title: teamData.team.title,
-            description: teamData.team.description,
-          }}
-          validationSchema={validationSchema}
-          onSubmit={async (values) => {
-            try {
-              const response = await api.put(
-                `/teams/${teamData.team.id}`,
-                values
-              );
-              if (response) {
-                revalidator.revalidate();
-              }
-              setIsEditing(null);
-            } catch (err) {
-              setIsEditing(null);
-            }
-          }}
-        >
-          {() => (
-            <Form>
-              <div className="grid rows-auto gap-2">
-                <EditField
-                  fieldName="title"
-                  isEditing={isEditing}
-                  setIsEditing={setIsEditing}
-                >
-                  {!isEditing || isEditing.field !== 'title' ? (
-                    <h2 className="mb-0">{teamData.team.title}</h2>
-                  ) : (
-                    <TextField name="title" />
-                  )}
-                </EditField>
-                <EditField
-                  fieldName="description"
-                  isEditing={isEditing}
-                  setIsEditing={setIsEditing}
-                >
-                  {!isEditing || isEditing.field !== 'description' ? (
-                    <span className="text-gray-600">
-                      {teamData.team.description}
-                    </span>
-                  ) : (
-                    <TextField name="description" />
-                  )}
-                </EditField>
-              </div>
-            </Form>
-          )}
-        </Formik>
-      ) : (
-        <div className="grid rows-auto gap-2">
-          <h2 className="mb-0">{teamData.team.title}</h2>
-          <span className="text-gray-600">{teamData.team.description}</span>
-        </div>
-      )}
-      <hr className="mt-4 border-gray-700" />
-      <div className="mt-9">
-        <h2>{teamData.team.title} Members</h2>
-        <TeamMemberList teamMembers={teamData.members} />
+    <div className="flex flex-col gap-4 h-full overflow-hidden">
+      <div className="flex-none flex flex-col gap-4">
+        {hasWriteAccess ? (
+          <TeamEditForm teamData={teamData} />
+        ) : (
+          <div className="grid rows-auto gap-2">
+            <h2 className="mb-0">{teamData.team.title}</h2>
+            <span className="text-gray-600">{teamData.team.description}</span>
+          </div>
+        )}
+        <hr className="border-gray-700" />
       </div>
-      {teamData.team.is_owner ? (
-        <div className="mt-4">
+      <div className="flex-grow overflow-hidden">
+        <h2>{teamData.team.title} Members</h2>
+        <TeamMemberList
+          teamMembers={teamData.members}
+          hasDeleteAccess={hasDeleteAccess}
+          hasWriteAccess={hasWriteAccess}
+        />
+      </div>
+      {hasWriteAccess ? (
+        <div className="flex-none">
           <h3>Find new team members</h3>
           <div className="mb-4 grid grid-flow-row gap-4">
             <SearchUsers
@@ -145,7 +125,6 @@ export default function TeamDetail() {
                 size="sm"
                 onClick={(e) => {
                   e.preventDefault();
-                  // filter out unselected members and already existing members
                   let selectedMembers = searchResults
                     .filter((u) => u.checked)
                     .filter(
