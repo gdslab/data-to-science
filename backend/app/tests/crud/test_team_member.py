@@ -301,6 +301,40 @@ def test_update_team_member_role_of_team_creator(db: Session) -> None:
     assert team_member_after_update.role == Role.OWNER
 
 
+def test_update_team_member_role_of_project_creator_does_not_update_project_member_role(
+    db: Session,
+) -> None:
+    """Verify updating team member role of project creator does not update project member role."""
+    team_owner = create_user(db)
+    team = create_team(db, owner_id=team_owner.id)
+    team_member_and_project_owner = create_user(db)
+    team_member = create_team_member(
+        db,
+        email=team_member_and_project_owner.email,
+        team_id=team.id,
+        role=Role.MANAGER,
+    )
+    project = create_project(
+        db, owner_id=team_member_and_project_owner.id, team_id=team.id
+    )
+    # Attempt to downgrade project member role to "viewer"
+    project_member = crud.project_member.get_by_project_and_member_id(
+        db, project_id=project.id, member_id=team_member_and_project_owner.id
+    )
+    assert project_member
+    project_member_in = schemas.ProjectMemberUpdate(role=Role.VIEWER)
+    project_member_updated_response = crud.project_member.update_project_member(
+        db, project_member_obj=project_member, project_member_in=project_member_in
+    )
+    # Confirm project member role was not updated and project member still has "owner" role
+    assert project_member_updated_response["response_code"] == 400
+    assert (
+        project_member_updated_response["message"]
+        == "Cannot change project creator role"
+    )
+    assert project_member_updated_response["result"] is None
+
+
 def test_remove_team_member_by_id(db: Session) -> None:
     """Verify removal of team member by team owner."""
     owner = create_user(db)

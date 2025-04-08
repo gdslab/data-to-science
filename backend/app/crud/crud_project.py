@@ -61,7 +61,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             if not is_team_owner(owner_id, team_members, include_manager=True):
                 return {
                     "response_code": status.HTTP_403_FORBIDDEN,
-                    "message": 'Only team member with "owner" role can perform this action',
+                    "message": 'Only team member with "owner" or "manager" role can perform this action',
                     "result": None,
                 }
         # add location to db

@@ -7,6 +7,7 @@ from app import crud
 from app.api.deps import get_current_user, get_current_approved_user
 from app.core.config import settings
 from app.schemas.team_member import Role, TeamMemberUpdate
+from app.tests.utils.project import create_project
 from app.tests.utils.team import create_team
 from app.tests.utils.team_member import create_team_member
 from app.tests.utils.user import create_user
@@ -442,6 +443,34 @@ def test_downgrade_team_creator_with_owner_role_by_owner_fails(
         json=jsonable_encoder(data),
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_downgrade_team_member_with_project_creator_role_fails(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    team = create_team(db, owner_id=current_user.id)
+    team_manager = create_user(db)
+    team_manager_team_member = create_team_member(
+        db, email=team_manager.email, team_id=team.id, role=Role.MANAGER
+    )
+    # Create project with team manager as creator
+    project = create_project(db, owner_id=team_manager.id, team_id=team.id)
+    # Downgrade team member with project creator role to team viewer role
+    data = {"role": "viewer"}
+    response = client.put(
+        f"{settings.API_V1_STR}/teams/{team.id}/members/{team_manager_team_member.id}",
+        json=jsonable_encoder(data),
+    )
+    assert response.status_code == status.HTTP_200_OK
+    # Confirm project member role remains "owner"
+    project_member = crud.project_member.get_by_project_and_member_id(
+        db, project_id=project.id, member_id=team_manager.id
+    )
+    assert project_member
+    assert project_member.role == Role.OWNER
 
 
 def test_non_creator_owner_can_update_role(

@@ -154,6 +154,9 @@ class CRUDProjectMember(
             UpdateProjectMember: Update project member response.
         """
         with db as session:
+            # Merge project member obj into session
+            project_member_obj = session.merge(project_member_obj)
+
             # Get project
             project_statement = (
                 select(Project)
@@ -175,7 +178,6 @@ class CRUDProjectMember(
                 .where(ProjectMember.role == Role.OWNER)
             )
             project_owners = session.execute(owners_statement).scalars().all()
-
             # Reject update action if the member being updated is the project creator
             if project_member_obj.member_id == project.owner_id:
                 return {

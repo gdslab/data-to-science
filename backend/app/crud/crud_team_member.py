@@ -314,14 +314,25 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
                         select(Project.id).where(Project.team_id == team_member.team_id)
                     ).all()
                     if project_ids:
-                        # Update project members role
-                        bulk_update_project_members = (
-                            update(ProjectMember)
-                            .where(ProjectMember.project_id.in_(project_ids))
-                            .where(ProjectMember.member_id == team_member.member_id)
-                            .values(role=updated_team_member.role)
-                        )
-                        session.execute(bulk_update_project_members)
+                        # Get all projects to check owner_id
+                        projects = session.scalars(
+                            select(Project).where(Project.id.in_(project_ids))
+                        ).all()
+
+                        # Update project members role, but exclude project owners
+                        for project in projects:
+                            # Skip if the team member is the project owner
+                            if project.owner_id == team_member.member_id:
+                                continue
+
+                            # Update project member role for non-owners
+                            bulk_update_project_members = (
+                                update(ProjectMember)
+                                .where(ProjectMember.project_id == project.id)
+                                .where(ProjectMember.member_id == team_member.member_id)
+                                .values(role=updated_team_member.role)
+                            )
+                            session.execute(bulk_update_project_members)
 
                 session.commit()
 

@@ -1,6 +1,6 @@
-from pathlib import Path
 import re
 import secrets
+from pathlib import Path
 
 
 def is_valid_filename(filename: str) -> bool:
