@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app import crud, models, schemas
 from app.api import deps
 from app.core.config import settings
+from app.schemas.role import Role
 
 router = APIRouter()
 
@@ -19,7 +20,7 @@ router = APIRouter()
 def create_flight(
     flight_in: schemas.FlightCreate,
     project_id: UUID,
-    project: models.Project = Depends(deps.can_read_write_project),
+    project: schemas.Project = Depends(deps.can_read_write_project),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Create new flight for a project."""
@@ -61,7 +62,7 @@ def read_flights(
     include_all: bool = True,
     has_raster: bool = False,
     current_user: models.User = Depends(deps.get_current_approved_user),
-    project: models.Project = Depends(deps.can_read_project),
+    project: schemas.Project = Depends(deps.can_read_project),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Retrieve flights associated with project user can access."""
@@ -108,7 +109,7 @@ def update_flight_project(
         db, project_id=destination_project_id, member_id=current_user.id
     )
     # raise exception if not project member or member without owner/manager role
-    if not project_membership or project_membership.role != "owner":
+    if not project_membership or project_membership.role != Role.OWNER:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Must be an owner of destination project",
@@ -176,7 +177,7 @@ def update_flight_project(
 def deactivate_flight(
     flight_id: UUID,
     flight: models.Flight = Depends(deps.can_read_write_flight),
-    project: models.Project = Depends(deps.can_read_write_delete_project),
+    project: schemas.Project = Depends(deps.can_read_write_delete_project),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     deactivated_flight = crud.flight.deactivate(db, flight_id=flight.id)

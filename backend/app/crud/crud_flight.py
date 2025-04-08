@@ -32,7 +32,7 @@ from app.schemas.job import State, Status
 class ReadFlight(TypedDict):
     response_code: int
     message: str
-    result: Flight | None
+    result: Optional[Flight]
 
 
 class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):

@@ -45,7 +45,7 @@ def create_project(
         raise HTTPException(
             status_code=project["response_code"], detail=project["message"]
         )
-    if not project["result"].id:
+    if not project["result"] or not project["result"].id:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to create project",
@@ -56,9 +56,8 @@ def create_project(
             db, user_id=current_user.id, project_id=project["result"].id
         )
         if project_in_db["result"]:
-            coordinates = project_in_db["result"].field["geometry"]["coordinates"]
-            features = [Feature(**project_in_db["result"].field)]
             try:
+                features = [Feature(**project_in_db["result"].field)]
                 create_project_field_preview(project["result"].id, features)
             except Exception:
                 logger.exception("Unable to create preview map")
@@ -154,19 +153,19 @@ def update_project(
                     }
                 ],
             )
-
-    project = crud.project.update_project(
+    updated_project = crud.project.update_project(
         db,
         project_id=project_id,
         project_obj=project,
         project_in=project_in,
         user_id=current_user.id,
     )
-    if project["response_code"] != status.HTTP_200_OK:
+    if updated_project["response_code"] != status.HTTP_200_OK:
         raise HTTPException(
-            status_code=project["response_code"], detail=project["message"]
+            status_code=updated_project["response_code"],
+            detail=updated_project["message"],
         )
-    return project["result"]
+    return updated_project["result"]
 
 
 @router.delete("/{project_id}", response_model=schemas.Project)

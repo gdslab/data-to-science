@@ -42,7 +42,7 @@ export default function SidebarPage() {
   }, [location.state]);
 
   return (
-    <div className="min-h-full flex">
+    <div className="flex h-full">
       {/* sidebar */}
       <div className="flex-grow w-80 flex-col justify-between border-e bg-accent3 text-slate-200">
         <div className="px-4 py-6">
@@ -88,7 +88,7 @@ export default function SidebarPage() {
         </div>
       </div>
       {/* page content */}
-      <div className="m-4 w-full">
+      <div className="flex-grow w-full m-4">
         {location.pathname === '/teams' && teams.length < 1 ? (
           <span>
             You do not currently belong to any teams. Use the{' '}

@@ -7,7 +7,6 @@ from typing import Annotated, Any, Optional, Sequence, Union
 from urllib.parse import urlparse, parse_qs
 from uuid import UUID, uuid4
 
-import httpx
 from geojson_pydantic import Feature, FeatureCollection, Polygon, MultiPolygon
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
@@ -22,6 +21,7 @@ from app.core.config import settings
 from app.models.vector_layer import VectorLayer
 from app.schemas.data_product_metadata import ZonalStatisticsProps
 from app.schemas.job import Status
+from app.schemas.role import Role
 from app.tasks.toolbox_tasks import (
     calculate_zonal_statistics,
     calculate_bulk_zonal_statistics,
@@ -273,20 +273,12 @@ def update_data_product_data_type(
 def deactivate_data_product(
     data_product_id: UUID,
     project: schemas.Project = Depends(deps.can_read_write_project),
-    flight: schemas.Flight = Depends(deps.can_read_write_flight),
+    flight: models.Flight = Depends(deps.can_read_write_flight),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    if not project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
-        )
-    if project.role != "owner":
+    if project.role != Role.OWNER:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Access forbidden"
-        )
-    if not flight:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
         )
     deactivated_data_product = crud.data_product.deactivate(
         db, data_product_id=data_product_id
@@ -357,14 +349,18 @@ def process_data_product_from_external_storage(
 
         # copy report
         try:
-            if os.path.exists(payload.report.storage_path) and os.path.join(
-                get_static_dir(),
-                "projects",
-                str(project_id),
-                "flights",
-                str(flight_id),
-                "raw_data",
-                str(payload.report.raw_data_id),
+            if (
+                payload.report
+                and os.path.exists(payload.report.storage_path)
+                and os.path.join(
+                    get_static_dir(),
+                    "projects",
+                    str(project_id),
+                    "flights",
+                    str(flight_id),
+                    "raw_data",
+                    str(payload.report.raw_data_id),
+                )
             ):
                 shutil.copyfile(
                     payload.report.storage_path,
@@ -379,8 +375,6 @@ def process_data_product_from_external_storage(
                         os.path.basename(payload.report.storage_path),
                     ),
                 )
-                # remove from network storage
-                os.remove(payload.report.storage_path)
             else:
                 logger.error(
                     "Report does not exist on network storage or raw data directory does not exist"

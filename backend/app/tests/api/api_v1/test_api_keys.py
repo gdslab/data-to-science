@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
+from app.schemas.role import Role
 from app.schemas.user import UserUpdate
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.project_member import create_project_member
@@ -51,7 +52,7 @@ def test_revoke_api_key_by_demo_user(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
-    api_key = crud.api_key.create_with_user(db, user_id=current_user.id)
+    crud.api_key.create_with_user(db, user_id=current_user.id)
     crud.user.update(db, db_obj=current_user, obj_in=UserUpdate(is_demo=True))
     response = client.get(f"{settings.API_V1_STR}/auth/revoke-api-key")
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -60,14 +61,14 @@ def test_revoke_api_key_by_demo_user(
 def test_revoke_api_key_when_one_does_not_exist(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
-    current_user = get_current_user(db, normal_user_access_token)
+    get_current_user(db, normal_user_access_token)
     response = client.get(f"{settings.API_V1_STR}/auth/revoke-api-key")
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 def test_access_authorized_data_product_with_api_key(
     client: TestClient, db: Session, normal_user_access_token: str
-):
+) -> None:
     # create user that will own project/data product
     project_owner = create_user(db)
     # user making request
@@ -79,8 +80,8 @@ def test_access_authorized_data_product_with_api_key(
     # project associated with data product
     project = data_product.project
     # add current user as member of project with default "viewer" role
-    project_member = create_project_member(
-        db, role="viewer", member_id=current_user.id, project_id=project.id
+    create_project_member(
+        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
     )
 
     # current user has access to the data product project
@@ -91,7 +92,7 @@ def test_access_authorized_data_product_with_api_key(
 
 def test_access_authorized_deactivated_data_product_with_api_key(
     client: TestClient, db: Session, normal_user_access_token: str
-):
+) -> None:
     # create user that will own project/data product
     project_owner = create_user(db)
     # user making request
@@ -103,13 +104,14 @@ def test_access_authorized_deactivated_data_product_with_api_key(
     # project associated with data product
     project = data_product.project
     # add current user as member of project with default "viewer" role
-    project_member = create_project_member(
-        db, role="viewer", member_id=current_user.id, project_id=project.id
+    create_project_member(
+        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
     )
     # deactivate data product
     deactivated_data_product = crud.data_product.deactivate(
         db, data_product_id=data_product.obj.id
     )
+    assert deactivated_data_product
 
     # current user has access to the data product project, but data product deactivated
     with pytest.raises(HTTPException) as exc_info:
@@ -122,7 +124,7 @@ def test_access_authorized_deactivated_data_product_with_api_key(
 
 def test_access_authorized_data_product_with_deactivated_api_key(
     client: TestClient, db: Session, normal_user_access_token: str
-):
+) -> None:
     # user making request
     current_user = get_current_user(db, normal_user_access_token)
     # create api key for current_user
@@ -139,6 +141,7 @@ def test_access_authorized_data_product_with_deactivated_api_key(
     deactivated_api_key = crud.api_key.deactivate(db, user_id=current_user.id)
 
     # verify with deactivated api key
+    assert deactivated_api_key
     assert not deactivated_api_key.is_active
     assert deactivated_api_key.deactivated_at.replace(
         tzinfo=timezone.utc
@@ -150,7 +153,7 @@ def test_access_authorized_data_product_with_deactivated_api_key(
 
 def test_access_unauthorized_data_product_with_api_key(
     client: TestClient, db: Session, normal_user_access_token: str
-):
+) -> None:
     # create user that will own project/data product
     project_owner = create_user(db)
     # user making request

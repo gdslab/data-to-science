@@ -6,13 +6,13 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app import crud
 from app.api.deps import (
     get_current_user,
     get_current_approved_user_by_jwt_or_api_key,
 )
 from app.core.config import settings
-from app.schemas.iforester import IForesterCreate, IForesterUpdate
+from app.schemas.iforester import IForesterUpdate
+from app.schemas.role import Role
 from app.tests.utils.iforester import (
     create_iforester,
     EXAMPLE_DATA,
@@ -80,7 +80,7 @@ def test_create_iforester_record_with_project_manager_role(
     owner = create_user(db)
     project = create_project(db, owner_id=owner.id)
     create_project_member(
-        db, role="manager", member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
     )
     payload = EXAMPLE_DATA
     response = client.post(
@@ -98,7 +98,7 @@ def test_create_iforester_record_with_project_viewer_role(
     owner = create_user(db)
     project = create_project(db, owner_id=owner.id)
     create_project_member(
-        db, role="viewer", member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
     )
     payload = EXAMPLE_DATA
     response = client.post(
@@ -151,7 +151,7 @@ def test_read_iforester_record_with_project_manager_role(
     owner = create_user(db)
     project = create_project(db, owner_id=owner.id)
     create_project_member(
-        db, role="manager", member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
     )
     iforester = create_iforester(db, project_id=project.id)
     response = client.get(
@@ -169,7 +169,7 @@ def test_read_iforester_record_with_project_viewer_role(
     owner = create_user(db)
     project = create_project(db, owner_id=owner.id)
     create_project_member(
-        db, role="viewer", member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
     )
     iforester = create_iforester(db, project_id=project.id)
     response = client.get(
@@ -220,7 +220,7 @@ def test_read_multi_iforester_records_with_project_manager_role(
     owner = create_user(db)
     project = create_project(db, owner_id=owner.id)
     create_project_member(
-        db, role="manager", member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
     )
     iforester1 = create_iforester(db, project_id=project.id)
     iforester2 = create_iforester(db, project_id=project.id)
@@ -245,7 +245,7 @@ def test_read_multi_iforester_records_with_project_viewer_role(
     owner = create_user(db)
     project = create_project(db, owner_id=owner.id)
     create_project_member(
-        db, role="viewer", member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
     )
     iforester1 = create_iforester(db, project_id=project.id)
     iforester2 = create_iforester(db, project_id=project.id)
@@ -302,7 +302,7 @@ def test_update_iforester_record_with_project_manager_role(
     owner = create_user(db)
     project = create_project(db, owner_id=owner.id)
     create_project_member(
-        db, role="manager", member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
     )
     iforester = create_iforester(db, project_id=project.id)
     old_species = iforester.species
@@ -324,7 +324,7 @@ def test_update_iforester_record_with_project_viewer_role(
     owner = create_user(db)
     project = create_project(db, owner_id=owner.id)
     create_project_member(
-        db, role="viewer", member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
     )
     iforester = create_iforester(db, project_id=project.id)
     old_species = iforester.species
@@ -375,7 +375,7 @@ def test_remove_iforester_record_with_project_manager_role(
     owner = create_user(db)
     project = create_project(db, owner_id=owner.id)
     create_project_member(
-        db, role="manager", member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
     )
     iforester = create_iforester(db, project_id=project.id)
     response = client.delete(
@@ -391,7 +391,7 @@ def test_remove_iforester_record_with_project_viewer_role(
     owner = create_user(db)
     project = create_project(db, owner_id=owner.id)
     create_project_member(
-        db, role="viewer", member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
     )
     iforester = create_iforester(db, project_id=project.id)
     response = client.delete(

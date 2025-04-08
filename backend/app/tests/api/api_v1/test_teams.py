@@ -6,8 +6,9 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api.deps import get_current_user, get_current_approved_user
 from app.core.config import settings
+from app.schemas.role import Role
 from app.schemas.team import TeamUpdate
-from app.schemas.team_member import TeamMemberCreate
+from app.schemas.team_member import TeamMemberCreate, TeamMemberUpdate
 from app.schemas.user import UserUpdate
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
@@ -60,6 +61,7 @@ def test_create_team_with_project(
     assert response.status_code == status.HTTP_201_CREATED
     project_in_db = crud.project.get(db, id=project.id)
     team = response.json()
+    assert project_in_db
     assert str(project_in_db.team_id) == team["id"]
     project_members = crud.project_member.get_list_of_project_members(
         db, project_id=project.id
@@ -69,10 +71,13 @@ def test_create_team_with_project(
 
 
 def test_create_team_with_project_already_assigned_team(
-    client: TestClient, db: Session, normal_user_access_token: str
+    client: TestClient, normal_user_access_token: str, db: Session
 ) -> None:
-    project = create_project(db)
-    existing_team = create_team(db, project=str(project.id))
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token),
+    )
+    project = create_project(db, owner_id=current_user.id)
+    create_team(db, project=project.id, owner_id=current_user.id)
     data = {
         "title": random_team_name(),
         "description": random_team_description(),
@@ -80,9 +85,10 @@ def test_create_team_with_project_already_assigned_team(
     }
     response = client.post(f"{settings.API_V1_STR}/teams", json=data)
     project_in_db = crud.project.get(db, id=project.id)
-    assert response.status_code == status.HTTP_201_CREATED
-    team = response.json()
-    assert project_in_db.team_id == existing_team.id
+    assert project_in_db
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json() and response.json().get("detail")
+    assert response.json()["detail"] == "Project already has a team"
 
 
 def test_create_team_with_project_by_project_manager(
@@ -93,9 +99,9 @@ def test_create_team_with_project_by_project_manager(
     )
     project_owner = create_user(db)
     project = create_project(db, owner_id=project_owner.id)
-    # add current user as project member with manager role
+    # Add current user as project member with manager role
     create_project_member(
-        db, role="manager", member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
     )
     data = {
         "title": random_team_name(),
@@ -103,10 +109,8 @@ def test_create_team_with_project_by_project_manager(
         "project": str(project.id),
     }
     response = client.post(f"{settings.API_V1_STR}/teams", json=data)
-    project_in_db = crud.project.get(db, id=project.id)
-    assert response.status_code == status.HTTP_201_CREATED
-    response_data = response.json()
-    assert str(project_in_db.team_id) == response_data["id"]
+    # Only project owner can create team with project
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_get_teams(
@@ -209,12 +213,12 @@ def test_update_team_owned_by_current_user(
             description=random_team_description(),
         ).model_dump()
     )
-    r = client.put(
+    response = client.put(
         f"{settings.API_V1_STR}/teams/{team.id}",
         json=team_in,
     )
-    assert 200 == r.status_code
-    updated_team = r.json()
+    assert 200 == response.status_code
+    updated_team = response.json()
     assert str(team.id) == updated_team["id"]
     assert updated_team["is_owner"] is True
     assert team_in["title"] == updated_team["title"]
@@ -261,7 +265,7 @@ def test_update_team_current_user_does_not_belong_to(
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_remove_team_by_owner(
+def test_remove_team_by_team_creator(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_approved_user(
@@ -327,4 +331,5 @@ def test_remove_team_with_project(
     assert len(project_members_after_team_deleted) == 6
     # verify team_id is now null in project record
     project_after_team_deleted = crud.project.get(db, id=project.id)
+    assert project_after_team_deleted is not None
     assert project_after_team_deleted.team_id is None

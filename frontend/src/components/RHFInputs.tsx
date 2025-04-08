@@ -24,7 +24,12 @@ function CheckboxInput({ fieldName, label, ...props }: Input) {
 
   return (
     <label htmlFor={fieldName}>
-      <input id={fieldName} type="checkbox" {...register(fieldName)} {...props} />
+      <input
+        id={fieldName}
+        type="checkbox"
+        {...register(fieldName)}
+        {...props}
+      />
       <span className="text-sm ml-2">{label}</span>
       {error && <p className="text-sm text-red-500">{`${error.message}`}</p>}
     </label>
@@ -41,7 +46,9 @@ function NumberInput({ fieldName, label, step, ...props }: NumberInput) {
 
   return (
     <label htmlFor={fieldName}>
-      <span className="text-sm font-medium inline-block mr-2 w-24">{label}:</span>
+      <span className="text-sm font-medium inline-block mr-2 min-w-24">
+        {label}:
+      </span>
       <input
         id={fieldName}
         type="number"
@@ -54,7 +61,13 @@ function NumberInput({ fieldName, label, step, ...props }: NumberInput) {
   );
 }
 
-function RadioInput({ fieldName, inputId, label, value, ...props }: RadioInput) {
+function RadioInput({
+  fieldName,
+  inputId,
+  label,
+  value,
+  ...props
+}: RadioInput) {
   const { register } = useFormContext();
 
   // see https://github.com/react-hook-form/react-hook-form/issues/4604
