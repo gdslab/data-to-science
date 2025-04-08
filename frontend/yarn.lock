@@ -3746,6 +3746,11 @@ rbush@^3.0.1:
   dependencies:
     quickselect "^2.0.0"
 
+react-confirm@^0.3.0:
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/react-confirm/-/react-confirm-0.3.0.tgz#e67ea02732a1437af24b6dd8afce7a8e9c660a31"
+  integrity sha512-xd14cjreB+ndQFqO2iZSMFRelf7MXya7dhGEyZh1km1oCeudQaF7VoIMAzSDLB4wrZiFS3KfGxeqZLnoxq6dwA==
+
 react-dom@^18.2.0:
   version "18.3.1"
   resolved "https://registry.yarnpkg.com/react-dom/-/react-dom-18.3.1.tgz#c2265d79511b57d479b3dd3fdfa51536494c5cb4"

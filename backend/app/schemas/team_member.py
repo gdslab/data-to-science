@@ -1,22 +1,29 @@
-from typing import TYPE_CHECKING
+from enum import Enum
+from typing import Optional
+from typing_extensions import Self
 from uuid import UUID
 
-from pydantic import AnyHttpUrl, BaseModel
+from pydantic import AnyHttpUrl, BaseModel, EmailStr, model_validator
 
-if TYPE_CHECKING:
-    EmailStr = str
-else:
-    from pydantic import EmailStr
+from app.schemas.role import Role
 
 
 # shared properties
 class TeamMemberBase(BaseModel):
-    email: EmailStr | None
+    email: Optional[EmailStr] = None
+    member_id: Optional[UUID] = None
+    role: Optional[Role] = None
 
 
 # properties to receive via API on creation
 class TeamMemberCreate(TeamMemberBase):
-    email: EmailStr
+    role: Role = Role.VIEWER
+
+    @model_validator(mode="after")
+    def check_email_or_member_id(self) -> Self:
+        if not self.email and not self.member_id:
+            raise ValueError("Either email or member_id must be provided")
+        return self
 
 
 # properties to receive via API on update
@@ -27,17 +34,18 @@ class TeamMemberUpdate(TeamMemberBase):
 # properties shared by models stored in DB
 class TeamMemberInDBBase(TeamMemberBase, from_attributes=True):
     id: UUID
-    member_id: UUID
+    role: Role
 
+    member_id: UUID
     team_id: UUID
 
 
 # additional properties to return via API
 class TeamMember(TeamMemberInDBBase):
-    full_name: str | None = None
-    email: EmailStr | None = None
-    profile_url: AnyHttpUrl | None = None
-    role: str | None = None
+    full_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    profile_url: Optional[AnyHttpUrl] = None
+    role: Role
 
 
 # additional properties stored in DB

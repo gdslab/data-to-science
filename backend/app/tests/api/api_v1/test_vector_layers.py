@@ -1,6 +1,5 @@
 import os
 
-from geojson_pydantic import FeatureCollection
 from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -8,13 +7,11 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
+from app.schemas.role import Role
 from app.schemas.vector_layer import VectorLayerFeatureCollection
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
-from app.tests.utils.vector_layers import (
-    create_feature_collection,
-    get_geojson_feature_collection,
-)
+from app.tests.utils.vector_layers import create_feature_collection
 
 
 def test_read_vector_layer_with_project_owner_role(
@@ -52,7 +49,7 @@ def test_read_vector_layer_with_manager_owner_role(
     project = create_project(db)
     point_feature_collection = create_feature_collection(db, "point", project.id)
     create_project_member(
-        db, role="manager", member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
     )
     vector_layer_feature_id = point_feature_collection.features[0].properties[
         "feature_id"
@@ -83,7 +80,7 @@ def test_read_vector_layer_with_project_viewer_role(
     project = create_project(db)
     point_feature_collection = create_feature_collection(db, "point", project.id)
     create_project_member(
-        db, role="viewer", member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
     )
     vector_layer_feature_id = point_feature_collection.features[0].properties[
         "feature_id"
@@ -180,7 +177,7 @@ def test_read_vector_layers_with_project_manager_role(
     fc2 = create_feature_collection(db, "linestring", project_id=project.id)
     fc3 = create_feature_collection(db, "polygon", project_id=project.id)
     create_project_member(
-        db, role="manager", member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
     )
 
     response = client.get(f"{settings.API_V1_STR}/projects/{project.id}/vector_layers")
@@ -206,7 +203,7 @@ def test_read_vector_layers_with_project_viewer_role(
     fc2 = create_feature_collection(db, "linestring", project_id=project.id)
     fc3 = create_feature_collection(db, "polygon", project_id=project.id)
     create_project_member(
-        db, role="viewer", member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
     )
 
     response = client.get(f"{settings.API_V1_STR}/projects/{project.id}/vector_layers")
@@ -293,7 +290,7 @@ def test_remove_vector_layer_with_project_manager_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
     create_project_member(
-        db, role="manager", member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
     )
     feature_collection = create_feature_collection(
         db, geom_type="multipoint", project_id=project.id
@@ -317,7 +314,7 @@ def test_remove_vector_layer_with_project_viewer_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
     create_project_member(
-        db, role="viewer", member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
     )
     feature_collection = create_feature_collection(
         db, geom_type="multipoint", project_id=project.id

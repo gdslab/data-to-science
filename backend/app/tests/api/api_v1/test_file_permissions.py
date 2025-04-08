@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -7,6 +5,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
+from app.schemas.role import Role
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.project_member import create_project_member
 
@@ -19,6 +18,7 @@ def test_update_file_permission_with_project_owner_role(
     file_permission = crud.file_permission.get_by_data_product(
         db, file_id=data_product.obj.id
     )
+    assert file_permission is not None
     updated_data = {"is_public": True}
     response = client.put(
         f"{settings.API_V1_STR}/projects/{data_product.project.id}"
@@ -30,7 +30,7 @@ def test_update_file_permission_with_project_owner_role(
     updated_file_permission = response.json()
     assert updated_file_permission["id"] == str(file_permission.id)
     assert updated_file_permission["file_id"] == str(file_permission.file_id)
-    assert updated_file_permission["is_public"] == True
+    assert updated_file_permission["is_public"] is True
 
 
 def test_update_file_permission_with_project_manager_role(
@@ -42,7 +42,7 @@ def test_update_file_permission_with_project_manager_role(
         db,
         member_id=current_user.id,
         project_id=data_product.project.id,
-        role="manager",
+        role=Role.MANAGER,
     )
     updated_data = {"is_public": True}
     response = client.put(
@@ -63,7 +63,7 @@ def test_update_file_permission_with_project_viewer_role(
         db,
         member_id=current_user.id,
         project_id=data_product.project.id,
-        role="viewer",
+        role=Role.VIEWER,
     )
     updated_data = {"is_public": True}
     response = client.put(

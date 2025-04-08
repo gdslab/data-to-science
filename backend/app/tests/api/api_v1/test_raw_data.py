@@ -5,9 +5,9 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
+from app.schemas.role import Role
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
 from app.tests.utils.flight import create_flight
@@ -41,7 +41,7 @@ def test_read_raw_data_with_project_manager_role(
         db,
         member_id=current_user.id,
         project_id=raw_data.project.id,
-        role="manager",
+        role=Role.MANAGER,
     )
     response = client.get(
         f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
@@ -61,7 +61,7 @@ def test_read_raw_data_with_project_viewer_role(
         db,
         member_id=current_user.id,
         project_id=raw_data.project.id,
-        role="viewer",
+        role=Role.VIEWER,
     )
     response = client.get(
         f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
@@ -86,14 +86,14 @@ def test_read_raw_data_without_project_access(
 
 def test_download_raw_data_with_viewer_role(
     client: TestClient, db: Session, normal_user_access_token: str
-):
+) -> None:
     current_user = get_current_user(db, normal_user_access_token)
     raw_data = SampleRawData(db)
     create_project_member(
         db,
         member_id=current_user.id,
         project_id=raw_data.project.id,
-        role="viewer",
+        role=Role.VIEWER,
     )
     response = client.get(
         f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
@@ -108,7 +108,9 @@ def test_download_raw_data_with_viewer_role(
         assert len(test_data.read()) == len(response.content)
 
 
-def test_download_raw_data_without_project_role(client: TestClient, db: Session):
+def test_download_raw_data_without_project_role(
+    client: TestClient, db: Session
+) -> None:
     raw_data = SampleRawData(db)
     response = client.get(
         f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
@@ -152,7 +154,7 @@ def test_read_multi_raw_data_with_manager_role(
         db,
         member_id=current_user.id,
         project_id=project.id,
-        role="manager",
+        role=Role.MANAGER,
     )
     response = client.get(
         f"{settings.API_V1_STR}/projects/{project.id}" f"/flights/{flight.id}/raw_data"
@@ -180,7 +182,7 @@ def test_read_multi_raw_data_with_viewer_role(
         db,
         member_id=current_user.id,
         project_id=project.id,
-        role="viewer",
+        role=Role.VIEWER,
     )
     response = client.get(
         f"{settings.API_V1_STR}/projects/{project.id}" f"/flights/{flight.id}/raw_data"
@@ -216,7 +218,7 @@ def test_read_multi_raw_data_without_project_access(
 
 def test_deactivate_raw_data_with_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
-):
+) -> None:
     current_user = get_current_user(db, normal_user_access_token)
     raw_data = SampleRawData(db, user=current_user)
     response = client.delete(
@@ -237,11 +239,11 @@ def test_deactivate_raw_data_with_owner_role(
 
 def test_deactivate_raw_data_with_manager_role(
     client: TestClient, db: Session, normal_user_access_token: str
-):
+) -> None:
     current_user = get_current_user(db, normal_user_access_token)
     raw_data = SampleRawData(db)
     create_project_member(
-        db, role="manager", member_id=current_user.id, project_id=raw_data.project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_id=raw_data.project.id
     )
     response = client.delete(
         f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
@@ -252,11 +254,11 @@ def test_deactivate_raw_data_with_manager_role(
 
 def test_deactivate_raw_data_with_viewer_role(
     client: TestClient, db: Session, normal_user_access_token: str
-):
+) -> None:
     current_user = get_current_user(db, normal_user_access_token)
     raw_data = SampleRawData(db)
     create_project_member(
-        db, role="viewer", member_id=current_user.id, project_id=raw_data.project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_id=raw_data.project.id
     )
     response = client.delete(
         f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
@@ -267,7 +269,7 @@ def test_deactivate_raw_data_with_viewer_role(
 
 def test_deactivate_raw_data_without_project_access(
     client: TestClient, db: Session, normal_user_access_token: str
-):
+) -> None:
     current_user = get_current_user(db, normal_user_access_token)
     raw_data = SampleRawData(db)
     response = client.delete(

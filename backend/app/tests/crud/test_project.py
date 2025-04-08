@@ -1,9 +1,12 @@
 from datetime import datetime, timezone
 
+import pytest
+from fastapi import status
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
 from app.schemas.project import ProjectUpdate
+from app.schemas.team_member import TeamMemberUpdate, Role
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.flight import create_flight
 from app.tests.utils.team import create_team
@@ -46,15 +49,48 @@ def test_create_project_without_team(db: Session) -> None:
 
 
 def test_create_project_with_team(db: Session) -> None:
-    user = create_user(db)
-    team = create_team(db, owner_id=user.id)
+    # Create team with owner, manager, and viewer
+    team_owner = create_user(db)
+    team = create_team(db, owner_id=team_owner.id)
+    team_manager = create_user(db)
+    team_viewer = create_user(db)
+    create_team_member(db, email=team_manager.email, team_id=team.id, role=Role.MANAGER)
+    create_team_member(db, email=team_viewer.email, team_id=team.id, role=Role.VIEWER)
+    # Create project with team
     project = create_project(
         db,
-        owner_id=user.id,
+        owner_id=team_owner.id,
         team_id=team.id,
     )
-    assert project.owner_id == user.id
+    assert project.owner_id == team_owner.id
     assert project.team_id == team.id
+    # Get project members
+    project_members = crud.project_member.get_list_of_project_members(
+        db, project_id=project.id
+    )
+    assert len(project_members) == 3
+    for project_member in project_members:
+        if project_member.member_id == team_owner.id:
+            assert project_member.role == Role.OWNER
+        elif project_member.member_id == team_manager.id:
+            assert project_member.role == Role.MANAGER
+        elif project_member.member_id == team_viewer.id:
+            assert project_member.role == Role.VIEWER
+
+
+def test_create_project_with_team_not_owned_by_user(db: Session) -> None:
+    user = create_user(db)
+    other_user = create_user(db)
+    team = create_team(db, owner_id=other_user.id)
+    # Add user as team member with default "member" role
+    create_team_member(db, email=user.email, team_id=team.id)
+    # Create project with team not owned by user
+    with pytest.raises(ValueError):
+        create_project(
+            db,
+            owner_id=user.id,
+            team_id=team.id,
+        )
 
 
 def test_create_project_creates_project_member_for_owner(db: Session) -> None:
@@ -64,7 +100,7 @@ def test_create_project_creates_project_member_for_owner(db: Session) -> None:
         db, project_id=project.id, member_id=user.id
     )
     assert project_member
-    assert project_member.role == "owner"
+    assert project_member.role == Role.OWNER
     assert user.id == project_member.member_id
     assert project.id == project_member.project_id
 
@@ -162,12 +198,10 @@ def test_get_projects_with_data_products_by_type(db: Session) -> None:
         flight = create_flight(db, project_id=project.id)
         # add raster data product to first project
         if project_idx == 0:
-            raster_data_product = SampleDataProduct(
-                db, data_type="ortho", flight=flight, project=project
-            )
+            SampleDataProduct(db, data_type="ortho", flight=flight, project=project)
         # add point cloud data product to second project
         if project_idx == 1:
-            point_cloud_data_product = crud.data_product.create_with_flight(
+            crud.data_product.create_with_flight(
                 db,
                 obj_in=schemas.DataProductCreate(
                     data_type="point_cloud",
@@ -202,13 +236,109 @@ def test_update_project(db: Session) -> None:
     new_title = random_team_name()
     new_planting_date = random_planting_date()
     project_in_update = ProjectUpdate(title=new_title, planting_date=new_planting_date)
-    project_update = crud.project.update(db, db_obj=project, obj_in=project_in_update)
-    assert project.id == project_update.id
-    assert new_title == project_update.title
-    assert new_planting_date == project_update.planting_date
-    assert project.planting_date == project_update.planting_date
-    assert project.description == project_update.description
-    assert project.owner_id == project_update.owner_id
+    project_update = crud.project.update_project(
+        db,
+        project_id=project.id,
+        project_obj=project,
+        project_in=project_in_update,
+        user_id=project.owner_id,
+    )
+
+    assert project_update.get("response_code") == status.HTTP_200_OK
+    assert project_update.get("message") == "Project updated successfully"
+    updated_project = project_update.get("result")
+    assert updated_project
+    assert project.id == updated_project.id
+    assert new_title == updated_project.title
+    assert new_planting_date == updated_project.planting_date
+    assert project.planting_date == updated_project.planting_date
+    assert project.description == updated_project.description
+    assert project.owner_id == updated_project.owner_id
+
+
+def test_update_project_with_team(db: Session) -> None:
+    team_owner = create_user(db)
+    team = create_team(db, owner_id=team_owner.id)
+    # Create team member and update role to owner
+    team_member = create_team_member(db, team_id=team.id)
+    updated_team_member = crud.team_member.update(
+        db,
+        db_obj=team_member,
+        obj_in=TeamMemberUpdate(role=Role.OWNER),
+    )
+    assert updated_team_member.role == Role.OWNER
+
+    # Add another team member with manager role
+    team_member2 = create_team_member(db, team_id=team.id)
+    updated_team_member2 = crud.team_member.update(
+        db,
+        db_obj=team_member2,
+        obj_in=TeamMemberUpdate(role=Role.MANAGER),
+    )
+    assert updated_team_member2.role == Role.MANAGER
+
+    # Add another team member with viewer role
+    team_member3 = create_team_member(db, team_id=team.id)
+    updated_team_member3 = crud.team_member.update(
+        db,
+        db_obj=team_member3,
+        obj_in=TeamMemberUpdate(role=Role.VIEWER),
+    )
+    assert updated_team_member3.role == Role.VIEWER
+
+    # Create project owned by team member and update it with the team
+    project = create_project(db, owner_id=team_member.member_id)
+    project_in_update = ProjectUpdate(team_id=team.id)
+    project_update = crud.project.update_project(
+        db,
+        project_id=project.id,
+        project_obj=project,
+        project_in=project_in_update,
+        user_id=project.owner_id,
+    )
+    assert project_update.get("response_code") == status.HTTP_200_OK
+    assert project_update.get("message") == "Project updated successfully"
+    updated_project = project_update.get("result")
+    assert updated_project
+    assert project.id == updated_project.id
+    assert project.team_id == updated_project.team_id
+
+    # Get project members
+    project_members = crud.project_member.get_list_of_project_members(
+        db, project_id=project.id
+    )
+    assert project_members
+    # Team owner, team manager, team viewer, and project owner
+    assert len(project_members) == 4
+    # Team member and project member roles should match
+    for project_member in project_members:
+        if project_member.member_id == team_owner.id:
+            assert project_member.role == Role.OWNER
+        elif project_member.member_id == team_member2.member_id:
+            assert project_member.role == Role.MANAGER
+        elif project_member.member_id == team_member3.member_id:
+            assert project_member.role == Role.VIEWER
+        else:
+            assert project_member.role == Role.OWNER
+
+
+def test_update_project_with_team_not_owned_by_user(db: Session) -> None:
+    team_owner = create_user(db)
+    team = create_team(db, owner_id=team_owner.id)
+    # Create team member with default "member" role
+    team_member = create_team_member(db, team_id=team.id)
+
+    # Create project owned by team member and update it with the team
+    project = create_project(db, owner_id=team_member.member_id)
+    project_in_update = ProjectUpdate(team_id=team.id)
+    project_update = crud.project.update_project(
+        db,
+        project_id=project.id,
+        project_obj=project,
+        project_in=project_in_update,
+        user_id=project.owner_id,
+    )
+    assert project_update.get("response_code") == status.HTTP_403_FORBIDDEN
 
 
 def test_get_project_flight_count(db: Session) -> None:
@@ -309,5 +439,5 @@ def test_get_projects_ignores_deactivated_projects(db: Session) -> None:
     assert projects
     assert isinstance(projects, list)
     assert len(projects) == 2
-    for project in projects:
-        assert project.id in [project.id, project2.id]
+    for project_obj in projects:
+        assert project_obj.id in [project.id, project2.id]

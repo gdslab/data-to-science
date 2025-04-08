@@ -12,6 +12,9 @@ alembic upgrade head
 # add extensions
 python /app/app/extensions.py
 
+# update team members table
+python /app/app/update_team_member_role.py
+
 # start uvicorn server
 if [[ "$DEV_MODE" = true ]]; then
     uvicorn app.main:app --host 0.0.0.0 --port 5000  --reload
