@@ -126,7 +126,7 @@ export default function ProjectList({
   );
 
   const TOTAL_PAGES = Math.ceil(
-    projects ? filterSearch(projects).length : 0 / MAX_ITEMS
+    projects ? filterSearch(projects).length / MAX_ITEMS : 0
   );
 
   if (!projects) {
