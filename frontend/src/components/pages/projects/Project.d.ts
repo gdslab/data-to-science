@@ -107,6 +107,7 @@ export interface Project {
   team_id: string;
   title: string;
   role: string;
+  is_published: boolean;
 }
 
 // raster band info from gdalinfo

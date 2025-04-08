@@ -55,6 +55,8 @@ def test_create_project(
     assert data["planting_date"] == response_data["planting_date"]
     assert data["harvest_date"] == response_data["harvest_date"]
     assert "location_id" in response_data
+    assert response_data["is_active"] is True
+    assert response_data["is_published"] is False
 
 
 def test_create_project_with_team_with_team_owner_role(
