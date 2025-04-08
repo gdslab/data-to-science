@@ -1,8 +1,8 @@
 import secrets
-from typing import Any
+from typing import Any, Optional
 
 from fastapi_mail.config import ConnectionConfig
-from pydantic import EmailStr, field_validator, ValidationInfo, PostgresDsn
+from pydantic import AnyHttpUrl, EmailStr, field_validator, ValidationInfo, PostgresDsn
 from pydantic_settings import BaseSettings
 
 
@@ -104,6 +104,9 @@ class Settings(BaseSettings):
 
     # Testing
     EMAIL_TEST_USER: EmailStr = "test@example.com"  # type: ignore
+
+    # STAC Catalog
+    STAC_API_URL: Optional[AnyHttpUrl] = None
 
 
 settings = Settings()

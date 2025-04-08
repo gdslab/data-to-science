@@ -184,3 +184,13 @@ def deactivate_project(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to deactivate"
         )
     return deactivated_project
+
+
+@router.post("/{project_id}/publish")
+def publish_project(
+    project_id: UUID,
+    project: models.Project = Depends(deps.can_read_write_project),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    pass
