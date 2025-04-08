@@ -349,14 +349,18 @@ def process_data_product_from_external_storage(
 
         # copy report
         try:
-            if os.path.exists(payload.report.storage_path) and os.path.join(
-                get_static_dir(),
-                "projects",
-                str(project_id),
-                "flights",
-                str(flight_id),
-                "raw_data",
-                str(payload.report.raw_data_id),
+            if (
+                payload.report
+                and os.path.exists(payload.report.storage_path)
+                and os.path.join(
+                    get_static_dir(),
+                    "projects",
+                    str(project_id),
+                    "flights",
+                    str(flight_id),
+                    "raw_data",
+                    str(payload.report.raw_data_id),
+                )
             ):
                 shutil.copyfile(
                     payload.report.storage_path,
@@ -371,8 +375,6 @@ def process_data_product_from_external_storage(
                         os.path.basename(payload.report.storage_path),
                     ),
                 )
-                # remove from network storage
-                os.remove(payload.report.storage_path)
             else:
                 logger.error(
                     "Report does not exist on network storage or raw data directory does not exist"

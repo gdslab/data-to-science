@@ -1,22 +1,25 @@
 import { useForm, FormProvider, SubmitHandler } from 'react-hook-form';
-
 import { yupResolver } from '@hookform/resolvers/yup';
 
-import { CheckboxInput, NumberInput, RadioInput } from '../../../../../RHFInputs';
+import {
+  CheckboxInput,
+  NumberInput,
+  RadioInput,
+} from '../../../../../../RHFInputs';
 
 import {
-  ImageProcessingSettings,
+  MetashapeSettings,
   RawDataImageProcessingFormProps,
-} from '../RawData.types';
+} from '../../RawData.types';
 
 import defaultValues from './defaultValues';
 import validationSchema from './validationSchema';
 
-export default function RawDataImageProcessingForm({
+export default function MetashapeForm({
   onSubmitJob,
   toggleModal,
 }: RawDataImageProcessingFormProps) {
-  const methods = useForm<ImageProcessingSettings>({
+  const methods = useForm<MetashapeSettings>({
     defaultValues,
     resolver: yupResolver(validationSchema),
   });
@@ -24,7 +27,7 @@ export default function RawDataImageProcessingForm({
     handleSubmit,
     formState: { errors },
   } = methods;
-  const onSubmit: SubmitHandler<ImageProcessingSettings> = (data) => {
+  const onSubmit: SubmitHandler<MetashapeSettings> = (data) => {
     onSubmitJob(data);
     toggleModal();
   };
@@ -58,9 +61,13 @@ export default function RawDataImageProcessingForm({
                   value="multi"
                 />
               </div>
-              {errors && errors.camera && typeof errors.camera.message === 'string' && (
-                <p className="text-sm text-red-500">{errors.camera.message}</p>
-              )}
+              {errors &&
+                errors.camera &&
+                typeof errors.camera.message === 'string' && (
+                  <p className="text-sm text-red-500">
+                    {errors.camera.message}
+                  </p>
+                )}
             </fieldset>
             {/* Align Photos */}
             <fieldset className="border border-solid border-slate-300 p-3">
@@ -68,7 +75,7 @@ export default function RawDataImageProcessingForm({
                 Align Photos
               </legend>
               {/* Accuracy */}
-              <div>
+              <div className="flex flex-col gap-1.5">
                 <span className="text-sm font-medium">Accuracy</span>
                 <div>
                   <RadioInput
@@ -104,8 +111,16 @@ export default function RawDataImageProcessingForm({
               </div>
               {/* Key point and tie point limits */}
               <div className="flex flex-col gap-4 justify-start">
-                <NumberInput fieldName="keyPoint" label="Key point limit" step={1000} />
-                <NumberInput fieldName="tiePoint" label="Tie point limit" step={100} />
+                <NumberInput
+                  fieldName="keyPoint"
+                  label="Key point limit"
+                  step={1000}
+                />
+                <NumberInput
+                  fieldName="tiePoint"
+                  label="Tie point limit"
+                  step={100}
+                />
               </div>
             </fieldset>
             {/* Build Point Cloud */}
@@ -114,7 +129,7 @@ export default function RawDataImageProcessingForm({
                 Build Point Cloud
               </legend>
               {/* Quality */}
-              <div>
+              <div className="flex flex-col gap-1.5">
                 <span className="text-sm font-medium">Quality</span>
                 <div>
                   <RadioInput
