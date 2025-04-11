@@ -212,7 +212,13 @@ def set_status_attr(data_product_obj: DataProduct, jobs: List[Job]) -> bool:
     if data_product_obj.is_initial_processing_completed:
         status = Status.SUCCESS
     else:
-        accepted_job_names = ["upload-data-product", "exg-process", "nvdi-process"]
+        accepted_job_names = [
+            "upload-data-product",
+            "exg-process",
+            "nvdi-process",
+            "exg",
+            "ndvi",
+        ]
         for job in jobs:
             if job.name in accepted_job_names:
                 status = job.status
@@ -253,7 +259,11 @@ def set_bbox_attr(data_product: DataProduct) -> None:
                 # Set bounding box as attribute on data product object
                 setattr(data_product, "bbox", wgs84_bbox)
                 # Set CRS and resolution as attributes on data product object
-                setattr(data_product, "crs", {"epsg": src.crs.to_epsg(), "unit": src.crs.linear_units})
+                setattr(
+                    data_product,
+                    "crs",
+                    {"epsg": src.crs.to_epsg(), "unit": src.crs.linear_units},
+                )
                 setattr(data_product, "resolution", {"x": src.res[0], "y": src.res[1]})
         except CRSError:
             logger.exception(

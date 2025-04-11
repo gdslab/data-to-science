@@ -106,7 +106,9 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                                 Job.data_product_id == data_product.id,
                                 or_(
                                     Job.name == "upload-data-product",
+                                    Job.name == "exg",
                                     Job.name == "exg-process",
+                                    Job.name == "ndvi",
                                     Job.name == "ndvi-process",
                                 ),
                             )
