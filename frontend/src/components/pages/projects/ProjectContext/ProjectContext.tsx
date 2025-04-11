@@ -14,6 +14,7 @@ import {
   FlightsFilterSelectionAction,
   MapLayersAction,
   ProjectAction,
+  ProjectFilterSelectionAction,
   ProjectMembersAction,
   ProjectRoleAction,
 } from './actions';
@@ -26,6 +27,7 @@ import {
   projectReducer,
   projectMembersReducer,
   projectRoleReducer,
+  projectFilterSelectionReducer,
 } from './reducers';
 
 import api from '../../../../api';
@@ -43,6 +45,8 @@ interface Context {
   projectMembersDispatch: React.Dispatch<ProjectMembersAction>;
   projectRole: string | undefined;
   projectRoleDispatch: React.Dispatch<ProjectRoleAction>;
+  projectFilterSelection: string[];
+  projectFilterSelectionDispatch: React.Dispatch<ProjectFilterSelectionAction>;
   flights: Flight[] | null;
   flightsDispatch: React.Dispatch<FlightsAction>;
   flightsFilterSelection: string[];
@@ -62,6 +66,8 @@ const context: Context = {
   projectMembersDispatch: () => {},
   projectRole: undefined,
   projectRoleDispatch: () => {},
+  projectFilterSelection: [],
+  projectFilterSelectionDispatch: () => {},
   flights: null,
   flightsDispatch: () => {},
   flightsFilterSelection: [],
@@ -126,6 +132,10 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
   const [flights, flightsDispatch] = useReducer(flightsReducer, null);
   const [flightsFilterSelection, flightsFilterSelectionDispatch] = useReducer(
     flightsFilterSelectionReducer,
+    []
+  );
+  const [projectFilterSelection, projectFilterSelectionDispatch] = useReducer(
+    projectFilterSelectionReducer,
     []
   );
   const [mapLayers, mapLayersDispatch] = useReducer(mapLayersReducer, []);
@@ -299,6 +309,8 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
         projectMembersDispatch,
         projectRole,
         projectRoleDispatch,
+        projectFilterSelection,
+        projectFilterSelectionDispatch,
       }}
     >
       {children}

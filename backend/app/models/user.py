@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from .api_key import APIKey
     from .campaign import Campaign
     from .flight import Flight
+    from .project_like import ProjectLike
     from .team import Team
     from .team_member import TeamMember
     from .project import Project
@@ -59,6 +60,9 @@ class User(Base):
     )
     flights: Mapped[List["Flight"]] = relationship(
         back_populates="pilot", cascade="all, delete"
+    )
+    project_likes: Mapped[List["ProjectLike"]] = relationship(
+        back_populates="user", cascade="all, delete"
     )
     project_memberships: Mapped[List["ProjectMember"]] = relationship(
         back_populates="member"

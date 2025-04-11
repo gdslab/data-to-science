@@ -14,6 +14,7 @@ from app import crud
 from app.crud.base import CRUDBase
 from app.models.location import Location
 from app.models.project import Project
+from app.models.project_like import ProjectLike
 from app.models.project_member import ProjectMember
 from app.models.team_member import TeamMember
 from app.models.user import User
@@ -212,6 +213,15 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     Project,
                     func.ST_X(func.ST_Centroid(Location.geom)).label("center_x"),
                     func.ST_Y(func.ST_Centroid(Location.geom)).label("center_y"),
+                    select(1)
+                    .where(
+                        and_(
+                            ProjectLike.project_id == Project.id,
+                            ProjectLike.user_id == user.id,
+                        )
+                    )
+                    .exists()
+                    .label("liked"),
                 )
                 .join(Project.location)
                 .where(Project.is_active)
@@ -223,6 +233,15 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     ProjectMember,
                     func.ST_X(func.ST_Centroid(Location.geom)).label("center_x"),
                     func.ST_Y(func.ST_Centroid(Location.geom)).label("center_y"),
+                    select(1)
+                    .where(
+                        and_(
+                            ProjectLike.project_id == Project.id,
+                            ProjectLike.user_id == user.id,
+                        )
+                    )
+                    .exists()
+                    .label("liked"),
                 )
                 .join(Project.members)
                 .join(Project.location)
@@ -233,12 +252,14 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             # iterate over each returned project
             for project in session.execute(statement).all():
                 # unpack project
+                print(project)
                 if include_all and user.is_superuser:
-                    project_obj, center_x, center_y = project
+                    project_obj, center_x, center_y, liked = project
                 else:
-                    project_obj, member_obj, center_x, center_y = project
+                    project_obj, member_obj, center_x, center_y, liked = project
                 # add center x, y attributes to project obj
                 setattr(project_obj, "centroid", Centroid(x=center_x, y=center_y))
+                setattr(project_obj, "liked", liked)
                 # count of project's active flights and most recent flight date
                 flight_count, most_recent_flight = (
                     get_flight_count_and_most_recent_flight(project_obj)

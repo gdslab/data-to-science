@@ -112,6 +112,9 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
                 <Sort
                   sortSelection={sortSelection}
                   setSortSelection={setSortSelection}
+                  isOpen={false}
+                  onOpen={() => {}}
+                  onClose={() => {}}
                 />
               </div>
             </div>

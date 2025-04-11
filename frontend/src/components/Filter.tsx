@@ -2,10 +2,16 @@ export default function Filter({
   categories,
   selectedCategory,
   setSelectedCategory,
+  isOpen,
+  onOpen,
+  onClose,
 }: {
-  categories: string[];
+  categories: { label: string; value: string }[];
   selectedCategory: string[];
   setSelectedCategory: (selectedCategories: string[]) => void;
+  isOpen: boolean;
+  onOpen: () => void;
+  onClose: () => void;
 }) {
   function onChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.checked) {
@@ -20,7 +26,17 @@ export default function Filter({
   return (
     <div className="flex gap-8">
       <div className="relative">
-        <details className="group [&_summary::-webkit-details-marker]:hidden">
+        <details
+          className="group [&_summary::-webkit-details-marker]:hidden"
+          open={isOpen}
+          onToggle={(e) => {
+            if (e.currentTarget.open) {
+              onOpen();
+            } else {
+              onClose();
+            }
+          }}
+        >
           <summary className="flex cursor-pointer items-center gap-2 border-b border-gray-400 pb-1 text-gray-900 transition hover:border-gray-600">
             <span className="text-sm font-medium"> Filter by </span>
 
@@ -61,22 +77,22 @@ export default function Filter({
 
               <ul className="space-y-1 border-t border-gray-200 p-4">
                 {categories.map((category) => (
-                  <li key={category}>
+                  <li key={category.value}>
                     <label
-                      htmlFor={category}
+                      htmlFor={category.value}
                       className="inline-flex items-center gap-2"
                     >
                       <input
                         type="checkbox"
-                        id={category}
+                        id={category.value}
                         className="size-5 rounded text-accent2 border-gray-300"
-                        value={category}
-                        checked={selectedCategory.indexOf(category) > -1}
+                        value={category.value}
+                        checked={selectedCategory.indexOf(category.value) > -1}
                         onChange={onChange}
                       />
                       <span className="text-sm font-medium text-gray-700">
                         {' '}
-                        {category}{' '}
+                        {category.label}{' '}
                       </span>
                     </label>
                   </li>

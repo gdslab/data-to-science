@@ -8,6 +8,7 @@ from .file_permission import FilePermission
 from .flight import Flight
 from .iforester import IForester
 from .job import Job
+from .project_like import ProjectLike
 from .location import Location
 from .project import Project
 from .project_member import ProjectMember
