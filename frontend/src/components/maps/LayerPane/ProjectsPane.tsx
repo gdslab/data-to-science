@@ -26,7 +26,6 @@ type ProjectsPaneProps = {
 
 export default function ProjectsPane({ projects }: ProjectsPaneProps) {
   const [currentPage, setCurrentPage] = useState(0);
-  const [filterSelection, setFilterSelection] = useState<string[]>([]);
   const [openComponent, setOpenComponent] = useState<'filter' | 'sort' | null>(
     null
   );
@@ -35,8 +34,13 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
     getSortPreferenceFromLocalStorage('sortPreference')
   );
 
-  const { activeDataProductDispatch, activeProjectDispatch, projectsVisible } =
-    useMapContext();
+  const {
+    activeDataProductDispatch,
+    activeProjectDispatch,
+    projectFilterSelection,
+    projectFilterSelectionDispatch,
+    projectsVisible,
+  } = useMapContext();
 
   // Filter projects by filter selection
   const filteredProjects = useMemo(() => {
@@ -44,20 +48,20 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
 
     let filteredProjects = projects;
 
-    if (filterSelection.includes('myProjects')) {
+    if (projectFilterSelection.includes('myProjects')) {
       filteredProjects = filteredProjects.filter(
         (project) => project.role === 'owner'
       );
     }
 
-    if (filterSelection.includes('likedProjects')) {
+    if (projectFilterSelection.includes('likedProjects')) {
       filteredProjects = filteredProjects.filter(
         (project) => project.liked || false
       );
     }
 
     return filteredProjects;
-  }, [projects, filterSelection]);
+  }, [projects, projectFilterSelection]);
 
   // Filters projects by search text and visible projects in map extent
   const filteredVisibleProjects = useMemo(() => {
@@ -121,6 +125,10 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
     }
   }, [filteredVisibleProjects]);
 
+  function updateProjectFilter(filterSelections: string[]) {
+    projectFilterSelectionDispatch({ type: 'set', payload: filterSelections });
+  }
+
   return (
     <div className="h-[calc(100%_-_44px)] p-4">
       <article className="h-full">
@@ -145,8 +153,8 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
                       { label: 'My projects', value: 'myProjects' },
                       { label: 'Favorite projects', value: 'likedProjects' },
                     ]}
-                    selectedCategory={filterSelection}
-                    setSelectedCategory={setFilterSelection}
+                    selectedCategory={projectFilterSelection}
+                    setSelectedCategory={updateProjectFilter}
                     isOpen={openComponent === 'filter'}
                     onOpen={() => setOpenComponent('filter')}
                     onClose={() => setOpenComponent(null)}

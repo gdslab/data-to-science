@@ -18,6 +18,7 @@ import {
   MapTool,
   ProjectsAction,
   ProjectsLoadedAction,
+  ProjectFilterSelectionAction,
   ProjectsVisibleAction,
   TileScaleAction,
 } from './Maps';
@@ -172,6 +173,23 @@ function projectsReducer(state: Project[] | null, action: ProjectsAction) {
   }
 }
 
+function projectFilterSelectionReducer(
+  state: string[],
+  action: ProjectFilterSelectionAction
+) {
+  switch (action.type) {
+    case 'set': {
+      return action.payload ? action.payload : [];
+    }
+    case 'reset': {
+      return [];
+    }
+    default: {
+      return state;
+    }
+  }
+}
+
 export type ProjectsLoadedState = 'initial' | 'loading' | 'loaded' | 'error';
 
 function projectsLoadedReducer(
@@ -239,6 +257,8 @@ const context: {
   projectsDispatch: React.Dispatch<ProjectsAction>;
   projectsLoaded: ProjectsLoadedState;
   projectsLoadedDispatch: React.Dispatch<ProjectsLoadedAction>;
+  projectFilterSelection: string[];
+  projectFilterSelectionDispatch: React.Dispatch<ProjectFilterSelectionAction>;
   projectsVisible: string[];
   projectsVisibleDispatch: React.Dispatch<ProjectsVisibleAction>;
   tileScale: number;
@@ -263,6 +283,8 @@ const context: {
   projectsDispatch: () => {},
   projectsLoaded: 'initial',
   projectsLoadedDispatch: () => {},
+  projectFilterSelection: [],
+  projectFilterSelectionDispatch: () => {},
   projectsVisible: [],
   projectsVisibleDispatch: () => {},
   tileScale: 2,
@@ -306,6 +328,10 @@ export function MapContextProvider({
   const [projectsLoaded, projectsLoadedDispatch] = useReducer(
     projectsLoadedReducer,
     'initial'
+  );
+  const [projectFilterSelection, projectFilterSelectionDispatch] = useReducer(
+    projectFilterSelectionReducer,
+    []
   );
   const [projectsVisible, projectsVisibleDispatch] = useReducer(
     projectsVisibleReducer,
@@ -358,6 +384,8 @@ export function MapContextProvider({
         mapboxAccessTokenDispatch,
         mapViewProperties,
         mapViewPropertiesDispatch,
+        projectFilterSelection,
+        projectFilterSelectionDispatch,
         projectLayers,
         projectLayersDispatch,
         projects,
