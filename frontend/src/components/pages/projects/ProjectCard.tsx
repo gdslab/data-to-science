@@ -1,8 +1,8 @@
 import { isAxiosError } from 'axios';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BookmarkIcon as BookmarkIconOutline } from '@heroicons/react/24/outline';
-import { BookmarkIcon as BookmarkIconSolid } from '@heroicons/react/24/solid';
+import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
+import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 
 import { Project } from './ProjectList';
 
@@ -66,13 +66,13 @@ export default function ProjectCard({
             aria-label={liked ? 'Remove bookmark' : 'Bookmark project'}
           >
             {liked ? (
-              <BookmarkIconSolid
-                className={`w-6 h-6 text-accent2 ${
+              <StarIconSolid
+                className={`w-6 h-6 text-amber-500 ${
                   isLoading ? 'opacity-50' : ''
                 }`}
               />
             ) : (
-              <BookmarkIconOutline
+              <StarIconOutline
                 className={`w-6 h-6 text-gray-400 ${
                   isLoading ? 'opacity-50' : ''
                 }`}

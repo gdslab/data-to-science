@@ -252,7 +252,6 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             # iterate over each returned project
             for project in session.execute(statement).all():
                 # unpack project
-                print(project)
                 if include_all and user.is_superuser:
                     project_obj, center_x, center_y, liked = project
                 else:

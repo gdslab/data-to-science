@@ -163,7 +163,7 @@ export default function ProjectList({
   );
 
   const TOTAL_PAGES = Math.ceil(
-    projects ? filterSearch(projects).length / MAX_ITEMS : 0
+    filteredProjects ? filterSearch(filteredProjects).length / MAX_ITEMS : 0
   );
 
   function updateProjectFilter(filterSelections: string[]) {
@@ -211,10 +211,9 @@ export default function ProjectList({
               )}
               <div className="flex flex-row gap-8">
                 <Filter
-                  key={`filter-${openComponent === 'filter'}`}
                   categories={[
                     { label: 'My projects', value: 'myProjects' },
-                    { label: 'Bookmarked projects', value: 'likedProjects' },
+                    { label: 'Favorite projects', value: 'likedProjects' },
                   ]}
                   selectedCategory={projectFilterSelection}
                   setSelectedCategory={updateProjectFilter}
@@ -223,7 +222,6 @@ export default function ProjectList({
                   onClose={() => setOpenComponent(null)}
                 />
                 <Sort
-                  key={`sort-${openComponent === 'sort'}`}
                   sortSelection={sortSelection}
                   setSortSelection={setSortSelection}
                   isOpen={openComponent === 'sort'}
