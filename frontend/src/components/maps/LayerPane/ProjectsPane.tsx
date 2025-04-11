@@ -1,9 +1,14 @@
 import clsx from 'clsx';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
+import {
+  PaperAirplaneIcon,
+  StarIcon as StarIconOutline,
+} from '@heroicons/react/24/outline';
+import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 
 import { Button } from '../../Buttons';
+import Filter from '../../Filter';
 import LayerCard from './LayerCard';
 import Pagination, { getPaginationResults } from '../../Pagination';
 import { Project } from '../../pages/projects/ProjectList';
@@ -21,6 +26,10 @@ type ProjectsPaneProps = {
 
 export default function ProjectsPane({ projects }: ProjectsPaneProps) {
   const [currentPage, setCurrentPage] = useState(0);
+  const [filterSelection, setFilterSelection] = useState<string[]>([]);
+  const [openComponent, setOpenComponent] = useState<'filter' | 'sort' | null>(
+    null
+  );
   const [searchText, setSearchText] = useState('');
   const [sortSelection, setSortSelection] = useState<SortSelection>(
     getSortPreferenceFromLocalStorage('sortPreference')
@@ -29,10 +38,31 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
   const { activeDataProductDispatch, activeProjectDispatch, projectsVisible } =
     useMapContext();
 
+  // Filter projects by filter selection
+  const filteredProjects = useMemo(() => {
+    if (!projects) return [];
+
+    let filteredProjects = projects;
+
+    if (filterSelection.includes('myProjects')) {
+      filteredProjects = filteredProjects.filter(
+        (project) => project.role === 'owner'
+      );
+    }
+
+    if (filterSelection.includes('likedProjects')) {
+      filteredProjects = filteredProjects.filter(
+        (project) => project.liked || false
+      );
+    }
+
+    return filteredProjects;
+  }, [projects, filterSelection]);
+
   // Filters projects by search text and visible projects in map extent
   const filteredVisibleProjects = useMemo(() => {
-    if (!projects) return [];
-    return projects
+    if (!filteredProjects) return [];
+    return filteredProjects
       .filter(({ id }) => projectsVisible.includes(id))
       .filter(
         (project) =>
@@ -40,7 +70,7 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
           project.title.toLowerCase().includes(searchText.toLowerCase()) ||
           project.description.toLowerCase().includes(searchText.toLowerCase())
       );
-  }, [projects, projectsVisible, searchText]);
+  }, [filteredProjects, projectsVisible, searchText]);
 
   // Projects available on current page
   const currentPageProjects = useMemo(() => {
@@ -96,7 +126,7 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
       <article className="h-full">
         <div className="h-36">
           <h1>Projects</h1>
-          {projects && projects.length > 0 && (
+          {filteredProjects && filteredProjects.length > 0 && (
             <div className="flex flex-col gap-2 my-2">
               <ProjectSearch
                 searchText={searchText}
@@ -109,23 +139,47 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
                   currentPageProjects.length,
                   filteredVisibleProjects.length
                 )}
-                <Sort
-                  sortSelection={sortSelection}
-                  setSortSelection={setSortSelection}
-                />
+                <div className="flex flex-row gap-8">
+                  <Filter
+                    categories={[
+                      { label: 'My projects', value: 'myProjects' },
+                      { label: 'Favorite projects', value: 'likedProjects' },
+                    ]}
+                    selectedCategory={filterSelection}
+                    setSelectedCategory={setFilterSelection}
+                    isOpen={openComponent === 'filter'}
+                    onOpen={() => setOpenComponent('filter')}
+                    onClose={() => setOpenComponent(null)}
+                  />
+                  <Sort
+                    sortSelection={sortSelection}
+                    setSortSelection={setSortSelection}
+                    isOpen={openComponent === 'sort'}
+                    onOpen={() => setOpenComponent('sort')}
+                    onClose={() => setOpenComponent(null)}
+                  />
+                </div>
               </div>
             </div>
           )}
         </div>
-        {projects && projects.length > 0 ? (
+        {filteredProjects && filteredProjects.length > 0 ? (
           <ul className="h-[calc(100%_-_144px)] space-y-2 overflow-y-auto pb-16">
             {currentPageProjects.map((project) => (
               <li key={project.id}>
                 <LayerCard hover={true}>
                   <div
+                    className="relative"
                     onClick={handleProjectClick(project)}
                     title={project.title}
                   >
+                    <div className="absolute top-0 right-0">
+                      {project.liked ? (
+                        <StarIconSolid className="w-3 h-3 text-amber-500" />
+                      ) : (
+                        <StarIconOutline className="w-3 h-3 text-gray-400" />
+                      )}
+                    </div>
                     <div className="grid grid-cols-4 gap-4">
                       <div className="flex items-center justify-between">
                         <img

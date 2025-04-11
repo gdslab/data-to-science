@@ -1,6 +1,6 @@
 import { AxiosResponse, isAxiosError } from 'axios';
 import { useState, useEffect, useTransition } from 'react';
-import { useLoaderData } from 'react-router-dom';
+import { useLoaderData, useRevalidator } from 'react-router-dom';
 
 import ProjectList, { Project } from './projects/ProjectList';
 
@@ -48,6 +48,7 @@ export default function Workspace() {
     cachedProjects: Project[] | null;
     freshProjects: Promise<AxiosResponse<Project[]>>;
   };
+  const revalidator = useRevalidator();
 
   // Immediately display cached projects
   const [projects, setProjects] = useState<Project[] | null>(cachedProjects);
@@ -73,5 +74,7 @@ export default function Workspace() {
     };
   }, [freshProjects, startTransition]);
 
-  return <ProjectList projects={projects} />;
+  return (
+    <ProjectList projects={projects} revalidate={revalidator.revalidate} />
+  );
 }

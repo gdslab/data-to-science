@@ -85,6 +85,7 @@ class Projects(BaseModel):
     owner_id: UUID4 = Field(exclude=True)
     role: Role
     title: str
+    liked: Optional[bool] = False
 
 
 # additional properties stored in DB

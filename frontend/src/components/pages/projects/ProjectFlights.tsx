@@ -1,33 +1,33 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { PencilIcon } from "@heroicons/react/24/outline";
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { PencilIcon } from '@heroicons/react/24/outline';
 
-import { Button } from "../../Buttons";
-import Filter from "../../Filter";
-import FlightCarousel from "./flights/FlightCarousel";
-import FlightDeleteModal from "./flights/FlightDeleteModal";
-import FlightForm from "./flights/FlightForm";
-import Modal from "../../Modal";
-import TableCardRadioInput from "../../TableCardRadioInput";
-import { useProjectContext } from "./ProjectContext";
+import { Button } from '../../Buttons';
+import Filter from '../../Filter';
+import FlightCarousel from './flights/FlightCarousel';
+import FlightDeleteModal from './flights/FlightDeleteModal';
+import FlightForm from './flights/FlightForm';
+import Modal from '../../Modal';
+import TableCardRadioInput from '../../TableCardRadioInput';
+import { useProjectContext } from './ProjectContext';
 
-import { getUnique, sorter } from "../../utils";
-import MoveFlightModal from "./flights/MoveFlightModal";
+import { getUnique, sorter } from '../../utils';
+import MoveFlightModal from './flights/MoveFlightModal';
 
-function getFlightsDisplayModeFromLS(): "table" | "carousel" {
-  const flightsDisplayMode = localStorage.getItem("flightsDisplayMode");
-  if (flightsDisplayMode === "table" || flightsDisplayMode === "carousel") {
+function getFlightsDisplayModeFromLS(): 'table' | 'carousel' {
+  const flightsDisplayMode = localStorage.getItem('flightsDisplayMode');
+  if (flightsDisplayMode === 'table' || flightsDisplayMode === 'carousel') {
     return flightsDisplayMode;
   } else {
-    localStorage.setItem("flightsDisplayMode", "carousel");
-    return "carousel";
+    localStorage.setItem('flightsDisplayMode', 'carousel');
+    return 'carousel';
   }
 }
 
 export default function ProjectFlights() {
-  const [flightSortOrder, setFlightSortOrder] = useState("asc");
+  const [flightSortOrder, setFlightSortOrder] = useState('asc');
   const [open, setOpen] = useState(false);
-  const [tableView, toggleTableView] = useState<"table" | "carousel">(
+  const [tableView, toggleTableView] = useState<'table' | 'carousel'>(
     getFlightsDisplayModeFromLS()
   );
 
@@ -40,12 +40,12 @@ export default function ProjectFlights() {
   } = useProjectContext();
 
   function updateFlightsFilter(filterSelections: string[]) {
-    flightsFilterSelectionDispatch({ type: "set", payload: filterSelections });
+    flightsFilterSelectionDispatch({ type: 'set', payload: filterSelections });
   }
 
   function onTableViewChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (e.target.value === "carousel" || e.target.value === "table") {
-      localStorage.setItem("flightsDisplayMode", e.target.value);
+    if (e.target.value === 'carousel' || e.target.value === 'table') {
+      localStorage.setItem('flightsDisplayMode', e.target.value);
       toggleTableView(e.target.value);
     }
   }
@@ -92,7 +92,13 @@ export default function ProjectFlights() {
               {flights && flights.length > 0 && (
                 <div className="flex flex-row items-center gap-2">
                   <Filter
-                    categories={getUnique(flights, "sensor")}
+                    isOpen={false}
+                    onOpen={() => {}}
+                    onClose={() => {}}
+                    categories={getUnique(flights, 'sensor').map((sensor) => ({
+                      label: sensor,
+                      value: sensor,
+                    }))}
                     selectedCategory={flightsFilterSelection}
                     setSelectedCategory={updateFlightsFilter}
                   />
@@ -106,7 +112,7 @@ export default function ProjectFlights() {
           </div>
         </div>
 
-        {project && flights && flights.length > 0 && tableView === "table" && (
+        {project && flights && flights.length > 0 && tableView === 'table' && (
           <div className="min-w-[1000px] overflow-x-auto">
             <div className="overflow-y-auto min-h-96 max-h-96 xl:max-h-[420px] 2xl:max-h-[512px]">
               <table className="w-full table-auto border-collapse">
@@ -127,7 +133,7 @@ export default function ProjectFlights() {
                     <th scope="col" className="px-4 py-2 w-24">
                       Data
                     </th>
-                    {projectRole !== "viewer" && (
+                    {projectRole !== 'viewer' && (
                       <th scope="col" className="px-4 py-2 w-64">
                         Actions
                       </th>
@@ -142,12 +148,12 @@ export default function ProjectFlights() {
                     >
                       <td className="p-1 max-w-96">
                         <div className="bg-white p-4 text-ellipsis overflow-hidden ...">
-                          {flight.name || "No name"}
+                          {flight.name || 'No name'}
                         </div>
                       </td>
                       <td className="p-1 max-w-80">
                         <div className="bg-white p-4 text-ellipsis overflow-hidden ...">
-                          {flight.platform.replace(/_/g, " ")}
+                          {flight.platform.replace(/_/g, ' ')}
                         </div>
                       </td>
                       <td className="p-1">
@@ -168,14 +174,14 @@ export default function ProjectFlights() {
                               Manage
                               <div className="flex items-center justify-center rounded-full bg-accent2 text-white font-semibold h-6 w-6">
                                 {flight.data_products.length > 5
-                                  ? "5+"
+                                  ? '5+'
                                   : flight.data_products.length}
                               </div>
                             </div>
                           </Link>
                         </div>
                       </td>
-                      {projectRole !== "viewer" && (
+                      {projectRole !== 'viewer' && (
                         <td className="p-1">
                           <div className="flex items-center justify-between gap-4 p-4 bg-white">
                             <Link
@@ -187,14 +193,14 @@ export default function ProjectFlights() {
                                 <span>Edit</span>
                               </div>
                             </Link>
-                            {projectRole === "owner" && (
+                            {projectRole === 'owner' && (
                               <MoveFlightModal
                                 flightId={flight.id}
                                 srcProjectId={flight.project_id}
                                 tableView={true}
                               />
                             )}
-                            {projectRole === "owner" && (
+                            {projectRole === 'owner' && (
                               <FlightDeleteModal
                                 flight={flight}
                                 tableView={true}
@@ -214,13 +220,13 @@ export default function ProjectFlights() {
         {project &&
           flights &&
           flights.length > 0 &&
-          tableView === "carousel" && (
+          tableView === 'carousel' && (
             <div className="h-full min-h-96 mx-4">
               <FlightCarousel flights={sortedFlights || []} />
             </div>
           )}
 
-        {projectRole !== "viewer" ? (
+        {projectRole !== 'viewer' ? (
           <div className="my-4 flex justify-center">
             <Modal open={open} setOpen={setOpen}>
               <FlightForm setOpen={setOpen} />
