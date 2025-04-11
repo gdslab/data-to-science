@@ -19,6 +19,8 @@ export type BBox = [number, number, number, number];
 
 export type FlightsAction = { type: string; payload: Flight[] };
 
+export type ProjectFilterSelectionAction = { type: string; payload?: string[] };
+
 export type ProjectsAction = { type: string; payload: Project[] | null };
 
 export type ProjectsLoadedAction = {
