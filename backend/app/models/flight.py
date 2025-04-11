@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 PLATFORMS = ["Phantom_4", "M300", "M350", "Other"]
 
 # default sensors, only these exact values are accepted
-SENSORS = ["RGB", "Multispectral", "LiDAR", "Other"]
+SENSORS = ["RGB", "Multispectral", "LiDAR", "Thermal", "Hyperspectral", "Other"]
 
 
 class Flight(Base):
