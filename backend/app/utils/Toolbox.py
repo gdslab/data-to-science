@@ -1,24 +1,18 @@
-import glob
 import os
 import tempfile
-from datetime import datetime
 from pathlib import Path
-from uuid import UUID
+from typing import Optional
 
 from celery.utils.log import get_task_logger
-from sqlalchemy.orm import Session
-
-from app import crud, schemas
-from app.api.deps import get_db
-from app.core.celery_app import celery_app
 from app.utils.ImageProcessor import ImageProcessor
 from app.utils.toolbox.exg import run as exg_run
 from app.utils.toolbox.ndvi import run as ndvi_run
+from app.utils.toolbox.vari import run as vari_run
 
 logger = get_task_logger(__name__)
 
 
-AVAILABLE_TOOLS = {"exg": exg_run, "ndvi": ndvi_run}
+AVAILABLE_TOOLS = {"exg": exg_run, "ndvi": ndvi_run, "vari": vari_run}
 
 
 class Toolbox:
@@ -36,7 +30,7 @@ class Toolbox:
         self.in_raster = in_raster
         self.out_raster = out_raster
 
-        self.ip = None
+        self.ip: Optional[ImageProcessor] = None
 
         if not os.path.exists(in_raster):
             raise FileNotFoundError("Input raster does not exist")
@@ -44,12 +38,12 @@ class Toolbox:
         if os.path.exists(out_raster):
             raise FileExistsError("Output raster already exists")
 
-    def run(self, name: str, params) -> tuple[str, ImageProcessor]:
+    def run(self, name: str, params: dict) -> tuple[str, Optional[ImageProcessor]]:
         """Run processing tool.
 
         Args:
             name (str): Name of processing tool
-            params (_type_): Input parameters for processing tool
+            params (dict): Input parameters for processing tool
 
         Raises:
             ValueError: Raise if tool name not matched with tool function
@@ -62,6 +56,9 @@ class Toolbox:
         if name not in AVAILABLE_TOOLS:
             raise ValueError("Invalid tool name")
         tool_fn = AVAILABLE_TOOLS.get(name)
+
+        if not tool_fn:
+            raise ValueError("Invalid tool name")
 
         # create temp directory and run tool
         in_raster = Path(self.in_raster)
@@ -93,7 +90,10 @@ class Toolbox:
             e: Raise exception if image processor fails
         """
         try:
-            self.ip = ImageProcessor(tmp_out_raster, output_dir=output_dir)
+            self.ip = ImageProcessor(in_raster=tmp_out_raster, output_dir=output_dir)
+            if not self.ip:
+                raise ValueError("Failed to create image processor")
+
             self.ip.run()
         except Exception as e:
             logger.exception("Failed to process output raster")

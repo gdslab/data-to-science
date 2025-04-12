@@ -29,6 +29,10 @@ export interface ToolboxFields {
   ndvi: boolean;
   ndviNIR: number;
   ndviRed: number;
+  vari: boolean;
+  variRed: number;
+  variGreen: number;
+  variBlue: number;
   zonal: boolean;
   zonal_layer_id: string;
 }
@@ -88,6 +92,10 @@ export default function ToolboxModal({
                   ndvi: false,
                   ndviNIR: 4,
                   ndviRed: 3,
+                  vari: false,
+                  variRed: 3,
+                  variGreen: 2,
+                  variBlue: 1,
                   zonal: false,
                   zonal_layer_id: '',
                 } as ToolboxFields
@@ -152,6 +160,7 @@ export default function ToolboxModal({
                     disabled={
                       (!values.exg &&
                         !values.ndvi &&
+                        !values.vari &&
                         !values.chm &&
                         !values.zonal) ||
                       (values.zonal && !values.zonal_layer_id) ||

@@ -640,6 +640,10 @@ def test_running_tool_on_data_product(
         "ndvi": False,
         "ndviNIR": 4,
         "ndviRed": 3,
+        "vari": True,
+        "variRed": 3,
+        "variGreen": 2,
+        "variBlue": 1,
         "zonal": False,
         "zonal_layer_id": "",
     }

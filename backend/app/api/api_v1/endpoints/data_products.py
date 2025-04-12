@@ -410,6 +410,10 @@ class ProcessingRequest(BaseModel):
     ndvi: bool
     ndviNIR: int
     ndviRed: int
+    vari: bool
+    variRed: int
+    variGreen: int
+    variBlue: int
     zonal: bool
     zonal_layer_id: str
 
@@ -432,6 +436,7 @@ async def run_processing_tool(
     if (
         toolbox_in.exg is False
         and toolbox_in.ndvi is False
+        and toolbox_in.vari is False
         and toolbox_in.zonal is False
     ):
         raise HTTPException(
@@ -522,6 +527,42 @@ async def run_processing_tool(
                 current_user.id,
             )
         )
+
+    # vari
+    if toolbox_in.vari and not os.environ.get("RUNNING_TESTS") == "1":
+        # create new data product record
+        vari_data_product: models.DataProduct = crud.data_product.create_with_flight(
+            db,
+            schemas.DataProductCreate(
+                data_type="VARI",
+                filepath="null",
+                original_filename=data_product.original_filename,
+            ),
+            flight_id=flight.id,
+        )
+        # get path for vari tool output raster
+        data_product_dir = utils.get_data_product_dir(
+            str(project.id), str(flight.id), str(vari_data_product.id)
+        )
+        vari_filename: str = str(uuid4()) + ".tif"
+        out_raster = data_product_dir / vari_filename
+        # run vari tool in background
+        tool_params = {
+            "red_band_idx": toolbox_in.variRed,
+            "green_band_idx": toolbox_in.variGreen,
+            "blue_band_idx": toolbox_in.variBlue,
+        }
+        run_toolbox.apply_async(
+            args=(
+                "vari",
+                data_product.filepath,
+                str(out_raster),
+                tool_params,
+                vari_data_product.id,
+                current_user.id,
+            )
+        )
+
     # zonal
     if toolbox_in.zonal and not os.environ.get("RUNNING_TESTS") == "1":
         features = crud.vector_layer.get_vector_layer_by_id(
