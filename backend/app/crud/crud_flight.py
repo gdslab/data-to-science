@@ -110,6 +110,7 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                                     Job.name == "exg-process",
                                     Job.name == "ndvi",
                                     Job.name == "ndvi-process",
+                                    Job.name == "vari",
                                 ),
                             )
                         )
