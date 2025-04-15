@@ -1,5 +1,6 @@
 """Celery tasks for processing uploaded files."""
 
+import json
 import os
 import shutil
 import subprocess
@@ -197,16 +198,41 @@ def upload_point_cloud(
         else:
             copc_laz_filepath = in_las.parents[1] / in_las.with_suffix(".copc.laz").name
 
-            subprocess.run(
-                [
-                    "untwine",
-                    "--single_file",
-                    "-i",
-                    in_las,
-                    "-o",
-                    copc_laz_filepath,
-                ]
-            )
+            # use pdal info to find the EPSG code of the point cloud
+            untwine_cmd: list[str] = [
+                "untwine",
+                "--single_file",
+                "-i",
+                str(in_las),
+                "-o",
+                str(copc_laz_filepath),
+            ]
+
+            try:
+                pdal_info = subprocess.run(
+                    [
+                        "pdal",
+                        "info",
+                        "--metadata",
+                        in_las,
+                    ],
+                    capture_output=True,
+                    text=True,
+                )
+                metadata = json.loads(pdal_info.stdout)["metadata"]
+                epsg_code = (
+                    metadata.get("srs", {}).get("json", {}).get("id", {}).get("code")
+                )
+                if epsg_code:
+                    a_srs = f"EPSG:{epsg_code}"
+                    # Insert the a_srs parameter after --single_file
+                    untwine_cmd.insert(2, "--a_srs")
+                    untwine_cmd.insert(3, a_srs)
+            except Exception:
+                # If we can't get the EPSG code, leave untwine_cmd as is (without a_srs)
+                pass
+
+            subprocess.run(untwine_cmd)
             # clean up temp directory created by untwine
             if os.path.exists(f"{copc_laz_filepath}_tmp"):
                 shutil.rmtree(f"{copc_laz_filepath}_tmp")
