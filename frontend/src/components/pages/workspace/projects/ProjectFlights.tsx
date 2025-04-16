@@ -92,7 +92,13 @@ export default function ProjectFlights() {
               {flights && flights.length > 0 && (
                 <div className="flex flex-row items-center gap-2">
                   <Filter
-                    categories={getUnique(flights, 'sensor')}
+                    isOpen={false}
+                    onOpen={() => {}}
+                    onClose={() => {}}
+                    categories={getUnique(flights, 'sensor').map((sensor) => ({
+                      label: sensor,
+                      value: sensor,
+                    }))}
                     selectedCategory={flightsFilterSelection}
                     setSelectedCategory={updateFlightsFilter}
                   />

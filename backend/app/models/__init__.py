@@ -10,6 +10,7 @@ from .iforester import IForester
 from .indoor_project import IndoorProject
 from .indoor_project_data import IndoorProjectData
 from .job import Job
+from .project_like import ProjectLike
 from .location import Location
 from .project import Project
 from .project_member import ProjectMember

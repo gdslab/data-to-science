@@ -23,6 +23,8 @@ from app.tasks.upload_tasks import (
 
 logger = logging.getLogger("__name__")
 
+SUPPORTED_EXTENSIONS = {".tif", ".las", ".laz"}  # Using a set for O(1) lookup
+
 
 def process_data_product_uploaded_to_tusd(
     db: Session,
@@ -56,9 +58,10 @@ def process_data_product_uploaded_to_tusd(
     """
     # create new filename
     new_filename = str(uuid4())
+    # lowercase the file extension
+    original_filename = original_filename.with_suffix(original_filename.suffix.lower())
     # check if uploaded file has supported extension
-    suffix = original_filename.suffix
-    if suffix not in [".tif", ".las", ".laz"]:
+    if original_filename.suffix not in SUPPORTED_EXTENSIONS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported file extension"
         )
@@ -76,7 +79,7 @@ def process_data_product_uploaded_to_tusd(
     )
     # construct fullpath for uploaded data product
     tmpdir = tempfile.mkdtemp(dir=data_product_dir)
-    destination_filepath = f"{tmpdir}/{new_filename}{suffix}"
+    destination_filepath = f"{tmpdir}/{new_filename}{original_filename.suffix}"
 
     # create job to track task progress
     job_in = schemas.job.JobCreate(
@@ -144,6 +147,8 @@ def process_raw_data_uploaded_to_tusd(
     """
     # upload file info and new filename
     new_filename = str(uuid4())
+    # lowercase the file extension
+    original_filename = original_filename.with_suffix(original_filename.suffix.lower())
     # check if uploaded file has supported extension
     suffix = original_filename.suffix
     if suffix != ".zip":

@@ -143,6 +143,8 @@ class CRUDExtension(CRUDBase[Extension, ExtensionCreate, ExtensionUpdate]):
             if team_extension:
                 return team_extension
 
+        return None
+
     def get_user_extension(
         self, db: Session, extension_id: UUID, user_id: UUID
     ) -> Optional[UserExtension]:
@@ -175,10 +177,14 @@ class CRUDExtension(CRUDBase[Extension, ExtensionCreate, ExtensionUpdate]):
             .where(and_(TeamMember.member_id == user_id, TeamExtension.is_active))
         )
         with db as session:
-            user_extensions = session.scalars(select_user_extensions_statement).all()
-            team_extensions = session.scalars(select_team_extesnions_statement).all()
+            user_extensions = list(
+                session.scalars(select_user_extensions_statement).all()
+            )
+            team_extensions = list(
+                session.scalars(select_team_extesnions_statement).all()
+            )
             user_extensions.extend(team_extensions)
-            extension_names = set([ext.name for ext in user_extensions])
+            extension_names = list(set([ext.name for ext in user_extensions]))
             return extension_names
 
 

@@ -12,7 +12,7 @@ multispectral_dataset = Path("/app/app/tests/data/test_multispectral.tif")
 validation_dataset = Path("/app/app/tests/data/exg_validation.tif")
 
 
-def compare_results(tool_results: str):
+def compare_results(tool_results: str) -> None:
     """Performs element-wise comparision between test dataset and validation dataset.
 
     Args:
@@ -30,7 +30,7 @@ def compare_results(tool_results: str):
             assert np.isclose(validation_array, test_array, atol=0.00001).all()
 
 
-def test_results_from_exg_tool():
+def test_results_from_exg_tool() -> None:
     """Test results from exg script against validation dataset."""
     with TemporaryDirectory() as tmpdir:
         tmpdir = Path(tmpdir)

@@ -16,7 +16,7 @@ import { useProjectContext } from './ProjectContext';
 import api from '../../../../api';
 
 export async function loader() {
-  const response = await api.get('/teams');
+  const response = await api.get('/teams', { params: { owner_only: true } });
   if (response) {
     const teams = response.data;
     teams.unshift({ title: 'No team', id: '' });

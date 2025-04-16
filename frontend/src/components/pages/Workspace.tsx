@@ -1,6 +1,6 @@
 import { AxiosResponse, isAxiosError } from 'axios';
 import { useState, useEffect, useTransition } from 'react';
-import { useLoaderData } from 'react-router-dom';
+import { useLoaderData, useRevalidator } from 'react-router-dom';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 
 import ProjectList, { Project } from './workspace/projects/ProjectList';
@@ -69,6 +69,7 @@ export default function Workspace() {
       freshProjects: Promise<AxiosResponse<Project[]>>;
       freshIndoorProjects: Promise<AxiosResponse<IndoorProjectAPIResponse[]>>;
     };
+  const revalidator = useRevalidator();
 
   // Tab state
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -135,7 +136,10 @@ export default function Workspace() {
       </TabList>
       <TabPanels>
         <TabPanel>
-          <ProjectList projects={projects} />
+          <ProjectList
+            projects={projects}
+            revalidate={revalidator.revalidate}
+          />
         </TabPanel>
         <TabPanel>
           <IndoorProjectList indoorProjects={indoorProjects} />

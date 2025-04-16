@@ -10,6 +10,7 @@ from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
 from app.schemas.file_permission import FilePermissionUpdate
+from app.schemas.role import Role
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.data_product_metadata import (
     create_zonal_metadata,
@@ -55,7 +56,7 @@ def test_read_data_product_with_project_manager_role(
         db,
         member_id=current_user.id,
         project_id=data_product.project.id,
-        role="manager",
+        role=Role.MANAGER,
     )
     response = client.get(
         f"{settings.API_V1_STR}/projects/{data_product.project.id}"
@@ -75,7 +76,7 @@ def test_read_data_product_with_project_viewer_role(
         db,
         member_id=current_user.id,
         project_id=data_product.project.id,
-        role="viewer",
+        role=Role.VIEWER,
     )
     response = client.get(
         f"{settings.API_V1_STR}/projects/{data_product.project.id}"
@@ -133,7 +134,7 @@ def test_generate_data_product_colorbar_with_viewer_role(
         db,
         member_id=current_user.id,
         project_id=data_product.project.id,
-        role="viewer",
+        role=Role.VIEWER,
     )
     response = client.get(
         f"{settings.API_V1_STR}/projects/{data_product.project.id}"
@@ -179,7 +180,7 @@ def test_generate_data_product_colorbar_with_invalid_parameters(
         db,
         member_id=current_user.id,
         project_id=data_product.project.id,
-        role="viewer",
+        role=Role.VIEWER,
     )
     response = client.get(
         f"{settings.API_V1_STR}/projects/{data_product.project.id}"
@@ -241,7 +242,7 @@ def test_read_data_products_with_manager_role(
         db,
         member_id=current_user.id,
         project_id=project.id,
-        role="manager",
+        role=Role.MANAGER,
     )
     response = client.get(
         f"{settings.API_V1_STR}/projects/{project.id}"
@@ -281,7 +282,7 @@ def test_read_data_products_with_viewer_role(
         db,
         member_id=current_user.id,
         project_id=project.id,
-        role="viewer",
+        role=Role.VIEWER,
     )
     response = client.get(
         f"{settings.API_V1_STR}/projects/{project.id}"
@@ -355,7 +356,7 @@ def test_update_data_product_bands_with_project_manager_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
     create_project_member(
-        db, role="manager", member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
     )
     data_product = SampleDataProduct(db, project=project)
     # Create payload for updating bands
@@ -381,7 +382,7 @@ def test_update_data_product_bands_with_project_viewer_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
     create_project_member(
-        db, role="viewer", member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
     )
     data_product = SampleDataProduct(db, project=project)
     # Create payload for updating bands
@@ -487,7 +488,7 @@ def test_update_data_product_data_type_with_project_manager_role(
     data_product = SampleDataProduct(db, data_type=old_data_type, project=project)
     # add current user as a manager to the data product's project
     create_project_member(
-        db, role="manager", member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
     )
     payload = {"data_type": new_data_type}
     response = client.put(
@@ -511,7 +512,7 @@ def test_update_data_product_data_type_with_project_viewer_role(
     data_product = SampleDataProduct(db, data_type=old_data_type, project=project)
     # add current user as a viewer to the data product's project
     create_project_member(
-        db, role="viewer", member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
     )
     payload = {"data_type": new_data_type}
     response = client.put(
@@ -566,7 +567,7 @@ def test_deactivate_data_product_with_owner_role(
     )
     assert response.status_code == status.HTTP_200_OK
     deactivated_data_product = response.json()
-    assert deactivated_data_product
+    assert deactivated_data_product is not None
     assert deactivated_data_product.get("id", None) == str(data_product.obj.id)
     assert deactivated_data_product.get("is_active", True) is False
     deactivated_at = datetime.strptime(
@@ -583,7 +584,7 @@ def test_deactivate_data_product_with_manager_role(
     data_product = SampleDataProduct(db, create_style=True)
     create_project_member(
         db,
-        role="manager",
+        role=Role.MANAGER,
         member_id=current_user.id,
         project_id=data_product.project.id,
     )
@@ -601,7 +602,7 @@ def test_deactivate_data_product_with_viewer_role(
     data_product = SampleDataProduct(db, create_style=True)
     create_project_member(
         db,
-        role="viewer",
+        role=Role.VIEWER,
         member_id=current_user.id,
         project_id=data_product.project.id,
     )
@@ -639,6 +640,10 @@ def test_running_tool_on_data_product(
         "ndvi": False,
         "ndviNIR": 4,
         "ndviRed": 3,
+        "vari": True,
+        "variRed": 3,
+        "variGreen": 2,
+        "variBlue": 1,
         "zonal": False,
         "zonal_layer_id": "",
     }
@@ -658,7 +663,7 @@ def test_get_zonal_statistics(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
     create_project_member(
-        db, role="viewer", member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
     )
     data_product = SampleDataProduct(db, data_type="dsm", project=project)
     # get single polygon feature inside the sample data product
@@ -703,7 +708,8 @@ def test_get_zonal_statistics(
         assert response.status_code == status.HTTP_200_OK
         response_data = response.json()
         assert Feature(**response_data)
-        response_feature = Feature(**response_data)
+        response_feature: Feature = Feature(**response_data)
+        assert response_feature.properties is not None
         assert (
             response_feature.properties["min"]
             and response_feature.properties["max"]
@@ -725,7 +731,7 @@ def test_get_zonal_statistics_by_layer_id(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
     create_project_member(
-        db, role="viewer", member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
     )
     data_product = SampleDataProduct(db, data_type="dsm", project=project)
     # create zonal statistics metadata for data product

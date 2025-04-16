@@ -30,6 +30,7 @@ from .indoor_project_data import (
 from .job import Job, JobCreate, JobUpdate
 from .location import Location, LocationCreate, LocationUpdate
 from .project import Project, ProjectCreate, ProjectUpdate
+from .project_like import ProjectLike, ProjectLikeCreate, ProjectLikeUpdate
 from .project_member import ProjectMember, ProjectMemberCreate, ProjectMemberUpdate
 from .raw_data import RawData, RawDataCreate, RawDataUpdate, RawDataMetadata
 from .shortened_url import (

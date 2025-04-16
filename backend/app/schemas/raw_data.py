@@ -72,10 +72,18 @@ class RawDataMetadata(BaseModel):
     report: Optional[Report]
 
 
-class ImageProcessingQueryParams(BaseModel):
+class MetashapeQueryParams(BaseModel):
     alignQuality: Literal["low", "medium", "high"]
+    backend: Literal["metashape"]
     buildDepthQuality: Literal["low", "medium", "high"]
     camera: Literal["single", "multi"]
     disclaimer: bool
     keyPoint: int
     tiePoint: int
+
+
+class ODMQueryParams(BaseModel):
+    backend: Literal["odm"]
+    disclaimer: bool
+    orthoResolution: float
+    pcQuality: Literal["lowest", "low", "medium", "high", "ultra"]

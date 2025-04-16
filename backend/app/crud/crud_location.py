@@ -59,7 +59,7 @@ class CRUDLocation(CRUDBase[Location, LocationCreate, LocationUpdate]):
         # Get geometry from GeoJSON Feature (not interested in props)
         geometry = feature.geometry.__dict__
         # Serialize geometry for ST_GeomFromGeoJSON function
-        geom = func.ST_GeomFromGeoJSON(json.dumps(geometry))
+        geom = func.ST_Force2D(func.ST_GeomFromGeoJSON(json.dumps(geometry)))
 
         statement = update(Location).where(Location.id == location_id).values(geom=geom)
         with db as session:

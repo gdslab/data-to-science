@@ -1,6 +1,7 @@
+from datetime import date
 import logging
 import json
-from typing import List, Sequence, TypedDict
+from typing import List, Optional, Sequence, Tuple, TypedDict
 from uuid import UUID
 
 from fastapi import status
@@ -9,40 +10,32 @@ from sqlalchemy import and_, func, select, update
 from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm import joinedload, Session
 
-from app import crud, schemas
+from app import crud
 from app.crud.base import CRUDBase
 from app.models.location import Location
 from app.models.project import Project
+from app.models.project_like import ProjectLike
 from app.models.project_member import ProjectMember
 from app.models.team_member import TeamMember
 from app.models.user import User
 from app.models.utils.utcnow import utcnow
-from app.schemas.project import Centroid, ProjectCreate, ProjectUpdate, Projects
+from app.schemas.project import (
+    Centroid,
+    ProjectCreate,
+    ProjectUpdate,
+    Project as ProjectSchema,
+    Projects,
+)
+from app.schemas.role import Role
 
 
 logger = logging.getLogger("__name__")
 
 
-def is_team_member(user_id: UUID, team_members: Sequence[TeamMember]) -> bool:
-    """Returns True if user_id matches a user on a team.
-
-    Args:
-        user_id (UUID): User ID to check for on a team.
-        team_members (Sequence[TeamMember]): List of team members.
-
-    Returns:
-        bool: True if the user ID matches a user in the team member list, otherwise False.
-    """
-    for team_member in team_members:
-        if team_member.member_id == user_id:
-            return True
-    return False
-
-
 class ReadProject(TypedDict):
     response_code: int
     message: str
-    result: schemas.Project | None
+    result: ProjectSchema | None
 
 
 class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
@@ -54,8 +47,8 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
     ) -> ReadProject:
         """Create new project and add user as project member."""
         obj_in_data = jsonable_encoder(obj_in)
-        # check if team was included and if user is team member
-        team_members = []
+        # Check if team was included and if user has the team member "owner" role
+        team_members: Sequence[TeamMember] = []
         if obj_in_data.get("team_id"):
             team_members = crud.team_member.get_list_of_team_members(
                 db, team_id=obj_in_data.get("team_id")
@@ -66,10 +59,10 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     "message": "Team does not have any members",
                     "result": None,
                 }
-            if not is_team_member(owner_id, team_members):
+            if not is_team_owner(owner_id, team_members, include_manager=True):
                 return {
                     "response_code": status.HTTP_403_FORBIDDEN,
-                    "message": "Only team member can perform this action",
+                    "message": 'Only team member with "owner" or "manager" role can perform this action',
                     "result": None,
                 }
         # add location to db
@@ -96,12 +89,13 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         setattr(project_db_obj, "role", "owner")
         # add project memebers to db
         member_db_obj = ProjectMember(
-            member_id=owner_id, project_id=project_db_obj.id, role="owner"
+            member_id=owner_id, project_id=project_db_obj.id, role=Role.OWNER
         )
         with db as session:
             session.add(member_db_obj)
             session.commit()
             session.refresh(member_db_obj)
+
         # add team members as project members
         if len(team_members) > 0:
             project_members = []
@@ -111,7 +105,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                         ProjectMember(
                             member_id=team_member.member_id,
                             project_id=project_db_obj.id,
-                            role="viewer",
+                            role=team_member.role,
                         )
                     )
             if len(project_members) > 0:
@@ -119,10 +113,20 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     session.add_all(project_members)
                     session.commit()
 
+        try:
+            project_schema = ProjectSchema.model_validate(project_db_obj)
+        except Exception as e:
+            logger.error(e)
+            return {
+                "response_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+                "message": "Error occurred while creating project",
+                "result": None,
+            }
+
         return {
             "response_code": status.HTTP_201_CREATED,
             "message": "Project created successfully",
-            "result": project_db_obj,
+            "result": project_schema,
         }
 
     def get_user_project(
@@ -156,9 +160,9 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 }
             if project and len(project) == 5:
                 member_role = project[1].role
-                if (permission == "rwd" and member_role != "owner") or (
+                if (permission == "rwd" and member_role != Role.OWNER) or (
                     permission == "rw"
-                    and (member_role != "owner" and member_role != "manager")
+                    and (member_role != Role.OWNER and member_role != Role.MANAGER)
                 ):
                     return {
                         "response_code": status.HTTP_403_FORBIDDEN,
@@ -209,6 +213,15 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     Project,
                     func.ST_X(func.ST_Centroid(Location.geom)).label("center_x"),
                     func.ST_Y(func.ST_Centroid(Location.geom)).label("center_y"),
+                    select(1)
+                    .where(
+                        and_(
+                            ProjectLike.project_id == Project.id,
+                            ProjectLike.user_id == user.id,
+                        )
+                    )
+                    .exists()
+                    .label("liked"),
                 )
                 .join(Project.location)
                 .where(Project.is_active)
@@ -220,6 +233,15 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     ProjectMember,
                     func.ST_X(func.ST_Centroid(Location.geom)).label("center_x"),
                     func.ST_Y(func.ST_Centroid(Location.geom)).label("center_y"),
+                    select(1)
+                    .where(
+                        and_(
+                            ProjectLike.project_id == Project.id,
+                            ProjectLike.user_id == user.id,
+                        )
+                    )
+                    .exists()
+                    .label("liked"),
                 )
                 .join(Project.members)
                 .join(Project.location)
@@ -231,11 +253,12 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             for project in session.execute(statement).all():
                 # unpack project
                 if include_all and user.is_superuser:
-                    project_obj, center_x, center_y = project
+                    project_obj, center_x, center_y, liked = project
                 else:
-                    project_obj, member_obj, center_x, center_y = project
+                    project_obj, member_obj, center_x, center_y, liked = project
                 # add center x, y attributes to project obj
                 setattr(project_obj, "centroid", Centroid(x=center_x, y=center_y))
+                setattr(project_obj, "liked", liked)
                 # count of project's active flights and most recent flight date
                 flight_count, most_recent_flight = (
                     get_flight_count_and_most_recent_flight(project_obj)
@@ -262,9 +285,21 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         project_obj: Project,
         project_in: ProjectUpdate,
         user_id: UUID,
-    ):
+    ) -> ReadProject:
+        """Update project and add team members as project members if a new team is being added.
+
+        Args:
+            db (Session): Database session.
+            project_id (UUID): ID of project to update.
+            project_obj (Project): Project object to update
+            project_in (ProjectUpdate): Project update object
+            user_id (UUID): ID of user updating project
+
+        Returns:
+            ReadProject: ReadProject object containing response code, message, and updated project.
+        """
         project_in_data = jsonable_encoder(project_in)
-        # if team association is being updated, check that user has team permission
+        # Only process team changes if a new team_id is provided and it's different from current
         if (
             project_in_data.get("team_id") is not None
             and project_obj.team_id != project_in_data["team_id"]
@@ -272,83 +307,89 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             team_members = crud.team_member.get_list_of_team_members(
                 db, team_id=project_in_data["team_id"]
             )
-            if len(team_members) == 0 or not is_team_member(user_id, team_members):
+            # Check permissions
+            if len(team_members) == 0 or not is_team_owner(
+                user_id, team_members, include_manager=True
+            ):
                 return {
                     "response_code": status.HTTP_403_FORBIDDEN,
                     "message": "Only team owner can perform this action",
                     "result": None,
                 }
-        # replacing current team with new team
-        if project_obj.team_id and project_in_data.get("team_id") is not None:
-            # add new team's project members
-            team_members = crud.team_member.get_list_of_team_members(
-                db, team_id=project_in_data["team_id"]
-            )
-            if len(team_members) > 0:
-                team_member_ids = [
-                    team_member.member_id for team_member in team_members
-                ]
-                crud.project_member.create_multi_with_project(
-                    db, member_ids=team_member_ids, project_id=project_id
-                )
-        # adding new team
-        if not project_obj.team_id and project_in_data.get("team_id") is not None:
-            # add new team's project members
-            team_members = crud.team_member.get_list_of_team_members(
-                db, team_id=project_in_data["team_id"]
-            )
-            if len(team_members) > 0:
-                team_member_ids = [
-                    team_member.member_id for team_member in team_members
-                ]
-                crud.project_member.create_multi_with_project(
-                    db, member_ids=team_member_ids, project_id=project_id
-                )
 
-        # finish updating project
+            # Add team members as project members
+            crud.project_member.create_multi_with_project(
+                db,
+                new_members=[
+                    (team_member.member_id, team_member.role)
+                    for team_member in team_members
+                ],
+                project_id=project_id,
+            )
+
+        # Finish updating project
         updated_project = crud.project.update(db, db_obj=project_obj, obj_in=project_in)
+        try:
+            # Get project role for user updating project
+            project_member = crud.project_member.get_by_project_and_member_id(
+                db, project_id=project_id, member_id=user_id
+            )
+            if project_member:
+                setattr(updated_project, "role", project_member.role)
+            else:
+                setattr(updated_project, "role", "viewer")
+            # Validate and return updated project
+            updated_project_schema = ProjectSchema.model_validate(updated_project)
+        except Exception as e:
+            logger.error(e)
+            return {
+                "response_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+                "message": "Error occurred while updating project",
+                "result": None,
+            }
         return {
             "response_code": status.HTTP_200_OK,
             "message": "Project updated successfully",
-            "result": updated_project,
+            "result": updated_project_schema,
         }
 
     def deactivate(
         self, db: Session, project_id: UUID, user_id: UUID
-    ) -> Project | None:
-        # update project's active status
-        update_project_sql = (
-            update(Project)
-            .where(and_(Project.id == project_id, Project.owner_id == user_id))
-            .values(is_active=False, deactivated_at=utcnow())
-        )
+    ) -> Optional[Project]:
+        """Deactivate project and associated flights."""
         with db as session:
+            # Update project to be inactive
+            update_project_sql = (
+                update(Project)
+                .where(and_(Project.id == project_id, Project.owner_id == user_id))
+                .values(is_active=False, deactivated_at=utcnow())
+            )
             session.execute(update_project_sql)
             session.commit()
 
-        # get deactivated project that will be deactivated
-        get_project_sql = (
-            select(Project)
-            .options(joinedload(Project.flights))
-            .where(Project.id == project_id, Project.owner_id == user_id)
-        )
-        with db as session:
+            # Get deactivated project
+            get_project_sql = (
+                select(Project)
+                .options(joinedload(Project.flights))
+                .where(Project.id == project_id, Project.owner_id == user_id)
+            )
             deactivated_project = session.execute(get_project_sql).scalar()
 
-        # deactivate flights associated with project
+        # Deactivate flights associated with project
         if deactivated_project:
             if len(deactivated_project.flights) > 0:
                 for flight in deactivated_project.flights:
-                    with db as session:
-                        crud.flight.deactivate(db, flight_id=flight.id)
+                    crud.flight.deactivate(db, flight_id=flight.id)
 
-            # add owner role to deactivated project
-            setattr(deactivated_project, "role", "owner")
+        # Add owner role to deactivated project (necessary for validation)
+        setattr(deactivated_project, "role", "owner")
 
-            return deactivated_project
+        return deactivated_project
 
 
-def get_flight_count_and_most_recent_flight(project: Project) -> int:
+def get_flight_count_and_most_recent_flight(
+    project: Project,
+) -> Tuple[int, Optional[date]]:
     """Calculate total number of active flights in a project and
     find date for most recent flight.
 
@@ -356,7 +397,7 @@ def get_flight_count_and_most_recent_flight(project: Project) -> int:
         project (Project): Project with flights.
 
     Returns:
-        int: Number of flights in project.
+        Tuple[int, Optional[date]]: Number of flights in project and date of most recent flight.
     """
     flight_count = 0
     most_recent_flight = None
@@ -391,6 +432,47 @@ def has_flight_with_raster_data_project(project: Project) -> bool:
                     has_at_least_one_raster_data_product = True
 
     return has_at_least_one_raster_data_product
+
+
+def is_team_member(user_id: UUID, team_members: Sequence[TeamMember]) -> bool:
+    """Returns True if user_id matches a user on a team.
+
+    Args:
+        user_id (UUID): User ID to check for on a team.
+        team_members (Sequence[TeamMember]): List of team members.
+
+    Returns:
+        bool: True if the user ID matches a user in the team member list, otherwise False.
+    """
+    for team_member in team_members:
+        if team_member.member_id == user_id:
+            return True
+    return False
+
+
+def is_team_owner(
+    user_id: UUID, team_members: Sequence[TeamMember], include_manager: bool = False
+) -> bool:
+    """Returns True if user_id matches a user on a team and is the team owner.
+
+    Args:
+        user_id (UUID): User ID to check for on a team.
+        team_members (Sequence[TeamMember]): List of team members.
+        include_manager (bool): Whether to include manager role in check.
+    Returns:
+        bool: True if the user ID matches a user in the team member list and is the team owner,
+        otherwise False.
+    """
+    for team_member in team_members:
+        if team_member.member_id == user_id and team_member.role == Role.OWNER:
+            return True
+        if (
+            include_manager
+            and team_member.member_id == user_id
+            and team_member.role == Role.MANAGER
+        ):
+            return True
+    return False
 
 
 project = CRUDProject(Project)

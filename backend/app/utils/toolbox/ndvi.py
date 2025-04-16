@@ -30,7 +30,11 @@ def run(in_raster: str, out_raster: str, params: dict) -> str:
         # update source raster profile to single band and float32
         profile = src.profile
         profile.update(
-            dtype=rasterio.float32, count=1, compress="deflate", BIGTIFF="YES"
+            dtype=rasterio.float32,
+            count=1,
+            compress="deflate",
+            BIGTIFF="YES",
+            nodata=-9999.0,
         )
 
         # use block windows to calculate exg and write to new file
@@ -62,6 +66,9 @@ def run(in_raster: str, out_raster: str, params: dict) -> str:
                 nir = img[nir_band_img_idx, :, :].astype(np.float32)
                 red = img[red_band_img_idx, :, :].astype(np.float32)
                 ndvi = (nir - red) / (nir + red)
+
+                # replace infinite values with NoData
+                ndvi[np.isinf(ndvi)] = profile["nodata"]
 
                 # write ndvi window to out raster
                 dst.write(ndvi, window=window, indexes=1)

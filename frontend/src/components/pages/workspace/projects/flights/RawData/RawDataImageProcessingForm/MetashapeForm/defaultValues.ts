@@ -1,6 +1,7 @@
-import { ImageProcessingSettings } from '../RawData.types';
+import { MetashapeSettings } from '../../RawData.types';
 
-const defaultValues: ImageProcessingSettings = {
+const defaultValues: MetashapeSettings = {
+  backend: 'metashape',
   alignQuality: 'medium',
   buildDepthQuality: 'medium',
   camera: 'single',

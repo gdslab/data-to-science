@@ -32,7 +32,7 @@ export default function ProjectCluster({
   includeAll = false,
   setIsMapReady,
 }: ProjectClusterProps) {
-  const { projects, projectsLoaded } = useMapContext();
+  const { projects, projectsLoaded, projectFilterSelection } = useMapContext();
 
   const [geojsonData, setGeojsonData] =
     useState<ProjectFeatureCollection | null>(null);
@@ -40,9 +40,31 @@ export default function ProjectCluster({
 
   const { current: map } = useMap();
 
+  const filteredProjects = useMemo(() => {
+    if (!projects) {
+      return [];
+    }
+
+    let filteredProjects = projects;
+
+    if (projectFilterSelection.includes('myProjects')) {
+      filteredProjects = filteredProjects.filter(
+        (project) => project.role === 'owner'
+      );
+    }
+
+    if (projectFilterSelection.includes('likedProjects')) {
+      filteredProjects = filteredProjects.filter(
+        (project) => project.liked || false
+      );
+    }
+
+    return filteredProjects;
+  }, [projects, projectFilterSelection]);
+
   const projectsFeatureCollection = useMemo(() => {
-    if (!projects || projects.length === 0) return null;
-    const features: ProjectPointFeature[] = projects.map((project) => ({
+    if (!filteredProjects || filteredProjects.length === 0) return null;
+    const features: ProjectPointFeature[] = filteredProjects.map((project) => ({
       type: 'Feature',
       geometry: {
         type: 'Point',
@@ -59,7 +81,7 @@ export default function ProjectCluster({
       features: features,
     };
     return featureCollection;
-  }, [projects]);
+  }, [filteredProjects]);
 
   // Use context to set project markers if fetchFromAPI is false
   useEffect(() => {
@@ -67,7 +89,7 @@ export default function ProjectCluster({
       setGeojsonData(projectsFeatureCollection);
       setGeojsonLoaded(true);
     }
-  }, [projectsLoaded]);
+  }, [projectsLoaded, projectsFeatureCollection]);
 
   // Fetch project markers in geojson format from api when fetchFromAPI is true
   useEffect(() => {

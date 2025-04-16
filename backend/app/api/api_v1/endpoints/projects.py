@@ -45,7 +45,7 @@ def create_project(
         raise HTTPException(
             status_code=project["response_code"], detail=project["message"]
         )
-    if not project["result"].id:
+    if not project["result"] or not project["result"].id:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to create project",
@@ -56,9 +56,8 @@ def create_project(
             db, user_id=current_user.id, project_id=project["result"].id
         )
         if project_in_db["result"]:
-            coordinates = project_in_db["result"].field["geometry"]["coordinates"]
-            features = [Feature(**project_in_db["result"].field)]
             try:
+                features = [Feature(**project_in_db["result"].field)]
                 create_project_field_preview(project["result"].id, features)
             except Exception:
                 logger.exception("Unable to create preview map")
@@ -154,19 +153,19 @@ def update_project(
                     }
                 ],
             )
-
-    project = crud.project.update_project(
+    updated_project = crud.project.update_project(
         db,
         project_id=project_id,
         project_obj=project,
         project_in=project_in,
         user_id=current_user.id,
     )
-    if project["response_code"] != status.HTTP_200_OK:
+    if updated_project["response_code"] != status.HTTP_200_OK:
         raise HTTPException(
-            status_code=project["response_code"], detail=project["message"]
+            status_code=updated_project["response_code"],
+            detail=updated_project["message"],
         )
-    return project["result"]
+    return updated_project["result"]
 
 
 @router.delete("/{project_id}", response_model=schemas.Project)
@@ -184,3 +183,56 @@ def deactivate_project(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to deactivate"
         )
     return deactivated_project
+
+
+@router.post("/{project_id}/like", status_code=status.HTTP_201_CREATED)
+def create_project_like(
+    project_id: UUID,
+    project: models.Project = Depends(deps.can_read_project),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Create project like."""
+    project_like_in_db = crud.project_like.get_by_project_id_and_user_id(
+        db, project_id=project_id, user_id=current_user.id
+    )
+    if project_like_in_db:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Project already bookmarked"
+        )
+    project_like_in = schemas.ProjectLikeCreate(
+        project_id=project_id,
+        user_id=current_user.id,
+    )
+    project_like = crud.project_like.create(db, obj_in=project_like_in)
+    if not project_like:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to create like"
+        )
+
+    return {"message": "Project bookmarked"}
+
+
+@router.delete("/{project_id}/like", status_code=status.HTTP_200_OK)
+def delete_project_like(
+    project_id: UUID,
+    project: models.Project = Depends(deps.can_read_project),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Delete project like."""
+    project_like_in_db = crud.project_like.get_by_project_id_and_user_id(
+        db, project_id=project_id, user_id=current_user.id
+    )
+    if not project_like_in_db:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to delete like"
+        )
+    project_like = crud.project_like.remove(db, id=project_like_in_db.id)
+
+    if not project_like:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to delete like"
+        )
+
+    return {"message": "Project unbookmarked"}

@@ -10,6 +10,8 @@ export const SENSOR_OPTIONS = [
   { label: 'RGB', value: 'RGB' },
   { label: 'Multispectral', value: 'Multispectral' },
   { label: 'LiDAR', value: 'LiDAR' },
+  { label: 'Thermal', value: 'Thermal' },
+  { label: 'Hyperspectral', value: 'Hyperspectral' },
   { label: 'Other', value: 'Other' },
 ];
 
@@ -46,7 +48,9 @@ export function getInitialValues(flight: Flight | null) {
       sensor: flight.sensor,
       platform: getPlatform(flight.platform),
       platformOther:
-        getPlatform(flight.platform).toLowerCase() === 'other' ? flight.platform : '',
+        getPlatform(flight.platform).toLowerCase() === 'other'
+          ? flight.platform
+          : '',
       pilotId: '',
     };
   } else {

@@ -17,7 +17,8 @@ import { useInterval } from '../../../../../hooks';
 import { useProjectContext } from '../../ProjectContext';
 import {
   ImageProcessingJobProps,
-  ImageProcessingSettings,
+  MetashapeSettings,
+  ODMSettings,
   RawDataProps,
 } from './RawData.types';
 
@@ -29,7 +30,9 @@ import {
 } from './utils';
 
 export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
-  const [hasImageProcessingExt, setHasImageProcessingExt] = useState(false);
+  const [imageProcessingExt, setImageProcessingExt] = useState<
+    'metashape' | 'odm' | null
+  >(null);
   const [imageProcessingJobStatus, setImageProcessingJobStatus] = useState<
     ImageProcessingJobProps[]
   >([]);
@@ -44,7 +47,7 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
   useEffect(() => {
     // check if user has image processing extension
     fetchUserExtensions()
-      .then((hasExtension) => setHasImageProcessingExt(hasExtension))
+      .then((extension) => setImageProcessingExt(extension))
       .catch((err) => setStatus({ type: 'error', msg: err.message }));
   }, []);
 
@@ -133,7 +136,7 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
 
   function onImageProcessingClick(
     rawDataId: string,
-    settings: ImageProcessingSettings
+    settings: MetashapeSettings | ODMSettings
   ) {
     if (flightId && projectId) {
       startImageProcessingJob(flightId, projectId, rawDataId, settings)
@@ -188,10 +191,11 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
                 {dataset.status === 'WAITING' && <PendingIcon />}
                 {dataset.status === 'FAILED' && <ErrorIcon />}
                 {/* display button for image processing if user has extension */}
-                {hasImageProcessingExt && (
+                {imageProcessingExt && projectRole !== 'viewer' && (
                   <RawDataImageProcessingModal
+                    imageProcessingExt={imageProcessingExt}
                     isProcessing={isProcessing(dataset.id)}
-                    onSubmitJob={(settings: ImageProcessingSettings) =>
+                    onSubmitJob={(settings: MetashapeSettings | ODMSettings) =>
                       onImageProcessingClick(dataset.id, settings)
                     }
                   />

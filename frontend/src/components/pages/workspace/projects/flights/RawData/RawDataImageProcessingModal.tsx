@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import Modal from '../../../../../Modal';
-import RawDataImageProcessingForm from './RawDataImageProcessingForm';
-import { ImageProcessingSettings } from './RawData.types';
+import MetashapeForm from './RawDataImageProcessingForm/MetashapeForm';
+import ODMForm from './RawDataImageProcessingForm/ODMForm';
+import { MetashapeSettings, ODMSettings } from './RawData.types';
 
 type RawDataImageProcessingModal = {
+  imageProcessingExt: 'metashape' | 'odm';
   isProcessing: boolean;
-  onSubmitJob: (settings: ImageProcessingSettings) => void;
+  onSubmitJob: (settings: MetashapeSettings | ODMSettings) => void;
 };
 
 export default function RawDataImageProcessingModal({
+  imageProcessingExt,
   isProcessing,
   onSubmitJob,
 }: RawDataImageProcessingModal) {
@@ -29,10 +32,11 @@ export default function RawDataImageProcessingModal({
         {isProcessing ? 'Processing' : 'Process'}
       </button>
       <Modal open={open} setOpen={setOpen}>
-        <RawDataImageProcessingForm
-          onSubmitJob={onSubmitJob}
-          toggleModal={toggleModal}
-        />
+        {imageProcessingExt === 'metashape' ? (
+          <MetashapeForm onSubmitJob={onSubmitJob} toggleModal={toggleModal} />
+        ) : (
+          <ODMForm onSubmitJob={onSubmitJob} toggleModal={toggleModal} />
+        )}
       </Modal>
     </div>
   );

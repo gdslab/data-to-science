@@ -28,7 +28,9 @@ export async function loader({ params }: { params: Params<string> }) {
     const flights: AxiosResponse<Flight[]> = await api.get(
       `/projects/${params.projectId}/flights`
     );
-    const teams: AxiosResponse<Team[]> = await api.get('/teams');
+    const teams: AxiosResponse<Team[]> = await api.get('/teams', {
+      params: { owner_only: true },
+    });
 
     if (project && project_member && flights && teams) {
       const teamsf = teams.data;

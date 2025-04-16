@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from .campaign import Campaign
     from .flight import Flight
     from .iforester import IForester
+    from .project_like import ProjectLike
     from .location import Location
     from .project_member import ProjectMember
     from .team import Team
@@ -51,6 +52,9 @@ class Project(Base):
     team: Mapped["Team"] = relationship(back_populates="projects")
 
     campaigns: Mapped[list["Campaign"]] = relationship(
+        back_populates="project", cascade="all, delete"
+    )
+    likes: Mapped[list["ProjectLike"]] = relationship(
         back_populates="project", cascade="all, delete"
     )
     flights: Mapped[list["Flight"]] = relationship(

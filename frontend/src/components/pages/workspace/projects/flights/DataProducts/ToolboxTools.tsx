@@ -17,7 +17,7 @@ import api from '../../../../../../api';
 
 const EXGBandSelection = ({ dataProduct }: { dataProduct: DataProduct }) => {
   const bandOptions = dataProduct.stac_properties.eo.map((band, idx) => ({
-    label: band.name,
+    label: `${band.name} (${band.description})`,
     value: idx + 1,
   }));
 
@@ -35,7 +35,7 @@ const EXGBandSelection = ({ dataProduct }: { dataProduct: DataProduct }) => {
 
 const NDVIBandSelection = ({ dataProduct }: { dataProduct: DataProduct }) => {
   const bandOptions = dataProduct.stac_properties.eo.map((band, idx) => ({
-    label: band.name,
+    label: `${band.name} (${band.description})`,
     value: idx + 1,
   }));
 
@@ -50,13 +50,35 @@ const NDVIBandSelection = ({ dataProduct }: { dataProduct: DataProduct }) => {
   );
 };
 
+const VARIBandSelection = ({ dataProduct }: { dataProduct: DataProduct }) => {
+  const bandOptions = dataProduct.stac_properties.eo.map((band, idx) => ({
+    label: `${band.name} (${band.description})`,
+    value: idx + 1,
+  }));
+
+  return (
+    <div>
+      <HintText>Select Red, Green, and Blue Bands</HintText>
+      <div className="flex flex-row gap-4">
+        <SelectField name="variRed" label="Red Band" options={bandOptions} />
+        <SelectField
+          name="variGreen"
+          label="Green Band"
+          options={bandOptions}
+        />
+        <SelectField name="variBlue" label="Blue Band" options={bandOptions} />
+      </div>
+    </div>
+  );
+};
+
 const RGBTools = ({ dataProduct }: { dataProduct: DataProduct }) => {
   const { values } = useFormikContext<ToolboxFields>();
 
   return (
     <ul>
       <li>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 mb-4">
           <div className="flex items-center">
             <Field id="exg-checkbox" type="checkbox" name="exg" />
             <label
@@ -67,6 +89,20 @@ const RGBTools = ({ dataProduct }: { dataProduct: DataProduct }) => {
             </label>
           </div>
           {values.exg ? <EXGBandSelection dataProduct={dataProduct} /> : null}
+        </div>
+      </li>
+      <li>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center">
+            <Field id="vari-checkbox" type="checkbox" name="vari" />
+            <label
+              htmlFor="vari-checkbox"
+              className="ms-2 text-sm font-medium text-gray-900"
+            >
+              Visible Atmospherically Resistant Index (VARI)
+            </label>
+          </div>
+          {values.vari ? <VARIBandSelection dataProduct={dataProduct} /> : null}
         </div>
       </li>
     </ul>

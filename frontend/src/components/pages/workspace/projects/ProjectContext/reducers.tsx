@@ -9,6 +9,7 @@ import {
   FlightsFilterSelectionAction,
   MapLayersAction,
   ProjectAction,
+  ProjectFilterSelectionAction,
   ProjectMembersAction,
   ProjectRoleAction,
 } from './actions';
@@ -72,6 +73,23 @@ function flightsFilterSelectionReducer(
   }
 }
 
+function projectFilterSelectionReducer(
+  state: string[],
+  action: ProjectFilterSelectionAction
+) {
+  switch (action.type) {
+    case 'set': {
+      return action.payload ? action.payload : [];
+    }
+    case 'reset': {
+      return [];
+    }
+    default: {
+      return state;
+    }
+  }
+}
+
 function mapLayersReducer(state: MapLayer[], action: MapLayersAction) {
   switch (action.type) {
     case 'set': {
@@ -91,7 +109,8 @@ function mapLayersReducer(state: MapLayer[], action: MapLayersAction) {
     case 'remove': {
       if (action.payload) {
         if (state.length > 0 && action.payload.length === 1) {
-          const layerIdToRemove: string | undefined = action.payload[0].layer_id;
+          const layerIdToRemove: string | undefined =
+            action.payload[0].layer_id;
           if (layerIdToRemove) {
             return state.filter((layer) => {
               if (layer.layer_id !== layerIdToRemove) {
@@ -143,7 +162,10 @@ function projectMembersReducer(
   }
 }
 
-function projectRoleReducer(state: string | undefined, action: ProjectRoleAction) {
+function projectRoleReducer(
+  state: string | undefined,
+  action: ProjectRoleAction
+) {
   switch (action.type) {
     case 'set': {
       return action.payload;
@@ -163,7 +185,8 @@ export {
   flightsReducer,
   flightsFilterSelectionReducer,
   mapLayersReducer,
-  projectReducer,
+  projectFilterSelectionReducer,
   projectMembersReducer,
+  projectReducer,
   projectRoleReducer,
 };

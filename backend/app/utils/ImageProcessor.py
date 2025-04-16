@@ -43,15 +43,26 @@ class ImageProcessor:
     def run(self) -> Path:
         info: dict = get_info(self.in_raster)
 
+        logger.info(f" Processing {self.in_raster}")
+        logger.info(f" Output will be saved to {self.out_raster}")
+        logger.info(f" Preview image will be saved to {self.preview_out_path}")
+        logger.info(f" Info before processing: {info}")
+
         if is_cog(info):
             shutil.move(self.in_raster, self.out_dir)
         else:
-            convert_to_cog(self.in_raster, self.out_raster, info)
+            convert_to_cog(self.in_raster, self.out_raster)
+            # Update info to reflect new COG
+            info = get_info(self.out_raster)
+
+        logger.info(f" Info after processing: {info}")
 
         if os.path.exists(self.in_raster.parent):
             shutil.rmtree(self.in_raster.parent)
 
         self.stac_properties = get_stac_properties(info)
+
+        logger.info(f" STAC properties: {self.stac_properties}")
 
         create_preview_image(
             self.out_raster, self.preview_out_path, self.stac_properties
@@ -180,14 +191,13 @@ def get_stac_properties(info: dict) -> STACProperties:
 
 
 def convert_to_cog(
-    in_raster: Path, out_raster: Path, info: dict, num_threads: int | None = None
+    in_raster: Path, out_raster: Path, num_threads: int | None = None
 ) -> None:
     """Runs gdalwarp to generate new raster in COG layout.
 
     Args:
         in_raster (Path): Path to input raster dataset
         out_raster (Path): Path for output raster dataset
-        info (dict): gdalinfo -json output
         num_threads (int | None, optional): No. of CPUs to use. Defaults to None.
     """
     if not num_threads:

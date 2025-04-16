@@ -7,7 +7,11 @@ import { DataProduct } from '../../pages/workspace/projects/Project';
 import { getDataProductName } from '../../pages/workspace/projects/flights/DataProducts/DataProductsTable';
 import { useRasterSymbologyContext } from '../RasterSymbologyContext';
 
-export default function DataProductCard({ dataProduct }: { dataProduct: DataProduct }) {
+export default function DataProductCard({
+  dataProduct,
+}: {
+  dataProduct: DataProduct;
+}) {
   const { activeDataProduct, activeDataProductDispatch } = useMapContext();
 
   const { dispatch } = useRasterSymbologyContext();
@@ -15,7 +19,9 @@ export default function DataProductCard({ dataProduct }: { dataProduct: DataProd
   return (
     <LayerCard
       hover={true}
-      active={activeDataProduct !== null && dataProduct.id === activeDataProduct.id}
+      active={
+        activeDataProduct !== null && dataProduct.id === activeDataProduct.id
+      }
     >
       <div className="text-slate-600 text-sm">
         <div
@@ -63,7 +69,9 @@ export default function DataProductCard({ dataProduct }: { dataProduct: DataProd
           ) : null}
           {dataProduct.data_type !== 'point_cloud' &&
             dataProduct.stac_properties.raster.length === 1 && (
-              <RasterStats stats={dataProduct.stac_properties.raster[0].stats} />
+              <RasterStats
+                stats={dataProduct.stac_properties.raster[0].stats}
+              />
             )}
         </div>
         {activeDataProduct &&

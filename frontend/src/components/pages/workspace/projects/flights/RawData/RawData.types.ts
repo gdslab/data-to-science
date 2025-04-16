@@ -1,13 +1,23 @@
 type CameraType = 'single' | 'multi';
 type QualityType = 'low' | 'medium' | 'high';
 
-export interface ImageProcessingSettings {
+export interface MetashapeSettings {
+  backend: 'metashape';
   alignQuality: QualityType;
   buildDepthQuality: QualityType;
   camera: CameraType;
   disclaimer: boolean;
   keyPoint: number;
   tiePoint: number;
+}
+
+type PCQualityType = 'lowest' | 'low' | 'medium' | 'high' | 'ultra';
+
+export interface ODMSettings {
+  backend: 'odm';
+  disclaimer: boolean;
+  orthoResolution: number;
+  pcQuality: PCQualityType;
 }
 
 export type ImageProcessingJobProps = {
@@ -26,6 +36,6 @@ export type RawDataProps = {
 };
 
 export type RawDataImageProcessingFormProps = {
-  onSubmitJob: (settings: ImageProcessingSettings) => void;
+  onSubmitJob: (settings: MetashapeSettings | ODMSettings) => void;
   toggleModal: () => void;
 };
