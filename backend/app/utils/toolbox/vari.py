@@ -27,7 +27,11 @@ def run(in_raster: str, out_raster: str, params: dict) -> str:
         # update source raster profile to single band and float32
         profile = src.profile
         profile.update(
-            dtype=rasterio.float32, count=1, compress="deflate", BIGTIFF="YES"
+            dtype=rasterio.float32,
+            count=1,
+            compress="deflate",
+            BIGTIFF="YES",
+            nodata=-9999.0,
         )
 
         # use block windows to calculate vari and write to new file
@@ -64,6 +68,9 @@ def run(in_raster: str, out_raster: str, params: dict) -> str:
                 blue = img[blue_band_img_idx, :, :].astype(np.float32)
 
                 vari = (green - red) / (green + red - blue)
+
+                # replace infinite values with NoData
+                vari[np.isinf(vari)] = profile["nodata"]
 
                 # write vari window to out raster
                 dst.write(vari, window=window, indexes=1)

@@ -73,6 +73,10 @@ class Toolbox:
                 logger.exception(f"{name.upper()} processing tool failed")
                 raise e
             # convert output raster from tool to COG
+            import shutil
+
+            logger.info(f" Copying {tmp_out_raster} to /tmp/test.tif")
+            shutil.copy(tmp_out_raster, "/tmp/test.tif")
             self.convert_result_to_cog(
                 tmp_out_raster, output_dir=str(out_raster.parent)
             )
