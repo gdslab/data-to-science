@@ -17,7 +17,7 @@ import api from '../../../../../api';
 
 const EXGBandSelection = ({ dataProduct }: { dataProduct: DataProduct }) => {
   const bandOptions = dataProduct.stac_properties.eo.map((band, idx) => ({
-    label: band.name,
+    label: `${band.name} (${band.description})`,
     value: idx + 1,
   }));
 
@@ -35,7 +35,7 @@ const EXGBandSelection = ({ dataProduct }: { dataProduct: DataProduct }) => {
 
 const NDVIBandSelection = ({ dataProduct }: { dataProduct: DataProduct }) => {
   const bandOptions = dataProduct.stac_properties.eo.map((band, idx) => ({
-    label: band.name,
+    label: `${band.name} (${band.description})`,
     value: idx + 1,
   }));
 
@@ -52,7 +52,7 @@ const NDVIBandSelection = ({ dataProduct }: { dataProduct: DataProduct }) => {
 
 const VARIBandSelection = ({ dataProduct }: { dataProduct: DataProduct }) => {
   const bandOptions = dataProduct.stac_properties.eo.map((band, idx) => ({
-    label: band.name,
+    label: `${band.name} (${band.description})`,
     value: idx + 1,
   }));
 

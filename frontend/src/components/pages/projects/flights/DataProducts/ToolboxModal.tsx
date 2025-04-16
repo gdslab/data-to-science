@@ -41,6 +41,39 @@ const getNumOfBands = (dataProduct: DataProduct) => {
   return dataProduct.stac_properties.raster.length;
 };
 
+const getInitialValues = (dataProduct: DataProduct) => {
+  const eo = dataProduct.stac_properties?.eo ?? [];
+
+  const findBandIndex = (description: string, defaultIndex: number) => {
+    const idx = eo.findIndex(
+      (band) => band.description.toLowerCase() === description
+    );
+    return idx === -1 ? defaultIndex : idx;
+  };
+
+  const redBandIndex = findBandIndex('red', 0);
+  const greenBandIndex = findBandIndex('green', 1);
+  const blueBandIndex = findBandIndex('blue', 2);
+  const nirBandIndex = findBandIndex('nir', 3);
+
+  return {
+    chm: false,
+    exg: false,
+    exgRed: redBandIndex + 1,
+    exgGreen: greenBandIndex + 1,
+    exgBlue: blueBandIndex + 1,
+    ndvi: false,
+    ndviNIR: nirBandIndex + 1,
+    ndviRed: redBandIndex + 1,
+    vari: false,
+    variRed: redBandIndex + 1,
+    variGreen: greenBandIndex + 1,
+    variBlue: blueBandIndex + 1,
+    zonal: false,
+    zonal_layer_id: '',
+  } as ToolboxFields;
+};
+
 export default function ToolboxModal({
   dataProduct,
   tableView = false,
@@ -82,24 +115,7 @@ export default function ToolboxModal({
           <div className="flex flex-col gap-4">
             <DataProductBandForm dataProduct={dataProduct} />
             <Formik
-              initialValues={
-                {
-                  chm: false,
-                  exg: false,
-                  exgRed: 3,
-                  exgGreen: 2,
-                  exgBlue: 1,
-                  ndvi: false,
-                  ndviNIR: 4,
-                  ndviRed: 3,
-                  vari: false,
-                  variRed: 3,
-                  variGreen: 2,
-                  variBlue: 1,
-                  zonal: false,
-                  zonal_layer_id: '',
-                } as ToolboxFields
-              }
+              initialValues={getInitialValues(dataProduct)}
               onSubmit={async (values, actions) => {
                 setStatus(null);
                 if (projectId && flightId && dataProduct.id) {
