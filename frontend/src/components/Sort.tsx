@@ -56,6 +56,12 @@ export function sortProjects(
   sortSelection: SortSelection
 ): Project[] {
   return projects.sort((a, b) => {
+    // First sort by liked status (liked projects come first)
+    if (a.liked !== b.liked) {
+      return a.liked ? -1 : 1;
+    }
+
+    // Then apply the selected sort
     if (sortSelection === 'atoz') {
       return sorter(a.title.toLowerCase(), b.title.toLowerCase());
     } else if (sortSelection === 'ztoa') {
