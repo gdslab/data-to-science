@@ -1,8 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ChevronDownIcon } from '@heroicons/react/24/outline';
 
 import Alert, { Status } from '../../Alert';
-import { CopyShortURLButton, CopyURLButton } from '../../Buttons';
+import {
+  Button,
+  CopyShortURLButton,
+  CopyURLButton,
+  DownloadQRButton,
+} from '../../Buttons';
 import { DataProduct } from '../../pages/projects/Project';
 import { useMapContext } from '../MapContext';
 import { Project } from '../../pages/projects/ProjectList';
@@ -26,6 +32,7 @@ export default function RasterSymbologyAccessControls({
 }) {
   const [accessOption, setAccessOption] = useState<boolean>(dataProduct.public);
   const [status, setStatus] = useState<Status | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
 
   const navigate = useNavigate();
 
@@ -164,16 +171,71 @@ export default function RasterSymbologyAccessControls({
         </div>
         {symbology && (
           <div className="col-span-2">
-            <CopyURLButton
-              copyText="Copy Share URL"
-              copiedText="Copied"
-              url={
-                window.origin +
-                `/sharemap?file_id=${dataProduct.id}&symbology=` +
-                btoa(JSON.stringify(symbology))
-              }
-              title="Copy link that can be used to share the current map and selected data product"
-            />
+            <div className="relative">
+              <button
+                type="button"
+                className="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+                onClick={() => setIsOpen(!isOpen)}
+              >
+                Share Current Map
+                <ChevronDownIcon
+                  className="-mr-1 h-5 w-5 text-gray-400"
+                  aria-hidden="true"
+                />
+              </button>
+              {isOpen && (
+                <div
+                  className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                  style={{ bottom: '100%', marginBottom: '0.5rem' }}
+                >
+                  <div className="py-1">
+                    <div className="px-4 py-2">
+                      <CopyURLButton
+                        copyText="Copy Share URL"
+                        copiedText="Copied"
+                        url={
+                          window.origin +
+                          `/sharemap?file_id=${dataProduct.id}&symbology=` +
+                          btoa(JSON.stringify(symbology))
+                        }
+                        title="Copy link that can be used to share the current map and selected data product"
+                      />
+                    </div>
+                    <div className="px-4 py-2">
+                      <CopyShortURLButton
+                        copyText="Copy Short URL"
+                        copiedText="Copied"
+                        dataProduct={dataProduct}
+                        project={project}
+                        setStatus={setStatus}
+                        url={
+                          window.origin +
+                          `/sharemap?file_id=${dataProduct.id}&symbology=${btoa(
+                            JSON.stringify(symbology)
+                          )}`
+                        }
+                      />
+                    </div>
+                    <div className="px-4 py-2">
+                      <DownloadQRButton
+                        dataProductId={dataProduct.id}
+                        flightId={dataProduct.flight_id}
+                        projectId={project.id}
+                        setStatus={setStatus}
+                        title="Download QR Code"
+                        titleOnSubmission="QR Code Downloaded"
+                        url={
+                          window.origin +
+                          `/sharemap?file_id=${dataProduct.id}&symbology=${btoa(
+                            JSON.stringify(symbology)
+                          )}`
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
         {dataProduct.data_type === 'point_cloud' && (
@@ -183,23 +245,6 @@ export default function RasterSymbologyAccessControls({
               copiedText="Copied"
               url={window.origin + `/sharepotree?file_id=${dataProduct.id}`}
               title="Copy link that can be used to share the point cloud with potree"
-            />
-          </div>
-        )}
-        {symbology && (
-          <div className="col-span-2">
-            <CopyShortURLButton
-              copyText="Copy Short URL"
-              copiedText="Copied"
-              dataProduct={dataProduct}
-              project={project}
-              setStatus={setStatus}
-              url={
-                window.origin +
-                `/sharemap?file_id=${dataProduct.id}&symbology=${btoa(
-                  JSON.stringify(symbology)
-                )}`
-              }
             />
           </div>
         )}
