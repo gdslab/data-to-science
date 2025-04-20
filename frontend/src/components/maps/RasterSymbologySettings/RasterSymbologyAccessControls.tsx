@@ -4,7 +4,6 @@ import { ChevronDownIcon } from '@heroicons/react/24/outline';
 
 import Alert, { Status } from '../../Alert';
 import {
-  Button,
   CopyShortURLButton,
   CopyURLButton,
   DownloadQRButton,
