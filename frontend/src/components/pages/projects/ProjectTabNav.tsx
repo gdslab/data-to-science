@@ -4,6 +4,7 @@ import { useLocation, useParams } from 'react-router-dom';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 
 import { LinkButton } from '../../Buttons';
+import BreedBase from './breedBase/BreedBase';
 import { IForester } from './Project';
 import ProjectCampaigns from './ProjectCampaigns';
 import ProjectFlights from './ProjectFlights';
@@ -71,6 +72,11 @@ export default function ProjectTabNav() {
             </div>
           </Tab>
         )}
+        <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium">
+          <div className="flex items-center justify-center gap-2">
+            BreedBase
+          </div>
+        </Tab>
       </TabList>
       <hr className="my-4 border-gray-700" />
       <TabPanels>
@@ -90,6 +96,9 @@ export default function ProjectTabNav() {
             </LinkButton>
           </TabPanel>
         )}
+        <TabPanel>
+          <BreedBase />
+        </TabPanel>
       </TabPanels>
     </TabGroup>
   );
