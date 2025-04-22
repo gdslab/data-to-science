@@ -64,7 +64,7 @@ export default function SidebarPage() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-full overflow-hidden">
       {/* sidebar */}
       <div className="w-80 flex flex-col border-e bg-accent3 text-slate-200">
         <div className="flex flex-col h-full px-4 py-6">
@@ -83,21 +83,23 @@ export default function SidebarPage() {
               </div>
             </div>
             <hr className="mb-4 border-gray-300" />
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center">
-                <div className="relative rounded-full accent3 p-1 hover:text-slate-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
-                  <span className="absolute -inset-1.5" />
-                  <span className="sr-only">Team List</span>
-                  <UserGroupIcon className="h-6 w-6" aria-hidden="true" />
+            {filteredTeams.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center">
+                  <div className="relative rounded-full accent3 p-1 hover:text-slate-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
+                    <span className="absolute -inset-1.5" />
+                    <span className="sr-only">Team List</span>
+                    <UserGroupIcon className="h-6 w-6" aria-hidden="true" />
+                  </div>
+                  <span className="ml-4">Team List</span>
                 </div>
-                <span className="ml-4">Team List</span>
+                <div className="flex items-center">
+                  <TeamSearch value={searchValue} onChange={handleSearch} />
+                </div>
               </div>
-              <div className="flex items-center">
-                <TeamSearch value={searchValue} onChange={handleSearch} />
-              </div>
-            </div>
+            )}
           </div>
-          <div className="mt-4 flex-1 overflow-y-auto mb-8">
+          <div className="mt-4 flex-1 overflow-y-auto mb-4">
             <ul className="space-y-1">
               {filteredTeams.map((team) => (
                 <li key={team.id}>
