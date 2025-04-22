@@ -1,7 +1,7 @@
 import { isAxiosError } from 'axios';
 import { useState } from 'react';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
-import { useParams } from 'react-router-dom';
+import { useParams, useRevalidator } from 'react-router-dom';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 
@@ -35,6 +35,8 @@ export default function DataProductBandForm({
   const [status, setStatus] = useState<Status | null>(null);
 
   const { projectId, flightId } = useParams();
+  const revalidator = useRevalidator();
+
   const { control, formState, handleSubmit, register } =
     useForm<DataProductBandForm>({
       defaultValues: {
@@ -62,6 +64,7 @@ export default function DataProductBandForm({
           type: 'success',
           msg: 'Band descriptions updated successfully',
         });
+        revalidator.revalidate();
         setTimeout(() => setStatus(null), 3000);
       }
     } catch (error) {
