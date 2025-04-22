@@ -1,5 +1,5 @@
 # base image
-FROM python:3.11-slim AS python-base
+FROM python:3.12-slim AS python-base
 
 # build args
 ARG INSTALL_DEV=false
@@ -36,7 +36,7 @@ FROM condaforge/miniforge3:latest AS conda-env-base
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # env for conda environment file
-ENV CONDA_ENV_DEPS=environment.yml
+ENV CONDA_ENV_DEPS=environment.lock.yml
 
 WORKDIR /opt
 
@@ -60,15 +60,13 @@ RUN useradd d2s
 # copy over virtual environment
 COPY --from=conda-env-base --chown=d2s:d2s $CONDA_ENV_PATH $CONDA_ENV_PATH
 
-# update path to include venv bin
-ENV PATH="$CONDA_ENV_PATH/bin:$PATH"
-
-# entwine and proj libs
-ENV LD_LIBRARY_PATH=/usr/local/lib
-ENV PROJ_LIB="$CONDA_ENV_PATH/share/proj"
-
 # install curl and gdal
-RUN apt-get update && apt-get install -y curl gdal-bin rsync && rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+    && apt-get install -y curl gdal-bin rsync \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV PROJ_LIB="${CONDA_ENV_PATH}/share/proj"
+ENV PATH="${CONDA_ENV_PATH}/bin:${PATH}"
 
 # copy over application code
 COPY --chown=d2s:d2s . /app
