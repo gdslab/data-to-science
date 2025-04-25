@@ -395,7 +395,6 @@ dependencies:
   - ucc=1.3.0=had72a48_5
   - ucx=1.18.0=hfd9a62f_3
   - unicodedata2=16.0.0=py312h66e93f0_0
-  - untwine=1.3.2=hc8922a7_4
   - uriparser=0.9.8=hac33072_0
   - urllib3=2.4.0=pyhd8ed1ab_0
   - uvicorn=0.34.2=pyh31011fe_0
@@ -427,4 +426,3 @@ dependencies:
   - zstd=1.5.7=hb8e6e7a_2
   - pip:
       - pdal-plugins==1.6.2
-prefix: /home/benh/miniforge3/envs/d2s

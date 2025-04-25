@@ -360,7 +360,6 @@ dependencies:
   - tzcode
   - tzdata
   - unicodedata2
-  - untwine
   - uriparser
   - urllib3
   - uvicorn
