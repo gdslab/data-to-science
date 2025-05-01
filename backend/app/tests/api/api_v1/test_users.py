@@ -269,3 +269,55 @@ def test_read_user_extensions(
     assert isinstance(extensions, List)
     assert len(extensions) == 2
     assert "ext1" in extensions and "ext2" in extensions
+
+
+def test_read_user_extensions_for_user_with_both_user_and_team_image_processing_extensions_returns_only_user_extension(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    team = create_team(db)
+    create_team_member(db, email=current_user.email, team_id=team.id)
+    extension1 = create_extension(db, name="odm")
+    extension2 = create_extension(db, name="metashape")
+    create_user_extension(db, extension_id=extension1.id, user_id=current_user.id)
+    create_team_extension(db, extension_id=extension2.id, team_id=team.id)
+    response = client.get(f"{settings.API_V1_STR}/users/extensions")
+    assert response.status_code == status.HTTP_200_OK
+    extensions = response.json()
+    assert isinstance(extensions, List)
+    assert len(extensions) == 1
+    assert "odm" in extensions
+
+
+def test_read_user_extensions_for_user_with_odm_and_metashape_user_extensions_returns_only_metashape_extension(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    extension1 = create_extension(db, name="odm")
+    extension2 = create_extension(db, name="metashape")
+    create_user_extension(db, extension_id=extension1.id, user_id=current_user.id)
+    create_user_extension(db, extension_id=extension2.id, user_id=current_user.id)
+    response = client.get(f"{settings.API_V1_STR}/users/extensions")
+    assert response.status_code == status.HTTP_200_OK
+    extensions = response.json()
+    assert isinstance(extensions, List)
+    assert len(extensions) == 1
+    assert "metashape" in extensions
+
+
+def test_read_user_extensions_for_user_with_odm_and_metashape_team_extensions_returns_only_metashape_extension(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    team = create_team(db)
+    create_team_member(db, email=current_user.email, team_id=team.id)
+    extension1 = create_extension(db, name="odm")
+    extension2 = create_extension(db, name="metashape")
+    create_team_extension(db, extension_id=extension1.id, team_id=team.id)
+    create_team_extension(db, extension_id=extension2.id, team_id=team.id)
+    response = client.get(f"{settings.API_V1_STR}/users/extensions")
+    assert response.status_code == status.HTTP_200_OK
+    extensions = response.json()
+    assert isinstance(extensions, List)
+    assert len(extensions) == 1
+    assert "metashape" in extensions
