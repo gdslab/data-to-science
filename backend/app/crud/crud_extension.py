@@ -176,15 +176,41 @@ class CRUDExtension(CRUDBase[Extension, ExtensionCreate, ExtensionUpdate]):
             .join(TeamMember)
             .where(and_(TeamMember.member_id == user_id, TeamExtension.is_active))
         )
+
         with db as session:
+            # Get all extensions
             user_extensions = list(
                 session.scalars(select_user_extensions_statement).all()
             )
             team_extensions = list(
                 session.scalars(select_team_extesnions_statement).all()
             )
-            user_extensions.extend(team_extensions)
-            extension_names = list(set([ext.name for ext in user_extensions]))
+
+            # Get user's metashape and odm extensions
+            user_metashape = any(ext.name == "metashape" for ext in user_extensions)
+            user_odm = any(ext.name == "odm" for ext in user_extensions)
+
+            # Get team's metashape extension
+            team_metashape = any(ext.name == "metashape" for ext in team_extensions)
+
+            # Handle precedence rules
+            if user_metashape:
+                # If user has metashape, remove odm from both lists
+                user_extensions = [ext for ext in user_extensions if ext.name != "odm"]
+                team_extensions = [ext for ext in team_extensions if ext.name != "odm"]
+            elif user_odm:
+                # If user has odm but not metashape, remove metashape from team extensions
+                team_extensions = [
+                    ext for ext in team_extensions if ext.name != "metashape"
+                ]
+            elif team_metashape:
+                # If team has metashape and user has neither, remove odm from team extensions
+                team_extensions = [ext for ext in team_extensions if ext.name != "odm"]
+
+            # Combine and deduplicate extensions
+            all_extensions = user_extensions + team_extensions
+            extension_names = list(set(ext.name for ext in all_extensions))
+
             return extension_names
 
 
