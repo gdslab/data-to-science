@@ -1,12 +1,10 @@
-import json
 import logging
 from datetime import date, datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import List, Tuple
 
 import geopandas as gpd
-import numpy as np
 import rasterio
-from pydantic import AnyHttpUrl, UUID4
+from pydantic import UUID4
 from pystac import (
     Asset,
     Catalog,

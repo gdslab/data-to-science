@@ -341,7 +341,7 @@ def delete_project_like(
     return {"message": "Project unbookmarked"}
 
 
-def rollback_stac_publication(scm: STACCollectionManager, project_id: UUID) -> None:
+def rollback_stac_publication(scm: STACCollectionManager, project_id: UUID) -> Any:
     """Rollback the STAC publication if an error occurs.
 
     Args:
