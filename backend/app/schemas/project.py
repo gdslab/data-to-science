@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Dict, Literal, Optional
+from typing import Dict, Optional
 
 from geojson_pydantic import Feature, Polygon
 from pydantic import BaseModel, Field, field_validator, ValidationInfo, UUID4
@@ -65,7 +65,7 @@ class Project(ProjectInDBBase):
     field: Optional[Feature[Polygon, Dict]] = None
     flight_count: int = 0
     most_recent_flight: Optional[date] = None
-    role: Role
+    role: Role = Role.VIEWER
 
 
 # project boundary centroid

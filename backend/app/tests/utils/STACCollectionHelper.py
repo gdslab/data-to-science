@@ -1,10 +1,11 @@
-import requests
 from typing import List, Optional
 
 from pystac import Collection, Item
 from sqlalchemy.orm import Session
 
 from app.tests.utils.data_product import SampleDataProduct
+from app.tests.utils.flight import create_flight
+from app.tests.utils.project import create_project
 from app.utils.STACCollectionManager import STACCollectionManager
 from app.utils.STACGenerator import STACGenerator
 
@@ -12,19 +13,27 @@ from app.utils.STACGenerator import STACGenerator
 TEST_STAC_API_URL = "https://stac-dev.d2s.org"
 
 
-class TestSTACCollection:
+class STACCollectionHelper:
     def __init__(self, db: Session):
         self.db = db
-        self.data_product = SampleDataProduct(db=db)
-        self.project = self.data_product.project
 
+        # Set up project with two flights and two data products
+        project = create_project(db)
+        self.flight1 = create_flight(db, project_id=project.id)
+        self.flight2 = create_flight(db, project_id=project.id)
+        self.data_product1 = SampleDataProduct(db=db, flight=self.flight1).obj
+        self.data_product2 = SampleDataProduct(
+            db=db, flight=self.flight2, data_type="ortho"
+        ).obj
+
+        self.project_id = project.id
         self.collection_id: Optional[str] = None
         self.collection: Optional[Collection] = None
         self.items: Optional[List[Item]] = None
 
-    def create(self) -> None:
+    def create(self, publish: bool = True) -> None:
         # Create STAC Collection using STACGenerator
-        sg = STACGenerator(db=self.db, project_id=self.project.id)
+        sg = STACGenerator(db=self.db, project_id=self.project_id)
         self.collection = sg.collection
         self.items = sg.items
 
@@ -39,7 +48,8 @@ class TestSTACCollection:
             )
 
             # Publish collection to STAC API
-            scm.publish_to_catalog()
+            if publish:
+                scm.publish_to_catalog()
         else:
             raise ValueError("Failed to create STAC collection")
 

@@ -160,7 +160,10 @@ class STACGenerator:
         flight: models.Flight,
     ) -> Item:
         flight_properties = {
-            "Flight Details": {
+            "data_product_details": {
+                "data_type": data_product.data_type,
+            },
+            "flight_details": {
                 "flight_id": str(flight.id),
                 "acquisition_date": date_to_datetime(
                     flight.acquisition_date
@@ -170,7 +173,7 @@ class STACGenerator:
                 "side_overlap": flight.side_overlap,
                 "platform": flight.platform,
                 "sensor": flight.sensor,
-            }
+            },
         }
         if data_product.data_type == "point_cloud":
             # Create COPC item

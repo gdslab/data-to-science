@@ -202,7 +202,6 @@ export default function ProjectDetailEditForm({
               ]}
             />
           </Table>
-
           {projectRole === 'owner' ? (
             <div className="flex flex-row justify-end gap-4 mt-4">
               <LinkButton url={`/projects/${project.id}/access`} size="sm">
@@ -211,11 +210,11 @@ export default function ProjectDetailEditForm({
               <ProjectSTACPublishing
                 is_published={project.is_published}
                 projectId={project.id}
+                setStatus={setStatus}
               />
               <ProjectDeleteModal project={project} />
             </div>
           ) : null}
-
           {status && status.type && status.msg ? (
             <div className="mt-4">
               <Alert alertType={status.type}>{status.msg}</Alert>

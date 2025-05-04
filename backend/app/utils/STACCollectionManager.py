@@ -87,6 +87,75 @@ class STACCollectionManager:
         logger.info(f"Successfully fetched collection {self.collection_id}")
         return collection_d
 
+    def fetch_public_items(self) -> List[str]:
+        """Get STAC Items in public catalog.
+
+        Returns:
+            List[str]: List of published item ids associated with collection.
+        """
+        try:
+            # Connect to STAC API and retrieve items
+            logger.info(f"Connecting to STAC API at {self.api_url}")
+            client = Client.open(self.api_url)
+            logger.debug(f"Fetching items for collection {self.collection_id}")
+            items = client.get_collection(self.collection_id).get_items()
+
+            # Get item ids from items
+            item_ids = [item.id for item in items]
+
+            return item_ids
+        except Exception as e:
+            logger.error(
+                f"Failed to fetch items for collection {self.collection_id}: {str(e)}"
+            )
+            # Return empty list instead of None to avoid errors downstream
+            return []
+
+    def fetch_public_item(self, item_id: str) -> Optional[Dict]:
+        """Get STAC Item in public catalog.
+
+        Returns:
+            Optional[Dict]: Item as dict, or None if item not found.
+        """
+        try:
+            # Connect to STAC API and retrieve item
+            logger.info(f"Connecting to STAC API at {self.api_url}")
+            client = Client.open(self.api_url)
+            logger.debug(f"Fetching item {item_id}")
+            item = client.get_collection(self.collection_id).get_item(item_id)
+        except APIError as e:
+            # Check if this is a 404 error (item not found)
+            if hasattr(e, "status_code") and e.status_code == 404:
+                logger.info(
+                    f"Item {item_id} in collection {self.collection_id} not found in STAC catalog"
+                )
+                return None
+            else:
+                # This is a different API error (like connection issue)
+                logger.error(
+                    f"Failed to connect to STAC API or fetch item {item_id} in collection {self.collection_id}: {str(e)}"
+                )
+                raise
+
+        if not item:
+            logger.info(
+                f"Item {item_id} in collection {self.collection_id} not found in STAC catalog"
+            )
+            return None
+
+        try:
+            # Transform Item to dict
+            logger.debug(f"Transforming item {item_id} to dict")
+            item_d = item.to_dict()
+        except Exception as e:
+            logger.error(f"Failed to transform item {item_id} to dict: {str(e)}")
+            raise ValueError(f"Failed to transform item to dict: {str(e)}")
+
+        logger.info(
+            f"Successfully fetched item {item_id} in collection {self.collection_id}"
+        )
+        return item_d
+
     def compare_and_update(self) -> None:
         """Compare STAC Collection from public catalog with new STAC
         Collection. Update public catalog if there are changes.
@@ -174,18 +243,29 @@ class STACCollectionManager:
                 )
             logger.info(f"Successfully published collection {self.collection_id}")
 
+            # Get item ids from items
+            public_item_ids = self.fetch_public_items()
+
             # Prepare items data
             items_data = [item.to_dict() for item in self.items]
 
             # Publish items to catalog
             for item in items_data:
-                logger.info(f"Publishing item {item['id']} to catalog")
-                endpoint = f"{self.api_url}/collections/{self.collection_id}/items"
-
                 # Use FastAPI's jsonable_encoder to handle datetime objects
                 jsonable_item = jsonable_encoder(item)
-
-                response = requests.post(endpoint, headers=headers, json=jsonable_item)
+                if item["id"] not in public_item_ids:
+                    logger.info(f"Publishing item {item['id']} to catalog")
+                    endpoint = f"{self.api_url}/collections/{self.collection_id}/items"
+                    response = requests.post(
+                        endpoint, headers=headers, json=jsonable_item
+                    )
+                else:
+                    # Update item if it already exists
+                    logger.info(f"Updating item {item['id']} in catalog")
+                    endpoint = f"{self.api_url}/collections/{self.collection_id}/items/{item['id']}"
+                    response = requests.put(
+                        endpoint, headers=headers, json=jsonable_item
+                    )
 
                 if response.status_code not in (200, 201):
                     logger.error(
@@ -218,15 +298,20 @@ class STACCollectionManager:
             endpoint = f"{self.api_url}/collections/{self.collection_id}"
             response = requests.delete(endpoint, headers=headers)
 
-            if response.status_code != 204:
-                logger.error(
-                    f"Failed to remove collection {self.collection_id}: {response.status_code} {response.text}"
-                )
-                raise Exception(
-                    f"Failed to remove collection {self.collection_id}: {response.status_code} {response.text}"
-                )
-
-            logger.info(f"Successfully removed collection {self.collection_id}")
+            if response.status_code != 200:
+                if response.status_code == 404:
+                    logger.info(
+                        f"Collection {self.collection_id} not found in STAC catalog"
+                    )
+                else:
+                    logger.error(
+                        f"Failed to remove collection {self.collection_id}: {response.status_code} {response.text}"
+                    )
+                    raise Exception(
+                        f"Failed to remove collection {self.collection_id}: {response.status_code} {response.text}"
+                    )
+            else:
+                logger.info(f"Successfully removed collection {self.collection_id}")
         except Exception as e:
             logger.error(f"Failed to remove collection {self.collection_id}: {str(e)}")
             raise

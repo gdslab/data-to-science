@@ -1,4 +1,5 @@
 from datetime import date, datetime, timezone
+from uuid import UUID
 
 from fastapi import status
 from fastapi.encoders import jsonable_encoder
@@ -23,10 +24,16 @@ from app.tests.utils.project import (
     random_harvest_date,
 )
 from app.tests.utils.project_member import create_project_member
+from app.tests.utils.test_stac import (
+    stac_collection_published,
+    stac_collection_unpublished,
+)
+from app.tests.utils.STACCollectionHelper import STACCollectionHelper
 from app.tests.utils.team import create_team, random_team_name, random_team_description
 from app.tests.utils.team_member import create_team_member
 from app.tests.utils.user import create_user, update_regular_user_to_superuser
 from app.tests.utils.utils import get_geojson_feature_collection
+from app.utils.STACCollectionManager import STACCollectionManager
 
 API_URL = f"{settings.API_V1_STR}/projects"
 
@@ -865,3 +872,225 @@ def test_deactivate_project_deactivates_flights_and_data_products(
         deactivated_data_product = crud.data_product.get(db, id=data_product_id)
         assert deactivated_data_product is not None
         assert deactivated_data_product.is_active is False
+
+
+def test_publish_project_to_stac(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # Create project owned by current user with two flights and two data products
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    flight1 = create_flight(db, project_id=project.id)
+    flight2 = create_flight(db, project_id=project.id)
+    data_product1 = SampleDataProduct(db, project=project, flight=flight1)
+    data_product2 = SampleDataProduct(db, project=project, flight=flight2)
+
+    # Publish project to STAC
+    response = client.put(f"{API_URL}/{project.id}/publish-stac")
+
+    # Confirm that the project is published to STAC
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data is not None
+    assert response_data.get("id") == str(project.id)
+    assert response_data.get("is_published", False) is True
+
+    # Confirm that data product1 is now public
+    data_product1_file_permission = crud.file_permission.get_by_data_product(
+        db, file_id=data_product1.obj.id
+    )
+    assert data_product1_file_permission is not None
+    assert data_product1_file_permission.is_public is True
+
+    # Confirm that data product2 is now public
+    data_product2_file_permission = crud.file_permission.get_by_data_product(
+        db, file_id=data_product2.obj.id
+    )
+    assert data_product2_file_permission is not None
+    assert data_product2_file_permission.is_public is True
+
+
+def test_update_project_on_stac(
+    client: TestClient,
+    db: Session,
+    normal_user_access_token: str,
+    stac_collection_published: STACCollectionHelper,
+) -> None:
+    # Create project owned by current user with two flights and two data products
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    # Publish a project to STAC and get the project id (e.g. collection id)
+    project_id = stac_collection_published.collection_id
+    assert project_id
+
+    # Add current user as a project member with the owner role
+    create_project_member(
+        db, role=Role.OWNER, email=current_user.email, project_id=UUID(project_id)
+    )
+
+    # Get first data product from project
+    data_product = stac_collection_published.data_product1
+    original_data_type = data_product.data_type
+
+    # Update the data type for the data product
+    new_data_type = "new_data_type"
+    assert original_data_type != new_data_type
+    updated_data_product = crud.data_product.update_data_type(
+        db,
+        data_product_id=data_product.id,
+        new_data_type=new_data_type,
+    )
+    assert updated_data_product is not None
+    assert updated_data_product.data_type == new_data_type
+
+    # Update the project on STAC
+    response = client.put(f"{API_URL}/{project_id}/publish-stac")
+
+    # Confirm that the project is updated on STAC
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data is not None
+    assert response_data.get("id") == str(project_id)
+    assert response_data.get("is_published", False) is True
+
+    # Fetch the data product STAC Item from STAC API
+    stac_collection_manager = STACCollectionManager(collection_id=project_id)
+    stac_item = stac_collection_manager.fetch_public_item(str(data_product.id))
+    assert stac_item is not None
+    print(stac_item)
+    assert stac_item["properties"]["data_product_details"]["data_type"] == new_data_type
+
+
+def test_remove_project_from_stac(
+    client: TestClient,
+    db: Session,
+    normal_user_access_token: str,
+    stac_collection_published: STACCollectionHelper,
+) -> None:
+    # Create project owned by current user with two flights and two data products
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    # Publish a project to STAC and get the project id (e.g. collection id)
+    project_id = stac_collection_published.collection_id
+    assert project_id
+    # Add current user as a project member with the owner role
+    create_project_member(
+        db, role=Role.OWNER, email=current_user.email, project_id=UUID(project_id)
+    )
+
+    # Remove the project from STAC
+    response = client.delete(f"{API_URL}/{project_id}/delete-stac")
+
+    # Confirm that the project is removed from STAC
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data is not None
+    assert response_data.get("id") == str(project_id)
+    assert response_data.get("is_published", True) is False
+
+    # Fetch the collection from STAC API and confirm that it is not published
+    stac_collection_manager = STACCollectionManager(collection_id=project_id)
+    stac_collection = stac_collection_manager.fetch_public_collection()
+    assert stac_collection is None
+
+    # Get data products
+    data_product1 = stac_collection_published.data_product1
+    data_product2 = stac_collection_published.data_product2
+
+    # Confirm that data product1 is now private
+    data_product1_file_permission = crud.file_permission.get_by_data_product(
+        db, file_id=data_product1.id
+    )
+    assert data_product1_file_permission is not None
+    assert data_product1_file_permission.is_public is False
+
+    # Confirm that data product2 is now private
+    data_product2_file_permission = crud.file_permission.get_by_data_product(
+        db, file_id=data_product2.id
+    )
+    assert data_product2_file_permission is not None
+    assert data_product2_file_permission.is_public is False
+
+
+def test_publish_project_to_stac_without_project_member_owner_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # Create project not owned by current user with two flights and two data products
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project_owner = create_user(db)
+    project = create_project(db, owner_id=project_owner.id)
+    flight1 = create_flight(db, project_id=project.id)
+    flight2 = create_flight(db, project_id=project.id)
+    SampleDataProduct(db, project=project, flight=flight1)
+    SampleDataProduct(db, project=project, flight=flight2)
+
+    # Add current user as a project member with the manager role
+    create_project_member(
+        db, role=Role.MANAGER, email=current_user.email, project_id=project.id
+    )
+
+    # Publish project to STAC
+    response = client.put(f"{API_URL}/{project.id}/publish-stac")
+
+    # Confirm that the project is not published to STAC
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_update_project_on_stac_without_project_member_owner_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # Create project not owned by current user with two flights and two data products
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project_owner = create_user(db)
+    project = create_project(db, owner_id=project_owner.id)
+    flight1 = create_flight(db, project_id=project.id)
+    flight2 = create_flight(db, project_id=project.id)
+    SampleDataProduct(db, project=project, flight=flight1)
+    SampleDataProduct(db, project=project, flight=flight2)
+
+    # Add current user as a project member with the manager role
+    create_project_member(
+        db, role=Role.MANAGER, email=current_user.email, project_id=project.id
+    )
+
+    # Publish project to STAC
+    response = client.put(f"{API_URL}/{project.id}/publish-stac")
+
+    # Confirm that the project is not published to STAC
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_remove_project_from_stac_without_project_member_owner_role(
+    client: TestClient,
+    db: Session,
+    normal_user_access_token: str,
+) -> None:
+    # Create project not owned by current user with two flights and two data products
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project_owner = create_user(db)
+    project = create_project(db, owner_id=project_owner.id)
+    flight1 = create_flight(db, project_id=project.id)
+    flight2 = create_flight(db, project_id=project.id)
+    SampleDataProduct(db, project=project, flight=flight1)
+    SampleDataProduct(db, project=project, flight=flight2)
+
+    # Add current user as a project member with the manager role
+    create_project_member(
+        db, role=Role.MANAGER, email=current_user.email, project_id=project.id
+    )
+
+    # Remove project from STAC
+    response = client.delete(f"{API_URL}/{project.id}/delete-stac")
+
+    # Confirm that the project is not published to STAC
+    assert response.status_code == status.HTTP_403_FORBIDDEN
