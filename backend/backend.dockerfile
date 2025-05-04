@@ -1,5 +1,5 @@
 # base image
-FROM python:3.11-slim AS python-base
+FROM ubuntu:24.04 AS python-base
 
 # build args
 ARG INSTALL_DEV=false
@@ -29,6 +29,19 @@ ENV CELERY_BEAT_SCHEDULE=/var/run/celery/celerybeat-schedule
 # matplotlib tmp dir
 ENV MPLCONFIGDIR=/var/tmp/d2s
 
+# Install Python and other system dependencies
+RUN apt-get update && apt-get install -y \
+    python3.12 \
+    python3.12-dev \
+    curl \
+    build-essential \
+    cmake \
+    rsync \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create symbolic links for Python
+RUN ln -s /usr/bin/python3.12 /usr/bin/python
+
 # image for building python environment
 FROM condaforge/miniforge3:latest AS conda-env-base
 
@@ -36,7 +49,12 @@ FROM condaforge/miniforge3:latest AS conda-env-base
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # env for conda environment file
-ENV CONDA_ENV_DEPS=environment.yml
+ENV CONDA_ENV_DEPS=environment.lock.yml
+
+# install system dependencies
+RUN apt-get update \
+    && apt-get install -y curl build-essential cmake \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /opt
 
@@ -55,20 +73,35 @@ FROM python-base
 WORKDIR /app/
 
 # create d2s user
-RUN useradd d2s
+RUN userdel -r ubuntu 2>/dev/null || true \
+    && groupadd -g 1000 d2s \
+    && useradd -u 1000 -g 1000 d2s
 
 # copy over virtual environment
 COPY --from=conda-env-base --chown=d2s:d2s $CONDA_ENV_PATH $CONDA_ENV_PATH
 
-# update path to include venv bin
-ENV PATH="$CONDA_ENV_PATH/bin:$PATH"
+# set environment variables
+ENV GDAL_DATA="${CONDA_ENV_PATH}/share/gdal"
+ENV LD_LIBRARY_PATH="${CONDA_ENV_PATH}/lib"
+ENV PATH="${CONDA_ENV_PATH}/bin:${PATH}"
+ENV PROJ_LIB="${CONDA_ENV_PATH}/share/proj"
 
-# entwine and proj libs
-ENV LD_LIBRARY_PATH=/usr/local/lib
-ENV PROJ_LIB="$CONDA_ENV_PATH/share/proj"
+# install untwine v1.5.0 from source
+RUN mkdir -p /opt/untwine \
+    && cd /opt/untwine \
+    && curl -L https://github.com/hobuinc/untwine/releases/download/1.5.0/Untwine-1.5.0-src.tar.gz -o untwine-1.5.0.tar.gz \
+    && tar -xzf untwine-1.5.0.tar.gz \
+    && cd Untwine-1.5.0-src \
+    && mkdir build \
+    && cd build \
+    && cmake .. \
+    && make \
+    && make install \
+    && cd /opt \
+    && rm -rf /opt/untwine/untwine-1.5.0.tar.gz /opt/untwine/Untwine-1.5.0-src
 
-# install curl and gdal
-RUN apt-get update && apt-get install -y curl gdal-bin rsync && rm -rf /var/lib/apt/lists/*
+# update LD_LIBRARY_PATH to include untwine library
+ENV LD_LIBRARY_PATH="/opt/untwine/lib:${LD_LIBRARY_PATH}"
 
 # copy over application code
 COPY --chown=d2s:d2s . /app

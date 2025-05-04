@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import LoadingBars from '../../LoadingBars';
+import Filter from '../../Filter';
 import Pagination, { getPaginationResults } from '../../Pagination';
 import ProjectCard from './ProjectCard';
 import { useProjectContext } from './ProjectContext';
@@ -31,6 +32,7 @@ export interface Project {
   description: string;
   field: FieldGeoJSONFeature;
   flight_count: number;
+  liked: boolean;
   location_id: string;
   most_recent_flight: string;
   role: string;
@@ -40,17 +42,28 @@ export interface Project {
 
 export default function ProjectList({
   projects,
+  revalidate,
 }: {
   projects: Project[] | null;
+  revalidate: () => void;
 }) {
   const [currentPage, setCurrentPage] = useState(0);
   const [sortSelection, setSortSelection] = useState<SortSelection>(
     getSortPreferenceFromLocalStorage('sortPreference')
   );
+  const [openComponent, setOpenComponent] = useState<'filter' | 'sort' | null>(
+    null
+  );
 
   const [searchText, setSearchText] = useState('');
 
-  const { locationDispatch, project, projectDispatch } = useProjectContext();
+  const {
+    locationDispatch,
+    project,
+    projectDispatch,
+    projectFilterSelection,
+    projectFilterSelectionDispatch,
+  } = useProjectContext();
 
   const MAX_ITEMS = 12;
 
@@ -119,17 +132,45 @@ export default function ProjectList({
     );
   }
 
+  const filteredProjects = useMemo(() => {
+    if (!projects) {
+      return [];
+    }
+
+    let filteredProjects = projects;
+
+    if (projectFilterSelection.includes('myProjects')) {
+      filteredProjects = filteredProjects.filter(
+        (project) => project.role === 'owner'
+      );
+    }
+
+    if (projectFilterSelection.includes('likedProjects')) {
+      filteredProjects = filteredProjects.filter(
+        (project) => project.liked || false
+      );
+    }
+
+    return filteredProjects;
+  }, [projects, projectFilterSelection]);
+
   const filteredAndSortedProjects = useMemo(
     () =>
-      projects ? filterAndSlice(sortProjects(projects, sortSelection)) : [],
-    [currentPage, projects, searchText, sortSelection]
+      filteredProjects
+        ? filterAndSlice(sortProjects(filteredProjects, sortSelection))
+        : [],
+    [currentPage, filteredProjects, searchText, sortSelection]
   );
 
   const TOTAL_PAGES = Math.ceil(
-    projects ? filterSearch(projects).length / MAX_ITEMS : 0
+    filteredProjects ? filterSearch(filteredProjects).length / MAX_ITEMS : 0
   );
 
-  if (!projects) {
+  function updateProjectFilter(filterSelections: string[]) {
+    projectFilterSelectionDispatch({ type: 'set', payload: filterSelections });
+  }
+
+  if (!filteredProjects) {
     return (
       <div className="h-full w-full flex flex-col items-center justify-center">
         <span className="text-lg italic text-gray-700 font-semibold">
@@ -144,15 +185,15 @@ export default function ProjectList({
         {/* Project header and search */}
         <div className="flex flex-col gap-4">
           <ProjectListHeader />
-          {!projects ||
-            (projects.length === 0 && (
+          {!filteredProjects ||
+            (filteredProjects.length === 0 && (
               <p>
                 Use the above button to create your first project. Your projects
                 will appear in the space below.
               </p>
             ))}
         </div>
-        {projects && projects.length > 0 && (
+        {filteredProjects && filteredProjects.length > 0 && (
           <div>
             <div className="w-96 mb-4">
               <ProjectSearch
@@ -165,25 +206,45 @@ export default function ProjectList({
               {getPaginationResults(
                 currentPage,
                 MAX_ITEMS,
-                filterAndSlice(projects).length,
-                filterSearch(projects).length
+                filterAndSlice(filteredProjects).length,
+                filterSearch(filteredProjects).length
               )}
-              <Sort
-                sortSelection={sortSelection}
-                setSortSelection={setSortSelection}
-              />
+              <div className="flex flex-row gap-8">
+                <Filter
+                  categories={[
+                    { label: 'My projects', value: 'myProjects' },
+                    { label: 'Favorite projects', value: 'likedProjects' },
+                  ]}
+                  selectedCategory={projectFilterSelection}
+                  setSelectedCategory={updateProjectFilter}
+                  isOpen={openComponent === 'filter'}
+                  onOpen={() => setOpenComponent('filter')}
+                  onClose={() => setOpenComponent(null)}
+                />
+                <Sort
+                  sortSelection={sortSelection}
+                  setSortSelection={setSortSelection}
+                  isOpen={openComponent === 'sort'}
+                  onOpen={() => setOpenComponent('sort')}
+                  onClose={() => setOpenComponent(null)}
+                />
+              </div>
             </div>
           </div>
         )}
-        {projects && (
+        {filteredProjects && filteredProjects.length > 0 && (
           <div className="flex-1 flex flex-wrap gap-4 pb-24 overflow-y-auto">
             {filteredAndSortedProjects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
+              <ProjectCard
+                key={project.id}
+                project={project}
+                revalidate={revalidate}
+              />
             ))}
           </div>
         )}
         {/* Pagination */}
-        {projects && (
+        {filteredProjects && filteredProjects.length > 0 && (
           <div className="w-full bg-slate-200 fixed bottom-4 py-4 px-6">
             <div className="flex justify-center">
               <Pagination

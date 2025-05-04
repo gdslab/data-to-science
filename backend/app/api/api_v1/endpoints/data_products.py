@@ -2,14 +2,17 @@ import json
 import logging
 import os
 import shutil
+from io import BytesIO
 from pathlib import Path
 from typing import Annotated, Any, Optional, Sequence, Union
 from urllib.parse import urlparse, parse_qs
 from uuid import UUID, uuid4
 
-from geojson_pydantic import Feature, FeatureCollection, Polygon, MultiPolygon
+import segno
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
+from fastapi.responses import StreamingResponse
+from geojson_pydantic import Feature, FeatureCollection, Polygon, MultiPolygon
 from pydantic import BaseModel, UUID4
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -83,15 +86,17 @@ def update_feature_properties(
 def get_shortened_url(
     data_product_id: UUID,
     payload: UrlPayload,
+    qrcode: bool = False,
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
     flight: models.Flight = Depends(deps.can_read_flight),
-) -> ShortenedUrlApiResponse:
+) -> Union[ShortenedUrlApiResponse, Any]:
     """Generates shortened URL for share URL received in payload.
 
     Args:
         data_product_id (UUID): ID of data product being shared.
         payload (UrlPayload): Share URL to be shortened.
+        qrcode (bool, optional): Whether to generate a QR code. Defaults to False.
         current_user (models.User, optional): Current logged in user. Defaults to Depends(deps.get_current_approved_user).
         db (Session, optional): Database session. Defaults to Depends(deps.get_db).
         flight (models.Flight, optional): Flight associated with data product. Defaults to Depends(deps.can_read_flight).
@@ -135,7 +140,14 @@ def get_shortened_url(
         )
     url = f"{settings.SHORTENED_URL_BASE}/{shortened_url.short_id}"
 
-    return schemas.ShortenedUrlApiResponse(shortened_url=url)
+    if qrcode:
+        qrcode_image = segno.make(url)
+        buffer = BytesIO()
+        qrcode_image.save(buffer, kind="png", scale=10)
+        buffer.seek(0)
+        return StreamingResponse(buffer, media_type="image/png")
+    else:
+        return schemas.ShortenedUrlApiResponse(shortened_url=url)
 
 
 @router.get("/{data_product_id}", response_model=schemas.DataProduct)
@@ -410,6 +422,10 @@ class ProcessingRequest(BaseModel):
     ndvi: bool
     ndviNIR: int
     ndviRed: int
+    vari: bool
+    variRed: int
+    variGreen: int
+    variBlue: int
     zonal: bool
     zonal_layer_id: str
 
@@ -432,6 +448,7 @@ async def run_processing_tool(
     if (
         toolbox_in.exg is False
         and toolbox_in.ndvi is False
+        and toolbox_in.vari is False
         and toolbox_in.zonal is False
     ):
         raise HTTPException(
@@ -522,6 +539,42 @@ async def run_processing_tool(
                 current_user.id,
             )
         )
+
+    # vari
+    if toolbox_in.vari and not os.environ.get("RUNNING_TESTS") == "1":
+        # create new data product record
+        vari_data_product: models.DataProduct = crud.data_product.create_with_flight(
+            db,
+            schemas.DataProductCreate(
+                data_type="VARI",
+                filepath="null",
+                original_filename=data_product.original_filename,
+            ),
+            flight_id=flight.id,
+        )
+        # get path for vari tool output raster
+        data_product_dir = utils.get_data_product_dir(
+            str(project.id), str(flight.id), str(vari_data_product.id)
+        )
+        vari_filename: str = str(uuid4()) + ".tif"
+        out_raster = data_product_dir / vari_filename
+        # run vari tool in background
+        tool_params = {
+            "red_band_idx": toolbox_in.variRed,
+            "green_band_idx": toolbox_in.variGreen,
+            "blue_band_idx": toolbox_in.variBlue,
+        }
+        run_toolbox.apply_async(
+            args=(
+                "vari",
+                data_product.filepath,
+                str(out_raster),
+                tool_params,
+                vari_data_product.id,
+                current_user.id,
+            )
+        )
+
     # zonal
     if toolbox_in.zonal and not os.environ.get("RUNNING_TESTS") == "1":
         features = crud.vector_layer.get_vector_layer_by_id(

@@ -5,11 +5,10 @@ from tempfile import TemporaryDirectory
 import numpy as np
 import rasterio
 
-from app.utils.toolbox.exg import run
-
+from app.utils.toolbox.vari import run
 
 multispectral_dataset = Path("/app/app/tests/data/test_multispectral.tif")
-validation_dataset = Path("/app/app/tests/data/exg_validation.tif")
+validation_dataset = Path("/app/app/tests/data/vari_validation.tif")
 
 
 def compare_results(tool_results: str) -> None:
@@ -30,12 +29,12 @@ def compare_results(tool_results: str) -> None:
             assert np.isclose(validation_array, test_array, atol=0.00001).all()
 
 
-def test_results_from_exg_tool() -> None:
-    """Test results from exg script against validation dataset."""
+def test_results_from_vari_tool() -> None:
+    """Test results from vari script against validation dataset."""
     with TemporaryDirectory() as tmpdir:
         tmpdir = Path(tmpdir)
         in_raster = Path(tmpdir / multispectral_dataset.name)
-        out_raster = Path(tmpdir / "exg.tif")
+        out_raster = Path(tmpdir / "vari.tif")
         params = {"red_band_idx": 3, "green_band_idx": 2, "blue_band_idx": 1}
 
         shutil.copyfile(multispectral_dataset, in_raster)

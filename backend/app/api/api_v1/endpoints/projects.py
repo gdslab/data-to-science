@@ -58,7 +58,7 @@ def create_project(
         )
         if project_in_db["result"]:
             try:
-                features = [Feature(**project_in_db["result"].field)]
+                features: List[Feature] = [Feature(**project_in_db["result"].field)]
                 create_project_field_preview(project["result"].id, features)
             except Exception:
                 logger.exception("Unable to create preview map")
@@ -286,6 +286,59 @@ def deactivate_project(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to deactivate"
         )
     return deactivated_project
+
+
+@router.post("/{project_id}/like", status_code=status.HTTP_201_CREATED)
+def create_project_like(
+    project_id: UUID,
+    project: models.Project = Depends(deps.can_read_project),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Create project like."""
+    project_like_in_db = crud.project_like.get_by_project_id_and_user_id(
+        db, project_id=project_id, user_id=current_user.id
+    )
+    if project_like_in_db:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Project already bookmarked"
+        )
+    project_like_in = schemas.ProjectLikeCreate(
+        project_id=project_id,
+        user_id=current_user.id,
+    )
+    project_like = crud.project_like.create(db, obj_in=project_like_in)
+    if not project_like:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to create like"
+        )
+
+    return {"message": "Project bookmarked"}
+
+
+@router.delete("/{project_id}/like", status_code=status.HTTP_200_OK)
+def delete_project_like(
+    project_id: UUID,
+    project: models.Project = Depends(deps.can_read_project),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Delete project like."""
+    project_like_in_db = crud.project_like.get_by_project_id_and_user_id(
+        db, project_id=project_id, user_id=current_user.id
+    )
+    if not project_like_in_db:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to delete like"
+        )
+    project_like = crud.project_like.remove(db, id=project_like_in_db.id)
+
+    if not project_like:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to delete like"
+        )
+
+    return {"message": "Project unbookmarked"}
 
 
 def rollback_stac_publication(scm: STACCollectionManager, project_id: UUID) -> None:

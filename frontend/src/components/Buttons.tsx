@@ -294,3 +294,73 @@ export function CopyShortURLButton({
     </Button>
   );
 }
+
+type DownloadQRButton = {
+  closeShareButton: () => void;
+  dataProductId: string;
+  flightId: string;
+  projectId: string;
+  title: string;
+  titleOnSubmission: string;
+  setStatus: React.Dispatch<React.SetStateAction<Status | null>>;
+  setQrCode: React.Dispatch<React.SetStateAction<Blob | null>>;
+  url: string;
+};
+
+export function DownloadQRButton({
+  closeShareButton,
+  dataProductId,
+  flightId,
+  projectId,
+  setStatus,
+  setQrCode,
+  title,
+  titleOnSubmission,
+  url,
+}: DownloadQRButton) {
+  const [buttonText, setButtonText] = useState(title);
+  const [isFetchingShortUrl, setIsFetchingShortUrl] = useState(false);
+
+  const onShortenButtonClick = async () => {
+    setIsFetchingShortUrl(true);
+    setButtonText(titleOnSubmission);
+
+    try {
+      const endpoint = `/projects/${projectId}/flights/${flightId}/data_products/${dataProductId}/utils/shorten?qrcode=true`;
+      const response = await api.post(
+        endpoint,
+        { url: url },
+        { responseType: 'blob' }
+      );
+      if (response.data) {
+        closeShareButton();
+        setQrCode(response.data);
+        setTimeout(() => setButtonText(title), 2000);
+      } else {
+        setIsFetchingShortUrl(false);
+        setButtonText(title);
+        setStatus({
+          type: 'error',
+          msg: 'Failed to generate QR Code',
+        });
+      }
+    } catch (error) {
+      setIsFetchingShortUrl(false);
+      setButtonText(title);
+      setStatus({
+        type: 'error',
+        msg: 'Failed to generate QR Code',
+      });
+    }
+  };
+
+  return (
+    <Button
+      size="sm"
+      onClick={onShortenButtonClick}
+      title={title ? title : 'Click to download QR Code'}
+    >
+      {isFetchingShortUrl ? 'Generating....' : buttonText}
+    </Button>
+  );
+}

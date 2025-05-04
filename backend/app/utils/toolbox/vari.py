@@ -6,8 +6,8 @@ import rasterio
 
 
 def run(in_raster: str, out_raster: str, params: dict) -> str:
-    """Main function for creating Excess Green Index raster from input raster.
-    Output EXG raster will be stored as a GeoTIFF in the 'out_dir' location.
+    """Main function for creating VARI raster from input raster. Output
+    VARI raster will be stored as a GeoTIFF in the 'out_dir' location.
 
     Args:
         in_raster (str): Filepath for input raster.
@@ -27,10 +27,14 @@ def run(in_raster: str, out_raster: str, params: dict) -> str:
         # update source raster profile to single band and float32
         profile = src.profile
         profile.update(
-            dtype=rasterio.float32, count=1, compress="deflate", BIGTIFF="YES"
+            dtype=rasterio.float32,
+            count=1,
+            compress="deflate",
+            BIGTIFF="YES",
+            nodata=-9999.0,
         )
 
-        # use block windows to calculate exg and write to new file
+        # use block windows to calculate vari and write to new file
         with rasterio.open(out_raster, "w", **profile) as dst:
             # all bands must have same block window shapes
             assert len(set(src.block_shapes)) == 1
@@ -58,25 +62,24 @@ def run(in_raster: str, out_raster: str, params: dict) -> str:
                     params.get("blue_band_idx"), window=window
                 )
 
-                # calculate exg for current window
+                # calculate vari for current window
                 red = img[red_band_img_idx, :, :].astype(np.float32)
                 green = img[green_band_img_idx, :, :].astype(np.float32)
                 blue = img[blue_band_img_idx, :, :].astype(np.float32)
 
-                red_s = red / (red + green + blue)
-                green_s = green / (red + green + blue)
-                blue_s = blue / (red + green + blue)
+                vari = (green - red) / (green + red - blue)
 
-                exg = 2 * green_s - red_s - blue_s
+                # replace infinite values with NoData
+                vari[np.isinf(vari)] = profile["nodata"]
 
-                # write exg window to out raster
-                dst.write(exg, window=window, indexes=1)
+                # write vari window to out raster
+                dst.write(vari, window=window, indexes=1)
 
     return out_raster
 
 
 def validate_params(params: dict) -> None:
-    """Validate parameters for EXG tool.
+    """Validate parameters for VARI tool.
     Checks for missing parameters and incorrect data types.
 
     Args:
@@ -106,9 +109,9 @@ def validate_params(params: dict) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Creates a excess green index index data product."
+        description="Creates a vegetation index data product."
     )
-    parser.add_argument("in_raster", type=str, help="Path to multispectral raster file")
+    parser.add_argument("in_raster", type=str, help="Path to RGB raster file")
     parser.add_argument("out_raster", type=str, help="Full path for output raster")
     parser.add_argument("--red", type=int, help="Red band index")
     parser.add_argument("--green", type=int, help="Green band index")

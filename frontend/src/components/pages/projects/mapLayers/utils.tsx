@@ -197,7 +197,7 @@ export function download(
  * @param {Blob} blob Data to be downloaded.
  * @param {string} filename Filename for download.
  */
-function createAndClickDownloadLink(blob: Blob, filename: string) {
+export function createAndClickDownloadLink(blob: Blob, filename: string) {
   // create link to download geojson blob
   const href = URL.createObjectURL(blob);
   const link = document.createElement('a');

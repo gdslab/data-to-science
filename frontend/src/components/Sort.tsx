@@ -56,6 +56,12 @@ export function sortProjects(
   sortSelection: SortSelection
 ): Project[] {
   return projects.sort((a, b) => {
+    // First sort by liked status (liked projects come first)
+    if (a.liked !== b.liked) {
+      return a.liked ? -1 : 1;
+    }
+
+    // Then apply the selected sort
     if (sortSelection === 'atoz') {
       return sorter(a.title.toLowerCase(), b.title.toLowerCase());
     } else if (sortSelection === 'ztoa') {
@@ -75,9 +81,15 @@ export function sortProjects(
 export default function Sort({
   sortSelection,
   setSortSelection,
+  isOpen,
+  onOpen,
+  onClose,
 }: {
   sortSelection: SortSelection;
   setSortSelection: SetSortSelection;
+  isOpen: boolean;
+  onOpen: () => void;
+  onClose: () => void;
 }) {
   const categories = [
     {
@@ -107,10 +119,11 @@ export default function Sort({
       if (detailsRef.current && event.target) {
         if (!detailsRef.current.contains(event.target as HTMLElement)) {
           detailsRef.current.removeAttribute('open');
+          onClose();
         }
       }
     });
-  }, []);
+  }, [onClose]);
 
   /**
    * Returns label for the currently selected sort option.
@@ -152,6 +165,14 @@ export default function Sort({
         <details
           ref={detailsRef}
           className="group [&_summary::-webkit-details-marker]:hidden"
+          open={isOpen}
+          onToggle={(e) => {
+            if (e.currentTarget.open) {
+              onOpen();
+            } else {
+              onClose();
+            }
+          }}
         >
           <summary className="flex cursor-pointer items-center gap-2 border-b border-gray-400 pb-1 text-gray-900 transition hover:border-gray-600">
             <span className="w-36 text-sm font-medium">

@@ -11,6 +11,7 @@ from app.api.deps import get_current_user, get_current_approved_user
 from app.core.config import settings
 from app.schemas.data_product import DataProductCreate
 from app.schemas.project import ProjectUpdate
+from app.schemas.project_like import ProjectLikeCreate
 from app.schemas.project_member import ProjectMemberCreate
 from app.schemas.role import Role
 from app.schemas.team_member import TeamMemberUpdate
@@ -1094,3 +1095,56 @@ def test_remove_project_from_stac_without_project_member_owner_role(
 
     # Confirm that the project is not published to STAC
     assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_create_project_like(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    response = client.post(f"{API_URL}/{project.id}/like")
+    assert response.status_code == status.HTTP_201_CREATED
+    response_data = response.json()
+    assert response_data.get("message") == "Project bookmarked"
+
+
+def test_create_project_like_by_non_project_member(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    user = create_user(db)
+    project = create_project(db, owner_id=user.id)
+    response = client.post(f"{API_URL}/{project.id}/like")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_delete_project_like(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    # Create project like
+    project_like_in = ProjectLikeCreate(
+        project_id=project.id,
+        user_id=current_user.id,
+    )
+    project_like_in_db = crud.project_like.create(db, obj_in=project_like_in)
+    assert crud.project_like.get(db, id=project_like_in_db.id) is not None
+    # Delete project like
+    response = client.delete(f"{API_URL}/{project.id}/like")
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data.get("message") == "Project unbookmarked"
+    assert crud.project_like.get(db, id=project_like_in_db.id) is None
+
+
+def test_delete_project_like_by_non_project_member(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    user = create_user(db)
+    project = create_project(db, owner_id=user.id)
+    response = client.post(f"{API_URL}/{project.id}/like")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
