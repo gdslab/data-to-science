@@ -1,5 +1,6 @@
 import logging
 import os
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 import requests
@@ -9,7 +10,7 @@ from pystac_client import Client
 from pystac_client.exceptions import APIError
 
 from app.core.config import settings
-
+from app.schemas import STACReport, ItemStatus, STACError
 
 logger = logging.getLogger(__name__)
 
@@ -182,7 +183,7 @@ class STACCollectionManager:
             logger.error(f"Error during collection comparison: {str(e)}")
             raise
 
-    def publish_to_catalog(self) -> None:
+    def publish_to_catalog(self) -> STACReport:
         """Publish STAC Collection to public catalog."""
         try:
             logger.info(f"Publishing collection {self.collection_id} to catalog")
@@ -196,6 +197,15 @@ class STACCollectionManager:
                 logger.error("STAC_API_KEY environment variable is not set")
                 raise ValueError("STAC_API_KEY environment variable is not set")
 
+            # Create STAC report
+            stac_report = STACReport(
+                collection_id=self.collection_id,
+                items=[],
+                is_published=False,
+                collection_url=f"{self.api_url}/collections/{self.collection_id}",
+                error=None,
+            )
+
             # Check if collection already exists
             try:
                 existing_collection = self.fetch_public_collection()
@@ -204,9 +214,13 @@ class STACCollectionManager:
                 logger.error(
                     f"Cannot publish collection {self.collection_id}: API is unavailable"
                 )
-                raise ConnectionError(
-                    f"STAC API at {self.api_url} is unavailable: {str(e)}"
+                stac_report.error = STACError(
+                    code="API_UNAVAILABLE",
+                    message="STAC API is unavailable",
+                    timestamp=datetime.now(tz=timezone.utc),
+                    details={"error": str(e)},
                 )
+                return stac_report
 
             # Set up headers
             headers = {
@@ -238,9 +252,17 @@ class STACCollectionManager:
                 logger.error(
                     f"Failed to publish collection {self.collection_id}: {response.status_code} {response.text}"
                 )
-                raise Exception(
-                    f"Failed to publish collection {self.collection_id}: {response.status_code} {response.text}"
+                stac_report.error = STACError(
+                    code="PUBLISH_FAILED",
+                    message="Failed to publish collection",
+                    timestamp=datetime.now(tz=timezone.utc),
+                    details={"error": response.text},
                 )
+                return stac_report
+
+            # Update published status in report
+            stac_report.is_published = True
+
             logger.info(f"Successfully published collection {self.collection_id}")
 
             # Get item ids from items
@@ -251,6 +273,14 @@ class STACCollectionManager:
 
             # Publish items to catalog
             for item in items_data:
+                # Add item to report
+                item_status = ItemStatus(
+                    item_id=item["id"],
+                    is_published=False,
+                    item_url=f"{self.api_url}/collections/{self.collection_id}/items/{item['id']}",
+                    error=None,
+                )
+
                 # Use FastAPI's jsonable_encoder to handle datetime objects
                 jsonable_item = jsonable_encoder(item)
                 if item["id"] not in public_item_ids:
@@ -271,9 +301,23 @@ class STACCollectionManager:
                     logger.error(
                         f"Failed to publish item {item['id']}: {response.status_code} {response.text}"
                     )
-                    raise Exception(
-                        f"Failed to publish item {item['id']}: {response.status_code} {response.text}"
+                    item_status.error = STACError(
+                        code="PUBLISH_FAILED",
+                        message="Failed to publish item",
+                        timestamp=datetime.now(tz=timezone.utc),
+                        details={"error": response.text},
                     )
+                    stac_report.items.append(item_status)
+                    continue
+
+                # Update item status in report
+                item_status.is_published = True
+                stac_report.items.append(item_status)
+
+                logger.info(f"Successfully published item {item['id']}")
+
+            return stac_report
+
         except Exception as e:
             logger.error(f"Failed to publish collection {self.collection_id}: {str(e)}")
             raise

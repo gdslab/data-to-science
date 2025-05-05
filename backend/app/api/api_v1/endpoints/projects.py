@@ -120,7 +120,7 @@ def read_projects(
         return projects
 
 
-@router.put("/{project_id}/publish-stac", response_model=schemas.Project)
+@router.put("/{project_id}/publish-stac", response_model=schemas.STACReport)
 def publish_project_to_stac_catalog(
     project_id: UUID,
     project: models.Project = Depends(deps.can_read_write_delete_project),
@@ -154,7 +154,7 @@ def publish_project_to_stac_catalog(
         scm = STACCollectionManager(
             collection_id=str(project_id), collection=collection, items=items
         )
-        scm.publish_to_catalog()
+        stac_report = scm.publish_to_catalog()
     except Exception as e:
         logger.exception(
             f"Failed to publish collection and items to STAC catalog for project {project_id}: {str(e)}"
@@ -176,7 +176,7 @@ def publish_project_to_stac_catalog(
             detail="Failed to publish project to the catalog. Please try again later.",
         )
 
-    return updated_project
+    return stac_report
 
 
 @router.put("/{project_id}", response_model=schemas.Project)
