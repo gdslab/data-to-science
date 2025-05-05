@@ -1200,8 +1200,25 @@ def test_publish_project_to_stac(
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     assert response_data is not None
-    assert response_data.get("id") == str(project.id)
-    assert response_data.get("is_published", False) is True
+    # Check that the response is a STACReport
+    assert STACReport(**response_data)
+    response_data = STACReport(**response_data)
+    assert response_data.collection_id == project.id
+    assert response_data.is_published is True
+    assert response_data.collection_url is not None
+    assert len(response_data.items) == 2
+    # Get expected data product IDs
+    expected_ids = {str(data_product1.obj.id), str(data_product2.obj.id)}
+
+    # Verify all items are present and published
+    for item in response_data.items:
+        assert str(item.item_id) in expected_ids
+        assert item.is_published is True
+        # Remove the ID from the set to ensure we don't have duplicates
+        expected_ids.remove(str(item.item_id))
+
+    # Verify we've seen all expected IDs
+    assert len(expected_ids) == 0
 
     # Confirm that data product1 is now public
     data_product1_file_permission = crud.file_permission.get_by_data_product(
@@ -1259,14 +1276,30 @@ def test_update_project_on_stac(
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     assert response_data is not None
-    assert response_data.get("id") == str(project_id)
-    assert response_data.get("is_published", False) is True
+    assert STACReport(**response_data)
+    response_data = STACReport(**response_data)
+    assert str(response_data.collection_id) == project_id
+    assert response_data.is_published is True
+    assert response_data.collection_url is not None
+    assert len(response_data.items) == 2
+    # Get expected data product IDs
+    expected_ids = {
+        str(stac_collection_published.data_product1.id),
+        str(stac_collection_published.data_product2.id),
+    }
+
+    # Verify all items are present and published
+    for item in response_data.items:
+        assert str(item.item_id) in expected_ids
+        assert item.is_published is True
+        # Remove the ID from the set to ensure we don't have duplicates
+        expected_ids.remove(str(item.item_id))
 
     # Fetch the data product STAC Item from STAC API
     stac_collection_manager = STACCollectionManager(collection_id=project_id)
     stac_item = stac_collection_manager.fetch_public_item(str(data_product.id))
     assert stac_item is not None
-    print(stac_item)
+    # Check that the data type has been updated
     assert stac_item["properties"]["data_product_details"]["data_type"] == new_data_type
 
 
