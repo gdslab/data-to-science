@@ -48,8 +48,12 @@ FROM condaforge/miniforge3:latest AS conda-env-base
 # do not write byte code .pyc
 ENV PYTHONDONTWRITEBYTECODE=1
 
-# env for conda environment file
-ENV CONDA_ENV_DEPS=environment.lock.yml
+# set path to conda environment
+ENV CONDA_ENV_PATH=/opt/conda/envs/d2s
+
+# add conda lock file
+ENV CONDA_LOCK_FILE=linux-64.conda.lock
+ADD $CONDA_LOCK_FILE /locks/$CONDA_LOCK_FILE
 
 # install system dependencies
 RUN apt-get update \
@@ -58,11 +62,9 @@ RUN apt-get update \
 
 WORKDIR /opt
 
-COPY $CONDA_ENV_DEPS ./
-
 # allow installing dev dependencies to run tests
 ARG INSTALL_DEV=false
-RUN conda env create -f $CONDA_ENV_DEPS \
+RUN conda create -p $CONDA_ENV_PATH --copy --file /locks/$CONDA_LOCK_FILE \
     && conda run -n d2s pip install staticmap redis types-python-jose types-passlib \
     && conda clean -afy \
     && find /opt/conda/ -follow -type f -name '*.pyc' -delete
