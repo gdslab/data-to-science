@@ -361,6 +361,40 @@ def test_get_project_flight_count(db: Session) -> None:
     assert stored_project["result"].flight_count == 5
 
 
+def test_get_project_data_product_count(db: Session) -> None:
+    user = create_user(db)
+    project = create_project(db, owner_id=user.id)
+    flight = create_flight(db, project_id=project.id)
+    SampleDataProduct(db, data_type="ortho", flight=flight, project=project)
+    stored_project = crud.project.get_user_project(
+        db, project_id=project.id, user_id=user.id
+    )
+    assert stored_project and stored_project["result"]
+    assert stored_project["result"].data_product_count == 1
+
+
+def test_get_project_data_product_count_for_multiple_projects(db: Session) -> None:
+    user = create_user(db)
+    project1 = create_project(db, owner_id=user.id)
+    project2 = create_project(db, owner_id=user.id)
+    project3 = create_project(db, owner_id=user.id)
+    flight1 = create_flight(db, project_id=project1.id)
+    flight2 = create_flight(db, project_id=project2.id)
+    flight3 = create_flight(db, project_id=project3.id)
+    SampleDataProduct(db, data_type="ortho", flight=flight1, project=project1)
+    SampleDataProduct(db, data_type="ortho", flight=flight2, project=project2)
+    SampleDataProduct(db, data_type="ortho", flight=flight3, project=project3)
+    stored_projects = crud.project.get_user_projects(db, user=user)
+    assert len(stored_projects) == 3
+    for project in stored_projects:
+        if project.id == project1.id:
+            assert project.data_product_count == 1
+        elif project.id == project2.id:
+            assert project.data_product_count == 1
+        elif project.id == project3.id:
+            assert project.data_product_count == 1
+
+
 def test_get_project_flight_count_with_deactivated_flight(db: Session) -> None:
     user = create_user(db)
     project = create_project(db, owner_id=user.id)

@@ -63,6 +63,7 @@ class ProjectInDBBase(ProjectBase, from_attributes=True):
 class Project(ProjectInDBBase):
     # properties created after queries
     field: Optional[Feature[Polygon, Dict]] = None
+    data_product_count: int = 0
     flight_count: int = 0
     most_recent_flight: Optional[date] = None
     role: Role = Role.VIEWER
@@ -79,6 +80,7 @@ class Projects(BaseModel):
     id: UUID4
     centroid: Centroid
     description: str
+    data_product_count: int = 0
     flight_count: int = 0
     harvest_date: Optional[date] = None
     most_recent_flight: Optional[date] = None
