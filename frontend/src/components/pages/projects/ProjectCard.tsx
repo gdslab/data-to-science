@@ -1,9 +1,12 @@
 import { isAxiosError } from 'axios';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 
+import CountBadge from '../../CountBadge';
+import { GridIcon } from './GridIcon';
 import { Project } from './ProjectList';
 
 import api from '../../../api';
@@ -51,10 +54,10 @@ export default function ProjectCard({
     <Link
       key={project.id}
       to={`/projects/${project.id}`}
-      className="block h-36"
+      className="block h-40"
     >
       <article
-        className="relative flex items-center w-96 h-36 shadow bg-white transition hover:shadow-xl"
+        className="relative flex items-center w-96 h-40 shadow bg-white transition hover:shadow-xl"
         title={project.title}
       >
         <div className="absolute top-2 right-2">
@@ -104,13 +107,29 @@ export default function ProjectCard({
           </div>
         </div>
 
-        <div className="w-full md:w-64 border-s border-gray-900/10 p-2 sm:border-l-transparent sm:p-4">
-          <h3 className="font-bold uppercase text-gray-900 truncate">
-            {project.title}
-          </h3>
-          <p className="mt-2 line-clamp-3 text-sm/relaxed text-gray-700 text-wrap truncate">
-            {project.description}
-          </p>
+        <div className="w-full md:w-64 border-s border-gray-900/10 p-2 sm:border-l-transparent sm:p-4 flex flex-col h-full">
+          <div>
+            <h3 className="font-bold uppercase text-gray-900 max-w-48 truncate">
+              {project.title}
+            </h3>
+            <p className="line-clamp-2 text-sm/relaxed text-gray-700 text-wrap truncate">
+              {project.description}
+            </p>
+          </div>
+          <div className="mt-auto flex items-center justify-between">
+            <CountBadge
+              count={project.flight_count}
+              color="sky"
+              label="Flights"
+              icon={<PaperAirplaneIcon className="h-4 w-4 -ms-1 me-1.5" />}
+            />
+            <CountBadge
+              count={project.data_product_count}
+              color="green"
+              label="Data Products"
+              icon={<GridIcon className="h-4 w-4 -ms-1 me-1.5" />}
+            />
+          </div>
         </div>
       </article>
     </Link>

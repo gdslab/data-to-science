@@ -1,4 +1,3 @@
-import clsx from 'clsx';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -8,6 +7,7 @@ import {
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 
 import { Button } from '../../Buttons';
+import CountBadge from '../../CountBadge';
 import Filter from '../../Filter';
 import LayerCard from './LayerCard';
 import Pagination, { getPaginationResults } from '../../Pagination';
@@ -205,23 +205,14 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
                         </div>
                       </div>
                       <div className="flex items-center justify-center">
-                        <span
-                          className={clsx(
-                            'inline-flex items-center justify-center rounded-full text-sky-700 px-2.5 py-0.5',
-                            {
-                              'bg-sky-50': project.flight_count === 0,
-                              'bg-sky-100':
-                                project.flight_count > 0 &&
-                                project.flight_count < 5,
-                              'bg-sky-200': project.flight_count > 4,
-                            }
-                          )}
-                        >
-                          <PaperAirplaneIcon className="h-4 w-4 -ms-1 me-1.5" />
-                          <p className="whitespace-nowrap text-sm">
-                            {project.flight_count} Flights
-                          </p>
-                        </span>
+                        <CountBadge
+                          count={project.flight_count}
+                          color="sky"
+                          label="Flights"
+                          icon={
+                            <PaperAirplaneIcon className="h-4 w-4 -ms-1 me-1.5" />
+                          }
+                        />
                       </div>
                     </div>
                   </div>

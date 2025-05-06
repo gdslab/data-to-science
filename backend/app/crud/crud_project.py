@@ -176,6 +176,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 )
                 setattr(project[0], "field", field_dict)
                 flight_count = 0
+                data_product_count = 0
                 most_recent_flight = None
                 for flight in project[0].flights:
                     if flight.is_active:
@@ -185,8 +186,13 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                         else:
                             most_recent_flight = flight.acquisition_date
                         flight_count += 1
+                        for data_product in flight.data_products:
+                            if data_product.is_active:
+                                data_product_count += 1
+
                 setattr(project[0], "flight_count", flight_count)
                 setattr(project[0], "most_recent_flight", most_recent_flight)
+                setattr(project[0], "data_product_count", data_product_count)
                 return {
                     "response_code": status.HTTP_200_OK,
                     "message": "Project fetched successfully",
@@ -260,9 +266,10 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 setattr(project_obj, "centroid", Centroid(x=center_x, y=center_y))
                 setattr(project_obj, "liked", liked)
                 # count of project's active flights and most recent flight date
-                flight_count, most_recent_flight = (
+                flight_count, most_recent_flight, data_product_count = (
                     get_flight_count_and_most_recent_flight(project_obj)
                 )
+                setattr(project_obj, "data_product_count", data_product_count)
                 setattr(project_obj, "flight_count", flight_count)
                 setattr(project_obj, "most_recent_flight", most_recent_flight)
                 # add project member role
@@ -389,16 +396,17 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
 
 def get_flight_count_and_most_recent_flight(
     project: Project,
-) -> Tuple[int, Optional[date]]:
-    """Calculate total number of active flights in a project and
+) -> Tuple[int, Optional[date], int]:
+    """Calculate total number of active flights and data products in a project and
     find date for most recent flight.
 
     Args:
         project (Project): Project with flights.
 
     Returns:
-        Tuple[int, Optional[date]]: Number of flights in project and date of most recent flight.
+        Tuple[int, Optional[date], int]: Number of flights and data products in project and date of most recent flight.
     """
+    data_product_count = 0
     flight_count = 0
     most_recent_flight = None
 
@@ -411,7 +419,11 @@ def get_flight_count_and_most_recent_flight(
                 most_recent_flight = flight.acquisition_date
             flight_count += 1
 
-    return flight_count, most_recent_flight
+            for data_product in flight.data_products:
+                if data_product.is_active:
+                    data_product_count += 1
+
+    return flight_count, most_recent_flight, data_product_count
 
 
 def has_flight_with_raster_data_project(project: Project) -> bool:
