@@ -29,6 +29,7 @@ export interface Project {
     x: number;
     y: number;
   };
+  data_product_count: number;
   description: string;
   field: FieldGeoJSONFeature;
   flight_count: number;
