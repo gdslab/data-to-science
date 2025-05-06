@@ -17,7 +17,7 @@ import Sort, { sortProjects, SortSelection } from '../../Sort';
 import { useMapContext } from '../MapContext';
 
 import { getSortPreferenceFromLocalStorage } from '../../Sort';
-
+import { getCategory } from '../utils';
 const MAX_ITEMS = 10; // max number of projects per page in left-side pane
 
 type ProjectsPaneProps = {
@@ -212,6 +212,10 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
                           icon={
                             <PaperAirplaneIcon className="h-4 w-4 -ms-1 me-1.5" />
                           }
+                          rank={getCategory(
+                            project.data_product_count,
+                            'flight'
+                          )}
                         />
                       </div>
                     </div>

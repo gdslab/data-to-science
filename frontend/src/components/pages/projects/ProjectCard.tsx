@@ -10,6 +10,7 @@ import { GridIcon } from './GridIcon';
 import { Project } from './ProjectList';
 
 import api from '../../../api';
+import { getCategory } from '../../maps/utils';
 
 export default function ProjectCard({
   project,
@@ -122,12 +123,14 @@ export default function ProjectCard({
               color="sky"
               label="Flights"
               icon={<PaperAirplaneIcon className="h-4 w-4 -ms-1 me-1.5" />}
+              rank={getCategory(project.flight_count, 'flight')}
             />
             <CountBadge
               count={project.data_product_count}
               color="green"
               label="Data Products"
               icon={<GridIcon className="h-4 w-4 -ms-1 me-1.5" />}
+              rank={getCategory(project.data_product_count, 'data_product')}
             />
           </div>
         </div>

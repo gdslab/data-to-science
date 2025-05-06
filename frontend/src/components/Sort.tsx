@@ -3,7 +3,14 @@ import { Project } from './pages/projects/ProjectList';
 
 import { sorter } from './utils';
 
-export type SortSelection = 'atoz' | 'ztoa' | 'recent';
+export type SortSelection =
+  | 'atoz'
+  | 'ztoa'
+  | 'recent'
+  | 'mostflights'
+  | 'leastflights'
+  | 'mostdata'
+  | 'leastdata';
 type SetSortSelection = React.Dispatch<React.SetStateAction<SortSelection>>;
 
 /**
@@ -72,6 +79,14 @@ export function sortProjects(
         new Date(b.most_recent_flight),
         'desc'
       );
+    } else if (sortSelection === 'mostflights') {
+      return b.flight_count - a.flight_count;
+    } else if (sortSelection === 'leastflights') {
+      return a.flight_count - b.flight_count;
+    } else if (sortSelection === 'mostdata') {
+      return b.data_product_count - a.data_product_count;
+    } else if (sortSelection === 'leastdata') {
+      return a.data_product_count - b.data_product_count;
     } else {
       return sorter(a.title.toLowerCase(), b.title.toLowerCase());
     }
@@ -106,6 +121,26 @@ export default function Sort({
       key: 'recent',
       label: 'Recent Flights',
       title: 'Sort by projects with most recent flights',
+    },
+    {
+      key: 'mostflights',
+      label: 'Most Flights',
+      title: 'Sort by projects with most flights',
+    },
+    {
+      key: 'leastflights',
+      label: 'Least Flights',
+      title: 'Sort by projects with least flights',
+    },
+    {
+      key: 'mostdata',
+      label: 'Most Data',
+      title: 'Sort by projects with most data products',
+    },
+    {
+      key: 'leastdata',
+      label: 'Least Data',
+      title: 'Sort by projects with least data products',
     },
   ];
 
@@ -148,7 +183,11 @@ export default function Sort({
       if (
         event.target.value === 'atoz' ||
         event.target.value === 'ztoa' ||
-        event.target.value === 'recent'
+        event.target.value === 'recent' ||
+        event.target.value === 'mostflights' ||
+        event.target.value === 'leastflights' ||
+        event.target.value === 'mostdata' ||
+        event.target.value === 'leastdata'
       )
         setSortSelection(event.target.value);
       // update sort option in local storage
