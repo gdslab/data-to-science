@@ -15,9 +15,6 @@ export default function CountBadge({
   icon,
   rank,
 }: CountBadgeProps) {
-  console.log('count', count);
-  console.log('color', color);
-  console.log('rank', rank);
   return (
     <span
       className={clsx(
