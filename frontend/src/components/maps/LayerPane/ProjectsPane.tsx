@@ -130,49 +130,49 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
   }
 
   return (
-    <div className="h-[calc(100%_-_44px)] p-4">
-      <article className="h-full">
-        <div className="h-36">
-          <h1>Projects</h1>
-          {filteredProjects && filteredProjects.length > 0 && (
-            <div className="flex flex-col gap-2 my-2">
-              <ProjectSearch
-                searchText={searchText}
-                updateSearchText={updateSearchText}
-              />
-              <div className="flex justify-between">
-                {getPaginationResults(
-                  currentPage,
-                  MAX_ITEMS,
-                  currentPageProjects.length,
-                  filteredVisibleProjects.length
-                )}
-                <div className="flex flex-row gap-8">
-                  <Filter
-                    categories={[
-                      { label: 'My projects', value: 'myProjects' },
-                      { label: 'Favorite projects', value: 'likedProjects' },
-                    ]}
-                    selectedCategory={projectFilterSelection}
-                    setSelectedCategory={updateProjectFilter}
-                    isOpen={openComponent === 'filter'}
-                    onOpen={() => setOpenComponent('filter')}
-                    onClose={() => setOpenComponent(null)}
-                  />
-                  <Sort
-                    sortSelection={sortSelection}
-                    setSortSelection={setSortSelection}
-                    isOpen={openComponent === 'sort'}
-                    onOpen={() => setOpenComponent('sort')}
-                    onClose={() => setOpenComponent(null)}
-                  />
-                </div>
+    <div className="h-[calc(100%_-_44px)] p-4 flex flex-col">
+      <div className="h-36">
+        <h1>Projects</h1>
+        {filteredProjects && filteredProjects.length > 0 && (
+          <div className="flex flex-col gap-2 my-2">
+            <ProjectSearch
+              searchText={searchText}
+              updateSearchText={updateSearchText}
+            />
+            <div className="flex justify-between">
+              {getPaginationResults(
+                currentPage,
+                MAX_ITEMS,
+                currentPageProjects.length,
+                filteredVisibleProjects.length
+              )}
+              <div className="flex flex-row gap-8">
+                <Filter
+                  categories={[
+                    { label: 'My projects', value: 'myProjects' },
+                    { label: 'Favorite projects', value: 'likedProjects' },
+                  ]}
+                  selectedCategory={projectFilterSelection}
+                  setSelectedCategory={updateProjectFilter}
+                  isOpen={openComponent === 'filter'}
+                  onOpen={() => setOpenComponent('filter')}
+                  onClose={() => setOpenComponent(null)}
+                />
+                <Sort
+                  sortSelection={sortSelection}
+                  setSortSelection={setSortSelection}
+                  isOpen={openComponent === 'sort'}
+                  onOpen={() => setOpenComponent('sort')}
+                  onClose={() => setOpenComponent(null)}
+                />
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
+      </div>
+      <div className="flex-1 min-h-0">
         {filteredProjects && filteredProjects.length > 0 ? (
-          <ul className="h-[calc(100%_-_144px)] space-y-2 overflow-y-auto pb-16">
+          <ul className="h-full space-y-2 overflow-y-auto">
             {currentPageProjects.map((project) => (
               <li key={project.id}>
                 <LayerCard hover={true}>
@@ -236,8 +236,8 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
             </Link>
           </div>
         )}
-      </article>
-      <div className="w-[450px] bg-slate-100 fixed bottom-0 p-2.5">
+      </div>
+      <div className="bg-slate-100 p-2.5">
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
