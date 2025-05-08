@@ -150,14 +150,19 @@ export default function Sort({
    * Closes the Sort by ... details element on click outside element
    */
   useEffect(() => {
-    document.body.addEventListener('click', (event: MouseEvent) => {
-      if (detailsRef.current && event.target) {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (detailsRef.current?.open && event.target) {
         if (!detailsRef.current.contains(event.target as HTMLElement)) {
           detailsRef.current.removeAttribute('open');
           onClose();
         }
       }
-    });
+    };
+
+    window.addEventListener('click', handleClickOutside);
+    return () => {
+      window.removeEventListener('click', handleClickOutside);
+    };
   }, [onClose]);
 
   /**
