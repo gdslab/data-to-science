@@ -112,8 +112,14 @@ def send_admins_new_registree_notification(
         "<p>-D2S Support</p>"
     )
 
+    subject = "D2S New Account"
+
+    api_domain = settings.API_DOMAIN
+
+    subject = f"{subject} ({api_domain})"
+
     send_email(
-        subject="D2S New Account",
+        subject=subject,
         recipients=admin_emails,
         body=content,
         background_tasks=background_tasks,
@@ -159,6 +165,8 @@ def send_contact_email(
     else:
         content = f"<p>Message from anonymous D2S user:</p>"
 
+    api_domain = settings.API_DOMAIN
+
     content += f"<p>Topic:</p><blockquote>{topic}</blockquote>"
     content += f"<p>Subject:</p><blockquote>{subject}</blockquote>"
     content += f"<p>Message:</p><blockquote>{message}</blockquote>"
@@ -166,7 +174,7 @@ def send_contact_email(
     content += "<br /><br /><p>-D2S Support</p>"
 
     send_email(
-        subject=f"{topic}: D2S Contact Form Submission",
+        subject=f"{topic}: D2S Contact Form Submission ({api_domain})",
         recipients=[settings.MAIL_FROM],
         body=content,
         background_tasks=background_tasks,
