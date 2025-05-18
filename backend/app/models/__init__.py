@@ -1,4 +1,5 @@
 from .api_key import APIKey
+from .breedbase_connection import BreedbaseConnection
 from .campaign import Campaign
 from .data_product import DataProduct
 from .data_product_metadata import DataProductMetadata

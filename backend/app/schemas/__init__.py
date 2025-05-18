@@ -1,5 +1,10 @@
 from .admin import SiteStatistics, UserProjectStatistics
 from .api_key import APIKey, APIKeyCreate, APIKeyUpdate
+from .breedbase_connection import (
+    BreedbaseConnection,
+    BreedbaseConnectionCreate,
+    BreedbaseConnectionUpdate,
+)
 from .campaign import Campaign, CampaignCreate, CampaignUpdate, CampaignTemplateCreate
 from .data_product import (
     DataProduct,

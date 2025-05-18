@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.api.api_v1.endpoints import (
     admin,
     auth,
+    breedbase_connections,
     campaigns,
     contact,
     file_permission,
@@ -28,6 +29,11 @@ api_router = APIRouter()
 api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
 api_router.include_router(contact.router, prefix="/contact", tags=["contact"])
+api_router.include_router(
+    breedbase_connections.router,
+    prefix="/projects/{project_id}/breedbase-connections",
+    tags=["breedbase_connections"],
+)
 api_router.include_router(health.router, prefix="/health", tags=["health"])
 api_router.include_router(locations.router, prefix="/locations", tags=["locations"])
 api_router.include_router(public.router, prefix="/public", tags=["public"])
