@@ -20,7 +20,7 @@ export function getPaginationResults(
     // either 0 of 0 or 1 of 1 being displayed
     return (
       <span className="text-sm text-gray-600">
-        Viewing {numOfItemsOnPage} of {numOfItemsOnPage}
+        {numOfItemsOnPage} of {numOfItemsOnPage}
       </span>
     );
   } else {
@@ -31,7 +31,7 @@ export function getPaginationResults(
 
     return (
       <span className="text-sm text-gray-600">
-        Viewing {startItemOnPage}-{endItemOnPage} of {totalFilteredItems}
+        {startItemOnPage}-{endItemOnPage} of {totalFilteredItems}
       </span>
     );
   }
@@ -81,7 +81,8 @@ export default function Pagination({
                 className={clsx('block size-8 rounded text-center leading-8', {
                   'border border-gray-100 bg-white text-gray-900':
                     pageNumber !== currentPage,
-                  'border-accent2 bg-accent2 text-white': pageNumber === currentPage,
+                  'border-accent2 bg-accent2 text-white':
+                    pageNumber === currentPage,
                 })}
               >
                 {pageNumber + 1}

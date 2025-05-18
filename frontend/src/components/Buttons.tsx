@@ -14,7 +14,6 @@ import { Project } from './pages/projects/ProjectList';
 import { Status } from './Alert';
 
 import api from '../api';
-import { createAndClickDownloadLink } from './pages/projects/mapLayers/utils';
 
 interface Button extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
@@ -297,20 +296,24 @@ export function CopyShortURLButton({
 }
 
 type DownloadQRButton = {
+  closeShareButton: () => void;
   dataProductId: string;
   flightId: string;
   projectId: string;
   title: string;
   titleOnSubmission: string;
   setStatus: React.Dispatch<React.SetStateAction<Status | null>>;
+  setQrCode: React.Dispatch<React.SetStateAction<Blob | null>>;
   url: string;
 };
 
 export function DownloadQRButton({
+  closeShareButton,
   dataProductId,
   flightId,
   projectId,
   setStatus,
+  setQrCode,
   title,
   titleOnSubmission,
   url,
@@ -330,7 +333,8 @@ export function DownloadQRButton({
         { responseType: 'blob' }
       );
       if (response.data) {
-        createAndClickDownloadLink(response.data, 'qrcode.png');
+        closeShareButton();
+        setQrCode(response.data);
         setTimeout(() => setButtonText(title), 2000);
       } else {
         setIsFetchingShortUrl(false);

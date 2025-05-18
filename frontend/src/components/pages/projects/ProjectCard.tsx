@@ -1,12 +1,16 @@
 import { isAxiosError } from 'axios';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 
+import CountBadge from '../../CountBadge';
+import { GridIcon } from './GridIcon';
 import { Project } from './ProjectList';
 
 import api from '../../../api';
+import { getCategory } from '../../maps/utils';
 
 export default function ProjectCard({
   project,
@@ -51,10 +55,10 @@ export default function ProjectCard({
     <Link
       key={project.id}
       to={`/projects/${project.id}`}
-      className="block h-36"
+      className="block h-40"
     >
       <article
-        className="relative flex items-center w-96 h-36 shadow bg-white transition hover:shadow-xl"
+        className="relative flex items-center w-96 h-40 shadow bg-white transition hover:shadow-xl"
         title={project.title}
       >
         <div className="absolute top-2 right-2">
@@ -80,25 +84,55 @@ export default function ProjectCard({
             )}
           </button>
         </div>
-        <div className="w-32 h-full p-1.5 hidden sm:block">
-          <img
-            className="h-full object-cover"
-            src={`/static/projects/${project.id}/preview_map.png`}
-            alt={`Preview map for ${project.title}`}
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = '/static/projects/default-preview.png';
-            }}
-          />
+        <div className="w-32 h-full p-1.5 hidden sm:block bg-gray-100 relative">
+          <div className="absolute inset-0 flex items-center justify-center">
+            <img
+              className="h-full w-full object-cover"
+              src={`/static/projects/${project.id}/preview_map.png`}
+              alt="Preview not available"
+              onError={(e) => {
+                // If the image fails to load, display a placeholder icon
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const parent = target.parentElement;
+                if (parent) {
+                  const icon = document.createElement('div');
+                  icon.className =
+                    'flex items-center justify-center w-full h-full';
+                  icon.innerHTML =
+                    '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 text-gray-400"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>';
+                  parent.appendChild(icon);
+                }
+              }}
+            />
+          </div>
         </div>
 
-        <div className="w-full md:w-64 border-s border-gray-900/10 p-2 sm:border-l-transparent sm:p-4">
-          <h3 className="font-bold uppercase text-gray-900 truncate">
-            {project.title}
-          </h3>
-          <p className="mt-2 line-clamp-3 text-sm/relaxed text-gray-700 text-wrap truncate">
-            {project.description}
-          </p>
+        <div className="w-full md:w-64 border-s border-gray-900/10 p-2 sm:border-l-transparent sm:p-4 flex flex-col h-full">
+          <div>
+            <h3 className="font-bold uppercase text-gray-900 max-w-48 truncate">
+              {project.title}
+            </h3>
+            <p className="line-clamp-2 text-sm/relaxed text-gray-700 text-wrap truncate">
+              {project.description}
+            </p>
+          </div>
+          <div className="mt-auto flex items-center justify-between">
+            <CountBadge
+              count={project.flight_count}
+              color="sky"
+              label="Flights"
+              icon={<PaperAirplaneIcon className="h-4 w-4 -ms-1 me-1.5" />}
+              rank={getCategory(project.flight_count, 'flight')}
+            />
+            <CountBadge
+              count={project.data_product_count}
+              color="green"
+              label="Data Products"
+              icon={<GridIcon className="h-4 w-4 -ms-1 me-1.5" />}
+              rank={getCategory(project.data_product_count, 'data_product')}
+            />
+          </div>
         </div>
       </article>
     </Link>

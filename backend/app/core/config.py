@@ -2,7 +2,7 @@ import secrets
 from typing import Any
 
 from fastapi_mail.config import ConnectionConfig
-from pydantic import EmailStr, field_validator, ValidationInfo, PostgresDsn
+from pydantic import EmailStr, field_validator, ValidationInfo, PostgresDsn, SecretStr
 from pydantic_settings import BaseSettings
 
 
@@ -70,7 +70,7 @@ class Settings(BaseSettings):
     MAIL_ENABLED: int = 0
     MAIL_ADMINS: str = ""
     MAIL_USERNAME: EmailStr | str = ""
-    MAIL_PASSWORD: str = ""
+    MAIL_PASSWORD: SecretStr = SecretStr("")
     MAIL_FROM: EmailStr | str = ""
     MAIL_FROM_NAME: str = ""
     MAIL_PORT: int = 587
