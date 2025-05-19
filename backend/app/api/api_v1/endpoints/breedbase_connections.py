@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -8,6 +8,7 @@ from app import crud, models, schemas
 from app.api import deps
 
 router = APIRouter()
+trial_router = APIRouter()
 
 
 @router.post(
@@ -36,22 +37,27 @@ def read_breedbase_connection(
     return breedbase_connection
 
 
-@router.get("/trial/{trial_id}", response_model=schemas.BreedbaseConnection)
+@trial_router.get("/{trial_id}", response_model=List[schemas.BreedbaseConnection])
 def read_breedbase_connection_by_trial_id(
     trial_id: str,
     db: Session = Depends(deps.get_db),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+) -> Any:
+    breedbase_connections = crud.breedbase_connection.get_by_trial_id(
+        db, trial_id=trial_id, user_id=current_user.id
+    )
+    return breedbase_connections
+
+
+@router.get("", response_model=List[schemas.BreedbaseConnection])
+def read_breedbase_connections(
+    db: Session = Depends(deps.get_db),
     project: models.Project = Depends(deps.can_read_project),
 ) -> Any:
-    breedbase_connection = crud.breedbase_connection.get_by_trial_id(
-        db, trial_id=trial_id
+    breedbase_connections = crud.breedbase_connection.get_multi_by_project_id(
+        db, project_id=project.id
     )
-    if not breedbase_connection:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Breedbase connection not found",
-        )
-
-    return breedbase_connection
+    return breedbase_connections
 
 
 @router.put("/{breedbase_connection_id}", response_model=schemas.BreedbaseConnection)

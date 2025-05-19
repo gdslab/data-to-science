@@ -4,9 +4,11 @@ import Pagination from '../../../Pagination';
 
 export default function BreedBaseStudies({
   data,
+  onAddTrialId,
   onPageChange,
 }: {
   data: BreedBaseStudiesAPIResponse;
+  onAddTrialId: (trialId: string) => void;
   onPageChange: (page: number) => void;
 }) {
   return (
@@ -46,7 +48,10 @@ export default function BreedBaseStudies({
                   <td className="px-4 py-2">{study.trialDbId}</td>
                   <td className="px-4 py-2">{study.trialName}</td>
                   <td className="px-4 py-2">
-                    <button className="bg-accent2/90 text-white font-semibold px-2 py-1 rounded enabled:hover:bg-accent2 disabled:opacity-75 disabled:cursor-not-allowed">
+                    <button
+                      onClick={() => onAddTrialId(study.trialDbId)}
+                      className="bg-accent2/90 text-white font-semibold px-2 py-1 rounded enabled:hover:bg-accent2 disabled:opacity-75 disabled:cursor-not-allowed"
+                    >
                       Add
                     </button>
                   </td>

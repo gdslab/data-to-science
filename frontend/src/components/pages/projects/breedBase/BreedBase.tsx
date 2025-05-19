@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useForm, FormProvider, SubmitHandler } from 'react-hook-form';
 import { useParams } from 'react-router-dom';
 import { yupResolver } from '@hookform/resolvers/yup';
+import { XCircleIcon } from '@heroicons/react/24/solid';
 
 import BreedBaseStudies from './BreedBaseStudies';
 import { TextInput } from '../../../RHFInputs';
@@ -12,7 +13,7 @@ import {
   BreedBaseFormData,
   BreedBaseSearchAPIResponse,
   BreedBaseStudiesAPIResponse,
-  BreedBaseStudy,
+  BreedBaseTrial,
 } from './BreedBase.types';
 import defaultValues from './defaultValues';
 import validationSchema from './validationSchema';
@@ -28,9 +29,7 @@ const breedBaseApi = axios.create({
 export default function BreedBase() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [breedbaseStudies, setBreedbaseStudies] = useState<BreedBaseStudy[]>(
-    []
-  );
+  const [breedbaseTrials, setBreedbaseTrials] = useState<BreedBaseTrial[]>([]);
   const [searchResultsDbId, setSearchResultsDbId] = useState<string | null>(
     null
   );
@@ -40,13 +39,13 @@ export default function BreedBase() {
   const { projectId } = useParams();
 
   useEffect(() => {
-    const fetchBreedbaseStudies = async () => {
-      const response: AxiosResponse<BreedBaseStudy[]> = await api.get(
-        `/projects/${projectId}/breedbase`
+    const fetchBreedbaseTrials = async () => {
+      const response: AxiosResponse<BreedBaseTrial[]> = await api.get(
+        `/projects/${projectId}/breedbase-connections`
       );
-      setBreedbaseStudies(response.data);
+      setBreedbaseTrials(response.data);
     };
-    fetchBreedbaseStudies();
+    fetchBreedbaseTrials();
   }, []);
 
   const methods = useForm<BreedBaseFormData>({
@@ -132,6 +131,33 @@ export default function BreedBase() {
     }
   };
 
+  const onRemoveStudy = async (trialId: string) => {
+    try {
+      const response: AxiosResponse<BreedBaseTrial> = await api.delete(
+        `/projects/${projectId}/breedbase-connections/${trialId}`
+      );
+      if (response.status === 200) {
+        setBreedbaseTrials((prev) =>
+          prev.filter((trial) => trial.id !== trialId)
+        );
+      } else {
+        setError('Failed to remove trial');
+      }
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        setError(
+          `Server error: ${
+            err.response?.data?.message || err.response?.statusText
+          }`
+        );
+      } else if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unknown error occurred');
+      }
+    }
+  };
+
   const fetchPage = async (page: number) => {
     setError(null);
     setIsLoading(true);
@@ -153,7 +179,7 @@ export default function BreedBase() {
     }
   };
 
-  const onAddStudy = async (studyId: string) => {
+  const onAddStudy = async (trialId: string) => {
     const breedBaseBaseUrl = methods.getValues('breedbaseUrl');
     if (!breedBaseBaseUrl) {
       setError('BreedBase URL is required');
@@ -161,18 +187,18 @@ export default function BreedBase() {
     }
 
     try {
-      const response: AxiosResponse<BreedBaseStudy> = await api.post(
-        `/projects/${projectId}/breedbase`,
+      const response: AxiosResponse<BreedBaseTrial> = await api.post(
+        `/projects/${projectId}/breedbase-connections`,
         {
-          baseUrl: breedBaseBaseUrl,
-          studyDbId: studyId,
+          base_url: breedBaseBaseUrl,
+          trial_id: trialId,
         }
       );
-      if (response.status === 200) {
+      if (response.status === 201) {
         // Update the local state to include the new study
-        setBreedbaseStudies((prev) => [...prev, response.data]);
+        setBreedbaseTrials((prev) => [...prev, response.data]);
       } else {
-        setError('Failed to add study');
+        setError('Failed to add trial');
       }
     } catch (err) {
       if (axios.isAxiosError(err)) {
@@ -194,18 +220,41 @@ export default function BreedBase() {
       <h2>BreedBase Connection</h2>
       <div className="flex flex-col gap-2">
         <div className="flex flex-col">
-          <h3>Studies</h3>
+          <h3>Trials</h3>
           <p className="text-sm text-gray-500">
-            Studies associated with this project.
+            Trials associated with this project.
           </p>
         </div>
-        {breedbaseStudies.length > 0 ? (
-          breedbaseStudies.map((study) => (
-            <div key={study.id}>
-              <div>{study.studyDbId}</div>
-              <div>{study.baseUrl}</div>
+        {breedbaseTrials.length > 0 ? (
+          <>
+            <div className="max-w-xl grid grid-cols-[1fr_auto_auto] items-center gap-4 p-2 text-sm font-medium text-gray-500 border-b border-gray-200">
+              <div className="truncate">Base URL</div>
+              <div className="px-2">Trial ID</div>
+              <div className="w-5 flex justify-center">Remove</div>
             </div>
-          ))
+            {breedbaseTrials.map((trial) => (
+              <div
+                key={trial.id}
+                className="max-w-xl grid grid-cols-[1fr_auto_auto] items-center gap-4 p-2 hover:bg-gray-50 rounded"
+              >
+                <div className="text-gray-700 truncate" title={trial.base_url}>
+                  {trial.base_url}
+                </div>
+                <div className="text-gray-700 px-2" title={trial.trial_id}>
+                  {trial.trial_id}
+                </div>
+                <div className="w-5 flex justify-center">
+                  <button
+                    className="text-red-500 hover:text-red-700 transition-colors flex-shrink-0"
+                    onClick={() => onRemoveStudy(trial.id)}
+                    title="Remove connection"
+                  >
+                    <XCircleIcon className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </>
         ) : (
           <div>No studies found</div>
         )}
@@ -267,7 +316,11 @@ export default function BreedBase() {
         </form>
       </FormProvider>
       {studiesApiResponse && (
-        <BreedBaseStudies data={studiesApiResponse} onPageChange={fetchPage} />
+        <BreedBaseStudies
+          data={studiesApiResponse}
+          onAddTrialId={onAddStudy}
+          onPageChange={fetchPage}
+        />
       )}
     </div>
   );

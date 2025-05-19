@@ -32,15 +32,15 @@ interface BreedBaseFormData {
   trialNames?: string;
 }
 
-interface BreedBaseStudy {
+interface BreedBaseTrial {
   id: string;
-  baseUrl: string;
-  studyDbId: string;
+  base_url: string;
+  trial_id: string;
 }
 
 export type {
   BreedBaseSearchAPIResponse,
   BreedBaseStudiesAPIResponse,
   BreedBaseFormData,
-  BreedBaseStudy,
+  BreedBaseTrial,
 };

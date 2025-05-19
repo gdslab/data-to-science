@@ -34,6 +34,11 @@ api_router.include_router(
     prefix="/projects/{project_id}/breedbase-connections",
     tags=["breedbase_connections"],
 )
+api_router.include_router(
+    breedbase_connections.trial_router,
+    prefix="/breedbase-connections/trial",
+    tags=["breedbase_connections"],
+)
 api_router.include_router(health.router, prefix="/health", tags=["health"])
 api_router.include_router(locations.router, prefix="/locations", tags=["locations"])
 api_router.include_router(public.router, prefix="/public", tags=["public"])
