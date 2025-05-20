@@ -2,10 +2,9 @@ import { BreedBaseFormData } from './BreedBase.types';
 
 const defaultValues: BreedBaseFormData = {
   breedbaseUrl: '',
+  programName: '',
   studyDbIds: '',
   studyNames: '',
-  trialDbIds: '',
-  trialNames: '',
 };
 
 export default defaultValues;

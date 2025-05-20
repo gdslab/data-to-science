@@ -4,11 +4,11 @@ import Pagination from '../../../Pagination';
 
 export default function BreedBaseStudies({
   data,
-  onAddTrialId,
+  onAddStudyId,
   onPageChange,
 }: {
   data: BreedBaseStudiesAPIResponse;
-  onAddTrialId: (trialId: string) => void;
+  onAddStudyId: (studyId: string) => void;
   onPageChange: (page: number) => void;
 }) {
   return (
@@ -29,10 +29,10 @@ export default function BreedBaseStudies({
                   Study Description
                 </th>
                 <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
-                  Trial ID
+                  Program
                 </th>
                 <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
-                  Trial Name
+                  Seasons
                 </th>
                 <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
                   Actions
@@ -45,11 +45,13 @@ export default function BreedBaseStudies({
                   <td className="px-4 py-2">{study.studyDbId}</td>
                   <td className="px-4 py-2">{study.studyName}</td>
                   <td className="px-4 py-2">{study.studyDescription}</td>
-                  <td className="px-4 py-2">{study.trialDbId}</td>
-                  <td className="px-4 py-2">{study.trialName}</td>
+                  <td className="px-4 py-2">
+                    {study.additionalInfo?.programName}
+                  </td>
+                  <td className="px-4 py-2">{study.seasons.join(', ')}</td>
                   <td className="px-4 py-2">
                     <button
-                      onClick={() => onAddTrialId(study.trialDbId)}
+                      onClick={() => onAddStudyId(study.studyDbId)}
                       className="bg-accent2/90 text-white font-semibold px-2 py-1 rounded enabled:hover:bg-accent2 disabled:opacity-75 disabled:cursor-not-allowed"
                     >
                       Add

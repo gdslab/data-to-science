@@ -1,14 +1,10 @@
 import uuid
-from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String, Index
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base_class import Base
-
-if TYPE_CHECKING:
-    from .project import Project
 
 
 class BreedbaseConnection(Base):
@@ -19,7 +15,7 @@ class BreedbaseConnection(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     base_url: Mapped[str] = mapped_column(String(255), nullable=False)
-    trial_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    study_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
 
     # Foreign keys
     project_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("projects.id"))
@@ -27,5 +23,5 @@ class BreedbaseConnection(Base):
     def __repr__(self) -> str:
         return (
             f"BreedbaseConnection(id={self.id}, base_url={self.base_url}, "
-            f"trial_id={self.trial_id}, project_id={self.project_id})"
+            f"study_id={self.study_id}, project_id={self.project_id})"
         )

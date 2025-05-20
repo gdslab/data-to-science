@@ -24,7 +24,7 @@ def test_create_breedbase_connection(
     # Breedbase connection payload
     payload = {
         "base_url": "https://example.com",
-        "trial_id": "1234567890",
+        "study_id": "1234567890",
     }
 
     # Create breedbase connection
@@ -38,7 +38,7 @@ def test_create_breedbase_connection(
     response_data = response.json()
     assert response_data is not None
     assert response_data["project_id"] == str(project.id)
-    assert response_data["trial_id"] == payload["trial_id"]
+    assert response_data["study_id"] == payload["study_id"]
     assert response_data["base_url"] == payload["base_url"]
 
 
@@ -66,7 +66,7 @@ def test_read_breedbase_connection(
     response_data = response.json()
     assert response_data is not None
     assert response_data["project_id"] == str(project.id)
-    assert response_data["trial_id"] == breedbase_connection.trial_id
+    assert response_data["study_id"] == breedbase_connection.study_id
     assert response_data["base_url"] == breedbase_connection.base_url
 
 
@@ -105,7 +105,7 @@ def test_read_breedbase_connections(
     ]
 
 
-def test_get_breedbase_connection_by_trial_id(
+def test_get_breedbase_connection_by_study_id(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     # Get current user
@@ -119,9 +119,9 @@ def test_get_breedbase_connection_by_trial_id(
     # Create breedbase connection
     breedbase_connection = create_breedbase_connection(db, project.id)
 
-    # Get breedbase connection by trial ID
+    # Get breedbase connection by study ID
     response = client.get(
-        f"{settings.API_V1_STR}/breedbase-connections/trial/{breedbase_connection.trial_id}"
+        f"{settings.API_V1_STR}/breedbase-connections/study/{breedbase_connection.study_id}"
     )
 
     # Verify that the breedbase connection was read
@@ -130,18 +130,18 @@ def test_get_breedbase_connection_by_trial_id(
     assert response_data is not None
     assert len(response_data) == 1
     assert response_data[0]["project_id"] == str(project.id)
-    assert response_data[0]["trial_id"] == breedbase_connection.trial_id
+    assert response_data[0]["study_id"] == breedbase_connection.study_id
     assert response_data[0]["base_url"] == breedbase_connection.base_url
 
-    # Create another project with the same trial_id
+    # Create another project with the same study_id
     project2 = create_project(db, owner_id=current_user.id)
     breedbase_connection2 = create_breedbase_connection(
-        db, project2.id, trial_id=breedbase_connection.trial_id
+        db, project2.id, study_id=breedbase_connection.study_id
     )
 
-    # Get all breedbase connections for the trial_id
+    # Get all breedbase connections for the study_id
     response = client.get(
-        f"{settings.API_V1_STR}/breedbase-connections/trial/{breedbase_connection.trial_id}"
+        f"{settings.API_V1_STR}/breedbase-connections/study/{breedbase_connection.study_id}"
     )
 
     # Verify that both connections were read
@@ -154,7 +154,7 @@ def test_get_breedbase_connection_by_trial_id(
     assert str(breedbase_connection2.id) in connection_ids
 
 
-def test_get_breedbase_connection_by_trial_id_unauthorized(
+def test_get_breedbase_connection_by_study_id_unauthorized(
     client: TestClient, db: Session
 ) -> None:
     # Create project
@@ -163,16 +163,16 @@ def test_get_breedbase_connection_by_trial_id_unauthorized(
     # Create breedbase connection
     breedbase_connection = create_breedbase_connection(db, project.id)
 
-    # Try to get breedbase connection by trial ID without auth
+    # Try to get breedbase connection by study ID without auth
     response = client.get(
-        f"{settings.API_V1_STR}/breedbase-connections/trial/{breedbase_connection.trial_id}"
+        f"{settings.API_V1_STR}/breedbase-connections/study/{breedbase_connection.study_id}"
     )
 
     # Verify unauthorized response
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_get_breedbase_connection_by_trial_id_wrong_user(
+def test_get_breedbase_connection_by_study_id_wrong_user(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     # Create project with a different user
@@ -182,12 +182,12 @@ def test_get_breedbase_connection_by_trial_id_wrong_user(
     # Create breedbase connection
     breedbase_connection = create_breedbase_connection(db, project.id)
 
-    # Try to get breedbase connection by trial ID with different user
+    # Try to get breedbase connection by study ID with different user
     response = client.get(
-        f"{settings.API_V1_STR}/breedbase-connections/trial/{breedbase_connection.trial_id}",
+        f"{settings.API_V1_STR}/breedbase-connections/study/{breedbase_connection.study_id}",
     )
 
-    # Verify empty result (since user doesn't have access to any projects with this trial_id)
+    # Verify empty result (since user doesn't have access to any projects with this study_id)
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     assert response_data == []
@@ -207,12 +207,12 @@ def test_update_breedbase_connection(
     # Create breedbase connection
     breedbase_connection = create_breedbase_connection(db, project.id)
 
-    # New trial ID
-    new_trial_id = "1111111111"
+    # New study ID
+    new_study_id = "1111111111"
 
     # Update breedbase connection payload
     payload = {
-        "trial_id": new_trial_id,
+        "study_id": new_study_id,
     }
 
     # Update breedbase connection
@@ -226,7 +226,7 @@ def test_update_breedbase_connection(
     response_data = response.json()
     assert response_data is not None
     assert response_data["project_id"] == str(project.id)
-    assert response_data["trial_id"] == new_trial_id
+    assert response_data["study_id"] == new_study_id
     assert response_data["base_url"] == breedbase_connection.base_url
 
 
@@ -254,7 +254,7 @@ def test_remove_breedbase_connection(
     response_data = response.json()
     assert response_data is not None
     assert response_data["project_id"] == str(project.id)
-    assert response_data["trial_id"] == breedbase_connection.trial_id
+    assert response_data["study_id"] == breedbase_connection.study_id
     assert response_data["base_url"] == breedbase_connection.base_url
 
     # Get breedbase connection from database

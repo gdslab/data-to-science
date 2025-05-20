@@ -8,7 +8,7 @@ from app import crud, models, schemas
 from app.api import deps
 
 router = APIRouter()
-trial_router = APIRouter()
+study_router = APIRouter()
 
 
 @router.post(
@@ -37,14 +37,14 @@ def read_breedbase_connection(
     return breedbase_connection
 
 
-@trial_router.get("/{trial_id}", response_model=List[schemas.BreedbaseConnection])
-def read_breedbase_connection_by_trial_id(
-    trial_id: str,
+@study_router.get("/{study_id}", response_model=List[schemas.BreedbaseConnection])
+def read_breedbase_connection_by_study_id(
+    study_id: str,
     db: Session = Depends(deps.get_db),
     current_user: models.User = Depends(deps.get_current_approved_user),
 ) -> Any:
-    breedbase_connections = crud.breedbase_connection.get_by_trial_id(
-        db, trial_id=trial_id, user_id=current_user.id
+    breedbase_connections = crud.breedbase_connection.get_by_study_id(
+        db, study_id=study_id, user_id=current_user.id
     )
     return breedbase_connections
 

@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Sequence
+from typing import Sequence
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
@@ -33,8 +33,8 @@ class CRUDBreedbaseConnection(
 
         return db_obj
 
-    def get_by_trial_id(
-        self, db: Session, trial_id: str, user_id: UUID
+    def get_by_study_id(
+        self, db: Session, study_id: str, user_id: UUID
     ) -> Sequence[BreedbaseConnection]:
         """Get breedbase connections by trial ID, ensuring user has access to the projects."""
         statement = (
@@ -42,7 +42,7 @@ class CRUDBreedbaseConnection(
             .join(Project)
             .join(Project.members)
             .where(
-                BreedbaseConnection.trial_id == trial_id,
+                BreedbaseConnection.study_id == study_id,
                 Project.is_active,
                 Project.members.any(member_id=user_id),
             )

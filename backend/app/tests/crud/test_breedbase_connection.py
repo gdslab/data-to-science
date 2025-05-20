@@ -13,13 +13,13 @@ def test_create_breedbase_connection(db: Session) -> None:
     # Fake base URL
     base_url = "https://example.com"
 
-    # Fake trial ID
-    trial_id = "1234567890"
+    # Fake study ID
+    study_id = "1234567890"
 
     # Create breedbase connection schema
     breedbase_connection_in = schemas.BreedbaseConnectionCreate(
         base_url=base_url,
-        trial_id=trial_id,
+        study_id=study_id,
     )
 
     # Create breedbase connection in database
@@ -30,7 +30,7 @@ def test_create_breedbase_connection(db: Session) -> None:
     # Verify that the breedbase connection was created
     assert breedbase_connection is not None
     assert breedbase_connection.project_id == project.id
-    assert breedbase_connection.trial_id == trial_id
+    assert breedbase_connection.study_id == study_id
 
 
 def test_read_breedbase_connection(db: Session) -> None:
@@ -48,7 +48,7 @@ def test_read_breedbase_connection(db: Session) -> None:
     # Verify that the breedbase connection was created
     assert breedbase_connection_from_db is not None
     assert breedbase_connection_from_db.project_id == project.id
-    assert breedbase_connection_from_db.trial_id == breedbase_connection.trial_id
+    assert breedbase_connection_from_db.study_id == breedbase_connection.study_id
     assert breedbase_connection_from_db.base_url == breedbase_connection.base_url
 
 
@@ -77,7 +77,7 @@ def test_read_breedbase_connections(db: Session) -> None:
     ]
 
 
-def test_get_breedbase_connection_by_trial_id(db: Session) -> None:
+def test_get_breedbase_connection_by_study_id(db: Session) -> None:
     # Create project
     project = create_project(db)
 
@@ -85,25 +85,25 @@ def test_get_breedbase_connection_by_trial_id(db: Session) -> None:
     breedbase_connection = create_breedbase_connection(db, project.id)
 
     # Get breedbase connection from database
-    breedbase_connections = crud.breedbase_connection.get_by_trial_id(
-        db, trial_id=breedbase_connection.trial_id, user_id=project.owner_id
+    breedbase_connections = crud.breedbase_connection.get_by_study_id(
+        db, study_id=breedbase_connection.study_id, user_id=project.owner_id
     )
 
     # Verify that the breedbase connection was found
     assert len(breedbase_connections) == 1
     assert breedbase_connections[0].project_id == project.id
-    assert breedbase_connections[0].trial_id == breedbase_connection.trial_id
+    assert breedbase_connections[0].study_id == breedbase_connection.study_id
     assert breedbase_connections[0].base_url == breedbase_connection.base_url
 
-    # Create another project with the same trial_id
+    # Create another project with the same study_id
     project2 = create_project(db, owner_id=project.owner_id)
     breedbase_connection2 = create_breedbase_connection(
-        db, project2.id, trial_id=breedbase_connection.trial_id
+        db, project2.id, study_id=breedbase_connection.study_id
     )
 
-    # Get all breedbase connections for the trial_id
-    breedbase_connections = crud.breedbase_connection.get_by_trial_id(
-        db, trial_id=breedbase_connection.trial_id, user_id=project.owner_id
+    # Get all breedbase connections for the study_id
+    breedbase_connections = crud.breedbase_connection.get_by_study_id(
+        db, study_id=breedbase_connection.study_id, user_id=project.owner_id
     )
 
     # Verify that both connections were found
@@ -114,8 +114,8 @@ def test_get_breedbase_connection_by_trial_id(db: Session) -> None:
 
     # Test with a different user who doesn't have access
     other_user = create_user(db)
-    breedbase_connections = crud.breedbase_connection.get_by_trial_id(
-        db, trial_id=breedbase_connection.trial_id, user_id=other_user.id
+    breedbase_connections = crud.breedbase_connection.get_by_study_id(
+        db, study_id=breedbase_connection.study_id, user_id=other_user.id
     )
 
     # Verify that no connections are returned for user without access
@@ -129,13 +129,13 @@ def test_update_breedbase_connection(db: Session) -> None:
     # Create breedbase connection
     breedbase_connection = create_breedbase_connection(db, project.id)
 
-    # New trial ID
-    new_trial_id = "1111111111"
+    # New study ID
+    new_study_id = "1111111111"
 
     # Update breedbase connection
     breedbase_connection_in = schemas.BreedbaseConnectionUpdate(
         base_url="https://example.com",
-        trial_id=new_trial_id,
+        study_id=new_study_id,
     )
 
     # Update breedbase connection in database
@@ -146,7 +146,7 @@ def test_update_breedbase_connection(db: Session) -> None:
     # Verify that the breedbase connection was updated
     assert breedbase_connection_updated is not None
     assert breedbase_connection_updated.project_id == project.id
-    assert breedbase_connection_updated.trial_id == new_trial_id
+    assert breedbase_connection_updated.study_id == new_study_id
 
 
 def test_remove_breedbase_connection(db: Session) -> None:
@@ -165,7 +165,7 @@ def test_remove_breedbase_connection(db: Session) -> None:
     assert removed_breedbase_connection is not None
     assert removed_breedbase_connection.id == breedbase_connection.id
     assert removed_breedbase_connection.project_id == project.id
-    assert removed_breedbase_connection.trial_id == breedbase_connection.trial_id
+    assert removed_breedbase_connection.study_id == breedbase_connection.study_id
 
     # Get breedbase connection from database
     breedbase_connection_from_db = crud.breedbase_connection.get(

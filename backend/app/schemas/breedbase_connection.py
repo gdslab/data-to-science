@@ -6,13 +6,13 @@ from pydantic import BaseModel, ConfigDict, UUID4
 # Shared properties
 class BreedbaseConnectionBase(BaseModel):
     base_url: Optional[str] = None
-    trial_id: Optional[str] = None
+    study_id: Optional[str] = None
 
 
 # Properties required on creation
 class BreedbaseConnectionCreate(BreedbaseConnectionBase):
     base_url: str
-    trial_id: str
+    study_id: str
 
 
 # Properties required on update
@@ -26,7 +26,7 @@ class BreedbaseConnectionInDBBase(BreedbaseConnectionBase):
 
     id: UUID4
     base_url: str
-    trial_id: str
+    study_id: str
     project_id: UUID4
 
 

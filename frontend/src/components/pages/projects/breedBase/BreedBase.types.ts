@@ -15,32 +15,33 @@ interface BreedBaseStudiesAPIResponse {
   };
   result: {
     data: {
+      additionalInfo: {
+        programName?: string;
+      };
+      seasons: string[];
       studyDbId: string;
       studyName: string;
       studyDescription: string;
-      trialDbId: string;
-      trialName: string;
     }[];
   };
 }
 
 interface BreedBaseFormData {
   breedbaseUrl: string;
+  programName?: string;
   studyDbIds?: string;
   studyNames?: string;
-  trialDbIds?: string;
-  trialNames?: string;
 }
 
-interface BreedBaseTrial {
+interface BreedBaseStudy {
   id: string;
   base_url: string;
-  trial_id: string;
+  study_id: string;
 }
 
 export type {
   BreedBaseSearchAPIResponse,
   BreedBaseStudiesAPIResponse,
   BreedBaseFormData,
-  BreedBaseTrial,
+  BreedBaseStudy,
 };

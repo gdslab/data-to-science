@@ -35,8 +35,8 @@ api_router.include_router(
     tags=["breedbase_connections"],
 )
 api_router.include_router(
-    breedbase_connections.trial_router,
-    prefix="/breedbase-connections/trial",
+    breedbase_connections.study_router,
+    prefix="/breedbase-connections/study",
     tags=["breedbase_connections"],
 )
 api_router.include_router(health.router, prefix="/health", tags=["health"])
