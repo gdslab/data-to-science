@@ -1,5 +1,6 @@
 import io
 from pathlib import Path
+import tempfile
 
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
@@ -16,12 +17,16 @@ def create_preview_image(input_las_path: Path, preview_out_path: Path) -> None:
         preview_out_path (str): Path for final preview image.
     """
     input_las = lp.read(input_las_path)
-    # input_las = lp.read('/home/minyj/Downloads/231028_PUSH_L1_40m_5ms_lin_70.las')
 
     # reduce the number of points
-
-    idx_preview = (np.arange(len(input_las.x)) % 10) == 0
-    # '''may need to reduce number of point in consideration of computing resources capacity'''
+    num_point_for_preview = 10000000
+    # may need to reduce number of point in consideration of computing resources capacity
+    if len(input_las.points) > num_point_for_preview:
+        ratio = np.round(len(input_las.points) / num_point_for_preview)
+        idx_preview = (np.arange(len(input_las)) % ratio) == 0
+        del ratio
+    else:
+        idx_preview = (np.arange(len(input_las))) >= 0
 
     point_x = input_las.x[idx_preview]
     point_y = input_las.y[idx_preview]
@@ -61,18 +66,8 @@ def create_preview_image(input_las_path: Path, preview_out_path: Path) -> None:
         ax.set_xlim([x1, x2])
         ax.set_ylim([y1, y2])
         ax.set_zlim([z1, z2])
-        # ax.set_yticks([])
-        # ax.set_xticks([])
-        # ax.set_zticks([])
         ax.set_aspect("equal")
         plt.axis("off")
-        # ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-        # ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-        # ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-        # ax.xaxis._axinfo["grid"]['color'] = (1, 1, 1, 0)
-        # ax.yaxis._axinfo["grid"]['color'] = (1, 1, 1, 0)
-        # ax.zaxis._axinfo["grid"]['color'] = (1, 1, 1, 0)
-        # plt.show()
 
     else:
         table_color = point_z
@@ -82,45 +77,35 @@ def create_preview_image(input_las_path: Path, preview_out_path: Path) -> None:
         ax.set_xlim([x1, x2])
         ax.set_ylim([y1, y2])
         ax.set_zlim([z1, z2])
-        # ax.set_yticks([])
-        # ax.set_xticks([])
-        # ax.set_zticks([])
         ax.set_aspect("equal")
         plt.axis("off")
-        # ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-        # ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-        # ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-        # ax.xaxis._axinfo["grid"]['color'] = (1, 1, 1, 0)
-        # ax.yaxis._axinfo["grid"]['color'] = (1, 1, 1, 0)
-        # ax.zaxis._axinfo["grid"]['color'] = (1, 1, 1, 0)
-        # plt.show()
 
-    in_memory_buff = io.BytesIO()
-    plt.savefig(
-        in_memory_buff, transparent=True, bbox_inches="tight", dpi=200
-    )  # generate image with margins
-    in_memory_buff.seek(0)
-    plt.close("all")
+    # save initial figure to temporary file
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_file:
+        plt.savefig(
+            tmp_file.name, transparent=True, bbox_inches="tight", dpi=200
+        )  # generate image with margins
+        plt.close("all")
 
-    # region - Reduce the margins
+        # region - Reduce the margins
+        img = mpimg.imread(tmp_file.name)
+        tmp_x, tmp_y = np.where(img[:, :, -1] != 0)
+        x1 = np.min(tmp_x) - 10
+        x2 = np.max(tmp_x) + 10
+        if x1 < 0:
+            x1 = 0
+        if x2 > img.shape[1]:
+            x2 = img.shape[1]
+        y1 = np.min(tmp_y) - 10
+        y2 = np.max(tmp_y) + 10
+        if y1 < 0:
+            y1 = 0
+        if y2 > img.shape[0]:
+            y2 = img.shape[0]
+        plt.imshow(img[x1:x2, y1:y2, :])
+        plt.axis("off")
+        plt.savefig(preview_out_path, transparent=True, bbox_inches="tight", dpi=200)
+        plt.close("all")
 
-    img = mpimg.imread(in_memory_buff)
-    tmp_x, tmp_y = np.where(img[:, :, -1] != 0)
-    x1 = np.min(tmp_x) - 10
-    x2 = np.max(tmp_x) + 10
-    if x1 < 0:
-        x1 = 0
-    if x2 > img.shape[1]:
-        x2 = img.shape[1]
-    y1 = np.min(tmp_y) - 10
-    y2 = np.max(tmp_y) + 10
-    if y1 < 0:
-        y1 = 0
-    if y2 > img.shape[0]:
-        y2 = img.shape[0]
-    plt.imshow(img[x1:x2, y1:y2, :])
-    plt.axis("off")
-    plt.savefig(preview_out_path, transparent=True, bbox_inches="tight", dpi=200)
-    plt.close("all")
-
-    # endregion
+        # clean up the temporary file
+        Path(tmp_file.name).unlink()
