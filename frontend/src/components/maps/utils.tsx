@@ -475,6 +475,21 @@ function getCategory(
   }
 }
 
+/**
+ * Returns true if data product is an elevation data product.
+ * @param dataProduct Data product to check.
+ * @returns True if data product is an elevation data product, otherwise false.
+ */
+const isElevationDataProduct = (dataProduct: DataProduct): boolean => {
+  const dataType = dataProduct.data_type.toLowerCase();
+  return (
+    (dataType.includes('dem') ||
+      dataType.includes('dtm') ||
+      dataType.includes('dsm')) &&
+    isSingleBand(dataProduct)
+  );
+};
+
 export {
   areProjectsEqual,
   calculateBoundsFromGeoJSON,
@@ -487,6 +502,7 @@ export {
   getMultibandMinMax,
   getSingleBandMinMax,
   getTitilerQueryParams,
+  isElevationDataProduct,
   isSingleBand,
   mapApiResponseToLayers,
   setLocalStorageProjects,

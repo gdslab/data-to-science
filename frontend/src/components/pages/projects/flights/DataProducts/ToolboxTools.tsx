@@ -13,6 +13,8 @@ import { useProjectContext } from '../../ProjectContext';
 import { downloadFile as downloadCSV } from '../../fieldCampaigns/utils';
 import { download as downloadGeoJSON } from '../../mapLayers/utils';
 
+import { isElevationDataProduct } from '../../../../maps/utils';
+
 import api from '../../../../../api';
 
 const EXGBandSelection = ({ dataProduct }: { dataProduct: DataProduct }) => {
@@ -72,6 +74,60 @@ const VARIBandSelection = ({ dataProduct }: { dataProduct: DataProduct }) => {
   );
 };
 
+const PointCloudTools = ({
+  otherDataProducts,
+}: {
+  otherDataProducts: DataProduct[];
+}) => {
+  const { values } = useFormikContext<ToolboxFields>();
+  const elevationDataProducts = useMemo(
+    () => otherDataProducts.filter(isElevationDataProduct),
+    [otherDataProducts]
+  );
+  if (elevationDataProducts.length === 0)
+    return (
+      <div>
+        <HintText>
+          CHM unavailable. No DTM data products found. "DTM", "DSM", or "DEM"
+          must be in the name of the data product for it to be detected.
+        </HintText>
+      </div>
+    );
+  return (
+    <ul>
+      <li>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center">
+            <Field id="chm-checkbox" type="checkbox" name="chm" />
+            <label
+              htmlFor="chm-checkbox"
+              className="ms-2 text-sm font-medium text-gray-900"
+            >
+              Canopy Height Model (CHM)
+            </label>
+          </div>
+          {values.chm && (
+            <div>
+              <HintText>
+                The height data (e.g., DTM, DSM, DEM) for this process should
+                indicate terrain height.
+              </HintText>
+              <SelectField
+                name="dem_id"
+                label="DTM"
+                options={elevationDataProducts.map((dp) => ({
+                  label: dp.data_type.toUpperCase(),
+                  value: dp.id,
+                }))}
+              />
+            </div>
+          )}
+        </div>
+      </li>
+    </ul>
+  );
+};
+
 const RGBTools = ({ dataProduct }: { dataProduct: DataProduct }) => {
   const { values } = useFormikContext<ToolboxFields>();
 
@@ -126,27 +182,6 @@ const MultiSpectralTools = ({ dataProduct }: { dataProduct: DataProduct }) => {
             </label>
           </div>
           {values.ndvi ? <NDVIBandSelection dataProduct={dataProduct} /> : null}
-        </div>
-      </li>
-    </ul>
-  );
-};
-
-const LidarTools = () => {
-  return (
-    <ul>
-      <li>
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center">
-            <Field id="chm-checkbox" type="checkbox" name="chm" disabled />
-            <label
-              htmlFor="chm-checkbox"
-              className="ms-2 text-sm font-medium text-gray-900"
-            >
-              Canopy Height Model (CHM){' '}
-              <span className="italic">Coming soon</span>
-            </label>
-          </div>
         </div>
       </li>
     </ul>
@@ -303,4 +338,4 @@ const ZonalStatisticTools = ({ dataProductId }: { dataProductId: string }) => {
   );
 };
 
-export { RGBTools, MultiSpectralTools, LidarTools, ZonalStatisticTools };
+export { MultiSpectralTools, PointCloudTools, RGBTools, ZonalStatisticTools };
