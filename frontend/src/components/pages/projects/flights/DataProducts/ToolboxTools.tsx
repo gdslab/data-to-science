@@ -13,7 +13,7 @@ import { useProjectContext } from '../../ProjectContext';
 import { downloadFile as downloadCSV } from '../../fieldCampaigns/utils';
 import { download as downloadGeoJSON } from '../../mapLayers/utils';
 
-import { isSingleBand, isElevationDataProduct } from '../../../../maps/utils';
+import { isElevationDataProduct } from '../../../../maps/utils';
 
 import api from '../../../../../api';
 
@@ -87,7 +87,10 @@ const PointCloudTools = ({
   if (elevationDataProducts.length === 0)
     return (
       <div>
-        <HintText>CHM unavailable. No elevation data products found.</HintText>
+        <HintText>
+          CHM unavailable. No DTM data products found. "DTM", "DSM", or "DEM"
+          must be in the name of the data product for it to be detected.
+        </HintText>
       </div>
     );
   return (
@@ -105,9 +108,13 @@ const PointCloudTools = ({
           </div>
           {values.chm && (
             <div>
+              <HintText>
+                The height data (e.g., DTM, DSM, DEM) for this process should
+                indicate terrain height.
+              </HintText>
               <SelectField
                 name="dem_id"
-                label="DEM"
+                label="DTM"
                 options={elevationDataProducts.map((dp) => ({
                   label: dp.data_type.toUpperCase(),
                   value: dp.id,

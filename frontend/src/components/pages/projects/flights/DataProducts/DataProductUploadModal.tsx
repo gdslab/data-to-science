@@ -1,5 +1,10 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
-import { Dialog, DialogPanel, Transition, TransitionChild } from '@headlessui/react';
+import {
+  Dialog,
+  DialogPanel,
+  Transition,
+  TransitionChild,
+} from '@headlessui/react';
 
 import DataProductUpload from './DataProductUpload';
 import DataTypeRadioInput, { getAllowedFileTypes } from './DataTypeRadioInput';
@@ -19,7 +24,7 @@ export default function DataProductUploadModal({
 }: Props) {
   const cancelButtonRef = useRef(null);
   const [disabled, setDisabled] = useState(false);
-  const [dtype, setDtype] = useState('dsm');
+  const [dtype, setDtype] = useState('dem');
   const [dtypeOther, setDtypeOther] = useState('');
   const [dtypeOtherTouched, setDtypeOtherTouched] = useState(false);
   const [uploadHistory, setUploadHistory] = useState<string[]>([]);
@@ -27,7 +32,7 @@ export default function DataProductUploadModal({
   let uploadType: string | undefined = undefined;
 
   useEffect(() => {
-    setDtype('dsm');
+    setDtype('dem');
     setDtypeOther('');
     setDtypeOtherTouched(false);
     setUploadHistory([]);
@@ -50,7 +55,7 @@ export default function DataProductUploadModal({
     setUploadHistory(currentUploadHistory);
   }
 
-  if (['dsm', 'ortho', 'point_cloud', 'other'].indexOf(dtype) > -1) {
+  if (['dem', 'ortho', 'point_cloud', 'other'].indexOf(dtype) > -1) {
     uploadType = 'dataProduct';
   } else {
     throw new Error('unknown data type');
@@ -99,7 +104,8 @@ export default function DataProductUploadModal({
                   />
                 )}
 
-                {dtype !== 'other' || (dtype === 'other' && dtypeOther.length > 1) ? (
+                {dtype !== 'other' ||
+                (dtype === 'other' && dtypeOther.length > 1) ? (
                   <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                     <DataProductUpload
                       info={{
@@ -135,7 +141,8 @@ export default function DataProductUploadModal({
 
                 <div className="flex items-center justify-between bg-gray-50 px-4 py-3 sm:px-6">
                   <span>
-                    Click <strong>Done</strong> when you have finished uploading files.
+                    Click <strong>Done</strong> when you have finished uploading
+                    files.
                   </span>
                   <button
                     ref={cancelButtonRef}

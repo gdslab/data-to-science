@@ -17,9 +17,6 @@ if TYPE_CHECKING:
     from .vector_layer import VectorLayer
 
 
-DATA_TYPES = ["dsm", "point_cloud", "ortho", "other"]
-
-
 class DataProduct(Base):
     __tablename__ = "data_products"
     # columns
