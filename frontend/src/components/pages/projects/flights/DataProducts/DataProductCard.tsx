@@ -30,9 +30,11 @@ function ProgressBar() {
 
 export default function DataProductCard({
   dataProduct,
+  otherDataProducts,
   setStatus,
 }: {
   dataProduct: DataProduct;
+  otherDataProducts: DataProduct[];
   setStatus: React.Dispatch<React.SetStateAction<Status | null>>;
 }) {
   const [invalidPreviews, setInvalidPreviews] = useState<string[]>([]);
@@ -161,13 +163,15 @@ export default function DataProductCard({
                 <EyeIcon className="h-6 w-6" />
                 <span>View</span>
               </div>
-              {(projectRole === 'manager' || projectRole === 'owner') &&
-              dataProduct.data_type !== 'point_cloud' ? (
+              {(projectRole === 'manager' || projectRole === 'owner') && (
                 <>
                   <span className="text-slate-300">|</span>
-                  <ToolboxModal dataProduct={dataProduct} />
+                  <ToolboxModal
+                    dataProduct={dataProduct}
+                    otherDataProducts={otherDataProducts}
+                  />
                 </>
-              ) : null}
+              )}
             </div>
           </div>
         </Card>

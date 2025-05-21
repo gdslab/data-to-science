@@ -14,8 +14,13 @@ import { sorter } from '../../../../utils';
 import { AlertBar, Status } from '../../../../Alert';
 
 function getDataProductsDisplayModeFromLS(): 'table' | 'carousel' {
-  const dataProductsDisplayMode = localStorage.getItem('dataProductsDisplayMode');
-  if (dataProductsDisplayMode === 'table' || dataProductsDisplayMode === 'carousel') {
+  const dataProductsDisplayMode = localStorage.getItem(
+    'dataProductsDisplayMode'
+  );
+  if (
+    dataProductsDisplayMode === 'table' ||
+    dataProductsDisplayMode === 'carousel'
+  ) {
     return dataProductsDisplayMode;
   } else {
     localStorage.setItem('dataProductsDisplayMode', 'carousel');
@@ -45,8 +50,9 @@ export default function DataProducts({ data }: { data: DataProduct[] }) {
     },
     data &&
       data.length > 0 &&
-      data.filter(({ status }) => status === 'INPROGRESS' || status === 'WAITING')
-        .length > 0
+      data.filter(
+        ({ status }) => status === 'INPROGRESS' || status === 'WAITING'
+      ).length > 0
       ? 5000 // check every 5 seconds while processing job is active
       : 30000 // check every 30 seconds when no known jobs are active
   );
@@ -83,6 +89,9 @@ export default function DataProducts({ data }: { data: DataProduct[] }) {
             <DataProductCard
               key={dataProduct.id}
               dataProduct={dataProduct}
+              otherDataProducts={sortedDataProducts.filter(
+                (dp) => dp.id !== dataProduct.id
+              )}
               setStatus={setStatus}
             />
           ))}
