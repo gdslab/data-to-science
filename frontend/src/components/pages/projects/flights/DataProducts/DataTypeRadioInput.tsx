@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 
 export function getAllowedFileTypes(dtype: string): string[] {
-  if (dtype === 'dsm' || dtype === 'ortho' || dtype === 'other') {
+  if (dtype === 'dem' || dtype === 'ortho' || dtype === 'other') {
     return ['.tif'];
   } else if (dtype === 'point_cloud') {
     return ['.las', '.laz'];
@@ -47,16 +47,16 @@ export default function DataTypeRadioInput({
             <input
               type="radio"
               name="dtypeOption"
-              value="dsm"
-              id="dtypeDSM"
+              value="dem"
+              id="dtypeDEM"
               className="peer hidden"
-              checked={dtype === 'dsm'}
+              checked={dtype === 'dem'}
               onChange={changeDtype}
               disabled={disabled}
             />
 
             <label
-              htmlFor="dtypeDSM"
+              htmlFor="dtypeDEM"
               className={clsx(
                 'flex items-center justify-center rounded-md border border-gray-100 bg-white px-3 py-2 text-gray-900 hover:border-gray-200 peer-checked:border-accent3 peer-checked:bg-accent3 peer-checked:text-white',
                 {
@@ -65,7 +65,7 @@ export default function DataTypeRadioInput({
                 }
               )}
             >
-              <p className="text-sm font-medium">DSM</p>
+              <p className="text-sm font-medium">DEM</p>
             </label>
           </div>
 
