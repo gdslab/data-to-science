@@ -36,6 +36,7 @@
    - `MAIL_ADMINS`: List of emails that should receive admin mail separated by commas.
    - `MAIL_PORT`: SMTP server port.
    - `MAPBOX_ACCESS_TOKEN`: Mapbox access token for satellite imagery (optional).
+   - `POINT_LIMIT`: Total number of points to be used when generating point cloud preview images.
    - `SECRET_KEY`: Secret key for signing and verifying JWT tokens.
 
 5. Open `db.env` in a text editor. `POSTGRES_PASSWORD` should be assigned a secure password. The other environment variables can be left on the default values. `POSTGRES_HOST` should always be set to `db` unless the database service name is changed from `db` to another name in `docker-compose.yml`.

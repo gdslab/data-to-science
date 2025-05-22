@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     # Provide mapbox token for worldwide satellite imagery (optional)
     MAPBOX_ACCESS_TOKEN: str | None = None
 
+    # Point limit for point cloud preview generation
+    POINT_LIMIT: int = 1_000_000
+
     # Database
     POSTGRES_HOST: str = ""
     POSTGRES_USER: str = ""

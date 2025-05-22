@@ -4,6 +4,7 @@ from pathlib import Path
 
 from celery.utils.log import get_task_logger
 
+from app.core.config import settings
 from app.core.celery_app import celery_app
 from app.utils.job_manager import JobManager, Status
 from app.utils import gen_preview_from_pointcloud
@@ -30,9 +31,11 @@ def generate_point_cloud_preview(in_las_filepath: str) -> None:
             )
         else:
             preview_out_path = in_las.parents[1] / in_las.with_suffix(".png").name
+
         gen_preview_from_pointcloud.create_preview_image(
             input_las_path=in_las,
             preview_out_path=preview_out_path,
+            point_limit=settings.POINT_LIMIT,
         )
     except Exception:
         logger.exception("Unable to generate preview image for uploaded point cloud")
