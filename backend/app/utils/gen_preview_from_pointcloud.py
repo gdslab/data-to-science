@@ -2,15 +2,14 @@ import tempfile
 from pathlib import Path
 from typing import List, Optional
 
+import laspy as lp
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-
-import laspy as lp
 import numpy as np
 
 
 def create_preview_image(
-    input_las_path: Path, preview_out_path: Path, point_limit: int = 10_000_000
+    input_las_path: Path, preview_out_path: Path, point_limit: int = 1_000_000
 ) -> None:
     """Generates preview image for point cloud data products using streaming to reduce memory usage.
 
@@ -23,6 +22,10 @@ def create_preview_image(
     with lp.open(input_las_path) as input_las:
         # Get total number of points from header
         total_points = input_las.header.point_count
+
+        # Adjust point limit if it's larger than total points
+        if point_limit > total_points:
+            point_limit = total_points - 1
 
         # Calculate sampling ratio
         if total_points > point_limit:
@@ -62,29 +65,19 @@ def create_preview_image(
 
             chunk = input_las.read_points(current_chunk_size)
 
-            # Sample points based on ratio
-            if ratio > 1:
-                mask = (np.arange(len(chunk)) % ratio) == 0
-                point_x.extend(chunk.x[mask])
-                point_y.extend(chunk.y[mask])
-                point_z.extend(chunk.z[mask])
-                if exist_color and point_colors is not None:
-                    point_colors.extend(
-                        np.stack(
-                            (chunk.red[mask], chunk.green[mask], chunk.blue[mask]),
-                            axis=1,
-                        )
+            # Always use sampling logic, with ratio=1 when no sampling needed
+            mask = (np.arange(len(chunk)) % ratio) == 0
+            point_x.extend(chunk.x[mask])
+            point_y.extend(chunk.y[mask])
+            point_z.extend(chunk.z[mask])
+            if exist_color and point_colors is not None:
+                point_colors.extend(
+                    np.stack(
+                        (chunk.red[mask], chunk.green[mask], chunk.blue[mask]),
+                        axis=1,
                     )
-                points_collected += len(chunk.x[mask])
-            else:
-                point_x.extend(chunk.x)
-                point_y.extend(chunk.y)
-                point_z.extend(chunk.z)
-                if exist_color and point_colors is not None:
-                    point_colors.extend(
-                        np.stack((chunk.red, chunk.green, chunk.blue), axis=1)
-                    )
-                points_collected += len(chunk.x)
+                )
+            points_collected += len(chunk.x[mask])
 
         # Convert to numpy arrays
         point_x_array = np.array(point_x)
@@ -92,6 +85,9 @@ def create_preview_image(
         point_z_array = np.array(point_z)
         if exist_color:
             point_colors_array = np.array(point_colors)
+
+        if len(point_x_array) == 0:
+            raise ValueError("No points were collected from the point cloud file")
 
         # Calculate bounds
         x1 = float(np.min(point_x_array))
