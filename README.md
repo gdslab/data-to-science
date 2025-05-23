@@ -6,7 +6,7 @@
 
 [Docker Engine](https://docs.docker.com/engine/install/) and [Docker Compose](https://docs.docker.com/compose/install/) are required to run the container with the following instructions. If you can successfully run `docker --version` and `docker compose --version` from a terminal then you are ready to proceed to the next section.
 
-### Set up environment variables
+### Copy env example files
 
 1. Navigate to the root directory of the repository.
 2. Copy `backend.example.env` to a new file named `backend.env`.
@@ -17,11 +17,44 @@
    ```
    cp db.example.env db.env
    ```
-4. Open `backend.env` in a text editor. Below is a list of the environment variables can be set inside `backend.env`. You may use the default values or change them as needed.
+4. Copy `.env.example` to a new file named `.env`.
+   ```
+   cp .env.example .env
+   ```
+5. Copy `frontend.example.env` to a new file named `frontend.env`.
+   ```
+   cp frontend.example.env frontend.env
+   ```
+6. Copy `frontend/.env.example` to a new file named `frontend/.env`.
+   ```
+   cp frontend/.env.example frontend/.env
+   ```
+7. Copy `frontend/example.env.development` to a new file named `frontend/.env.development`.
+   ```
+   cp frontend/example.env.development frontend/.env.development
+   ```
+
+### Customize env files
+
+1. Open `.env`. Below is a list of the environment variables that can be set inside `.env`.
+
+   **Environment variables**
+
+- `EXTERNAL_STORAGE`: Location where raw image zips and metadata will be sent for image processing jobs. It could be a mapped network drive or any other directory on the host machine. This **should be left empty** unless you have set up an image processing backend that works with the D2S image processing Celery task.
+- `TUSD_STORAGE`: Location of Docker managed volume or mapped host directory that stores user uploaded datasets.
+- `TILE_SIGNING_SECRET`: Secret key used for creating a signed URL that the client can use to access raster tiles and MVT tiles.
+
+2. Open `frontend.env`. Below is a list of the environment variables that can be set inside `frontend.env`.
+
+   **Environment variables**
+
+- `VITE_MAPBOX_ACCESS_TOKEN`: Mapbox access token for satellite imagery (optional).
+
+3. Open `backend.env` in a text editor. Below is a list of the environment variables that can be set inside `backend.env`. You may use the default values or change them as needed.
 
    If you do not assign a value to `SECRET_KEY`, a key will automatically be generated for you. Note to developers: A new key will be generated each time a change is made to the backend code. This will invalidate any JWT tokens signed with the previous key. To prevent this behavior, set a secret key in `backend.env`.
 
-   Environment variables:
+   **Environment variables**
 
    - `API_PROJECT_NAME`: Name that will appear in the FastAPI docs.
    - `API_DOMAIN`: Domain used for accessing the application (e.g., http://localhost or https://customdomain)
@@ -39,23 +72,41 @@
    - `POINT_LIMIT`: Total number of points to be used when generating point cloud preview images.
    - `SECRET_KEY`: Secret key for signing and verifying JWT tokens.
 
-5. Open `db.env` in a text editor. `POSTGRES_PASSWORD` should be assigned a secure password. The other environment variables can be left on the default values. `POSTGRES_HOST` should always be set to `db` unless the database service name is changed from `db` to another name in `docker-compose.yml`.
+4. Open `db.env` in a text editor. `POSTGRES_PASSWORD` should be assigned a secure password. The other environment variables can be left on the default values. `POSTGRES_HOST` should always be set to `db` unless the database service name is changed from `db` to another name in `docker-compose.yml`.
 
    If you change `POSTGRES_USER` or `POSTGRES_HOST`, you must also update these environment variables with the new values under the `db` service in `docker-compose.yml`.
 
-6. Open `docker-compose.yml` in a text editor. Find the `environment` directive under the `frontend` service near the top of the file. Five frontend environment variables starting with `VITE_` are declared. You may use the default values or change them as needed.
+5. Open `frontend/.env` in a text editor. You may use the default values or change them as needed.
 
-   Environment variables:
+   **Environment variables**
 
-   - `VITE_API_V1_STR`: Path for API endpoints.
+   - `VITE_API_V1_STR`: Path for API endpoints. Do not change from default value unless the path has been changed in the backend.
    - `VITE_BRAND_FULL`: Full name of application.
    - `VITE_BRAND_SHORT`: Abbreviated name of application.
    - `VITE_BRAND_SLOGAN`: Slogan that appears on landing page.
-   - `VITE_DOMAIN`: Domain used for accessing application (e.g., http://localhost or https://customdomain)
+   - `VITE_TITLE`: Page title.
+   - `VITE_META_DESCRIPTION`: Description for search results and browser tabs.
+   - `VITE_META_OG_TITLE`: Title for social media shares.
+   - `VITE_META_OG_DESCRIPTION`: Description for social media shares.
+   - `VITE_META_OG_TYPE`: Content type (e.g., 'website', 'article').
+   - `VITE_SHOW_CONTACT_FORM`: Boolean (0 or 1) to indicate if Contact Form link should be shown (requires email service).
+
+6. Open `frontend/.env.development` in a text editor. You may use the default values or change them as needed.
+
+   Environment variables:
+
+   - `VITE_META_OG_IMAGE`: Preview image URL for social media shares.
+   - `VITE_META_OG_URL`: Hostname for site.
 
 ### Build Docker images for services
 
-1. In the root repository directory where `docker-compose.yml` is located, build Docker images for the frontend, backend, and proxy services with the following command:
+1. In the root repository directory where `docker-compose.example.yml` is located. Copy it to a new file named `docker-compose.yml`.
+
+   ```
+   cp docker-compose.example.yml docker-compose.yml
+   ```
+
+2. Build Docker images for the frontend, backend, and proxy services with the following command:
    ```
    docker compose build
    ```
