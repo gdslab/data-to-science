@@ -12,14 +12,16 @@ from pydantic import (
 )
 from pydantic_settings import BaseSettings
 
+from app.core.utils import generate_secret_key
+
 
 class Settings(BaseSettings):
     ENV: str = "dev"
     API_V1_STR: str = "/api/v1"
 
-    SECRET_KEY: str = ""
+    SECRET_KEY: str = generate_secret_key()
     # Secret key used for signing pg_tileserv and titiler requests
-    TILE_SIGNING_SECRET_KEY: str = ""
+    TILE_SIGNING_SECRET_KEY: str = generate_secret_key()
 
     @field_validator("SECRET_KEY", mode="before")
     def generate_secret_key(cls, v: str | None) -> str:

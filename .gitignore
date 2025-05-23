@@ -168,3 +168,7 @@ cython_debug/
 .vscode/
 
 !backend/potree/
+
+# Docker compose
+docker-compose.yml
+docker-compose.prod.yml
