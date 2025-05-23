@@ -1,8 +1,7 @@
 from datetime import datetime
 from typing import Dict, List, Optional
-from uuid import UUID
 
-from pydantic import AnyHttpUrl, BaseModel, Field
+from pydantic import AnyHttpUrl, BaseModel, Field, UUID4
 
 from app.utils.ImageProcessor import STACProperties
 
@@ -36,10 +35,10 @@ class DataProductUpdateDataType(BaseModel):
 
 # properties shared by models stored in DB
 class DataProductInDBBase(DataProductBase, from_attributes=True):
-    id: UUID
+    id: UUID4
     data_type: str
     filepath: str
-    flight_id: UUID
+    flight_id: UUID4
     original_filename: str
     stac_properties: Optional[STACProperties] = None
     user_style: Optional[dict] = None
@@ -80,3 +79,22 @@ class DataProductBand(BaseModel):
 
 class DataProductBands(BaseModel):
     bands: List[DataProductBand]
+
+
+# properties to receive via API on processing tool run
+class ProcessingRequest(BaseModel):
+    chm: bool
+    dem_id: Optional[UUID4] = None
+    exg: bool
+    exgRed: int
+    exgGreen: int
+    exgBlue: int
+    ndvi: bool
+    ndviNIR: int
+    ndviRed: int
+    vari: bool
+    variRed: int
+    variGreen: int
+    variBlue: int
+    zonal: bool
+    zonal_layer_id: str
