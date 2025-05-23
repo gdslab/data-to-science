@@ -60,6 +60,8 @@
    - `API_DOMAIN`: Domain used for accessing the application (e.g., http://localhost or https://customdomain)
    - `CELERY_BROKER_URL`: Address for local redis service.
    - `CELERY_RESULT_BACKEND`: Address for local redis service.
+   - `EXTENSIONS`: Can be used to enable extensions. Should be left blank typically.
+   - `EXTERNAL_STORAGE`: Internal mount point for external storage. Should be blank unless you have a binding mount for external storage.
    - `MAIL_ENABLED`: Enable SMTP email by changing value from 0 to 1.
    - `MAIL_SERVER`: SMTP server address.
    - `MAIL_USERNAME`: Username for SMTP server.
@@ -70,7 +72,13 @@
    - `MAIL_PORT`: SMTP server port.
    - `MAPBOX_ACCESS_TOKEN`: Mapbox access token for satellite imagery (optional).
    - `POINT_LIMIT`: Total number of points to be used when generating point cloud preview images.
+   - `RABBITMQ_HOST`: RabbitMQ hostname. Leave blank.
+   - `RABBITMQ_USERNAME`: RabbitMQ username. Leave blank.
+   - `RABBITMQ_PASSWORD`: RabbitMQ password. Leave blank.
    - `SECRET_KEY`: Secret key for signing and verifying JWT tokens.
+   - `HTTP_COOKIE_SECURE`: Set to 1 to only send cookies over HTTPS, 0 to allow HTTP.
+   - `LIMIT_MAX_REQUESTS`: Maximum number of requests a worker will handle before being restarted.
+   - `UVICORN_WORKERS`: Number of uvicorn workers.
 
 4. Open `db.env` in a text editor. `POSTGRES_PASSWORD` should be assigned a secure password. The other environment variables can be left on the default values. `POSTGRES_HOST` should always be set to `db` unless the database service name is changed from `db` to another name in `docker-compose.yml`.
 
