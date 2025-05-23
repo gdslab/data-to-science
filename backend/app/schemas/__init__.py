@@ -12,6 +12,7 @@ from .data_product import (
     DataProductCreate,
     DataProductUpdate,
     DataProductUpdateDataType,
+    ProcessingRequest,
 )
 from .data_product_metadata import (
     DataProductMetadata,

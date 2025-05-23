@@ -413,28 +413,10 @@ def process_data_product_from_external_storage(
     crud.user.remove_single_use_token(db, db_obj=token_db_obj)
 
 
-class ProcessingRequest(BaseModel):
-    chm: bool
-    dem_id: UUID4
-    exg: bool
-    exgRed: int
-    exgGreen: int
-    exgBlue: int
-    ndvi: bool
-    ndviNIR: int
-    ndviRed: int
-    vari: bool
-    variRed: int
-    variGreen: int
-    variBlue: int
-    zonal: bool
-    zonal_layer_id: str
-
-
 @router.post("/{data_product_id}/tools", status_code=status.HTTP_202_ACCEPTED)
 async def run_processing_tool(
     data_product_id: UUID,
-    toolbox_in: ProcessingRequest,
+    toolbox_in: schemas.ProcessingRequest,
     current_user: models.User = Depends(deps.get_current_approved_user),
     project: models.Project = Depends(deps.can_read_write_project),
     flight: models.Flight = Depends(deps.can_read_write_flight),
