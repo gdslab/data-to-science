@@ -3,8 +3,9 @@ import logging
 import os
 import sys
 from functools import lru_cache
-from io import TextIOBase
 from http import HTTPStatus
+from io import TextIOBase
+from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -88,8 +89,11 @@ class CustomJsonFormatter(logging.Formatter):
             )
 
 
-@lru_cache
 def get_logger_config(nofile: bool = False) -> LoggerConfig:
+    # Get the current log directory from settings
+    current_logdir = Path(settings.API_LOGDIR)
+    current_logfile = current_logdir / "backend.log"
+
     # stdout handler
     stdout_handler_format = logging.Formatter(LOGGER_FORMAT, datefmt=DATE_FORMAT)
     stdout_handler = logging.StreamHandler(sys.stdout)
@@ -100,8 +104,14 @@ def get_logger_config(nofile: bool = False) -> LoggerConfig:
         stdout_handler
     ]
     if not nofile:
-        # file handler
-        output_file_handler = logging.FileHandler(API_LOGFILE)
+        # file handler with daily rotation, keeping logs for 7 days
+        output_file_handler = TimedRotatingFileHandler(
+            current_logfile,
+            when="midnight",  # Rotate at midnight
+            interval=1,  # Every day
+            backupCount=7,  # Keep 7 days of logs
+            encoding="utf-8",
+        )
         output_file_handler.setFormatter(CustomJsonFormatter(datefmt=DATE_FORMAT))
         output_file_handler.setLevel(logging.DEBUG)
 
@@ -111,7 +121,7 @@ def get_logger_config(nofile: bool = False) -> LoggerConfig:
         handlers=handlers,
         format="%(levelname)s: %(asctime)s \t%(message)s",
         date_format="%d-%b-%Y %H:%M:%S",
-        logger_file=API_LOGFILE,
+        logger_file=current_logfile,
     )
 
 
