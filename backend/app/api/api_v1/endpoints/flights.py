@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
+from app.api.utils import normalize_sensor_value
 from app.core.config import settings
 from app.schemas.role import Role
 
@@ -39,6 +40,9 @@ def create_flight(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Pilot must be project member",
         )
+    # Normalize sensor value
+    flight_in.sensor = normalize_sensor_value(flight_in.sensor)
+
     flight = crud.flight.create_with_project(
         db, obj_in=flight_in, project_id=project_id
     )

@@ -201,6 +201,37 @@ def test_create_flight_with_pilot_that_does_not_belong_to_project(
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
+def test_create_flight_with_lower_case_sensor(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    pilot = create_user(db)
+    project = create_project(db)
+    current_user = get_current_user(db, normal_user_access_token)
+    create_project_member(
+        db, role=Role.OWNER, member_id=current_user.id, project_id=project.id
+    )
+    create_project_member(
+        db, role=Role.VIEWER, member_id=pilot.id, project_id=project.id
+    )
+    data = {
+        "name": "Test Flight",
+        "acquisition_date": create_acquisition_date(),
+        "altitude": randint(0, 500),
+        "side_overlap": randint(40, 80),
+        "forward_overlap": randint(40, 80),
+        "sensor": SENSORS[0].lower(),
+        "platform": PLATFORMS[0],
+        "pilot_id": pilot.id,
+    }
+    data = jsonable_encoder(data)
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/flights", json=data
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    response_data = response.json()
+    assert response_data["sensor"] == SENSORS[0]
+
+
 def test_get_flight_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
