@@ -2,6 +2,8 @@ name: d2s
 channels:
   - conda-forge
   - defaults
+platforms:
+  - linux-64
 dependencies:
   - _libgcc_mutex
   - _openmp_mutex
@@ -360,7 +362,6 @@ dependencies:
   - tzcode
   - tzdata
   - unicodedata2
-  - untwine
   - uriparser
   - urllib3
   - uvicorn

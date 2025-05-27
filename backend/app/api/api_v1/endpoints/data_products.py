@@ -413,27 +413,10 @@ def process_data_product_from_external_storage(
     crud.user.remove_single_use_token(db, db_obj=token_db_obj)
 
 
-class ProcessingRequest(BaseModel):
-    chm: bool
-    exg: bool
-    exgRed: int
-    exgGreen: int
-    exgBlue: int
-    ndvi: bool
-    ndviNIR: int
-    ndviRed: int
-    vari: bool
-    variRed: int
-    variGreen: int
-    variBlue: int
-    zonal: bool
-    zonal_layer_id: str
-
-
 @router.post("/{data_product_id}/tools", status_code=status.HTTP_202_ACCEPTED)
 async def run_processing_tool(
     data_product_id: UUID,
-    toolbox_in: ProcessingRequest,
+    toolbox_in: schemas.ProcessingRequest,
     current_user: models.User = Depends(deps.get_current_approved_user),
     project: models.Project = Depends(deps.can_read_write_project),
     flight: models.Flight = Depends(deps.can_read_write_flight),
@@ -446,7 +429,8 @@ async def run_processing_tool(
         )
     # verify at least one processing tool was selected
     if (
-        toolbox_in.exg is False
+        toolbox_in.chm is False
+        and toolbox_in.exg is False
         and toolbox_in.ndvi is False
         and toolbox_in.vari is False
         and toolbox_in.zonal is False
@@ -464,13 +448,59 @@ async def run_processing_tool(
         db,
         data_product_id=data_product_id,
         user_id=current_user.id,
-        upload_dir=upload_dir,
+        upload_dir=str(upload_dir),
     )
     # verify input raster exists and it is active
     if not data_product:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
         )
+
+    # chm
+    if toolbox_in.chm and not os.environ.get("RUNNING_TESTS") == "1":
+        # create new data product record
+        chm_data_product: models.DataProduct = crud.data_product.create_with_flight(
+            db,
+            schemas.DataProductCreate(
+                data_type="CHM",
+                filepath="null",
+                original_filename=data_product.original_filename,
+            ),
+            flight_id=flight.id,
+        )
+        # get path for chm tool output raster
+        data_product_dir = utils.get_data_product_dir(
+            str(project.id), str(flight.id), str(chm_data_product.id)
+        )
+        chm_filename: str = str(uuid4()) + ".tif"
+        out_raster = data_product_dir / chm_filename
+        # get fullpath to dem data product
+        dem_data_product = crud.data_product.get_single_by_id(
+            db,
+            data_product_id=toolbox_in.dem_id,
+            user_id=current_user.id,
+            upload_dir=str(upload_dir),
+        )
+        if not dem_data_product:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="DEM data product not found",
+            )
+        # run chm tool in background
+        tool_params = {
+            "dem_input": dem_data_product.filepath,
+        }
+        run_toolbox.apply_async(
+            args=(
+                "chm",
+                data_product.filepath,
+                str(out_raster),
+                tool_params,
+                chm_data_product.id,
+                current_user.id,
+            )
+        )
+
     # ndvi
     if toolbox_in.ndvi and not os.environ.get("RUNNING_TESTS") == "1":
         # create new data product record

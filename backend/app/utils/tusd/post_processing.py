@@ -23,7 +23,33 @@ from app.tasks.upload_tasks import (
 
 logger = logging.getLogger("__name__")
 
-SUPPORTED_EXTENSIONS = {".tif", ".las", ".laz"}  # Using a set for O(1) lookup
+SUPPORTED_EXTENSIONS = {
+    ".tif",
+    ".las",
+    ".laz",
+    ".copc.laz",
+}
+
+
+def get_file_extension(filename: Path) -> str:
+    """Get the file extension, handling compound extensions like .copc.laz.
+
+    Args:
+        filename (Path): The filename to check
+
+    Returns:
+        str: The full extension including compound extensions
+    """
+    name = filename.name.lower()
+    if name.endswith(".copc.laz"):
+        return ".copc.laz"
+    elif name.endswith(".laz"):
+        return ".laz"
+    elif name.endswith(".las"):
+        return ".las"
+    elif name.endswith(".tif"):
+        return ".tif"
+    return filename.suffix.lower()
 
 
 def process_data_product_uploaded_to_tusd(
@@ -58,10 +84,10 @@ def process_data_product_uploaded_to_tusd(
     """
     # create new filename
     new_filename = str(uuid4())
-    # lowercase the file extension
-    original_filename = original_filename.with_suffix(original_filename.suffix.lower())
+    # get the full extension
+    extension = get_file_extension(original_filename)
     # check if uploaded file has supported extension
-    if original_filename.suffix not in SUPPORTED_EXTENSIONS:
+    if extension not in SUPPORTED_EXTENSIONS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported file extension"
         )
@@ -79,7 +105,7 @@ def process_data_product_uploaded_to_tusd(
     )
     # construct fullpath for uploaded data product
     tmpdir = tempfile.mkdtemp(dir=data_product_dir)
-    destination_filepath = f"{tmpdir}/{new_filename}{original_filename.suffix}"
+    destination_filepath = f"{tmpdir}/{new_filename}{extension}"
 
     # create job to track task progress
     job_in = schemas.job.JobCreate(

@@ -1,5 +1,5 @@
 import { Form, Formik } from 'formik';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRevalidator } from 'react-router-dom';
 import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 
@@ -10,18 +10,19 @@ import Modal from '../../../../../Modal';
 import HintText from '../../../../../HintText';
 import { useFlightContext } from '../../FlightContext/FlightContext';
 import { DataProduct } from '../../Project';
+import { isElevationDataProduct } from '../../../../../maps/utils';
 import {
   RGBTools,
   MultiSpectralTools,
-  LidarTools,
   ZonalStatisticTools,
+  PointCloudTools,
 } from './ToolboxTools';
 
 import api from '../../../../../../api';
-import { isSingleBand } from '../../../../../maps/utils';
 
 export interface ToolboxFields {
   chm: boolean;
+  dem_id: string;
   exg: boolean;
   exgRed: number;
   exgGreen: number;
@@ -41,7 +42,10 @@ const getNumOfBands = (dataProduct: DataProduct) => {
   return dataProduct.stac_properties.raster.length;
 };
 
-const getInitialValues = (dataProduct: DataProduct) => {
+const getInitialValues = (
+  dataProduct: DataProduct,
+  otherDataProducts: DataProduct[] = []
+) => {
   const eo = dataProduct.stac_properties?.eo ?? [];
 
   const findBandIndex = (description: string, defaultIndex: number) => {
@@ -56,8 +60,12 @@ const getInitialValues = (dataProduct: DataProduct) => {
   const blueBandIndex = findBandIndex('blue', 2);
   const nirBandIndex = findBandIndex('nir', 3);
 
+  // Find first available elevation data product
+  const firstElevationProduct = otherDataProducts.find(isElevationDataProduct);
+
   return {
     chm: false,
+    dem_id: firstElevationProduct?.id ?? '',
     exg: false,
     exgRed: redBandIndex + 1,
     exgGreen: greenBandIndex + 1,
@@ -76,9 +84,11 @@ const getInitialValues = (dataProduct: DataProduct) => {
 
 export default function ToolboxModal({
   dataProduct,
+  otherDataProducts,
   tableView = false,
 }: {
   dataProduct: DataProduct;
+  otherDataProducts: DataProduct[];
   tableView?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -86,6 +96,12 @@ export default function ToolboxModal({
   const { flight } = useFlightContext();
   const { projectId, flightId } = useParams();
   const revalidator = useRevalidator();
+
+  const isPointCloud = dataProduct.data_type === 'point_cloud';
+
+  useEffect(() => {
+    setStatus(null);
+  }, []);
 
   return (
     <div>
@@ -113,9 +129,9 @@ export default function ToolboxModal({
           </div>
           <hr className="mb-2 border-gray-300" />
           <div className="flex flex-col gap-4">
-            <DataProductBandForm dataProduct={dataProduct} />
+            {!isPointCloud && <DataProductBandForm dataProduct={dataProduct} />}
             <Formik
-              initialValues={getInitialValues(dataProduct)}
+              initialValues={getInitialValues(dataProduct, otherDataProducts)}
               onSubmit={async (values, actions) => {
                 setStatus(null);
                 if (projectId && flightId && dataProduct.id) {
@@ -153,6 +169,7 @@ export default function ToolboxModal({
                   <HintText>Select data products to be generated</HintText>
                   {/* rgb tools */}
                   {flight &&
+                    !isPointCloud &&
                     (flight.sensor.toLowerCase() === 'rgb' ||
                       flight.sensor.toLowerCase() === 'multispectral') &&
                     getNumOfBands(dataProduct) > 2 && (
@@ -160,16 +177,20 @@ export default function ToolboxModal({
                     )}
                   {/* multispectral tools */}
                   {flight &&
+                    !isPointCloud &&
                     flight.sensor.toLowerCase() === 'multispectral' &&
                     getNumOfBands(dataProduct) > 2 && (
                       <MultiSpectralTools dataProduct={dataProduct} />
                     )}
-                  {/* lidar tools */}
+                  {/* zonal statistic tools */}
                   {flight &&
-                    flight.sensor.toLowerCase() === 'lidar' &&
-                    isSingleBand(dataProduct) && <LidarTools />}
-                  {flight && getNumOfBands(dataProduct) === 1 && (
-                    <ZonalStatisticTools dataProductId={dataProduct.id} />
+                    !isPointCloud &&
+                    getNumOfBands(dataProduct) === 1 && (
+                      <ZonalStatisticTools dataProductId={dataProduct.id} />
+                    )}
+                  {/* point cloud tools */}
+                  {flight && isPointCloud && (
+                    <PointCloudTools otherDataProducts={otherDataProducts} />
                   )}
                   <Button
                     type="submit"
@@ -180,6 +201,7 @@ export default function ToolboxModal({
                         !values.chm &&
                         !values.zonal) ||
                       (values.zonal && !values.zonal_layer_id) ||
+                      (values.chm && !values.dem_id) ||
                       !dirty
                     }
                     size="sm"

@@ -453,17 +453,56 @@ function setLocalStorageProjects(projects: Project[]): void {
   }
 }
 
+/**
+ * Returns the category of a value based on predefined thresholds for flights or data products.
+ * @param count Value to be categorized.
+ * @param type Type of count ('flight' or 'data_product').
+ * @returns Category of the value.
+ */
+function getCategory(
+  count: number,
+  type: 'flight' | 'data_product'
+): 'low' | 'medium' | 'high' {
+  if (type === 'flight') {
+    if (count >= 0 && count < 3) return 'low';
+    else if (count >= 3 && count < 5) return 'medium';
+    else return 'high';
+  } else {
+    // data_product type
+    if (count >= 0 && count < 5) return 'low';
+    else if (count >= 5 && count < 10) return 'medium';
+    else return 'high';
+  }
+}
+
+/**
+ * Returns true if data product is an elevation data product.
+ * @param dataProduct Data product to check.
+ * @returns True if data product is an elevation data product, otherwise false.
+ */
+const isElevationDataProduct = (dataProduct: DataProduct): boolean => {
+  const dataType = dataProduct.data_type.toLowerCase();
+  return (
+    (dataType.includes('dem') ||
+      dataType.includes('dtm') ||
+      dataType.includes('dsm')) &&
+    isSingleBand(dataProduct)
+  );
+};
+
 export {
   areProjectsEqual,
   calculateBoundsFromGeoJSON,
   createDefaultSingleBandSymbology,
   createDefaultMultibandSymbology,
+  getCategory,
   getDefaultStyle,
   getHillshade,
   getLocalStorageProjects,
   getMultibandMinMax,
   getSingleBandMinMax,
   getTitilerQueryParams,
+  isElevationDataProduct,
   isSingleBand,
   mapApiResponseToLayers,
   setLocalStorageProjects,

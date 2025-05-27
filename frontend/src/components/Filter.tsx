@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react';
+
 export default function Filter({
   categories,
   selectedCategory,
@@ -13,6 +15,27 @@ export default function Filter({
   onOpen: () => void;
   onClose: () => void;
 }) {
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+
+  /**
+   * Closes the Filter by ... details element on click outside element
+   */
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (detailsRef.current?.open && event.target) {
+        if (!detailsRef.current.contains(event.target as HTMLElement)) {
+          detailsRef.current.removeAttribute('open');
+          onClose();
+        }
+      }
+    };
+
+    window.addEventListener('click', handleClickOutside);
+    return () => {
+      window.removeEventListener('click', handleClickOutside);
+    };
+  }, [onClose]);
+
   function onChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.checked) {
       setSelectedCategory([...selectedCategory, e.target.value]);
@@ -27,6 +50,7 @@ export default function Filter({
     <div className="flex gap-8">
       <div className="relative">
         <details
+          ref={detailsRef}
           className="group [&_summary::-webkit-details-marker]:hidden"
           open={isOpen}
           onToggle={(e) => {
@@ -59,7 +83,7 @@ export default function Filter({
           </summary>
 
           <div className="z-50 group-open:absolute group-open:start-0 group-open:top-auto group-open:mt-2">
-            <div className="w-96 rounded border border-gray-200 bg-white">
+            <div className="min-w-[200px] max-w-[300px] rounded border border-gray-200 bg-white">
               <header className="flex items-center justify-between p-4">
                 <span className="text-sm text-gray-700">
                   {' '}

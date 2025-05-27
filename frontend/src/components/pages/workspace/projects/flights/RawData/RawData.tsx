@@ -4,6 +4,7 @@ import { useParams, useRevalidator } from 'react-router-dom';
 
 import { AlertBar, Status } from '../../../../../Alert';
 import { Button } from '../../../../../Buttons';
+import LoadingBars from '../../../../../LoadingBars';
 import RawDataDeleteModal from './RawDataDeleteModal';
 import RawDataDownloadLink, {
   RawDataReportDownloadLink,
@@ -38,6 +39,7 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
   >([]);
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const { flightId, projectId } = useParams();
   const revalidator = useRevalidator();
@@ -134,6 +136,12 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
     imageProcessingJobStatus.length > 0 ? 5000 : null
   );
 
+  useEffect(() => {
+    if (projectRole !== undefined) {
+      setIsLoading(false);
+    }
+  }, [projectRole]);
+
   function onImageProcessingClick(
     rawDataId: string,
     settings: MetashapeSettings | ODMSettings
@@ -175,9 +183,14 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
     }
   };
 
+  if (isLoading) {
+    return <LoadingBars />;
+  }
+
   return (
     <div className="h-full flex flex-col">
       <h2>Raw Data</h2>
+
       <div className="flex flex-col gap-2 overflow-auto">
         {rawData.length > 0 &&
           rawData.map((dataset) => (
@@ -224,10 +237,11 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
             </div>
           ))}
       </div>
+
       {/* display alert bar when status is not null */}
       {status && <AlertBar alertType={status.type}>{status.msg}</AlertBar>}
       {/* display upload button for project owners and managers */}
-      {projectRole !== 'viewer' && projectId && flightId && (
+      {projectRole && projectRole !== 'viewer' && projectId && flightId && (
         <div className="my-4 flex justify-center">
           <RawDataUploadModal
             flightID={flightId}

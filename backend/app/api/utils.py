@@ -353,3 +353,20 @@ def get_signature_for_data_product(data_product_id: UUID4) -> Tuple[str, int]:
     signed_payload, expiration_timestamp = sign_map_tile_payload(payload_str)
 
     return signed_payload, expiration_timestamp
+
+
+def normalize_sensor_value(sensor: str) -> str:
+    """
+    Normalize sensor value to match the expected ENUM case.
+    Returns the normalized value if it matches a valid sensor type (case-insensitive),
+    otherwise returns the original value.
+    """
+    sensor_mapping = {
+        "rgb": "RGB",
+        "multispectral": "Multispectral",
+        "lidar": "LiDAR",
+        "thermal": "Thermal",
+        "hyperspectral": "Hyperspectral",
+        "other": "Other",
+    }
+    return sensor_mapping.get(sensor.lower(), sensor)

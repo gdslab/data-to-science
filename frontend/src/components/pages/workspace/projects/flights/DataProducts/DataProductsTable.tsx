@@ -57,7 +57,13 @@ function getDataProductActions(
   const getToolboxAction = (dataProduct: DataProduct) => ({
     key: `action-toolbox-${dataProduct.id}`,
     type: 'component',
-    component: <ToolboxModal dataProduct={dataProduct} tableView={true} />,
+    component: (
+      <ToolboxModal
+        dataProduct={dataProduct}
+        tableView={true}
+        otherDataProducts={data.filter((dp) => dp.id !== dataProduct.id)}
+      />
+    ),
     label: 'Toolbox',
   });
 

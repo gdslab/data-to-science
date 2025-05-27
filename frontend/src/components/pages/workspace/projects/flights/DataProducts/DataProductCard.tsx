@@ -30,9 +30,11 @@ function ProgressBar() {
 
 export default function DataProductCard({
   dataProduct,
+  otherDataProducts,
   setStatus,
 }: {
   dataProduct: DataProduct;
+  otherDataProducts: DataProduct[];
   setStatus: React.Dispatch<React.SetStateAction<Status | null>>;
 }) {
   const [invalidPreviews, setInvalidPreviews] = useState<string[]>([]);
@@ -43,9 +45,9 @@ export default function DataProductCard({
 
   return (
     <div className="flex items-center justify-center min-h-80">
-      <div className="relative w-80">
+      <div className="relative w-80 overflow-hidden">
         <Card rounded={true}>
-          <div className="grid grid-flow-row auto-rows-max gap-2">
+          <div className="grid grid-flow-row auto-rows-max gap-2 relative">
             {/* preview image */}
             <div className="relative flex items-center justify-center bg-accent3/20">
               {dataProduct.status === 'SUCCESS' &&
@@ -145,7 +147,7 @@ export default function DataProductCard({
               )}
             </div>
             {/* action buttons */}
-            <div className="flex items-center justify-around gap-4">
+            <div className="flex items-center justify-around gap-4 relative">
               <div
                 className="flex items-center gap-2 text-sky-600 cursor-pointer"
                 onClick={() => {
@@ -161,19 +163,21 @@ export default function DataProductCard({
                 <EyeIcon className="h-6 w-6" />
                 <span>View</span>
               </div>
-              {(projectRole === 'manager' || projectRole === 'owner') &&
-              dataProduct.data_type !== 'point_cloud' ? (
+              {(projectRole === 'manager' || projectRole === 'owner') && (
                 <>
                   <span className="text-slate-300">|</span>
-                  <ToolboxModal dataProduct={dataProduct} />
+                  <ToolboxModal
+                    dataProduct={dataProduct}
+                    otherDataProducts={otherDataProducts}
+                  />
                 </>
-              ) : null}
+              )}
             </div>
           </div>
         </Card>
         {dataProduct.status === 'INPROGRESS' ||
         dataProduct.status === 'WAITING' ? (
-          <div className="w-full absolute bottom-0">
+          <div className="w-full absolute bottom-0 left-0">
             <ProgressBar />
           </div>
         ) : null}

@@ -2,17 +2,19 @@ import secrets
 from typing import Any
 
 from fastapi_mail.config import ConnectionConfig
-from pydantic import EmailStr, field_validator, ValidationInfo, PostgresDsn
+from pydantic import EmailStr, field_validator, ValidationInfo, PostgresDsn, SecretStr
 from pydantic_settings import BaseSettings
+
+from app.core.utils import generate_secret_key
 
 
 class Settings(BaseSettings):
     ENV: str = "dev"
     API_V1_STR: str = "/api/v1"
 
-    SECRET_KEY: str = ""
+    SECRET_KEY: str = generate_secret_key()
     # Secret key used for signing pg_tileserv and titiler requests
-    TILE_SIGNING_SECRET_KEY: str = ""
+    TILE_SIGNING_SECRET_KEY: str = generate_secret_key()
 
     @field_validator("SECRET_KEY", mode="before")
     def generate_secret_key(cls, v: str | None) -> str:
@@ -46,6 +48,9 @@ class Settings(BaseSettings):
     # Provide mapbox token for worldwide satellite imagery (optional)
     MAPBOX_ACCESS_TOKEN: str | None = None
 
+    # Point limit for point cloud preview generation
+    POINT_LIMIT: int = 1_000_000
+
     # Database
     POSTGRES_HOST: str = ""
     POSTGRES_USER: str = ""
@@ -70,7 +75,7 @@ class Settings(BaseSettings):
     MAIL_ENABLED: int = 0
     MAIL_ADMINS: str = ""
     MAIL_USERNAME: EmailStr | str = ""
-    MAIL_PASSWORD: str = ""
+    MAIL_PASSWORD: SecretStr = SecretStr("")
     MAIL_FROM: EmailStr | str = ""
     MAIL_FROM_NAME: str = ""
     MAIL_PORT: int = 587

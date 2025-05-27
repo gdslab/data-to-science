@@ -5,6 +5,7 @@ from typing import Optional
 
 from celery.utils.log import get_task_logger
 from app.utils.ImageProcessor import ImageProcessor
+from app.utils.toolbox.chm import run as chm_run
 from app.utils.toolbox.exg import run as exg_run
 from app.utils.toolbox.ndvi import run as ndvi_run
 from app.utils.toolbox.vari import run as vari_run
@@ -12,7 +13,7 @@ from app.utils.toolbox.vari import run as vari_run
 logger = get_task_logger(__name__)
 
 
-AVAILABLE_TOOLS = {"exg": exg_run, "ndvi": ndvi_run, "vari": vari_run}
+AVAILABLE_TOOLS = {"chm": chm_run, "exg": exg_run, "ndvi": ndvi_run, "vari": vari_run}
 
 
 class Toolbox:
@@ -73,10 +74,6 @@ class Toolbox:
                 logger.exception(f"{name.upper()} processing tool failed")
                 raise e
             # convert output raster from tool to COG
-            import shutil
-
-            logger.info(f" Copying {tmp_out_raster} to /tmp/test.tif")
-            shutil.copy(tmp_out_raster, "/tmp/test.tif")
             self.convert_result_to_cog(
                 tmp_out_raster, output_dir=str(out_raster.parent)
             )
