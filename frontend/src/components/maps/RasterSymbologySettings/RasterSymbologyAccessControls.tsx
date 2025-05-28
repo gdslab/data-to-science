@@ -18,7 +18,7 @@ import {
 } from '../RasterSymbologyContext';
 
 import api from '../../../api';
-import { createAndClickDownloadLink } from '../../pages/projects/mapLayers/utils';
+import { createAndClickDownloadLink } from '../../pages/workspace/projects/mapLayers/utils';
 
 export default function RasterSymbologyAccessControls({
   dataProduct,

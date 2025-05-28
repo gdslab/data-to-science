@@ -49,7 +49,7 @@ export default function IndoorProjectList({
       <IndoorProjectListHeader />
       <div className="flex flex-1 flex-wrap gap-4 pb-24 overflow-y-auto">
         {indoorProjects.map((indoorProject) => (
-          <div key={indoorProject.id} className="h-16 w-">
+          <div key={indoorProject.id} className="block h-40">
             <IndoorProjectCard indoorProject={indoorProject} />
           </div>
         ))}

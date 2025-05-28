@@ -19,6 +19,7 @@ interface UseIndoorProjectDataReturn {
   potGroupModuleVisualizationData: IndoorProjectDataVizAPIResponse | null;
   traitModuleVisualizationData: IndoorProjectDataViz2APIResponse | null;
   isLoading: boolean;
+  isLoadingData: boolean;
   error: { status: number; message: string } | null;
   setPotGroupModuleVisualizationData: Dispatch<
     SetStateAction<IndoorProjectDataVizAPIResponse | null>
@@ -43,6 +44,7 @@ export function useIndoorProjectData({
   const [traitModuleVisualizationData, setTraitModuleVisualizationData] =
     useState<IndoorProjectDataViz2APIResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(false);
   const [error, setError] = useState<{
     status: number;
     message: string;
@@ -59,6 +61,7 @@ export function useIndoorProjectData({
             }/indoor_projects/${indoorProjectId}/uploaded`
           );
         setIndoorProjectData(response.data);
+        setIsLoadingData(false);
       } catch (error) {
         if (isAxiosError(error)) {
           setError({
@@ -73,10 +76,12 @@ export function useIndoorProjectData({
             message: 'An unexpected error occurred.',
           });
         }
+        setIsLoadingData(false);
       }
     };
 
     if (indoorProjectId) {
+      setIsLoadingData(true);
       fetchIndoorProjectData();
     }
   }, [indoorProjectId]);
@@ -124,57 +129,57 @@ export function useIndoorProjectData({
   }, [indoorProjectId, indoorProjectData]);
 
   // Fetch visualization data
-  useEffect(() => {
-    let isMounted = true;
+  // useEffect(() => {
+  //   let isMounted = true;
 
-    async function loadVizData() {
-      setError(null);
-      setIsLoading(true);
-      setPotModuleVisualizationData(null);
+  //   async function loadVizData() {
+  //     setError(null);
+  //     setIsLoading(true);
+  //     setPotModuleVisualizationData(null);
 
-      const indoorProjectDataId = indoorProjectData.find(
-        ({ file_type }) => file_type === '.xlsx'
-      )?.id;
+  //     const indoorProjectDataId = indoorProjectData.find(
+  //       ({ file_type }) => file_type === '.xlsx'
+  //     )?.id;
 
-      if (!indoorProjectDataId) {
-        setIsLoading(false);
-        return;
-      }
+  //     if (!indoorProjectDataId) {
+  //       setIsLoading(false);
+  //       return;
+  //     }
 
-      try {
-        const data = await fetchPotGroupModuleVisualizationData({
-          indoorProjectId,
-          indoorProjectDataId,
-          cameraOrientation: 'side',
-          groupBy: 'single_pot',
-        });
+  //     try {
+  //       const data = await fetchPotGroupModuleVisualizationData({
+  //         indoorProjectId,
+  //         indoorProjectDataId,
+  //         cameraOrientation: 'side',
+  //         groupBy: 'single_pot',
+  //       });
 
-        if (isMounted) {
-          setPotModuleVisualizationData(data);
-        }
-      } catch (error) {
-        if (isMounted) {
-          setError({
-            status: 500,
-            message:
-              error instanceof Error
-                ? error.message
-                : 'Failed to load visualization data',
-          });
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    }
+  //       if (isMounted) {
+  //         setPotModuleVisualizationData(data);
+  //       }
+  //     } catch (error) {
+  //       if (isMounted) {
+  //         setError({
+  //           status: 500,
+  //           message:
+  //             error instanceof Error
+  //               ? error.message
+  //               : 'Failed to load visualization data',
+  //         });
+  //       }
+  //     } finally {
+  //       if (isMounted) {
+  //         setIsLoading(false);
+  //       }
+  //     }
+  //   }
 
-    loadVizData();
+  //   loadVizData();
 
-    return () => {
-      isMounted = false;
-    };
-  }, [indoorProjectId, indoorProjectData]);
+  //   return () => {
+  //     isMounted = false;
+  //   };
+  // }, [indoorProjectId, indoorProjectData]);
 
   return {
     indoorProjectData,
@@ -183,6 +188,7 @@ export function useIndoorProjectData({
     potGroupModuleVisualizationData,
     traitModuleVisualizationData,
     isLoading,
+    isLoadingData,
     error,
     setPotGroupModuleVisualizationData,
     setTraitModuleVisualizationData,
