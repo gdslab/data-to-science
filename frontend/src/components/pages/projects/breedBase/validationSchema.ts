@@ -8,7 +8,7 @@ const schema = yup.object({
     .test('is-https', 'Only HTTPS URLs are allowed', (value) => {
       return value?.startsWith('https://');
     }),
-  programName: yup.string(),
+  programNames: yup.string(),
   studyDbIds: yup.string(),
   studyNames: yup.string(),
 });

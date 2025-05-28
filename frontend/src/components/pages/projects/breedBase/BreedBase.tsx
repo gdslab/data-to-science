@@ -1,5 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useForm, FormProvider, SubmitHandler } from 'react-hook-form';
 import { useParams } from 'react-router-dom';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -7,48 +6,14 @@ import { XCircleIcon } from '@heroicons/react/24/solid';
 
 import BreedBaseStudies from './BreedBaseStudies';
 import { TextInput } from '../../../RHFInputs';
+import { useBreedBase } from './useBreedBase';
+import { BreedBaseFormData } from './BreedBase.types';
 
-import api from '../../../../api';
-import {
-  BreedBaseFormData,
-  BreedBaseSearchAPIResponse,
-  BreedBaseStudiesAPIResponse,
-  BreedBaseStudy,
-} from './BreedBase.types';
 import defaultValues from './defaultValues';
 import validationSchema from './validationSchema';
 
-// Create a separate axios instance for BreedBase API calls without credentials
-const breedBaseApi = axios.create({
-  withCredentials: false,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
 export default function BreedBase() {
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [breedbaseStudies, setBreedbaseStudies] = useState<BreedBaseStudy[]>(
-    []
-  );
-  const [searchResultsDbId, setSearchResultsDbId] = useState<string | null>(
-    null
-  );
-  const [studiesApiResponse, setStudiesApiResponse] =
-    useState<BreedBaseStudiesAPIResponse | null>(null);
-
   const { projectId } = useParams();
-
-  useEffect(() => {
-    const fetchBreedbaseStudies = async () => {
-      const response: AxiosResponse<BreedBaseStudy[]> = await api.get(
-        `/projects/${projectId}/breedbase-connections`
-      );
-      setBreedbaseStudies(response.data);
-    };
-    fetchBreedbaseStudies();
-  }, []);
 
   const methods = useForm<BreedBaseFormData>({
     defaultValues,
@@ -56,164 +21,25 @@ export default function BreedBase() {
   });
 
   const {
-    handleSubmit,
-    formState: { errors },
-  } = methods;
+    error,
+    isLoading,
+    breedbaseStudies,
+    studiesApiResponse,
+    fetchBreedbaseStudies,
+    searchStudies,
+    removeStudy,
+    fetchPage,
+    addStudy,
+  } = useBreedBase({ projectId: projectId!, methods });
 
-  console.log(errors);
+  useEffect(() => {
+    fetchBreedbaseStudies();
+  }, []);
+
+  const { handleSubmit } = methods;
 
   const onSubmit: SubmitHandler<BreedBaseFormData> = async (data) => {
-    setError(null);
-    setIsLoading(true);
-
-    try {
-      // Split the search parameters into arrays
-      const searchParams = {
-        studyDbIds: data.studyDbIds
-          ? data.studyDbIds.split(';').filter(Boolean)
-          : [],
-        studyNames: data.studyNames
-          ? data.studyNames.split(';').filter(Boolean)
-          : [],
-        programName: data.programName
-          ? data.programName.split(';').filter(Boolean)
-          : [],
-      };
-
-      const searchResponse: AxiosResponse<BreedBaseSearchAPIResponse> =
-        await breedBaseApi.post(
-          `${data.breedbaseUrl}/search/studies`,
-          searchParams
-        );
-
-      if (!searchResponse.data?.result?.searchResultsDbId) {
-        throw new Error('Invalid search response: missing searchResultsDbId');
-      }
-
-      const searchResultsDbId = searchResponse.data.result.searchResultsDbId;
-      setSearchResultsDbId(searchResultsDbId);
-
-      const studiesResponse: AxiosResponse<BreedBaseStudiesAPIResponse> =
-        await breedBaseApi.get(
-          `${data.breedbaseUrl}/search/studies/${searchResultsDbId}`
-        );
-
-      if (!studiesResponse.data?.result?.data) {
-        throw new Error('Invalid studies response: missing data');
-      }
-      console.log(studiesResponse.data);
-      setStudiesApiResponse(studiesResponse.data);
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        if (err.response) {
-          // The request was made and the server responded with a status code
-          // that falls out of the range of 2xx
-          setError(
-            `Server error: ${
-              err.response.data?.message || err.response.statusText
-            }`
-          );
-        } else if (err.request) {
-          // The request was made but no response was received
-          setError(
-            'No response received from server. Please check your connection.'
-          );
-        } else {
-          // Something happened in setting up the request that triggered an Error
-          setError(`Request error: ${err.message}`);
-        }
-      } else if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('An unknown error occurred');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const onRemoveStudy = async (studyId: string) => {
-    try {
-      const response: AxiosResponse<BreedBaseStudy> = await api.delete(
-        `/projects/${projectId}/breedbase-connections/${studyId}`
-      );
-      if (response.status === 200) {
-        setBreedbaseStudies((prev) =>
-          prev.filter((study) => study.id !== studyId)
-        );
-      } else {
-        setError('Failed to remove study');
-      }
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(
-          `Server error: ${
-            err.response?.data?.message || err.response?.statusText
-          }`
-        );
-      } else if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('An unknown error occurred');
-      }
-    }
-  };
-
-  const fetchPage = async (page: number) => {
-    setError(null);
-    setIsLoading(true);
-
-    try {
-      const formData = methods.getValues();
-      const url = `${formData.breedbaseUrl}/search/studies/${searchResultsDbId}?page=${page}`;
-      const response: AxiosResponse<BreedBaseStudiesAPIResponse> =
-        await breedBaseApi.get(url);
-      setStudiesApiResponse(response.data);
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('An unknown error occurred');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const onAddStudy = async (studyId: string) => {
-    const breedBaseBaseUrl = methods.getValues('breedbaseUrl');
-    if (!breedBaseBaseUrl) {
-      setError('BreedBase URL is required');
-      return;
-    }
-
-    try {
-      const response: AxiosResponse<BreedBaseStudy> = await api.post(
-        `/projects/${projectId}/breedbase-connections`,
-        {
-          base_url: breedBaseBaseUrl,
-          study_id: studyId,
-        }
-      );
-      if (response.status === 201) {
-        // Update the local state to include the new study
-        setBreedbaseStudies((prev) => [...prev, response.data]);
-      } else {
-        setError('Failed to add study');
-      }
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(
-          `Server error: ${
-            err.response?.data?.message || err.response?.statusText
-          }`
-        );
-      } else if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('An unknown error occurred');
-      }
-    }
+    await searchStudies(data);
   };
 
   return (
@@ -247,7 +73,7 @@ export default function BreedBase() {
                 <div className="w-5 flex justify-center">
                   <button
                     className="text-red-500 hover:text-red-700 transition-colors flex-shrink-0"
-                    onClick={() => onRemoveStudy(study.id)}
+                    onClick={() => removeStudy(study.id)}
                     title="Remove connection"
                   >
                     <XCircleIcon className="h-5 w-5" />
@@ -292,7 +118,7 @@ export default function BreedBase() {
                   placeholder="The First Bob Study 2017;Wheat Yield Trial 246"
                 />
                 <TextInput
-                  fieldName="programName"
+                  fieldName="programNames"
                   label="Program Name"
                   placeholder="The First Bob Study 2017;Wheat Yield Trial 246"
                 />
@@ -314,7 +140,7 @@ export default function BreedBase() {
       {studiesApiResponse && (
         <BreedBaseStudies
           data={studiesApiResponse}
-          onAddStudyId={onAddStudy}
+          onAddStudyId={addStudy}
           onPageChange={fetchPage}
         />
       )}

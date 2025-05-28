@@ -28,7 +28,7 @@ interface BreedBaseStudiesAPIResponse {
 
 interface BreedBaseFormData {
   breedbaseUrl: string;
-  programName?: string;
+  programNames?: string;
   studyDbIds?: string;
   studyNames?: string;
 }
