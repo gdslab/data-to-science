@@ -5,7 +5,7 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any, NoReturn
+from typing import Any, NoReturn, Optional
 
 from pydantic import ValidationError
 
@@ -41,33 +41,30 @@ class ImageProcessor:
         self.stac_properties: STACProperties = {"raster": [], "eo": []}
 
     def run(self) -> Path:
+        logger.debug("Getting raster info from gdalinfo")
         info: dict = get_info(self.in_raster)
 
-        logger.info(f" Processing {self.in_raster}")
-        logger.info(f" Output will be saved to {self.out_raster}")
-        logger.info(f" Preview image will be saved to {self.preview_out_path}")
-        logger.info(f" Info before processing: {info}")
-
+        logger.debug("Checking if raster is in COG layout")
         if is_cog(info):
+            logger.info("Raster is in COG layout, moving to output directory")
             shutil.move(self.in_raster, self.out_dir)
         else:
+            logger.info("Converting raster to COG layout")
             convert_to_cog(self.in_raster, self.out_raster)
             # Update info to reflect new COG
             info = get_info(self.out_raster)
 
-        logger.info(f" Info after processing: {info}")
-
+        logger.debug("Cleaning up temporary files")
         if os.path.exists(self.in_raster.parent):
             shutil.rmtree(self.in_raster.parent)
 
+        logger.debug("Processing STAC properties and creating preview")
         self.stac_properties = get_stac_properties(info)
-
-        logger.info(f" STAC properties: {self.stac_properties}")
-
         create_preview_image(
             self.out_raster, self.preview_out_path, self.stac_properties
         )
 
+        logger.info(f"Successfully processed raster: {self.out_raster}")
         return self.out_raster
 
     def get_default_symbology(self) -> UserStyleCreate | NoReturn:
@@ -77,21 +74,23 @@ class ImageProcessor:
             and len(self.stac_properties["eo"]) > 0
         ):
             if len(self.stac_properties["raster"]) == 1:
-                stats: Stats | None = self.stac_properties["raster"][0].get("stats")
+                stats: Optional[Stats] = self.stac_properties["raster"][0].get("stats")
                 if stats is None:
                     raise Exception("Unable to get raster stats")
 
-                return {
-                    "settings": {
-                        "colorRamp": "rainbow",
-                        "mode": "minMax",
-                        "max": stats.get("maximum", 255),
-                        "min": stats.get("minimum", 0),
-                        "userMax": stats.get("maximum", 255),
-                        "userMin": stats.get("minimum", 0),
-                        "meanStdDev": 2,
+                return UserStyleCreate(
+                    **{
+                        "settings": {
+                            "colorRamp": "rainbow",
+                            "mode": "minMax",
+                            "max": stats.get("maximum", 255),
+                            "min": stats.get("minimum", 0),
+                            "userMax": stats.get("maximum", 255),
+                            "userMin": stats.get("minimum", 0),
+                            "meanStdDev": 2,
+                        }
                     }
-                }
+                )
             elif len(self.stac_properties["raster"]) > 2:
                 symbology: dict = {
                     "mode": "minMax",
@@ -111,7 +110,7 @@ class ImageProcessor:
                         "userMax": stats.get("maximum", 255),
                     }
 
-                return {"settings": symbology}
+                return UserStyleCreate(**{"settings": symbology})
             else:
                 raise Exception("Need at least three bands for ortho imagery")
         else:
