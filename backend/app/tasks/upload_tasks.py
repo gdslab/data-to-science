@@ -34,6 +34,7 @@ def upload_geotiff(
     user_id: UUID,
     job_id: UUID,
     data_product_id: UUID,
+    project_to_utm: bool = False,
 ) -> None:
     """Celery task for processing an uploaded GeoTIFF.
 
@@ -43,6 +44,7 @@ def upload_geotiff(
         user_id (UUID): User ID for user that uploaded GeoTIFF.
         job_id (UUID): Job ID for job associated with upload process.
         data_product_id (UUID): Data product ID for uploaded GeoTIFF.
+        project_to_utm (bool): Whether to project the GeoTIFF to UTM.
     """
     in_raster = Path(geotiff_filepath)
 
@@ -79,7 +81,7 @@ def upload_geotiff(
 
     # create get STAC properties and convert to COG (if needed)
     try:
-        ip = ImageProcessor(str(in_raster))
+        ip = ImageProcessor(str(in_raster), project_to_utm=project_to_utm)
         out_raster = ip.run()
         default_symbology = ip.get_default_symbology()
     except Exception:

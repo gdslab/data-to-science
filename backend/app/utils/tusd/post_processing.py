@@ -53,6 +53,7 @@ def process_data_product_uploaded_to_tusd(
     dtype: str,
     project_id: UUID,
     flight_id: UUID,
+    project_to_utm: bool = False,
 ) -> dict:
     """Post-processing method for data product uploaded to tus file server. Creates job
     for converting GeoTIFF (.tif) to Cloud Optimized GeoTIFF or converting point cloud
@@ -130,6 +131,7 @@ def process_data_product_uploaded_to_tusd(
                 user_id,
                 job.id,
                 data_product.id,
+                project_to_utm,
             ),
         )
 
