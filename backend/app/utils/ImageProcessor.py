@@ -5,7 +5,7 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any, NoReturn, Optional
+from typing import Any, List, NoReturn, Optional
 
 from pydantic import ValidationError
 
@@ -28,7 +28,12 @@ class ImageProcessor:
     compressed COG for visualization will be created along with a small preview image.
     """
 
-    def __init__(self, in_raster: str, output_dir: str | Path | None = None) -> None:
+    def __init__(
+        self,
+        in_raster: str,
+        output_dir: str | Path | None = None,
+        project_to_utm: bool = False,
+    ) -> None:
         self.in_raster = Path(in_raster)
 
         if not output_dir:
@@ -37,6 +42,7 @@ class ImageProcessor:
         self.out_dir = Path(output_dir)
         self.out_raster = self.out_dir / self.in_raster.name
         self.preview_out_path = self.out_raster.with_suffix(".jpg")
+        self.project_to_utm = project_to_utm
 
         self.stac_properties: STACProperties = {"raster": [], "eo": []}
 
@@ -50,7 +56,7 @@ class ImageProcessor:
             shutil.move(self.in_raster, self.out_dir)
         else:
             logger.info("Converting raster to COG layout")
-            convert_to_cog(self.in_raster, self.out_raster)
+            convert_to_cog(self.in_raster, self.out_raster, self.project_to_utm, info)
             # Update info to reflect new COG
             info = get_info(self.out_raster)
 
@@ -190,36 +196,50 @@ def get_stac_properties(info: dict) -> STACProperties:
 
 
 def convert_to_cog(
-    in_raster: Path, out_raster: Path, num_threads: int | None = None
+    in_raster: Path,
+    out_raster: Path,
+    project_to_utm: bool,
+    info: dict,
+    num_threads: int | None = None,
 ) -> None:
     """Runs gdalwarp to generate new raster in COG layout.
 
     Args:
-        in_raster (Path): Path to input raster dataset
-        out_raster (Path): Path for output raster dataset
+        in_raster (Path): Path to input raster dataset.
+        out_raster (Path): Path for output raster dataset.
+        project_to_utm (bool): Whether to project the raster to UTM.
+        info (dict): gdalinfo -json output.
         num_threads (int | None, optional): No. of CPUs to use. Defaults to None.
     """
     if not num_threads:
         num_threads = int(multiprocessing.cpu_count() / 2)
 
-    result: subprocess.CompletedProcess = subprocess.run(
-        [
-            "gdalwarp",
-            in_raster,
-            out_raster,
-            "-of",
-            "COG",
-            "-co",
-            "COMPRESS=DEFLATE",
-            "-co",
-            f"NUM_THREADS={num_threads}",
-            "-co",
-            "BIGTIFF=YES",
-            "-wm",
-            "500",
-        ]
-    )
+    # Build the base command
+    command: List[str] = [
+        "gdalwarp",
+        str(in_raster),
+        str(out_raster),
+        "-of",
+        "COG",
+        "-co",
+        "COMPRESS=DEFLATE",
+        "-co",
+        f"NUM_THREADS={num_threads}",
+        "-co",
+        "BIGTIFF=YES",
+        "-wm",
+        "500",
+    ]
 
+    # Add projection parameters if needed
+    if project_to_utm and is_wgs84(info):
+        # Get lon/lat of upper left corner of raster
+        upper_left_lon: float = info["cornerCoordinates"]["upperLeft"][0]
+        upper_left_lat: float = info["cornerCoordinates"]["upperLeft"][1]
+        epsg_code = get_utm_epsg_from_latlon(upper_left_lat, upper_left_lon)
+        command.extend(["-s_srs", "EPSG:4326", "-t_srs", epsg_code])
+
+    result: subprocess.CompletedProcess = subprocess.run(command)
     result.check_returncode()
 
 
@@ -275,3 +295,40 @@ def create_preview_image(
     result = subprocess.run(command)
 
     result.check_returncode()
+
+
+def get_utm_epsg_from_latlon(lat: float, lon: float) -> str:
+    """
+    Returns an EPSG code string for the UTM zone corresponding to the given lat/lon.
+
+    Args:
+        lat (float): Latitude in decimal degrees.
+        lon (float): Longitude in decimal degrees.
+
+    Returns:
+        str: EPSG code string in the format "EPSG:326##" or "EPSG:327##"
+    """
+    if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+        raise ValueError("Invalid latitude or longitude values.")
+
+    zone_number = int((lon + 180) / 6) + 1
+    hemisphere_code = 326 if lat >= 0 else 327
+    epsg_code = f"EPSG:{hemisphere_code}{zone_number}"
+
+    return epsg_code
+
+
+def is_wgs84(info: dict) -> bool:
+    """Returns True if the input raster is in WGS84.
+
+    Args:
+        info (dict): gdalinfo -json output.
+
+    Returns:
+        bool: True if the input raster is in WGS84, False otherwise.
+    """
+    if info and info.get("stac"):
+        stac: Any | None = info.get("stac")
+        if isinstance(stac, dict) and stac.get("proj:epsg"):
+            return stac["proj:epsg"] == 4326
+    return False
