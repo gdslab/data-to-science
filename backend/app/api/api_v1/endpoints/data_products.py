@@ -407,7 +407,6 @@ def process_data_product_from_external_storage(
                 dtype=data_product.data_type,
                 project_id=project_id,
                 flight_id=flight_id,
-                project_to_utm=True,
             )
 
     # remove token from database
