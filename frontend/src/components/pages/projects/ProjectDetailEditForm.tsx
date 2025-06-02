@@ -208,6 +208,10 @@ export default function ProjectDetailEditForm({
                 Manage Access
               </LinkButton>
 
+              <LinkButton url={`/projects/${project.id}/modules`} size="sm">
+                Manage Modules
+              </LinkButton>
+
               <ProjectDeleteModal project={project} />
             </div>
           ) : null}
