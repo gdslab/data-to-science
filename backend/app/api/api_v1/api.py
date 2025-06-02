@@ -13,6 +13,7 @@ from app.api.api_v1.endpoints import (
     public,
     projects,
     project_members,
+    project_modules,
     data_products,
     raw_data,
     style,
@@ -53,7 +54,11 @@ api_router.include_router(
     prefix="/projects/{project_id}/flights/{flight_id}/data_products/{data_product_id}/file_permission",
     tags=["file_permission"],
 )
-
+api_router.include_router(
+    project_modules.router,
+    prefix="/projects/{project_id}/modules",
+    tags=["project_modules"],
+)
 api_router.include_router(
     style.router,
     prefix="/projects/{project_id}/flights/{flight_id}/data_products/{data_product_id}/style",
