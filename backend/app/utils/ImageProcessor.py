@@ -7,6 +7,7 @@ import subprocess
 from pathlib import Path
 from typing import Any, NoReturn, Optional
 
+import rasterio
 from pydantic import ValidationError
 
 from app.schemas.user_style import UserStyleCreate
@@ -50,7 +51,11 @@ class ImageProcessor:
             shutil.move(self.in_raster, self.out_dir)
         else:
             logger.info("Converting raster to COG layout")
+<<<<<<< HEAD
             convert_to_cog(self.in_raster, self.out_raster)
+=======
+            convert_to_cog(self.in_raster, self.out_raster, self.project_to_utm)
+>>>>>>> e40599c (use rasterio to check crs and get mean x,y)
             # Update info to reflect new COG
             info = get_info(self.out_raster)
 
@@ -190,13 +195,26 @@ def get_stac_properties(info: dict) -> STACProperties:
 
 
 def convert_to_cog(
+<<<<<<< HEAD
     in_raster: Path, out_raster: Path, num_threads: int | None = None
+=======
+    in_raster: Path,
+    out_raster: Path,
+    project_to_utm: bool,
+    num_threads: int | None = None,
+>>>>>>> e40599c (use rasterio to check crs and get mean x,y)
 ) -> None:
     """Runs gdalwarp to generate new raster in COG layout.
 
     Args:
+<<<<<<< HEAD
         in_raster (Path): Path to input raster dataset
         out_raster (Path): Path for output raster dataset
+=======
+        in_raster (Path): Path to input raster dataset.
+        out_raster (Path): Path for output raster dataset.
+        project_to_utm (bool): Whether to project the raster to UTM.
+>>>>>>> e40599c (use rasterio to check crs and get mean x,y)
         num_threads (int | None, optional): No. of CPUs to use. Defaults to None.
     """
     if not num_threads:
@@ -220,6 +238,17 @@ def convert_to_cog(
         ]
     )
 
+<<<<<<< HEAD
+=======
+    # Add projection parameters if needed
+    wgs84_status, mean_x, mean_y = get_wgs84_info(in_raster)
+    if project_to_utm and wgs84_status and mean_x and mean_y:
+        # Get lon/lat of upper left corner of raster
+        epsg_code = get_utm_epsg_from_latlon(mean_y, mean_x)
+        command.extend(["-s_srs", "EPSG:4326", "-t_srs", epsg_code])
+
+    result: subprocess.CompletedProcess = subprocess.run(command)
+>>>>>>> e40599c (use rasterio to check crs and get mean x,y)
     result.check_returncode()
 
 
@@ -275,3 +304,47 @@ def create_preview_image(
     result = subprocess.run(command)
 
     result.check_returncode()
+<<<<<<< HEAD
+=======
+
+
+def get_utm_epsg_from_latlon(lat: float, lon: float) -> str:
+    """
+    Returns an EPSG code string for the UTM zone corresponding to the given lat/lon.
+
+    Args:
+        lat (float): Latitude in decimal degrees.
+        lon (float): Longitude in decimal degrees.
+
+    Returns:
+        str: EPSG code string in the format "EPSG:326##" or "EPSG:327##"
+    """
+    if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+        raise ValueError("Invalid latitude or longitude values.")
+
+    zone_number = int((lon + 180) / 6) + 1
+    hemisphere_code = 326 if lat >= 0 else 327
+    epsg_code = f"EPSG:{hemisphere_code}{zone_number}"
+
+    return epsg_code
+
+
+def get_wgs84_info(in_raster: Path) -> tuple[bool, float | None, float | None]:
+    """Returns WGS84 status and mean coordinates if the input raster is in WGS84.
+
+    Args:
+        in_raster (Path): Path to input raster dataset.
+
+    Returns:
+        tuple[bool, float | None, float | None]: A tuple containing:
+            - bool: True if the input raster is in WGS84, False otherwise
+            - float | None: Mean x coordinate (longitude) if WGS84, None otherwise
+            - float | None: Mean y coordinate (latitude) if WGS84, None otherwise
+    """
+    with rasterio.open(in_raster) as src:
+        if src.crs.to_epsg() == 4326:
+            mean_x = src.bounds.left + (src.bounds.right - src.bounds.left) / 2
+            mean_y = src.bounds.bottom + (src.bounds.top - src.bounds.bottom) / 2
+            return True, mean_x, mean_y
+        return False, None, None
+>>>>>>> e40599c (use rasterio to check crs and get mean x,y)
