@@ -1,7 +1,6 @@
 import { AxiosResponse, isAxiosError } from 'axios';
-import { useContext, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { CheckIcon } from '@heroicons/react/24/outline';
 
 import { AlertBar } from '../../Alert';
 import Table, { TableBody, TableHead } from '../../Table';
