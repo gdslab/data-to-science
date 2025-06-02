@@ -1,6 +1,6 @@
 import { IForester } from '../Project';
 import { GeoJSONFeature, MapLayer } from '../Project';
-import { Flight } from '../Project';
+import { Flight, ProjectModule } from '../Project';
 import { Project } from '../ProjectList';
 import { ProjectMember } from '../ProjectAccess';
 
@@ -14,5 +14,9 @@ export type ProjectFilterSelectionAction = { type: string; payload?: string[] };
 export type ProjectMembersAction = {
   type: string;
   payload: ProjectMember[] | null;
+};
+export type ProjectModulesAction = {
+  type: string;
+  payload: ProjectModule[] | null;
 };
 export type ProjectRoleAction = { type: string; payload: string | undefined };

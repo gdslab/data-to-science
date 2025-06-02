@@ -207,6 +207,9 @@ export default function ProjectDetailEditForm({
               <LinkButton url={`/projects/${project.id}/access`} size="sm">
                 Manage Access
               </LinkButton>
+              <LinkButton url={`/projects/${project.id}/modules`} size="sm">
+                Manage Modules
+              </LinkButton>
               <ProjectSTACPublishing
                 is_published={project.is_published}
                 projectId={project.id}

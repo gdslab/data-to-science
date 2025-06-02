@@ -4,7 +4,7 @@ import { useLocation, useParams } from 'react-router-dom';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 
 import { LinkButton } from '../../Buttons';
-import { IForester } from './Project';
+import { IForester, ProjectModule } from './Project';
 import ProjectCampaigns from './ProjectCampaigns';
 import ProjectFlights from './ProjectFlights';
 import ProjectVectorData from './ProjectVectorData';
@@ -13,7 +13,11 @@ import api from '../../../api';
 
 import iForesterLogo from '../../../assets/iForester-logo.png';
 
-export default function ProjectTabNav() {
+export default function ProjectTabNav({
+  project_modules,
+}: {
+  project_modules: ProjectModule[];
+}) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [iforesterData, setIForesterData] = useState<IForester[]>([]);
 
@@ -51,45 +55,63 @@ export default function ProjectTabNav() {
     }
   }, []);
 
+  // Sort modules by sort_order and filter enabled ones
+  const enabledModules = project_modules
+    .filter((module) => {
+      // Only show iForester if there is data
+      if (module.module_name === 'iforester') {
+        return module.enabled && iforesterData.length > 0;
+      }
+      return module.enabled;
+    })
+    .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+
+  // Map module names to their corresponding components
+  const getModuleComponent = (moduleName: string) => {
+    switch (moduleName) {
+      case 'flights':
+        return <ProjectFlights />;
+      case 'map_layers':
+        return <ProjectVectorData />;
+      case 'field_data':
+        return <ProjectCampaigns />;
+      case 'iforester':
+        return (
+          <LinkButton url={`/projects/${params.projectId}/iforester`}>
+            Go to iForester page
+          </LinkButton>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
       <TabList>
-        <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium">
-          Flights
-        </Tab>
-        <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium">
-          Map Layers
-        </Tab>
-        <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium">
-          Field Data
-        </Tab>
-        {iforesterData.length > 0 && (
-          <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium">
-            <div className="flex items-center justify-center gap-2">
-              <img src={iForesterLogo} className="h-4 w-4" />
-              iForester
-            </div>
+        {enabledModules.map((module) => (
+          <Tab
+            key={module.module_name}
+            className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium"
+          >
+            {module.module_name === 'iforester' ? (
+              <div className="flex items-center justify-center gap-2">
+                <img src={iForesterLogo} className="h-4 w-4" />
+                {module.label || 'iForester'}
+              </div>
+            ) : (
+              module.label || module.module_name
+            )}
           </Tab>
-        )}
+        ))}
       </TabList>
       <hr className="my-4 border-gray-700" />
       <TabPanels>
-        <TabPanel>
-          <ProjectFlights />
-        </TabPanel>
-        <TabPanel>
-          <ProjectVectorData />
-        </TabPanel>
-        <TabPanel>
-          <ProjectCampaigns />
-        </TabPanel>
-        {iforesterData.length > 0 && (
-          <TabPanel>
-            <LinkButton url={`/projects/${params.projectId}/iforester`}>
-              Go to iForester page
-            </LinkButton>
+        {enabledModules.map((module) => (
+          <TabPanel key={module.module_name}>
+            {getModuleComponent(module.module_name)}
           </TabPanel>
-        )}
+        ))}
       </TabPanels>
     </TabGroup>
   );
