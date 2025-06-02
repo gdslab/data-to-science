@@ -109,6 +109,17 @@ export interface Project {
   role: string;
 }
 
+export interface ProjectModule {
+  description?: string;
+  enabled: boolean;
+  id: string;
+  label?: string;
+  module_name: string;
+  project_id: string;
+  required?: boolean;
+  sort_order?: number;
+}
+
 // raster band info from gdalinfo
 export interface Band {
   data_type: string;
@@ -177,6 +188,7 @@ export interface Pilot {
 export interface ProjectLoaderData {
   pilots: Pilot[];
   project: Project;
+  project_modules: ProjectModule[];
   role: string;
   fieldCampaigns: FieldCampaign[];
   flights: Flight[];
