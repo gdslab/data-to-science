@@ -16,9 +16,11 @@ from app.models.data_product import DataProduct
 from app.models.file_permission import FilePermission
 from app.models.flight import Flight
 from app.models.location import Location
+from app.models.module_type import ModuleType
 from app.models.project import Project
 from app.models.project_like import ProjectLike
 from app.models.project_member import ProjectMember
+from app.models.project_module import ProjectModule
 from app.models.team_member import TeamMember
 from app.models.user import User
 from app.models.utils.utcnow import utcnow
@@ -115,6 +117,23 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 with db as session:
                     session.add_all(project_members)
                     session.commit()
+
+        # Create project module records for all module types
+        with db as session:
+            # Get all module types
+            module_types = session.query(ModuleType).all()
+            # Create project module records
+            project_modules = []
+            for module_type in module_types:
+                project_modules.append(
+                    ProjectModule(
+                        project_id=project_db_obj.id,
+                        module_name=module_type.module_name,
+                        enabled=module_type.required,  # Required modules are enabled by default
+                    )
+                )
+            session.add_all(project_modules)
+            session.commit()
 
         try:
             project_schema = ProjectSchema.model_validate(project_db_obj)
