@@ -105,7 +105,9 @@ export default function DataProductUploadModal({
                 )}
 
                 {dtype !== 'other' ||
-                (dtype === 'other' && dtypeOther.length > 1) ? (
+                (dtype === 'other' &&
+                  dtypeOther.length > 1 &&
+                  dtypeOther.length <= 16) ? (
                   <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                     <DataProductUpload
                       info={{
@@ -122,7 +124,9 @@ export default function DataProductUploadModal({
                   </div>
                 ) : dtypeOtherTouched ? (
                   <span className="px-4 pb-4 pt-5 sm:p-6 sm:pb-4 text-red-600">
-                    Data type must be at least 2 characters in length
+                    {dtypeOther.length <= 1
+                      ? 'Data type must be at least 2 characters in length'
+                      : 'Data type must not exceed 16 characters in length'}
                   </span>
                 ) : null}
 
