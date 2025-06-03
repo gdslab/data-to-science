@@ -1,14 +1,24 @@
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from pydantic import AnyHttpUrl, BaseModel, Field, UUID4
+from pydantic import (
+    AnyHttpUrl,
+    BaseModel,
+    Field,
+    field_validator,
+    UUID4,
+)
 
 from app.utils.ImageProcessor import STACProperties
+
+data_type_char_limit_rule = Field(
+    None, title="Name of data product's new data type", min_length=1, max_length=16
+)
 
 
 # shared properties
 class DataProductBase(BaseModel):
-    data_type: Optional[str] = None
+    data_type: Optional[str] = data_type_char_limit_rule
     filepath: Optional[str] = None
     original_filename: Optional[str] = None
     stac_properties: Optional[STACProperties] = None
@@ -30,7 +40,7 @@ class DataProductUpdate(DataProductBase):
 
 
 class DataProductUpdateDataType(BaseModel):
-    data_type: str = Field(title="Name of data product's new data type", max_length=16)
+    data_type: Optional[str] = data_type_char_limit_rule
 
 
 # properties shared by models stored in DB
@@ -98,3 +108,11 @@ class ProcessingRequest(BaseModel):
     variBlue: int
     zonal: bool
     zonal_layer_id: str
+
+    @field_validator("dem_id", mode="before")
+    @classmethod
+    def empty_string_to_none(cls, v: Optional[UUID4]) -> Optional[UUID4]:
+        """Return None if the string is empty, otherwise return the UUID4."""
+        if v == "":
+            return None
+        return v
