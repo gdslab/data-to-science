@@ -74,6 +74,26 @@ const VARIBandSelection = ({ dataProduct }: { dataProduct: DataProduct }) => {
   );
 };
 
+const HillshadeTools = ({ dataProductId }: { dataProductId: string }) => {
+  return (
+    <ul>
+      <li>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center">
+            <Field id="hillshade" type="checkbox" name="hillshade" />
+            <label
+              htmlFor="hillshade"
+              className="ms-2 text-sm font-medium text-gray-900"
+            >
+              Hillshade
+            </label>
+          </div>
+        </div>
+      </li>
+    </ul>
+  );
+};
+
 const PointCloudTools = ({
   otherDataProducts,
 }: {
@@ -338,4 +358,10 @@ const ZonalStatisticTools = ({ dataProductId }: { dataProductId: string }) => {
   );
 };
 
-export { MultiSpectralTools, PointCloudTools, RGBTools, ZonalStatisticTools };
+export {
+  HillshadeTools,
+  MultiSpectralTools,
+  PointCloudTools,
+  RGBTools,
+  ZonalStatisticTools,
+};

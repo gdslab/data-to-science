@@ -220,6 +220,7 @@ def set_status_attr(data_product_obj: DataProduct, jobs: List[Job]) -> bool:
             "ndvi",
             "vari",
             "chm",
+            "hillshade",
         ]
         for job in jobs:
             if job.name in accepted_job_names:

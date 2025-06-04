@@ -6,6 +6,7 @@ from pydantic import (
     BaseModel,
     Field,
     field_validator,
+    ValidationInfo,
     UUID4,
 )
 
@@ -99,6 +100,7 @@ class ProcessingRequest(BaseModel):
     exgRed: int
     exgGreen: int
     exgBlue: int
+    hillshade: bool
     ndvi: bool
     ndviNIR: int
     ndviRed: int
@@ -115,4 +117,14 @@ class ProcessingRequest(BaseModel):
         """Return None if the string is empty, otherwise return the UUID4."""
         if v == "":
             return None
+        return v
+
+    @field_validator("dem_id", mode="before")
+    @classmethod
+    def validate_dem_id_required(
+        cls, v: Optional[UUID4], info: ValidationInfo
+    ) -> Optional[UUID4]:
+        """Ensure dem_id is set when chm or hillshade is True."""
+        if info.data.get("chm") and v is None:
+            raise ValueError("dem_id is required when chm is True")
         return v

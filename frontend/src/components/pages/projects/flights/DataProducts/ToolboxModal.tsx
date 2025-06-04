@@ -12,10 +12,11 @@ import { useFlightContext } from '../../FlightContext/FlightContext';
 import { DataProduct } from '../../Project';
 import { isElevationDataProduct } from '../../../../maps/utils';
 import {
-  RGBTools,
+  HillshadeTools,
   MultiSpectralTools,
-  ZonalStatisticTools,
   PointCloudTools,
+  RGBTools,
+  ZonalStatisticTools,
 } from './ToolboxTools';
 
 import api from '../../../../../api';
@@ -27,6 +28,7 @@ export interface ToolboxFields {
   exgRed: number;
   exgGreen: number;
   exgBlue: number;
+  hillshade: boolean;
   ndvi: boolean;
   ndviNIR: number;
   ndviRed: number;
@@ -70,6 +72,7 @@ const getInitialValues = (
     exgRed: redBandIndex + 1,
     exgGreen: greenBandIndex + 1,
     exgBlue: blueBandIndex + 1,
+    hillshade: false,
     ndvi: false,
     ndviNIR: nirBandIndex + 1,
     ndviRed: redBandIndex + 1,
@@ -182,11 +185,14 @@ export default function ToolboxModal({
                     getNumOfBands(dataProduct) > 2 && (
                       <MultiSpectralTools dataProduct={dataProduct} />
                     )}
-                  {/* zonal statistic tools */}
+                  {/* hillshade and zonal statistic tools */}
                   {flight &&
                     !isPointCloud &&
                     getNumOfBands(dataProduct) === 1 && (
-                      <ZonalStatisticTools dataProductId={dataProduct.id} />
+                      <>
+                        <HillshadeTools dataProductId={dataProduct.id} />
+                        <ZonalStatisticTools dataProductId={dataProduct.id} />
+                      </>
                     )}
                   {/* point cloud tools */}
                   {flight && isPointCloud && (
@@ -199,6 +205,7 @@ export default function ToolboxModal({
                         !values.ndvi &&
                         !values.vari &&
                         !values.chm &&
+                        !values.hillshade &&
                         !values.zonal) ||
                       (values.zonal && !values.zonal_layer_id) ||
                       (values.chm && !values.dem_id) ||
