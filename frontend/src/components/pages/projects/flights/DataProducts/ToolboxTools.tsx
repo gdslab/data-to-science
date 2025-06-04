@@ -74,7 +74,7 @@ const VARIBandSelection = ({ dataProduct }: { dataProduct: DataProduct }) => {
   );
 };
 
-const HillshadeTools = ({ dataProductId }: { dataProductId: string }) => {
+const HillshadeTools = () => {
   return (
     <ul>
       <li>
