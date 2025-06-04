@@ -39,6 +39,7 @@ class CRUDBreedbaseConnection(
         """Get breedbase connections by trial ID, ensuring user has access to the projects."""
         statement = (
             select(BreedbaseConnection)
+            .distinct()
             .join(Project)
             .join(Project.members)
             .where(
