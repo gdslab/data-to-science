@@ -579,12 +579,6 @@ async def run_processing_tool(
 
     # hillshade
     if toolbox_in.hillshade and not os.environ.get("RUNNING_TESTS") == "1":
-        # check if dem_id is set
-        if not toolbox_in.dem_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="DEM data product ID is required",
-            )
         # create new data product record
         hillshade_data_product: models.DataProduct = (
             crud.data_product.create_with_flight(
