@@ -6,7 +6,6 @@ import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 import { LinkButton } from '../../Buttons';
 import BreedBase from './breedBase/BreedBase';
 import { IForester, ProjectModule } from './Project';
-import BreedBase from './breedBase/BreedBase';
 import ProjectCampaigns from './ProjectCampaigns';
 import ProjectFlights from './ProjectFlights';
 import ProjectVectorData from './ProjectVectorData';
