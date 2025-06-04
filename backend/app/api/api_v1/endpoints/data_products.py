@@ -431,6 +431,7 @@ async def run_processing_tool(
     if (
         toolbox_in.chm is False
         and toolbox_in.exg is False
+        and toolbox_in.hillshade is False
         and toolbox_in.ndvi is False
         and toolbox_in.vari is False
         and toolbox_in.zonal is False
@@ -458,6 +459,12 @@ async def run_processing_tool(
 
     # chm
     if toolbox_in.chm and not os.environ.get("RUNNING_TESTS") == "1":
+        # check if dem_id is set
+        if not toolbox_in.dem_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="DEM data product ID is required",
+            )
         # create new data product record
         chm_data_product: models.DataProduct = crud.data_product.create_with_flight(
             db,
@@ -566,6 +573,44 @@ async def run_processing_tool(
                 str(out_raster),
                 tool_params,
                 exg_data_product.id,
+                current_user.id,
+            )
+        )
+
+    # hillshade
+    if toolbox_in.hillshade and not os.environ.get("RUNNING_TESTS") == "1":
+        # check if dem_id is set
+        if not toolbox_in.dem_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="DEM data product ID is required",
+            )
+        # create new data product record
+        hillshade_data_product: models.DataProduct = (
+            crud.data_product.create_with_flight(
+                db,
+                schemas.DataProductCreate(
+                    data_type="Hillshade",
+                    filepath="null",
+                    original_filename=data_product.original_filename,
+                ),
+                flight_id=flight.id,
+            )
+        )
+        # get path for hillshade tool output raster
+        data_product_dir = utils.get_data_product_dir(
+            str(project.id), str(flight.id), str(hillshade_data_product.id)
+        )
+        hillshade_filename: str = str(uuid4()) + ".tif"
+        out_raster = data_product_dir / hillshade_filename
+        # run hillshade tool in background
+        run_toolbox.apply_async(
+            args=(
+                "hillshade",
+                data_product.filepath,
+                str(out_raster),
+                {},
+                hillshade_data_product.id,
                 current_user.id,
             )
         )
