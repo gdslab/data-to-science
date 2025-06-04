@@ -2,7 +2,13 @@ import { AxiosResponse, isAxiosError } from 'axios';
 import { createContext, useContext, useEffect, useReducer } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { Flight, GeoJSONFeature, IForester, MapLayer } from '../Project';
+import {
+  Flight,
+  GeoJSONFeature,
+  IForester,
+  MapLayer,
+  ProjectModule,
+} from '../Project';
 import { Project } from '../ProjectList';
 import { ProjectMember } from '../ProjectAccess';
 import { User } from '../../../../AuthContext';
@@ -16,6 +22,7 @@ import {
   ProjectAction,
   ProjectFilterSelectionAction,
   ProjectMembersAction,
+  ProjectModulesAction,
   ProjectRoleAction,
 } from './actions';
 import {
@@ -26,6 +33,7 @@ import {
   mapLayersReducer,
   projectReducer,
   projectMembersReducer,
+  projectModulesReducer,
   projectRoleReducer,
   projectFilterSelectionReducer,
 } from './reducers';
@@ -43,6 +51,8 @@ interface Context {
   projectDispatch: React.Dispatch<ProjectAction>;
   projectMembers: ProjectMember[] | null;
   projectMembersDispatch: React.Dispatch<ProjectMembersAction>;
+  projectModules: ProjectModule[] | null;
+  projectModulesDispatch: React.Dispatch<ProjectModulesAction>;
   projectRole: string | undefined;
   projectRoleDispatch: React.Dispatch<ProjectRoleAction>;
   projectFilterSelection: string[];
@@ -64,6 +74,8 @@ const context: Context = {
   projectDispatch: () => {},
   projectMembers: null,
   projectMembersDispatch: () => {},
+  projectModules: null,
+  projectModulesDispatch: () => {},
   projectRole: undefined,
   projectRoleDispatch: () => {},
   projectFilterSelection: [],
@@ -94,6 +106,29 @@ export async function getProjectMembers(
       console.error(err);
     }
     projectMembersDispatch({ type: 'clear', payload: null });
+  }
+}
+
+export async function getProjectModules(
+  projectId: string,
+  projectModulesDispatch: React.Dispatch<ProjectModulesAction>
+) {
+  try {
+    const response: AxiosResponse<ProjectModule[]> = await api.get(
+      `/projects/${projectId}/modules`
+    );
+    if (response) {
+      projectModulesDispatch({ type: 'set', payload: response.data });
+    } else {
+      projectModulesDispatch({ type: 'clear', payload: null });
+    }
+  } catch (err) {
+    if (isAxiosError(err)) {
+      console.log(err.response?.data);
+    } else {
+      console.error(err);
+    }
+    projectModulesDispatch({ type: 'clear', payload: null });
   }
 }
 
@@ -142,6 +177,10 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
   const [project, projectDispatch] = useReducer(projectReducer, null);
   const [projectMembers, projectMembersDispatch] = useReducer(
     projectMembersReducer,
+    null
+  );
+  const [projectModules, projectModulesDispatch] = useReducer(
+    projectModulesReducer,
     null
   );
   const [projectRole, projectRoleDispatch] = useReducer(
@@ -259,6 +298,14 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
   }, [params.projectId]);
 
   useEffect(() => {
+    if (params.projectId) {
+      getProjectModules(params.projectId, projectModulesDispatch);
+    } else {
+      projectModulesDispatch({ type: 'clear', payload: null });
+    }
+  }, [params.projectId]);
+
+  useEffect(() => {
     async function getProjectRole() {
       try {
         const profile = localStorage.getItem('userProfile');
@@ -307,6 +354,8 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
         projectDispatch,
         projectMembers,
         projectMembersDispatch,
+        projectModules,
+        projectModulesDispatch,
         projectRole,
         projectRoleDispatch,
         projectFilterSelection,

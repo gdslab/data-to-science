@@ -4,7 +4,7 @@ import { Params, useLoaderData } from 'react-router-dom';
 
 import { User } from '../../../AuthContext';
 import { useProjectContext } from './ProjectContext';
-import { Flight, Project, ProjectLoaderData } from './Project';
+import { Flight, Project, ProjectLoaderData, ProjectModule } from './Project';
 import { ProjectMember } from './ProjectAccess';
 import ProjectDetailEditForm from './ProjectDetailEditForm';
 import ProjectTabNav from './ProjectTabNav';
@@ -25,6 +25,9 @@ export async function loader({ params }: { params: Params<string> }) {
     const project_member: AxiosResponse<ProjectMember> = await api.get(
       `/projects/${params.projectId}/members/${user.id}`
     );
+    const project_modules: AxiosResponse<ProjectModule[]> = await api.get(
+      `/projects/${params.projectId}/modules`
+    );
     const flights: AxiosResponse<Flight[]> = await api.get(
       `/projects/${params.projectId}/flights`
     );
@@ -43,6 +46,7 @@ export async function loader({ params }: { params: Params<string> }) {
       });
       return {
         project: project.data,
+        project_modules: project_modules.data,
         role: project_member.data.role,
         flights: flights.data,
         teams: teamsf,
@@ -50,6 +54,7 @@ export async function loader({ params }: { params: Params<string> }) {
     } else {
       return {
         project: null,
+        project_modules: [],
         role: null,
         flights: [],
         teams: [],
@@ -58,6 +63,7 @@ export async function loader({ params }: { params: Params<string> }) {
   } catch (err) {
     return {
       project: null,
+      project_modules: [],
       role: null,
       flights: [],
       teams: [],
@@ -66,7 +72,7 @@ export async function loader({ params }: { params: Params<string> }) {
 }
 
 export default function ProjectDetail() {
-  const { project, role, flights, teams } =
+  const { project, project_modules, role, flights, teams } =
     useLoaderData() as ProjectLoaderData;
 
   const {
@@ -77,6 +83,7 @@ export default function ProjectDetail() {
     flightsFilterSelectionDispatch,
     projectDispatch,
     projectMembersDispatch,
+    projectModulesDispatch,
     projectRoleDispatch,
   } = useProjectContext();
 
@@ -93,6 +100,12 @@ export default function ProjectDetail() {
     // update project members if team changes
     if (project) getProjectMembers(project.id, projectMembersDispatch);
   }, [project.team_id]);
+
+  useEffect(() => {
+    // update project modules
+    if (project)
+      projectModulesDispatch({ type: 'set', payload: project_modules });
+  }, [project, project_modules]);
 
   useEffect(() => {
     if (flights) flightsDispatch({ type: 'set', payload: flights });
@@ -141,7 +154,7 @@ export default function ProjectDetail() {
           </div>
         )}
         <div className="grow min-h-0">
-          <ProjectTabNav />
+          <ProjectTabNav project_modules={project_modules} />
         </div>
       </div>
     );

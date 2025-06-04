@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import List, TYPE_CHECKING
 
 from datetime import date
 
@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from .project_like import ProjectLike
     from .location import Location
     from .project_member import ProjectMember
+    from .project_module import ProjectModule
     from .team import Team
     from .user import User
     from .vector_layer import VectorLayer
@@ -45,27 +46,27 @@ class Project(Base):
         DateTime(timezone=True), nullable=True
     )
 
-    members: Mapped[list["ProjectMember"]] = relationship(
+    members: Mapped[List["ProjectMember"]] = relationship(
         back_populates="project", cascade="all, delete"
     )
-
+    modules: Mapped[List["ProjectModule"]] = relationship(back_populates="project")
     location: Mapped["Location"] = relationship(back_populates="project")
     owner: Mapped["User"] = relationship(back_populates="projects")
     team: Mapped["Team"] = relationship(back_populates="projects")
 
-    campaigns: Mapped[list["Campaign"]] = relationship(
+    campaigns: Mapped[List["Campaign"]] = relationship(
         back_populates="project", cascade="all, delete"
     )
-    likes: Mapped[list["ProjectLike"]] = relationship(
+    likes: Mapped[List["ProjectLike"]] = relationship(
         back_populates="project", cascade="all, delete"
     )
-    flights: Mapped[list["Flight"]] = relationship(
+    flights: Mapped[List["Flight"]] = relationship(
         back_populates="project", cascade="all, delete"
     )
-    iforester: Mapped[list["IForester"]] = relationship(
+    iforester: Mapped[List["IForester"]] = relationship(
         back_populates="project", cascade="all, delete"
     )
-    vector_layer: Mapped[list["VectorLayer"]] = relationship(
+    vector_layer: Mapped[List["VectorLayer"]] = relationship(
         back_populates="project", cascade="all, delete"
     )
 

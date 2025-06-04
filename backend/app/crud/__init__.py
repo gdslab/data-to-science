@@ -12,6 +12,7 @@ from .crud_location import location
 from .crud_project import project
 from .crud_project_like import project_like
 from .crud_project_member import project_member
+from .crud_project_module import project_module
 from .crud_raw_data import raw_data
 from .crud_shortened_url import shortened_url
 from .crud_team import team

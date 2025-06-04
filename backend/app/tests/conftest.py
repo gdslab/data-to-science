@@ -3,6 +3,7 @@ import shutil
 from typing import Generator
 
 import pytest
+from pytest import Config
 from fastapi import HTTPException, status
 from fastapi.testclient import TestClient
 from pydantic import PostgresDsn
@@ -18,6 +19,7 @@ from app.tests.utils.user import (
     authentication_api_key_from_email,
     authentication_token_from_email,
 )
+from app.seeds.seed_modules import seed_module_types
 
 
 TEST_DB_PATH = f"{settings.POSTGRES_DB or ''}_test"
@@ -37,6 +39,8 @@ def db_fixture() -> Generator:
     TestSessionLocal = sessionmaker(autoflush=False, bind=engine)
     try:
         db = TestSessionLocal()
+        # Seed module types
+        seed_module_types(session=db)
         yield db
     except Exception as exception:
         db.rollback()
@@ -62,7 +66,7 @@ def db_fixture() -> Generator:
 def client_fixture(db: Session) -> Generator:
     """Generate client for each api test."""
 
-    def get_db_override():
+    def get_db_override() -> Session:
         return db
 
     app.dependency_overrides[get_db] = get_db_override
@@ -89,7 +93,7 @@ def normal_user_api_key(client: TestClient, db: Session) -> str:
     )
 
 
-def pytest_configure(config):
+def pytest_configure(config: Config) -> None:
     """Create the test database before running tests if necessary."""
     create_test_db(db_path=TEST_DB_PATH)
     engine = create_engine(
@@ -97,3 +101,12 @@ def pytest_configure(config):
     )
     # drop any existing tables in test dataase
     Base.metadata.drop_all(engine)
+    # create tables
+    Base.metadata.create_all(engine)
+    # seed module types
+    TestSessionLocal = sessionmaker(autoflush=False, bind=engine)
+    session = TestSessionLocal()
+    try:
+        seed_module_types(session=session)
+    finally:
+        session.close()
