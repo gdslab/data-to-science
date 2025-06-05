@@ -1,7 +1,7 @@
 """add is_published column to projects
 
 Revision ID: 45875ccd4674
-Revises: 65ce1ac7b8a9
+Revises: 5c0f233cab5a
 Create Date: 2025-04-08 20:10:46.965844
 
 """
@@ -12,7 +12,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "45875ccd4674"
-down_revision: str | None = "65ce1ac7b8a9"
+down_revision: str | None = "5c0f233cab5a"
 branch_labels: str | None = None
 depends_on: str | None = None
 

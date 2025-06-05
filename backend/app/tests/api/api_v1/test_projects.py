@@ -1134,6 +1134,10 @@ def test_remove_project_from_stac_without_project_member_owner_role(
 def test_create_project_like(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
     response = client.post(f"{API_URL}/{project.id}/like")
     assert response.status_code == status.HTTP_201_CREATED
     response_data = response.json()
