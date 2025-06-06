@@ -1,3 +1,4 @@
+import os
 import secrets
 from typing import Any, Optional
 
@@ -119,6 +120,15 @@ class Settings(BaseSettings):
 
     # STAC Catalog
     STAC_API_URL: Optional[AnyHttpUrl] = None
+    STAC_API_TEST_URL: Optional[AnyHttpUrl] = None
+
+    @property
+    def get_stac_api_url(self) -> Optional[AnyHttpUrl]:
+        """Get the appropriate STAC API URL based on whether we're running tests."""
+        # Check if we're running tests
+        if os.getenv("RUNNING_TESTS") == "1" and self.STAC_API_TEST_URL:
+            return self.STAC_API_TEST_URL
+        return self.STAC_API_URL
 
 
 settings = Settings()

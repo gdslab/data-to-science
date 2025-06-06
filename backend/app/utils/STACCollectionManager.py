@@ -16,7 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 class STACCollectionManager:
-    STAC_API_URL = settings.STAC_API_URL
+    @property
+    def STAC_API_URL(self) -> Optional[str]:
+        return str(settings.get_stac_api_url) if settings.get_stac_api_url else None
 
     def __init__(
         self,
@@ -32,7 +34,7 @@ class STACCollectionManager:
             logger.error(f"STAC API at {self.STAC_API_URL} is unavailable")
             raise ConnectionError(f"STAC API at {self.STAC_API_URL} is unavailable.")
 
-        self.api_url = str(self.STAC_API_URL)
+        self.api_url = self.STAC_API_URL
         self.collection_id = collection_id
         self.collection = collection
         self.items = items or []
@@ -364,14 +366,19 @@ class STACCollectionManager:
     def is_stac_api_available(cls) -> bool:
         """Check if public STAC API is accessible."""
         try:
-            logger.debug(f"Checking if STAC API at {cls.STAC_API_URL} is available")
-            response = requests.get(cls.STAC_API_URL, timeout=5)
+            stac_url = settings.get_stac_api_url
+            if not stac_url:
+                logger.warning("STAC API URL is not configured")
+                return False
+
+            logger.debug(f"Checking if STAC API at {stac_url} is available")
+            response = requests.get(str(stac_url), timeout=5)
             is_available = response.status_code == 200
             if not is_available:
                 logger.warning(
-                    f"STAC API at {cls.STAC_API_URL} returned status code {response.status_code}"
+                    f"STAC API at {stac_url} returned status code {response.status_code}"
                 )
             return is_available
         except requests.RequestException as e:
-            logger.warning(f"STAC API at {cls.STAC_API_URL} is unavailable: {str(e)}")
+            logger.warning(f"STAC API at {stac_url} is unavailable: {str(e)}")
             return False

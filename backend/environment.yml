@@ -2,8 +2,6 @@ name: d2s
 channels:
   - conda-forge
   - defaults
-platforms:
-  - linux-64
 dependencies:
   - _libgcc_mutex
   - _openmp_mutex
@@ -135,6 +133,7 @@ dependencies:
   - jmespath
   - joblib
   - json-c
+  - jsonschema
   - kealib
   - keyutils
   - kiwisolver
@@ -303,6 +302,7 @@ dependencies:
   - pyproj
   - pysocks
   - pystac
+  - pystac-client
   - pytest
   - pytest-cov
   - python-dateutil
@@ -390,5 +390,3 @@ dependencies:
   - zlib
   - zstandard
   - zstd
-  - pystac-client
-  - rio-stac

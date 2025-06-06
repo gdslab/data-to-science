@@ -121,6 +121,17 @@ export interface ProjectModule {
   sort_order?: number;
 }
 
+export interface ProjectModule {
+  description?: string;
+  enabled: boolean;
+  id: string;
+  label?: string;
+  module_name: string;
+  project_id: string;
+  required?: boolean;
+  sort_order?: number;
+}
+
 // raster band info from gdalinfo
 export interface Band {
   data_type: string;
