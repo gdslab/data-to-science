@@ -512,6 +512,40 @@ async def run_processing_tool(
             )
         )
 
+    # dtm
+    if toolbox_in.dtm and not os.environ.get("RUNNING_TESTS") == "1":
+        # create new data product record
+        dtm_data_product: models.DataProduct = crud.data_product.create_with_flight(
+            db,
+            schemas.DataProductCreate(
+                data_type="DTM",
+                filepath="null",
+                original_filename=data_product.original_filename,
+            ),
+            flight_id=flight.id,
+        )
+        # get path for dtm tool output raster
+        data_product_dir = utils.get_data_product_dir(
+            str(project.id), str(flight.id), str(dtm_data_product.id)
+        )
+        dtm_filename: str = str(uuid4()) + ".tif"
+        out_raster = data_product_dir / dtm_filename
+        # run dtm tool in background
+        tool_params = {
+            "dtm_resolution": toolbox_in.dtmResolution,
+            "dtm_rigidness": toolbox_in.dtmRigidness,
+        }
+        run_toolbox.apply_async(
+            args=(
+                "dtm",
+                data_product.filepath,
+                str(out_raster),
+                tool_params,
+                dtm_data_product.id,
+                current_user.id,
+            )
+        )
+
     # ndvi
     if toolbox_in.ndvi and not os.environ.get("RUNNING_TESTS") == "1":
         # create new data product record

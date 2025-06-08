@@ -215,6 +215,7 @@ export default function ToolboxModal({
                         !values.ndvi &&
                         !values.vari &&
                         !values.chm &&
+                        !values.dtm &&
                         !values.hillshade &&
                         !values.zonal) ||
                       (values.zonal && !values.zonal_layer_id) ||

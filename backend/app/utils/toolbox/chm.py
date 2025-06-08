@@ -203,10 +203,14 @@ if __name__ == "__main__":
         "--dem_input", type=str, required=True, help="DEM data product filepath"
     )
     parser.add_argument(
-        "--chm_resolution", type=float, required=True, help="CHM resolution"
+        "--chm_resolution",
+        type=float,
+        required=True,
+        default=0.5,
+        help="CHM resolution",
     )
     parser.add_argument(
-        "--chm_percentile", type=int, required=True, help="CHM percentile"
+        "--chm_percentile", type=int, required=True, default=98, help="CHM percentile"
     )
 
     args = parser.parse_args()

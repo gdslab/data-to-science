@@ -6,6 +6,7 @@ from typing import Optional
 from celery.utils.log import get_task_logger
 from app.utils.ImageProcessor import ImageProcessor
 from app.utils.toolbox.chm import run as chm_run
+from app.utils.toolbox.dtm import run as dtm_run
 from app.utils.toolbox.exg import run as exg_run
 from app.utils.toolbox.hillshade import run as hillshade_run
 from app.utils.toolbox.ndvi import run as ndvi_run
@@ -16,6 +17,7 @@ logger = get_task_logger(__name__)
 
 AVAILABLE_TOOLS = {
     "chm": chm_run,
+    "dtm": dtm_run,
     "exg": exg_run,
     "hillshade": hillshade_run,
     "ndvi": ndvi_run,
