@@ -104,42 +104,129 @@ const PointCloudTools = ({
     () => otherDataProducts.filter(isElevationDataProduct),
     [otherDataProducts]
   );
-  if (elevationDataProducts.length === 0)
-    return (
-      <div>
-        <HintText>
-          CHM unavailable. No DTM data products found. "DTM", "DSM", or "DEM"
-          must be in the name of the data product for it to be detected.
-        </HintText>
-      </div>
-    );
+
   return (
-    <ul>
+    <ul className="space-y-6">
+      {elevationDataProducts.length > 0 ? (
+        <li>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center">
+              <Field id="chm-checkbox" type="checkbox" name="chm" />
+              <label
+                htmlFor="chm-checkbox"
+                className="ms-2 text-sm font-medium text-gray-900"
+              >
+                Canopy Height Model (CHM)
+              </label>
+            </div>
+            {values.chm && (
+              <div className="flex flex-col gap-4">
+                <HintText>
+                  The height data (e.g., DTM, DSM, DEM) for this process should
+                  indicate terrain height.
+                </HintText>
+                <SelectField
+                  name="dem_id"
+                  label="DTM"
+                  options={elevationDataProducts.map((dp) => ({
+                    label: dp.data_type.toUpperCase(),
+                    value: dp.id,
+                  }))}
+                />
+                <div className="flex flex-row gap-4 items-center">
+                  <div className="flex flex-col">
+                    <label
+                      htmlFor="chmResolution"
+                      className="block text-sm text-gray-400 font-bold pt-2 pb-1"
+                    >
+                      Resolution*
+                    </label>
+                    <Field
+                      name="chmResolution"
+                      type="number"
+                      min={0.1}
+                      step={0.1}
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <label
+                      htmlFor="chmPercentile"
+                      className="block text-sm text-gray-400 font-bold pt-2 pb-1"
+                    >
+                      Percentile*
+                    </label>
+                    <Field
+                      name="chmPercentile"
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </li>
+      ) : (
+        <li>
+          <div>
+            <HintText>
+              CHM unavailable. No DTM data products found. "DTM", "DSM", or
+              "DEM" must be in the name of the data product for it to be
+              detected.
+            </HintText>
+          </div>
+        </li>
+      )}
       <li>
         <div className="flex flex-col gap-4">
           <div className="flex items-center">
-            <Field id="chm-checkbox" type="checkbox" name="chm" />
+            <Field id="dtm-checkbox" type="checkbox" name="dtm" />
             <label
-              htmlFor="chm-checkbox"
+              htmlFor="dtm-checkbox"
               className="ms-2 text-sm font-medium text-gray-900"
             >
-              Canopy Height Model (CHM)
+              Digital Terrain Model (DTM)
             </label>
           </div>
-          {values.chm && (
-            <div>
+          {values.dtm && (
+            <div className="flex flex-col gap-4">
               <HintText>
-                The height data (e.g., DTM, DSM, DEM) for this process should
-                indicate terrain height.
+                Generate a digital terrain model from point cloud data using
+                ground points.
               </HintText>
-              <SelectField
-                name="dem_id"
-                label="DTM"
-                options={elevationDataProducts.map((dp) => ({
-                  label: dp.data_type.toUpperCase(),
-                  value: dp.id,
-                }))}
-              />
+              <div className="flex flex-row gap-4 items-center">
+                <div className="flex flex-col">
+                  <label
+                    htmlFor="dtmResolution"
+                    className="block text-sm text-gray-400 font-bold pt-2 pb-1"
+                  >
+                    Resolution*
+                  </label>
+                  <Field
+                    name="dtmResolution"
+                    type="number"
+                    min={0.1}
+                    step={0.1}
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label
+                    htmlFor="dtmRigidness"
+                    className="block text-sm text-gray-400 font-bold pt-2 pb-1"
+                  >
+                    Rigidness*
+                  </label>
+                  <Field
+                    name="dtmRigidness"
+                    type="number"
+                    min={1}
+                    max={3}
+                    step={1}
+                  />
+                </div>
+              </div>
             </div>
           )}
         </div>
