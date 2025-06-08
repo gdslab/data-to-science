@@ -127,7 +127,7 @@ const PointCloudTools = ({
             </label>
           </div>
           {values.chm && (
-            <div>
+            <div className="flex flex-col gap-4">
               <HintText>
                 The height data (e.g., DTM, DSM, DEM) for this process should
                 indicate terrain height.
@@ -140,6 +140,37 @@ const PointCloudTools = ({
                   value: dp.id,
                 }))}
               />
+              <div className="flex flex-row gap-4 items-center">
+                <div className="flex flex-col">
+                  <label
+                    htmlFor="chmResolution"
+                    className="block text-sm text-gray-400 font-bold pt-2 pb-1"
+                  >
+                    Resolution*
+                  </label>
+                  <Field
+                    name="chmResolution"
+                    type="number"
+                    min={0.1}
+                    step={0.1}
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label
+                    htmlFor="chmPercentile"
+                    className="block text-sm text-gray-400 font-bold pt-2 pb-1"
+                  >
+                    Percentile*
+                  </label>
+                  <Field
+                    name="chmPercentile"
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={0.1}
+                  />
+                </div>
+              </div>
             </div>
           )}
         </div>

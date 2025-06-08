@@ -23,7 +23,12 @@ import api from '../../../../../api';
 
 export interface ToolboxFields {
   chm: boolean;
+  chmResolution: number;
+  chmPercentile: number;
   dem_id: string;
+  dtm: boolean;
+  dtmResolution: number;
+  dtmRigidness: number;
   exg: boolean;
   exgRed: number;
   exgGreen: number;
@@ -67,7 +72,12 @@ const getInitialValues = (
 
   return {
     chm: false,
+    chmResolution: 0.5,
+    chmPercentile: 98,
     dem_id: firstElevationProduct?.id ?? '',
+    dtm: false,
+    dtmResolution: 0.5,
+    dtmRigidness: 2,
     exg: false,
     exgRed: redBandIndex + 1,
     exgGreen: greenBandIndex + 1,

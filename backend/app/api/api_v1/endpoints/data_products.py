@@ -431,6 +431,7 @@ async def run_processing_tool(
     # verify at least one processing tool was selected
     if (
         toolbox_in.chm is False
+        and toolbox_in.dtm is False
         and toolbox_in.exg is False
         and toolbox_in.hillshade is False
         and toolbox_in.ndvi is False
@@ -497,6 +498,8 @@ async def run_processing_tool(
         # run chm tool in background
         tool_params = {
             "dem_input": dem_data_product.filepath,
+            "chm_resolution": toolbox_in.chmResolution,
+            "chm_percentile": toolbox_in.chmPercentile,
         }
         run_toolbox.apply_async(
             args=(
