@@ -16,6 +16,17 @@ export default function SingleBandColorRampSelect({
 
   const symbology = state[dataProduct.id].symbology as SingleBandSymbology;
 
+  // Find the matching color option from the grouped options
+  const findMatchingColorOption = (
+    colorRamp: string
+  ): ColorMapOption | undefined => {
+    for (const group of colorMapGroupedOptions) {
+      const match = group.options.find((option) => option.value === colorRamp);
+      if (match) return match;
+    }
+    return undefined;
+  };
+
   const handleChange = (colorOption: SingleValue<ColorMapOption>) => {
     if (colorOption) {
       const updatedSymbology = {
@@ -49,7 +60,11 @@ export default function SingleBandColorRampSelect({
         },
       })}
       isSearchable
-      defaultValue={miscOptions[12]}
+      defaultValue={
+        symbology.colorRamp
+          ? findMatchingColorOption(symbology.colorRamp)
+          : miscOptions[12]
+      }
       options={colorMapGroupedOptions}
       onChange={handleChange}
     />

@@ -10,6 +10,7 @@ from uuid import UUID
 import geopandas as gpd
 from celery.utils.log import get_task_logger
 from fastapi.encoders import jsonable_encoder
+from pyproj import Transformer
 
 from app import crud, schemas
 from app.api.deps import get_db
@@ -18,7 +19,7 @@ from app.core.celery_app import celery_app
 from app.utils.job_manager import JobManager
 from app.schemas.data_product import DataProductUpdate
 from app.schemas.job import Status
-from app.utils.ImageProcessor import ImageProcessor
+from app.utils.ImageProcessor import ImageProcessor, get_utm_epsg_from_latlon
 
 
 logger = get_task_logger(__name__)
@@ -34,6 +35,7 @@ def upload_geotiff(
     user_id: UUID,
     job_id: UUID,
     data_product_id: UUID,
+    project_to_utm: bool = False,
 ) -> None:
     """Celery task for processing an uploaded GeoTIFF.
 
@@ -43,6 +45,7 @@ def upload_geotiff(
         user_id (UUID): User ID for user that uploaded GeoTIFF.
         job_id (UUID): Job ID for job associated with upload process.
         data_product_id (UUID): Data product ID for uploaded GeoTIFF.
+        project_to_utm (bool): Whether to project the GeoTIFF to UTM.
     """
     in_raster = Path(geotiff_filepath)
 
@@ -79,7 +82,7 @@ def upload_geotiff(
 
     # create get STAC properties and convert to COG (if needed)
     try:
-        ip = ImageProcessor(str(in_raster))
+        ip = ImageProcessor(str(in_raster), project_to_utm=project_to_utm)
         out_raster = ip.run()
         default_symbology = ip.get_default_symbology()
     except Exception:
@@ -142,6 +145,7 @@ def upload_point_cloud(
     las_filepath: str,
     job_id: UUID,
     data_product_id: UUID,
+    project_to_utm: bool = False,
 ) -> str | None:
     """Celery task for converting uploaded las/laz point cloud to cloud optimized
     point cloud format. Untwine performs the conversion
@@ -156,6 +160,8 @@ def upload_point_cloud(
         Exception: Raise if EPT or COPG subprocesses fail.
     """
     in_las = Path(las_filepath)
+
+    logger.info(f"Input point cloud filepath: {in_las}")
 
     # copy uploaded point cloud to static files
     with open(storage_path, "rb") as src, open(in_las, "wb") as dst:
@@ -193,15 +199,48 @@ def upload_point_cloud(
     try:
         # construct path for compressed COPC
         if in_las.name.endswith(".copc.laz"):
-            # skip if already copc laz (note - need to revise to actually verify format)
-            copc_laz_filepath = in_las
             # copy the file to parent directory using buffered copy
             with open(in_las, "rb") as src, open(
                 in_las.parents[1] / in_las.name, "wb"
             ) as dst:
                 shutil.copyfileobj(src, dst, length=BUFFER_SIZE)
+
+            copc_laz_filepath = in_las.parents[1] / in_las.name
         else:
             copc_laz_filepath = in_las.parents[1] / in_las.with_suffix(".copc.laz").name
+            # get UTM EPSG code if needed
+            if project_to_utm:
+                # read the point cloud metadata
+                pdal_info_cmd: list[str] = [
+                    "pdal",
+                    "info",
+                    "--summary",
+                    str(in_las),
+                ]
+                pdal_info_result = subprocess.run(
+                    pdal_info_cmd, stdout=subprocess.PIPE, check=True
+                )
+                pdal_info_json = json.loads(pdal_info_result.stdout)
+
+                # get the bounding box of the point cloud
+                minx = pdal_info_json["summary"]["bounds"]["minx"]
+                maxx = pdal_info_json["summary"]["bounds"]["maxx"]
+                miny = pdal_info_json["summary"]["bounds"]["miny"]
+                maxy = pdal_info_json["summary"]["bounds"]["maxy"]
+
+                # calculate the center point of the bounding box
+                mean_x = (minx + maxx) / 2
+                mean_y = (miny + maxy) / 2
+
+                # check if the point cloud is in WGS84
+                if not (-180 <= mean_x <= 180 and -90 <= mean_y <= 90):
+                    logger.error(
+                        f"Point cloud coordinates outside WGS84 bounds: lon={mean_x}, lat={mean_y}"
+                    )
+                    # leave the point cloud in its original CRS
+                    epsg_code = None
+                else:
+                    epsg_code = get_utm_epsg_from_latlon(mean_y, mean_x)
 
             # use pdal info to find the EPSG code of the point cloud
             untwine_cmd: list[str] = [
@@ -211,6 +250,10 @@ def upload_point_cloud(
                 "-o",
                 str(copc_laz_filepath),
             ]
+
+            # project to UTM if flag set and UTM EPSG code found
+            if project_to_utm and epsg_code:
+                untwine_cmd.extend(["--a_srs", epsg_code])
 
             # run untwine command
             subprocess.run(untwine_cmd)
