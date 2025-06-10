@@ -1,12 +1,36 @@
-# Data To Science Engine
+# Data to Science
 
-## Getting started
+## What is D2S?
 
-### Prerequisites
+The Data to Science (D2S) platform at Purdue University is an innovative, open-source initiative designed to facilitate data sharing and collaboration among researchers. Developed by Jinha Jung, an associate professor of civil engineering, and his team, the platform primarily focuses on housing data from unmanned aerial vehicles (UAVs) used in agricultural and forestry research.
+
+The D2S platform aims to create a data-driven open science community that promotes sustained innovation. Researchers can upload, manage, and share their UAV data, making it accessible to a broader audience. This collaborative approach helps in advancing research by providing a centralized repository of valuable datasets from various projects worldwide.
+
+<figure>
+  <img src="docs/assets/d2s_overview.png" alt="System Overview Diagram">
+  <figcaption>Overview of D2S System</figcaption>
+</figure>
+
+## 🌟 What Makes D2S Unique?
+
+The Data to Science (D2S) platform at Purdue University stands out from other data-sharing platforms due to several unique features and approaches:
+
+1. **Specialization in UAV Data:** Unlike many general data-sharing platforms, D2S is specifically designed to manage and share data from unmanned aerial vehicles (UAVs), making it particularly valuable for agricultural and forestry research.
+2. **Open-Source and Free Access:** D2S is an open-source platform, ensuring that researchers worldwide can access and contribute to the data repository without any cost barriers.
+3. **Focus on Collaboration:** The platform emphasizes building a community of researchers who can collaborate and share insights, fostering a more interactive and cooperative research environment.
+4. **Alignment with Open Science Mandates:** D2S aligns with the White House Office of Technology and Policy mandates on openness in scientific enterprise, ensuring that federally funded research and supporting data are disclosed to the public at no cost.
+5. **User-Centric Development:** The platform is developed with input from its users, ensuring that the tools and features meet the specific needs of the research community. This user-driven approach helps in creating a more effective and user-friendly platform.
+6. **Training and Support:** D2S offers training workshops and support to help researchers get acquainted with the platform's tools and capabilities, ensuring they can make the most of its features.
+
+These aspects make D2S a powerful tool for researchers looking to manage, share, and collaborate on UAV data, particularly in the fields of agriculture and forestry.
+
+## ⚙️ Getting started
+
+### 📋 Prerequisites
 
 [Docker Engine](https://docs.docker.com/engine/install/) and [Docker Compose](https://docs.docker.com/compose/install/) are required to run the container with the following instructions. If you can successfully run `docker --version` and `docker compose --version` from a terminal then you are ready to proceed to the next section.
 
-### Copy env example files
+### 📝 Copy env example files
 
 1. Navigate to the root directory of the repository.
 2. Copy `backend.example.env` to a new file named `backend.env`.
@@ -34,7 +58,7 @@
    cp frontend/example.env.development frontend/.env.development
    ```
 
-### Customize env files
+### ✏️ Customize env files
 
 1. Open `.env`. Below is a list of the environment variables that can be set inside `.env`.
 
@@ -106,7 +130,7 @@
    - `VITE_META_OG_IMAGE`: Preview image URL for social media shares.
    - `VITE_META_OG_URL`: Hostname for site.
 
-### Build Docker images for services
+### 🛠️ Build Docker images for services
 
 1. In the root repository directory where `docker-compose.example.yml` is located. Copy it to a new file named `docker-compose.yml`.
 
@@ -119,33 +143,33 @@
    docker compose build
    ```
 
-### Start the containers
+### ▶️ Start the containers
 
 1. Use the following command to run the service containers in the background:
    ```
    docker compose up -d
    ```
 
-### Stop the containers
+### ⏹️ Stop the containers
 
 1. Use the following command to stop the containers:
    ```
    docker compose stop
    ```
 
-### Accessing the web application
+### 🌍 Accessing the web application
 
 The Data To Science web application can be accessed from `http://localhost:8000`. Replace `localhost` with the `DOMAIN` environment variable if it was changed to a different value. If port `8000` is already use, or you want to use a different port, change the port in `docker-compose.yml` under the `proxy` service's `ports` setting.
 
-# Additional information
+# 📖 Additional information
 
 The above sections should provide all the necessary steps to get Data To Science up and running. These next sections provide additional information about using `docker-compose-dev.yml` for development, accessing the FastAPI documentation, and running the backend tests.
 
-## Accessing the API
+## 🧪 Accessing the API
 
 After running `docker compose up -d`, you should be able to access the web API from [http://localhost:8000/docs](http://localhost:8000/docs) or [http://localhost:8000/redoc](http://localhost:8000/redoc). The first URL will display the Swagger UI documentation for the API and the second URL will display the ReDoc documentation. The API endpoints can be tried out from either URL.
 
-## Running backend tests
+## 🧪 Running backend tests
 
 The `pytest` library can be used to run tests for the FastAPI backend. Use the following command to run the full test suite:
 
@@ -153,7 +177,7 @@ The `pytest` library can be used to run tests for the FastAPI backend. Use the f
 docker compose exec backend pytest
 ```
 
-## Database migrations with Alembic
+## 🗃️ Database migrations with Alembic
 
 If you make any changes the database models, run the following command to create a new migration:
 
@@ -166,3 +190,7 @@ After creating the new migration, use the following command to update to the tab
 ```
 docker compose exec backend alembic upgrade head
 ```
+
+# 📘 Documentation
+
+For detailed documentation, visit [documentation here](docs/README.md).
