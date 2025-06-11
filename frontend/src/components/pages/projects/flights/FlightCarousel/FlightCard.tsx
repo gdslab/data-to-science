@@ -15,7 +15,8 @@ export default function FlightCard({ flight }: { flight: Flight }) {
   const [invalidPreviews, setInvalidPreviews] = useState<string[]>([]);
   const { projectRole } = useProjectContext();
 
-  const dataProduct = flight.data_products.length > 0 ? flight.data_products[0] : null;
+  const dataProduct =
+    flight.data_products.length > 0 ? flight.data_products[0] : null;
 
   return (
     <div className="flex flex-col items-center justify-center">
@@ -47,7 +48,9 @@ export default function FlightCard({ flight }: { flight: Flight }) {
               />
             ) : (
               <div className="flex items-center justify-center w-full h-40 bg-white">
-                <span className="sr-only text-center">Preview not available</span>
+                <span className="sr-only text-center">
+                  Preview not available
+                </span>
                 <PhotoIcon className="h-40" />
               </div>
             )}
@@ -79,6 +82,7 @@ export default function FlightCard({ flight }: { flight: Flight }) {
               <LinkOutlineButton
                 size="sm"
                 url={`/projects/${flight.project_id}/flights/${flight.id}/data`}
+                onClick={(e) => e.stopPropagation()}
               >
                 Manage Data
               </LinkOutlineButton>
