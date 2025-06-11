@@ -22,6 +22,7 @@ export default function DataProductCard({
       active={
         activeDataProduct !== null && dataProduct.id === activeDataProduct.id
       }
+      data-product-id={dataProduct.id}
     >
       <div className="text-slate-600 text-sm">
         <div
