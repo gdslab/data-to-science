@@ -31,6 +31,7 @@ interface BreedBaseFormData {
   programNames?: string;
   studyDbIds?: string;
   studyNames?: string;
+  year?: string;
 }
 
 interface BreedBaseStudy {

@@ -2,9 +2,9 @@ import { useEffect } from 'react';
 import { useForm, FormProvider, SubmitHandler } from 'react-hook-form';
 import { useParams } from 'react-router-dom';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { XCircleIcon } from '@heroicons/react/24/solid';
 
 import BreedBaseStudies from './BreedBaseStudies';
+import BreedBaseStudiesTable from './BreedBaseStudiesTable';
 import { TextInput } from '../../../RHFInputs';
 import { useBreedBase } from './useBreedBase';
 import { BreedBaseFormData } from './BreedBase.types';
@@ -25,16 +25,48 @@ export default function BreedBase() {
     isLoading,
     breedbaseStudies,
     studiesApiResponse,
+    studyDetails,
+    loadingStudyDetails,
     fetchBreedbaseStudies,
     searchStudies,
     removeStudy,
     fetchPage,
     addStudy,
+    fetchStudyDetails,
   } = useBreedBase({ projectId: projectId!, methods });
 
   useEffect(() => {
     fetchBreedbaseStudies();
   }, []);
+
+  // Fetch study details when breedbaseStudies change
+  useEffect(() => {
+    breedbaseStudies.forEach((study) => {
+      fetchStudyDetails(study.base_url, study.study_id);
+    });
+  }, [breedbaseStudies]);
+
+  // Set default breedbaseUrl based on existing studies
+  useEffect(() => {
+    if (breedbaseStudies.length > 0) {
+      // Count frequency of each base_url
+      const urlCounts = breedbaseStudies.reduce((acc, study) => {
+        acc[study.base_url] = (acc[study.base_url] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      // Find the most common base_url (or first one in case of tie)
+      const mostCommonUrl = Object.entries(urlCounts).reduce((a, b) =>
+        a[1] >= b[1] ? a : b
+      )[0];
+
+      // Only set if the field is currently empty
+      const currentValue = methods.getValues('breedbaseUrl');
+      if (!currentValue) {
+        methods.setValue('breedbaseUrl', mostCommonUrl);
+      }
+    }
+  }, [breedbaseStudies, methods]);
 
   const { handleSubmit } = methods;
 
@@ -52,43 +84,16 @@ export default function BreedBase() {
             Studies associated with this project.
           </p>
         </div>
-        {breedbaseStudies.length > 0 ? (
-          <>
-            <div className="max-w-xl grid grid-cols-[1fr_auto_auto] items-center gap-4 p-2 text-sm font-medium text-gray-500 border-b border-gray-200">
-              <div className="truncate">Base URL</div>
-              <div className="px-2">Study ID</div>
-              <div className="w-5 flex justify-center">Remove</div>
-            </div>
-            {breedbaseStudies.map((study) => (
-              <div
-                key={study.id}
-                className="max-w-xl grid grid-cols-[1fr_auto_auto] items-center gap-4 p-2 hover:bg-gray-50 rounded"
-              >
-                <div className="text-gray-700 truncate" title={study.base_url}>
-                  {study.base_url}
-                </div>
-                <div className="text-gray-700 px-2" title={study.study_id}>
-                  {study.study_id}
-                </div>
-                <div className="w-5 flex justify-center">
-                  <button
-                    className="text-red-500 hover:text-red-700 transition-colors flex-shrink-0"
-                    onClick={() => removeStudy(study.id)}
-                    title="Remove connection"
-                  >
-                    <XCircleIcon className="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </>
-        ) : (
-          <div>No studies found</div>
-        )}
+        <BreedBaseStudiesTable
+          studies={breedbaseStudies}
+          studyDetails={studyDetails}
+          loadingStudyDetails={loadingStudyDetails}
+          onRemoveStudy={removeStudy}
+        />
       </div>
       <hr className="border-t border-gray-400" />
       <FormProvider {...methods}>
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit)} className="mb-4">
           <div className="flex flex-col">
             <h3>Search for studies</h3>
             <p className="text-sm text-gray-500">
@@ -121,6 +126,11 @@ export default function BreedBase() {
                   fieldName="programNames"
                   label="Program Name"
                   placeholder="The First Bob Study 2017;Wheat Yield Trial 246"
+                />
+                <TextInput
+                  fieldName="year"
+                  label="Program Year"
+                  placeholder="2017;2018;2019"
                 />
               </div>
             </fieldset>

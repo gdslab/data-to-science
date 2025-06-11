@@ -35,6 +35,12 @@ export function useBreedBase({ projectId, methods }: UseBreedBaseProps) {
   );
   const [studiesApiResponse, setStudiesApiResponse] =
     useState<BreedBaseStudiesAPIResponse | null>(null);
+  const [studyDetails, setStudyDetails] = useState<
+    Record<string, { studyName: string; seasons: string }>
+  >({});
+  const [loadingStudyDetails, setLoadingStudyDetails] = useState<
+    Record<string, boolean>
+  >({});
 
   const fetchBreedbaseStudies = async () => {
     try {
@@ -84,6 +90,7 @@ export function useBreedBase({ projectId, methods }: UseBreedBaseProps) {
         programNames: data.programNames
           ? data.programNames.split(';').filter(Boolean)
           : [],
+        seasonDbIds: data.year ? data.year.split(';').filter(Boolean) : [],
       };
 
       const searchResponse: AxiosResponse<BreedBaseSearchAPIResponse> =
@@ -149,6 +156,44 @@ export function useBreedBase({ projectId, methods }: UseBreedBaseProps) {
     }
   };
 
+  const fetchStudyDetails = async (baseUrl: string, studyId: string) => {
+    const studyKey = `${baseUrl}-${studyId}`;
+
+    // Skip if already loaded or loading
+    if (studyDetails[studyKey] || loadingStudyDetails[studyKey]) {
+      return;
+    }
+
+    setLoadingStudyDetails((prev) => ({ ...prev, [studyKey]: true }));
+
+    try {
+      const response = await breedBaseApi.get(`${baseUrl}/studies/${studyId}`);
+      if (response.status === 200 && response.data?.result) {
+        const studyName = response.data.result.studyName || 'Unknown Study';
+        const seasons = response.data.result.seasons
+          ? response.data.result.seasons.join(', ')
+          : 'N/A';
+        setStudyDetails((prev) => ({
+          ...prev,
+          [studyKey]: { studyName, seasons },
+        }));
+      } else {
+        setStudyDetails((prev) => ({
+          ...prev,
+          [studyKey]: { studyName: 'Error loading details', seasons: 'N/A' },
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching study details:', err);
+      setStudyDetails((prev) => ({
+        ...prev,
+        [studyKey]: { studyName: 'Error loading details', seasons: 'N/A' },
+      }));
+    } finally {
+      setLoadingStudyDetails((prev) => ({ ...prev, [studyKey]: false }));
+    }
+  };
+
   const addStudy = async (studyId: string) => {
     const breedBaseBaseUrl = methods.getValues('breedbaseUrl');
     if (!breedBaseBaseUrl) {
@@ -180,10 +225,13 @@ export function useBreedBase({ projectId, methods }: UseBreedBaseProps) {
     breedbaseStudies,
     searchResultsDbId,
     studiesApiResponse,
+    studyDetails,
+    loadingStudyDetails,
     fetchBreedbaseStudies,
     searchStudies,
     removeStudy,
     fetchPage,
     addStudy,
+    fetchStudyDetails,
   };
 }
