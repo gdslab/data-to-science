@@ -41,7 +41,7 @@ export default function MetashapeForm({
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="flex gap-8">
             {/* Camera Options */}
-            <fieldset className="border border-solid border-slate-300 p-3">
+            <fieldset className="border border-solid border-slate-300 p-3 min-w-max">
               <legend className="block text-gray-600 font-bold pt-2 pb-1">
                 Camera Options
               </legend>
@@ -123,47 +123,95 @@ export default function MetashapeForm({
                 />
               </div>
             </fieldset>
-            {/* Build Point Cloud */}
-            <fieldset className="border border-solid border-slate-300 p-3">
-              <legend className="block text-gray-600 font-bold pt-2 pb-1">
-                Build Point Cloud
-              </legend>
-              {/* Quality */}
-              <div className="flex flex-col gap-1.5">
-                <span className="text-sm font-medium">Quality</span>
-                <div>
-                  <RadioInput
-                    fieldName="buildDepthQuality"
-                    inputId="buildDepthQualityLow"
-                    label="Low"
-                    value="low"
-                  />
+            {/* Point Cloud and Orthomosaic Column */}
+            <div className="space-y-4">
+              {/* Build Point Cloud */}
+              <fieldset className="border border-solid border-slate-300 p-3">
+                <legend className="block text-gray-600 font-bold pt-2 pb-1">
+                  Build Point Cloud
+                </legend>
+                {/* Quality */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-sm font-medium">Quality</span>
+                  <div className="flex gap-4">
+                    <RadioInput
+                      fieldName="buildDepthQuality"
+                      inputId="buildDepthQualityLow"
+                      label="Low"
+                      value="low"
+                    />
+                    <RadioInput
+                      fieldName="buildDepthQuality"
+                      inputId="buildDepthQualityMedium"
+                      label="Medium"
+                      value="medium"
+                    />
+                    <RadioInput
+                      fieldName="buildDepthQuality"
+                      inputId="buildDepthQualityHigh"
+                      label="High"
+                      value="high"
+                    />
+                  </div>
+                  {errors &&
+                    errors.buildDepthQuality &&
+                    typeof errors.buildDepthQuality.message === 'string' && (
+                      <p className="text-sm text-red-500">
+                        {errors.buildDepthQuality.message}
+                      </p>
+                    )}
                 </div>
-                <div>
-                  <RadioInput
-                    fieldName="buildDepthQuality"
-                    inputId="buildDepthQualityMedium"
-                    label="Medium"
-                    value="medium"
-                  />
+              </fieldset>
+              {/* Build Orthomosaic */}
+              <fieldset className="border border-solid border-slate-300 p-3">
+                <legend className="block text-gray-600 font-bold pt-2 pb-1">
+                  Build Orthomosaic
+                </legend>
+                {/* Blending Mode */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-sm font-medium">Blending Mode</span>
+                  <div className="flex gap-4 flex-wrap">
+                    <RadioInput
+                      fieldName="blendingMode"
+                      inputId="blendingModeAverage"
+                      label="Average"
+                      value="average"
+                    />
+                    <RadioInput
+                      fieldName="blendingMode"
+                      inputId="blendingModeDisabled"
+                      label="Disabled"
+                      value="disabled"
+                    />
+                    <RadioInput
+                      fieldName="blendingMode"
+                      inputId="blendingModeMin"
+                      label="Min"
+                      value="min"
+                    />
+                    <RadioInput
+                      fieldName="blendingMode"
+                      inputId="blendingModeMax"
+                      label="Max"
+                      value="max"
+                    />
+                    <RadioInput
+                      fieldName="blendingMode"
+                      inputId="blendingModeMosaic"
+                      label="Mosaic"
+                      value="mosaic"
+                    />
+                  </div>
+                  {errors &&
+                    errors.blendingMode &&
+                    typeof errors.blendingMode.message === 'string' && (
+                      <p className="text-sm text-red-500">
+                        {errors.blendingMode.message}
+                      </p>
+                    )}
                 </div>
-                <div>
-                  <RadioInput
-                    fieldName="buildDepthQuality"
-                    inputId="buildDepthQualityHigh"
-                    label="High"
-                    value="high"
-                  />
-                </div>
-                {errors &&
-                  errors.buildDepthQuality &&
-                  typeof errors.buildDepthQuality.message === 'string' && (
-                    <p className="text-sm text-red-500">
-                      {errors.buildDepthQuality.message}
-                    </p>
-                  )}
-              </div>
-            </fieldset>
+              </fieldset>
+            </div>
           </div>
           <div className="mt-4">
             <CheckboxInput fieldName="disclaimer" label="Check to proceed" />

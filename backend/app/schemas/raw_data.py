@@ -75,6 +75,7 @@ class RawDataMetadata(BaseModel):
 class MetashapeQueryParams(BaseModel):
     alignQuality: Literal["low", "medium", "high"]
     backend: Literal["metashape"]
+    blendingMode: Literal["average", "disabled", "min", "max", "mosaic"]
     buildDepthQuality: Literal["low", "medium", "high"]
     camera: Literal["single", "multi"]
     disclaimer: bool

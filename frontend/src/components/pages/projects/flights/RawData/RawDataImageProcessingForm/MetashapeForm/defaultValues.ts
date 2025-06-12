@@ -1,8 +1,9 @@
 import { MetashapeSettings } from '../../RawData.types';
 
 const defaultValues: MetashapeSettings = {
-  backend: 'metashape',
   alignQuality: 'medium',
+  backend: 'metashape',
+  blendingMode: 'mosaic',
   buildDepthQuality: 'medium',
   camera: 'single',
   disclaimer: false,
