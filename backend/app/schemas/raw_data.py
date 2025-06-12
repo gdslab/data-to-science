@@ -80,6 +80,11 @@ class MetashapeQueryParams(BaseModel):
     camera: Literal["single", "multi"]
     cullFaces: bool
     disclaimer: bool
+    exportDEM: bool
+    exportDEMResolution: float
+    exportOrtho: bool
+    exportOrthoResolution: float
+    exportPointCloud: bool
     fillHoles: bool
     ghostingFilter: bool
     keyPoint: int
