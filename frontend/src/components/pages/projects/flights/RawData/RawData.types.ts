@@ -8,8 +8,13 @@ export interface MetashapeSettings {
   blendingMode: BlendingModeType;
   buildDepthQuality: QualityType;
   camera: CameraType;
+  cullFaces: boolean;
   disclaimer: boolean;
+  fillHoles: boolean;
+  ghostingFilter: boolean;
   keyPoint: number;
+  refineSeamlines: boolean;
+  resolution: number;
   tiePoint: number;
 }
 
