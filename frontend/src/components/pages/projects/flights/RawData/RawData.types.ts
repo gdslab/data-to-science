@@ -1,9 +1,11 @@
+type BlendingModeType = 'average' | 'disabled' | 'min' | 'max' | 'mosaic';
 type CameraType = 'single' | 'multi';
 type QualityType = 'low' | 'medium' | 'high';
 
 export interface MetashapeSettings {
-  backend: 'metashape';
   alignQuality: QualityType;
+  backend: 'metashape';
+  blendingMode: BlendingModeType;
   buildDepthQuality: QualityType;
   camera: CameraType;
   disclaimer: boolean;

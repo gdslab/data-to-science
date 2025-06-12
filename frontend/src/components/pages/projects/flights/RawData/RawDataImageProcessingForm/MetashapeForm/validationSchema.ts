@@ -12,6 +12,13 @@ const schema = yup.object({
     .string()
     .oneOf(['metashape'], 'Backend must be "metashape"')
     .required('Backend is required'),
+  blendingMode: yup
+    .string()
+    .oneOf(
+      ['average', 'disabled', 'min', 'max', 'mosaic'],
+      'Blending mode must be "average", "disabled", "min", "max", or "mosaic"'
+    )
+    .required('Blending mode is required'),
   buildDepthQuality: yup
     .string()
     .oneOf(
