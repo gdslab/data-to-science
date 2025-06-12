@@ -78,8 +78,13 @@ class MetashapeQueryParams(BaseModel):
     blendingMode: Literal["average", "disabled", "min", "max", "mosaic"]
     buildDepthQuality: Literal["low", "medium", "high"]
     camera: Literal["single", "multi"]
+    cullFaces: bool
     disclaimer: bool
+    fillHoles: bool
+    ghostingFilter: bool
     keyPoint: int
+    refineSeamlines: bool
+    resolution: float
     tiePoint: int
 
 
