@@ -10,6 +10,11 @@ export interface MetashapeSettings {
   camera: CameraType;
   cullFaces: boolean;
   disclaimer: boolean;
+  exportDEM: boolean;
+  exportDEMResolution: number;
+  exportOrtho: boolean;
+  exportOrthoResolution: number;
+  exportPointCloud: boolean;
   fillHoles: boolean;
   ghostingFilter: boolean;
   keyPoint: number;

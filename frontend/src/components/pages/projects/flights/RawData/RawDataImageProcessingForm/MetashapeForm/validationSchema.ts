@@ -35,6 +35,19 @@ const schema = yup.object({
     .boolean()
     .oneOf([true], 'You must check this box before proceeding')
     .required('Accepting terms is required'),
+  exportDEM: yup.boolean().required('Export DEM is required'),
+  exportDEMResolution: yup
+    .number()
+    .typeError('Enter a valid number (decimals allowed)')
+    .min(0, 'DEM resolution must be 0 or greater (0 = auto)')
+    .required('DEM resolution is required'),
+  exportOrtho: yup.boolean().required('Export orthomosaic is required'),
+  exportOrthoResolution: yup
+    .number()
+    .typeError('Enter a valid number (decimals allowed)')
+    .min(0, 'Orthomosaic resolution must be 0 or greater (0 = auto)')
+    .required('Orthomosaic resolution is required'),
+  exportPointCloud: yup.boolean().required('Export point cloud is required'),
   fillHoles: yup.boolean().required('Fill holes is required'),
   ghostingFilter: yup.boolean().required('Ghosting filter is required'),
   keyPoint: yup
