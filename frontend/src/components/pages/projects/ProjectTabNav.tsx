@@ -4,6 +4,7 @@ import { useLocation, useParams } from 'react-router-dom';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 
 import { LinkButton } from '../../Buttons';
+import BreedBase from './breedBase/BreedBase';
 import { IForester, ProjectModule } from './Project';
 import ProjectCampaigns from './ProjectCampaigns';
 import ProjectFlights from './ProjectFlights';
@@ -81,6 +82,8 @@ export default function ProjectTabNav({
             Go to iForester page
           </LinkButton>
         );
+      case 'breedbase':
+        return <BreedBase />;
       default:
         return null;
     }

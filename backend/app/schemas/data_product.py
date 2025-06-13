@@ -95,7 +95,30 @@ class DataProductBands(BaseModel):
 # properties to receive via API on processing tool run
 class ProcessingRequest(BaseModel):
     chm: bool
+    chmResolution: float = Field(
+        ge=0.1,
+        title="CHM Resolution",
+        description="Spatial resolution for Canopy Height Model processing (0.1-10.0)",
+    )
+    chmPercentile: int = Field(
+        ge=0,
+        le=100,
+        title="CHM Percentile",
+        description="Percentile value for Canopy Height Model processing (0-100)",
+    )
     dem_id: Optional[UUID4] = None
+    dtm: bool
+    dtmResolution: float = Field(
+        ge=0.1,
+        title="DTM Resolution",
+        description="Spatial resolution for Digital Terrain Model processing (0.1-10.0)",
+    )
+    dtmRigidness: int = Field(
+        ge=1,
+        le=3,
+        title="DTM Rigidness",
+        description="Digital Terrain Model rigidness level (1, 2, or 3)",
+    )
     exg: bool
     exgRed: int
     exgGreen: int

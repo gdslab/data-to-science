@@ -282,12 +282,22 @@ def create_preview_image(
             "255",
         ]
 
-    size_params: list = ["-outsize", "6.25%", "6.25%"]
+    outsize_params: list = ["-outsize", "320", "0"]
     inout_params: list = [in_raster, preview_out_path]
 
-    command = ["gdal_translate", "-of", "JPEG", "-ot", "Byte", "-co", "QUALITY=75"]
+    command = [
+        "gdal_translate",
+        "-of",
+        "JPEG",
+        "-ot",
+        "Byte",
+        "-co",
+        "QUALITY=75",
+        "-r",
+        "near",
+    ]
     command.extend(band_params)
-    command.extend(size_params)
+    command.extend(outsize_params)
     command.extend(scale_params)
     command.extend(inout_params)
 

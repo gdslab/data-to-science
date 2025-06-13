@@ -10,6 +10,14 @@
     align-items: center;
 }
 
+/* Ensure buttons in carousel have proper pointer events */
+.swiper-slide button,
+.swiper-slide a {
+    pointer-events: auto;
+    position: relative;
+    z-index: 10;
+}
+
 .swiper-pagination-bullet-active {
     background-color: #EE6C4D;
 }

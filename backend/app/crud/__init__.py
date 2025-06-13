@@ -1,4 +1,5 @@
 from .crud_api_key import api_key
+from .crud_breedbase_connection import breedbase_connection
 from .crud_campaign import campaign
 from .crud_data_product import data_product
 from .crud_data_product_metadata import data_product_metadata

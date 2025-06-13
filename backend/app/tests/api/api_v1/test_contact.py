@@ -17,6 +17,7 @@ def test_email_contact_message_to_support(
     urna neque finibus. Interdum urna fermentum et nascetur eros sed. Convallis proin 
     porta convallis eleifend; quisque sociosqu."""
 
+    api_domain = settings.API_DOMAIN
     payload = {"topic": "bug_report", "subject": subject, "message": message}
     if fm:
         fm.config.SUPPRESS_SEND = 1
@@ -30,7 +31,10 @@ def test_email_contact_message_to_support(
             == settings.MAIL_FROM_NAME + " <" + settings.MAIL_FROM + ">"
         )
         assert outbox[0]["To"] == settings.MAIL_FROM
-        assert outbox[0]["Subject"] == "BUG REPORT: D2S Contact Form Submission"
+        assert (
+            outbox[0]["Subject"]
+            == f"BUG REPORT: D2S Contact Form Submission ({api_domain})"
+        )
 
 
 def test_email_contact_message_with_too_few_characters(

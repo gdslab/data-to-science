@@ -109,6 +109,7 @@ export default function ProjectDetail() {
 
   useEffect(() => {
     if (flights) flightsDispatch({ type: 'set', payload: flights });
+
     // check filter option for new flight if it is the first flight with its sensor
     if (flights && flightsPrev) {
       // no previous flights, so select any sensor in flights
