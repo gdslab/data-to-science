@@ -87,3 +87,36 @@ def test_update_file_permission_without_project_access(
         json=updated_data,
     )
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_update_file_permission_to_private_when_project_is_published(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+
+    # Publish the project (sets is_published=True and all file permissions to is_public=True)
+    crud.project.update_project_visibility(
+        db, project_id=data_product.project.id, is_public=True
+    )
+
+    # Verify the project is published and file permission is public
+    published_project = crud.project.get(db, id=data_product.project.id)
+    assert published_project is not None
+    assert published_project.is_published is True
+
+    file_permission = crud.file_permission.get_by_data_product(
+        db, file_id=data_product.obj.id
+    )
+    assert file_permission is not None
+    assert file_permission.is_public is True
+
+    # Attempt to change file permission from public to private
+    updated_data = {"is_public": False}
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{data_product.project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}"
+        f"/file_permission",
+        json=updated_data,
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN

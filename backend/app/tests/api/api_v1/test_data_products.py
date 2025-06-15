@@ -624,6 +624,30 @@ def test_deactivate_data_product_without_project_access(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+def test_deactivate_data_product_when_project_is_published(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, create_style=True, user=current_user)
+
+    # Publish the project (sets is_published=True)
+    crud.project.update_project_visibility(
+        db, project_id=data_product.project.id, is_public=True
+    )
+
+    # Verify the project is published
+    published_project = crud.project.get(db, id=data_product.project.id)
+    assert published_project is not None
+    assert published_project.is_published is True
+
+    # Attempt to deactivate the data product
+    response = client.delete(
+        f"{settings.API_V1_STR}/projects/{data_product.project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}"
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
 def test_running_tool_on_data_product(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
