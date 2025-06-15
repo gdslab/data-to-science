@@ -131,7 +131,8 @@ class STACGenerator:
         if not flight:
             raise ValueError("Flight not found.")
 
-        return flight.data_products
+        # Filter out deactivated data products
+        return [dp for dp in flight.data_products if dp.is_active]
 
     def generate_stac_collection(self) -> Collection:
         """Create PySTAC Collection for project.

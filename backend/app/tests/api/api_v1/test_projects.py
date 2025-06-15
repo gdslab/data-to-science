@@ -931,6 +931,68 @@ def test_publish_project_to_stac(
     assert data_product2_file_permission.is_public is True
 
 
+def test_publish_project_to_stac_excludes_deactivated_data_products(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test that deactivated data products are not included when publishing to STAC."""
+    # Create project owned by current user with one flight and two data products
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    flight = create_flight(db, project_id=project.id)
+    data_product1 = SampleDataProduct(db, project=project, flight=flight)
+    data_product2 = SampleDataProduct(db, project=project, flight=flight)
+
+    # Deactivate one of the data products
+    deactivated_data_product = crud.data_product.deactivate(
+        db, data_product_id=data_product1.obj.id
+    )
+    assert deactivated_data_product is not None
+    assert deactivated_data_product.is_active is False
+
+    # Publish project to STAC
+    response = client.put(f"{API_URL}/{project.id}/publish-stac")
+
+    # Confirm that the project is published to STAC
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data is not None
+
+    # Check that the response is a STACReport
+    assert STACReport(**response_data)
+    response_data = STACReport(**response_data)
+    assert response_data.collection_id == project.id
+    assert response_data.is_published is True
+    assert response_data.collection_url is not None
+
+    # Only one data product should be published (the active one)
+    assert len(response_data.items) == 1
+
+    # Verify only the active data product is in the response
+    published_item = response_data.items[0]
+    assert str(published_item.item_id) == str(data_product2.obj.id)
+    assert published_item.is_published is True
+
+    # Confirm that the deactivated data product ID is not in the response
+    published_item_ids = {str(item.item_id) for item in response_data.items}
+    assert str(data_product1.obj.id) not in published_item_ids
+
+    # Confirm that only data product2 is now public
+    data_product2_file_permission = crud.file_permission.get_by_data_product(
+        db, file_id=data_product2.obj.id
+    )
+    assert data_product2_file_permission is not None
+    assert data_product2_file_permission.is_public is True
+
+    # Confirm that the deactivated data product1 remains private
+    data_product1_file_permission = crud.file_permission.get_by_data_product(
+        db, file_id=data_product1.obj.id
+    )
+    assert data_product1_file_permission is not None
+    assert data_product1_file_permission.is_public is False
+
+
 def test_update_project_on_stac(
     client: TestClient,
     db: Session,
