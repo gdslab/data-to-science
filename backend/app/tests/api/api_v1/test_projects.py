@@ -1244,3 +1244,20 @@ def test_delete_project_like_by_non_project_member(
     project = create_project(db, owner_id=user.id)
     response = client.post(f"{API_URL}/{project.id}/like")
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_deactivate_project_when_published(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    # Set project as published
+    crud.project.update_project_visibility(db, project_id=project.id, is_public=True)
+    response = client.delete(f"{API_URL}/{project.id}")
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert (
+        response.json()["detail"]
+        == "Cannot deactivate project when it is published in a STAC catalog"
+    )

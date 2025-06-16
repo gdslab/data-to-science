@@ -1,14 +1,50 @@
 from typing import Generator
 
+import logging
 import pytest
 from pystac.validation import validate
 from sqlalchemy.orm import Session
+from pystac_client import Client
 
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.project import create_project
 from app.tests.utils.STACCollectionHelper import STACCollectionHelper
 from app.utils.STACCollectionManager import STACCollectionManager
 from app.utils.STACGenerator import STACGenerator
+from app.core.config import settings
+
+
+logger = logging.getLogger(__name__)
+
+
+@pytest.fixture(scope="module", autouse=True)
+def cleanup_stac_catalog():
+    """Fixture to clean up any collections from the test STAC catalog after all tests run."""
+    yield  # Let all tests run first
+
+    try:
+        # Connect to STAC API
+        stac_url = settings.get_stac_api_url
+        if not stac_url:
+            return
+
+        client = Client.open(str(stac_url))
+        collections = client.get_collections()
+
+        # Remove all collections since this is a test-only catalog
+        for collection in collections:
+            collection_id = collection.id
+            if collection_id:
+                try:
+                    logger.info(f"Cleaning up collection {collection_id}")
+                    scm = STACCollectionManager(collection_id=collection_id)
+                    scm.remove_from_catalog()
+                except Exception as e:
+                    logger.error(
+                        f"Failed to cleanup collection {collection_id}: {str(e)}"
+                    )
+    except Exception as e:
+        logger.error(f"Failed to cleanup STAC catalog: {str(e)}")
 
 
 @pytest.fixture

@@ -1,5 +1,6 @@
 from typing import List, Optional
 
+import logging
 from pystac import Collection, Item
 from sqlalchemy.orm import Session
 
@@ -8,6 +9,9 @@ from app.tests.utils.flight import create_flight
 from app.tests.utils.project import create_project
 from app.utils.STACCollectionManager import STACCollectionManager
 from app.utils.STACGenerator import STACGenerator
+
+
+logger = logging.getLogger(__name__)
 
 
 TEST_STAC_API_URL = "https://stac-dev.d2s.org"
@@ -55,6 +59,13 @@ class STACCollectionHelper:
 
     def destroy(self) -> None:
         if self.collection_id:
-            # Create STAC Collection Manager to remove the collection
-            scm = STACCollectionManager(collection_id=self.collection_id)
-            scm.remove_from_catalog()
+            try:
+                # Create STAC Collection Manager to remove the collection
+                scm = STACCollectionManager(collection_id=self.collection_id)
+                scm.remove_from_catalog()
+            except Exception as e:
+                logger.error(
+                    f"Failed to destroy STAC collection {self.collection_id}: {str(e)}"
+                )
+                # Re-raise to ensure test failure
+                raise

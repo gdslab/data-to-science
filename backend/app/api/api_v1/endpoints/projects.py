@@ -278,6 +278,13 @@ def deactivate_project(
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
+    # Check if project is published
+    if project.is_published:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot deactivate project when it is published in a STAC catalog",
+        )
+
     deactivated_project = crud.project.deactivate(
         db, project_id=project.id, user_id=current_user.id
     )
