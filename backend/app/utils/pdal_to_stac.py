@@ -42,6 +42,8 @@ def create_item(
     asset = Asset(href=copc_url)
 
     # Get geometry from boundary if possible, fallback to stats bbox
+    geometry = None
+
     try:
         geometry = convertGeometry(
             boundary["boundary_json"], copc["comp_spatialreference"]
@@ -52,26 +54,41 @@ def create_item(
         if not geometry:
             raise ValueError("Unable to find geometry")
 
+    # Get bounding box
+    bbox = None
+    try:
+        bbox = convertBBox(stats["bbox"]["EPSG:4326"]["bbox"])
+    except KeyError:
+        bbox = convertBBox(boundary["boundary_json"])
+    finally:
+        if not bbox:
+            raise ValueError("Unable to find bounding box")
+
     # Unique UUID for COPC
     copc_uuid = Path(path_to_copc).stem.replace(".copc", "")
 
     # Extra properties for STAC Item
-    properties = {
-        "pc:count": count,
-        "pc:density": boundary.get("avg_pt_per_sq_unit", 0),
-        "pc:schemas": info["schema"]["dimensions"],
-        "pc:statistics": stats["statistic"],
-        "pc:type": "point_cloud",
-        "datetime": capture_date(copc),
-        "sensor_type": "flight.sensor",
-    }
+    try:
+        properties = {
+            "pc:count": count,
+            "pc:density": boundary.get("avg_pt_per_sq_unit", 0),
+            "pc:schemas": info["schema"]["dimensions"],
+            "pc:statistics": stats["statistic"],
+            "pc:type": "point_cloud",
+            "datetime": capture_date(copc),
+            "sensor_type": "flight.sensor",
+        }
+    except KeyError:
+        raise ValueError("Unable to find properties")
+    except Exception as e:
+        raise ValueError(f"Error creating properties: {e}")
 
     # Create STAC Item for COPC
     item = Item(
         id=copc_uuid,
         collection=collection_id,
         geometry=geometry,
-        bbox=convertBBox(stats["bbox"]["EPSG:4326"]["bbox"]),
+        bbox=bbox,
         stac_extensions=COPC_EXTENSIONS,
         datetime=fallback_dt,
         properties={**flight_properties, **properties},

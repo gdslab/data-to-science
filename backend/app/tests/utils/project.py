@@ -29,6 +29,7 @@ def create_project(
     location: Feature[Polygon, Dict] | None = None,
     owner_id: UUID | None = None,
     team_id: UUID | None = None,
+    no_dates: bool = False,
 ) -> Project:
     """Create random project with no team association."""
     if owner_id is None:
@@ -38,10 +39,11 @@ def create_project(
         title = random_team_name()
     if description is None:
         description = random_team_description()
-    if planting_date is None:
-        planting_date = random_planting_date()
-    if harvest_date is None:
-        harvest_date = random_harvest_date()
+    if not no_dates:
+        if planting_date is None:
+            planting_date = random_planting_date()
+        if harvest_date is None:
+            harvest_date = random_harvest_date()
     if location is None:
         feature_collection = get_geojson_feature_collection("polygon")
         location = feature_collection["geojson"]["features"][0]
