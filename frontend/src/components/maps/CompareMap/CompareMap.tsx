@@ -14,7 +14,7 @@ import { useRasterSymbologyContext } from '../RasterSymbologyContext';
 import { BBox } from '../Maps';
 import {
   getMapboxSatelliteBasemapStyle,
-  usgsImageryTopoBasemapStyle,
+  worldImageryTopoBasemapStyle,
 } from '../styles/basemapStyles';
 import {
   createDefaultMultibandSymbology,
@@ -188,7 +188,7 @@ export default function CompareMap() {
   const mapStyle = useMemo(() => {
     return mapboxAccessToken
       ? getMapboxSatelliteBasemapStyle(mapboxAccessToken)
-      : usgsImageryTopoBasemapStyle;
+      : worldImageryTopoBasemapStyle;
   }, [mapboxAccessToken]);
 
   return (

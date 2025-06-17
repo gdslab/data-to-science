@@ -19,7 +19,7 @@ import { DataProduct } from '../pages/projects/Project';
 
 import {
   getMapboxSatelliteBasemapStyle,
-  usgsImageryTopoBasemapStyle,
+  worldImageryTopoBasemapStyle,
 } from './styles/basemapStyles';
 
 import api from '../../api';
@@ -147,7 +147,7 @@ export default function ShareMap() {
   const mapStyle = useMemo(() => {
     return mapboxAccessToken
       ? getMapboxSatelliteBasemapStyle(mapboxAccessToken)
-      : usgsImageryTopoBasemapStyle;
+      : worldImageryTopoBasemapStyle;
   }, [mapboxAccessToken]);
 
   return (
