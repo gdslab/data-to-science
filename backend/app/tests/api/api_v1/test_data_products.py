@@ -657,10 +657,17 @@ def test_running_tool_on_data_product(
     )
     processing_request = {
         "chm": False,
+        "chmResolution": 0.5,
+        "chmPercentile": 98,
+        "dem_id": None,
+        "dtm": False,
+        "dtmResolution": 0.5,
+        "dtmRigidness": 2,
         "exg": True,
         "exgRed": 3,
         "exgGreen": 2,
         "exgBlue": 1,
+        "hillshade": False,
         "ndvi": False,
         "ndviNIR": 4,
         "ndviRed": 3,

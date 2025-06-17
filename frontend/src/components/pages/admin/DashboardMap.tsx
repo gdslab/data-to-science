@@ -8,7 +8,7 @@ import ProjectPopup from '../../maps/ProjectPopup';
 import { PopupInfoProps } from '../../maps/HomeMap';
 import {
   getMapboxSatelliteBasemapStyle,
-  usgsImageryTopoBasemapStyle,
+  worldImageryTopoBasemapStyle,
 } from '../../maps/styles/basemapStyles';
 
 export default function DashboardMap() {
@@ -61,7 +61,7 @@ export default function DashboardMap() {
   const mapStyle = useMemo(() => {
     return mapboxAccessToken
       ? getMapboxSatelliteBasemapStyle(mapboxAccessToken)
-      : usgsImageryTopoBasemapStyle;
+      : worldImageryTopoBasemapStyle;
   }, [mapboxAccessToken]);
 
   return (

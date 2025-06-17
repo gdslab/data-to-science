@@ -13,7 +13,7 @@ import { useProjectContext } from '../ProjectContext';
 
 import {
   getMapboxSatelliteBasemapStyle,
-  usgsImageryTopoBasemapStyle,
+  worldImageryTopoBasemapStyle,
 } from '../../../maps/styles/basemapStyles';
 import IForesterCluster from './IForesterCluster';
 import { FeatureCollection } from 'geojson';
@@ -137,7 +137,7 @@ export default function IForesterMap() {
   const mapStyle = useMemo(() => {
     return mapboxAccessToken
       ? getMapboxSatelliteBasemapStyle(mapboxAccessToken)
-      : usgsImageryTopoBasemapStyle;
+      : worldImageryTopoBasemapStyle;
   }, [mapboxAccessToken]);
 
   return (

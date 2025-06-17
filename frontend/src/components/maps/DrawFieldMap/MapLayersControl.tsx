@@ -42,26 +42,13 @@ export default function MapLayersControl() {
           maxZoom={24}
         />
       </LayersControl.BaseLayer>
-      <LayersControl.BaseLayer name="USGS Topo">
+      <LayersControl.BaseLayer
+        name="ESRI World Imagery"
+        checked={!mapboxAccessToken}
+      >
         <TileLayer
-          attribution="USGS The National Map: National Boundaries Dataset, 3DEP Elevation Program, Geographic Names Information System, National Hydrography Dataset, National Land Cover Database, National Structures Dataset, and National Transportation Dataset; USGS Global Ecosystems; U.S. Census Bureau TIGER/Line data; USFS Road Data; Natural Earth Data; U.S. Department of State Humanitarian Information Unit; and NOAA National Centers for Environmental Information, U.S. Coastal Relief Model. Data refreshed April, 2023."
-          url="https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}"
-          maxNativeZoom={16}
-          maxZoom={24}
-        />
-      </LayersControl.BaseLayer>
-      <LayersControl.BaseLayer name="USGS Imagery" checked={!mapboxAccessToken}>
-        <TileLayer
-          attribution="USGS The National Map: Orthoimagery. Data refreshed December, 2021."
-          url="https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}"
-          maxNativeZoom={16}
-          maxZoom={24}
-        />
-      </LayersControl.BaseLayer>
-      <LayersControl.BaseLayer name="USGS ImageryTopo">
-        <TileLayer
-          attribution="USGS The National Map: Orthoimagery and US Topo. Data refreshed August, 2023."
-          url="https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}"
+          attribution="Esri, Maxar, Earthstar Geographics, and the GIS User Community"
+          url="https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
           maxNativeZoom={16}
           maxZoom={24}
         />

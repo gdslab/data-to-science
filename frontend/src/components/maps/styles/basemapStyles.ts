@@ -45,27 +45,31 @@ const osmBasemapStyle: StyleSpecification = {
   ],
 };
 
-const usgsImageryTopoBasemapStyle: StyleSpecification = {
+const worldImageryTopoBasemapStyle: StyleSpecification = {
   version: 8,
   glyphs: 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf',
   sources: {
-    usgs: {
+    esri: {
       type: 'raster',
       tiles: [
-        'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}',
+        'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       ],
       tileSize: 256,
       attribution:
-        'USGS The National Map: Orthoimagery and US Topo. Data refreshed October, 2024.',
+        'Esri, Maxar, Earthstar Geographics, and the GIS User Community',
     },
   },
   layers: [
     {
-      id: 'usgs-layer',
+      id: 'world-imagery-layer',
       type: 'raster',
-      source: 'usgs',
+      source: 'esri',
     },
   ],
 };
 
-export { getMapboxSatelliteBasemapStyle, osmBasemapStyle, usgsImageryTopoBasemapStyle };
+export {
+  getMapboxSatelliteBasemapStyle,
+  osmBasemapStyle,
+  worldImageryTopoBasemapStyle,
+};

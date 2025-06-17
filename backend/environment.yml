@@ -390,3 +390,6 @@ dependencies:
   - zlib
   - zstandard
   - zstd
+  - pystac-client
+  - rio-stac
+  - jsonschema
