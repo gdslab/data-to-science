@@ -28,7 +28,7 @@ class MapMaker:
                 + mapbox_access_token
             )
         else:
-            basemap = "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}"
+            basemap = "https://tiledbasemaps.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
 
         headers = {"User-Agent": "StaticMap", "Referer": settings.API_DOMAIN}
 
