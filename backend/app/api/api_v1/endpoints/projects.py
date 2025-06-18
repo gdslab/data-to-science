@@ -12,6 +12,7 @@ from app.api import deps
 from app.api.utils import create_project_field_preview
 from app.utils.STACGenerator import STACGenerator
 from app.utils.STACCollectionManager import STACCollectionManager
+from app.core.config import settings
 
 
 logger = logging.getLogger("__name__")
@@ -120,14 +121,20 @@ def read_projects(
         return projects
 
 
-@router.put("/{project_id}/publish-stac", response_model=schemas.STACReport)
+@router.put("/{project_id}/publish-stac", response_model=schemas.STACResponse)
 def publish_project_to_stac_catalog(
     project_id: UUID,
+    preview: bool = False,
     project: models.Project = Depends(deps.can_read_write_delete_project),
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    """Publish project to STAC catalog or update existing published project."""
+    """Publish project to STAC catalog or preview STAC metadata.
+
+    Args:
+        project_id: The project ID
+        preview: If True, only generate STAC metadata without publishing
+    """
     try:
         # Generate STAC collection and items for project
         sg = STACGenerator(db, project_id=project_id)
@@ -148,6 +155,15 @@ def publish_project_to_stac_catalog(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="No items to publish found"
         )
+
+    if preview:
+        # Return STAC metadata without publishing
+        return {
+            "collection_id": project_id,
+            "collection": collection.to_dict(),
+            "items": [item.to_dict() for item in items],
+            "is_published": False,
+        }
 
     # Publish collection and items to STAC catalog
     try:
@@ -346,6 +362,59 @@ def delete_project_like(
         )
 
     return {"message": "Project unbookmarked"}
+
+
+@router.get("/{project_id}/stac", response_model=schemas.STACResponse)
+def get_project_stac_metadata(
+    project_id: UUID,
+    project: models.Project = Depends(deps.can_read_write_delete_project),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Get STAC metadata for a published project."""
+    if not project.is_published:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Project is not published in STAC catalog",
+        )
+
+    try:
+        # Fetch collection and items from STAC API
+        scm = STACCollectionManager(collection_id=str(project_id))
+        collection = scm.fetch_public_collection()
+        items = scm.fetch_public_items_full()
+
+        if not collection:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="STAC collection not found",
+            )
+
+        # Add browser URLs if STAC_BROWSER_URL is configured
+        collection_url = None
+        if settings.STAC_BROWSER_URL:
+            collection_url = f"{settings.STAC_BROWSER_URL}/collections/{project_id}"
+            # Add URL to each item
+            for item in items:
+                item["browser_url"] = (
+                    f"{settings.STAC_BROWSER_URL}/collections/{project_id}/items/{item['id']}"
+                )
+
+        return {
+            "collection_id": project_id,
+            "collection": collection,
+            "items": items,
+            "is_published": True,
+            "collection_url": collection_url,
+        }
+    except Exception as e:
+        logger.exception(
+            f"Failed to fetch STAC metadata for project {project_id}: {str(e)}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch STAC metadata. Please try again later.",
+        )
 
 
 def rollback_stac_publication(scm: STACCollectionManager, project_id: UUID) -> Any:

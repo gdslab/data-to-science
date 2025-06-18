@@ -60,6 +60,9 @@ import Workspace, {
 import { RootPublic, RootProtected } from './components/layout/Root';
 import { RequireAdmin, RequireAuth } from './AuthContext';
 import ProjectLayout from './components/pages/projects/ProjectLayout';
+import ProjectSTACPublishing, {
+  loader as stacPublishingLoader,
+} from './components/pages/projects/ProjectSTACPublishing';
 
 export const router = createBrowserRouter(
   [
@@ -158,6 +161,11 @@ export const router = createBrowserRouter(
             {
               path: '/projects/:projectId/modules',
               element: <ProjectModules />,
+            },
+            {
+              path: '/projects/:projectId/stac',
+              element: <ProjectSTACPublishing />,
+              loader: stacPublishingLoader,
             },
             {
               path: '/projects/:projectId/campaigns/create',

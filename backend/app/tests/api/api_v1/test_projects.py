@@ -14,7 +14,7 @@ from app.schemas.project import ProjectUpdate
 from app.schemas.project_like import ProjectLikeCreate
 from app.schemas.project_member import ProjectMemberCreate
 from app.schemas.role import Role
-from app.schemas.stac import STACReport
+from app.schemas.stac import STACReport, STACPreview
 from app.schemas.team_member import TeamMemberUpdate
 from app.schemas.user import UserUpdate
 from app.tests.utils.data_product import SampleDataProduct
@@ -1261,3 +1261,278 @@ def test_deactivate_project_when_published(
         response.json()["detail"]
         == "Cannot deactivate project when it is published in a STAC catalog"
     )
+
+
+def test_publish_project_to_stac_preview(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test publishing project to STAC with preview=True returns STACPreview."""
+    # Create project owned by current user with two flights and two data products
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    flight1 = create_flight(db, project_id=project.id)
+    flight2 = create_flight(db, project_id=project.id)
+    data_product1 = SampleDataProduct(db, project=project, flight=flight1)
+    data_product2 = SampleDataProduct(db, project=project, flight=flight2)
+
+    # Preview STAC metadata without publishing
+    response = client.put(f"{API_URL}/{project.id}/publish-stac?preview=true")
+
+    # Confirm that the preview is returned
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data is not None
+
+    # Verify response structure matches STACPreview
+    assert "collection_id" in response_data
+    assert "collection" in response_data
+    assert "items" in response_data
+    assert "is_published" in response_data
+
+    assert str(response_data["collection_id"]) == str(project.id)
+    assert response_data["is_published"] is False
+
+    # Verify collection is a dictionary with expected structure
+    collection = response_data["collection"]
+    assert isinstance(collection, dict)
+    assert collection["id"] == str(project.id)
+    assert collection["title"] == project.title
+    assert collection["description"] == project.description
+
+    # Verify items are dictionaries with expected structure
+    items = response_data["items"]
+    assert isinstance(items, list)
+    assert len(items) == 2
+
+    expected_ids = {str(data_product1.obj.id), str(data_product2.obj.id)}
+    for item in items:
+        assert isinstance(item, dict)
+        assert "id" in item
+        assert "type" in item
+        assert "properties" in item
+        assert item["id"] in expected_ids
+        assert item["type"] == "Feature"
+        assert "flight_details" in item["properties"]
+        assert "data_product_details" in item["properties"]
+        expected_ids.remove(item["id"])
+
+    # Verify all expected items were found
+    assert len(expected_ids) == 0
+
+    # Confirm project is not actually published (data products remain private)
+    data_product1_file_permission = crud.file_permission.get_by_data_product(
+        db, file_id=data_product1.obj.id
+    )
+    assert data_product1_file_permission is not None
+    assert data_product1_file_permission.is_public is False
+
+    # Preview mode should not include URLs
+    assert response_data.get("collection_url") is None
+    for item in items:
+        assert "browser_url" not in item
+
+
+def test_get_project_stac_metadata(
+    client: TestClient,
+    db: Session,
+    normal_user_access_token: str,
+    stac_collection_published: STACCollectionHelper,
+) -> None:
+    """Test getting STAC metadata for a published project."""
+    # Get project from published collection
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project_id = stac_collection_published.collection_id
+    assert project_id
+
+    # Add current user as project owner
+    create_project_member(
+        db, role=Role.OWNER, email=current_user.email, project_id=UUID(project_id)
+    )
+
+    # Get STAC metadata
+    response = client.get(f"{API_URL}/{project_id}/stac")
+
+    # Confirm successful response
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data is not None
+
+    # Verify response structure
+    assert "collection_id" in response_data
+    assert "collection" in response_data
+    assert "items" in response_data
+    assert "is_published" in response_data
+    assert "collection_url" in response_data
+
+    assert str(response_data["collection_id"]) == project_id
+    assert response_data["is_published"] is True
+
+    # Verify collection is a dictionary
+    collection = response_data["collection"]
+    assert isinstance(collection, dict)
+    assert collection["id"] == project_id
+
+    # Verify items are full dictionaries
+    items = response_data["items"]
+    assert isinstance(items, list)
+    assert len(items) == 2  # Published collection has 2 items
+
+    for item in items:
+        assert isinstance(item, dict)
+        assert "id" in item
+        assert "type" in item
+        assert "collection" in item
+        assert "properties" in item
+        assert item["collection"] == project_id
+        assert item["type"] == "Feature"
+        # browser_url should be present if STAC_BROWSER_URL is configured
+        if settings.STAC_BROWSER_URL:
+            assert "browser_url" in item
+            expected_url = f"{settings.STAC_BROWSER_URL}/collections/{project_id}/items/{item['id']}"
+            assert item["browser_url"] == expected_url
+
+    # collection_url should be present if STAC_BROWSER_URL is configured
+    if settings.STAC_BROWSER_URL:
+        expected_collection_url = (
+            f"{settings.STAC_BROWSER_URL}/collections/{project_id}"
+        )
+        assert response_data["collection_url"] == expected_collection_url
+    else:
+        assert response_data["collection_url"] is None
+
+
+def test_get_project_stac_metadata_not_published(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test getting STAC metadata for an unpublished project returns 400."""
+    # Create unpublished project
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    flight = create_flight(db, project_id=project.id)
+    SampleDataProduct(db, project=project, flight=flight)
+
+    # Try to get STAC metadata
+    response = client.get(f"{API_URL}/{project.id}/stac")
+
+    # Should return 400 for unpublished project
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "not published" in response.json()["detail"]
+
+
+def test_get_project_stac_metadata_without_owner_role(
+    client: TestClient,
+    db: Session,
+    normal_user_access_token: str,
+    stac_collection_published: STACCollectionHelper,
+) -> None:
+    """Test getting STAC metadata without owner role returns 403."""
+    # Get project from published collection
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project_id = stac_collection_published.collection_id
+    assert project_id
+
+    # Add current user as project manager (not owner)
+    create_project_member(
+        db, role=Role.MANAGER, email=current_user.email, project_id=UUID(project_id)
+    )
+
+    # Try to get STAC metadata
+    response = client.get(f"{API_URL}/{project_id}/stac")
+
+    # Should return 403 for non-owner
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_stac_response_union_type_validation(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test that both STACReport and STACPreview responses are valid STACResponse types."""
+    # Create project owned by current user with data products
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    flight = create_flight(db, project_id=project.id)
+    data_product = SampleDataProduct(db, project=project, flight=flight)
+
+    # Test STACPreview response
+    preview_response = client.put(f"{API_URL}/{project.id}/publish-stac?preview=true")
+    assert preview_response.status_code == status.HTTP_200_OK
+    preview_data = preview_response.json()
+
+    # Validate as STACPreview
+    stac_preview = STACPreview(**preview_data)
+    assert stac_preview.collection_id == project.id
+    assert stac_preview.is_published is False
+    assert isinstance(stac_preview.collection, dict)
+    assert isinstance(stac_preview.items, list)
+
+    # Test STACReport response (actual publish)
+    publish_response = client.put(f"{API_URL}/{project.id}/publish-stac")
+    assert publish_response.status_code == status.HTTP_200_OK
+    publish_data = publish_response.json()
+
+    # Validate as STACReport
+    stac_report = STACReport(**publish_data)
+    assert stac_report.collection_id == project.id
+    assert stac_report.is_published is True
+    assert isinstance(stac_report.items, list)
+    assert len(stac_report.items) == 1
+    assert stac_report.items[0].item_id == data_product.obj.id
+    assert stac_report.items[0].is_published is True
+
+
+def test_get_project_stac_metadata_with_browser_urls(
+    client: TestClient,
+    db: Session,
+    normal_user_access_token: str,
+    stac_collection_published: STACCollectionHelper,
+    monkeypatch,
+) -> None:
+    """Test getting STAC metadata with browser URLs when STAC_BROWSER_URL is configured."""
+    # Set STAC_BROWSER_URL for this test
+    test_browser_url = "https://stac-browser.example.com"
+    monkeypatch.setattr(settings, "STAC_BROWSER_URL", test_browser_url)
+
+    # Get project from published collection
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project_id = stac_collection_published.collection_id
+    assert project_id
+
+    # Add current user as project owner
+    create_project_member(
+        db, role=Role.OWNER, email=current_user.email, project_id=UUID(project_id)
+    )
+
+    # Get STAC metadata
+    response = client.get(f"{API_URL}/{project_id}/stac")
+
+    # Confirm successful response
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data is not None
+
+    # Verify collection URL is present and correct
+    expected_collection_url = f"{test_browser_url}/collections/{project_id}"
+    assert response_data["collection_url"] == expected_collection_url
+
+    # Verify items have browser URLs
+    items = response_data["items"]
+    assert len(items) == 2
+
+    for item in items:
+        assert "browser_url" in item
+        expected_item_url = (
+            f"{test_browser_url}/collections/{project_id}/items/{item['id']}"
+        )
+        assert item["browser_url"] == expected_item_url

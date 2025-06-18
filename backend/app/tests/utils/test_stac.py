@@ -436,3 +436,47 @@ def test_stac_generator_temporal_extent_with_dates(db: Session) -> None:
     assert temporal_extent.intervals[0][1] == date_to_datetime(
         project_in_db.harvest_date
     )
+
+
+def test_fetch_public_items_full(
+    stac_collection_published: STACCollectionHelper,
+) -> None:
+    """Test fetching full item dictionaries from a published collection."""
+    # Get collection ID from fixture
+    collection_id = stac_collection_published.collection_id
+    assert collection_id is not None
+
+    # Create STAC Collection Manager
+    scm = STACCollectionManager(collection_id=collection_id)
+
+    # Fetch full items
+    items = scm.fetch_public_items_full()
+    assert len(items) == 2  # We create 2 items in the fixture
+
+    # Verify items are full dictionaries with expected structure
+    for item in items:
+        assert isinstance(item, dict)
+        assert "id" in item
+        assert "type" in item
+        assert "collection" in item
+        assert "properties" in item
+        assert "geometry" in item
+        assert "bbox" in item
+        assert item["collection"] == collection_id
+        assert item["type"] == "Feature"
+
+        # Verify flight details are present
+        assert "flight_details" in item["properties"]
+        assert "data_product_details" in item["properties"]
+
+
+def test_fetch_public_items_full_empty_collection() -> None:
+    """Test fetching full items from a non-existent collection returns empty list."""
+    # Create STAC Collection Manager with non-existent collection ID
+    collection_id = "00000000-0000-0000-0000-000000000000"
+    scm = STACCollectionManager(collection_id=collection_id)
+
+    # Fetch full items should return empty list
+    items = scm.fetch_public_items_full()
+    assert isinstance(items, list)
+    assert len(items) == 0

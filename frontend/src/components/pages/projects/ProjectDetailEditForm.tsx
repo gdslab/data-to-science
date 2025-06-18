@@ -11,7 +11,6 @@ import { Project } from './Project';
 import { useProjectContext } from './ProjectContext';
 import ProjectDeleteModal from './ProjectDeleteModal';
 import ProjectFormMap from './ProjectFormMap';
-import ProjectSTACPublishing from './ProjectSTACPublishing';
 import ProjectBoundaryDownloadButton from './ProjectBoundaryDownloadButton';
 import Table, { TableBody, TableHead } from '../../Table';
 import { Team } from '../teams/Teams';
@@ -218,11 +217,9 @@ export default function ProjectDetailEditForm({
               <LinkButton url={`/projects/${project.id}/modules`} size="sm">
                 Manage Modules
               </LinkButton>
-              <ProjectSTACPublishing
-                is_published={project.is_published}
-                projectId={project.id}
-                setStatus={setStatus}
-              />
+              <LinkButton url={`/projects/${project.id}/stac`} size="sm">
+                Manage STAC
+              </LinkButton>
               <ProjectDeleteModal project={project} />
             </div>
           ) : null}

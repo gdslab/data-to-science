@@ -1,7 +1,6 @@
 import { IForester } from '../Project';
 import { GeoJSONFeature, MapLayer } from '../Project';
-import { Flight, ProjectModule } from '../Project';
-import { Project } from '../ProjectList';
+import { Flight, ProjectModule, Project } from '../Project';
 import { ProjectMember } from '../ProjectAccess';
 
 export type IForesterAction = { type: string; payload: IForester[] | null };

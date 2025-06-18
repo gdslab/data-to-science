@@ -194,8 +194,9 @@ class STACGenerator:
                 datetime=date_to_datetime(flight.acquisition_date),
                 properties={**flight_properties},
             )
+            item.title = f"{flight.acquisition_date}_{data_product.data_type}_{flight.sensor}_{flight.platform}"  # type: ignore[attr-defined]
             item.add_asset(key=str(data_product.id), asset=asset)
-
+        logger.info(f"Item title: {item.title}")
         return item
 
     def get_spatial_extent(self) -> SpatialExtent:

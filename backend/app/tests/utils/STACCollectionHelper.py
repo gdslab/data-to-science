@@ -4,6 +4,7 @@ import logging
 from pystac import Collection, Item
 from sqlalchemy.orm import Session
 
+from app import crud
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.flight import create_flight
 from app.tests.utils.project import create_project
@@ -54,6 +55,12 @@ class STACCollectionHelper:
             # Publish collection to STAC API
             if publish:
                 scm.publish_to_catalog()
+
+                # Update the project to published and make all data products public
+                # This mirrors what the real API endpoint does
+                crud.project.update_project_visibility(
+                    self.db, project_id=self.project_id, is_public=True
+                )
         else:
             raise ValueError("Failed to create STAC collection")
 

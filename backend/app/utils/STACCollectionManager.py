@@ -114,6 +114,30 @@ class STACCollectionManager:
             # Return empty list instead of None to avoid errors downstream
             return []
 
+    def fetch_public_items_full(self) -> List[Dict]:
+        """Get full STAC Items in public catalog.
+
+        Returns:
+            List[Dict]: List of published items as dictionaries associated with collection.
+        """
+        try:
+            # Connect to STAC API and retrieve items
+            logger.info(f"Connecting to STAC API at {self.api_url}")
+            client = Client.open(self.api_url)
+            logger.debug(f"Fetching items for collection {self.collection_id}")
+            items = client.get_collection(self.collection_id).get_items()
+
+            # Convert items to dictionaries
+            item_dicts = [item.to_dict() for item in items]
+
+            return item_dicts
+        except Exception as e:
+            logger.error(
+                f"Failed to fetch items for collection {self.collection_id}: {str(e)}"
+            )
+            # Return empty list instead of None to avoid errors downstream
+            return []
+
     def fetch_public_item(self, item_id: str) -> Optional[Dict]:
         """Get STAC Item in public catalog.
 

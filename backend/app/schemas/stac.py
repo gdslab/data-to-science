@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from datetime import datetime
 from pydantic import BaseModel, UUID4
 
@@ -23,3 +23,14 @@ class STACReport(BaseModel):
     is_published: bool
     collection_url: Optional[str] = None
     error: Optional[STACError] = None
+
+
+class STACPreview(BaseModel):
+    collection_id: UUID4
+    collection: Dict[str, Any]
+    items: List[Dict[str, Any]]
+    is_published: bool
+    collection_url: Optional[str] = None
+
+
+STACResponse = Union[STACReport, STACPreview]
