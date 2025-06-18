@@ -210,7 +210,7 @@ if __name__ == "__main__":
         help="CHM resolution",
     )
     parser.add_argument(
-        "--chm_percentile", type=int, required=True, default=98, help="CHM percentile"
+        "--chm_percentile", type=float, required=True, default=98.0, help="CHM percentile"
     )
 
     args = parser.parse_args()
