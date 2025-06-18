@@ -38,7 +38,7 @@ affiliations:
   - index: 3
     name: College of Agriculture Research Services, Purdue University
 
-date: 9 June 2025
+date: 10 June 2025
 bibliography: paper.bib
 ---
 
@@ -57,17 +57,51 @@ With advances in sensor technologies and the growing emphasis on open science, t
 D2S uses a Python backend with a REST API built on open standards, connecting client applications to a PostgreSQL database with PostGIS for managing core application data and references to user-contributed datasets stored on the local file system. Full documentation on the system architecture is available in the GitHub README. 
 The D2S frontend web application provides researchers with an intuitive interface, developed in collaboration with a dedicated UI/UX team and informed by user interviews. The design efforts focused on creating an intuitive interface tailored for geospatial researchers, enabling side-by-side view comparisons and supporting analytic workflows through user-centered navigation and clarity of visual feedback. Built around this tailored interface, the current D2S web application (v1.0) offers five core categories of functionality, as outlined in the table below: 
 
-+--------------+-----------------+---------------------+
-| **Category** | **Description** | **Functionalities** |
-+:============:+:===============:+:===================:+
-| **Catalog** | Dynamic spatiotemporal cataloging of geospatial data in a cloud-optimized format, enabling users to seamlessly access, browse, and visualize datasets without downloading them | - Sorting geospatial data by time and location: 2D raster data (.tif), 3D point cloud data (.las, .laz), and vector data (.geojson, .shp) - Raster and vector data visualization with symbology configuration - Swipe comparison of geospatial data products across time or data type - Visualizing 3D point cloud data|
-| **Collaboration** | Sharing data with others within the D2S web application or by sending a sharable link | -	Managing teams and members - Creating accessible links and/or QR codes for shared data -Granting public access to data with no account or API key required |
-| **Preprocessing** | Producing geospatial data products, such as dense point clouds, Digital Surface Models (DSM), and orthorectified images, from raw UAS data | - Connecting to a photogrammetry pipeline based on open-source [OpenDroneMap (ODM)](https://www.opendronemap.org/) via ClusterODM - User configurable settings for the ODM pipeline |
-| **Postprocessing** | Basic analysis of geospatial data products | - Calculating vegetation indices (NDVI, ExG, VARI) and hillshade from raster data - Generating Digital Terrain Models (DTM) and Normalized Difference Height Models (NDHM) from point cloud data - Zonal statistics based on vector data |
-| **Publishing** | Publicly publishing data to the D2S STAC catalog | - Generating and pushing STAC catalogs of datasets to be publicly published |
-+===================+============+=====================+
-| NDVI = Normalized Difference Vegetation Index, ExG = Excess Green Vegetation Index, VARI = Visual Atmospherically Resistant Index |
-+===================+============+=====================+
++--------------------+-----------------------------------------------------------+------------------------------------------------------------------+
+| Category           | Description                                               | Functionalities                                                  |
++====================+===========================================================+==================================================================+
+| **Catalog**        | Dynamic spatiotemporal cataloging of geospatial data in a |
+|                    | cloud-optimized format, enabling users to seamlessly      |
+|                    | access, browse, and visualize datasets without            | 
+|                    | downloading them                                          | - Sorting geospatial data by time and location: 2D raster data   |
+|                    |                                                           |   (.tif), 3D point cloud data (.las, .laz), and vector data      |
+|                    |                                                           |   (.geojson, .shp)                                               |
+|                    |                                                           | - Raster and vector data visualization with symbology            |
+|                    |                                                           |   configuration                                                  |
+|                    |                                                           | - Swipe comparison of geospatial data products across time or    |
+|                    |                                                           |   data type                                                      |
+|                    |                                                           | - Visualizing 3D point cloud data                                |
+|                    |                                                           | \vspace{1em}                                                     |
++--------------------+-----------------------------------------------------------+------------------------------------------------------------------+
+| **Collaboration**  | Sharing data with others within the D2S web application   |
+|                    | or by sending a sharable link                             | - Managing teams and members                                     | 
+|                    |                                                           | - Creating accessible links and/or QR codes for shared data      |
+|                    |                                                           | - Granting public access to data with no account or API key      |
+|                    |                                                           |   required                                                       |
+|                    |                                                           | \vspace{1em}                                                     |
++--------------------+-----------------------------------------------------------+------------------------------------------------------------------+
+| **Preprocessing**  | Producing geospatial data products, such as dense point   |
+|                    | clouds, Digital Surface Models (DSM), and orthorectified  |
+|                    | images, from raw UAS data                                 | - Connecting to a photogrammetry pipeline based on open-source   |
+|                    |                                                           |   [OpenDroneMap (ODM)](https://www.opendronemap.org/) via        |
+|                    |                                                           |   ClusterODM                                                     |
+|                    |                                                           | - User configurable settings for the ODM pipeline                |
+|                    |                                                           | \vspace{1em}                                                     |
++--------------------+-----------------------------------------------------------+------------------------------------------------------------------+
+| **Postprocessing** | Basic analysis of geospatial data products                | - Calculating vegetation indices (NDVI¹, ExG², VARI³) and        |
+|                    |                                                           |   hillshade from raster data                                     |
+|                    |                                                           | - Generating Digital Terrain Models (DTM) and Normalized         |
+|                    |                                                           |   Difference Height Models (NDHM) from point cloud data          |
+|                    |                                                           | - Zonal statistics based on vector data                          |
+|                    |                                                           | \vspace{1em}                                                     |
++--------------------+-----------------------------------------------------------+------------------------------------------------------------------+
+| **Publishing**     | Publicly publishing data to the D2S STAC catalog          | - Generating and pushing STAC catalogs of datasets to be         |
+|                    |                                                           |   publicly published                                             |
+|                    |                                                           | \vspace{1em}                                                     |
++--------------------+-----------------------------------------------------------+------------------------------------------------------------------+
+¹ NDVI = Normalized Difference Vegetation Index  
+² ExG = Excess Green Vegetation Index  
+³ VARI = Visual Atmospherically Resistant Index  
 
 Furthermore, the Python module, [*d2spy*](https://py.d2s.org), is available through PyPI (https://py.d2s.org/), and the QGIS plugin, [*D2S Browser*](https://plugins.qgis.org/plugins/d2s_browser/), is also available at https://plugins.qgis.org/plugins/d2s_browser/. Notably, with *d2spy*, researchers can comprehensively analyze the geospatial data stored within the D2S ecosystem as well as external public datasets, such as Landsat, by seamlessly integrating with other Python packages like *geemap* [@wu2020geemap] and *leafmap* [@wu2021leafmap]. Additionally, datasets, such as 3DEP and NAIP datasets, can also be incorporated into collective analyses as they are provided via the [D2S STAC catalog](https://stac.d2s.org/) (https://stac.d2s.org/) as part of the D2S ecosystem.
 
