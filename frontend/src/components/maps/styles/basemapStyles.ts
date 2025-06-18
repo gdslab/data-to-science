@@ -55,6 +55,7 @@ const worldImageryTopoBasemapStyle: StyleSpecification = {
         'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       ],
       tileSize: 256,
+      maxzoom: 20,
       attribution:
         'Esri, Maxar, Earthstar Geographics, and the GIS User Community',
     },
