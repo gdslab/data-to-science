@@ -100,9 +100,9 @@ class ProcessingRequest(BaseModel):
         title="CHM Resolution",
         description="Spatial resolution for Canopy Height Model processing (0.1-10.0)",
     )
-    chmPercentile: int = Field(
-        ge=0,
-        le=100,
+    chmPercentile: float = Field(
+        ge=0.0,
+        le=100.0,
         title="CHM Percentile",
         description="Percentile value for Canopy Height Model processing (0-100)",
     )
