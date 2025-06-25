@@ -82,7 +82,8 @@ export default function ProjectBreadcrumbs() {
                 <Link
                   to={`/projects/${projectId}`}
                   className={classNames(
-                    !flightCrumb && !['access', 'modules'].includes(slug)
+                    !flightCrumb &&
+                      !['access', 'modules', 'stac'].includes(slug)
                       ? 'font-semibold'
                       : '',
                     'block transition hover:text-gray-700 max-w-60 truncate'

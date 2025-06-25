@@ -1,6 +1,6 @@
 import logging
 from datetime import date, datetime, timezone
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import geopandas as gpd
 import rasterio
@@ -28,6 +28,7 @@ from app import crud, models
 from app.api.api_v1.endpoints.data_products import get_static_dir
 from app.crud.crud_data_product import get_url
 from app.utils import pdal_to_stac
+from app.schemas import STACError, ItemStatus
 
 
 logger = logging.getLogger("__name__")
@@ -39,11 +40,26 @@ COG_EXTENSIONS = [
     f"https://stac-extensions.github.io/eo/{EO_EXT_VERSION}/schema.json",
 ]
 
+# Scientific extension URI
+SCIENTIFIC_EXTENSION_URI = (
+    "https://stac-extensions.github.io/scientific/v1.0.0/schema.json"
+)
+
 
 class STACGenerator:
-    def __init__(self, db: Session, project_id: UUID4):
+    def __init__(
+        self,
+        db: Session,
+        project_id: UUID4,
+        sci_doi: Optional[str] = None,
+        sci_citation: Optional[str] = None,
+        custom_titles: Optional[dict] = None,
+    ):
         self.db = db
         self.project_id = project_id
+        self.sci_doi = sci_doi
+        self.sci_citation = sci_citation
+        self.custom_titles = custom_titles or {}
 
         # Get project and flights associated with project
         self.project = self.get_project()
@@ -54,32 +70,67 @@ class STACGenerator:
 
         #  Iterate over each flight
         self.items: List[Item] = []
+        self.failed_items: List[ItemStatus] = []
         for flight in self.flights:
             # Get data products associated with flight
             data_products = self.get_data_products(flight_id=flight.id)
             # Iterate over each data product
             for data_product in data_products:
-                # Create STAC Item for each data product
-                item = self.generate_stac_item(
-                    collection_id=self.collection.id,
-                    data_product=data_product,
-                    flight=flight,
-                )
-                self.items.append(item)
+                try:
+                    # Create STAC Item for each data product
+                    item = self.generate_stac_item(
+                        collection_id=self.collection.id,
+                        data_product=data_product,
+                        flight=flight,
+                    )
+                    self.items.append(item)
+                except Exception as e:
+                    # Log the error and add to failed items list
+                    error_msg = f"Failed to generate STAC item for data product {data_product.id}: {str(e)}"
+                    logger.error(error_msg)
 
-        # Raise exception if no data products were found
-        if len(self.items) == 0:
+                    # Generate title for failed item using utility function
+                    title = generate_item_title(
+                        data_product, flight, self.custom_titles
+                    )
+
+                    # Create failed item status
+                    failed_item = ItemStatus(
+                        item_id=str(data_product.id),
+                        is_published=False,
+                        item_url=None,
+                        error=STACError(
+                            code="ITEM_GENERATION_FAILED",
+                            message=str(e),
+                            timestamp=datetime.now(tz=timezone.utc),
+                            details={
+                                "data_product_id": str(data_product.id),
+                                "data_type": data_product.data_type,
+                                "filepath": data_product.filepath,
+                                "flight_id": str(flight.id),
+                                "title": title,
+                                "acquisition_date": str(flight.acquisition_date),
+                                "platform": flight.platform,
+                                "sensor": flight.sensor,
+                            },
+                        ),
+                    )
+                    self.failed_items.append(failed_item)
+
+        # Raise exception if no data products were found at all
+        if len(self.items) == 0 and len(self.failed_items) == 0:
             raise ValueError("No data products found in project.")
 
-        # Add items to collection
-        self.collection.add_items(self.items)
+        # Add items to collection (only successful ones)
+        if self.items:
+            self.collection.add_items(self.items)
 
-        # Create dummy catalog for validation
-        catalog = Catalog(
-            id="dummy-catalog", description="Dummy catalog for validation"
-        )
-        catalog.add_child(self.collection)
-        catalog.normalize_hrefs("./")
+            # Create dummy catalog for validation
+            catalog = Catalog(
+                id="dummy-catalog", description="Dummy catalog for validation"
+            )
+            catalog.add_child(self.collection)
+            catalog.normalize_hrefs("./")
 
     def get_project(self) -> models.Project:
         """Return project associated with "project_id" from database.
@@ -140,6 +191,18 @@ class STACGenerator:
         Returns:
             Collection: Project Collection.
         """
+        # Prepare scientific metadata
+        stac_extensions = []
+        extra_fields = {}
+
+        # Add scientific extension if DOI or citation is provided
+        if self.sci_doi or self.sci_citation:
+            stac_extensions.append(SCIENTIFIC_EXTENSION_URI)
+            if self.sci_doi:
+                extra_fields["sci:doi"] = self.sci_doi
+            if self.sci_citation:
+                extra_fields["sci:citation"] = self.sci_citation
+
         collection = Collection(
             id=str(self.project.id),
             title=self.project.title,
@@ -148,6 +211,8 @@ class STACGenerator:
                 spatial=self.get_spatial_extent(), temporal=self.get_temporal_extent()
             ),
             license="MIT",
+            stac_extensions=stac_extensions if stac_extensions else None,
+            extra_fields=extra_fields if extra_fields else None,
         )
 
         return collection
@@ -174,6 +239,10 @@ class STACGenerator:
                 "sensor": flight.sensor,
             },
         }
+        # Add title to properties - use custom title if provided, otherwise use default
+        title = generate_item_title(data_product, flight, self.custom_titles)
+        flight_properties["title"] = title
+
         if data_product.data_type == "point_cloud":
             # Create COPC item
             item = pdal_to_stac.create_item(
@@ -194,9 +263,10 @@ class STACGenerator:
                 datetime=date_to_datetime(flight.acquisition_date),
                 properties={**flight_properties},
             )
-            item.title = f"{flight.acquisition_date}_{data_product.data_type}_{flight.sensor}_{flight.platform}"  # type: ignore[attr-defined]
             item.add_asset(key=str(data_product.id), asset=asset)
-        logger.info(f"Item title: {item.title}")
+
+        # Log the title from properties instead
+        logger.info(f"Item title: {item.properties.get('title', 'No title set')}")
         return item
 
     def get_spatial_extent(self) -> SpatialExtent:
@@ -279,9 +349,43 @@ def date_to_datetime(d: date) -> datetime:
     return datetime(d.year, d.month, d.day).replace(tzinfo=timezone.utc)
 
 
+def generate_item_title(
+    data_product: models.DataProduct,
+    flight: models.Flight,
+    custom_titles: Optional[dict] = None,
+) -> str:
+    """Generate title for a STAC item.
+
+    Args:
+        data_product: DataProduct object
+        flight: Flight object
+        custom_titles: Optional dict of custom titles keyed by data_product_id
+
+    Returns:
+        str: Generated title for the item
+    """
+    data_product_id = str(data_product.id)
+    if (
+        custom_titles
+        and data_product_id in custom_titles
+        and custom_titles[data_product_id]
+    ):
+        return custom_titles[data_product_id]
+    else:
+        return f"{flight.acquisition_date}_{data_product.data_type}_{flight.sensor}_{flight.platform}"
+
+
 def generate_asset_for_cog(
     path_to_cog: str,
 ) -> Tuple[Tuple[float, float, float, float], Asset]:
+    """Generate a STAC Asset for a COG.
+
+    Args:
+        path_to_cog (str): Path to COG.
+
+    Returns:
+        Tuple[Tuple[float, float, float, float], Asset]: Tuple containing the bounding box and the asset.
+    """
     with rasterio.open(path_to_cog) as src:
         # Bounding box and footprint for COG
         bbox = get_dataset_geom(src)["bbox"]

@@ -1,4 +1,5 @@
 import json
+import subprocess
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List
@@ -16,12 +17,55 @@ osr.DontUseExceptions()
 COPC_EXTENSIONS = ["https://stac-extensions.github.io/pointcloud/v1.0.0/schema.json"]
 
 
+def validate_coordinate_system(path_to_copc: str) -> bool:
+    """
+    Validate if the point cloud has a valid coordinate system using pdal info --summary.
+    This is a lightweight check that doesn't process all points.
+
+    Args:
+        path_to_copc: Path to the COPC file
+
+    Returns:
+        bool: True if the point cloud has a valid coordinate system, False otherwise
+    """
+    try:
+        # Use pdal info --summary for lightweight metadata extraction
+        result = subprocess.run(
+            ["pdal", "info", "--summary", path_to_copc],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        info_data = json.loads(result.stdout)
+
+        # Check if spatial reference exists and is not empty
+        srs = info_data.get("summary", {}).get("srs", {})
+
+        # Check for various SRS fields that indicate a valid coordinate system
+        has_valid_srs = any(
+            [srs.get("compoundwkt"), srs.get("wkt"), srs.get("proj4"), srs.get("units")]
+        )
+
+        return has_valid_srs
+
+    except (subprocess.CalledProcessError, json.JSONDecodeError, KeyError) as e:
+        # If pdal info fails or output is malformed, assume no valid SRS
+        return False
+
+
 def create_item(
     path_to_copc: str,
     collection_id: str,
     fallback_dt: datetime,
     flight_properties: Dict[str, Any],
 ) -> Item:
+    # First, validate that the point cloud has a coordinate system
+    if not validate_coordinate_system(path_to_copc):
+        raise ValueError(
+            f"Point cloud does not have a valid coordinate system and cannot be published to STAC"
+        )
+
     # pdal info --all call references hexbin, stats, and info filters
     r = pdal.Reader.copc(path_to_copc)
     hb = pdal.Filter.hexbin()

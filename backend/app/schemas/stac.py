@@ -11,7 +11,7 @@ class STACError(BaseModel):
 
 
 class ItemStatus(BaseModel):
-    item_id: UUID4
+    item_id: str
     is_published: bool
     item_url: Optional[str] = None
     error: Optional[STACError] = None
@@ -31,6 +31,7 @@ class STACPreview(BaseModel):
     items: List[Dict[str, Any]]
     is_published: bool
     collection_url: Optional[str] = None
+    failed_items: Optional[List[ItemStatus]] = None
 
 
 STACResponse = Union[STACReport, STACPreview]

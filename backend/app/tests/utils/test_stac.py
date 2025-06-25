@@ -2,53 +2,18 @@ from datetime import date
 from typing import Generator
 from uuid import UUID
 
-import logging
 import pytest
 from pystac.validation import validate
 from sqlalchemy.orm import Session
-from pystac_client import Client
 
 from app import crud
-from app.core.config import settings
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.project import create_project
 from app.tests.utils.flight import create_flight
 from app.tests.utils.STACCollectionHelper import STACCollectionHelper
+
 from app.utils.STACCollectionManager import STACCollectionManager
 from app.utils.STACGenerator import STACGenerator, date_to_datetime
-
-
-logger = logging.getLogger(__name__)
-
-
-@pytest.fixture(scope="module", autouse=True)
-def cleanup_stac_catalog():
-    """Fixture to clean up any collections from the test STAC catalog after all tests run."""
-    yield  # Let all tests run first
-
-    try:
-        # Connect to STAC API
-        stac_url = settings.get_stac_api_url
-        if not stac_url:
-            return
-
-        client = Client.open(str(stac_url))
-        collections = client.get_collections()
-
-        # Remove all collections since this is a test-only catalog
-        for collection in collections:
-            collection_id = collection.id
-            if collection_id:
-                try:
-                    logger.info(f"Cleaning up collection {collection_id}")
-                    scm = STACCollectionManager(collection_id=collection_id)
-                    scm.remove_from_catalog()
-                except Exception as e:
-                    logger.error(
-                        f"Failed to cleanup collection {collection_id}: {str(e)}"
-                    )
-    except Exception as e:
-        logger.error(f"Failed to cleanup STAC catalog: {str(e)}")
 
 
 @pytest.fixture
@@ -480,3 +445,320 @@ def test_fetch_public_items_full_empty_collection() -> None:
     items = scm.fetch_public_items_full()
     assert isinstance(items, list)
     assert len(items) == 0
+
+
+def test_stac_generator_with_scientific_metadata(db: Session) -> None:
+    """Test STACGenerator with scientific DOI and citation."""
+    # Create new project
+    project = create_project(db)
+
+    # Add sample data product to project
+    data_product = SampleDataProduct(db, project=project)
+
+    # Get flight from data product
+    flight = data_product.flight
+
+    # Scientific metadata
+    test_doi = "10.1000/stac123"
+    test_citation = (
+        "STAC, Test, et al. (2023). STAC Test Dataset. STAC Journal, 1(1), 1-10."
+    )
+
+    # Generate STAC with scientific metadata
+    sg = STACGenerator(
+        db, project_id=project.id, sci_doi=test_doi, sci_citation=test_citation
+    )
+
+    # Get STAC generated STAC items
+    stac_items = sg.items
+
+    # Get STAC generated STAC collection
+    stac_collection = sg.collection
+
+    # Assert that the STAC item was created
+    assert len(stac_items) == 1
+    assert stac_items[0].id == str(data_product.obj.id)
+
+    # Validate STAC Item
+    assert validate(stac_items[0])
+
+    # Validate STAC Collection
+    assert validate(stac_collection)
+
+    # Confirm flight id is present in STAC Item
+    assert stac_items[0].properties["flight_details"]["flight_id"] == str(flight.id)
+
+    # Verify scientific extension and metadata are present
+    collection_dict = stac_collection.to_dict()
+    assert "stac_extensions" in collection_dict
+    assert (
+        "https://stac-extensions.github.io/scientific/v1.0.0/schema.json"
+        in collection_dict["stac_extensions"]
+    )
+    assert collection_dict.get("sci:doi") == test_doi
+    assert collection_dict.get("sci:citation") == test_citation
+
+
+def test_stac_generator_with_only_doi(db: Session) -> None:
+    """Test STACGenerator with only DOI (no citation)."""
+    # Create new project
+    project = create_project(db)
+
+    # Add sample data product to project
+    data_product = SampleDataProduct(db, project=project)
+
+    # Only DOI, no citation
+    test_doi = "10.1000/stac456"
+
+    # Generate STAC with only DOI
+    sg = STACGenerator(db, project_id=project.id, sci_doi=test_doi)
+
+    # Get STAC generated STAC collection
+    stac_collection = sg.collection
+
+    # Validate STAC Collection
+    assert validate(stac_collection)
+
+    # Verify scientific extension and DOI are present, but no citation
+    collection_dict = stac_collection.to_dict()
+    assert "stac_extensions" in collection_dict
+    assert (
+        "https://stac-extensions.github.io/scientific/v1.0.0/schema.json"
+        in collection_dict["stac_extensions"]
+    )
+    assert collection_dict.get("sci:doi") == test_doi
+    assert "sci:citation" not in collection_dict
+
+
+def test_stac_generator_with_only_citation(db: Session) -> None:
+    """Test STACGenerator with only citation (no DOI)."""
+    # Create new project
+    project = create_project(db)
+
+    # Add sample data product to project
+    data_product = SampleDataProduct(db, project=project)
+
+    # Only citation, no DOI
+    test_citation = "Citation, Only, et al. (2023). Citation Only Dataset. Citation Journal, 2(1), 5-15."
+
+    # Generate STAC with only citation
+    sg = STACGenerator(db, project_id=project.id, sci_citation=test_citation)
+
+    # Get STAC generated STAC collection
+    stac_collection = sg.collection
+
+    # Validate STAC Collection
+    assert validate(stac_collection)
+
+    # Verify scientific extension and citation are present, but no DOI
+    collection_dict = stac_collection.to_dict()
+    assert "stac_extensions" in collection_dict
+    assert (
+        "https://stac-extensions.github.io/scientific/v1.0.0/schema.json"
+        in collection_dict["stac_extensions"]
+    )
+    assert collection_dict.get("sci:citation") == test_citation
+    assert "sci:doi" not in collection_dict
+
+
+def test_stac_generator_without_scientific_metadata(db: Session) -> None:
+    """Test STACGenerator without scientific metadata (ensures backward compatibility)."""
+    # Create new project
+    project = create_project(db)
+
+    # Add sample data product to project
+    data_product = SampleDataProduct(db, project=project)
+
+    # Get flight from data product
+    flight = data_product.flight
+
+    # Generate STAC without scientific metadata
+    sg = STACGenerator(db, project_id=project.id)
+
+    # Get STAC generated STAC items
+    stac_items = sg.items
+
+    # Get STAC generated STAC collection
+    stac_collection = sg.collection
+
+    # Assert that the STAC item was created
+    assert len(stac_items) == 1
+    assert stac_items[0].id == str(data_product.obj.id)
+
+    # Validate STAC Item
+    assert validate(stac_items[0])
+
+    # Validate STAC Collection
+    assert validate(stac_collection)
+
+    # Confirm flight id is present in STAC Item
+    assert stac_items[0].properties["flight_details"]["flight_id"] == str(flight.id)
+
+    # Verify scientific extension and metadata are NOT present
+    collection_dict = stac_collection.to_dict()
+    if "stac_extensions" in collection_dict:
+        assert (
+            "https://stac-extensions.github.io/scientific/v1.0.0/schema.json"
+            not in collection_dict["stac_extensions"]
+        )
+    assert "sci:doi" not in collection_dict
+    assert "sci:citation" not in collection_dict
+
+
+def test_stac_generator_with_custom_titles(db: Session) -> None:
+    """Test STACGenerator with custom titles for STAC items."""
+    # Create new project
+    project = create_project(db)
+
+    # Add sample data products to project
+    data_product1 = SampleDataProduct(db, project=project)
+    data_product2 = SampleDataProduct(db, project=project)
+
+    # Custom titles for the data products
+    custom_titles = {
+        str(data_product1.obj.id): "Custom Title for Item 1",
+        str(data_product2.obj.id): "Custom Title for Item 2",
+    }
+
+    # Generate STAC with custom titles
+    sg = STACGenerator(db, project_id=project.id, custom_titles=custom_titles)
+
+    # Get STAC generated STAC items
+    stac_items = sg.items
+
+    # Get STAC generated STAC collection
+    stac_collection = sg.collection
+
+    # Assert that the STAC items were created
+    assert len(stac_items) == 2
+
+    # Validate STAC Items
+    for item in stac_items:
+        assert validate(item)
+
+    # Validate STAC Collection
+    assert validate(stac_collection)
+
+    # Verify custom titles are used
+    for item in stac_items:
+        item_id = item.id
+        if item_id == str(data_product1.obj.id):
+            assert item.properties["title"] == "Custom Title for Item 1"
+        elif item_id == str(data_product2.obj.id):
+            assert item.properties["title"] == "Custom Title for Item 2"
+
+
+def test_stac_generator_with_partial_custom_titles(db: Session) -> None:
+    """Test STACGenerator with custom titles for only some STAC items."""
+    # Create new project
+    project = create_project(db)
+
+    # Add sample data products to project
+    data_product1 = SampleDataProduct(db, project=project)
+    data_product2 = SampleDataProduct(db, project=project)
+
+    # Custom title for only one data product
+    custom_titles = {
+        str(data_product1.obj.id): "Custom Title for Item 1",
+        # data_product2 will use default title
+    }
+
+    # Generate STAC with partial custom titles
+    sg = STACGenerator(db, project_id=project.id, custom_titles=custom_titles)
+
+    # Get STAC generated STAC items
+    stac_items = sg.items
+
+    # Assert that the STAC items were created
+    assert len(stac_items) == 2
+
+    # Verify titles
+    for item in stac_items:
+        item_id = item.id
+        if item_id == str(data_product1.obj.id):
+            assert item.properties["title"] == "Custom Title for Item 1"
+        elif item_id == str(data_product2.obj.id):
+            # Should use default title format
+            flight = data_product2.flight
+            expected_title = f"{flight.acquisition_date}_{data_product2.obj.data_type}_{flight.sensor}_{flight.platform}"
+            assert item.properties["title"] == expected_title
+
+
+def test_stac_generator_with_empty_custom_titles(db: Session) -> None:
+    """Test STACGenerator with empty custom titles (should use defaults)."""
+    # Create new project
+    project = create_project(db)
+
+    # Add sample data product to project
+    data_product = SampleDataProduct(db, project=project)
+
+    # Get flight from data product
+    flight = data_product.flight
+
+    # Custom titles with empty string (should use default)
+    custom_titles = {
+        str(data_product.obj.id): "",
+    }
+
+    # Generate STAC with empty custom titles
+    sg = STACGenerator(db, project_id=project.id, custom_titles=custom_titles)
+
+    # Get STAC generated STAC items
+    stac_items = sg.items
+
+    # Assert that the STAC item was created
+    assert len(stac_items) == 1
+    assert stac_items[0].id == str(data_product.obj.id)
+
+    # Verify default title is used when custom title is empty
+    expected_title = f"{flight.acquisition_date}_{data_product.obj.data_type}_{flight.sensor}_{flight.platform}"
+    assert stac_items[0].properties["title"] == expected_title
+
+
+def test_publish_to_catalog_with_scientific_metadata(db: Session) -> None:
+    """Test publishing a collection with scientific metadata to the catalog."""
+    # Create new project
+    project = create_project(db)
+
+    # Add sample data product to project
+    data_product = SampleDataProduct(db, project=project)
+
+    # Scientific metadata
+    test_doi = "10.1000/publish123"
+    test_citation = "Publish, Test, et al. (2023). Published Dataset. Publishing Journal, 3(1), 10-20."
+
+    # Generate STAC with scientific metadata using STACGenerator
+    sg = STACGenerator(
+        db, project_id=project.id, sci_doi=test_doi, sci_citation=test_citation
+    )
+    stac_collection = sg.collection
+    stac_items = sg.items
+
+    # Create STAC Collection Manager
+    scm = STACCollectionManager(
+        collection_id=stac_collection.id,
+        collection=stac_collection,
+        items=stac_items,
+    )
+
+    # Publish STAC Collection to STAC API
+    stac_report = scm.publish_to_catalog()
+    assert stac_report.is_published is True
+
+    # Fetch published STAC Collection from STAC API
+    public_collection = scm.fetch_public_collection()
+
+    assert public_collection is not None
+    assert public_collection["id"] == stac_collection.id
+
+    # Verify scientific extension and metadata are present in published collection
+    assert "stac_extensions" in public_collection
+    assert (
+        "https://stac-extensions.github.io/scientific/v1.0.0/schema.json"
+        in public_collection["stac_extensions"]
+    )
+    assert public_collection.get("sci:doi") == test_doi
+    assert public_collection.get("sci:citation") == test_citation
+
+    # Clean up - remove the published collection
+    scm.remove_from_catalog()

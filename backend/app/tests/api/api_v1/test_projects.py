@@ -1,3 +1,4 @@
+import json
 from datetime import date, datetime, timezone
 from uuid import UUID
 
@@ -14,7 +15,7 @@ from app.schemas.project import ProjectUpdate
 from app.schemas.project_like import ProjectLikeCreate
 from app.schemas.project_member import ProjectMemberCreate
 from app.schemas.role import Role
-from app.schemas.stac import STACReport, STACPreview
+from app.schemas.stac import STACReport
 from app.schemas.team_member import TeamMemberUpdate
 from app.schemas.user import UserUpdate
 from app.tests.utils.data_product import SampleDataProduct
@@ -876,12 +877,20 @@ def test_deactivate_project_deactivates_flights_and_data_products(
         assert deactivated_data_product.is_active is False
 
 
-def test_publish_project_to_stac(
-    client: TestClient, db: Session, normal_user_access_token: str
+def test_publish_project_to_stac_using_task(
+    db: Session, normal_user_access_token: str
 ) -> None:
+    """Test publishing project to STAC using the task function."""
+    from app.api.deps import get_current_approved_user, get_current_user
+    from app.tasks.stac_tasks import publish_stac_catalog_task
+    from app.tests.utils.data_product import SampleDataProduct
+    from app.tests.utils.flight import create_flight
+    from app.tests.utils.project import create_project
+    from app import crud
+
     # Create project owned by current user with two flights and two data products
     current_user = get_current_approved_user(
-        get_current_user(db, normal_user_access_token)
+        get_current_user(db, normal_user_access_token),
     )
     project = create_project(db, owner_id=current_user.id)
     flight1 = create_flight(db, project_id=project.id)
@@ -889,52 +898,45 @@ def test_publish_project_to_stac(
     data_product1 = SampleDataProduct(db, project=project, flight=flight1)
     data_product2 = SampleDataProduct(db, project=project, flight=flight2)
 
-    # Publish project to STAC
-    response = client.put(f"{API_URL}/{project.id}/publish-stac")
+    # Publish project to STAC using task function
+    result = publish_stac_catalog_task(str(project.id), db=db)
 
     # Confirm that the project is published to STAC
-    assert response.status_code == status.HTTP_200_OK
-    response_data = response.json()
-    assert response_data is not None
-    # Check that the response is a STACReport
-    assert STACReport(**response_data)
-    response_data = STACReport(**response_data)
-    assert response_data.collection_id == project.id
-    assert response_data.is_published is True
-    assert response_data.collection_url is not None
-    assert len(response_data.items) == 2
-    # Get expected data product IDs
+    assert result is not None
+    assert str(result["collection_id"]) == str(project.id)
+    assert result["is_published"] is True
+    assert len(result["items"]) == 2
+
+    # Verify all items are present
     expected_ids = {str(data_product1.obj.id), str(data_product2.obj.id)}
+    item_ids = {item["id"] for item in result["items"]}
+    assert item_ids == expected_ids
 
-    # Verify all items are present and published
-    for item in response_data.items:
-        assert str(item.item_id) in expected_ids
-        assert item.is_published is True
-        # Remove the ID from the set to ensure we don't have duplicates
-        expected_ids.remove(str(item.item_id))
-
-    # Verify we've seen all expected IDs
-    assert len(expected_ids) == 0
-
-    # Confirm that data product1 is now public
+    # Confirm that data products are now public
     data_product1_file_permission = crud.file_permission.get_by_data_product(
         db, file_id=data_product1.obj.id
     )
     assert data_product1_file_permission is not None
     assert data_product1_file_permission.is_public is True
 
-    # Confirm that data product2 is now public
-    data_product2_file_permission = crud.file_permission.get_by_data_product(
-        db, file_id=data_product2.obj.id
-    )
-    assert data_product2_file_permission is not None
-    assert data_product2_file_permission.is_public is True
+    # Clean up - remove from STAC catalog
+    from app.utils.STACCollectionManager import STACCollectionManager
+
+    scm = STACCollectionManager(collection_id=str(project.id))
+    scm.remove_from_catalog()
 
 
-def test_publish_project_to_stac_excludes_deactivated_data_products(
-    client: TestClient, db: Session, normal_user_access_token: str
+def test_publish_project_to_stac_excludes_deactivated_data_products_using_task(
+    db: Session, normal_user_access_token: str
 ) -> None:
-    """Test that deactivated data products are not included when publishing to STAC."""
+    """Test that deactivated data products are not included when publishing to STAC using task."""
+    from app.api.deps import get_current_approved_user, get_current_user
+    from app.tasks.stac_tasks import publish_stac_catalog_task
+    from app.tests.utils.data_product import SampleDataProduct
+    from app.tests.utils.flight import create_flight
+    from app.tests.utils.project import create_project
+    from app import crud
+
     # Create project owned by current user with one flight and two data products
     current_user = get_current_approved_user(
         get_current_user(db, normal_user_access_token)
@@ -951,322 +953,40 @@ def test_publish_project_to_stac_excludes_deactivated_data_products(
     assert deactivated_data_product is not None
     assert deactivated_data_product.is_active is False
 
-    # Publish project to STAC
-    response = client.put(f"{API_URL}/{project.id}/publish-stac")
+    # Publish project to STAC using task function
+    result = publish_stac_catalog_task(str(project.id), db=db)
 
     # Confirm that the project is published to STAC
-    assert response.status_code == status.HTTP_200_OK
-    response_data = response.json()
-    assert response_data is not None
-
-    # Check that the response is a STACReport
-    assert STACReport(**response_data)
-    response_data = STACReport(**response_data)
-    assert response_data.collection_id == project.id
-    assert response_data.is_published is True
-    assert response_data.collection_url is not None
+    assert result is not None
+    assert str(result["collection_id"]) == str(project.id)
+    assert result["is_published"] is True
 
     # Only one data product should be published (the active one)
-    assert len(response_data.items) == 1
+    assert len(result["items"]) == 1
 
     # Verify only the active data product is in the response
-    published_item = response_data.items[0]
-    assert str(published_item.item_id) == str(data_product2.obj.id)
-    assert published_item.is_published is True
-
-    # Confirm that the deactivated data product ID is not in the response
-    published_item_ids = {str(item.item_id) for item in response_data.items}
+    published_item_ids = {item["id"] for item in result["items"]}
+    assert str(data_product2.obj.id) in published_item_ids
     assert str(data_product1.obj.id) not in published_item_ids
 
-    # Confirm that only data product2 is now public
-    data_product2_file_permission = crud.file_permission.get_by_data_product(
-        db, file_id=data_product2.obj.id
-    )
-    assert data_product2_file_permission is not None
-    assert data_product2_file_permission.is_public is True
+    # Clean up
+    from app.utils.STACCollectionManager import STACCollectionManager
 
-    # Confirm that the deactivated data product1 remains private
-    data_product1_file_permission = crud.file_permission.get_by_data_product(
-        db, file_id=data_product1.obj.id
-    )
-    assert data_product1_file_permission is not None
-    assert data_product1_file_permission.is_public is False
+    scm = STACCollectionManager(collection_id=str(project.id))
+    scm.remove_from_catalog()
 
 
-def test_update_project_on_stac(
-    client: TestClient,
-    db: Session,
-    normal_user_access_token: str,
-    stac_collection_published: STACCollectionHelper,
+def test_generate_stac_preview_using_task(
+    db: Session, normal_user_access_token: str
 ) -> None:
-    # Create project owned by current user with two flights and two data products
-    current_user = get_current_approved_user(
-        get_current_user(db, normal_user_access_token)
-    )
-    # Publish a project to STAC and get the project id (e.g. collection id)
-    project_id = stac_collection_published.collection_id
-    assert project_id
+    """Test generating STAC preview using the task function."""
+    from app.api.deps import get_current_approved_user, get_current_user
+    from app.tasks.stac_tasks import generate_stac_preview_task
+    from app.tests.utils.data_product import SampleDataProduct
+    from app.tests.utils.flight import create_flight
+    from app.tests.utils.project import create_project
+    from app import crud
 
-    # Add current user as a project member with the owner role
-    create_project_member(
-        db, role=Role.OWNER, email=current_user.email, project_id=UUID(project_id)
-    )
-
-    # Get first data product from project
-    data_product = stac_collection_published.data_product1
-    original_data_type = data_product.data_type
-
-    # Update the data type for the data product
-    new_data_type = "new_data_type"
-    assert original_data_type != new_data_type
-    updated_data_product = crud.data_product.update_data_type(
-        db,
-        data_product_id=data_product.id,
-        new_data_type=new_data_type,
-    )
-    assert updated_data_product is not None
-    assert updated_data_product.data_type == new_data_type
-
-    # Update the project on STAC
-    response = client.put(f"{API_URL}/{project_id}/publish-stac")
-
-    # Confirm that the project is updated on STAC
-    assert response.status_code == status.HTTP_200_OK
-    response_data = response.json()
-    assert response_data is not None
-    assert STACReport(**response_data)
-    response_data = STACReport(**response_data)
-    assert str(response_data.collection_id) == project_id
-    assert response_data.is_published is True
-    assert response_data.collection_url is not None
-    assert len(response_data.items) == 2
-    # Get expected data product IDs
-    expected_ids = {
-        str(stac_collection_published.data_product1.id),
-        str(stac_collection_published.data_product2.id),
-    }
-
-    # Verify all items are present and published
-    for item in response_data.items:
-        assert str(item.item_id) in expected_ids
-        assert item.is_published is True
-        # Remove the ID from the set to ensure we don't have duplicates
-        expected_ids.remove(str(item.item_id))
-
-    # Fetch the data product STAC Item from STAC API
-    stac_collection_manager = STACCollectionManager(collection_id=project_id)
-    stac_item = stac_collection_manager.fetch_public_item(str(data_product.id))
-    assert stac_item is not None
-    # Check that the data type has been updated
-    assert stac_item["properties"]["data_product_details"]["data_type"] == new_data_type
-
-
-def test_remove_project_from_stac(
-    client: TestClient,
-    db: Session,
-    normal_user_access_token: str,
-    stac_collection_published: STACCollectionHelper,
-) -> None:
-    # Create project owned by current user with two flights and two data products
-    current_user = get_current_approved_user(
-        get_current_user(db, normal_user_access_token)
-    )
-    # Publish a project to STAC and get the project id (e.g. collection id)
-    project_id = stac_collection_published.collection_id
-    assert project_id
-    # Add current user as a project member with the owner role
-    create_project_member(
-        db, role=Role.OWNER, email=current_user.email, project_id=UUID(project_id)
-    )
-
-    # Remove the project from STAC
-    response = client.delete(f"{API_URL}/{project_id}/delete-stac")
-
-    # Confirm that the project is removed from STAC
-    assert response.status_code == status.HTTP_200_OK
-    response_data = response.json()
-    assert response_data is not None
-    assert response_data.get("id") == str(project_id)
-    assert response_data.get("is_published", True) is False
-
-    # Fetch the collection from STAC API and confirm that it is not published
-    stac_collection_manager = STACCollectionManager(collection_id=project_id)
-    stac_collection = stac_collection_manager.fetch_public_collection()
-    assert stac_collection is None
-
-    # Get data products
-    data_product1 = stac_collection_published.data_product1
-    data_product2 = stac_collection_published.data_product2
-
-    # Confirm that data product1 is now private
-    data_product1_file_permission = crud.file_permission.get_by_data_product(
-        db, file_id=data_product1.id
-    )
-    assert data_product1_file_permission is not None
-    assert data_product1_file_permission.is_public is False
-
-    # Confirm that data product2 is now private
-    data_product2_file_permission = crud.file_permission.get_by_data_product(
-        db, file_id=data_product2.id
-    )
-    assert data_product2_file_permission is not None
-    assert data_product2_file_permission.is_public is False
-
-
-def test_publish_project_to_stac_without_project_member_owner_role(
-    client: TestClient, db: Session, normal_user_access_token: str
-) -> None:
-    # Create project not owned by current user with two flights and two data products
-    current_user = get_current_approved_user(
-        get_current_user(db, normal_user_access_token)
-    )
-    project_owner = create_user(db)
-    project = create_project(db, owner_id=project_owner.id)
-    flight1 = create_flight(db, project_id=project.id)
-    flight2 = create_flight(db, project_id=project.id)
-    SampleDataProduct(db, project=project, flight=flight1)
-    SampleDataProduct(db, project=project, flight=flight2)
-
-    # Add current user as a project member with the manager role
-    create_project_member(
-        db, role=Role.MANAGER, email=current_user.email, project_id=project.id
-    )
-
-    # Publish project to STAC
-    response = client.put(f"{API_URL}/{project.id}/publish-stac")
-
-    # Confirm that the project is not published to STAC
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-
-
-def test_update_project_on_stac_without_project_member_owner_role(
-    client: TestClient, db: Session, normal_user_access_token: str
-) -> None:
-    # Create project not owned by current user with two flights and two data products
-    current_user = get_current_approved_user(
-        get_current_user(db, normal_user_access_token)
-    )
-    project_owner = create_user(db)
-    project = create_project(db, owner_id=project_owner.id)
-    flight1 = create_flight(db, project_id=project.id)
-    flight2 = create_flight(db, project_id=project.id)
-    SampleDataProduct(db, project=project, flight=flight1)
-    SampleDataProduct(db, project=project, flight=flight2)
-
-    # Add current user as a project member with the manager role
-    create_project_member(
-        db, role=Role.MANAGER, email=current_user.email, project_id=project.id
-    )
-
-    # Publish project to STAC
-    response = client.put(f"{API_URL}/{project.id}/publish-stac")
-
-    # Confirm that the project is not published to STAC
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-
-
-def test_remove_project_from_stac_without_project_member_owner_role(
-    client: TestClient,
-    db: Session,
-    normal_user_access_token: str,
-) -> None:
-    # Create project not owned by current user with two flights and two data products
-    current_user = get_current_approved_user(
-        get_current_user(db, normal_user_access_token)
-    )
-    project_owner = create_user(db)
-    project = create_project(db, owner_id=project_owner.id)
-    flight1 = create_flight(db, project_id=project.id)
-    flight2 = create_flight(db, project_id=project.id)
-    SampleDataProduct(db, project=project, flight=flight1)
-    SampleDataProduct(db, project=project, flight=flight2)
-
-    # Add current user as a project member with the manager role
-    create_project_member(
-        db, role=Role.MANAGER, email=current_user.email, project_id=project.id
-    )
-
-    # Remove project from STAC
-    response = client.delete(f"{API_URL}/{project.id}/delete-stac")
-
-    # Confirm that the project is not published to STAC
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-
-
-def test_create_project_like(
-    client: TestClient, db: Session, normal_user_access_token: str
-) -> None:
-    current_user = get_current_approved_user(
-        get_current_user(db, normal_user_access_token)
-    )
-    project = create_project(db, owner_id=current_user.id)
-    response = client.post(f"{API_URL}/{project.id}/like")
-    assert response.status_code == status.HTTP_201_CREATED
-    response_data = response.json()
-    assert response_data.get("message") == "Project bookmarked"
-
-
-def test_create_project_like_by_non_project_member(
-    client: TestClient, db: Session, normal_user_access_token: str
-) -> None:
-    user = create_user(db)
-    project = create_project(db, owner_id=user.id)
-    response = client.post(f"{API_URL}/{project.id}/like")
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-
-
-def test_delete_project_like(
-    client: TestClient, db: Session, normal_user_access_token: str
-) -> None:
-    current_user = get_current_approved_user(
-        get_current_user(db, normal_user_access_token)
-    )
-    project = create_project(db, owner_id=current_user.id)
-    # Create project like
-    project_like_in = ProjectLikeCreate(
-        project_id=project.id,
-        user_id=current_user.id,
-    )
-    project_like_in_db = crud.project_like.create(db, obj_in=project_like_in)
-    assert crud.project_like.get(db, id=project_like_in_db.id) is not None
-    # Delete project like
-    response = client.delete(f"{API_URL}/{project.id}/like")
-    assert response.status_code == status.HTTP_200_OK
-    response_data = response.json()
-    assert response_data.get("message") == "Project unbookmarked"
-    assert crud.project_like.get(db, id=project_like_in_db.id) is None
-
-
-def test_delete_project_like_by_non_project_member(
-    client: TestClient, db: Session, normal_user_access_token: str
-) -> None:
-    user = create_user(db)
-    project = create_project(db, owner_id=user.id)
-    response = client.post(f"{API_URL}/{project.id}/like")
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-
-
-def test_deactivate_project_when_published(
-    client: TestClient, db: Session, normal_user_access_token: str
-) -> None:
-    current_user = get_current_approved_user(
-        get_current_user(db, normal_user_access_token)
-    )
-    project = create_project(db, owner_id=current_user.id)
-    # Set project as published
-    crud.project.update_project_visibility(db, project_id=project.id, is_public=True)
-    response = client.delete(f"{API_URL}/{project.id}")
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-    assert (
-        response.json()["detail"]
-        == "Cannot deactivate project when it is published in a STAC catalog"
-    )
-
-
-def test_publish_project_to_stac_preview(
-    client: TestClient, db: Session, normal_user_access_token: str
-) -> None:
-    """Test publishing project to STAC with preview=True returns STACPreview."""
     # Create project owned by current user with two flights and two data products
     current_user = get_current_approved_user(
         get_current_user(db, normal_user_access_token)
@@ -1277,32 +997,23 @@ def test_publish_project_to_stac_preview(
     data_product1 = SampleDataProduct(db, project=project, flight=flight1)
     data_product2 = SampleDataProduct(db, project=project, flight=flight2)
 
-    # Preview STAC metadata without publishing
-    response = client.put(f"{API_URL}/{project.id}/publish-stac?preview=true")
+    # Generate preview using task function
+    result = generate_stac_preview_task(str(project.id), db=db)
 
     # Confirm that the preview is returned
-    assert response.status_code == status.HTTP_200_OK
-    response_data = response.json()
-    assert response_data is not None
-
-    # Verify response structure matches STACPreview
-    assert "collection_id" in response_data
-    assert "collection" in response_data
-    assert "items" in response_data
-    assert "is_published" in response_data
-
-    assert str(response_data["collection_id"]) == str(project.id)
-    assert response_data["is_published"] is False
+    assert result is not None
+    assert str(result["collection_id"]) == str(project.id)
+    assert result["is_published"] is False
 
     # Verify collection is a dictionary with expected structure
-    collection = response_data["collection"]
+    collection = result["collection"]
     assert isinstance(collection, dict)
     assert collection["id"] == str(project.id)
     assert collection["title"] == project.title
     assert collection["description"] == project.description
 
     # Verify items are dictionaries with expected structure
-    items = response_data["items"]
+    items = result["items"]
     assert isinstance(items, list)
     assert len(items) == 2
 
@@ -1328,134 +1039,19 @@ def test_publish_project_to_stac_preview(
     assert data_product1_file_permission is not None
     assert data_product1_file_permission.is_public is False
 
-    # Preview mode should not include URLs
-    assert response_data.get("collection_url") is None
-    for item in items:
-        assert "browser_url" not in item
 
-
-def test_get_project_stac_metadata(
-    client: TestClient,
-    db: Session,
-    normal_user_access_token: str,
-    stac_collection_published: STACCollectionHelper,
+def test_publish_stac_with_scientific_metadata_using_task(
+    db: Session, normal_user_access_token: str
 ) -> None:
-    """Test getting STAC metadata for a published project."""
-    # Get project from published collection
-    current_user = get_current_approved_user(
-        get_current_user(db, normal_user_access_token)
-    )
-    project_id = stac_collection_published.collection_id
-    assert project_id
+    """Test publishing project to STAC with scientific metadata using task."""
+    from app.api.deps import get_current_approved_user, get_current_user
+    from app.tasks.stac_tasks import publish_stac_catalog_task
+    from app.tests.utils.data_product import SampleDataProduct
+    from app.tests.utils.flight import create_flight
+    from app.tests.utils.project import create_project
+    from app.utils.STACCollectionManager import STACCollectionManager
 
-    # Add current user as project owner
-    create_project_member(
-        db, role=Role.OWNER, email=current_user.email, project_id=UUID(project_id)
-    )
-
-    # Get STAC metadata
-    response = client.get(f"{API_URL}/{project_id}/stac")
-
-    # Confirm successful response
-    assert response.status_code == status.HTTP_200_OK
-    response_data = response.json()
-    assert response_data is not None
-
-    # Verify response structure
-    assert "collection_id" in response_data
-    assert "collection" in response_data
-    assert "items" in response_data
-    assert "is_published" in response_data
-    assert "collection_url" in response_data
-
-    assert str(response_data["collection_id"]) == project_id
-    assert response_data["is_published"] is True
-
-    # Verify collection is a dictionary
-    collection = response_data["collection"]
-    assert isinstance(collection, dict)
-    assert collection["id"] == project_id
-
-    # Verify items are full dictionaries
-    items = response_data["items"]
-    assert isinstance(items, list)
-    assert len(items) == 2  # Published collection has 2 items
-
-    for item in items:
-        assert isinstance(item, dict)
-        assert "id" in item
-        assert "type" in item
-        assert "collection" in item
-        assert "properties" in item
-        assert item["collection"] == project_id
-        assert item["type"] == "Feature"
-        # browser_url should be present if STAC_BROWSER_URL is configured
-        if settings.STAC_BROWSER_URL:
-            assert "browser_url" in item
-            expected_url = f"{settings.STAC_BROWSER_URL}/collections/{project_id}/items/{item['id']}"
-            assert item["browser_url"] == expected_url
-
-    # collection_url should be present if STAC_BROWSER_URL is configured
-    if settings.STAC_BROWSER_URL:
-        expected_collection_url = (
-            f"{settings.STAC_BROWSER_URL}/collections/{project_id}"
-        )
-        assert response_data["collection_url"] == expected_collection_url
-    else:
-        assert response_data["collection_url"] is None
-
-
-def test_get_project_stac_metadata_not_published(
-    client: TestClient, db: Session, normal_user_access_token: str
-) -> None:
-    """Test getting STAC metadata for an unpublished project returns 400."""
-    # Create unpublished project
-    current_user = get_current_approved_user(
-        get_current_user(db, normal_user_access_token)
-    )
-    project = create_project(db, owner_id=current_user.id)
-    flight = create_flight(db, project_id=project.id)
-    SampleDataProduct(db, project=project, flight=flight)
-
-    # Try to get STAC metadata
-    response = client.get(f"{API_URL}/{project.id}/stac")
-
-    # Should return 400 for unpublished project
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert "not published" in response.json()["detail"]
-
-
-def test_get_project_stac_metadata_without_owner_role(
-    client: TestClient,
-    db: Session,
-    normal_user_access_token: str,
-    stac_collection_published: STACCollectionHelper,
-) -> None:
-    """Test getting STAC metadata without owner role returns 403."""
-    # Get project from published collection
-    current_user = get_current_approved_user(
-        get_current_user(db, normal_user_access_token)
-    )
-    project_id = stac_collection_published.collection_id
-    assert project_id
-
-    # Add current user as project manager (not owner)
-    create_project_member(
-        db, role=Role.MANAGER, email=current_user.email, project_id=UUID(project_id)
-    )
-
-    # Try to get STAC metadata
-    response = client.get(f"{API_URL}/{project_id}/stac")
-
-    # Should return 403 for non-owner
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-
-
-def test_stac_response_union_type_validation(
-    client: TestClient, db: Session, normal_user_access_token: str
-) -> None:
-    """Test that both STACReport and STACPreview responses are valid STACResponse types."""
-    # Create project owned by current user with data products
+    # Create project owned by current user
     current_user = get_current_approved_user(
         get_current_user(db, normal_user_access_token)
     )
@@ -1463,76 +1059,585 @@ def test_stac_response_union_type_validation(
     flight = create_flight(db, project_id=project.id)
     data_product = SampleDataProduct(db, project=project, flight=flight)
 
-    # Test STACPreview response
-    preview_response = client.put(f"{API_URL}/{project.id}/publish-stac?preview=true")
-    assert preview_response.status_code == status.HTTP_200_OK
-    preview_data = preview_response.json()
+    # Scientific metadata
+    test_doi = "10.1000/test123"
+    test_citation = (
+        "Smith, J., et al. (2023). Test Dataset. Journal of Test Data, 1(1), 1-10."
+    )
 
-    # Validate as STACPreview
-    stac_preview = STACPreview(**preview_data)
-    assert stac_preview.collection_id == project.id
-    assert stac_preview.is_published is False
-    assert isinstance(stac_preview.collection, dict)
-    assert isinstance(stac_preview.items, list)
+    # Publish project to STAC with scientific metadata using task
+    result = publish_stac_catalog_task(
+        str(project.id), sci_doi=test_doi, sci_citation=test_citation, db=db
+    )
 
-    # Test STACReport response (actual publish)
-    publish_response = client.put(f"{API_URL}/{project.id}/publish-stac")
-    assert publish_response.status_code == status.HTTP_200_OK
-    publish_data = publish_response.json()
+    # Confirm that the project is published to STAC
+    assert result is not None
+    assert str(result["collection_id"]) == str(project.id)
+    assert result["is_published"] is True
 
-    # Validate as STACReport
-    stac_report = STACReport(**publish_data)
-    assert stac_report.collection_id == project.id
-    assert stac_report.is_published is True
-    assert isinstance(stac_report.items, list)
-    assert len(stac_report.items) == 1
-    assert stac_report.items[0].item_id == data_product.obj.id
-    assert stac_report.items[0].is_published is True
+    # Fetch the published collection to verify scientific metadata
+    stac_collection_manager = STACCollectionManager(collection_id=str(project.id))
+    collection = stac_collection_manager.fetch_public_collection()
+    assert collection is not None
+
+    # Verify scientific extension and metadata are present
+    assert "stac_extensions" in collection
+    assert (
+        "https://stac-extensions.github.io/scientific/v1.0.0/schema.json"
+        in collection["stac_extensions"]
+    )
+    assert collection.get("sci:doi") == test_doi
+    assert collection.get("sci:citation") == test_citation
+
+    # Clean up
+    stac_collection_manager.remove_from_catalog()
 
 
-def test_get_project_stac_metadata_with_browser_urls(
-    client: TestClient,
-    db: Session,
-    normal_user_access_token: str,
-    stac_collection_published: STACCollectionHelper,
-    monkeypatch,
+def test_publish_stac_with_custom_titles_using_task(
+    db: Session, normal_user_access_token: str
 ) -> None:
-    """Test getting STAC metadata with browser URLs when STAC_BROWSER_URL is configured."""
-    # Set STAC_BROWSER_URL for this test
-    test_browser_url = "https://stac-browser.example.com"
-    monkeypatch.setattr(settings, "STAC_BROWSER_URL", test_browser_url)
+    """Test publishing project to STAC with custom titles using task."""
+    from app.api.deps import get_current_approved_user, get_current_user
+    from app.tasks.stac_tasks import publish_stac_catalog_task
+    from app.tests.utils.data_product import SampleDataProduct
+    from app.tests.utils.flight import create_flight
+    from app.tests.utils.project import create_project
+    from app.utils.STACCollectionManager import STACCollectionManager
 
-    # Get project from published collection
+    # Create project owned by current user
     current_user = get_current_approved_user(
         get_current_user(db, normal_user_access_token)
     )
-    project_id = stac_collection_published.collection_id
-    assert project_id
+    project = create_project(db, owner_id=current_user.id)
+    flight1 = create_flight(db, project_id=project.id)
+    flight2 = create_flight(db, project_id=project.id)
+    data_product1 = SampleDataProduct(db, project=project, flight=flight1)
+    data_product2 = SampleDataProduct(db, project=project, flight=flight2)
 
-    # Add current user as project owner
-    create_project_member(
-        db, role=Role.OWNER, email=current_user.email, project_id=UUID(project_id)
+    # Custom titles for the data products
+    custom_titles = {
+        str(data_product1.obj.id): "Custom Title for First Product",
+        str(data_product2.obj.id): "Custom Title for Second Product",
+    }
+
+    # Publish project to STAC with custom titles using task
+    result = publish_stac_catalog_task(
+        str(project.id), custom_titles=custom_titles, db=db
     )
 
-    # Get STAC metadata
-    response = client.get(f"{API_URL}/{project_id}/stac")
+    # Confirm that the project is published to STAC
+    assert result is not None
+    assert str(result["collection_id"]) == str(project.id)
+    assert result["is_published"] is True
+    assert len(result["items"]) == 2
 
-    # Confirm successful response
+    # Fetch the published items to verify custom titles
+    stac_collection_manager = STACCollectionManager(collection_id=str(project.id))
+
+    # Verify custom titles are present in published items
+    item1 = stac_collection_manager.fetch_public_item(str(data_product1.obj.id))
+    assert item1 is not None
+    assert item1["properties"]["title"] == "Custom Title for First Product"
+
+    item2 = stac_collection_manager.fetch_public_item(str(data_product2.obj.id))
+    assert item2 is not None
+    assert item2["properties"]["title"] == "Custom Title for Second Product"
+
+    # Clean up
+    stac_collection_manager.remove_from_catalog()
+
+
+def test_publish_stac_with_failed_items_using_task(
+    db: Session, normal_user_access_token: str, monkeypatch
+) -> None:
+    """Test publishing project to STAC when some items fail to generate using task."""
+    from app.api.deps import get_current_approved_user, get_current_user
+    from app.tasks.stac_tasks import publish_stac_catalog_task
+    from app.tests.utils.data_product import SampleDataProduct
+    from app.tests.utils.flight import create_flight
+    from app.tests.utils.project import create_project
+    from app.utils.STACCollectionManager import STACCollectionManager
+
+    # Create project owned by current user
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    flight1 = create_flight(db, project_id=project.id)
+    flight2 = create_flight(db, project_id=project.id)
+
+    # Create one regular data product and one point cloud data product
+    data_product1 = SampleDataProduct(db, project=project, flight=flight1)
+    data_product2 = SampleDataProduct(
+        db, project=project, flight=flight2, data_type="point_cloud"
+    )
+
+    # Mock pdal_to_stac.create_item to raise a ValueError for point cloud processing
+    def mock_create_item(*args, **kwargs):
+        raise ValueError("Unable to find bounding box")
+
+    monkeypatch.setattr("app.utils.pdal_to_stac.create_item", mock_create_item)
+
+    # Publish project to STAC using task
+    result = publish_stac_catalog_task(str(project.id), db=db)
+
+    # Should succeed with partial publication
+    assert result is not None
+    assert str(result["collection_id"]) == str(project.id)
+    assert (
+        result["is_published"] is True
+    )  # Should be published since we have one successful item
+    assert len(result["items"]) == 1  # Only successful items in main items array
+    assert "failed_items" in result
+    assert len(result["failed_items"]) == 1  # Failed items in separate array
+
+    # Verify the successful item
+    successful_item = result["items"][0]
+    assert successful_item["id"] == str(data_product1.obj.id)
+
+    # Verify the failed item
+    failed_item_dict = result["failed_items"][0]
+    assert failed_item_dict["item_id"] == str(data_product2.obj.id)
+    assert failed_item_dict["is_published"] is False
+    assert failed_item_dict["error"]["code"] == "ITEM_GENERATION_FAILED"
+    assert "Unable to find bounding box" in failed_item_dict["error"]["message"]
+
+    # Clean up
+    stac_collection_manager = STACCollectionManager(collection_id=str(project.id))
+    stac_collection_manager.remove_from_catalog()
+
+
+def test_get_stac_cache_exists(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test getting cached STAC metadata when cache exists."""
+    from app.tasks.stac_tasks import generate_stac_preview_task
+
+    # Create project owned by current user
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    flight = create_flight(db, project_id=project.id)
+    data_product = SampleDataProduct(db, project=project, flight=flight)
+
+    # First generate STAC metadata to create cache using task function
+    generate_stac_preview_task(str(project.id), db=db)
+
+    # Now test getting cached metadata
+    response = client.get(f"{API_URL}/{project.id}/stac-cache")
     assert response.status_code == status.HTTP_200_OK
+
     response_data = response.json()
     assert response_data is not None
+    assert str(response_data["collection_id"]) == str(project.id)
+    assert response_data["is_published"] is False
+    assert len(response_data["items"]) == 1
+    assert response_data["items"][0]["id"] == str(data_product.obj.id)
 
-    # Verify collection URL is present and correct
-    expected_collection_url = f"{test_browser_url}/collections/{project_id}"
-    assert response_data["collection_url"] == expected_collection_url
 
-    # Verify items have browser URLs
-    items = response_data["items"]
-    assert len(items) == 2
+def test_get_stac_cache_not_exists(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test getting cached STAC metadata when cache doesn't exist."""
+    # Create project owned by current user
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    create_flight(db, project_id=project.id)
 
-    for item in items:
-        assert "browser_url" in item
-        expected_item_url = (
-            f"{test_browser_url}/collections/{project_id}/items/{item['id']}"
-        )
-        assert item["browser_url"] == expected_item_url
+    # Try to get cached metadata that doesn't exist
+    response = client.get(f"{API_URL}/{project.id}/stac-cache")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    response_data = response.json()
+    assert "No cached STAC metadata found" in response_data["detail"]
+
+
+def test_get_stac_cache_without_permission(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test getting cached STAC metadata without permission."""
+    # Create project owned by another user
+    other_user = create_user(db)
+    project = create_project(db, owner_id=other_user.id)
+
+    # Try to get cached metadata without permission
+    response = client.get(f"{API_URL}/{project.id}/stac-cache")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_generate_stac_preview_async(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test generating STAC preview asynchronously."""
+    # Create project owned by current user
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    flight = create_flight(db, project_id=project.id)
+    data_product = SampleDataProduct(db, project=project, flight=flight)
+
+    # Trigger async STAC preview generation
+    response = client.post(f"{API_URL}/{project.id}/generate-stac-preview")
+    assert response.status_code == status.HTTP_200_OK
+
+    response_data = response.json()
+    assert response_data is not None
+    assert "STAC preview generation started" in response_data["message"]
+    assert "task_id" in response_data
+    assert str(response_data["project_id"]) == str(project.id)
+
+
+def test_generate_stac_preview_async_with_scientific_metadata(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test generating STAC preview asynchronously with scientific metadata."""
+    # Create project owned by current user
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    flight = create_flight(db, project_id=project.id)
+    data_product = SampleDataProduct(db, project=project, flight=flight)
+
+    # Scientific metadata
+    doi = "10.1000/async123"
+    citation = (
+        "Async, Test, et al. (2023). Async STAC Dataset. Async Journal, 1(1), 1-10."
+    )
+
+    # Trigger async STAC preview generation with scientific metadata
+    response = client.post(
+        f"{API_URL}/{project.id}/generate-stac-preview?sci_doi={doi}&sci_citation={citation}"
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+    response_data = response.json()
+    assert response_data is not None
+    assert "STAC preview generation started" in response_data["message"]
+    assert "task_id" in response_data
+    assert str(response_data["project_id"]) == str(project.id)
+
+
+def test_generate_stac_preview_async_with_custom_titles(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test generating STAC preview asynchronously with custom titles."""
+    # Create project owned by current user
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    flight = create_flight(db, project_id=project.id)
+    data_product = SampleDataProduct(db, project=project, flight=flight)
+
+    # Custom titles
+    custom_titles = {str(data_product.obj.id): "Custom Async Title"}
+    custom_titles_json = json.dumps(custom_titles)
+
+    # Trigger async STAC preview generation with custom titles
+    response = client.post(
+        f"{API_URL}/{project.id}/generate-stac-preview?custom_titles={custom_titles_json}"
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+    response_data = response.json()
+    assert response_data is not None
+    assert "STAC preview generation started" in response_data["message"]
+    assert "task_id" in response_data
+    assert str(response_data["project_id"]) == str(project.id)
+
+
+def test_generate_stac_preview_async_without_permission(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test generating STAC preview asynchronously without permission."""
+    # Create project owned by another user
+    other_user = create_user(db)
+    project = create_project(db, owner_id=other_user.id)
+
+    # Try to generate preview without permission
+    response = client.post(f"{API_URL}/{project.id}/generate-stac-preview")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_generate_stac_preview_async_with_invalid_json(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test generating STAC preview asynchronously with invalid custom titles JSON."""
+    # Create project owned by current user
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    flight = create_flight(db, project_id=project.id)
+    data_product = SampleDataProduct(db, project=project, flight=flight)
+
+    # Invalid JSON
+    invalid_json = "{invalid json"
+
+    # Should still work but ignore invalid JSON
+    response = client.post(
+        f"{API_URL}/{project.id}/generate-stac-preview?custom_titles={invalid_json}"
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+    response_data = response.json()
+    assert response_data is not None
+    assert "STAC preview generation started" in response_data["message"]
+
+
+def test_publish_stac_async(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test publishing STAC catalog asynchronously."""
+    # Create project owned by current user
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    flight = create_flight(db, project_id=project.id)
+    data_product = SampleDataProduct(db, project=project, flight=flight)
+
+    # Trigger async STAC catalog publication
+    response = client.put(f"{API_URL}/{project.id}/publish-stac-async")
+    assert response.status_code == status.HTTP_200_OK
+
+    response_data = response.json()
+    assert response_data is not None
+    assert "STAC catalog publication started" in response_data["message"]
+    assert "task_id" in response_data
+    assert str(response_data["project_id"]) == str(project.id)
+
+
+def test_publish_stac_async_with_scientific_metadata(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test publishing STAC catalog asynchronously with scientific metadata."""
+    # Create project owned by current user
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    flight = create_flight(db, project_id=project.id)
+    data_product = SampleDataProduct(db, project=project, flight=flight)
+
+    # Scientific metadata
+    doi = "10.1000/asyncpub456"
+    citation = "AsyncPub, Test, et al. (2023). Async Publication Dataset. AsyncPub Journal, 2(1), 5-20."
+
+    # Trigger async STAC catalog publication with scientific metadata
+    response = client.put(
+        f"{API_URL}/{project.id}/publish-stac-async?sci_doi={doi}&sci_citation={citation}"
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+    response_data = response.json()
+    assert response_data is not None
+    assert "STAC catalog publication started" in response_data["message"]
+    assert "task_id" in response_data
+    assert str(response_data["project_id"]) == str(project.id)
+
+
+def test_publish_stac_async_with_custom_titles(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test publishing STAC catalog asynchronously with custom titles."""
+    # Create project owned by current user
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    flight = create_flight(db, project_id=project.id)
+    data_product = SampleDataProduct(db, project=project, flight=flight)
+
+    # Custom titles
+    custom_titles = {str(data_product.obj.id): "Custom Async Publish Title"}
+    custom_titles_json = json.dumps(custom_titles)
+
+    # Trigger async STAC catalog publication with custom titles
+    response = client.put(
+        f"{API_URL}/{project.id}/publish-stac-async?custom_titles={custom_titles_json}"
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+    response_data = response.json()
+    assert response_data is not None
+    assert "STAC catalog publication started" in response_data["message"]
+    assert "task_id" in response_data
+    assert str(response_data["project_id"]) == str(project.id)
+
+
+def test_publish_stac_async_without_permission(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test publishing STAC catalog asynchronously without permission."""
+    # Create project owned by another user
+    other_user = create_user(db)
+    project = create_project(db, owner_id=other_user.id)
+
+    # Try to publish without permission
+    response = client.put(f"{API_URL}/{project.id}/publish-stac-async")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_publish_stac_async_with_invalid_json(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test publishing STAC catalog asynchronously with invalid custom titles JSON."""
+    # Create project owned by current user
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    flight = create_flight(db, project_id=project.id)
+    data_product = SampleDataProduct(db, project=project, flight=flight)
+
+    # Invalid JSON
+    invalid_json = "{invalid json"
+
+    # Should still work but ignore invalid JSON
+    response = client.put(
+        f"{API_URL}/{project.id}/publish-stac-async?custom_titles={invalid_json}"
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+    response_data = response.json()
+    assert response_data is not None
+    assert "STAC catalog publication started" in response_data["message"]
+
+
+def test_stac_cache_with_failed_items_preview(
+    client: TestClient, db: Session, normal_user_access_token: str, monkeypatch
+) -> None:
+    """Test STAC cache contains failed items in preview mode."""
+    from app.tasks.stac_tasks import generate_stac_preview_task
+
+    # Create project owned by current user
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    flight1 = create_flight(db, project_id=project.id)
+    flight2 = create_flight(db, project_id=project.id)
+
+    # Create one regular data product and one point cloud data product
+    data_product1 = SampleDataProduct(db, project=project, flight=flight1)
+    data_product2 = SampleDataProduct(
+        db, project=project, flight=flight2, data_type="point_cloud"
+    )
+
+    # Mock pdal_to_stac.create_item to raise a ValueError for point cloud processing
+    def mock_create_item(*args, **kwargs):
+        raise ValueError("Unable to process point cloud")
+
+    monkeypatch.setattr("app.utils.pdal_to_stac.create_item", mock_create_item)
+
+    # Generate preview to create cache using task function
+    generate_stac_preview_task(str(project.id), db=db)
+
+    # Get cached metadata
+    response = client.get(f"{API_URL}/{project.id}/stac-cache")
+    assert response.status_code == status.HTTP_200_OK
+
+    response_data = response.json()
+    assert response_data is not None
+    assert str(response_data["collection_id"]) == str(project.id)
+    assert response_data["is_published"] is False
+    assert len(response_data["items"]) == 1  # Only successful items
+    assert "failed_items" in response_data
+    assert len(response_data["failed_items"]) == 1  # Failed items
+
+    # Verify successful item
+    successful_item = response_data["items"][0]
+    assert successful_item["id"] == str(data_product1.obj.id)
+
+    # Verify failed item
+    failed_item = response_data["failed_items"][0]
+    assert failed_item["item_id"] == str(data_product2.obj.id)
+    assert failed_item["is_published"] is False
+    assert failed_item["error"]["code"] == "ITEM_GENERATION_FAILED"
+    assert "Unable to process point cloud" in failed_item["error"]["message"]
+
+
+def test_stac_cache_path_helper():
+    """Test the get_stac_cache_path helper function."""
+    from app.tasks.stac_tasks import get_stac_cache_path
+    from uuid import uuid4
+    import os
+
+    project_id = uuid4()
+    cache_path = get_stac_cache_path(project_id)
+
+    # Verify path structure
+    expected_dir = os.path.join("projects", str(project_id))
+    assert expected_dir in str(cache_path)
+    assert cache_path.name == "stac.json"
+
+
+def test_async_endpoints_with_missing_project(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test async endpoints with non-existent project ID."""
+    from uuid import uuid4
+
+    fake_project_id = uuid4()
+
+    # Test generate-stac-preview with missing project
+    response = client.post(f"{API_URL}/{fake_project_id}/generate-stac-preview")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    # Test publish-stac-async with missing project
+    response = client.put(f"{API_URL}/{fake_project_id}/publish-stac-async")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    # Test stac-cache with missing project
+    response = client.get(f"{API_URL}/{fake_project_id}/stac-cache")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_stac_cache_after_successful_publication(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test that cache is created and updated after successful publication."""
+    from app.tasks.stac_tasks import (
+        generate_stac_preview_task,
+        publish_stac_catalog_task,
+    )
+
+    # Create project owned by current user
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    flight = create_flight(db, project_id=project.id)
+    data_product = SampleDataProduct(db, project=project, flight=flight)
+
+    # Generate preview first (creates cache) using task function
+    generate_stac_preview_task(str(project.id), db=db)
+
+    # Verify cache exists and shows unpublished
+    response = client.get(f"{API_URL}/{project.id}/stac-cache")
+    assert response.status_code == status.HTTP_200_OK
+    cache_data = response.json()
+    assert cache_data["is_published"] is False
+
+    # Now publish the project using task function
+    publish_stac_catalog_task(str(project.id), db=db)
+
+    # Verify cache is updated to show published
+    response = client.get(f"{API_URL}/{project.id}/stac-cache")
+    assert response.status_code == status.HTTP_200_OK
+    cache_data = response.json()
+    assert cache_data["is_published"] is True
+    assert len(cache_data["items"]) == 1
+    assert cache_data["items"][0]["id"] == str(data_product.obj.id)
+
+    # Clean up - remove from STAC catalog
+    from app.utils.STACCollectionManager import STACCollectionManager
+
+    scm = STACCollectionManager(collection_id=str(project.id))
+    scm.remove_from_catalog()

@@ -42,7 +42,11 @@ import ProjectAccess from './components/pages/projects/ProjectAccess';
 import ProjectDetail, {
   loader as projectDetailLoader,
 } from './components/pages/projects/ProjectDetail';
+import ProjectLayout from './components/pages/projects/ProjectLayout';
 import ProjectModules from './components/pages/projects/ProjectModules';
+import ProjectSTACPublishing, {
+  loader as stacPublishingLoader,
+} from './components/pages/projects/stac/ProjectSTACPublishing';
 import RegistrationForm from './components/pages/auth/RegistrationForm';
 import { RasterSymbologyProvider } from './components/maps/RasterSymbologyContext';
 import SharePotreeViewer from './components/maps/SharePotreeViewer';
@@ -59,10 +63,6 @@ import Workspace, {
 
 import { RootPublic, RootProtected } from './components/layout/Root';
 import { RequireAdmin, RequireAuth } from './AuthContext';
-import ProjectLayout from './components/pages/projects/ProjectLayout';
-import ProjectSTACPublishing, {
-  loader as stacPublishingLoader,
-} from './components/pages/projects/ProjectSTACPublishing';
 
 export const router = createBrowserRouter(
   [
