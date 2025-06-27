@@ -76,7 +76,7 @@ These aspects make D2S a powerful tool for researchers looking to manage, share,
 
 3. Open `backend.env` in a text editor. Below is a list of the environment variables that can be set inside `backend.env`. You may use the default values or change them as needed.
 
-   If you do not assign a value to `SECRET_KEY`, a key will automatically be generated for you. Note to developers: A new key will be generated each time a change is made to the backend code. This will invalidate any JWT tokens signed with the previous key. To prevent this behavior, set a secret key in `backend.env`.
+   You must provide a value for `SECRET_KEY` in your `backend.env` file. Use a cryptographically secure random string of at least 32 characters.
 
    **Environment variables**
 
