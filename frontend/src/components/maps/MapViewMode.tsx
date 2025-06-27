@@ -18,6 +18,7 @@ export default function MapViewMode() {
     activeMapTool,
     activeProject,
     mapboxAccessTokenDispatch,
+    maptilerApiKeyDispatch,
   } = useMapContext();
   const {
     state: { layers },
@@ -26,23 +27,42 @@ export default function MapViewMode() {
   const symbologyContext = useRasterSymbologyContext();
 
   useEffect(() => {
-    if (!import.meta.env.VITE_MAPBOX_ACCESS_TOKEN) {
+    if (
+      !import.meta.env.VITE_MAPBOX_ACCESS_TOKEN ||
+      !import.meta.env.VITE_MAPTILER_API_KEY
+    ) {
       fetch('/config.json')
         .then((response) => response.json())
         .then((config) => {
-          mapboxAccessTokenDispatch({
-            type: 'set',
-            payload: config.mapboxAccessToken,
-          });
+          if (config.mapboxAccessToken) {
+            mapboxAccessTokenDispatch({
+              type: 'set',
+              payload: config.mapboxAccessToken,
+            });
+          }
+          if (config.maptilerApiKey) {
+            maptilerApiKeyDispatch({
+              type: 'set',
+              payload: config.maptilerApiKey,
+            });
+          }
         })
         .catch((error) => {
           console.error('Failed to load config.json:', error);
         });
     } else {
-      mapboxAccessTokenDispatch({
-        type: 'set',
-        payload: import.meta.env.VITE_MAPBOX_ACCESS_TOKEN,
-      });
+      if (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN) {
+        mapboxAccessTokenDispatch({
+          type: 'set',
+          payload: import.meta.env.VITE_MAPBOX_ACCESS_TOKEN,
+        });
+      }
+      if (import.meta.env.VITE_MAPTILER_API_KEY) {
+        maptilerApiKeyDispatch({
+          type: 'set',
+          payload: import.meta.env.VITE_MAPTILER_API_KEY,
+        });
+      }
     }
   }, []);
 

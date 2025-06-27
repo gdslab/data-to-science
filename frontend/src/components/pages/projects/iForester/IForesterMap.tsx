@@ -13,7 +13,7 @@ import { useProjectContext } from '../ProjectContext';
 
 import {
   getMapboxSatelliteBasemapStyle,
-  worldImageryTopoBasemapStyle,
+  getWorldImageryTopoBasemapStyle,
 } from '../../../maps/styles/basemapStyles';
 import IForesterCluster from './IForesterCluster';
 import { FeatureCollection } from 'geojson';
@@ -26,6 +26,7 @@ export function getUniqueValues(
 
 export default function IForesterMap() {
   const [mapboxAccessToken, setMapboxAccessToken] = useState<string>('');
+  const [maptilerApiKey, setMaptilerApiKey] = useState<string>('');
   const { state, dispatch } = useIForesterControlContext();
   const { activeMarkerZoom, dbhMin, dbhMax, speciesSelection } = state;
   const { iforester } = useProjectContext();
@@ -66,19 +67,32 @@ export default function IForesterMap() {
     }
   }, [filteredLocationsGeoJSON]);
 
-  // Load mapbox access token
+  // Load mapbox access token and maptiler api key
   useEffect(() => {
-    if (!import.meta.env.VITE_MAPBOX_ACCESS_TOKEN) {
+    if (
+      !import.meta.env.VITE_MAPBOX_ACCESS_TOKEN ||
+      !import.meta.env.VITE_MAPTILER_API_KEY
+    ) {
       fetch('/config.json')
         .then((response) => response.json())
         .then((config) => {
-          setMapboxAccessToken(config.mapboxAccessToken);
+          if (config.mapboxAccessToken) {
+            setMapboxAccessToken(config.mapboxAccessToken);
+          }
+          if (config.maptilerApiKey) {
+            setMaptilerApiKey(config.maptilerApiKey);
+          }
         })
         .catch((error) => {
           console.error('Failed to load config.json:', error);
         });
     } else {
-      setMapboxAccessToken(import.meta.env.VITE_MAPBOX_ACCESS_TOKEN);
+      if (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN) {
+        setMapboxAccessToken(import.meta.env.VITE_MAPBOX_ACCESS_TOKEN);
+      }
+      if (import.meta.env.VITE_MAPTILER_API_KEY) {
+        setMaptilerApiKey(import.meta.env.VITE_MAPTILER_API_KEY);
+      }
     }
   }, []);
 
@@ -137,8 +151,8 @@ export default function IForesterMap() {
   const mapStyle = useMemo(() => {
     return mapboxAccessToken
       ? getMapboxSatelliteBasemapStyle(mapboxAccessToken)
-      : worldImageryTopoBasemapStyle;
-  }, [mapboxAccessToken]);
+      : getWorldImageryTopoBasemapStyle(maptilerApiKey);
+  }, [mapboxAccessToken, maptilerApiKey]);
 
   return (
     <Map

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Generate a runtime configuration file with the environment variable
-CONFIG_CONTENT="{\"mapboxAccessToken\": \"${VITE_MAPBOX_ACCESS_TOKEN}\"}"
+# Generate a runtime configuration file with the environment variables
+CONFIG_CONTENT="{\"mapboxAccessToken\": \"${VITE_MAPBOX_ACCESS_TOKEN}\", \"maptilerApiKey\": \"${VITE_MAPTILER_API_KEY}\"}"
 
 # Write to public folder (for development yarn server)
 echo "$CONFIG_CONTENT" > /app/public/config.json
