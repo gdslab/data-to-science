@@ -19,7 +19,7 @@ import { DataProduct } from '../pages/projects/Project';
 
 import {
   getMapboxSatelliteBasemapStyle,
-  worldImageryTopoBasemapStyle,
+  getWorldImageryTopoBasemapStyle,
 } from './styles/basemapStyles';
 
 import api from '../../api';
@@ -52,6 +52,7 @@ export default function ShareMap() {
   const [status, setStatus] = useState<Status | null>(null);
 
   const [mapboxAccessToken, setMapboxAccessToken] = useState('');
+  const [maptilerApiKey, setMaptilerApiKey] = useState('');
   const { state, dispatch } = useRasterSymbologyContext();
 
   const mapRef = useRef<MapRef | null>(null);
@@ -61,17 +62,30 @@ export default function ShareMap() {
   const symbologyFromQueryParams = parseSymbology(query.get('symbology'));
 
   useEffect(() => {
-    if (!import.meta.env.VITE_MAPBOX_ACCESS_TOKEN) {
+    if (
+      !import.meta.env.VITE_MAPBOX_ACCESS_TOKEN ||
+      !import.meta.env.VITE_MAPTILER_API_KEY
+    ) {
       fetch('/config.json')
         .then((response) => response.json())
         .then((config) => {
-          setMapboxAccessToken(config.mapboxAccessToken);
+          if (config.mapboxAccessToken) {
+            setMapboxAccessToken(config.mapboxAccessToken);
+          }
+          if (config.maptilerApiKey) {
+            setMaptilerApiKey(config.maptilerApiKey);
+          }
         })
         .catch((error) => {
           console.error('Failed to load config.json:', error);
         });
     } else {
-      setMapboxAccessToken(import.meta.env.VITE_MAPBOX_ACCESS_TOKEN);
+      if (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN) {
+        setMapboxAccessToken(import.meta.env.VITE_MAPBOX_ACCESS_TOKEN);
+      }
+      if (import.meta.env.VITE_MAPTILER_API_KEY) {
+        setMaptilerApiKey(import.meta.env.VITE_MAPTILER_API_KEY);
+      }
     }
   }, []);
 
@@ -147,8 +161,8 @@ export default function ShareMap() {
   const mapStyle = useMemo(() => {
     return mapboxAccessToken
       ? getMapboxSatelliteBasemapStyle(mapboxAccessToken)
-      : worldImageryTopoBasemapStyle;
-  }, [mapboxAccessToken]);
+      : getWorldImageryTopoBasemapStyle(maptilerApiKey);
+  }, [mapboxAccessToken, maptilerApiKey]);
 
   return (
     <Map
