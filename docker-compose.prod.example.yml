@@ -78,7 +78,10 @@ services:
       - /var/run/postgresql
     healthcheck:
       test:
-        ["CMD-SHELL", "pg_isready --username=$$POSTGRES_USER --dbname=$$POSTGRES_DB"]
+        [
+          "CMD-SHELL",
+          "pg_isready --username=$$POSTGRES_USER --dbname=$$POSTGRES_DB",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -146,11 +149,12 @@ services:
         window: 120s
     security_opt:
       - no-new-privileges=true
+    environment:
+      - CELERY_WORKERS=4
+      - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
     env_file:
       - backend.env
       - db.env
-    environment:
-      - CELERY_WORKERS=4
 
   celery_beat:
     image: d2s-api:latest
@@ -180,12 +184,14 @@ services:
         window: 120s
     security_opt:
       - no-new-privileges=true
+    environment:
+      - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
     env_file:
       - backend.env
       - db.env
 
   proxy:
-    build: 
+    build:
       context: ./nginx
       dockerfile: nginx.dockerfile
       args:
@@ -288,7 +294,15 @@ services:
       - CPL_VSIL_CURL_ALLOWED_EXTENSIONS=.tif,.TIF,.tiff
       - CPL_VSIL_CURL_CACHE_SIZE=200000000
     healthcheck:
-      test: ["CMD", "curl", "-s", "-o", "/dev/null", "http://localhost:8888/healthz"]
+      test:
+        [
+          "CMD",
+          "curl",
+          "-s",
+          "-o",
+          "/dev/null",
+          "http://localhost:8888/healthz",
+        ]
       interval: 1m30s
       timeout: 30s
       retries: 5
@@ -296,10 +310,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2'
+          cpus: "2"
           memory: 4G
         reservations:
-          cpus: '1'
+          cpus: "1"
           memory: 2G
       restart_policy:
         condition: on-failure

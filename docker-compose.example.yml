@@ -47,7 +47,10 @@ services:
     restart: always
     healthcheck:
       test:
-        ["CMD-SHELL", "pg_isready --username=$$POSTGRES_USER --dbname=$$POSTGRES_DB"]
+        [
+          "CMD-SHELL",
+          "pg_isready --username=$$POSTGRES_USER --dbname=$$POSTGRES_DB",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -86,11 +89,12 @@ services:
     depends_on:
       - redis
       - db
+    environment:
+      - CELERY_WORKERS=4
+      - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
     env_file:
       - backend.env
       - db.env
-    environment:
-      - CELERY_WORKERS=4
 
   celery_beat:
     image: d2s-api:dev
@@ -104,6 +108,8 @@ services:
     depends_on:
       - redis
       - db
+    environment:
+      - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
     env_file:
       - backend.env
       - db.env
@@ -120,12 +126,14 @@ services:
     depends_on:
       - redis
       - db
+    environment:
+      - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
     env_file:
       - backend.env
       - db.env
 
   proxy:
-    build: 
+    build:
       context: ./nginx
       dockerfile: nginx.dockerfile
       args:
