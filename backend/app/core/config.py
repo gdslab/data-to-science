@@ -12,14 +12,19 @@ class Settings(BaseSettings):
     ENV: str = "dev"
     API_V1_STR: str = "/api/v1"
 
-    SECRET_KEY: str = generate_secret_key()
+    SECRET_KEY: str = ""
     # Secret key used for signing pg_tileserv and titiler requests
-    TILE_SIGNING_SECRET_KEY: str = generate_secret_key()
+    TILE_SIGNING_SECRET_KEY: str = ""
 
-    @field_validator("SECRET_KEY", mode="before")
-    def generate_secret_key(cls, v: str | None) -> str:
-        if not v:
-            return secrets.token_urlsafe(32)
+    @field_validator("SECRET_KEY", "TILE_SIGNING_SECRET_KEY", mode="before")
+    def validate_secret_keys(cls, v: str | None, info: ValidationInfo) -> str:
+        field_name = info.field_name
+        if not v or v.strip() == "":
+            raise ValueError(
+                f"{field_name} environment variable must be set and cannot be empty"
+            )
+        if len(v) < 32:
+            raise ValueError(f"{field_name} must be at least 32 characters long")
         return v
 
     # 60 minutes * 24 hours * 8 days = 8 days
