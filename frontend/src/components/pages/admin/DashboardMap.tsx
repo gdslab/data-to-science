@@ -8,25 +8,39 @@ import ProjectPopup from '../../maps/ProjectPopup';
 import { PopupInfoProps } from '../../maps/HomeMap';
 import {
   getMapboxSatelliteBasemapStyle,
-  usgsImageryTopoBasemapStyle,
+  getWorldImageryTopoBasemapStyle,
 } from '../../maps/styles/basemapStyles';
 
 export default function DashboardMap() {
   const [mapboxAccessToken, setMapboxAccessToken] = useState('');
+  const [maptilerApiKey, setMaptilerApiKey] = useState('');
   const [popupInfo, setPopupInfo] = useState<PopupInfoProps | null>(null);
 
   useEffect(() => {
-    if (!import.meta.env.VITE_MAPBOX_ACCESS_TOKEN) {
+    if (
+      !import.meta.env.VITE_MAPBOX_ACCESS_TOKEN ||
+      !import.meta.env.VITE_MAPTILER_API_KEY
+    ) {
       fetch('/config.json')
         .then((response) => response.json())
         .then((config) => {
-          setMapboxAccessToken(config.mapboxAccessToken);
+          if (config.mapboxAccessToken) {
+            setMapboxAccessToken(config.mapboxAccessToken);
+          }
+          if (config.maptilerApiKey) {
+            setMaptilerApiKey(config.maptilerApiKey);
+          }
         })
         .catch((error) => {
           console.error('Failed to load config.json:', error);
         });
     } else {
-      setMapboxAccessToken(import.meta.env.VITE_MAPBOX_ACCESS_TOKEN);
+      if (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN) {
+        setMapboxAccessToken(import.meta.env.VITE_MAPBOX_ACCESS_TOKEN);
+      }
+      if (import.meta.env.VITE_MAPTILER_API_KEY) {
+        setMaptilerApiKey(import.meta.env.VITE_MAPTILER_API_KEY);
+      }
     }
   }, []);
 
@@ -61,8 +75,8 @@ export default function DashboardMap() {
   const mapStyle = useMemo(() => {
     return mapboxAccessToken
       ? getMapboxSatelliteBasemapStyle(mapboxAccessToken)
-      : usgsImageryTopoBasemapStyle;
-  }, [mapboxAccessToken]);
+      : getWorldImageryTopoBasemapStyle(maptilerApiKey);
+  }, [mapboxAccessToken, maptilerApiKey]);
 
   return (
     <Map

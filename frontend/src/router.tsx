@@ -48,6 +48,7 @@ import ProjectAccess from './components/pages/workspace/projects/ProjectAccess';
 import ProjectDetail, {
   loader as projectDetailLoader,
 } from './components/pages/workspace/projects/ProjectDetail';
+import ProjectModules from './components/pages/workspace/projects/ProjectModules';
 import RegistrationForm from './components/pages/auth/RegistrationForm';
 import { RasterSymbologyProvider } from './components/maps/RasterSymbologyContext';
 import SharePotreeViewer from './components/maps/SharePotreeViewer';
@@ -159,6 +160,10 @@ export const router = createBrowserRouter(
             {
               path: '/projects/:projectId/access',
               element: <ProjectAccess />,
+            },
+            {
+              path: '/projects/:projectId/modules',
+              element: <ProjectModules />,
             },
             {
               path: '/projects/:projectId/campaigns/create',

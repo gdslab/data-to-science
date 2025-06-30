@@ -65,8 +65,12 @@ function RasterSymbologySave({
   symbology,
 }: RasterSymbologySaveProps) {
   const { dispatch } = useRasterSymbologyContext();
+  const [isSaving, setIsSaving] = useState(false);
 
   const saveSymbology = async (dataProduct, projectId, symbology) => {
+    setIsSaving(true);
+    const startTime = Date.now();
+
     try {
       const axiosRequest = dataProduct.user_style ? api.put : api.post;
       const response: AxiosResponse<StyleResponse> = await axiosRequest(
@@ -84,6 +88,11 @@ function RasterSymbologySave({
       }
     } catch (err) {
       console.error(err);
+    } finally {
+      // Ensure loading state shows for at least 3 seconds
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      setTimeout(() => setIsSaving(false), remainingTime);
     }
   };
 
@@ -93,8 +102,9 @@ function RasterSymbologySave({
         type="button"
         size="sm"
         onClick={() => saveSymbology(dataProduct, projectId, symbology)}
+        disabled={isSaving}
       >
-        Save Changes
+        {isSaving ? 'Saving...' : 'Save Changes'}
       </Button>
     </div>
   );

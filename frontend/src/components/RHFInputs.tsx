@@ -14,6 +14,10 @@ interface RadioInput extends Input {
   value: string;
 }
 
+interface TextInput extends Input {
+  placeholder?: string;
+}
+
 function CheckboxInput({ fieldName, label, ...props }: Input) {
   const {
     register,
@@ -95,4 +99,28 @@ function RadioInput({
   );
 }
 
-export { CheckboxInput, NumberInput, RadioInput };
+function TextInput({ fieldName, label, placeholder, ...props }: TextInput) {
+  const {
+    register,
+    formState: { errors },
+  } = useFormContext();
+
+  const error = errors && errors[fieldName];
+
+  return (
+    <label htmlFor={fieldName}>
+      <span className="text-sm font-medium inline-block mr-2 min-w-24">
+        {label}:
+      </span>
+      <input
+        id={fieldName}
+        type="text"
+        placeholder={placeholder}
+        {...register(fieldName)}
+        {...props}
+      />
+      {error && <p className="text-sm text-red-500">{`${error.message}`}</p>}
+    </label>
+  );
+}
+export { CheckboxInput, NumberInput, RadioInput, TextInput };

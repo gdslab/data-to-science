@@ -1,4 +1,5 @@
 from .api_key import APIKey
+from .breedbase_connection import BreedbaseConnection
 from .campaign import Campaign
 from .data_product import DataProduct
 from .data_product_metadata import DataProductMetadata
@@ -12,8 +13,10 @@ from .indoor_project_data import IndoorProjectData
 from .job import Job
 from .project_like import ProjectLike
 from .location import Location
+from .module_type import ModuleType
 from .project import Project
 from .project_member import ProjectMember
+from .project_module import ProjectModule
 from .raw_data import RawData
 from .shortened_url import ShortenedUrl
 from .single_use_token import SingleUseToken

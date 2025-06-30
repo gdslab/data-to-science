@@ -23,6 +23,11 @@ import {
   TileScaleAction,
 } from './Maps';
 
+export type MaptilerApiKeyAction = {
+  type: 'set';
+  payload: string;
+};
+
 function activeDataProductReducer(
   state: DataProduct | null,
   action: ActiveDataProductAction
@@ -109,6 +114,16 @@ function mapboxAccessTokenReducer(
   state: string,
   action: MapboxAccessTokenAction
 ) {
+  switch (action.type) {
+    case 'set': {
+      return action.payload;
+    }
+    default:
+      return state;
+  }
+}
+
+function maptilerApiKeyReducer(state: string, action: MaptilerApiKeyAction) {
   switch (action.type) {
     case 'set': {
       return action.payload;
@@ -249,6 +264,8 @@ const context: {
   geoRasterIdDispatch: React.Dispatch<GeoRasterIdAction>;
   mapboxAccessToken: string;
   mapboxAccessTokenDispatch: React.Dispatch<MapboxAccessTokenAction>;
+  maptilerApiKey: string;
+  maptilerApiKeyDispatch: React.Dispatch<MaptilerApiKeyAction>;
   mapViewProperties: MapViewPropertiesState;
   mapViewPropertiesDispatch: React.Dispatch<MapViewPropertiesAction>;
   projectLayers: MapLayerFeatureCollection[];
@@ -275,6 +292,8 @@ const context: {
   geoRasterIdDispatch: () => {},
   mapboxAccessToken: '',
   mapboxAccessTokenDispatch: () => {},
+  maptilerApiKey: '',
+  maptilerApiKeyDispatch: () => {},
   mapViewProperties: null,
   mapViewPropertiesDispatch: () => {},
   projectLayers: [],
@@ -314,6 +333,10 @@ export function MapContextProvider({
   const [geoRasterId, geoRasterIdDispatch] = useReducer(geoRasterIdReducer, '');
   const [mapboxAccessToken, mapboxAccessTokenDispatch] = useReducer(
     mapboxAccessTokenReducer,
+    ''
+  );
+  const [maptilerApiKey, maptilerApiKeyDispatch] = useReducer(
+    maptilerApiKeyReducer,
     ''
   );
   const [mapViewProperties, mapViewPropertiesDispatch] = useReducer(
@@ -382,6 +405,8 @@ export function MapContextProvider({
         geoRasterIdDispatch,
         mapboxAccessToken,
         mapboxAccessTokenDispatch,
+        maptilerApiKey,
+        maptilerApiKeyDispatch,
         mapViewProperties,
         mapViewPropertiesDispatch,
         projectFilterSelection,

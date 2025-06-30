@@ -94,8 +94,20 @@ export default function EditableDataType({
         setIsEditing(false);
       }
     } catch (err) {
-      if (isAxiosError(err) && err.response && err.response.data.detail) {
-        setStatus({ type: 'error', msg: err.response.data.detail });
+      if (isAxiosError(err) && err.response) {
+        if (err.response.status === 422 && err.response.data.detail) {
+          const errorDetail = err.response.data.detail[0];
+          setStatus({
+            type: 'error',
+            msg: `${errorDetail.msg} for ${
+              errorDetail.loc[errorDetail.loc.length - 1]
+            }`,
+          });
+        } else if (err.response.data.detail) {
+          setStatus({ type: 'error', msg: err.response.data.detail });
+        } else {
+          setStatus({ type: 'error', msg: 'Unable to change data type name' });
+        }
       } else {
         setStatus({ type: 'error', msg: 'Unable to change data type name' });
       }
@@ -106,7 +118,7 @@ export default function EditableDataType({
   if (isEditing) {
     return (
       <div className="w-full flex justify-between gap-2">
-        <div className="w-3/4">
+        <div className="w-3/4 max-w-[200px]">
           <Createable
             styles={{
               input: (base) => ({
@@ -126,11 +138,19 @@ export default function EditableDataType({
             })}
             maxMenuHeight={140}
             menuPlacement={menuPlacement}
+            isClearable={true}
             isSearchable
             options={getDataTypeOptions(dataProduct)}
             onChange={(newDataType) => {
               if (newDataType && newDataType.value) {
-                setSelectedDataType(newDataType.value);
+                if (newDataType.value.length > 16) {
+                  setStatus({
+                    type: 'error',
+                    msg: 'Data type name must be less than 16 characters',
+                  });
+                } else {
+                  setSelectedDataType(newDataType.value);
+                }
               }
             }}
           />

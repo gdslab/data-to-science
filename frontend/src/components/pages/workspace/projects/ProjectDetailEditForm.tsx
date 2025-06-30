@@ -16,6 +16,7 @@ import { Project } from './Project';
 import { useProjectContext } from './ProjectContext';
 import ProjectDeleteModal from './ProjectDeleteModal';
 import ProjectFormMap from './ProjectFormMap';
+import ProjectBoundaryDownloadButton from './ProjectBoundaryDownloadButton';
 import Table, { TableBody, TableHead } from '../../../Table';
 import { Team } from '../../teams/Teams';
 
@@ -177,15 +178,22 @@ export default function ProjectDetailEditForm({
                         )}
                       </EditField>
                     </div>,
-                    <div className="flex justify-center">
+                    <div className="flex justify-between gap-8">
                       <MapIcon
                         className="h-6 w-6 cursor-pointer"
                         onClick={() => {
                           setStatus(null);
                           setOpenMap(true);
                         }}
+                        title="View or Edit Location"
                       />
                       <span className="sr-only">View or Edit Location</span>
+                      {project.field && (
+                        <ProjectBoundaryDownloadButton
+                          field={project.field}
+                          projectTitle={project.title}
+                        />
+                      )}
                       <Modal open={openMap} setOpen={setOpenMap}>
                         <div className="m-4">
                           <ProjectFormMap
@@ -211,6 +219,10 @@ export default function ProjectDetailEditForm({
             <div className="flex flex-row justify-end gap-4 mt-4">
               <LinkButton url={`/projects/${project.id}/access`} size="sm">
                 Manage Access
+              </LinkButton>
+
+              <LinkButton url={`/projects/${project.id}/modules`} size="sm">
+                Manage Modules
               </LinkButton>
 
               <ProjectDeleteModal project={project} />

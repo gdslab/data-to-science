@@ -5,8 +5,9 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any, NoReturn
+from typing import Any, List, NoReturn, Optional
 
+import rasterio
 from pydantic import ValidationError
 
 from app.schemas.user_style import UserStyleCreate
@@ -28,7 +29,12 @@ class ImageProcessor:
     compressed COG for visualization will be created along with a small preview image.
     """
 
-    def __init__(self, in_raster: str, output_dir: str | Path | None = None) -> None:
+    def __init__(
+        self,
+        in_raster: str,
+        output_dir: str | Path | None = None,
+        project_to_utm: bool = False,
+    ) -> None:
         self.in_raster = Path(in_raster)
 
         if not output_dir:
@@ -37,37 +43,35 @@ class ImageProcessor:
         self.out_dir = Path(output_dir)
         self.out_raster = self.out_dir / self.in_raster.name
         self.preview_out_path = self.out_raster.with_suffix(".jpg")
+        self.project_to_utm = project_to_utm
 
         self.stac_properties: STACProperties = {"raster": [], "eo": []}
 
     def run(self) -> Path:
+        logger.debug("Getting raster info from gdalinfo")
         info: dict = get_info(self.in_raster)
 
-        logger.info(f" Processing {self.in_raster}")
-        logger.info(f" Output will be saved to {self.out_raster}")
-        logger.info(f" Preview image will be saved to {self.preview_out_path}")
-        logger.info(f" Info before processing: {info}")
-
+        logger.debug("Checking if raster is in COG layout")
         if is_cog(info):
+            logger.info("Raster is in COG layout, moving to output directory")
             shutil.move(self.in_raster, self.out_dir)
         else:
-            convert_to_cog(self.in_raster, self.out_raster)
+            logger.info("Converting raster to COG layout")
+            convert_to_cog(self.in_raster, self.out_raster, self.project_to_utm)
             # Update info to reflect new COG
             info = get_info(self.out_raster)
 
-        logger.info(f" Info after processing: {info}")
-
+        logger.debug("Cleaning up temporary files")
         if os.path.exists(self.in_raster.parent):
             shutil.rmtree(self.in_raster.parent)
 
+        logger.debug("Processing STAC properties and creating preview")
         self.stac_properties = get_stac_properties(info)
-
-        logger.info(f" STAC properties: {self.stac_properties}")
-
         create_preview_image(
             self.out_raster, self.preview_out_path, self.stac_properties
         )
 
+        logger.info(f"Successfully processed raster: {self.out_raster}")
         return self.out_raster
 
     def get_default_symbology(self) -> UserStyleCreate | NoReturn:
@@ -77,21 +81,23 @@ class ImageProcessor:
             and len(self.stac_properties["eo"]) > 0
         ):
             if len(self.stac_properties["raster"]) == 1:
-                stats: Stats | None = self.stac_properties["raster"][0].get("stats")
+                stats: Optional[Stats] = self.stac_properties["raster"][0].get("stats")
                 if stats is None:
                     raise Exception("Unable to get raster stats")
 
-                return {
-                    "settings": {
-                        "colorRamp": "rainbow",
-                        "mode": "minMax",
-                        "max": stats.get("maximum", 255),
-                        "min": stats.get("minimum", 0),
-                        "userMax": stats.get("maximum", 255),
-                        "userMin": stats.get("minimum", 0),
-                        "meanStdDev": 2,
+                return UserStyleCreate(
+                    **{
+                        "settings": {
+                            "colorRamp": "rainbow",
+                            "mode": "minMax",
+                            "max": stats.get("maximum", 255),
+                            "min": stats.get("minimum", 0),
+                            "userMax": stats.get("maximum", 255),
+                            "userMin": stats.get("minimum", 0),
+                            "meanStdDev": 2,
+                        }
                     }
-                }
+                )
             elif len(self.stac_properties["raster"]) > 2:
                 symbology: dict = {
                     "mode": "minMax",
@@ -111,7 +117,7 @@ class ImageProcessor:
                         "userMax": stats.get("maximum", 255),
                     }
 
-                return {"settings": symbology}
+                return UserStyleCreate(**{"settings": symbology})
             else:
                 raise Exception("Need at least three bands for ortho imagery")
         else:
@@ -191,36 +197,48 @@ def get_stac_properties(info: dict) -> STACProperties:
 
 
 def convert_to_cog(
-    in_raster: Path, out_raster: Path, num_threads: int | None = None
+    in_raster: Path,
+    out_raster: Path,
+    project_to_utm: bool,
+    num_threads: int | None = None,
 ) -> None:
     """Runs gdalwarp to generate new raster in COG layout.
 
     Args:
-        in_raster (Path): Path to input raster dataset
-        out_raster (Path): Path for output raster dataset
+        in_raster (Path): Path to input raster dataset.
+        out_raster (Path): Path for output raster dataset.
+        project_to_utm (bool): Whether to project the raster to UTM.
         num_threads (int | None, optional): No. of CPUs to use. Defaults to None.
     """
     if not num_threads:
         num_threads = int(multiprocessing.cpu_count() / 2)
 
-    result: subprocess.CompletedProcess = subprocess.run(
-        [
-            "gdalwarp",
-            in_raster,
-            out_raster,
-            "-of",
-            "COG",
-            "-co",
-            "COMPRESS=DEFLATE",
-            "-co",
-            f"NUM_THREADS={num_threads}",
-            "-co",
-            "BIGTIFF=YES",
-            "-wm",
-            "500",
-        ]
-    )
+    # Build the base command
+    command: List[str] = [
+        "gdalwarp",
+        str(in_raster),
+        str(out_raster),
+        "-of",
+        "COG",
+        "-co",
+        "COMPRESS=DEFLATE",
+        "-co",
+        f"NUM_THREADS={num_threads}",
+        "-co",
+        "BIGTIFF=YES",
+        "-wm",
+        "500",
+    ]
 
+    # Add projection parameters if needed
+    wgs84_status, mean_x, mean_y = get_wgs84_info(in_raster)
+    if project_to_utm and wgs84_status and mean_x and mean_y:
+        # Get lon/lat of upper left corner of raster
+        epsg_code = get_utm_epsg_from_latlon(mean_y, mean_x)
+        logger.info(f"Projecting raster to UTM: {epsg_code}")
+        command.extend(["-s_srs", "EPSG:4326", "-t_srs", epsg_code])
+
+    result: subprocess.CompletedProcess = subprocess.run(command)
     result.check_returncode()
 
 
@@ -264,15 +282,66 @@ def create_preview_image(
             "255",
         ]
 
-    size_params: list = ["-outsize", "6.25%", "6.25%"]
+    outsize_params: list = ["-outsize", "320", "0"]
     inout_params: list = [in_raster, preview_out_path]
 
-    command = ["gdal_translate", "-of", "JPEG", "-ot", "Byte", "-co", "QUALITY=75"]
+    command = [
+        "gdal_translate",
+        "-of",
+        "JPEG",
+        "-ot",
+        "Byte",
+        "-co",
+        "QUALITY=75",
+        "-r",
+        "near",
+    ]
     command.extend(band_params)
-    command.extend(size_params)
+    command.extend(outsize_params)
     command.extend(scale_params)
     command.extend(inout_params)
 
     result = subprocess.run(command)
 
     result.check_returncode()
+
+
+def get_utm_epsg_from_latlon(lat: float, lon: float) -> str:
+    """
+    Returns an EPSG code string for the UTM zone corresponding to the given lat/lon.
+
+    Args:
+        lat (float): Latitude in decimal degrees.
+        lon (float): Longitude in decimal degrees.
+
+    Returns:
+        str: EPSG code string in the format "EPSG:326##" or "EPSG:327##"
+    """
+    if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+        raise ValueError("Invalid latitude or longitude values.")
+
+    zone_number = int((lon + 180) / 6) + 1
+    hemisphere_code = 326 if lat >= 0 else 327
+    epsg_code = f"EPSG:{hemisphere_code}{zone_number}"
+
+    return epsg_code
+
+
+def get_wgs84_info(in_raster: Path) -> tuple[bool, float | None, float | None]:
+    """Returns WGS84 status and mean coordinates if the input raster is in WGS84.
+
+    Args:
+        in_raster (Path): Path to input raster dataset.
+
+    Returns:
+        tuple[bool, float | None, float | None]: A tuple containing:
+            - bool: True if the input raster is in WGS84, False otherwise
+            - float | None: Mean x coordinate (longitude) if WGS84, None otherwise
+            - float | None: Mean y coordinate (latitude) if WGS84, None otherwise
+    """
+    with rasterio.open(in_raster) as src:
+        if src.crs.to_epsg() == 4326:
+            mean_x = src.bounds.left + (src.bounds.right - src.bounds.left) / 2
+            mean_y = src.bounds.bottom + (src.bounds.top - src.bounds.bottom) / 2
+            return True, mean_x, mean_y
+        return False, None, None

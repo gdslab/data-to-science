@@ -32,7 +32,11 @@ export default function ProjectBreadcrumbs() {
       if (flights && flights.length > 0) {
         const currentFlight = flights.filter(({ id }) => id === flightId);
         if (currentFlight && currentFlight.length > 0) {
-          const sensorPlatformDate = `${currentFlight[0].name ? currentFlight[0].name + ' | ' : ''}${currentFlight[0].sensor} | ${currentFlight[0].platform} | ${currentFlight[0].acquisition_date}`;
+          const sensorPlatformDate = `${
+            currentFlight[0].name ? currentFlight[0].name + ' | ' : ''
+          }${currentFlight[0].sensor} | ${currentFlight[0].platform} | ${
+            currentFlight[0].acquisition_date
+          }`;
           setFlightCrumb(sensorPlatformDate);
           localStorage.setItem(currentFlight[0].id, sensorPlatformDate);
         }
@@ -50,7 +54,10 @@ export default function ProjectBreadcrumbs() {
       <nav aria-label="Breadcrumb">
         <ol className="flex items-center gap-1 text-sm text-gray-600">
           <li>
-            <Link to="/projects" className="block transition hover:text-gray-700">
+            <Link
+              to="/projects"
+              className="block transition hover:text-gray-700"
+            >
               <span className="ms-1.5 text-xs font-medium"> Projects </span>
             </Link>
           </li>
@@ -75,7 +82,9 @@ export default function ProjectBreadcrumbs() {
                 <Link
                   to={`/projects/${projectId}`}
                   className={classNames(
-                    !flightCrumb && slug !== 'access' ? 'font-semibold' : '',
+                    !flightCrumb && !['access', 'modules'].includes(slug)
+                      ? 'font-semibold'
+                      : '',
                     'block transition hover:text-gray-700 max-w-60 truncate'
                   )}
                 >
@@ -108,6 +117,34 @@ export default function ProjectBreadcrumbs() {
                   className="block transition font-semibold hover:text-gray-700"
                 >
                   Manage Access
+                </Link>
+              </li>
+            </>
+          ) : null}
+
+          {slug === 'modules' ? (
+            <>
+              <li>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </li>
+
+              <li>
+                <Link
+                  to={`/projects/${projectId}/modules`}
+                  className="block transition font-semibold hover:text-gray-700"
+                >
+                  Project Modules
                 </Link>
               </li>
             </>

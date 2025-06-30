@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.api.api_v1.endpoints import (
     admin,
     auth,
+    breedbase_connections,
     campaigns,
     contact,
     file_permission,
@@ -15,6 +16,7 @@ from app.api.api_v1.endpoints import (
     public,
     projects,
     project_members,
+    project_modules,
     data_products,
     raw_data,
     style,
@@ -30,6 +32,16 @@ api_router = APIRouter()
 api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
 api_router.include_router(contact.router, prefix="/contact", tags=["contact"])
+api_router.include_router(
+    breedbase_connections.router,
+    prefix="/projects/{project_id}/breedbase-connections",
+    tags=["breedbase_connections"],
+)
+api_router.include_router(
+    breedbase_connections.study_router,
+    prefix="/breedbase-connections/study",
+    tags=["breedbase_connections"],
+)
 api_router.include_router(health.router, prefix="/health", tags=["health"])
 api_router.include_router(locations.router, prefix="/locations", tags=["locations"])
 api_router.include_router(public.router, prefix="/public", tags=["public"])
@@ -63,7 +75,11 @@ api_router.include_router(
     prefix="/projects/{project_id}/flights/{flight_id}/data_products/{data_product_id}/file_permission",
     tags=["file_permission"],
 )
-
+api_router.include_router(
+    project_modules.router,
+    prefix="/projects/{project_id}/modules",
+    tags=["project_modules"],
+)
 api_router.include_router(
     style.router,
     prefix="/projects/{project_id}/flights/{flight_id}/data_products/{data_product_id}/style",

@@ -160,7 +160,7 @@ export default function FilterOptions() {
           <>
             <div className="relative">
               <div className="flex items-center justify-between">
-                <span className="text-md font-bold">DBH (in)</span>
+                <span className="text-md font-bold">DBH (m)</span>
                 <HideShowButton
                   label="DBH"
                   visible={dbhVisibility}
@@ -174,7 +174,7 @@ export default function FilterOptions() {
                   label="DBH"
                   minThumb={dbhMin}
                   maxThumb={dbhMax}
-                  unit="in"
+                  unit="m"
                   updateMinThumb={updateDBHMin}
                   updateMaxThumb={updateDBHMax}
                   values={iforester.map(({ dbh }) => dbh)}

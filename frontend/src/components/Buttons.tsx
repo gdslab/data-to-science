@@ -30,7 +30,7 @@ interface LinkButton extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
 }
 
 interface LinkOutlineButton
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   children: React.ReactNode;
   target?: string;
   size?: string;
@@ -99,17 +99,16 @@ export function LinkOutlineButton({
   ...props
 }: LinkOutlineButton) {
   return (
-    <Link to={url} target={target}>
-      <button
-        className={classNames(
-          getButtonSizeClassNames(size),
-          'w-full border-2 border-accent3 text-accent3 rounded-md py-2 px-4 w-full hover:bg-accent3 hover:text-white ease-in-out duration-300'
-        )}
-        type="button"
-        {...props}
-      >
-        {children}
-      </button>
+    <Link
+      to={url}
+      target={target}
+      className={classNames(
+        getButtonSizeClassNames(size),
+        'inline-block w-full border-2 border-accent3 text-accent3 rounded-md py-2 px-4 text-center hover:bg-accent3 hover:text-white ease-in-out duration-300 no-underline'
+      )}
+      {...props}
+    >
+      {children}
     </Link>
   );
 }

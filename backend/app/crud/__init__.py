@@ -1,4 +1,5 @@
 from .crud_api_key import api_key
+from .crud_breedbase_connection import breedbase_connection
 from .crud_campaign import campaign
 from .crud_data_product import data_product
 from .crud_data_product_metadata import data_product_metadata
@@ -14,6 +15,7 @@ from .crud_location import location
 from .crud_project import project
 from .crud_project_like import project_like
 from .crud_project_member import project_member
+from .crud_project_module import project_module
 from .crud_raw_data import raw_data
 from .crud_shortened_url import shortened_url
 from .crud_team import team

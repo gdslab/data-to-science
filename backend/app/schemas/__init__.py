@@ -1,5 +1,10 @@
 from .admin import SiteStatistics, UserProjectStatistics
 from .api_key import APIKey, APIKeyCreate, APIKeyUpdate
+from .breedbase_connection import (
+    BreedbaseConnection,
+    BreedbaseConnectionCreate,
+    BreedbaseConnectionUpdate,
+)
 from .campaign import Campaign, CampaignCreate, CampaignUpdate, CampaignTemplateCreate
 from .data_product import (
     DataProduct,
@@ -33,6 +38,7 @@ from .location import Location, LocationCreate, LocationUpdate
 from .project import Project, ProjectCreate, ProjectUpdate
 from .project_like import ProjectLike, ProjectLikeCreate, ProjectLikeUpdate
 from .project_member import ProjectMember, ProjectMemberCreate, ProjectMemberUpdate
+from .project_module import ProjectModule, ProjectModuleCreate, ProjectModuleUpdate
 from .raw_data import RawData, RawDataCreate, RawDataUpdate, RawDataMetadata
 from .shortened_url import (
     ShortenedUrl,

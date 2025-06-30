@@ -14,7 +14,7 @@ import { useRasterSymbologyContext } from '../RasterSymbologyContext';
 import { BBox } from '../Maps';
 import {
   getMapboxSatelliteBasemapStyle,
-  usgsImageryTopoBasemapStyle,
+  getWorldImageryTopoBasemapStyle,
 } from '../styles/basemapStyles';
 import {
   createDefaultMultibandSymbology,
@@ -72,7 +72,8 @@ export default function CompareMap() {
   const [mode, setMode] = useState<Mode>('split-screen');
   const [activeProjectBBox, setActiveProjectBBox] = useState<BBox | null>(null);
 
-  const { activeProject, flights, mapboxAccessToken } = useMapContext();
+  const { activeProject, flights, mapboxAccessToken, maptilerApiKey } =
+    useMapContext();
 
   const { state: symbologyState, dispatch } = useRasterSymbologyContext();
 
@@ -188,8 +189,8 @@ export default function CompareMap() {
   const mapStyle = useMemo(() => {
     return mapboxAccessToken
       ? getMapboxSatelliteBasemapStyle(mapboxAccessToken)
-      : usgsImageryTopoBasemapStyle;
-  }, [mapboxAccessToken]);
+      : getWorldImageryTopoBasemapStyle(maptilerApiKey);
+  }, [mapboxAccessToken, maptilerApiKey]);
 
   return (
     <div className="relative h-full">

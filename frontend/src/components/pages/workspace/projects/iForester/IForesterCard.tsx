@@ -13,7 +13,9 @@ const PropertyLabel = ({ children }) => (
 );
 
 const PropertyValue = ({ children }) => (
-  <span className="text-xs">{children}</span>
+  <span className="text-xs truncate" title={children}>
+    {children}
+  </span>
 );
 
 export default function IForesterCard({
@@ -36,7 +38,7 @@ export default function IForesterCard({
   return (
     <div
       className={clsx(
-        'p-1.5 h-[292px] w-44 flex flex-col gap-1.5 rounded-md drop-shadow-md border-2',
+        'p-1.5 h-[292px] w-44 flex flex-col gap-1.5 rounded-md shadow-md border-2',
         {
           'bg-white/90 border-white/0': state.activeMarker !== submission.id,
           'bg-white border-[#6381C7]': state.activeMarker === submission.id,
@@ -102,9 +104,9 @@ export default function IForesterCard({
       </div>
       <div className="grid grid-cols-2">
         <PropertyLabel>DBH</PropertyLabel>
-        <PropertyValue>{submission.dbh.toFixed(3)}</PropertyValue>
+        <PropertyValue>{submission.dbh.toFixed(3)} m</PropertyValue>
         <PropertyLabel>Distance</PropertyLabel>
-        <PropertyValue>{submission.distance.toFixed(3)}</PropertyValue>
+        <PropertyValue>{submission.distance.toFixed(3)} m</PropertyValue>
         <PropertyLabel>Height</PropertyLabel>
         <PropertyValue>Unknown</PropertyValue>
         <PropertyLabel>Species</PropertyLabel>

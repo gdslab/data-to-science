@@ -407,6 +407,7 @@ def process_data_product_from_external_storage(
                 dtype=data_product.data_type,
                 project_id=project_id,
                 flight_id=flight_id,
+                project_to_utm=True,
             )
 
     # remove token from database
@@ -430,7 +431,9 @@ async def run_processing_tool(
     # verify at least one processing tool was selected
     if (
         toolbox_in.chm is False
+        and toolbox_in.dtm is False
         and toolbox_in.exg is False
+        and toolbox_in.hillshade is False
         and toolbox_in.ndvi is False
         and toolbox_in.vari is False
         and toolbox_in.zonal is False
@@ -458,6 +461,12 @@ async def run_processing_tool(
 
     # chm
     if toolbox_in.chm and not os.environ.get("RUNNING_TESTS") == "1":
+        # check if dem_id is set
+        if not toolbox_in.dem_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="DEM data product ID is required",
+            )
         # create new data product record
         chm_data_product: models.DataProduct = crud.data_product.create_with_flight(
             db,
@@ -489,6 +498,8 @@ async def run_processing_tool(
         # run chm tool in background
         tool_params = {
             "dem_input": dem_data_product.filepath,
+            "chm_resolution": toolbox_in.chmResolution,
+            "chm_percentile": toolbox_in.chmPercentile,
         }
         run_toolbox.apply_async(
             args=(
@@ -497,6 +508,40 @@ async def run_processing_tool(
                 str(out_raster),
                 tool_params,
                 chm_data_product.id,
+                current_user.id,
+            )
+        )
+
+    # dtm
+    if toolbox_in.dtm and not os.environ.get("RUNNING_TESTS") == "1":
+        # create new data product record
+        dtm_data_product: models.DataProduct = crud.data_product.create_with_flight(
+            db,
+            schemas.DataProductCreate(
+                data_type="DTM",
+                filepath="null",
+                original_filename=data_product.original_filename,
+            ),
+            flight_id=flight.id,
+        )
+        # get path for dtm tool output raster
+        data_product_dir = utils.get_data_product_dir(
+            str(project.id), str(flight.id), str(dtm_data_product.id)
+        )
+        dtm_filename: str = str(uuid4()) + ".tif"
+        out_raster = data_product_dir / dtm_filename
+        # run dtm tool in background
+        tool_params = {
+            "dtm_resolution": toolbox_in.dtmResolution,
+            "dtm_rigidness": toolbox_in.dtmRigidness,
+        }
+        run_toolbox.apply_async(
+            args=(
+                "dtm",
+                data_product.filepath,
+                str(out_raster),
+                tool_params,
+                dtm_data_product.id,
                 current_user.id,
             )
         )
@@ -566,6 +611,38 @@ async def run_processing_tool(
                 str(out_raster),
                 tool_params,
                 exg_data_product.id,
+                current_user.id,
+            )
+        )
+
+    # hillshade
+    if toolbox_in.hillshade and not os.environ.get("RUNNING_TESTS") == "1":
+        # create new data product record
+        hillshade_data_product: models.DataProduct = (
+            crud.data_product.create_with_flight(
+                db,
+                schemas.DataProductCreate(
+                    data_type="Hillshade",
+                    filepath="null",
+                    original_filename=data_product.original_filename,
+                ),
+                flight_id=flight.id,
+            )
+        )
+        # get path for hillshade tool output raster
+        data_product_dir = utils.get_data_product_dir(
+            str(project.id), str(flight.id), str(hillshade_data_product.id)
+        )
+        hillshade_filename: str = str(uuid4()) + ".tif"
+        out_raster = data_product_dir / hillshade_filename
+        # run hillshade tool in background
+        run_toolbox.apply_async(
+            args=(
+                "hillshade",
+                data_product.filepath,
+                str(out_raster),
+                {},
+                hillshade_data_product.id,
                 current_user.id,
             )
         )

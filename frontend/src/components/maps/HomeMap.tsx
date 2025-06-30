@@ -27,7 +27,7 @@ import {
 
 import {
   getMapboxSatelliteBasemapStyle,
-  usgsImageryTopoBasemapStyle,
+  getWorldImageryTopoBasemapStyle,
 } from './styles/basemapStyles';
 
 import { isSingleBand } from './utils';
@@ -51,6 +51,7 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
     activeDataProduct,
     activeProject,
     mapboxAccessToken,
+    maptilerApiKey,
     projects,
     projectsVisibleDispatch,
   } = useMapContext();
@@ -181,8 +182,8 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
   const mapStyle = useMemo(() => {
     return mapboxAccessToken
       ? getMapboxSatelliteBasemapStyle(mapboxAccessToken)
-      : usgsImageryTopoBasemapStyle;
-  }, [mapboxAccessToken]);
+      : getWorldImageryTopoBasemapStyle(maptilerApiKey);
+  }, [mapboxAccessToken, maptilerApiKey]);
 
   return (
     <Map

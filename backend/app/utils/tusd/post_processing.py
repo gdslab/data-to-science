@@ -60,6 +60,7 @@ def process_data_product_uploaded_to_tusd(
     dtype: str,
     project_id: UUID,
     flight_id: UUID,
+    project_to_utm: bool = False,
 ) -> Dict:
     """Post-processing method for data product uploaded to tus file server. Creates job
     for converting GeoTIFF (.tif) to Cloud Optimized GeoTIFF or converting point cloud
@@ -74,6 +75,7 @@ def process_data_product_uploaded_to_tusd(
         dtype (str): Type of data product (e.g., ortho, dsm, etc.)
         project_id (UUID): Project ID for data product's project.
         flight_id (UUID): Flight ID for data product's flight.
+        project_to_utm (bool): Whether to project the GeoTIFF to UTM.
 
     Raises:
         HTTPException: Raised if file extension is not supported.
@@ -120,12 +122,7 @@ def process_data_product_uploaded_to_tusd(
     if dtype == "point_cloud":
         # start point cloud process in background
         upload_point_cloud.apply_async(
-            args=(
-                str(storage_path),
-                destination_filepath,
-                job.id,
-                data_product.id,
-            ),
+            args=(str(storage_path), destination_filepath, job.id, data_product.id),
             link=generate_point_cloud_preview.s(),
         )
     else:
@@ -137,6 +134,7 @@ def process_data_product_uploaded_to_tusd(
                 user_id,
                 job.id,
                 data_product.id,
+                project_to_utm,
             ),
         )
 

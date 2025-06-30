@@ -159,6 +159,7 @@ export default function DataTypeRadioInput({
               placeholder="Enter other data type (e.g., NDVI)"
               className="w-full rounded-md border-gray-200 px-4 py-2.5 pe-10 shadow sm:text-sm"
               value={dtypeOther}
+              maxLength={16}
               onChange={updateDtypeOther}
               onBlur={() => setDtypeOtherTouched(true)}
               disabled={disabled}
