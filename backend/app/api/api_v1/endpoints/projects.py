@@ -165,6 +165,7 @@ def generate_stac_preview_async(
     sci_citation: Optional[str] = Query(
         None, description="Citation text for the scientific citation"
     ),
+    license: Optional[str] = Query(None, description="License for the dataset"),
     custom_titles: Optional[str] = Query(
         None, description="JSON string of custom titles for STAC items"
     ),
@@ -187,6 +188,7 @@ def generate_stac_preview_async(
         kwargs={
             "sci_doi": sci_doi,
             "sci_citation": sci_citation,
+            "license": license,
             "custom_titles": parsed_custom_titles,
         },
     )
@@ -205,6 +207,7 @@ def publish_project_to_stac_catalog_async(
     sci_citation: Optional[str] = Query(
         None, description="Citation text for the scientific citation"
     ),
+    license: Optional[str] = Query(None, description="License for the dataset"),
     custom_titles: Optional[str] = Query(
         None, description="JSON string of custom titles for STAC items"
     ),
@@ -227,6 +230,7 @@ def publish_project_to_stac_catalog_async(
         kwargs={
             "sci_doi": sci_doi,
             "sci_citation": sci_citation,
+            "license": license,
             "custom_titles": parsed_custom_titles,
         },
     )

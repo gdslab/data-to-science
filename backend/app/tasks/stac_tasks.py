@@ -68,6 +68,7 @@ def generate_stac_preview(
     project_id: str,
     sci_doi: Optional[str] = None,
     sci_citation: Optional[str] = None,
+    license: Optional[str] = None,
     custom_titles: Optional[Dict[str, str]] = None,
 ) -> Dict:
     """Generate STAC preview metadata for a project without publishing."""
@@ -85,6 +86,7 @@ def generate_stac_preview(
             project_id=project_uuid,
             sci_doi=sci_doi,
             sci_citation=sci_citation,
+            license=license,
             custom_titles=custom_titles,
         )
         collection = sg.collection
@@ -143,6 +145,7 @@ def publish_stac_catalog(
     project_id: str,
     sci_doi: Optional[str] = None,
     sci_citation: Optional[str] = None,
+    license: Optional[str] = None,
     custom_titles: Optional[Dict[str, str]] = None,
 ) -> Dict:
     """Publish project to STAC catalog."""
@@ -160,6 +163,7 @@ def publish_stac_catalog(
             project_id=project_uuid,
             sci_doi=sci_doi,
             sci_citation=sci_citation,
+            license=license,
             custom_titles=custom_titles,
         )
         collection = sg.collection
@@ -261,6 +265,7 @@ def generate_stac_preview_task(
     project_id: str,
     sci_doi: Optional[str] = None,
     sci_citation: Optional[str] = None,
+    license: Optional[str] = None,
     custom_titles: Optional[Dict[str, str]] = None,
     db: Optional[Session] = None,
 ) -> Dict:
@@ -285,6 +290,7 @@ def generate_stac_preview_task(
             project_id=project_uuid,
             sci_doi=sci_doi,
             sci_citation=sci_citation,
+            license=license,
             custom_titles=custom_titles,
         )
         collection = sg.collection
@@ -341,6 +347,7 @@ def publish_stac_catalog_task(
     project_id: str,
     sci_doi: Optional[str] = None,
     sci_citation: Optional[str] = None,
+    license: Optional[str] = None,
     custom_titles: Optional[Dict[str, str]] = None,
     db: Optional[Session] = None,
 ) -> Dict:
@@ -367,6 +374,7 @@ def publish_stac_catalog_task(
             project_id=project_uuid,
             sci_doi=sci_doi,
             sci_citation=sci_citation,
+            license=license,
             custom_titles=custom_titles,
         )
         collection = sg.collection

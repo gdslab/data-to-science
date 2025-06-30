@@ -53,12 +53,16 @@ class STACGenerator:
         project_id: UUID4,
         sci_doi: Optional[str] = None,
         sci_citation: Optional[str] = None,
+        license: Optional[str] = None,
         custom_titles: Optional[dict] = None,
     ):
         self.db = db
         self.project_id = project_id
         self.sci_doi = sci_doi
         self.sci_citation = sci_citation
+        self.license = (
+            license or "CC-BY-NC-4.0"
+        )  # Default to CC-BY-NC-4.0 if not provided
         self.custom_titles = custom_titles or {}
 
         # Get project and flights associated with project
@@ -210,7 +214,7 @@ class STACGenerator:
             extent=Extent(
                 spatial=self.get_spatial_extent(), temporal=self.get_temporal_extent()
             ),
-            license="MIT",
+            license=self.license,
             stac_extensions=stac_extensions if stac_extensions else None,
             extra_fields=extra_fields if extra_fields else None,
         )

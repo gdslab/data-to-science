@@ -111,6 +111,7 @@ export function usePolling<T>({
   ]);
 
   // Cleanup on unmount
+  // @ts-ignore
   const cleanup = useCallback(() => {
     stopPolling();
   }, [stopPolling]);

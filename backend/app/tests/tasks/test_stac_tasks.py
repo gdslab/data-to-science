@@ -404,3 +404,117 @@ def test_task_with_failed_items(mock_get_db, db: Session, monkeypatch):
                 cached_data = json.load(f)
             assert "failed_items" in cached_data
             assert len(cached_data["failed_items"]) == 1
+
+
+@patch("app.tasks.stac_tasks.get_db")
+def test_generate_stac_preview_task_with_license(mock_get_db, db: Session):
+    """Test STAC preview generation task with license parameter."""
+    # Setup
+    mock_get_db.return_value.__enter__.return_value = db
+
+    # Create project with data
+    project = create_project(db)
+    flight = create_flight(db, project_id=project.id)
+    data_product = SampleDataProduct(db, project=project, flight=flight)
+
+    # License parameter
+    custom_license = "MIT"
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Mock settings to use temp directory
+        with patch.object(settings, "STATIC_DIR", temp_dir):
+            # Call the task with license
+            result = generate_stac_preview_task(
+                str(project.id), license=custom_license, db=db
+            )
+
+            # Verify result structure
+            assert "collection_id" in result
+            assert str(result["collection_id"]) == str(project.id)
+            assert result["is_published"] is False
+
+            # Verify cache file was created with license
+            cache_path = get_stac_cache_path(project.id)
+            assert cache_path.exists()
+
+            # Verify cache content includes correct license
+            with open(cache_path, "r") as f:
+                cached_data = json.load(f)
+            assert cached_data["collection"]["license"] == custom_license
+
+
+@patch("app.tasks.stac_tasks.get_db")
+def test_publish_stac_catalog_task_with_license(mock_get_db, db: Session):
+    """Test STAC catalog publication task with license parameter."""
+    # Setup
+    mock_get_db.return_value.__enter__.return_value = db
+
+    # Create project with data
+    project = create_project(db)
+    flight = create_flight(db, project_id=project.id)
+    data_product = SampleDataProduct(db, project=project, flight=flight)
+
+    # License parameter
+    custom_license = "ISC"
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Mock settings to use temp directory
+        with patch.object(settings, "STATIC_DIR", temp_dir):
+            # Mock the STAC collection manager and project update
+            with patch("app.tasks.stac_tasks.STACCollectionManager") as mock_scm, patch(
+                "app.crud.project.update_project_visibility"
+            ) as mock_update:
+
+                mock_report = MagicMock()
+                mock_report.is_published = True
+                mock_report.collection_id = project.id
+                mock_scm.return_value.publish_to_catalog.return_value = mock_report
+                mock_update.return_value = True
+
+                # Call the task with license
+                result = publish_stac_catalog_task(
+                    str(project.id), license=custom_license, db=db
+                )
+
+                # Verify result structure
+                assert "collection_id" in result
+                assert str(result["collection_id"]) == str(project.id)
+                assert result["is_published"] is True
+
+                # Verify cache file includes license
+                cache_path = get_stac_cache_path(project.id)
+                with open(cache_path, "r") as f:
+                    cached_data = json.load(f)
+                assert cached_data["collection"]["license"] == custom_license
+
+
+@patch("app.tasks.stac_tasks.get_db")
+def test_generate_stac_preview_task_with_default_license(mock_get_db, db: Session):
+    """Test STAC preview generation task uses default license when none provided."""
+    # Setup
+    mock_get_db.return_value.__enter__.return_value = db
+
+    # Create project with data
+    project = create_project(db)
+    flight = create_flight(db, project_id=project.id)
+    data_product = SampleDataProduct(db, project=project, flight=flight)
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Mock settings to use temp directory
+        with patch.object(settings, "STATIC_DIR", temp_dir):
+            # Call the task without license parameter
+            result = generate_stac_preview_task(str(project.id), db=db)
+
+            # Verify result structure
+            assert "collection_id" in result
+            assert str(result["collection_id"]) == str(project.id)
+            assert result["is_published"] is False
+
+            # Verify cache file was created with default license
+            cache_path = get_stac_cache_path(project.id)
+            assert cache_path.exists()
+
+            # Verify cache content includes default license
+            with open(cache_path, "r") as f:
+                cached_data = json.load(f)
+            assert cached_data["collection"]["license"] == "CC-BY-NC-4.0"

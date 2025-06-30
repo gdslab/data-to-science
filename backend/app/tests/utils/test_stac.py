@@ -762,3 +762,106 @@ def test_publish_to_catalog_with_scientific_metadata(db: Session) -> None:
 
     # Clean up - remove the published collection
     scm.remove_from_catalog()
+
+
+def test_stac_generator_with_custom_license(db: Session) -> None:
+    """Test STACGenerator with custom license."""
+    # Create new project
+    project = create_project(db)
+
+    # Add sample data product to project
+    data_product = SampleDataProduct(db, project=project)
+
+    # Get flight from data product
+    flight = data_product.flight
+
+    # Test with custom license
+    custom_license = "MIT"
+
+    # Generate STAC with custom license
+    sg = STACGenerator(db, project_id=project.id, license=custom_license)
+
+    # Get STAC generated STAC items
+    stac_items = sg.items
+
+    # Get STAC generated STAC collection
+    stac_collection = sg.collection
+
+    # Assert that the STAC item was created
+    assert len(stac_items) == 1
+    assert stac_items[0].id == str(data_product.obj.id)
+
+    # Validate STAC Item
+    assert validate(stac_items[0])
+
+    # Validate STAC Collection
+    assert validate(stac_collection)
+
+    # Confirm license is set correctly
+    collection_dict = stac_collection.to_dict()
+    assert collection_dict["license"] == custom_license
+
+    # Confirm flight id is present in STAC Item
+    assert stac_items[0].properties["flight_details"]["flight_id"] == str(flight.id)
+
+
+def test_stac_generator_with_default_license(db: Session) -> None:
+    """Test STACGenerator uses default license when none provided."""
+    # Create new project
+    project = create_project(db)
+
+    # Add sample data product to project
+    data_product = SampleDataProduct(db, project=project)
+
+    # Generate STAC without specifying license (should use default)
+    sg = STACGenerator(db, project_id=project.id)
+
+    # Get STAC generated STAC collection
+    stac_collection = sg.collection
+
+    # Validate STAC Collection
+    assert validate(stac_collection)
+
+    # Confirm default license is set
+    collection_dict = stac_collection.to_dict()
+    assert collection_dict["license"] == "CC-BY-NC-4.0"
+
+
+def test_publish_to_catalog_with_custom_license(db: Session) -> None:
+    """Test publishing a collection with custom license to the catalog."""
+    # Create new project
+    project = create_project(db)
+
+    # Add sample data product to project
+    data_product = SampleDataProduct(db, project=project)
+
+    # Test with ISC license
+    test_license = "ISC"
+
+    # Generate STAC with custom license using STACGenerator
+    sg = STACGenerator(db, project_id=project.id, license=test_license)
+    stac_collection = sg.collection
+    stac_items = sg.items
+
+    # Create STAC Collection Manager
+    scm = STACCollectionManager(
+        collection_id=stac_collection.id,
+        collection=stac_collection,
+        items=stac_items,
+    )
+
+    # Publish STAC Collection to STAC API
+    stac_report = scm.publish_to_catalog()
+    assert stac_report.is_published is True
+
+    # Fetch published STAC Collection from STAC API
+    public_collection = scm.fetch_public_collection()
+
+    assert public_collection is not None
+    assert public_collection["id"] == stac_collection.id
+
+    # Verify license is present in published collection
+    assert public_collection.get("license") == test_license
+
+    # Clean up - remove the published collection
+    scm.remove_from_catalog()

@@ -1641,3 +1641,108 @@ def test_stac_cache_after_successful_publication(
 
     scm = STACCollectionManager(collection_id=str(project.id))
     scm.remove_from_catalog()
+
+
+def test_generate_stac_preview_async_with_license(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test generating STAC preview asynchronously with license parameter."""
+    # Create project owned by current user
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    flight = create_flight(db, project_id=project.id)
+    data_product = SampleDataProduct(db, project=project, flight=flight)
+
+    # License parameter
+    license_param = "MIT"
+
+    # Trigger async STAC preview generation with license
+    response = client.post(
+        f"{API_URL}/{project.id}/generate-stac-preview?license={license_param}"
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+    response_data = response.json()
+    assert response_data is not None
+    assert "STAC preview generation started" in response_data["message"]
+    assert "task_id" in response_data
+    assert str(response_data["project_id"]) == str(project.id)
+
+
+def test_publish_stac_async_with_license(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test publishing STAC catalog asynchronously with license parameter."""
+    # Create project owned by current user
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    flight = create_flight(db, project_id=project.id)
+    data_product = SampleDataProduct(db, project=project, flight=flight)
+
+    # License parameter
+    license_param = "ISC"
+
+    # Trigger async STAC catalog publication with license
+    response = client.put(
+        f"{API_URL}/{project.id}/publish-stac-async?license={license_param}"
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+    response_data = response.json()
+    assert response_data is not None
+    assert "STAC catalog publication started" in response_data["message"]
+    assert "task_id" in response_data
+    assert str(response_data["project_id"]) == str(project.id)
+
+
+def test_stac_with_license_using_task(
+    db: Session, normal_user_access_token: str
+) -> None:
+    """Test STAC generation and publication with license using task functions."""
+    from app.tasks.stac_tasks import (
+        generate_stac_preview_task,
+        publish_stac_catalog_task,
+    )
+
+    # Create project owned by current user
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    project = create_project(db, owner_id=current_user.id)
+    flight = create_flight(db, project_id=project.id)
+    data_product = SampleDataProduct(db, project=project, flight=flight)
+
+    # Test license
+    test_license = "GPL-3.0"
+
+    # Generate preview with license using task function
+    preview_result = generate_stac_preview_task(
+        str(project.id), license=test_license, db=db
+    )
+
+    # Verify preview result includes correct license
+    assert preview_result is not None
+    assert str(preview_result["collection_id"]) == str(project.id)
+    assert preview_result["is_published"] is False
+    assert preview_result["collection"]["license"] == test_license
+
+    # Publish with license using task function
+    publish_result = publish_stac_catalog_task(
+        str(project.id), license=test_license, db=db
+    )
+
+    # Verify publish result includes correct license
+    assert publish_result is not None
+    assert str(publish_result["collection_id"]) == str(project.id)
+    assert publish_result["is_published"] is True
+    assert publish_result["collection"]["license"] == test_license
+
+    # Clean up - remove from STAC catalog
+    from app.utils.STACCollectionManager import STACCollectionManager
+
+    scm = STACCollectionManager(collection_id=str(project.id))
+    scm.remove_from_catalog()

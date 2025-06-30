@@ -8,9 +8,8 @@ import {
   IForester,
   MapLayer,
   ProjectModule,
-  Project as ProjectDetail,
 } from '../Project';
-import { Project as ProjectList } from '../ProjectList';
+import { Project } from '../ProjectList';
 import { ProjectMember } from '../ProjectAccess';
 import { User } from '../../../../AuthContext';
 
@@ -48,7 +47,7 @@ interface Context {
   locationDispatch: React.Dispatch<LocationAction>;
   mapLayers: MapLayer[];
   mapLayersDispatch: React.Dispatch<MapLayersAction>;
-  project: ProjectDetail | null;
+  project: Project | null;
   projectDispatch: React.Dispatch<ProjectAction>;
   projectMembers: ProjectMember[] | null;
   projectMembersDispatch: React.Dispatch<ProjectMembersAction>;
@@ -192,7 +191,7 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
   const params = useParams();
 
   useEffect(() => {
-    async function getLocation(project: ProjectDetail) {
+    async function getLocation(project: Project) {
       try {
         const response: AxiosResponse<GeoJSONFeature> = await api.get(
           `/locations/${project.id}/${project.location_id}`
@@ -265,7 +264,7 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
   useEffect(() => {
     async function getProject() {
       try {
-        const response: AxiosResponse<ProjectDetail> = await api.get(
+        const response: AxiosResponse<Project> = await api.get(
           `/projects/${params.projectId}`
         );
         if (response) {

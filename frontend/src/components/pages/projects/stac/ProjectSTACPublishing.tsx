@@ -58,6 +58,7 @@ export default function ProjectSTACPublishing() {
   const [pollingStatus, setPollingStatus] = useState<string>('');
   const [sciDoi, setSciDoi] = useState<string>('');
   const [sciCitation, setSciCitation] = useState<string>('');
+  const [license, setLicense] = useState<string>('CC-BY-NC-4.0');
   const [customTitles, setCustomTitles] = useState<Record<string, string>>({});
   const { stacMetadata: initialStacMetadata, project: loaderProject } =
     useLoaderData() as {
@@ -119,6 +120,7 @@ export default function ProjectSTACPublishing() {
     if (stacMetadata?.collection) {
       setSciDoi(stacMetadata.collection['sci:doi'] || '');
       setSciCitation(stacMetadata.collection['sci:citation'] || '');
+      setLicense((stacMetadata.collection as any).license || 'CC-BY-NC-4.0');
     }
     // Initialize custom titles from STAC items if they have custom titles
     if (stacMetadata?.items) {
@@ -148,7 +150,7 @@ export default function ProjectSTACPublishing() {
         msg: 'STAC metadata generated successfully',
       });
     },
-    onError: (error) => {
+    onError: (_error) => {
       setStatus({
         type: 'error',
         msg: 'STAC generation is taking longer than expected. Please refresh the page to check status.',
@@ -173,6 +175,7 @@ export default function ProjectSTACPublishing() {
       const params = new URLSearchParams();
       if (sciDoi) params.append('sci_doi', sciDoi);
       if (sciCitation) params.append('sci_citation', sciCitation);
+      if (license) params.append('license', license);
       if (customTitles && Object.keys(customTitles).length > 0) {
         params.append('custom_titles', JSON.stringify(customTitles));
       }
@@ -214,11 +217,13 @@ export default function ProjectSTACPublishing() {
   const buildPublishUrl = (
     doi?: string,
     citation?: string,
+    license?: string,
     customTitles?: Record<string, string>
   ) => {
     const params = new URLSearchParams();
     if (doi) params.append('sci_doi', doi);
     if (citation) params.append('sci_citation', citation);
+    if (license) params.append('license', license);
     if (customTitles && Object.keys(customTitles).length > 0) {
       params.append('custom_titles', JSON.stringify(customTitles));
     }
@@ -232,7 +237,7 @@ export default function ProjectSTACPublishing() {
     setIsPublishing(true);
     setStatus(null);
     try {
-      const url = buildPublishUrl(sciDoi, sciCitation, customTitles);
+      const url = buildPublishUrl(sciDoi, sciCitation, license, customTitles);
       const response = await api.put(url);
       if (response) {
         setStatus({
@@ -255,7 +260,7 @@ export default function ProjectSTACPublishing() {
     setIsUpdating(true);
     setStatus(null);
     try {
-      const url = buildPublishUrl(sciDoi, sciCitation, customTitles);
+      const url = buildPublishUrl(sciDoi, sciCitation, license, customTitles);
       const response = await api.put(url);
       if (response) {
         setStatus({
@@ -322,6 +327,8 @@ export default function ProjectSTACPublishing() {
               setSciDoi={setSciDoi}
               sciCitation={sciCitation}
               setSciCitation={setSciCitation}
+              license={license}
+              setLicense={setLicense}
             />
 
             <STACItemTitlesForm
