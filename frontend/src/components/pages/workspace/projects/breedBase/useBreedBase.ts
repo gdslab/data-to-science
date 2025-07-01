@@ -9,7 +9,7 @@ import {
   BreedBaseStudy,
 } from './BreedBase.types';
 
-import api from '../../../../api';
+import api from '../../../../../api';
 
 // Create a separate axios instance for BreedBase API calls without credentials
 const breedBaseApi = axios.create({

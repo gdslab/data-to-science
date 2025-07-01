@@ -2,13 +2,13 @@ import { AxiosResponse, isAxiosError } from 'axios';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { AlertBar } from '../../Alert';
-import Table, { TableBody, TableHead } from '../../Table';
+import { AlertBar } from '../../../Alert';
+import Table, { TableBody, TableHead } from '../../../Table';
 import { ProjectModule } from './Project';
 import { useProjectContext } from './ProjectContext';
 
-import api from '../../../api';
-import { classNames } from '../../utils';
+import api from '../../../../api';
+import { classNames } from '../../../utils';
 
 export default function ProjectModules() {
   const [error, setError] = useState('');

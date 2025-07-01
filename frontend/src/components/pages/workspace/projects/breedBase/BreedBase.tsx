@@ -5,7 +5,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 
 import BreedBaseStudies from './BreedBaseStudies';
 import BreedBaseStudiesTable from './BreedBaseStudiesTable';
-import { TextInput } from '../../../RHFInputs';
+import { TextInput } from '../../../../RHFInputs';
 import { useBreedBase } from './useBreedBase';
 import { BreedBaseFormData } from './BreedBase.types';
 

@@ -105,8 +105,6 @@ export default function IndoorProjectForm({
 
   return (
     <div className="my-8 mx-4">
-      <h1>New Indoor Project</h1>
-
       <div className="mx-4 my-2">
         <h1>New Indoor Project</h1>
         <FormProvider {...methods}>
