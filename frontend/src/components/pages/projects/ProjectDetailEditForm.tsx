@@ -217,9 +217,11 @@ export default function ProjectDetailEditForm({
               <LinkButton url={`/projects/${project.id}/modules`} size="sm">
                 Manage Modules
               </LinkButton>
-              <LinkButton url={`/projects/${project.id}/stac`} size="sm">
-                Manage STAC
-              </LinkButton>
+              {import.meta.env.VITE_STAC_ENABLED === 'true' && (
+                <LinkButton url={`/projects/${project.id}/stac`} size="sm">
+                  Manage STAC
+                </LinkButton>
+              )}
               <ProjectDeleteModal project={project} />
             </div>
           ) : null}

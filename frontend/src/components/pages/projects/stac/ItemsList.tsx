@@ -5,7 +5,6 @@ interface ItemsListProps {
 }
 
 export default function ItemsList({ allItems }: ItemsListProps) {
-  console.log(allItems);
   return (
     <div>
       <h4 className="font-semibold mb-2">Items ({allItems.length})</h4>

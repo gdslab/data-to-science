@@ -74,6 +74,7 @@ These aspects make D2S a powerful tool for researchers looking to manage, share,
 
 - `VITE_MAPBOX_ACCESS_TOKEN`: Mapbox access token for satellite imagery (optional).
 - `VITE_MAPTILER_API_KEY`: Maptiler API key for OSM labels (optional).
+- `VITE_STAC_ENABLED`: Set to `true` to enable STAC feature.
 
 3. Open `backend.env` in a text editor. Below is a list of the environment variables that can be set inside `backend.env`. You may use the default values or change them as needed.
 
@@ -101,6 +102,10 @@ These aspects make D2S a powerful tool for researchers looking to manage, share,
    - `RABBITMQ_USERNAME`: RabbitMQ username. Leave blank.
    - `RABBITMQ_PASSWORD`: RabbitMQ password. Leave blank.
    - `SECRET_KEY`: Secret key for signing and verifying JWT tokens.
+   - `STAC_API_KEY`: Secret key that can be used for verification by STAC API.
+   - `STAC_API_URL`: URL for a STAC API.
+   - `STAC_API_TEST_URL`: URL for a STAC API that can be used for testing.
+   - `STAC_BROWSER_URL`: URL for STAC Browser site connected to the STAC API.
    - `HTTP_COOKIE_SECURE`: Set to 1 to only send cookies over HTTPS, 0 to allow HTTP.
    - `LIMIT_MAX_REQUESTS`: Maximum number of requests a worker will handle before being restarted.
    - `UVICORN_WORKERS`: Number of uvicorn workers.

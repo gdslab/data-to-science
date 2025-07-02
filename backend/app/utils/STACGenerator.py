@@ -165,7 +165,9 @@ class STACGenerator:
             db=self.db, project_id=self.project_id
         )
         if len(flights) == 0:
-            raise ValueError("Project must have at least one flight to publish.")
+            raise ValueError(
+                "Project must have at least one flight with a data product to publish."
+            )
 
         return list(flights)
 

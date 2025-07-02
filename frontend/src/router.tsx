@@ -47,6 +47,7 @@ import ProjectModules from './components/pages/projects/ProjectModules';
 import ProjectSTACPublishing, {
   loader as stacPublishingLoader,
 } from './components/pages/projects/stac/ProjectSTACPublishing';
+import STACDisabled from './components/pages/projects/stac/STACDisabled';
 import RegistrationForm from './components/pages/auth/RegistrationForm';
 import { RasterSymbologyProvider } from './components/maps/RasterSymbologyContext';
 import SharePotreeViewer from './components/maps/SharePotreeViewer';
@@ -162,11 +163,21 @@ export const router = createBrowserRouter(
               path: '/projects/:projectId/modules',
               element: <ProjectModules />,
             },
-            {
-              path: '/projects/:projectId/stac',
-              element: <ProjectSTACPublishing />,
-              loader: stacPublishingLoader,
-            },
+            // Conditionally include STAC route based on environment variable
+            ...(import.meta.env.VITE_STAC_ENABLED === 'true'
+              ? [
+                  {
+                    path: '/projects/:projectId/stac',
+                    element: <ProjectSTACPublishing />,
+                    loader: stacPublishingLoader,
+                  },
+                ]
+              : [
+                  {
+                    path: '/projects/:projectId/stac',
+                    element: <STACDisabled />,
+                  },
+                ]),
             {
               path: '/projects/:projectId/campaigns/create',
               element: <FieldCampaignCreate />,
