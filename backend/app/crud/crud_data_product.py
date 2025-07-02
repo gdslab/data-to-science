@@ -291,11 +291,17 @@ def set_signature_attr(data_product_obj: DataProduct) -> None:
     setattr(data_product_obj, "signature", signature_prop)
 
 
+def get_url(data_product_filepath: str, upload_dir: str) -> str:
+    static_url = settings.API_DOMAIN + settings.STATIC_DIR
+    relative_path = Path(data_product_filepath).relative_to(upload_dir)
+
+    return f"{static_url}/{str(relative_path)}"
+
+
 def set_url_attr(data_product_obj: DataProduct, upload_dir: str) -> None:
     try:
-        static_url = settings.API_DOMAIN + settings.STATIC_DIR
-        relative_path = Path(data_product_obj.filepath).relative_to(upload_dir)
-        setattr(data_product_obj, "url", f"{static_url}/{str(relative_path)}")
+        url = get_url(data_product_obj.filepath, upload_dir)
+        setattr(data_product_obj, "url", url)
     except ValueError:
         setattr(data_product_obj, "url", None)
 

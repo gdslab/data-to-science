@@ -10,7 +10,6 @@ from uuid import UUID
 import geopandas as gpd
 from celery.utils.log import get_task_logger
 from fastapi.encoders import jsonable_encoder
-from pyproj import Transformer
 
 from app import crud, schemas
 from app.api.deps import get_db

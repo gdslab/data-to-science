@@ -107,6 +107,18 @@ export interface Project {
   team_id: string;
   title: string;
   role: string;
+  is_published: boolean;
+}
+
+export interface ProjectModule {
+  description?: string;
+  enabled: boolean;
+  id: string;
+  label?: string;
+  module_name: string;
+  project_id: string;
+  required?: boolean;
+  sort_order?: number;
 }
 
 export interface ProjectModule {

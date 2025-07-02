@@ -1,10 +1,6 @@
-import {
-  GeoJSONFeature,
-  IForester,
-  Flight,
-  MapLayer,
-  ProjectModule,
-} from '../Project';
+import { IForester } from '../Project';
+import { GeoJSONFeature, MapLayer } from '../Project';
+import { Flight, ProjectModule } from '../Project';
 import { Project } from '../ProjectList';
 import { ProjectMember } from '../ProjectAccess';
 

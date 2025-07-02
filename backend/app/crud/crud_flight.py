@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import status
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import and_, or_, select, update
+from sqlalchemy import and_, or_, select, true, update
 from sqlalchemy.orm import joinedload, Session
 
 from app import crud
@@ -75,6 +75,26 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                 "message": "Flight fetched successfully",
                 "result": flight,
             }
+
+    def get_multi_by_project_id(
+        self, db: Session, project_id: UUID
+    ) -> Sequence[Flight]:
+        """Return all active flights for a project.
+
+        Args:
+            db (Session): Database session.
+            project_id (UUID): Project ID.
+
+        Returns:
+            Sequence[Flight]: List of active flights.
+        """
+        statement = select(Flight).where(
+            Flight.project_id == project_id, Flight.is_active
+        )
+
+        with db as session:
+            flights = session.scalars(statement).unique().all()
+            return flights
 
     def get_multi_by_project(
         self,

@@ -1,8 +1,16 @@
+import os
 import secrets
-from typing import Any
+from typing import Any, Optional
 
 from fastapi_mail.config import ConnectionConfig
-from pydantic import EmailStr, field_validator, ValidationInfo, PostgresDsn, SecretStr
+from pydantic import (
+    AnyHttpUrl,
+    EmailStr,
+    field_validator,
+    ValidationInfo,
+    PostgresDsn,
+    SecretStr,
+)
 from pydantic_settings import BaseSettings
 
 from app.core.utils import generate_secret_key
@@ -114,6 +122,19 @@ class Settings(BaseSettings):
 
     # Testing
     EMAIL_TEST_USER: EmailStr = "test@example.com"  # type: ignore
+
+    # STAC Catalog
+    STAC_API_URL: Optional[AnyHttpUrl] = None
+    STAC_API_TEST_URL: Optional[AnyHttpUrl] = None
+    STAC_BROWSER_URL: Optional[AnyHttpUrl] = None
+
+    @property
+    def get_stac_api_url(self) -> Optional[AnyHttpUrl]:
+        """Get the appropriate STAC API URL based on whether we're running tests."""
+        # Check if we're running tests
+        if os.getenv("RUNNING_TESTS") == "1" and self.STAC_API_TEST_URL:
+            return self.STAC_API_TEST_URL
+        return self.STAC_API_URL
 
 
 settings = Settings()

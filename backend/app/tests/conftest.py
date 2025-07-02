@@ -1,6 +1,7 @@
 import os
 import shutil
 from typing import Generator
+import logging
 
 import pytest
 from pytest import Config
@@ -9,6 +10,7 @@ from fastapi.testclient import TestClient
 from pydantic import PostgresDsn
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
+from pystac_client import Client
 
 from app.api.deps import get_db
 from app.core.config import settings
@@ -20,7 +22,10 @@ from app.tests.utils.user import (
     authentication_token_from_email,
 )
 from app.seeds.seed_modules import seed_module_types
+from app.utils.STACCollectionManager import STACCollectionManager
 
+
+logger = logging.getLogger(__name__)
 
 TEST_DB_PATH = f"{settings.POSTGRES_DB or ''}_test"
 SQLALCHEMY_TEST_DATABASE_URI: PostgresDsn = build_sqlalchemy_uri(db_path=TEST_DB_PATH)
@@ -91,6 +96,36 @@ def normal_user_api_key(client: TestClient, db: Session) -> str:
     return authentication_api_key_from_email(
         client=client, email=settings.EMAIL_TEST_USER, db=db
     )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_stac_catalog():
+    """Fixture to clean up any collections from the test STAC catalog after all tests run."""
+    yield  # Let all tests run first
+
+    try:
+        # Connect to STAC API
+        stac_url = settings.get_stac_api_url
+        if not stac_url:
+            return
+
+        client = Client.open(str(stac_url))
+        collections = client.get_collections()
+
+        # Remove all collections since this is a test-only catalog
+        for collection in collections:
+            collection_id = collection.id
+            if collection_id:
+                try:
+                    logger.info(f"Cleaning up collection {collection_id}")
+                    scm = STACCollectionManager(collection_id=collection_id)
+                    scm.remove_from_catalog()
+                except Exception as e:
+                    logger.error(
+                        f"Failed to cleanup collection {collection_id}: {str(e)}"
+                    )
+    except Exception as e:
+        logger.error(f"Failed to cleanup STAC catalog: {str(e)}")
 
 
 def pytest_configure(config: Config) -> None:
