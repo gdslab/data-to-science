@@ -1,6 +1,8 @@
 services:
   frontend:
     build:
+      args:
+        - VITE_STAC_ENABLED=true
       context: ./frontend
       dockerfile: frontend.prod.dockerfile
     image: d2s-app:pheno

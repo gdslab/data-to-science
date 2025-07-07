@@ -1,5 +1,11 @@
 FROM node:18-bullseye-slim AS build-stage
 
+# Accept build arguments
+ARG VITE_STAC_ENABLED
+
+# Set environment variables so Vite can use them during build
+ENV VITE_STAC_ENABLED=$VITE_STAC_ENABLED
+
 WORKDIR /app/
 
 COPY ./package.json ./yarn.lock ./
