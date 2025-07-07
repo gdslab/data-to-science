@@ -74,7 +74,6 @@ These aspects make D2S a powerful tool for researchers looking to manage, share,
 
 - `VITE_MAPBOX_ACCESS_TOKEN`: Mapbox access token for satellite imagery (optional).
 - `VITE_MAPTILER_API_KEY`: Maptiler API key for OSM labels (optional).
-- `VITE_STAC_ENABLED`: Set to `true` to enable STAC feature.
 
 3. Open `backend.env` in a text editor. Below is a list of the environment variables that can be set inside `backend.env`. You may use the default values or change them as needed.
 
