@@ -133,6 +133,7 @@ dependencies:
   - jmespath
   - joblib
   - json-c
+  - jsonschema
   - kealib
   - keyutils
   - kiwisolver
@@ -301,6 +302,7 @@ dependencies:
   - pyproj
   - pysocks
   - pystac
+  - pystac-client
   - pytest
   - pytest-cov
   - python-dateutil
@@ -321,6 +323,7 @@ dependencies:
   - readline
   - requests
   - rich
+  - rio-stac
   - rsa
   - s2n
   - s3transfer

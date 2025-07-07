@@ -1,16 +1,25 @@
+import json
 import logging
 import os
-from datetime import date
-from typing import Any, List, Optional, Union
+from pathlib import Path
+from typing import Any, List, Union, Optional
 from uuid import UUID
 
 from geojson_pydantic import Feature, FeatureCollection
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
 from app.api.utils import create_project_field_preview
+from app.utils.STACGenerator import STACGenerator
+from app.utils.STACCollectionManager import STACCollectionManager
+from app.core.config import settings
+from app.tasks.stac_tasks import (
+    generate_stac_preview,
+    publish_stac_catalog,
+    get_stac_cache_path,
+)
 
 
 logger = logging.getLogger("__name__")
@@ -57,8 +66,9 @@ def create_project(
         )
         if project_in_db["result"]:
             try:
-                features = [Feature(**project_in_db["result"].field)]
-                create_project_field_preview(project["result"].id, features)
+                if project_in_db["result"].field:
+                    features: List[Feature] = [Feature(**project_in_db["result"].field)]
+                    create_project_field_preview(project["result"].id, features)
             except Exception:
                 logger.exception("Unable to create preview map")
     return project["result"]
@@ -119,6 +129,119 @@ def read_projects(
         return projects
 
 
+@router.get(
+    "/{project_id}/stac-cache", response_model=Union[schemas.STACResponse, dict]
+)
+def get_cached_stac_metadata(
+    project_id: UUID,
+    project: models.Project = Depends(deps.can_read_write_delete_project),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+) -> Any:
+    """Get cached STAC metadata for a project."""
+    cache_path = get_stac_cache_path(project_id)
+
+    if not cache_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No cached STAC metadata found. Please generate it first.",
+        )
+
+    try:
+        with open(cache_path, "r") as f:
+            cached_data = json.load(f)
+        return cached_data
+    except Exception as e:
+        logger.exception(f"Failed to read cached STAC metadata: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to read cached STAC metadata",
+        )
+
+
+@router.post("/{project_id}/generate-stac-preview")
+def generate_stac_preview_async(
+    project_id: UUID,
+    sci_doi: Optional[str] = Query(None, description="DOI for the scientific citation"),
+    sci_citation: Optional[str] = Query(
+        None, description="Citation text for the scientific citation"
+    ),
+    license: Optional[str] = Query(None, description="License for the dataset"),
+    custom_titles: Optional[str] = Query(
+        None, description="JSON string of custom titles for STAC items"
+    ),
+    project: models.Project = Depends(deps.can_read_write_delete_project),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+) -> Any:
+    """Generate STAC preview metadata asynchronously."""
+    # Parse custom titles from JSON string if provided
+    parsed_custom_titles = None
+    if custom_titles:
+        try:
+            parsed_custom_titles = json.loads(custom_titles)
+        except (json.JSONDecodeError, TypeError) as e:
+            logger.warning(f"Failed to parse custom_titles JSON: {e}")
+            parsed_custom_titles = None
+
+    # Start the background task
+    task = generate_stac_preview.apply_async(
+        args=[str(project_id)],
+        kwargs={
+            "sci_doi": sci_doi,
+            "sci_citation": sci_citation,
+            "license": license,
+            "custom_titles": parsed_custom_titles,
+        },
+    )
+
+    return {
+        "message": "STAC preview generation started",
+        "task_id": task.id,
+        "project_id": str(project_id),
+    }
+
+
+@router.put("/{project_id}/publish-stac-async")
+def publish_project_to_stac_catalog_async(
+    project_id: UUID,
+    sci_doi: Optional[str] = Query(None, description="DOI for the scientific citation"),
+    sci_citation: Optional[str] = Query(
+        None, description="Citation text for the scientific citation"
+    ),
+    license: Optional[str] = Query(None, description="License for the dataset"),
+    custom_titles: Optional[str] = Query(
+        None, description="JSON string of custom titles for STAC items"
+    ),
+    project: models.Project = Depends(deps.can_read_write_delete_project),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+) -> Any:
+    """Publish project to STAC catalog asynchronously."""
+    # Parse custom titles from JSON string if provided
+    parsed_custom_titles = None
+    if custom_titles:
+        try:
+            parsed_custom_titles = json.loads(custom_titles)
+        except (json.JSONDecodeError, TypeError) as e:
+            logger.warning(f"Failed to parse custom_titles JSON: {e}")
+            parsed_custom_titles = None
+
+    # Start the background task
+    task = publish_stac_catalog.apply_async(
+        args=[str(project_id)],
+        kwargs={
+            "sci_doi": sci_doi,
+            "sci_citation": sci_citation,
+            "license": license,
+            "custom_titles": parsed_custom_titles,
+        },
+    )
+
+    return {
+        "message": "STAC catalog publication started",
+        "task_id": task.id,
+        "project_id": str(project_id),
+    }
+
+
 @router.put("/{project_id}", response_model=schemas.Project)
 def update_project(
     project_id: UUID,
@@ -168,6 +291,49 @@ def update_project(
     return updated_project["result"]
 
 
+@router.delete("/{project_id}/delete-stac", response_model=schemas.Project)
+def remove_project_from_stac_catalog(
+    project_id: UUID,
+    project: models.Project = Depends(deps.can_read_write_delete_project),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Remove project from STAC catalog."""
+    # Check if project exists in STAC catalog
+    scm = STACCollectionManager(collection_id=str(project_id))
+    collection = scm.fetch_public_collection()
+    if not collection:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Project not found in STAC catalog",
+        )
+
+    # Remove project from STAC catalog
+    try:
+        scm.remove_from_catalog()
+    except Exception:
+        logger.exception(
+            f"Failed to remove collection and items from STAC catalog for project {project_id}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to remove project from STAC catalog. Please try again later.",
+        )
+
+    # Update the project to unpublished and change all data products to private
+    updated_project = crud.project.update_project_visibility(
+        db, project_id=project_id, is_public=False
+    )
+
+    if not updated_project:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to remove project from STAC catalog. Please try again later.",
+        )
+
+    return updated_project
+
+
 @router.delete("/{project_id}", response_model=schemas.Project)
 def deactivate_project(
     project_id: UUID,
@@ -175,6 +341,13 @@ def deactivate_project(
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
+    # Check if project is published
+    if project.is_published:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot deactivate project when it is published in a STAC catalog",
+        )
+
     deactivated_project = crud.project.deactivate(
         db, project_id=project.id, user_id=current_user.id
     )
@@ -236,3 +409,56 @@ def delete_project_like(
         )
 
     return {"message": "Project unbookmarked"}
+
+
+@router.get("/{project_id}/stac", response_model=schemas.STACResponse)
+def get_project_stac_metadata(
+    project_id: UUID,
+    project: models.Project = Depends(deps.can_read_write_delete_project),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Get STAC metadata for a published project."""
+    if not project.is_published:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Project is not published in STAC catalog",
+        )
+
+    try:
+        # Fetch collection and items from STAC API
+        scm = STACCollectionManager(collection_id=str(project_id))
+        collection = scm.fetch_public_collection()
+        items = scm.fetch_public_items_full()
+
+        if not collection:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="STAC collection not found",
+            )
+
+        # Add browser URLs if STAC_BROWSER_URL is configured
+        collection_url = None
+        if settings.STAC_BROWSER_URL:
+            collection_url = f"{settings.STAC_BROWSER_URL}/collections/{project_id}"
+            # Add URL to each item
+            for item in items:
+                item["browser_url"] = (
+                    f"{settings.STAC_BROWSER_URL}/collections/{project_id}/items/{item['id']}"
+                )
+
+        return {
+            "collection_id": project_id,
+            "collection": collection,
+            "items": items,
+            "is_published": True,
+            "collection_url": collection_url,
+        }
+    except Exception as e:
+        logger.exception(
+            f"Failed to fetch STAC metadata for project {project_id}: {str(e)}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch STAC metadata. Please try again later.",
+        )

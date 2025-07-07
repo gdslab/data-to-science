@@ -48,7 +48,12 @@ import ProjectAccess from './components/pages/workspace/projects/ProjectAccess';
 import ProjectDetail, {
   loader as projectDetailLoader,
 } from './components/pages/workspace/projects/ProjectDetail';
+import ProjectLayout from './components/pages/workspace/projects/ProjectLayout';
 import ProjectModules from './components/pages/workspace/projects/ProjectModules';
+import ProjectSTACPublishing, {
+  loader as stacPublishingLoader,
+} from './components/pages/projects/stac/ProjectSTACPublishing';
+import STACDisabled from './components/pages/projects/stac/STACDisabled';
 import RegistrationForm from './components/pages/auth/RegistrationForm';
 import { RasterSymbologyProvider } from './components/maps/RasterSymbologyContext';
 import SharePotreeViewer from './components/maps/SharePotreeViewer';
@@ -65,7 +70,6 @@ import Workspace, {
 
 import { RootPublic, RootProtected } from './components/layout/Root';
 import { RequireAdmin, RequireAuth } from './AuthContext';
-import ProjectLayout from './components/pages/workspace/projects/ProjectLayout';
 
 export const router = createBrowserRouter(
   [
@@ -165,6 +169,21 @@ export const router = createBrowserRouter(
               path: '/projects/:projectId/modules',
               element: <ProjectModules />,
             },
+            // Conditionally include STAC route based on environment variable
+            ...(import.meta.env.VITE_STAC_ENABLED === 'true'
+              ? [
+                  {
+                    path: '/projects/:projectId/stac',
+                    element: <ProjectSTACPublishing />,
+                    loader: stacPublishingLoader,
+                  },
+                ]
+              : [
+                  {
+                    path: '/projects/:projectId/stac',
+                    element: <STACDisabled />,
+                  },
+                ]),
             {
               path: '/projects/:projectId/campaigns/create',
               element: <FieldCampaignCreate />,

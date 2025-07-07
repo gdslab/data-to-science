@@ -214,21 +214,22 @@ export default function ProjectDetailEditForm({
               ]}
             />
           </Table>
-
           {projectRole === 'owner' ? (
             <div className="flex flex-row justify-end gap-4 mt-4">
               <LinkButton url={`/projects/${project.id}/access`} size="sm">
                 Manage Access
               </LinkButton>
-
               <LinkButton url={`/projects/${project.id}/modules`} size="sm">
                 Manage Modules
               </LinkButton>
-
+              {import.meta.env.VITE_STAC_ENABLED === 'true' && (
+                <LinkButton url={`/projects/${project.id}/stac`} size="sm">
+                  Manage STAC
+                </LinkButton>
+              )}
               <ProjectDeleteModal project={project} />
             </div>
           ) : null}
-
           {status && status.type && status.msg ? (
             <div className="mt-4">
               <Alert alertType={status.type}>{status.msg}</Alert>

@@ -46,6 +46,8 @@ def test_create_project_without_team(db: Session) -> None:
     assert project.harvest_date == harvest_date
     assert project.location_id
     assert project.owner_id == user.id
+    assert project.is_active is True
+    assert project.is_published is False
 
 
 def test_create_project_with_team(db: Session) -> None:
@@ -116,6 +118,8 @@ def test_get_project_by_id(db: Session) -> None:
     assert project.harvest_date == stored_project.harvest_date
     assert project.location_id == stored_project.location_id
     assert project.owner_id == stored_project.owner_id
+    assert project.is_active is True
+    assert project.is_published is False
 
 
 def test_get_project_by_user_and_project_id(db: Session) -> None:
@@ -132,6 +136,8 @@ def test_get_project_by_user_and_project_id(db: Session) -> None:
     assert project.harvest_date == stored_project["result"].harvest_date
     assert project.location_id == stored_project["result"].location_id
     assert project.owner_id == stored_project["result"].owner_id
+    assert project.is_active == stored_project["result"].is_active
+    assert project.is_published == stored_project["result"].is_published
 
 
 def test_get_project_with_team_by_user_and_project_id(db: Session) -> None:
@@ -151,6 +157,8 @@ def test_get_project_with_team_by_user_and_project_id(db: Session) -> None:
     assert project.harvest_date == stored_project["result"].harvest_date
     assert project.location_id == stored_project["result"].location_id
     assert project.owner_id == stored_project["result"].owner_id
+    assert project.is_active == stored_project["result"].is_active
+    assert project.is_published == stored_project["result"].is_published
 
 
 def test_get_projects_by_owner(db: Session) -> None:

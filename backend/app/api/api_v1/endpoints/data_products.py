@@ -292,6 +292,14 @@ def deactivate_data_product(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Access forbidden"
         )
+
+    # Check if project is published
+    if project.is_published:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot deactivate data product when project is published in a STAC catalog",
+        )
+
     deactivated_data_product = crud.data_product.deactivate(
         db, data_product_id=data_product_id
     )

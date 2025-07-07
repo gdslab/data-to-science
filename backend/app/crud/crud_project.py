@@ -12,6 +12,9 @@ from sqlalchemy.orm import joinedload, Session
 
 from app import crud
 from app.crud.base import CRUDBase
+from app.models.data_product import DataProduct
+from app.models.file_permission import FilePermission
+from app.models.flight import Flight
 from app.models.location import Location
 from app.models.module_type import ModuleType
 from app.models.project import Project
@@ -378,6 +381,59 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             "message": "Project updated successfully",
             "result": updated_project_schema,
         }
+
+    def update_project_visibility(
+        self, db: Session, project_id: UUID, is_public: bool = True
+    ) -> Optional[Project]:
+        """
+        Updates the project's publication status and the visibility of all its data products.
+
+        Args:
+            db (Session): Database session.
+            project_id (UUID): ID of project to update.
+            is_public (bool): Whether to make the project and its data products public (True)
+                             or private (False).
+
+        Returns:
+            Project: Updated project object.
+        """
+        with db as session:
+            # Update the file permissions for each data product in the project
+            file_permission_ids_subquery = (
+                select(FilePermission.id)
+                .join(DataProduct)
+                .join(Flight)
+                .join(Project)
+                .where(Project.id == project_id)
+                .where(Project.is_active)
+                .where(Flight.is_active)
+                .where(DataProduct.is_active)
+                .scalar_subquery()
+            )
+
+            update_file_permissions_sql = (
+                update(FilePermission)
+                .where(FilePermission.id.in_(file_permission_ids_subquery))
+                .values(is_public=is_public)
+            )
+
+            # Update the project publication status
+            update_project_sql = (
+                update(Project)
+                .where(Project.id == project_id)
+                .where(Project.is_active)
+                .values(is_published=is_public)
+            )
+
+            # Execute the update queries
+            session.execute(update_file_permissions_sql)
+            session.execute(update_project_sql)
+
+            # Commit the changes
+            session.commit()
+
+            # Return the updated project
+            return self.get(db, project_id)
 
     def deactivate(
         self, db: Session, project_id: UUID, user_id: UUID
