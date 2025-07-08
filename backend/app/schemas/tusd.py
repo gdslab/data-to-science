@@ -57,6 +57,7 @@ class Header(BaseModel):
     X_Indoor_Project_ID: Optional[List[UUID4]] = Field(
         alias="X-Indoor-Project-Id", default=None
     )
+    X_Treatment: Optional[List[str]] = Field(alias="X-Treatment", default=None)
 
 
 class HTTPRequest(BaseModel):

@@ -11,8 +11,8 @@ import Alert from '../../../Alert';
 import {
   IndoorProjectAPIResponse,
   IndoorProjectDataAPIResponse,
-} from './IndoorProject';
-import IndoorProjectUploadModal from './IndoorProjectUploadModal';
+} from './IndoorProject.d';
+
 import IndoorProjectPageLayout from './IndoorProjectPageLayout';
 import LoadingBars from '../../../LoadingBars';
 
@@ -49,9 +49,6 @@ export default function IndoorProjectDetail() {
     indoorProject: IndoorProjectAPIResponse;
   };
 
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [activeTreatment, setActiveTreatment] = useState<string | null>(null);
-
   const {
     indoorProjectData,
     indoorProjectDataSpreadsheet,
@@ -63,6 +60,7 @@ export default function IndoorProjectDetail() {
     error,
     setPotGroupModuleVisualizationData,
     setTraitModuleVisualizationData,
+    refetch,
   } = useIndoorProjectData({ indoorProjectId: indoorProject.id });
 
   console.log('indoorProjectData:', indoorProjectData);
@@ -74,11 +72,6 @@ export default function IndoorProjectDetail() {
     ({ file_type }) => file_type === '.xlsx'
   )?.id;
 
-  // Get unique treatments from spreadsheet
-  const treatments = indoorProjectDataSpreadsheet
-    ? [...new Set(indoorProjectDataSpreadsheet.summary.treatment)]
-    : [];
-
   if (!indoorProject)
     return (
       <div>
@@ -88,123 +81,108 @@ export default function IndoorProjectDetail() {
 
   return (
     <IndoorProjectPageLayout>
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-4 h-full">
+        {/* Project title and description */}
+        <div className="flex flex-col gap-2 flex-shrink-0">
           <h2 className="truncate" title={indoorProject.title}>
             {indoorProject.title}
           </h2>
           <p className="text-gray-600 line-clamp-3">
             {indoorProject.description}
           </p>
+          <hr className="my-4 border-gray-700" />
         </div>
 
-        <TabGroup>
-          <TabList>
-            <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium">
-              Data
-            </Tab>
-            <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium">
-              Viz
-            </Tab>
-          </TabList>
-          <hr className="my-4 border-gray-700" />
-          <TabPanels>
-            <TabPanel>
-              <div className="flex flex-col gap-8">
-                <IndoorProjectUploadForm
-                  indoorProjectId={indoorProject.id}
-                  indoorProjectData={indoorProjectData}
-                  indoorProjectDataSpreadsheet={
-                    indoorProjectDataSpreadsheet || undefined
-                  }
-                />
+        <div className="flex gap-4 flex-1 min-h-0">
+          {/* Upload form */}
+          <div className="flex flex-col w-1/3 gap-8 p-4 border-r border-gray-700 h-full">
+            <IndoorProjectUploadForm
+              indoorProjectId={indoorProject.id}
+              indoorProjectData={indoorProjectData}
+              indoorProjectDataSpreadsheet={
+                indoorProjectDataSpreadsheet || undefined
+              }
+              onUploadSuccess={refetch}
+            />
+          </div>
+          {/* Data visualization */}
+          <div className="flex flex-col w-2/3 gap-8 p-4 h-full">
+            {isLoading && <LoadingBars />}
+
+            {!isLoading && indoorProjectData.length === 0 && (
+              <div className="flex flex-col justify-center items-center h-full">
+                <h3>No data yet</h3>
+                <p className="text-gray-400">
+                  Please upload data files to get started
+                </p>
               </div>
-            </TabPanel>
-            <TabPanel>
-              {isLoading && <LoadingBars />}
+            )}
 
-              {!isLoading && indoorProjectData.length === 0 && null}
+            {!isLoading && indoorProjectData.length > 0 && (
+              <div className="w-full flex flex-col gap-4">
+                <span className="text-lg font-bold">
+                  Pots
+                  {indoorProjectDataSpreadsheet
+                    ? ` (${
+                        Object.keys(indoorProjectDataSpreadsheet.records).length
+                      })`
+                    : ''}
+                </span>
+                <span>
+                  Planting date:{' '}
+                  {indoorProjectDataSpreadsheet?.summary?.planting_date
+                    ? new Date(
+                        indoorProjectDataSpreadsheet.summary.planting_date
+                      ).toLocaleDateString()
+                    : 'Not available'}
+                </span>
 
-              {!isLoading && indoorProjectData.length > 0 && (
-                <div className="w-full flex flex-col gap-4">
-                  <span className="text-lg font-bold">
-                    Pots
-                    {indoorProjectDataSpreadsheet
-                      ? ` (${
-                          Object.keys(indoorProjectDataSpreadsheet.records)
-                            .length
-                        })`
-                      : ''}
-                  </span>
-                  <span>
-                    Planting date:{' '}
-                    {indoorProjectDataSpreadsheet?.summary?.planting_date
-                      ? new Date(
-                          indoorProjectDataSpreadsheet.summary.planting_date
-                        ).toLocaleDateString()
-                      : 'Not available'}
-                  </span>
-
-                  {indoorProjectDataSpreadsheet &&
-                    potModuleVisualizationData && (
-                      <div className="max-h-[450px] flex flex-wrap justify-start p-4 gap-4 overflow-auto">
-                        <PotModuleDataVisualization
-                          data={potModuleVisualizationData}
-                          indoorProjectDataSpreadsheet={
-                            indoorProjectDataSpreadsheet
-                          }
-                          indoorProjectId={indoorProject.id}
-                        />
-                      </div>
-                    )}
-
-                  {indoorProjectDataId && (
-                    <PotGroupModuleForm
-                      indoorProjectId={indoorProject.id}
-                      indoorProjectDataId={indoorProjectDataId}
-                      setVisualizationData={setPotGroupModuleVisualizationData}
-                    />
-                  )}
-                  {potGroupModuleVisualizationData && (
-                    <PotGroupModuleDataVisualization
-                      data={potGroupModuleVisualizationData}
-                    />
-                  )}
-                  {indoorProjectDataSpreadsheet && indoorProjectDataId && (
-                    <TraitModuleForm
-                      indoorProjectId={indoorProject.id}
-                      indoorProjectDataId={indoorProjectDataId}
-                      numericColumns={
-                        indoorProjectDataSpreadsheet.numeric_columns
+                {indoorProjectDataSpreadsheet && potModuleVisualizationData && (
+                  <div className="max-h-[450px] flex flex-wrap justify-start p-4 gap-4 overflow-auto">
+                    <PotModuleDataVisualization
+                      data={potModuleVisualizationData}
+                      indoorProjectDataSpreadsheet={
+                        indoorProjectDataSpreadsheet
                       }
-                      setVisualizationData={setTraitModuleVisualizationData}
+                      indoorProjectId={indoorProject.id}
                     />
-                  )}
-                  {traitModuleVisualizationData && (
-                    <TraitModuleDataVisualization
-                      data={traitModuleVisualizationData}
-                    />
-                  )}
-                </div>
-              )}
+                  </div>
+                )}
 
-              {error && <Alert alertType="error">{error.message}</Alert>}
-            </TabPanel>
-          </TabPanels>
-        </TabGroup>
+                {indoorProjectDataId && (
+                  <PotGroupModuleForm
+                    indoorProjectId={indoorProject.id}
+                    indoorProjectDataId={indoorProjectDataId}
+                    setVisualizationData={setPotGroupModuleVisualizationData}
+                  />
+                )}
+                {potGroupModuleVisualizationData && (
+                  <PotGroupModuleDataVisualization
+                    data={potGroupModuleVisualizationData}
+                  />
+                )}
+                {indoorProjectDataSpreadsheet && indoorProjectDataId && (
+                  <TraitModuleForm
+                    indoorProjectId={indoorProject.id}
+                    indoorProjectDataId={indoorProjectDataId}
+                    numericColumns={
+                      indoorProjectDataSpreadsheet.numeric_columns
+                    }
+                    setVisualizationData={setTraitModuleVisualizationData}
+                  />
+                )}
+                {traitModuleVisualizationData && (
+                  <TraitModuleDataVisualization
+                    data={traitModuleVisualizationData}
+                  />
+                )}
+              </div>
+            )}
+
+            {error && <Alert alertType="error">{error.message}</Alert>}
+          </div>
+        </div>
       </div>
-
-      <IndoorProjectUploadModal
-        indoorProjectId={indoorProject.id}
-        btnLabel={
-          activeTreatment
-            ? `Upload ${activeTreatment} TAR`
-            : 'Upload Spreadsheet'
-        }
-        isOpen={isUploadModalOpen}
-        setIsOpen={setIsUploadModalOpen}
-        hideBtn={true}
-      />
     </IndoorProjectPageLayout>
   );
 }

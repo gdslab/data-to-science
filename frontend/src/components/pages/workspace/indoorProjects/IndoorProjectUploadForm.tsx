@@ -4,19 +4,21 @@ import { useState } from 'react';
 import {
   IndoorProjectDataAPIResponse,
   IndoorProjectDataSpreadsheetAPIResponse,
-} from './IndoorProject';
+} from './IndoorProject.d';
 import IndoorProjectUploadModal from './IndoorProjectUploadModal';
 
 interface IndoorProjectUploadFormProps {
   indoorProjectId: string;
   indoorProjectData: IndoorProjectDataAPIResponse[];
   indoorProjectDataSpreadsheet?: IndoorProjectDataSpreadsheetAPIResponse;
+  onUploadSuccess?: () => void;
 }
 
 export default function IndoorProjectUploadForm({
   indoorProjectId,
   indoorProjectData,
   indoorProjectDataSpreadsheet,
+  onUploadSuccess,
 }: IndoorProjectUploadFormProps) {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [activeTreatment, setActiveTreatment] = useState<string | null>(null);
@@ -26,12 +28,15 @@ export default function IndoorProjectUploadForm({
 
   // Get unique treatments from spreadsheet
   const treatments = hasSpreadsheet
-    ? [...new Set(indoorProjectDataSpreadsheet.summary.treatment)]
+    ? [...new Set(indoorProjectDataSpreadsheet.summary.treatment)].filter(
+        (treatment): treatment is string => typeof treatment === 'string'
+      )
     : [];
 
   const formattedDate = (uploadedFile: IndoorProjectDataAPIResponse): string =>
     new Date(uploadedFile.upload_date.toString()).toLocaleDateString();
-
+  console.log(indoorProjectData);
+  console.log('activeTreatment', activeTreatment);
   return (
     <div className="space-y-6">
       {/* Step 1: Upload Experiment */}
@@ -108,8 +113,7 @@ export default function IndoorProjectUploadForm({
             {treatments.map((treatment) => {
               const uploadedData = indoorProjectData.find(
                 (data) =>
-                  data.file_type === '.tar' &&
-                  data.directory_structure?.name === treatment
+                  data.file_type === '.tar' && data.treatment === treatment
               );
               return (
                 <div
@@ -130,23 +134,52 @@ export default function IndoorProjectUploadForm({
                           <span className="italic">
                             Uploaded on {formattedDate(uploadedData)}
                           </span>
-                          <a
-                            href={uploadedData.file_path}
-                            download
-                            className="inline-flex items-center text-blue-600 hover:text-blue-800"
-                          >
-                            <ArrowDownTrayIcon className="w-4 h-4 mr-1" />
-                            Download
-                          </a>
+                          {uploadedData.file_path && (
+                            <a
+                              href={uploadedData.file_path}
+                              download
+                              className="inline-flex items-center text-blue-600 hover:text-blue-800"
+                            >
+                              <ArrowDownTrayIcon className="w-4 h-4 mr-1" />
+                              Download
+                            </a>
+                          )}
                         </div>
                       </div>
                     )}
                   </div>
                   {uploadedData ? (
-                    <div className="flex items-center gap-2 text-green-600">
-                      <CheckCircleIcon className="w-6 h-6" />
-                      <span className="text-sm font-medium">TAR Uploaded</span>
-                    </div>
+                    uploadedData.directory_structure &&
+                    typeof uploadedData.directory_structure === 'object' &&
+                    !('error' in uploadedData.directory_structure) ? (
+                      <div className="flex items-center gap-2 text-green-600">
+                        <CheckCircleIcon className="w-6 h-6" />
+                        <span className="text-sm font-medium">
+                          TAR Uploaded
+                        </span>
+                      </div>
+                    ) : uploadedData.directory_structure &&
+                      typeof uploadedData.directory_structure === 'object' &&
+                      'error' in uploadedData.directory_structure ? (
+                      <div className="flex flex-col items-center gap-2 text-red-600">
+                        <div className="text-center">
+                          <div className="text-sm font-medium">Error</div>
+                          <div className="text-xs">
+                            {(uploadedData.directory_structure as any).error}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 text-amber-600">
+                        <div className="w-6 h-6 border-2 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="text-center">
+                          <div className="text-sm font-medium">Processing</div>
+                          <div className="text-xs">
+                            This may take several minutes
+                          </div>
+                        </div>
+                      </div>
+                    )
                   ) : (
                     <button
                       type="button"
@@ -165,8 +198,8 @@ export default function IndoorProjectUploadForm({
           </div>
         </div>
       )}
-
       <IndoorProjectUploadModal
+        activeTreatment={activeTreatment}
         indoorProjectId={indoorProjectId}
         btnLabel={
           activeTreatment
@@ -177,6 +210,7 @@ export default function IndoorProjectUploadForm({
         setIsOpen={setIsUploadModalOpen}
         hideBtn={true}
         fileType={activeTreatment ? '.tar' : '.xlsx'}
+        onUploadSuccess={onUploadSuccess}
       />
     </div>
   );

@@ -20,10 +20,13 @@ class IndoorProjectData(Base):
     file_path: Mapped[str] = mapped_column(String, nullable=False)
     file_size: Mapped[int] = mapped_column(BigInteger, nullable=False)
     file_type: Mapped[str] = mapped_column(String, nullable=False)
-    directory_structure: Mapped[dict] = mapped_column(JSONB, nullable=True)
+    treatment: Mapped[str] = mapped_column(String, nullable=True)
     upload_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     deactivated_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    is_initial_processing_completed: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
     # foreign keys
     indoor_project_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("indoor_projects.id"), nullable=False
@@ -37,9 +40,10 @@ class IndoorProjectData(Base):
             f"IndoorProjectData(id={self.id!r}, original_filename={self.original_filename!r}, "
             f"stored_filename={self.stored_filename!r}, file_path={self.file_path!r}, "
             f"file_size={self.file_size!r}, file_type={self.file_type!r}, "
-            f"directory_structure={self.directory_structure!r}, "
+            f"treatment={self.treatment!r}, "
             f"upload_date={self.upload_date!r}, is_active={self.is_active!r}, "
             f"deactivated_at={self.deactivated_at!r}, "
+            f"is_initial_processing_completed={self.is_initial_processing_completed!r}, "
             f"indoor_project_id={self.indoor_project_id!r}, "
             f"uploader_id={self.uploader_id!r})"
         )

@@ -3,7 +3,7 @@ import os
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 from uuid import UUID, uuid4
 
 from fastapi import HTTPException, status
@@ -231,6 +231,7 @@ def process_indoor_data_uploaded_to_tusd(
     storage_path: Path,
     original_filename: Path,
     indoor_project_id: UUID,
+    treatment: Optional[str] = None,
 ) -> Dict:
     """_summary_
 
@@ -264,6 +265,7 @@ def process_indoor_data_uploaded_to_tusd(
                 file_path="null",
                 file_size=os.stat(storage_path).st_size,
                 file_type=suffix,
+                treatment=treatment,
                 upload_date=datetime.now(tz=timezone.utc),
             )
         )
@@ -292,7 +294,7 @@ def process_indoor_data_uploaded_to_tusd(
         state=State.PENDING,
         status=Status.WAITING,
         start_time=datetime.now(tz=timezone.utc),
-        indoor_project_id=indoor_project_id,
+        extra={"indoor_project_id": indoor_project_id},
     )
     job = crud.job.create_job(db, job_in)
 

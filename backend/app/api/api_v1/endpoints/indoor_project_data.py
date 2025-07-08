@@ -426,7 +426,6 @@ def read_indoor_project_data_plant(
                         )
                     )
 
-        print("SIDE AVERAGE")
         for record in side_avg_records:
             record["images"] = []
             search_term_parts = record["filename"].split("_")
@@ -455,7 +454,7 @@ def read_indoor_project_data_plant(
                             filename=image_file["name"],
                         )
                     )
-    print(side_avg_records)
+
     payload = {
         "ppew": ppew_summary,
         "top": top_records,

@@ -9,6 +9,7 @@ import { CheckCircleIcon } from '@heroicons/react/24/solid';
 
 import { IndoorProjectUploadInputProps } from './IndoorProject';
 import Modal from '../../../Modal';
+import { useInterval } from '../../../hooks';
 import { useIndoorProjectData } from './hooks/useIndoorProjectData';
 
 type IndoorProjectUploadModalProps = {
@@ -19,6 +20,7 @@ type IndoorProjectUploadModalProps = {
   hideBtn?: boolean;
   fileType?: string;
   activeTreatment?: string | null;
+  onUploadSuccess?: () => void;
 };
 
 export default function IndoorProjectUploadModal({
@@ -29,12 +31,21 @@ export default function IndoorProjectUploadModal({
   hideBtn = false,
   fileType = '.xlsx',
   activeTreatment = null,
+  onUploadSuccess,
 }: IndoorProjectUploadModalProps) {
   const [internalIsOpen, setInternalIsOpen] = useState<boolean>(false);
 
   // Use controlled state if provided, otherwise use internal state
   const isOpen = controlledIsOpen ?? internalIsOpen;
   const setIsOpen = controlledSetIsOpen ?? setInternalIsOpen;
+
+  const handleUploadSuccess = () => {
+    if (onUploadSuccess) {
+      onUploadSuccess();
+    }
+    // Close the modal after triggering refetch
+    setIsOpen(false);
+  };
 
   const handleClick = () => setIsOpen(!isOpen);
 
@@ -65,6 +76,7 @@ export default function IndoorProjectUploadModal({
             indoorProjectId={indoorProjectId}
             fileType={fileType}
             activeTreatment={activeTreatment}
+            onUploadSuccess={handleUploadSuccess}
           />
         </div>
       </Modal>
@@ -72,12 +84,19 @@ export default function IndoorProjectUploadModal({
   );
 }
 
-function initUppyWithTus(indoorProjectId) {
+function initUppyWithTus(indoorProjectId, treatment?: string | null) {
+  console.log('treatment', treatment);
+  const headers = {
+    'X-Indoor-Project-ID': indoorProjectId,
+  };
+
+  if (treatment) {
+    headers['X-Treatment'] = treatment;
+  }
+
   return new Uppy().use(Tus, {
     endpoint: '/files',
-    headers: {
-      'X-Indoor-Project-ID': indoorProjectId,
-    },
+    headers,
   });
 }
 
@@ -85,42 +104,55 @@ function IndoorProjectUploadInput({
   indoorProjectId,
   fileType = '.xlsx',
   activeTreatment = null,
-}: IndoorProjectUploadInputProps & { fileType?: string }) {
-  const [uppy, _setUppy] = useState(() => initUppyWithTus(indoorProjectId));
+  onUploadSuccess,
+}: IndoorProjectUploadInputProps & {
+  fileType?: string;
+  onUploadSuccess?: () => void;
+}) {
+  console.log('activeTreatment', activeTreatment);
+  const [uppy, _setUppy] = useState(() =>
+    initUppyWithTus(indoorProjectId, activeTreatment)
+  );
   const [uploadSuccess, setUploadSuccess] = useState(false);
-  const { indoorProjectData, isLoadingData } = useIndoorProjectData({
-    indoorProjectId,
-  });
+  const [isPolling, setIsPolling] = useState(false);
+  const [pollStartTime, setPollStartTime] = useState<number | null>(null);
+
+  // Polling function to check for uploaded data
+  const checkForUploadedData = () => {
+    console.log('checking for uploaded data');
+    if (!uploadSuccess || !onUploadSuccess || !pollStartTime) return;
+
+    console.log('uploadSuccess', uploadSuccess);
+    console.log('onUploadSuccess', onUploadSuccess);
+    console.log('pollStartTime', pollStartTime);
+
+    // Stop polling after 60 seconds
+    const elapsed = Date.now() - pollStartTime;
+    if (elapsed > 60000) {
+      console.log('Polling timeout reached (60s), stopping...');
+      setIsPolling(false);
+      return;
+    }
+
+    console.log(
+      `Polling for uploaded data... (${Math.round(elapsed / 1000)}s elapsed)`
+    );
+
+    setIsPolling(false);
+    onUploadSuccess();
+    return;
+  };
+
+  // Use polling when upload is successful
+  useInterval(checkForUploadedData, isPolling ? 2000 : null); // Poll every 2 seconds
 
   useEffect(() => {
-    if (!uploadSuccess || isLoadingData) return;
-
-    if (fileType === '.xlsx') {
-      // For spreadsheet uploads, check if we have any spreadsheet data
-      const hasSpreadsheet = indoorProjectData.some(
-        (data) => data.file_type === '.xlsx'
-      );
-      if (hasSpreadsheet) {
-        window.location.reload();
-      }
-    } else if (fileType === '.tar' && activeTreatment) {
-      // For TAR uploads, check if we have the specific treatment data
-      const hasTar = indoorProjectData.some(
-        (data) =>
-          data.file_type === '.tar' &&
-          data.directory_structure?.name === activeTreatment
-      );
-      if (hasTar) {
-        window.location.reload();
-      }
+    if (uploadSuccess && onUploadSuccess && !isPolling) {
+      console.log('Upload successful, starting to poll for data...');
+      setIsPolling(true);
+      setPollStartTime(Date.now());
     }
-  }, [
-    uploadSuccess,
-    isLoadingData,
-    indoorProjectData,
-    fileType,
-    activeTreatment,
-  ]);
+  }, [uploadSuccess, onUploadSuccess, isPolling]);
 
   const restrictions = {
     allowedFileTypes:
@@ -147,6 +179,10 @@ function IndoorProjectUploadInput({
   });
 
   if (uploadSuccess) {
+    const elapsed = pollStartTime
+      ? Math.round((Date.now() - pollStartTime) / 1000)
+      : 0;
+
     return (
       <div className="flex flex-col items-center justify-center p-8 bg-white rounded-lg">
         <CheckCircleIcon className="w-12 h-12 text-green-500 mb-4" />
@@ -154,11 +190,15 @@ function IndoorProjectUploadInput({
           Upload Successful!
         </h3>
         <p className="text-gray-600 text-center">
-          Your file has been received and is being processed. This may take a
-          few moments.
-          {isLoadingData && (
+          Your file has been received and is being processed.
+          {isPolling && (
             <span className="block mt-2 text-sm text-gray-500">
-              Checking for updates...
+              Checking for processed data... ({elapsed}s)
+            </span>
+          )}
+          {!isPolling && uploadSuccess && (
+            <span className="block mt-2 text-sm text-green-600">
+              Data found! Refreshing page...
             </span>
           )}
         </p>

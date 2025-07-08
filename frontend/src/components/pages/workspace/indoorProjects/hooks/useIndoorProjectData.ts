@@ -5,7 +5,7 @@ import {
   IndoorProjectDataSpreadsheetAPIResponse,
   IndoorProjectDataVizAPIResponse,
   IndoorProjectDataViz2APIResponse,
-} from '../IndoorProject';
+} from '../IndoorProject.d';
 import { fetchPotGroupModuleVisualizationData } from '../PotGroupModule/service';
 
 interface UseIndoorProjectDataProps {
@@ -27,6 +27,7 @@ interface UseIndoorProjectDataReturn {
   setTraitModuleVisualizationData: Dispatch<
     SetStateAction<IndoorProjectDataViz2APIResponse | null>
   >;
+  refetch: () => void;
 }
 
 export function useIndoorProjectData({
@@ -181,6 +182,47 @@ export function useIndoorProjectData({
   //   };
   // }, [indoorProjectId, indoorProjectData]);
 
+  const refetch = () => {
+    console.log('running refetch');
+    // Clear existing data and trigger a fresh fetch
+    setIndoorProjectData([]);
+    setIndoorProjectDataSpreadsheet(null);
+    setPotModuleVisualizationData(null);
+    setError(null);
+    setIsLoadingData(true);
+
+    // Trigger a re-fetch by updating a dependency
+    const fetchIndoorProjectData = async () => {
+      try {
+        const response: AxiosResponse<IndoorProjectDataAPIResponse[]> =
+          await axios.get(
+            `${
+              import.meta.env.VITE_API_V1_STR
+            }/indoor_projects/${indoorProjectId}/uploaded`
+          );
+        setIndoorProjectData(response.data);
+        setIsLoadingData(false);
+      } catch (error) {
+        if (isAxiosError(error)) {
+          setError({
+            status: error.response?.status || 500,
+            message: `Failed to load uploaded data: ${
+              error.response?.data?.message || error.message
+            }`,
+          });
+        } else {
+          setError({
+            status: 500,
+            message: 'An unexpected error occurred.',
+          });
+        }
+        setIsLoadingData(false);
+      }
+    };
+
+    fetchIndoorProjectData();
+  };
+
   return {
     indoorProjectData,
     indoorProjectDataSpreadsheet,
@@ -192,5 +234,6 @@ export function useIndoorProjectData({
     error,
     setPotGroupModuleVisualizationData,
     setTraitModuleVisualizationData,
+    refetch,
   };
 }

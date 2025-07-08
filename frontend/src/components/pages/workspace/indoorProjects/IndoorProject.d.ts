@@ -18,6 +18,7 @@ export type IndoorProjectDataAPIResponse = {
   file_path: string;
   file_size: number;
   file_type: string;
+  treatment?: string;
   directory_structure?: {
     name: string;
     type: string;

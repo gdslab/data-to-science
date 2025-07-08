@@ -197,10 +197,19 @@ def handle_tusd_http_hooks(
                 # verify uploaded file exists in tusd data dir
                 storage = payload.Event.Upload.Storage
                 if storage and os.path.exists(storage.Path):
+                    # extract treatment from custom header
+                    x_treatment = payload.Event.HTTPRequest.Header.X_Treatment
+                    treatment = (
+                        x_treatment[0]
+                        if x_treatment and len(x_treatment) == 1
+                        else None
+                    )
+
                     process_indoor_data_uploaded_to_tusd(
                         db,
                         user_id=current_user.id,
                         storage_path=Path(storage.Path),
                         original_filename=Path(payload.Event.Upload.MetaData.filename),
                         indoor_project_id=indoor_project_id,
+                        treatment=treatment,
                     )

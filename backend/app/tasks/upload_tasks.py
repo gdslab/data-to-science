@@ -185,8 +185,7 @@ def upload_indoor_project_data(
         # add filepath to indoor project data
         indoor_project_data_update_in = (
             schemas.indoor_project_data.IndoorProjectDataUpdate(
-                file_path=str(destination_filepath),
-                is_initial_processing_completed=True,
+                file_path=str(destination_filepath)
             )
         )
         indoor_project_data_updated = crud.indoor_project_data.update(
@@ -206,6 +205,8 @@ def upload_indoor_project_data(
             os.remove(destination_filepath)
         job.update(status=Status.FAILED)
         return None
+
+    print(destination_filepath)
 
     # extract contents if this is a tar archive
     if tarfile.is_tarfile(destination_filepath):

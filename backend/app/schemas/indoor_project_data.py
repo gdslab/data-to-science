@@ -15,6 +15,7 @@ class IndoorProjectDataBase(BaseModel):
     file_path: Optional[str] = None
     file_size: Optional[int] = None
     file_type: Optional[str] = None
+    treatment: Optional[str] = None
     directory_structure: Optional[Dict] = None
     upload_date: Optional[datetime] = None
 
@@ -29,6 +30,7 @@ class IndoorProjectDataCreate(IndoorProjectDataBase):
     file_path: str
     file_size: int
     file_type: str
+    treatment: Optional[str] = None
     upload_date: datetime
 
 
@@ -51,6 +53,7 @@ class IndoorProjectDataInDBBase(IndoorProjectDataBase):
     file_path: str
     file_size: int
     file_type: str
+    treatment: Optional[str] = None
     upload_date: datetime
     # internal
     id: UUID4
