@@ -2,7 +2,7 @@ import Select, { SingleValue } from 'react-select';
 
 import { ColorMapOption } from '../../../../maps/RasterSymbologySettings/cmaps';
 import { nivoColorSchemeMap } from './nivoColorSchemeMap';
-import { nivoCategoricalColors, nivoColorMapGroupedOptions } from '../utils';
+import { nivoSequentialColors, nivoColorMapGroupedOptions } from '../utils';
 
 type ColorMapSelectProps = {
   colorPreviewCount?: number;
@@ -76,7 +76,7 @@ export default function ColorMapSelect({
           },
         })}
         isSearchable
-        defaultValue={nivoCategoricalColors[0]}
+        defaultValue={nivoSequentialColors[1]}
         options={nivoColorMapGroupedOptions}
         onChange={handleChange}
         formatOptionLabel={formatOptionLabel}

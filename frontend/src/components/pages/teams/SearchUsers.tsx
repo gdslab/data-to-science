@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { User } from '../../../AuthContext';
 import { generateRandomProfileColor } from '../auth/Profile';
 import { TeamMember } from './TeamDetail';
-import { ProjectMember } from '../projects/ProjectAccess';
+import { ProjectMember } from '../workspace/projects/ProjectAccess';
 
 import api from '../../../api';
 import { sorter } from '../../utils';

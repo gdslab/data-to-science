@@ -13,7 +13,7 @@ export default function TraitModuleDataVisualization({
 }: {
   data: IndoorProjectDataViz2APIResponse;
 }) {
-  const [colorOption, setColorOption] = useState('nivo');
+  const [colorOption, setColorOption] = useState('greens');
 
   const trait = useMemo(() => {
     if (!data.results.length) return undefined;
@@ -26,7 +26,7 @@ export default function TraitModuleDataVisualization({
     return data.results.reduce((acc, item) => {
       const { interval_days, group } = item;
       if (!acc[interval_days]) {
-        acc[interval_days] = { interval_days };
+        acc[interval_days] = { interval_days, id: interval_days.toString() };
       }
       if (trait) {
         acc[interval_days][group] = item[trait].toFixed(2);
@@ -53,8 +53,10 @@ export default function TraitModuleDataVisualization({
             indexBy="interval_days"
             enableLabel={false}
             colors={{ scheme: colorOption as ColorSchemeId }}
-            margin={{ top: 50, right: 110, bottom: 60, left: 100 }}
+            margin={{ top: 100, right: 110, bottom: 60, left: 100 }}
             groupMode="grouped"
+            borderColor={{ from: 'color', modifiers: [['darker', 1.6]] }}
+            borderWidth={1}
             theme={{
               text: {
                 fontSize: 16,
@@ -103,25 +105,17 @@ export default function TraitModuleDataVisualization({
             legends={[
               {
                 dataFrom: 'keys',
-                anchor: 'bottom-right',
+                anchor: 'top-left',
                 direction: 'column',
                 justify: false,
-                translateX: 120,
-                translateY: 0,
-                itemsSpacing: 2,
+                translateX: 0,
+                translateY: -100,
+                itemsSpacing: 6,
                 itemWidth: 100,
                 itemHeight: 20,
                 itemDirection: 'left-to-right',
                 itemOpacity: 0.85,
-                symbolSize: 20,
-                effects: [
-                  {
-                    on: 'hover',
-                    style: {
-                      itemOpacity: 1,
-                    },
-                  },
-                ],
+                symbolSize: 16,
               },
             ]}
             role="application"

@@ -7,10 +7,6 @@ export type IndoorProjectAPIResponse = {
   end_date?: Date;
 };
 
-export type IndoorProjectUploadInputProps = {
-  indoorProjectId: string;
-};
-
 export type IndoorProjectDataAPIResponse = {
   id: string;
   original_filename: string;
@@ -252,4 +248,9 @@ export interface PotModuleDataVisualizationProps {
 export interface SliderMark {
   value: number;
   label: string;
+}
+
+export interface IndoorProjectUploadInputProps {
+  indoorProjectId: string;
+  activeTreatment?: string | null;
 }

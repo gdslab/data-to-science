@@ -1,6 +1,6 @@
 import logging
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from typing import Any, Dict, List, Optional, Union, Sequence, Tuple
 
 import pandas as pd
@@ -51,6 +51,11 @@ def read_indoor_project_data_spreadsheet(
     ),
     db: Session = Depends(deps.get_db),
 ) -> Any:
+    logger.info("--------------------------------")
+    logger.info("read_indoor_project_data_spreadsheet")
+    logger.info("--------------------------------")
+    logger.info(f"indoor_project_id: {indoor_project_id}")
+    logger.info(f"indoor_project_data_id: {indoor_project_data_id}")
     spreadsheet_file = crud.indoor_project_data.read_by_id(
         db,
         indoor_project_id=indoor_project_id,
@@ -89,9 +94,19 @@ def read_indoor_project_data_spreadsheet(
         ppew_df.columns = ppew_df.columns.str.replace(" ", "_")
 
         # convert planting date to datetime string YYYY-mm-dd HH:MM:SS
-        ppew_df["planting_date"] = ppew_df["planting_date"].dt.strftime(
-            "%Y-%m-%d %H:%M:%S"
+        ppew_df["planting_date"] = (
+            ppew_df["planting_date"].apply(parse_date).dt.strftime("%Y-%m-%d %H:%M:%S")
         )
+
+        # entry might be an integer, convert to string
+        ppew_df["entry"] = ppew_df["entry"].astype(str)
+
+        # treatment might be an integer, convert to string
+        ppew_df["treatment"] = ppew_df["treatment"].astype(str)
+
+        # convert location and pi to string to ensure nans are replaced with ""
+        ppew_df["location"] = ppew_df["location"].astype(str)
+        ppew_df["pi"] = ppew_df["pi"].astype(str)
 
         # replace nan with "" for object columns and -9999 for numeric columns
         ppew_df = ppew_df.apply(
@@ -104,6 +119,7 @@ def read_indoor_project_data_spreadsheet(
             "treatment",
             "species_name",
             "entry",
+            "replicate_number",
             "pot_barcode",
             "planting_date",
             "pottype",
@@ -346,8 +362,8 @@ def read_indoor_project_data_plant(
     pot_side_avg_df.columns = pot_side_avg_df.columns.str.replace(" ", "_")
 
     # convert planting date to datetime string YYYY-mm-dd HH:MM:SS
-    pot_ppew_df["planting_date"] = pot_ppew_df["planting_date"].dt.strftime(
-        "%Y-%m-%d %H:%M:%S"
+    pot_ppew_df["planting_date"] = (
+        pot_ppew_df["planting_date"].apply(parse_date).dt.strftime("%Y-%m-%d %H:%M:%S")
     )
 
     # convert scan date to date string YYYY-mm-dd
@@ -946,3 +962,41 @@ def construct_image_path(
         return image_path
     else:
         return ""
+
+
+def parse_date(date_str: Union[str, datetime, date]) -> datetime:
+    """Parse a date string into a datetime object, handling various formats.
+
+    Args:
+        date_str: Date string or datetime/date object to parse
+
+    Returns:
+        datetime: Parsed datetime object
+
+    Raises:
+        ValueError: If date string cannot be parsed
+    """
+    if isinstance(date_str, (datetime, date)):
+        return (
+            date_str
+            if isinstance(date_str, datetime)
+            else datetime.combine(date_str, datetime.min.time())
+        )
+
+    # Try common date formats
+    formats = [
+        "%Y-%m-%d %H:%M:%S",  # 2024-01-17 14:30:00
+        "%Y-%m-%d",  # 2024-01-17
+        "%m/%d/%Y",  # 1/17/2024
+        "%m/%d/%Y %H:%M:%S",  # 1/17/2024 14:30:00
+        "%d/%m/%Y",  # 17/1/2024
+        "%d/%m/%Y %H:%M:%S",  # 17/1/2024 14:30:00
+    ]
+
+    for fmt in formats:
+        try:
+            return datetime.strptime(date_str, fmt)
+        except ValueError:
+            continue
+
+    raise ValueError(f"Could not parse date string: {date_str}")

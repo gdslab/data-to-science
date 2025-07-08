@@ -1,9 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
 import { Params, useLoaderData } from 'react-router-dom';
-import {
-  ArrowDownTrayIcon,
-  CheckCircleIcon,
-} from '@heroicons/react/24/outline';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 import { useState } from 'react';
 
@@ -12,7 +8,6 @@ import {
   IndoorProjectAPIResponse,
   IndoorProjectDataAPIResponse,
 } from './IndoorProject.d';
-
 import IndoorProjectPageLayout from './IndoorProjectPageLayout';
 import LoadingBars from '../../../LoadingBars';
 
@@ -48,7 +43,6 @@ export default function IndoorProjectDetail() {
   const { indoorProject } = useLoaderData() as {
     indoorProject: IndoorProjectAPIResponse;
   };
-
   const {
     indoorProjectData,
     indoorProjectDataSpreadsheet,
@@ -56,17 +50,14 @@ export default function IndoorProjectDetail() {
     potGroupModuleVisualizationData,
     traitModuleVisualizationData,
     isLoading,
-    isLoadingData,
     error,
     setPotGroupModuleVisualizationData,
     setTraitModuleVisualizationData,
     refetch,
   } = useIndoorProjectData({ indoorProjectId: indoorProject.id });
-
   const indoorProjectDataId = indoorProjectData.find(
     ({ file_type }) => file_type === '.xlsx'
   )?.id;
-
   if (!indoorProject)
     return (
       <div>

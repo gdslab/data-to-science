@@ -79,6 +79,7 @@ class IndoorProjectDataSpreadsheetSummary(BaseModel):
     treatment: List[str]
     species_name: List[str]
     entry: List[str]
+    replicate_number: List[int]
     pot_barcode: List[int]
     planting_date: List[datetime]
     pottype: List[str]
@@ -98,6 +99,7 @@ class IndoorProjectDataPlant(BaseModel):
     treatment: str
     species_name: str
     entry: str
+    replicate_number: int
     planting_date: datetime
     pottype: str
     ct_configuration: str

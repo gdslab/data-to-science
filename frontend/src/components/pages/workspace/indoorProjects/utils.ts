@@ -4,6 +4,7 @@ import {
   ColorMapGroupedOption,
   ColorMapOption,
 } from '../../../maps/RasterSymbologySettings/cmaps';
+import { IndoorProjectDataVizRecord } from './IndoorProject';
 
 /**
  * Returns the appropriate text color for a HSV background.
@@ -25,6 +26,55 @@ const getTextColor = (hue, saturation, value) => {
 
   // Return Tailwind class based on luminance
   return contrastWhite > contrastBlack ? 'text-white' : 'text-black';
+};
+
+/**
+ * Stretches the values of an array to a new range.
+ *
+ * @param {number[]} values - The array of values to stretch.
+ * @param {number} outMin - The minimum value of the new range.
+ * @param {number} outMax - The maximum value of the new range.
+ * @returns {number[]} The stretched values.
+ */
+const stretch = (
+  values: number[],
+  outMin: number = 0.5,
+  outMax: number = 1.0
+): number[] => {
+  const inMin = Math.min(...values);
+  const inMax = Math.max(...values);
+  return values.map((v) => {
+    const t = (v - inMin) / (inMax - inMin || 1);
+    return outMin + t * (outMax - outMin);
+  });
+};
+
+/**
+ * Normalizes the values of an array to a new range.
+ *
+ * @param {number[]} values - The array of values to normalize.
+ * @returns {number[]} The normalized values.
+ */
+const getNormalizedValues = (values: number[]): number[] => {
+  return values.map((value) => (value != null ? value / 100 : 0));
+};
+
+/**
+ * Returns the normalized and stretched values of an array.
+ *
+ * @param {IndoorProjectDataVizRecord[][]} data - The data to normalize and stretch.
+ * @returns {Object} An object containing the stretched saturation and intensity values.
+ */
+const getNormalizedAndStretchedValues = (
+  data: IndoorProjectDataVizRecord[][]
+): { stretchedSValues: number[]; stretchedVValues: number[] } => {
+  const sValues = getNormalizedValues(data.map((g) => g?.[0]?.saturation ?? 0));
+  const vValues = getNormalizedValues(data.map((g) => g?.[0]?.intensity ?? 0));
+
+  const stretchedSValues = stretch(sValues, 0.5, 1.0);
+  const stretchedVValues = stretch(vValues, 0.5, 1.0);
+
+  return { stretchedSValues, stretchedVValues };
 };
 
 const nivoCategoricalColors: readonly ColorMapOption[] = [
@@ -100,8 +150,10 @@ const titleCaseConversion = (str: string): string => {
 };
 
 export {
+  getNormalizedAndStretchedValues,
   getTextColor,
   nivoCategoricalColors,
   nivoColorMapGroupedOptions,
+  nivoSequentialColors,
   titleCaseConversion,
 };
