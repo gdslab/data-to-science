@@ -206,27 +206,13 @@ def upload_indoor_project_data(
         job.update(status=Status.FAILED)
         return None
 
-    print(destination_filepath)
-
     # extract contents if this is a tar archive
     if tarfile.is_tarfile(destination_filepath):
         logger.info("Extracting indoor project data tar archive contents...")
         try:
             tar_processor = TarProcessor(tar_file_path=destination_filepath)
             tar_processor.extract()
-            tar_dir_structure = tar_processor.get_directory_structure()
-            # update indoor project data with tar directory structure
-            indoor_project_data_update_in = (
-                schemas.indoor_project_data.IndoorProjectDataUpdate(
-                    directory_structure=tar_dir_structure
-                )
-            )
-            crud.indoor_project_data.update(
-                db,
-                db_obj=indoor_project_data_updated,
-                obj_in=indoor_project_data_update_in,
-            )
-        except Exception as e:
+        except Exception:
             logger.exception(f"Failed to extract tar archive at {destination_filepath}")
             # clean up any files
             if os.path.exists(destination_filepath):
@@ -238,6 +224,15 @@ def upload_indoor_project_data(
         tar_processor.remove()
 
         logger.info("Extracting indoor project data tar archive contents...Done!")
+
+    # update indoor project data to indicate initial processing is complete
+    crud.indoor_project_data.update(
+        db,
+        db_obj=indoor_project_data_updated,
+        obj_in=schemas.indoor_project_data.IndoorProjectDataUpdate(
+            is_initial_processing_completed=True
+        ),
+    )
 
     job.update(status=Status.SUCCESS)
 

@@ -1,7 +1,7 @@
 import logging
 import tarfile
 import os
-from typing import Any, Dict, List
+import shutil
 
 from PIL import Image
 
@@ -14,8 +14,9 @@ QUALITY = 80
 
 class TarProcessor:
     """
-    Used to extract contents of tar file and return tar file's directory structure
-    in Dict format.
+    Used to extract contents of tar file, convert images to WebP format,
+    and store them in an "images" directory while discarding the original
+    tar contents.
     """
 
     def __init__(self, tar_file_path: str) -> None:
@@ -32,14 +33,30 @@ class TarProcessor:
 
     def extract(self) -> None:
         """
-        Extracts all contents of tar file to current directory and converts images to WebP.
+        Extracts all contents of tar file, converts images to WebP,
+        stores them in an "images" directory, and cleans up extracted contents.
         """
-        with tarfile.open(self.tar_file_path, "r") as tar_file:
-            parent_dir = os.path.dirname(self.tar_file_path)
-            tar_file.extractall(path=parent_dir)
+        parent_dir = os.path.dirname(self.tar_file_path)
+        images_dir = os.path.join(parent_dir, "images")
 
-        # Convert images to WebP after extraction
-        self._convert_images_in_directory(parent_dir)
+        # Create images directory if it doesn't exist
+        os.makedirs(images_dir, exist_ok=True)
+
+        # Create temporary extraction directory
+        temp_extract_dir = os.path.join(parent_dir, "temp_extract")
+
+        try:
+            # Extract tar file to temporary directory
+            with tarfile.open(self.tar_file_path, "r") as tar_file:
+                tar_file.extractall(path=temp_extract_dir)
+
+            # Convert images and move to images directory
+            self._process_images_to_images_dir(temp_extract_dir, images_dir)
+
+        finally:
+            # Clean up temporary extraction directory
+            if os.path.exists(temp_extract_dir):
+                shutil.rmtree(temp_extract_dir)
 
     def _is_image_file(self, file_path: str) -> bool:
         """Check if a file is an image based on its extension.
@@ -54,33 +71,51 @@ class TarProcessor:
         _, ext = os.path.splitext(file_path)
         return ext in image_extensions
 
-    def _convert_images_in_directory(self, directory_path: str) -> None:
-        """Walk through directory and convert all image files to WebP.
+    def _process_images_to_images_dir(self, source_dir: str, images_dir: str) -> None:
+        """Walk through source directory, convert all image files to WebP, and move to images directory.
 
         Args:
-            directory_path (str): Path to the directory to process.
+            source_dir (str): Path to the source directory to process.
+            images_dir (str): Path to the images directory where WebP files will be stored.
+
+        Raises:
+            Exception: If there are filename conflicts (duplicate filenames).
         """
-        for root, dirs, files in os.walk(directory_path):
+        for root, dirs, files in os.walk(source_dir):
             for file in files:
                 file_path = os.path.join(root, file)
                 if self._is_image_file(file_path):
                     try:
-                        convert_to_webp(file_path)
+                        # Convert to WebP in place first
+                        webp_path = convert_to_webp(file_path)
+
+                        # Preserve original filename with .webp extension
+                        original_base_name = os.path.splitext(file)[0]
+                        webp_filename = f"{original_base_name}.webp"
+                        destination_path = os.path.join(images_dir, webp_filename)
+
+                        # Check for filename conflicts
+                        if os.path.exists(destination_path):
+                            raise Exception(
+                                f"Filename conflict: '{webp_filename}' already exists in images directory"
+                            )
+
+                        # Move WebP file to images directory
+                        shutil.move(webp_path, destination_path)
+
                     except Exception as e:
-                        logger.error(f"Failed to convert {file_path}: {str(e)}")
-                        # Continue processing other files even if one fails
+                        logger.error(f"Failed to process {file_path}: {str(e)}")
+                        # Re-raise the exception to stop processing on conflicts or other critical errors
+                        raise
 
-    def get_directory_structure(self) -> Dict[str, Any]:
-        """Returns directory structure of extracted files in Dict format.
-
-        Note: This reads from the extracted filesystem, not the original tar file,
-        so it will reflect any file conversions (e.g., images converted to WebP).
+    def get_images_directory_path(self) -> str:
+        """Returns the path to the images directory.
 
         Returns:
-            dict: Dict representation of the extracted directory structure.
+            str: Path to the images directory.
         """
         parent_dir = os.path.dirname(self.tar_file_path)
-        return generate_filesystem_structure_json(parent_dir)
+        return os.path.join(parent_dir, "images")
 
     def remove(self) -> None:
         """
@@ -88,76 +123,6 @@ class TarProcessor:
         """
         if os.path.exists(self.tar_file_path):
             os.remove(self.tar_file_path)
-
-
-def generate_filesystem_structure_json(base_path: str) -> Dict[str, Any]:
-    """Returns Dict representation of the filesystem directory structure.
-
-    Args:
-        base_path (str): Path to the base directory to analyze.
-
-    Returns:
-        dict: Dict representation of the filesystem directory structure.
-    """
-
-    def build_filesystem_tree(path: str) -> Dict[str, Any]:
-        """Recursively builds the directory tree structure from filesystem.
-
-        Args:
-            path (str): Path to the current directory or file.
-
-        Returns:
-            Dict[str, Any]: Dictionary of directory/file structure.
-        """
-        node: Dict[str, Any] = {
-            "name": os.path.basename(path),
-            "type": "directory" if os.path.isdir(path) else "file",
-        }
-
-        if os.path.isfile(path):
-            node["size"] = os.path.getsize(path)
-        elif os.path.isdir(path):
-            try:
-                children = []
-                for item in os.listdir(path):
-                    item_path = os.path.join(path, item)
-                    children.append(build_filesystem_tree(item_path))
-
-                if children:
-                    node["children"] = children
-            except PermissionError:
-                logger.error(f"Permission denied accessing directory: {path}")
-
-        return node
-
-    try:
-        if not os.path.exists(base_path):
-            return {"error": f"Directory does not exist: {base_path}"}
-
-        # List all items in the base directory
-        items = os.listdir(base_path)
-
-        if len(items) == 0:
-            return {"error": "Directory is empty"}
-
-        # Check for single top-level directory (similar to tar logic)
-        directories = [
-            item for item in items if os.path.isdir(os.path.join(base_path, item))
-        ]
-
-        if len(directories) == 1 and len(items) == 1:
-            # Single top-level directory case
-            top_level_dir = os.path.join(base_path, directories[0])
-            return build_filesystem_tree(top_level_dir)
-        elif len(items) > 1:
-            return {"error": "Multiple top-level items found in extracted directory"}
-        else:
-            # Single item that might not be a directory
-            single_item = os.path.join(base_path, items[0])
-            return build_filesystem_tree(single_item)
-
-    except Exception as e:
-        return {"error": f"Error reading filesystem: {e}"}
 
 
 def convert_to_webp(image_path: str) -> str:

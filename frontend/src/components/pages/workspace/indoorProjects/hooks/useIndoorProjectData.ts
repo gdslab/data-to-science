@@ -1,12 +1,14 @@
 import { useState, useEffect, Dispatch, SetStateAction } from 'react';
 import axios, { AxiosResponse, isAxiosError } from 'axios';
+
+import { fetchPotGroupModuleVisualizationData } from '../PotGroupModule/service';
+
 import {
   IndoorProjectDataAPIResponse,
   IndoorProjectDataSpreadsheetAPIResponse,
   IndoorProjectDataVizAPIResponse,
   IndoorProjectDataViz2APIResponse,
 } from '../IndoorProject.d';
-import { fetchPotGroupModuleVisualizationData } from '../PotGroupModule/service';
 
 interface UseIndoorProjectDataProps {
   indoorProjectId: string;
@@ -130,57 +132,57 @@ export function useIndoorProjectData({
   }, [indoorProjectId, indoorProjectData]);
 
   // Fetch visualization data
-  // useEffect(() => {
-  //   let isMounted = true;
+  useEffect(() => {
+    let isMounted = true;
 
-  //   async function loadVizData() {
-  //     setError(null);
-  //     setIsLoading(true);
-  //     setPotModuleVisualizationData(null);
+    async function loadVizData() {
+      setError(null);
+      setIsLoading(true);
+      setPotModuleVisualizationData(null);
 
-  //     const indoorProjectDataId = indoorProjectData.find(
-  //       ({ file_type }) => file_type === '.xlsx'
-  //     )?.id;
+      const indoorProjectDataId = indoorProjectData.find(
+        ({ file_type }) => file_type === '.xlsx'
+      )?.id;
 
-  //     if (!indoorProjectDataId) {
-  //       setIsLoading(false);
-  //       return;
-  //     }
+      if (!indoorProjectDataId) {
+        setIsLoading(false);
+        return;
+      }
 
-  //     try {
-  //       const data = await fetchPotGroupModuleVisualizationData({
-  //         indoorProjectId,
-  //         indoorProjectDataId,
-  //         cameraOrientation: 'side',
-  //         groupBy: 'single_pot',
-  //       });
+      try {
+        const data = await fetchPotGroupModuleVisualizationData({
+          indoorProjectId,
+          indoorProjectDataId,
+          cameraOrientation: 'side',
+          groupBy: 'single_pot',
+        });
 
-  //       if (isMounted) {
-  //         setPotModuleVisualizationData(data);
-  //       }
-  //     } catch (error) {
-  //       if (isMounted) {
-  //         setError({
-  //           status: 500,
-  //           message:
-  //             error instanceof Error
-  //               ? error.message
-  //               : 'Failed to load visualization data',
-  //         });
-  //       }
-  //     } finally {
-  //       if (isMounted) {
-  //         setIsLoading(false);
-  //       }
-  //     }
-  //   }
+        if (isMounted) {
+          setPotModuleVisualizationData(data);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setError({
+            status: 500,
+            message:
+              error instanceof Error
+                ? error.message
+                : 'Failed to load visualization data',
+          });
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
 
-  //   loadVizData();
+    loadVizData();
 
-  //   return () => {
-  //     isMounted = false;
-  //   };
-  // }, [indoorProjectId, indoorProjectData]);
+    return () => {
+      isMounted = false;
+    };
+  }, [indoorProjectId, indoorProjectData]);
 
   const refetch = () => {
     console.log('running refetch');

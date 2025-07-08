@@ -85,7 +85,6 @@ export default function IndoorProjectUploadModal({
 }
 
 function initUppyWithTus(indoorProjectId, treatment?: string | null) {
-  console.log('treatment', treatment);
   const headers = {
     'X-Indoor-Project-ID': indoorProjectId,
   };
@@ -109,7 +108,6 @@ function IndoorProjectUploadInput({
   fileType?: string;
   onUploadSuccess?: () => void;
 }) {
-  console.log('activeTreatment', activeTreatment);
   const [uppy, _setUppy] = useState(() =>
     initUppyWithTus(indoorProjectId, activeTreatment)
   );
@@ -119,12 +117,7 @@ function IndoorProjectUploadInput({
 
   // Polling function to check for uploaded data
   const checkForUploadedData = () => {
-    console.log('checking for uploaded data');
     if (!uploadSuccess || !onUploadSuccess || !pollStartTime) return;
-
-    console.log('uploadSuccess', uploadSuccess);
-    console.log('onUploadSuccess', onUploadSuccess);
-    console.log('pollStartTime', pollStartTime);
 
     // Stop polling after 60 seconds
     const elapsed = Date.now() - pollStartTime;

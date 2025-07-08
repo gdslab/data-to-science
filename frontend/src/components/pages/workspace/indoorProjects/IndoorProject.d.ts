@@ -19,15 +19,7 @@ export type IndoorProjectDataAPIResponse = {
   file_size: number;
   file_type: string;
   treatment?: string;
-  directory_structure?: {
-    name: string;
-    type: string;
-    children: {
-      name: string;
-      type: string;
-      size?: number;
-    }[];
-  };
+  is_initial_processing_completed: boolean;
   upload_date: Date;
 };
 

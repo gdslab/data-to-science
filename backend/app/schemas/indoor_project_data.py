@@ -16,8 +16,8 @@ class IndoorProjectDataBase(BaseModel):
     file_size: Optional[int] = None
     file_type: Optional[str] = None
     treatment: Optional[str] = None
-    directory_structure: Optional[Dict] = None
     upload_date: Optional[datetime] = None
+    is_initial_processing_completed: Optional[bool] = False
 
 
 class IndoorProjectDataCreate(IndoorProjectDataBase):
@@ -32,6 +32,7 @@ class IndoorProjectDataCreate(IndoorProjectDataBase):
     file_type: str
     treatment: Optional[str] = None
     upload_date: datetime
+    is_initial_processing_completed: bool = False
 
 
 class IndoorProjectDataUpdate(IndoorProjectDataBase):
@@ -55,6 +56,7 @@ class IndoorProjectDataInDBBase(IndoorProjectDataBase):
     file_type: str
     treatment: Optional[str] = None
     upload_date: datetime
+    is_initial_processing_completed: bool = False
     # internal
     id: UUID4
     indoor_project_id: UUID4
@@ -69,7 +71,6 @@ class IndoorProjectData(IndoorProjectDataInDBBase):
     additional API exclusive attributes.
     """
 
-    # directory_structure: Optional[Dict] = Field(exclude=True)
     pass
 
 

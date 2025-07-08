@@ -63,11 +63,6 @@ export default function IndoorProjectDetail() {
     refetch,
   } = useIndoorProjectData({ indoorProjectId: indoorProject.id });
 
-  console.log('indoorProjectData:', indoorProjectData);
-
-  const formattedDate = (uploadedFile: IndoorProjectDataAPIResponse): string =>
-    new Date(uploadedFile.upload_date.toString()).toLocaleDateString();
-
   const indoorProjectDataId = indoorProjectData.find(
     ({ file_type }) => file_type === '.xlsx'
   )?.id;
@@ -78,6 +73,9 @@ export default function IndoorProjectDetail() {
         <span>No indoor project found</span>
       </div>
     );
+
+  console.log('isLoading', isLoading);
+  console.log('indoorProjectData', indoorProjectData);
 
   return (
     <IndoorProjectPageLayout>
@@ -93,9 +91,9 @@ export default function IndoorProjectDetail() {
           <hr className="my-4 border-gray-700" />
         </div>
 
-        <div className="flex gap-4 flex-1 min-h-0">
+        <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
           {/* Upload form */}
-          <div className="flex flex-col w-1/3 gap-8 p-4 border-r border-gray-700 h-full">
+          <div className="flex flex-col w-full lg:w-1/3 gap-8 p-4 border-b lg:border-b-0 lg:border-r border-gray-700 h-auto lg:h-full">
             <IndoorProjectUploadForm
               indoorProjectId={indoorProject.id}
               indoorProjectData={indoorProjectData}
@@ -106,7 +104,7 @@ export default function IndoorProjectDetail() {
             />
           </div>
           {/* Data visualization */}
-          <div className="flex flex-col w-2/3 gap-8 p-4 h-full">
+          <div className="flex flex-col w-full lg:w-2/3 gap-8 p-4 h-auto lg:h-full">
             {isLoading && <LoadingBars />}
 
             {!isLoading && indoorProjectData.length === 0 && (

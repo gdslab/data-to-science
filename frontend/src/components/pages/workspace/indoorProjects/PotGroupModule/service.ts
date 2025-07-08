@@ -3,7 +3,7 @@ import axios, { AxiosResponse, isAxiosError } from 'axios';
 import {
   FetchPotGroupModuleParams,
   IndoorProjectDataVizAPIResponse,
-} from '../IndoorProject';
+} from '../IndoorProject.d';
 
 export async function fetchPotGroupModuleVisualizationData({
   indoorProjectId,
