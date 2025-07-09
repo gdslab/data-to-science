@@ -93,6 +93,7 @@ export function useSTACData({
           id: item.id,
           isSuccessful: true,
           title: item.properties.title,
+          flightName: item.properties.flight_details.flight_name,
           dataType: item.properties.data_product_details.data_type,
           acquisitionDate: item.properties.flight_details.acquisition_date,
           platform: item.properties.flight_details.platform,

@@ -229,21 +229,25 @@ class STACGenerator:
         data_product: models.DataProduct,
         flight: models.Flight,
     ) -> Item:
+        flight_details = {
+            "flight_id": str(flight.id),
+            "acquisition_date": date_to_datetime(flight.acquisition_date).isoformat(),
+            "altitude": flight.altitude,
+            "forward_overlap": flight.forward_overlap,
+            "side_overlap": flight.side_overlap,
+            "platform": flight.platform,
+            "sensor": flight.sensor,
+        }
+
+        # Include flight name if provided
+        if flight.name:
+            flight_details["flight_name"] = flight.name
+
         flight_properties = {
             "data_product_details": {
                 "data_type": data_product.data_type,
             },
-            "flight_details": {
-                "flight_id": str(flight.id),
-                "acquisition_date": date_to_datetime(
-                    flight.acquisition_date
-                ).isoformat(),
-                "altitude": flight.altitude,
-                "forward_overlap": flight.forward_overlap,
-                "side_overlap": flight.side_overlap,
-                "platform": flight.platform,
-                "sensor": flight.sensor,
-            },
+            "flight_details": flight_details,
         }
         # Add title to properties - use custom title if provided, otherwise use default
         title = generate_item_title(data_product, flight, self.custom_titles)
