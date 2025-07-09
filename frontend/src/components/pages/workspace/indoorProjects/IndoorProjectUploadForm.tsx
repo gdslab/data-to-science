@@ -1,5 +1,5 @@
-import { CheckCircleIcon, DocumentIcon } from '@heroicons/react/24/solid';
-import { ArrowDownTrayIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { DocumentIcon } from '@heroicons/react/24/solid';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
 import {
   IndoorProjectDataAPIResponse,

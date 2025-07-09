@@ -10,7 +10,6 @@ import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import { IndoorProjectUploadInputProps } from './IndoorProject';
 import Modal from '../../../Modal';
 import { useInterval } from '../../../hooks';
-import { useIndoorProjectData } from './hooks/useIndoorProjectData';
 
 type IndoorProjectUploadModalProps = {
   btnLabel?: string;

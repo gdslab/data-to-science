@@ -1,13 +1,8 @@
 import axios, { AxiosResponse } from 'axios';
 import { Params, useLoaderData } from 'react-router-dom';
-import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
-import { useState } from 'react';
 
 import Alert from '../../../Alert';
-import {
-  IndoorProjectAPIResponse,
-  IndoorProjectDataAPIResponse,
-} from './IndoorProject.d';
+import { IndoorProjectAPIResponse } from './IndoorProject.d';
 import IndoorProjectPageLayout from './IndoorProjectPageLayout';
 import LoadingBars from '../../../LoadingBars';
 
