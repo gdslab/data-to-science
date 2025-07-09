@@ -33,6 +33,7 @@ export function useSTACData({
   );
   const hasCheckedForUpdates = useRef(false);
   const isBackgroundPolling = useRef(false);
+  const hasInitialEffectRun = useRef(false);
 
   // Helper function to detect meaningful metadata changes
   const hasMetadataChanged = useCallback(
@@ -241,15 +242,24 @@ export function useSTACData({
 
   // Initial data loading effect
   useEffect(() => {
+    // Prevent double execution of this effect
+    if (hasInitialEffectRun.current) {
+      return;
+    }
+
+    // Set flags to prevent double execution
+    hasInitialEffectRun.current = true;
     hasCheckedForUpdates.current = false;
 
+    // Generate preview if no initial metadata is provided
     if (!initialStacMetadata) {
       generatePreview();
     } else {
+      // Check for updates if initial metadata is provided
       hasCheckedForUpdates.current = true;
       checkForUpdates();
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // Cleanup effect
   useEffect(() => {

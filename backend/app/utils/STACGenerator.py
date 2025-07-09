@@ -148,7 +148,7 @@ class STACGenerator:
         project = crud.project.get(db=self.db, id=self.project_id)
 
         if not project:
-            raise ValueError("Project not found.")
+            raise ValueError("Project not found")
 
         return project
 
@@ -166,7 +166,7 @@ class STACGenerator:
         )
         if len(flights) == 0:
             raise ValueError(
-                "Project must have at least one flight with a data product to publish."
+                "Project must have at least one flight with a data product to publish"
             )
 
         return list(flights)

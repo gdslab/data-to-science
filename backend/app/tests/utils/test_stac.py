@@ -333,7 +333,8 @@ def test_stac_generator_no_flights(db: Session) -> None:
 
     # Try to create STACGenerator
     with pytest.raises(
-        ValueError, match="Project must have at least one flight to publish"
+        ValueError,
+        match="Project must have at least one flight with a data product to publish",
     ):
         STACGenerator(db=db, project_id=project.id)
 
