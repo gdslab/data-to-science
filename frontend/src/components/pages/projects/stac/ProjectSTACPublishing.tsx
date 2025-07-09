@@ -65,7 +65,7 @@ export default function ProjectSTACPublishing() {
   const { stacMetadata, allItems, generatePreview } = useSTACData({
     projectId: projectId!,
     initialStacMetadata,
-    buildQueryParams: formState.buildQueryParams,
+    buildRequestPayload: formState.buildRequestPayload,
     setCurrentOperation: operations.setCurrentOperation,
     setStatus: operations.setStatus,
     setPollingStatus: operations.setPollingStatus,
@@ -74,7 +74,7 @@ export default function ProjectSTACPublishing() {
   // Action handlers
   const actions = useSTACActions({
     projectId: projectId!,
-    buildQueryParams: formState.buildQueryParams,
+    buildRequestPayload: formState.buildRequestPayload,
     setCurrentOperation: operations.setCurrentOperation,
     setStatus: operations.setStatus,
   });

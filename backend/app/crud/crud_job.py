@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Sequence
 from uuid import UUID
 
@@ -89,6 +90,7 @@ class CRUDJob(CRUDBase[Job, JobCreate, JobUpdate]):
         job_name: str,
         flight_id: UUID,
         processing: Optional[bool] = False,
+        cutoff_time: Optional[datetime] = None,
     ) -> Sequence[Job]:
         """Returns raw data jobs that match job name, flight ID, and processing status.
 
@@ -97,30 +99,78 @@ class CRUDJob(CRUDBase[Job, JobCreate, JobUpdate]):
             job_name (str): Name of job.
             flight_id (UUID): ID of flight associated with raw data.
             processing (Optional[bool], optional): True if only waiting/inprogress jobs should be returned. Defaults to False.
+            cutoff_time (Optional[datetime], optional): If provided, exclude jobs older than this time when processing=True.
 
         Returns:
             List[Job]: Raw data jobs matching provided conditions.
         """
         if processing:
-            select_statement = (
-                select(Job)
-                .join(Job.raw_data)
-                .where(
-                    and_(
-                        Job.name == job_name,
-                        or_(
-                            Job.status == Status.WAITING,
-                            Job.status == Status.INPROGRESS,
-                        ),
-                        RawData.flight_id == flight_id,
-                    )
-                )
-            )
+            conditions = [
+                Job.name == job_name,
+                or_(
+                    Job.status == Status.WAITING,
+                    Job.status == Status.INPROGRESS,
+                ),
+                RawData.flight_id == flight_id,
+            ]
+
+            # Add cutoff time condition if provided
+            if cutoff_time:
+                conditions.append(Job.start_time >= cutoff_time)
+
+            select_statement = select(Job).join(Job.raw_data).where(and_(*conditions))
         else:
             select_statement = (
                 select(Job)
                 .join(Job.raw_data)
                 .where(and_(Job.name == job_name, RawData.flight_id == flight_id))
+            )
+
+        with db as session:
+            jobs = session.scalars(select_statement).all()
+            return jobs
+
+    def get_jobs_by_name_and_project_id(
+        self,
+        db: Session,
+        job_name: str,
+        project_id: UUID,
+        processing: Optional[bool] = False,
+        cutoff_time: Optional[datetime] = None,
+    ) -> Sequence[Job]:
+        """Returns jobs for a specific job name and project ID.
+
+        Args:
+            db (Session): Database session.
+            job_name (str): Name of the job to search for.
+            project_id (UUID): ID of the project to search for in job extra field.
+            processing (Optional[bool], optional): True if only waiting/inprogress jobs should be returned. Defaults to False.
+            cutoff_time (Optional[datetime], optional): If provided, exclude jobs older than this time when processing=True.
+
+        Returns:
+            List[Job]: Jobs matching the job name and project ID.
+        """
+        if processing:
+            conditions = [
+                Job.name == job_name,
+                or_(
+                    Job.status == Status.WAITING,
+                    Job.status == Status.INPROGRESS,
+                ),
+                Job.extra.contains({"project_id": str(project_id)}),
+            ]
+
+            # Add cutoff time condition if provided
+            if cutoff_time:
+                conditions.append(Job.start_time >= cutoff_time)
+
+            select_statement = select(Job).where(and_(*conditions))
+        else:
+            select_statement = select(Job).where(
+                and_(
+                    Job.name == job_name,
+                    Job.extra.contains({"project_id": str(project_id)}),
+                )
             )
 
         with db as session:

@@ -1,20 +1,4 @@
-interface STACItem {
-  id: string;
-  type: string;
-  properties: {
-    title?: string;
-    datetime: string;
-    data_product_details: {
-      data_type: string;
-    };
-    flight_details: {
-      acquisition_date: string;
-      platform: string;
-      sensor: string;
-    };
-  };
-  browser_url?: string;
-}
+import { STACItem } from './STACTypes';
 
 interface STACItemTitlesFormProps {
   items: STACItem[];
@@ -75,9 +59,14 @@ export default function STACItemTitlesForm({
                 </p>
                 <p className="text-xs text-gray-500">
                   {item.properties.data_product_details.data_type} •{' '}
-                  {new Date(
-                    item.properties.flight_details.acquisition_date
-                  ).toLocaleDateString()}{' '}
+                  {
+                    new Date(item.properties.flight_details.acquisition_date)
+                      .toISOString()
+                      .split('T')[0]
+                  }{' '}
+                  {item.properties.flight_details.flight_name && (
+                    <>• {item.properties.flight_details.flight_name} </>
+                  )}
                   • {item.properties.flight_details.sensor} •{' '}
                   {item.properties.flight_details.platform.replace(/_/g, ' ')}
                 </p>

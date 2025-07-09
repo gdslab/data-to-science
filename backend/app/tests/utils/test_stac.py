@@ -177,13 +177,19 @@ def test_stac_generator(db: Session) -> None:
     # Create new project
     project = create_project(db)
 
-    # Add sample data product to project
-    data_product = SampleDataProduct(db, project=project)
+    # Create flight with a name and data product
+    flight_with_name = create_flight(db, project_id=project.id, name="Test Flight Name")
+    data_product_with_name = SampleDataProduct(
+        db, project=project, flight=flight_with_name
+    )
 
-    # Get flight from data product
-    flight = data_product.flight
+    # Create flight without a name and data product
+    flight_without_name = create_flight(db, project_id=project.id, name=None)
+    data_product_without_name = SampleDataProduct(
+        db, project=project, flight=flight_without_name
+    )
 
-    # Generate STAC Item
+    # Generate STAC Items
     sg = STACGenerator(db, project_id=project.id)
 
     # Get STAC generated STAC items
@@ -192,18 +198,32 @@ def test_stac_generator(db: Session) -> None:
     # Get STAC generated STAC collection
     stac_collection = sg.collection
 
-    # Assert that the STAC item was created
-    assert len(stac_items) == 1
-    assert stac_items[0].id == str(data_product.obj.id)
+    # Assert that both STAC items were created
+    assert len(stac_items) == 2
 
-    # Validate STAC Item
-    assert validate(stac_items[0])
-
-    # Validate STAC Collection
+    # Validate STAC Items and Collection
+    for item in stac_items:
+        assert validate(item)
     assert validate(stac_collection)
 
-    # Confirm flight id is present in STAC Item
-    assert stac_items[0].properties["flight_details"]["flight_id"] == str(flight.id)
+    # Test flight_name handling for each item
+    for item in stac_items:
+        flight_details = item.properties["flight_details"]
+
+        if item.id == str(data_product_with_name.obj.id):
+            # Flight with name should include flight_name
+            assert "flight_name" in flight_details
+            assert flight_details["flight_name"] == "Test Flight Name"
+            assert flight_details["flight_id"] == str(flight_with_name.id)
+        elif item.id == str(data_product_without_name.obj.id):
+            # Flight without name should NOT include flight_name
+            assert "flight_name" not in flight_details
+            assert flight_details["flight_id"] == str(flight_without_name.id)
+
+        # Verify other expected fields are present in both cases
+        assert "acquisition_date" in flight_details
+        assert "platform" in flight_details
+        assert "sensor" in flight_details
 
 
 def test_fetch_public_items(stac_collection_published: STACCollectionHelper) -> None:
@@ -333,7 +353,8 @@ def test_stac_generator_no_flights(db: Session) -> None:
 
     # Try to create STACGenerator
     with pytest.raises(
-        ValueError, match="Project must have at least one flight to publish"
+        ValueError,
+        match="Project must have at least one flight with a data product to publish",
     ):
         STACGenerator(db=db, project_id=project.id)
 
