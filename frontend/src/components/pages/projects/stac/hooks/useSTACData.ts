@@ -4,10 +4,17 @@ import { usePolling } from '../../../../hooks/usePolling';
 import { Status } from '../../../../Alert';
 import api from '../../../../../api';
 
+interface STACRequestPayload {
+  sci_doi?: string;
+  sci_citation?: string;
+  license?: string;
+  custom_titles?: Record<string, string>;
+}
+
 interface UseSTACDataProps {
   projectId: string;
   initialStacMetadata: STACMetadata | null;
-  buildQueryParams: () => URLSearchParams;
+  buildRequestPayload: () => STACRequestPayload;
   setCurrentOperation: (operation: 'idle' | 'generating' | 'checking') => void;
   setStatus: (status: Status | null) => void;
   setPollingStatus: (status: string) => void;
@@ -23,7 +30,7 @@ interface UseSTACDataReturn {
 export function useSTACData({
   projectId,
   initialStacMetadata,
-  buildQueryParams,
+  buildRequestPayload,
   setCurrentOperation,
   setStatus,
   setPollingStatus,
@@ -185,12 +192,8 @@ export function useSTACData({
       }
 
       try {
-        const queryString = buildQueryParams().toString();
-        await api.post(
-          `/projects/${projectId}/generate-stac-preview${
-            queryString ? `?${queryString}` : ''
-          }`
-        );
+        const payload = buildRequestPayload();
+        await api.post(`/projects/${projectId}/generate-stac-preview`, payload);
 
         if (usePolling || isBackgroundCheck) {
           if (isBackgroundCheck) {
@@ -221,7 +224,7 @@ export function useSTACData({
     },
     [
       projectId,
-      buildQueryParams,
+      buildRequestPayload,
       setCurrentOperation,
       setStatus,
       isPolling,

@@ -161,14 +161,7 @@ def get_cached_stac_metadata(
 @router.post("/{project_id}/generate-stac-preview")
 def generate_stac_preview_async(
     project_id: UUID,
-    sci_doi: Optional[str] = Query(None, description="DOI for the scientific citation"),
-    sci_citation: Optional[str] = Query(
-        None, description="Citation text for the scientific citation"
-    ),
-    license: Optional[str] = Query(None, description="License for the dataset"),
-    custom_titles: Optional[str] = Query(
-        None, description="JSON string of custom titles for STAC items"
-    ),
+    metadata_request: schemas.STACMetadataRequest,
     project: models.Project = Depends(deps.can_read_write_delete_project),
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
@@ -211,23 +204,14 @@ def generate_stac_preview_async(
             "task_id": str(existing_jobs[0].id),  # Return the existing job ID
         }
 
-    # Parse custom titles from JSON string if provided
-    parsed_custom_titles = None
-    if custom_titles:
-        try:
-            parsed_custom_titles = json.loads(custom_titles)
-        except (json.JSONDecodeError, TypeError) as e:
-            logger.warning(f"Failed to parse custom_titles JSON: {e}")
-            parsed_custom_titles = None
-
     # Start the background task
     task = generate_stac_preview.apply_async(
         args=[str(project_id)],
         kwargs={
-            "sci_doi": sci_doi,
-            "sci_citation": sci_citation,
-            "license": license,
-            "custom_titles": parsed_custom_titles,
+            "sci_doi": metadata_request.sci_doi,
+            "sci_citation": metadata_request.sci_citation,
+            "license": metadata_request.license,
+            "custom_titles": metadata_request.custom_titles,
         },
     )
 
@@ -241,14 +225,7 @@ def generate_stac_preview_async(
 @router.put("/{project_id}/publish-stac-async")
 def publish_project_to_stac_catalog_async(
     project_id: UUID,
-    sci_doi: Optional[str] = Query(None, description="DOI for the scientific citation"),
-    sci_citation: Optional[str] = Query(
-        None, description="Citation text for the scientific citation"
-    ),
-    license: Optional[str] = Query(None, description="License for the dataset"),
-    custom_titles: Optional[str] = Query(
-        None, description="JSON string of custom titles for STAC items"
-    ),
+    metadata_request: schemas.STACMetadataRequest,
     project: models.Project = Depends(deps.can_read_write_delete_project),
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
@@ -291,23 +268,14 @@ def publish_project_to_stac_catalog_async(
             "task_id": str(existing_jobs[0].id),  # Return the existing job ID
         }
 
-    # Parse custom titles from JSON string if provided
-    parsed_custom_titles = None
-    if custom_titles:
-        try:
-            parsed_custom_titles = json.loads(custom_titles)
-        except (json.JSONDecodeError, TypeError) as e:
-            logger.warning(f"Failed to parse custom_titles JSON: {e}")
-            parsed_custom_titles = None
-
     # Start the background task
     task = publish_stac_catalog.apply_async(
         args=[str(project_id)],
         kwargs={
-            "sci_doi": sci_doi,
-            "sci_citation": sci_citation,
-            "license": license,
-            "custom_titles": parsed_custom_titles,
+            "sci_doi": metadata_request.sci_doi,
+            "sci_citation": metadata_request.sci_citation,
+            "license": metadata_request.license,
+            "custom_titles": metadata_request.custom_titles,
         },
     )
 

@@ -8,13 +8,20 @@ interface FormState {
   customTitles: Record<string, string>;
 }
 
+interface STACRequestPayload {
+  sci_doi?: string;
+  sci_citation?: string;
+  license?: string;
+  custom_titles?: Record<string, string>;
+}
+
 interface UseSTACFormReturn {
   formState: FormState;
   updateFormField: <K extends keyof FormState>(
     field: K,
     value: FormState[K]
   ) => void;
-  buildQueryParams: () => URLSearchParams;
+  buildRequestPayload: () => STACRequestPayload;
   resetForm: () => void;
 }
 
@@ -66,16 +73,17 @@ export function useSTACForm(
     setFormState((prev) => ({ ...prev, [field]: value }));
   };
 
-  const buildQueryParams = (): URLSearchParams => {
-    const params = new URLSearchParams();
-    if (formState.sciDoi) params.append('sci_doi', formState.sciDoi);
-    if (formState.sciCitation)
-      params.append('sci_citation', formState.sciCitation);
-    if (formState.license) params.append('license', formState.license);
+  const buildRequestPayload = (): STACRequestPayload => {
+    const payload: STACRequestPayload = {};
+
+    if (formState.sciDoi) payload.sci_doi = formState.sciDoi;
+    if (formState.sciCitation) payload.sci_citation = formState.sciCitation;
+    if (formState.license) payload.license = formState.license;
     if (Object.keys(formState.customTitles).length > 0) {
-      params.append('custom_titles', JSON.stringify(formState.customTitles));
+      payload.custom_titles = formState.customTitles;
     }
-    return params;
+
+    return payload;
   };
 
   const resetForm = () => {
@@ -90,7 +98,7 @@ export function useSTACForm(
   return {
     formState,
     updateFormField,
-    buildQueryParams,
+    buildRequestPayload,
     resetForm,
   };
 }

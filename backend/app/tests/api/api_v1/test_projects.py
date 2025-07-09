@@ -1,6 +1,5 @@
-import json
 from datetime import date, datetime, timezone
-from uuid import UUID
+from typing import Any, Dict
 
 from fastapi import status
 from fastapi.encoders import jsonable_encoder
@@ -12,10 +11,8 @@ from app.api.deps import get_current_user, get_current_approved_user
 from app.core.config import settings
 from app.schemas.data_product import DataProductCreate
 from app.schemas.project import ProjectUpdate
-from app.schemas.project_like import ProjectLikeCreate
 from app.schemas.project_member import ProjectMemberCreate
 from app.schemas.role import Role
-from app.schemas.stac import STACReport
 from app.schemas.team_member import TeamMemberUpdate
 from app.schemas.user import UserUpdate
 from app.tests.utils.data_product import SampleDataProduct
@@ -27,16 +24,10 @@ from app.tests.utils.project import (
     random_harvest_date,
 )
 from app.tests.utils.project_member import create_project_member
-from app.tests.utils.test_stac import (
-    stac_collection_published,
-    stac_collection_unpublished,
-)
-from app.tests.utils.STACCollectionHelper import STACCollectionHelper
 from app.tests.utils.team import create_team, random_team_name, random_team_description
 from app.tests.utils.team_member import create_team_member
 from app.tests.utils.user import create_user, update_regular_user_to_superuser
 from app.tests.utils.utils import get_geojson_feature_collection
-from app.utils.STACCollectionManager import STACCollectionManager
 
 API_URL = f"{settings.API_V1_STR}/projects"
 
@@ -1280,8 +1271,11 @@ def test_generate_stac_preview_async(
     flight = create_flight(db, project_id=project.id)
     data_product = SampleDataProduct(db, project=project, flight=flight)
 
-    # Trigger async STAC preview generation
-    response = client.post(f"{API_URL}/{project.id}/generate-stac-preview")
+    # Trigger async STAC preview generation with empty payload
+    payload: Dict[str, Any] = {}
+    response = client.post(
+        f"{API_URL}/{project.id}/generate-stac-preview", json=payload
+    )
     assert response.status_code == status.HTTP_200_OK
 
     response_data = response.json()
@@ -1310,8 +1304,9 @@ def test_generate_stac_preview_async_with_scientific_metadata(
     )
 
     # Trigger async STAC preview generation with scientific metadata
+    payload = {"sci_doi": doi, "sci_citation": citation}
     response = client.post(
-        f"{API_URL}/{project.id}/generate-stac-preview?sci_doi={doi}&sci_citation={citation}"
+        f"{API_URL}/{project.id}/generate-stac-preview", json=payload
     )
     assert response.status_code == status.HTTP_200_OK
 
@@ -1336,11 +1331,11 @@ def test_generate_stac_preview_async_with_custom_titles(
 
     # Custom titles
     custom_titles = {str(data_product.obj.id): "Custom Async Title"}
-    custom_titles_json = json.dumps(custom_titles)
 
     # Trigger async STAC preview generation with custom titles
+    payload = {"custom_titles": custom_titles}
     response = client.post(
-        f"{API_URL}/{project.id}/generate-stac-preview?custom_titles={custom_titles_json}"
+        f"{API_URL}/{project.id}/generate-stac-preview", json=payload
     )
     assert response.status_code == status.HTTP_200_OK
 
@@ -1364,10 +1359,10 @@ def test_generate_stac_preview_async_without_permission(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_generate_stac_preview_async_with_invalid_json(
+def test_generate_stac_preview_async_with_empty_payload(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
-    """Test generating STAC preview asynchronously with invalid custom titles JSON."""
+    """Test generating STAC preview asynchronously with empty request body."""
     # Create project owned by current user
     current_user = get_current_approved_user(
         get_current_user(db, normal_user_access_token)
@@ -1376,12 +1371,11 @@ def test_generate_stac_preview_async_with_invalid_json(
     flight = create_flight(db, project_id=project.id)
     data_product = SampleDataProduct(db, project=project, flight=flight)
 
-    # Invalid JSON
-    invalid_json = "{invalid json"
+    # Empty payload (should work with defaults)
+    payload: Dict[str, Any] = {}
 
-    # Should still work but ignore invalid JSON
     response = client.post(
-        f"{API_URL}/{project.id}/generate-stac-preview?custom_titles={invalid_json}"
+        f"{API_URL}/{project.id}/generate-stac-preview", json=payload
     )
     assert response.status_code == status.HTTP_200_OK
 
@@ -1402,8 +1396,9 @@ def test_publish_stac_async(
     flight = create_flight(db, project_id=project.id)
     data_product = SampleDataProduct(db, project=project, flight=flight)
 
-    # Trigger async STAC catalog publication
-    response = client.put(f"{API_URL}/{project.id}/publish-stac-async")
+    # Trigger async STAC catalog publication with empty payload
+    payload: Dict[str, Any] = {}
+    response = client.put(f"{API_URL}/{project.id}/publish-stac-async", json=payload)
     assert response.status_code == status.HTTP_200_OK
 
     response_data = response.json()
@@ -1430,9 +1425,8 @@ def test_publish_stac_async_with_scientific_metadata(
     citation = "AsyncPub, Test, et al. (2023). Async Publication Dataset. AsyncPub Journal, 2(1), 5-20."
 
     # Trigger async STAC catalog publication with scientific metadata
-    response = client.put(
-        f"{API_URL}/{project.id}/publish-stac-async?sci_doi={doi}&sci_citation={citation}"
-    )
+    payload = {"sci_doi": doi, "sci_citation": citation}
+    response = client.put(f"{API_URL}/{project.id}/publish-stac-async", json=payload)
     assert response.status_code == status.HTTP_200_OK
 
     response_data = response.json()
@@ -1456,12 +1450,10 @@ def test_publish_stac_async_with_custom_titles(
 
     # Custom titles
     custom_titles = {str(data_product.obj.id): "Custom Async Publish Title"}
-    custom_titles_json = json.dumps(custom_titles)
 
     # Trigger async STAC catalog publication with custom titles
-    response = client.put(
-        f"{API_URL}/{project.id}/publish-stac-async?custom_titles={custom_titles_json}"
-    )
+    payload = {"custom_titles": custom_titles}
+    response = client.put(f"{API_URL}/{project.id}/publish-stac-async", json=payload)
     assert response.status_code == status.HTTP_200_OK
 
     response_data = response.json()
@@ -1484,10 +1476,10 @@ def test_publish_stac_async_without_permission(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_publish_stac_async_with_invalid_json(
+def test_publish_stac_async_with_empty_payload(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
-    """Test publishing STAC catalog asynchronously with invalid custom titles JSON."""
+    """Test publishing STAC catalog asynchronously with empty request body."""
     # Create project owned by current user
     current_user = get_current_approved_user(
         get_current_user(db, normal_user_access_token)
@@ -1496,13 +1488,10 @@ def test_publish_stac_async_with_invalid_json(
     flight = create_flight(db, project_id=project.id)
     data_product = SampleDataProduct(db, project=project, flight=flight)
 
-    # Invalid JSON
-    invalid_json = "{invalid json"
+    # Empty payload (should work with defaults)
+    payload: Dict[str, Any] = {}
 
-    # Should still work but ignore invalid JSON
-    response = client.put(
-        f"{API_URL}/{project.id}/publish-stac-async?custom_titles={invalid_json}"
-    )
+    response = client.put(f"{API_URL}/{project.id}/publish-stac-async", json=payload)
     assert response.status_code == status.HTTP_200_OK
 
     response_data = response.json()
@@ -1659,8 +1648,9 @@ def test_generate_stac_preview_async_with_license(
     license_param = "MIT"
 
     # Trigger async STAC preview generation with license
+    payload = {"license": license_param}
     response = client.post(
-        f"{API_URL}/{project.id}/generate-stac-preview?license={license_param}"
+        f"{API_URL}/{project.id}/generate-stac-preview", json=payload
     )
     assert response.status_code == status.HTTP_200_OK
 
@@ -1687,9 +1677,8 @@ def test_publish_stac_async_with_license(
     license_param = "ISC"
 
     # Trigger async STAC catalog publication with license
-    response = client.put(
-        f"{API_URL}/{project.id}/publish-stac-async?license={license_param}"
-    )
+    payload = {"license": license_param}
+    response = client.put(f"{API_URL}/{project.id}/publish-stac-async", json=payload)
     assert response.status_code == status.HTTP_200_OK
 
     response_data = response.json()

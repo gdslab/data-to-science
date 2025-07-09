@@ -5,9 +5,16 @@ import { Status } from '../../../../Alert';
 
 type ActionType = 'publish' | 'update' | 'unpublish';
 
+interface STACRequestPayload {
+  sci_doi?: string;
+  sci_citation?: string;
+  license?: string;
+  custom_titles?: Record<string, string>;
+}
+
 interface ActionConfig {
   method: 'PUT' | 'DELETE';
-  endpoint: (projectId: string, queryString?: string) => string;
+  endpoint: (projectId: string) => string;
   successMessage: string;
   errorMessage: string;
   operationType: 'publishing' | 'updating' | 'unpublishing';
@@ -15,7 +22,7 @@ interface ActionConfig {
 
 interface UseSTACActionsProps {
   projectId: string;
-  buildQueryParams: () => URLSearchParams;
+  buildRequestPayload: () => STACRequestPayload;
   setCurrentOperation: (
     operation: 'idle' | 'publishing' | 'updating' | 'unpublishing'
   ) => void;
@@ -30,7 +37,7 @@ interface UseSTACActionsReturn {
 
 export function useSTACActions({
   projectId,
-  buildQueryParams,
+  buildRequestPayload,
   setCurrentOperation,
   setStatus,
 }: UseSTACActionsProps): UseSTACActionsReturn {
@@ -39,8 +46,7 @@ export function useSTACActions({
   const actionConfigs: Record<ActionType, ActionConfig> = {
     publish: {
       method: 'PUT',
-      endpoint: (id, qs) =>
-        `/projects/${id}/publish-stac-async${qs ? `?${qs}` : ''}`,
+      endpoint: (id) => `/projects/${id}/publish-stac-async`,
       successMessage:
         'Publish request sent. Please check back in a few minutes.',
       errorMessage: 'Failed to publish project',
@@ -48,8 +54,7 @@ export function useSTACActions({
     },
     update: {
       method: 'PUT',
-      endpoint: (id, qs) =>
-        `/projects/${id}/publish-stac-async${qs ? `?${qs}` : ''}`,
+      endpoint: (id) => `/projects/${id}/publish-stac-async`,
       successMessage:
         'Update request sent. Please check back in a few minutes.',
       errorMessage: 'Failed to update STAC catalog',
@@ -72,12 +77,12 @@ export function useSTACActions({
       setStatus(null);
 
       try {
-        const queryString =
-          actionType !== 'unpublish' ? buildQueryParams().toString() : '';
-        const endpoint = config.endpoint(projectId, queryString);
+        const endpoint = config.endpoint(projectId);
 
         if (config.method === 'PUT') {
-          await api.put(endpoint);
+          const payload =
+            actionType !== 'unpublish' ? buildRequestPayload() : {};
+          await api.put(endpoint, payload);
         } else {
           await api.delete(endpoint);
         }
@@ -98,7 +103,7 @@ export function useSTACActions({
     },
     [
       projectId,
-      buildQueryParams,
+      buildRequestPayload,
       setCurrentOperation,
       setStatus,
       revalidator,
