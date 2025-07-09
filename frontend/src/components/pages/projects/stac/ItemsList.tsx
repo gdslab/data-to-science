@@ -60,6 +60,12 @@ export default function ItemsList({ allItems }: ItemsListProps) {
                         <span className="font-medium">Title:</span> {item.title}
                       </p>
                     )}
+                    {item.flightName && (
+                      <p>
+                        <span className="font-medium">Flight Name:</span>{' '}
+                        {item.flightName}
+                      </p>
+                    )}
                     {item.browserUrl && (
                       <p>
                         <a

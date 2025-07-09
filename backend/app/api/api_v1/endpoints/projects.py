@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, List, Union, Optional
 from uuid import UUID
@@ -12,7 +13,6 @@ from sqlalchemy.orm import Session
 from app import crud, models, schemas
 from app.api import deps
 from app.api.utils import create_project_field_preview
-from app.utils.STACGenerator import STACGenerator
 from app.utils.STACCollectionManager import STACCollectionManager
 from app.core.config import settings
 from app.tasks.stac_tasks import (
@@ -161,35 +161,57 @@ def get_cached_stac_metadata(
 @router.post("/{project_id}/generate-stac-preview")
 def generate_stac_preview_async(
     project_id: UUID,
-    sci_doi: Optional[str] = Query(None, description="DOI for the scientific citation"),
-    sci_citation: Optional[str] = Query(
-        None, description="Citation text for the scientific citation"
-    ),
-    license: Optional[str] = Query(None, description="License for the dataset"),
-    custom_titles: Optional[str] = Query(
-        None, description="JSON string of custom titles for STAC items"
-    ),
+    metadata_request: schemas.STACMetadataRequest,
     project: models.Project = Depends(deps.can_read_write_delete_project),
     current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
 ) -> Any:
     """Generate STAC preview metadata asynchronously."""
-    # Parse custom titles from JSON string if provided
-    parsed_custom_titles = None
-    if custom_titles:
+    # Check if a STAC preview job is already running for this project
+    # Exclude jobs older than 24 hours to prevent stale/failed jobs from blocking new ones
+    cutoff_time = datetime.now(timezone.utc) - timedelta(hours=24)
+    existing_jobs = crud.job.get_jobs_by_name_and_project_id(
+        db,
+        job_name="stac_preview",
+        project_id=project_id,
+        processing=True,
+        cutoff_time=cutoff_time,
+    )
+    if existing_jobs:
+        logger.info(
+            f"STAC preview job already running for project {project_id}, returning existing job info"
+        )
+        # Try to return cached result if available
         try:
-            parsed_custom_titles = json.loads(custom_titles)
-        except (json.JSONDecodeError, TypeError) as e:
-            logger.warning(f"Failed to parse custom_titles JSON: {e}")
-            parsed_custom_titles = None
+            cache_path = get_stac_cache_path(project_id)
+            if cache_path.exists():
+                with open(cache_path, "r") as f:
+                    cached_data = json.load(f)
+                return {
+                    "message": "STAC preview already generated",
+                    "project_id": str(project_id),
+                    "cached_result": cached_data,
+                }
+        except Exception:
+            logger.warning(
+                "Could not read cached STAC preview, but job already running"
+            )
+
+        # Return job in progress response
+        return {
+            "message": "STAC preview generation already in progress",
+            "project_id": str(project_id),
+            "task_id": str(existing_jobs[0].id),  # Return the existing job ID
+        }
 
     # Start the background task
     task = generate_stac_preview.apply_async(
         args=[str(project_id)],
         kwargs={
-            "sci_doi": sci_doi,
-            "sci_citation": sci_citation,
-            "license": license,
-            "custom_titles": parsed_custom_titles,
+            "sci_doi": metadata_request.sci_doi,
+            "sci_citation": metadata_request.sci_citation,
+            "license": metadata_request.license,
+            "custom_titles": metadata_request.custom_titles,
         },
     )
 
@@ -203,35 +225,57 @@ def generate_stac_preview_async(
 @router.put("/{project_id}/publish-stac-async")
 def publish_project_to_stac_catalog_async(
     project_id: UUID,
-    sci_doi: Optional[str] = Query(None, description="DOI for the scientific citation"),
-    sci_citation: Optional[str] = Query(
-        None, description="Citation text for the scientific citation"
-    ),
-    license: Optional[str] = Query(None, description="License for the dataset"),
-    custom_titles: Optional[str] = Query(
-        None, description="JSON string of custom titles for STAC items"
-    ),
+    metadata_request: schemas.STACMetadataRequest,
     project: models.Project = Depends(deps.can_read_write_delete_project),
     current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
 ) -> Any:
     """Publish project to STAC catalog asynchronously."""
-    # Parse custom titles from JSON string if provided
-    parsed_custom_titles = None
-    if custom_titles:
+    # Check if a STAC publish job is already running for this project
+    # Exclude jobs older than 24 hours to prevent stale/failed jobs from blocking new ones
+    cutoff_time = datetime.now(timezone.utc) - timedelta(hours=24)
+    existing_jobs = crud.job.get_jobs_by_name_and_project_id(
+        db,
+        job_name="stac_publish",
+        project_id=project_id,
+        processing=True,
+        cutoff_time=cutoff_time,
+    )
+    if existing_jobs:
+        logger.info(
+            f"STAC publish job already running for project {project_id}, returning existing job info"
+        )
+        # Try to return cached result if available
         try:
-            parsed_custom_titles = json.loads(custom_titles)
-        except (json.JSONDecodeError, TypeError) as e:
-            logger.warning(f"Failed to parse custom_titles JSON: {e}")
-            parsed_custom_titles = None
+            cache_path = get_stac_cache_path(project_id)
+            if cache_path.exists():
+                with open(cache_path, "r") as f:
+                    cached_data = json.load(f)
+                return {
+                    "message": "Cached data from previous STAC publish job",
+                    "project_id": str(project_id),
+                    "cached_result": cached_data,
+                }
+        except Exception:
+            logger.warning(
+                "Could not read cached STAC publish result, but job already running"
+            )
+
+        # Return job in progress response
+        return {
+            "message": "STAC catalog publication already in progress",
+            "project_id": str(project_id),
+            "task_id": str(existing_jobs[0].id),  # Return the existing job ID
+        }
 
     # Start the background task
     task = publish_stac_catalog.apply_async(
         args=[str(project_id)],
         kwargs={
-            "sci_doi": sci_doi,
-            "sci_citation": sci_citation,
-            "license": license,
-            "custom_titles": parsed_custom_titles,
+            "sci_doi": metadata_request.sci_doi,
+            "sci_citation": metadata_request.sci_citation,
+            "license": metadata_request.license,
+            "custom_titles": metadata_request.custom_titles,
         },
     )
 

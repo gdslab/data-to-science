@@ -4,10 +4,17 @@ import { usePolling } from '../../../../hooks/usePolling';
 import { Status } from '../../../../Alert';
 import api from '../../../../../api';
 
+interface STACRequestPayload {
+  sci_doi?: string;
+  sci_citation?: string;
+  license?: string;
+  custom_titles?: Record<string, string>;
+}
+
 interface UseSTACDataProps {
   projectId: string;
   initialStacMetadata: STACMetadata | null;
-  buildQueryParams: () => URLSearchParams;
+  buildRequestPayload: () => STACRequestPayload;
   setCurrentOperation: (operation: 'idle' | 'generating' | 'checking') => void;
   setStatus: (status: Status | null) => void;
   setPollingStatus: (status: string) => void;
@@ -23,7 +30,7 @@ interface UseSTACDataReturn {
 export function useSTACData({
   projectId,
   initialStacMetadata,
-  buildQueryParams,
+  buildRequestPayload,
   setCurrentOperation,
   setStatus,
   setPollingStatus,
@@ -33,6 +40,7 @@ export function useSTACData({
   );
   const hasCheckedForUpdates = useRef(false);
   const isBackgroundPolling = useRef(false);
+  const hasInitialEffectRun = useRef(false);
 
   // Helper function to detect meaningful metadata changes
   const hasMetadataChanged = useCallback(
@@ -85,6 +93,7 @@ export function useSTACData({
           id: item.id,
           isSuccessful: true,
           title: item.properties.title,
+          flightName: item.properties.flight_details.flight_name,
           dataType: item.properties.data_product_details.data_type,
           acquisitionDate: item.properties.flight_details.acquisition_date,
           platform: item.properties.flight_details.platform,
@@ -184,12 +193,8 @@ export function useSTACData({
       }
 
       try {
-        const queryString = buildQueryParams().toString();
-        await api.post(
-          `/projects/${projectId}/generate-stac-preview${
-            queryString ? `?${queryString}` : ''
-          }`
-        );
+        const payload = buildRequestPayload();
+        await api.post(`/projects/${projectId}/generate-stac-preview`, payload);
 
         if (usePolling || isBackgroundCheck) {
           if (isBackgroundCheck) {
@@ -220,7 +225,7 @@ export function useSTACData({
     },
     [
       projectId,
-      buildQueryParams,
+      buildRequestPayload,
       setCurrentOperation,
       setStatus,
       isPolling,
@@ -241,15 +246,24 @@ export function useSTACData({
 
   // Initial data loading effect
   useEffect(() => {
+    // Prevent double execution of this effect
+    if (hasInitialEffectRun.current) {
+      return;
+    }
+
+    // Set flags to prevent double execution
+    hasInitialEffectRun.current = true;
     hasCheckedForUpdates.current = false;
 
+    // Generate preview if no initial metadata is provided
     if (!initialStacMetadata) {
       generatePreview();
     } else {
+      // Check for updates if initial metadata is provided
       hasCheckedForUpdates.current = true;
       checkForUpdates();
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // Cleanup effect
   useEffect(() => {

@@ -11,6 +11,7 @@ export interface STACItem {
       acquisition_date: string;
       platform: string;
       sensor: string;
+      flight_name?: string;
     };
   };
   browser_url?: string;
@@ -25,6 +26,7 @@ export interface STACError {
     data_type: string;
     filepath: string;
     flight_id: string;
+    flight_name?: string;
     title?: string;
     acquisition_date?: string;
     platform?: string;
@@ -66,6 +68,7 @@ export interface CombinedSTACItem {
   id: string;
   isSuccessful: boolean;
   title?: string;
+  flightName?: string;
   dataType?: string;
   acquisitionDate?: string;
   platform?: string;

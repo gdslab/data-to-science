@@ -34,4 +34,13 @@ class STACPreview(BaseModel):
     failed_items: Optional[List[ItemStatus]] = None
 
 
+class STACMetadataRequest(BaseModel):
+    """Request body for STAC operations (preview generation and catalog publishing)."""
+
+    sci_doi: Optional[str] = None
+    sci_citation: Optional[str] = None
+    license: Optional[str] = None
+    custom_titles: Optional[Dict[str, str]] = None
+
+
 STACResponse = Union[STACReport, STACPreview]

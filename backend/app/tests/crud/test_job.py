@@ -1,5 +1,6 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import List
+from uuid import uuid4
 
 from sqlalchemy.orm import Session
 
@@ -68,3 +69,129 @@ def test_update_job(db: Session) -> None:
     assert job_update.state == State.STARTED
     assert job_update.status == Status.INPROGRESS
     assert job_update.extra and job_update.extra.get("extra") == "could be anything"
+
+
+def test_get_jobs_by_name_and_project_id(db: Session) -> None:
+    """Verify getting jobs by name and project ID works correctly."""
+    from uuid import uuid4
+
+    project_id = uuid4()
+    other_project_id = uuid4()
+
+    # Create jobs with different names and project IDs
+    job1 = create_job(
+        db,
+        name="stac_preview",
+        extra={"project_id": str(project_id)},
+        status=Status.INPROGRESS,
+    )
+    job2 = create_job(
+        db,
+        name="stac_preview",
+        extra={"project_id": str(other_project_id)},
+        status=Status.WAITING,
+    )
+    job3 = create_job(
+        db,
+        name="stac_publish",
+        extra={"project_id": str(project_id)},
+        status=Status.INPROGRESS,
+    )
+    job4 = create_job(
+        db,
+        name="stac_preview",
+        extra={"project_id": str(project_id)},
+        status=Status.SUCCESS,
+    )
+
+    # Test finding stac_preview jobs for project_id (should return 2: job1 and job4)
+    jobs = crud.job.get_jobs_by_name_and_project_id(
+        db, job_name="stac_preview", project_id=project_id
+    )
+    assert len(jobs) == 2
+    job_ids = [job.id for job in jobs]
+    assert job1.id in job_ids
+    assert job4.id in job_ids
+
+    # Test finding only processing jobs for project_id (should return 1: job1)
+    processing_jobs = crud.job.get_jobs_by_name_and_project_id(
+        db, job_name="stac_preview", project_id=project_id, processing=True
+    )
+    assert len(processing_jobs) == 1
+    assert processing_jobs[0].id == job1.id
+
+    # Test finding stac_publish jobs for project_id (should return 1: job3)
+    publish_jobs = crud.job.get_jobs_by_name_and_project_id(
+        db, job_name="stac_publish", project_id=project_id
+    )
+    assert len(publish_jobs) == 1
+    assert publish_jobs[0].id == job3.id
+
+    # Test finding stac_publish processing jobs for project_id (should return 1: job3)
+    publish_processing_jobs = crud.job.get_jobs_by_name_and_project_id(
+        db, job_name="stac_publish", project_id=project_id, processing=True
+    )
+    assert len(publish_processing_jobs) == 1
+    assert publish_processing_jobs[0].id == job3.id
+
+    # Test finding jobs for other_project_id (should return 1: job2)
+    other_jobs = crud.job.get_jobs_by_name_and_project_id(
+        db, job_name="stac_preview", project_id=other_project_id
+    )
+    assert len(other_jobs) == 1
+    assert other_jobs[0].id == job2.id
+
+
+def test_get_jobs_by_name_and_project_id_excludes_old_jobs(db: Session) -> None:
+    """Verify that jobs older than the cutoff time are excluded when processing=True."""
+    project_id = uuid4()
+
+    # Create a recent job (should be included)
+    recent_job = create_job(
+        db,
+        name="stac_preview",
+        extra={"project_id": str(project_id)},
+        status=Status.INPROGRESS,
+        start_time=datetime.now(timezone.utc) - timedelta(hours=2),  # 2 hours ago
+    )
+
+    # Create an old job (should be excluded)
+    old_job = create_job(
+        db,
+        name="stac_preview",
+        extra={"project_id": str(project_id)},
+        status=Status.INPROGRESS,
+        start_time=datetime.now(timezone.utc) - timedelta(hours=25),  # 25 hours ago
+    )
+
+    # Set cutoff time to 24 hours ago
+    cutoff_time = datetime.now(timezone.utc) - timedelta(hours=24)
+
+    # Test finding processing jobs with cutoff - should only return the recent job
+    processing_jobs = crud.job.get_jobs_by_name_and_project_id(
+        db,
+        job_name="stac_preview",
+        project_id=project_id,
+        processing=True,
+        cutoff_time=cutoff_time,
+    )
+    assert len(processing_jobs) == 1
+    assert processing_jobs[0].id == recent_job.id
+
+    # Test finding processing jobs without cutoff - should return both
+    processing_jobs_no_cutoff = crud.job.get_jobs_by_name_and_project_id(
+        db, job_name="stac_preview", project_id=project_id, processing=True
+    )
+    assert len(processing_jobs_no_cutoff) == 2
+    job_ids = [job.id for job in processing_jobs_no_cutoff]
+    assert recent_job.id in job_ids
+    assert old_job.id in job_ids
+
+    # Test finding all jobs (processing=False) - should return both regardless of cutoff
+    all_jobs = crud.job.get_jobs_by_name_and_project_id(
+        db, job_name="stac_preview", project_id=project_id, processing=False
+    )
+    assert len(all_jobs) == 2
+    job_ids = [job.id for job in all_jobs]
+    assert recent_job.id in job_ids
+    assert old_job.id in job_ids

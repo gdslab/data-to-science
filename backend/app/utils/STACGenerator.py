@@ -148,7 +148,7 @@ class STACGenerator:
         project = crud.project.get(db=self.db, id=self.project_id)
 
         if not project:
-            raise ValueError("Project not found.")
+            raise ValueError("Project not found")
 
         return project
 
@@ -166,7 +166,7 @@ class STACGenerator:
         )
         if len(flights) == 0:
             raise ValueError(
-                "Project must have at least one flight with a data product to publish."
+                "Project must have at least one flight with a data product to publish"
             )
 
         return list(flights)
@@ -229,21 +229,25 @@ class STACGenerator:
         data_product: models.DataProduct,
         flight: models.Flight,
     ) -> Item:
+        flight_details = {
+            "flight_id": str(flight.id),
+            "acquisition_date": date_to_datetime(flight.acquisition_date).isoformat(),
+            "altitude": flight.altitude,
+            "forward_overlap": flight.forward_overlap,
+            "side_overlap": flight.side_overlap,
+            "platform": flight.platform,
+            "sensor": flight.sensor,
+        }
+
+        # Include flight name if provided
+        if flight.name:
+            flight_details["flight_name"] = flight.name
+
         flight_properties = {
             "data_product_details": {
                 "data_type": data_product.data_type,
             },
-            "flight_details": {
-                "flight_id": str(flight.id),
-                "acquisition_date": date_to_datetime(
-                    flight.acquisition_date
-                ).isoformat(),
-                "altitude": flight.altitude,
-                "forward_overlap": flight.forward_overlap,
-                "side_overlap": flight.side_overlap,
-                "platform": flight.platform,
-                "sensor": flight.sensor,
-            },
+            "flight_details": flight_details,
         }
         # Add title to properties - use custom title if provided, otherwise use default
         title = generate_item_title(data_product, flight, self.custom_titles)

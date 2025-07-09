@@ -77,7 +77,7 @@ def generate_stac_preview(
 
     # Create job for tracking
     job = JobManager(job_name="stac_preview")
-    job.start()
+    job.update(status=Status.INPROGRESS, extra={"project_id": str(project_uuid)})
 
     try:
         # Generate STAC collection and items
@@ -154,7 +154,7 @@ def publish_stac_catalog(
 
     # Create job for tracking
     job = JobManager(job_name="stac_publish")
-    job.start()
+    job.update(status=Status.INPROGRESS, extra={"project_id": str(project_uuid)})
 
     try:
         # Generate STAC collection and items
@@ -281,7 +281,7 @@ def generate_stac_preview_task(
 
     # Create job for tracking
     job = JobManager(job_name="stac_preview")
-    job.start()
+    job.update(status=Status.INPROGRESS, extra={"project_id": str(project_uuid)})
 
     try:
         # Generate STAC collection and items
@@ -365,7 +365,7 @@ def publish_stac_catalog_task(
 
     # Create job for tracking
     job = JobManager(job_name="stac_publish")
-    job.start()
+    job.update(status=Status.INPROGRESS, extra={"project_id": str(project_uuid)})
 
     try:
         # Generate STAC collection and items
