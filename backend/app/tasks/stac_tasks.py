@@ -70,6 +70,7 @@ def generate_stac_preview(
     sci_citation: Optional[str] = None,
     license: Optional[str] = None,
     custom_titles: Optional[Dict[str, str]] = None,
+    cached_stac_metadata: Optional[Dict] = None,
 ) -> Dict:
     """Generate STAC preview metadata for a project without publishing."""
     db: Session = next(get_db())
@@ -88,6 +89,7 @@ def generate_stac_preview(
             sci_citation=sci_citation,
             license=license,
             custom_titles=custom_titles,
+            cached_stac_metadata=cached_stac_metadata,
         )
         collection = sg.collection
         items = sg.items
@@ -147,6 +149,7 @@ def publish_stac_catalog(
     sci_citation: Optional[str] = None,
     license: Optional[str] = None,
     custom_titles: Optional[Dict[str, str]] = None,
+    cached_stac_metadata: Optional[Dict] = None,
 ) -> Dict:
     """Publish project to STAC catalog."""
     db: Session = next(get_db())
@@ -165,6 +168,7 @@ def publish_stac_catalog(
             sci_citation=sci_citation,
             license=license,
             custom_titles=custom_titles,
+            cached_stac_metadata=cached_stac_metadata,
         )
         collection = sg.collection
         items = sg.items
@@ -267,6 +271,7 @@ def generate_stac_preview_task(
     sci_citation: Optional[str] = None,
     license: Optional[str] = None,
     custom_titles: Optional[Dict[str, str]] = None,
+    cached_stac_metadata: Optional[Dict] = None,
     db: Optional[Session] = None,
 ) -> Dict:
     """Non-Celery function for testing STAC preview generation."""
@@ -292,6 +297,7 @@ def generate_stac_preview_task(
             sci_citation=sci_citation,
             license=license,
             custom_titles=custom_titles,
+            cached_stac_metadata=cached_stac_metadata,
         )
         collection = sg.collection
         items = sg.items
@@ -349,6 +355,7 @@ def publish_stac_catalog_task(
     sci_citation: Optional[str] = None,
     license: Optional[str] = None,
     custom_titles: Optional[Dict[str, str]] = None,
+    cached_stac_metadata: Optional[Dict] = None,
     db: Optional[Session] = None,
 ) -> Dict:
     """Non-Celery function for testing STAC catalog publication."""
@@ -376,6 +383,7 @@ def publish_stac_catalog_task(
             sci_citation=sci_citation,
             license=license,
             custom_titles=custom_titles,
+            cached_stac_metadata=cached_stac_metadata,
         )
         collection = sg.collection
         items = sg.items

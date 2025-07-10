@@ -167,6 +167,16 @@ def generate_stac_preview_async(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Generate STAC preview metadata asynchronously."""
+    # Check for cached STAC metadata to optimize generation
+    cached_stac_metadata = None
+    cache_path = get_stac_cache_path(project_id)
+    try:
+        if cache_path.exists():
+            with open(cache_path, "r") as f:
+                cached_stac_metadata = json.load(f)
+    except Exception:
+        logger.warning("Could not read cached STAC metadata for optimization")
+
     # Check if a STAC preview job is already running for this project
     # Exclude jobs older than 24 hours to prevent stale/failed jobs from blocking new ones
     cutoff_time = datetime.now(timezone.utc) - timedelta(hours=24)
@@ -182,20 +192,12 @@ def generate_stac_preview_async(
             f"STAC preview job already running for project {project_id}, returning existing job info"
         )
         # Try to return cached result if available
-        try:
-            cache_path = get_stac_cache_path(project_id)
-            if cache_path.exists():
-                with open(cache_path, "r") as f:
-                    cached_data = json.load(f)
-                return {
-                    "message": "STAC preview already generated",
-                    "project_id": str(project_id),
-                    "cached_result": cached_data,
-                }
-        except Exception:
-            logger.warning(
-                "Could not read cached STAC preview, but job already running"
-            )
+        if cached_stac_metadata:
+            return {
+                "message": "STAC preview already generated",
+                "project_id": str(project_id),
+                "cached_result": cached_stac_metadata,
+            }
 
         # Return job in progress response
         return {
@@ -212,6 +214,7 @@ def generate_stac_preview_async(
             "sci_citation": metadata_request.sci_citation,
             "license": metadata_request.license,
             "custom_titles": metadata_request.custom_titles,
+            "cached_stac_metadata": cached_stac_metadata,
         },
     )
 
@@ -231,6 +234,16 @@ def publish_project_to_stac_catalog_async(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Publish project to STAC catalog asynchronously."""
+    # Check for cached STAC metadata to optimize generation
+    cached_stac_metadata = None
+    cache_path = get_stac_cache_path(project_id)
+    try:
+        if cache_path.exists():
+            with open(cache_path, "r") as f:
+                cached_stac_metadata = json.load(f)
+    except Exception:
+        logger.warning("Could not read cached STAC metadata for optimization")
+
     # Check if a STAC publish job is already running for this project
     # Exclude jobs older than 24 hours to prevent stale/failed jobs from blocking new ones
     cutoff_time = datetime.now(timezone.utc) - timedelta(hours=24)
@@ -246,20 +259,12 @@ def publish_project_to_stac_catalog_async(
             f"STAC publish job already running for project {project_id}, returning existing job info"
         )
         # Try to return cached result if available
-        try:
-            cache_path = get_stac_cache_path(project_id)
-            if cache_path.exists():
-                with open(cache_path, "r") as f:
-                    cached_data = json.load(f)
-                return {
-                    "message": "Cached data from previous STAC publish job",
-                    "project_id": str(project_id),
-                    "cached_result": cached_data,
-                }
-        except Exception:
-            logger.warning(
-                "Could not read cached STAC publish result, but job already running"
-            )
+        if cached_stac_metadata:
+            return {
+                "message": "Cached data from previous STAC publish job",
+                "project_id": str(project_id),
+                "cached_result": cached_stac_metadata,
+            }
 
         # Return job in progress response
         return {
@@ -276,6 +281,7 @@ def publish_project_to_stac_catalog_async(
             "sci_citation": metadata_request.sci_citation,
             "license": metadata_request.license,
             "custom_titles": metadata_request.custom_titles,
+            "cached_stac_metadata": cached_stac_metadata,
         },
     )
 
