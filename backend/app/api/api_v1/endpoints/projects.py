@@ -2,8 +2,8 @@ import json
 import logging
 import os
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
-from typing import Any, List, Union, Optional
+from typing import Any, List, Union
+from urllib.parse import urljoin
 from uuid import UUID
 
 from geojson_pydantic import Feature, FeatureCollection
@@ -149,6 +149,21 @@ def get_cached_stac_metadata(
     try:
         with open(cache_path, "r") as f:
             cached_data = json.load(f)
+
+        # Add browser URLs if configured and not already present
+        if settings.STAC_BROWSER_URL and "collection_url" not in cached_data:
+            cached_data["collection_url"] = urljoin(
+                str(settings.STAC_BROWSER_URL), f"collections/{project_id}"
+            )
+            # Add URL to each item if not already present
+            if "items" in cached_data:
+                for item in cached_data["items"]:
+                    if "browser_url" not in item:
+                        item["browser_url"] = urljoin(
+                            str(settings.STAC_BROWSER_URL),
+                            f"collections/{project_id}/items/{item['id']}",
+                        )
+
         return cached_data
     except Exception as e:
         logger.exception(f"Failed to read cached STAC metadata: {e}")
@@ -490,11 +505,14 @@ def get_project_stac_metadata(
         # Add browser URLs if STAC_BROWSER_URL is configured
         collection_url = None
         if settings.STAC_BROWSER_URL:
-            collection_url = f"{settings.STAC_BROWSER_URL}/collections/{project_id}"
+            collection_url = urljoin(
+                str(settings.STAC_BROWSER_URL), f"collections/{project_id}"
+            )
             # Add URL to each item
             for item in items:
-                item["browser_url"] = (
-                    f"{settings.STAC_BROWSER_URL}/collections/{project_id}/items/{item['id']}"
+                item["browser_url"] = urljoin(
+                    str(settings.STAC_BROWSER_URL),
+                    f"collections/{project_id}/items/{item['id']}",
                 )
 
         return {

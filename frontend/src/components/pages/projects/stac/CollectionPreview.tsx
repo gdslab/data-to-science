@@ -1,11 +1,14 @@
 import { STACMetadata } from './STACTypes';
+import { Project } from '../Project';
 
 interface CollectionPreviewProps {
   stacMetadata: STACMetadata;
+  project: Project;
 }
 
 export default function CollectionPreview({
   stacMetadata,
+  project,
 }: CollectionPreviewProps) {
   return (
     <div className="mb-4 p-3 bg-white rounded border border-gray-200 shadow-sm">
@@ -13,7 +16,7 @@ export default function CollectionPreview({
       <div className="ml-4">
         <p>
           <span className="font-medium">Title:</span>{' '}
-          {stacMetadata.collection_url ? (
+          {stacMetadata.collection_url && project.is_published ? (
             <a
               href={stacMetadata.collection_url}
               target="_blank"

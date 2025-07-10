@@ -110,7 +110,11 @@ export default function ProjectSTACPublishing() {
             status={operations.status}
           />
 
-          <STACPreviewPanel stacMetadata={stacMetadata} allItems={allItems} />
+          <STACPreviewPanel
+            stacMetadata={stacMetadata}
+            allItems={allItems}
+            project={loaderProject}
+          />
         </div>
       )}
     </div>
