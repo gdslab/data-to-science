@@ -62,6 +62,7 @@ def create_item(
     collection_id: str,
     fallback_dt: datetime,
     flight_properties: Dict[str, Any],
+    item_id: str,
     cached_item: Optional[Dict[str, Any]] = None,
 ) -> Item:
     # Unique UUID for COPC
@@ -165,7 +166,7 @@ def create_item(
 
     # Create STAC Item for COPC
     item = Item(
-        id=copc_uuid,
+        id=item_id,
         collection=collection_id,
         geometry=geometry,
         bbox=bbox,
@@ -173,7 +174,7 @@ def create_item(
         datetime=fallback_dt,
         properties={**flight_properties, **properties},
     )
-    item.add_asset(key=copc_uuid, asset=asset)
+    item.add_asset(key=item_id, asset=asset)
 
     return item
 

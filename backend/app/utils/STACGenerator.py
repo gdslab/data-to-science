@@ -273,6 +273,7 @@ class STACGenerator:
                 collection_id=collection_id,
                 fallback_dt=date_to_datetime(flight.acquisition_date),
                 flight_properties=flight_properties,
+                item_id=data_product_id_str,
                 cached_item=cached_item,
             )
         else:
@@ -418,6 +419,7 @@ def generate_item_title(
         str: Generated title for the item
     """
     data_product_id = str(data_product.id)
+
     if (
         custom_titles
         and data_product_id in custom_titles
