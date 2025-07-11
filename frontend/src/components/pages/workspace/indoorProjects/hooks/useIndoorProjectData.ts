@@ -8,6 +8,7 @@ import {
   IndoorProjectDataSpreadsheetAPIResponse,
   IndoorProjectDataVizAPIResponse,
   IndoorProjectDataViz2APIResponse,
+  IndoorProjectDataVizScatterAPIResponse,
 } from '../IndoorProject.d';
 
 interface UseIndoorProjectDataProps {
@@ -20,6 +21,7 @@ interface UseIndoorProjectDataReturn {
   potModuleVisualizationData: IndoorProjectDataVizAPIResponse | null;
   potGroupModuleVisualizationData: IndoorProjectDataVizAPIResponse | null;
   traitModuleVisualizationData: IndoorProjectDataViz2APIResponse | null;
+  traitScatterModuleVisualizationData: IndoorProjectDataVizScatterAPIResponse | null;
   isLoading: boolean;
   isLoadingData: boolean;
   error: { status: number; message: string } | null;
@@ -28,6 +30,9 @@ interface UseIndoorProjectDataReturn {
   >;
   setTraitModuleVisualizationData: Dispatch<
     SetStateAction<IndoorProjectDataViz2APIResponse | null>
+  >;
+  setTraitScatterModuleVisualizationData: Dispatch<
+    SetStateAction<IndoorProjectDataVizScatterAPIResponse | null>
   >;
   refetch: () => void;
 }
@@ -46,6 +51,10 @@ export function useIndoorProjectData({
     useState<IndoorProjectDataVizAPIResponse | null>(null);
   const [traitModuleVisualizationData, setTraitModuleVisualizationData] =
     useState<IndoorProjectDataViz2APIResponse | null>(null);
+  const [
+    traitScatterModuleVisualizationData,
+    setTraitScatterModuleVisualizationData,
+  ] = useState<IndoorProjectDataVizScatterAPIResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [error, setError] = useState<{
@@ -231,11 +240,13 @@ export function useIndoorProjectData({
     potModuleVisualizationData,
     potGroupModuleVisualizationData,
     traitModuleVisualizationData,
+    traitScatterModuleVisualizationData,
     isLoading,
     isLoadingData,
     error,
     setPotGroupModuleVisualizationData,
     setTraitModuleVisualizationData,
+    setTraitScatterModuleVisualizationData,
     refetch,
   };
 }

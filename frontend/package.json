@@ -23,6 +23,7 @@
     "@nivo/calendar": "^0.87.0",
     "@nivo/funnel": "^0.87.0",
     "@nivo/line": "^0.87.0",
+    "@nivo/scatterplot": "^0.99.0",
     "@turf/area": "^6.5.0",
     "@turf/bbox": "^7.2.0",
     "@turf/bbox-polygon": "^7.2.0",

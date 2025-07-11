@@ -1,5 +1,6 @@
 import axios, { AxiosResponse } from 'axios';
 import { Params, useLoaderData } from 'react-router-dom';
+import { Tab } from '@headlessui/react';
 
 import Alert from '../../../Alert';
 import { IndoorProjectAPIResponse } from './IndoorProject.d';
@@ -11,6 +12,8 @@ import PotGroupModuleForm from './PotGroupModule/PotGroupModuleForm';
 import PotGroupModuleDataVisualization from './PotGroupModule/PotGroupModuleDataVisualization';
 import TraitModuleForm from './TraitModule/TraitModuleForm';
 import TraitModuleDataVisualization from './TraitModule/TraitModuleDataVisualization';
+import TraitScatterModuleForm from './TraitModule/TraitScatterModuleForm';
+import TraitScatterModuleDataVisualization from './TraitModule/TraitScatterModuleDataVisualization';
 import { useIndoorProjectData } from './hooks/useIndoorProjectData';
 import IndoorProjectUploadForm from './IndoorProjectUploadForm';
 
@@ -44,10 +47,12 @@ export default function IndoorProjectDetail() {
     potModuleVisualizationData,
     potGroupModuleVisualizationData,
     traitModuleVisualizationData,
+    traitScatterModuleVisualizationData,
     isLoading,
     error,
     setPotGroupModuleVisualizationData,
     setTraitModuleVisualizationData,
+    setTraitScatterModuleVisualizationData,
     refetch,
   } = useIndoorProjectData({ indoorProjectId: indoorProject.id });
   const indoorProjectDataId = indoorProjectData.find(
@@ -121,45 +126,128 @@ export default function IndoorProjectDetail() {
                     : 'Not available'}
                 </span>
 
-                {indoorProjectDataSpreadsheet && potModuleVisualizationData && (
-                  <div className="max-h-[450px] flex flex-wrap justify-start p-4 gap-4 overflow-auto">
-                    <PotModuleDataVisualization
-                      data={potModuleVisualizationData}
-                      indoorProjectDataSpreadsheet={
-                        indoorProjectDataSpreadsheet
+                <Tab.Group>
+                  <Tab.List className="flex space-x-1 rounded-xl bg-gray-800 p-1">
+                    <Tab
+                      className={({ selected }) =>
+                        `w-full rounded-lg py-2.5 px-3 text-sm font-medium leading-5 text-white transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 ${
+                          selected
+                            ? 'bg-blue-600 shadow'
+                            : 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                        }`
                       }
-                      indoorProjectId={indoorProject.id}
-                    />
-                  </div>
-                )}
-
-                {indoorProjectDataId && (
-                  <PotGroupModuleForm
-                    indoorProjectId={indoorProject.id}
-                    indoorProjectDataId={indoorProjectDataId}
-                    setVisualizationData={setPotGroupModuleVisualizationData}
-                  />
-                )}
-                {potGroupModuleVisualizationData && (
-                  <PotGroupModuleDataVisualization
-                    data={potGroupModuleVisualizationData}
-                  />
-                )}
-                {indoorProjectDataSpreadsheet && indoorProjectDataId && (
-                  <TraitModuleForm
-                    indoorProjectId={indoorProject.id}
-                    indoorProjectDataId={indoorProjectDataId}
-                    numericColumns={
-                      indoorProjectDataSpreadsheet.numeric_columns
-                    }
-                    setVisualizationData={setTraitModuleVisualizationData}
-                  />
-                )}
-                {traitModuleVisualizationData && (
-                  <TraitModuleDataVisualization
-                    data={traitModuleVisualizationData}
-                  />
-                )}
+                    >
+                      Pot Overview
+                    </Tab>
+                    <Tab
+                      className={({ selected }) =>
+                        `w-full rounded-lg py-2.5 px-3 text-sm font-medium leading-5 text-white transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 ${
+                          selected
+                            ? 'bg-blue-600 shadow'
+                            : 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                        }`
+                      }
+                    >
+                      Pot Groups
+                    </Tab>
+                    <Tab
+                      className={({ selected }) =>
+                        `w-full rounded-lg py-2.5 px-3 text-sm font-medium leading-5 text-white transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 ${
+                          selected
+                            ? 'bg-blue-600 shadow'
+                            : 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                        }`
+                      }
+                    >
+                      Traits
+                    </Tab>
+                    <Tab
+                      className={({ selected }) =>
+                        `w-full rounded-lg py-2.5 px-3 text-sm font-medium leading-5 text-white transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 ${
+                          selected
+                            ? 'bg-blue-600 shadow'
+                            : 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                        }`
+                      }
+                    >
+                      Trait Scatter
+                    </Tab>
+                  </Tab.List>
+                  <Tab.Panels className="mt-4">
+                    <Tab.Panel className="rounded-xl bg-gray-50 p-4 focus:outline-none">
+                      {indoorProjectDataSpreadsheet &&
+                        potModuleVisualizationData && (
+                          <div className="max-h-[450px] flex flex-wrap justify-start gap-4 overflow-auto">
+                            <PotModuleDataVisualization
+                              data={potModuleVisualizationData}
+                              indoorProjectDataSpreadsheet={
+                                indoorProjectDataSpreadsheet
+                              }
+                              indoorProjectId={indoorProject.id}
+                            />
+                          </div>
+                        )}
+                    </Tab.Panel>
+                    <Tab.Panel className="rounded-xl bg-gray-50 p-4 focus:outline-none">
+                      {indoorProjectDataId && (
+                        <PotGroupModuleForm
+                          indoorProjectId={indoorProject.id}
+                          indoorProjectDataId={indoorProjectDataId}
+                          setVisualizationData={
+                            setPotGroupModuleVisualizationData
+                          }
+                        />
+                      )}
+                      {potGroupModuleVisualizationData && (
+                        <div className="mt-4">
+                          <PotGroupModuleDataVisualization
+                            data={potGroupModuleVisualizationData}
+                          />
+                        </div>
+                      )}
+                    </Tab.Panel>
+                    <Tab.Panel className="rounded-xl bg-gray-50 p-4 focus:outline-none">
+                      {indoorProjectDataSpreadsheet && indoorProjectDataId && (
+                        <TraitModuleForm
+                          indoorProjectId={indoorProject.id}
+                          indoorProjectDataId={indoorProjectDataId}
+                          numericColumns={
+                            indoorProjectDataSpreadsheet.numeric_columns
+                          }
+                          setVisualizationData={setTraitModuleVisualizationData}
+                        />
+                      )}
+                      {traitModuleVisualizationData && (
+                        <div className="mt-4">
+                          <TraitModuleDataVisualization
+                            data={traitModuleVisualizationData}
+                          />
+                        </div>
+                      )}
+                    </Tab.Panel>
+                    <Tab.Panel className="rounded-xl bg-gray-50 p-4 focus:outline-none">
+                      {indoorProjectDataSpreadsheet && indoorProjectDataId && (
+                        <TraitScatterModuleForm
+                          indoorProjectId={indoorProject.id}
+                          indoorProjectDataId={indoorProjectDataId}
+                          numericColumns={
+                            indoorProjectDataSpreadsheet.numeric_columns
+                          }
+                          setVisualizationData={
+                            setTraitScatterModuleVisualizationData
+                          }
+                        />
+                      )}
+                      {traitScatterModuleVisualizationData && (
+                        <div className="mt-4">
+                          <TraitScatterModuleDataVisualization
+                            data={traitScatterModuleVisualizationData}
+                          />
+                        </div>
+                      )}
+                    </Tab.Panel>
+                  </Tab.Panels>
+                </Tab.Group>
               </div>
             )}
 

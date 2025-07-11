@@ -51,11 +51,6 @@ def read_indoor_project_data_spreadsheet(
     ),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    logger.info("--------------------------------")
-    logger.info("read_indoor_project_data_spreadsheet")
-    logger.info("--------------------------------")
-    logger.info(f"indoor_project_id: {indoor_project_id}")
-    logger.info(f"indoor_project_data_id: {indoor_project_data_id}")
     spreadsheet_file = crud.indoor_project_data.read_by_id(
         db,
         indoor_project_id=indoor_project_id,
@@ -622,6 +617,84 @@ def read_indoor_project_data_plant_for_viz2(
     return {"results": payload}
 
 
+@router.get(
+    "/{indoor_project_data_id}/data_for_scatter",
+    response_model=schemas.indoor_project_data.IndoorProjectDataVizScatterResponse,
+    status_code=status.HTTP_200_OK,
+)
+def read_indoor_project_data_plant_for_scatter(
+    indoor_project_id: UUID4,
+    indoor_project_data_id: UUID4,
+    camera_orientation: schemas.indoor_project_data.CameraOrientation,
+    group_by: schemas.indoor_project_data.GroupBy,
+    trait_x: str,
+    trait_y: str,
+    indoor_project: models.IndoorProject = Depends(
+        deps.can_read_write_delete_indoor_project
+    ),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    # Lookup spreadsheet in database
+    spreadsheet_file = crud.indoor_project_data.read_by_id(
+        db,
+        indoor_project_id=indoor_project_id,
+        indoor_project_data_id=indoor_project_data_id,
+    )
+
+    # Confirm spreadsheet has required sheets and records
+    try:
+        ppew_df, img_df = validate_spreadsheet(
+            spreadsheet_file=spreadsheet_file, camera_orientation=camera_orientation
+        )
+    except Exception as e:
+        raise e
+
+    # Lowercase column names and replace spaces
+    ppew_df = format_columns(ppew_df)
+    img_df = format_columns(img_df)
+
+    # Confirm both trait columns exist
+    if not trait_x.lower() in img_df.columns:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{trait_x} is not present in worksheet",
+        )
+
+    if not trait_y.lower() in img_df.columns:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{trait_y} is not present in worksheet",
+        )
+
+    # Convert 'scan_date' to date, find planting date, and date intervals
+    img_df, planting_date, date_intervals = process_date_columns(
+        dataDf=img_df, refDf=ppew_df
+    )
+
+    # Merge "description" column from PPEW dataframe with top/side dataframe
+    img_df = pd.merge(
+        img_df,
+        ppew_df[["pot_barcode", "description"]],
+        on="pot_barcode",
+        how="inner",
+    )
+
+    # Process data for scatter plot
+    scatter_df = group_and_average_scatter(
+        df=img_df,
+        date_intervals=date_intervals,
+        group_by=normalize_group_by(group_by),
+        planting_date=planting_date,
+        trait_x=trait_x.lower(),
+        trait_y=trait_y.lower(),
+    )
+
+    # Convert dataframe to dictionary
+    payload = scatter_df.to_dict(orient="records")
+
+    return {"results": payload, "traits": {"x": trait_x, "y": trait_y}}
+
+
 def is_data_type(xlsx_filename: str, data_type: str) -> bool:
     """Returns True if start of spreadsheet filename matches `data_type`.
 
@@ -788,6 +861,116 @@ def format_columns(df: pd.DataFrame) -> pd.DataFrame:
     df["pot_barcode"] = df["pot_barcode"].astype(str)
 
     return df
+
+
+def group_and_average_scatter(
+    df: pd.DataFrame,
+    date_intervals: List[int],
+    group_by: str,
+    planting_date: datetime,
+    trait_x: str,
+    trait_y: str,
+) -> pd.DataFrame:
+    """For each day measurements were collected, group records based on group_by
+    criteria and return individual data points for scatter plot with x and y values.
+
+    Args:
+        df (pd.DataFrame): Measurements for all pots.
+        date_intervals (List[int]): Days after planting date when measurements were collected.
+        group_by (str): Grouping criteria such as 'treatment' or 'description.'
+        planting_date (datetime): Initial planting date.
+        trait_x (str): Trait for X axis.
+        trait_y (str): Trait for Y axis.
+
+    Raises:
+        HTTPException: Raised if the grouping criteria is not recognized.
+
+    Returns:
+        pd.DataFrame: Dataframe with individual records for scatter plot.
+    """
+    # Define valid grouping options and a mapping to the corresponding columns
+    valid_groupings = {
+        "treatment": ["treatment"],
+        "description": ["description"],
+        "treatment_description": ["treatment", "description"],
+        "exp_id": ["exp_id"],
+        "pot_barcode": ["pot_barcode"],
+    }
+
+    # Verify current group_by value is valid
+    if group_by not in valid_groupings:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid group_by value: {group_by}",
+        )
+
+    # Pre-filter the dataframe: records after planting_date are used in every iteration
+    filtered_df = df[df["scan_date"] > planting_date].copy()
+
+    # Target both traits for scatter plot
+    columns_of_interest = [trait_x, trait_y]
+
+    # Also need grouping columns and pot_barcode for unique IDs
+    required_columns = valid_groupings[group_by] + columns_of_interest + ["pot_barcode"]
+
+    all_results = []
+
+    for days in date_intervals:
+        # Compute end date for the current interval
+        end_date = planting_date + timedelta(days=days)
+
+        # Select records within the current date interval
+        current_df = filtered_df[filtered_df["scan_date"] <= end_date]
+
+        if len(current_df) == 0:
+            continue
+
+        # Get the latest record for each pot within this interval
+        latest_records = current_df.groupby("pot_barcode").tail(1)
+
+        # Select only the columns we need
+        result_df = latest_records[required_columns].copy()
+
+        # Add the interval days to the results
+        result_df["interval_days"] = days
+
+        # Create unique ID for each data point
+        result_df["id"] = (
+            result_df["pot_barcode"].astype(str)
+            + "_"
+            + result_df["interval_days"].astype(str)
+        )
+
+        all_results.append(result_df)
+
+    if not all_results:
+        # Return empty dataframe with correct columns if no data
+        columns = ["interval_days", "group", trait_x, trait_y, "id"]
+        return pd.DataFrame(columns=columns)
+
+    # Merge list of dataframes into single dataframe
+    scatter_df = pd.concat(all_results, ignore_index=True)
+
+    # Rename grouping criteria column(s) to 'group' for consistent output
+    if group_by in {"treatment", "description", "exp_id", "pot_barcode"}:
+        scatter_df = scatter_df.rename(columns={group_by: "group"})
+    elif group_by == "treatment_description":
+        scatter_df = scatter_df.assign(
+            group=scatter_df["treatment"].astype(str)
+            + ": "
+            + scatter_df["description"].astype(str)
+        ).drop(columns=["treatment", "description"])
+    else:
+        raise ValueError(f"Invalid group_by value: {group_by}")
+
+    # Rename trait columns to x and y for scatter plot
+    scatter_df = scatter_df.rename(columns={trait_x: "x", trait_y: "y"})
+
+    # Select only the columns needed for the response
+    final_columns = ["interval_days", "group", "x", "y", "id"]
+    scatter_df = scatter_df[final_columns]
+
+    return scatter_df
 
 
 def group_and_average_hsv(

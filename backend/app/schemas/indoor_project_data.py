@@ -360,3 +360,16 @@ class VizRecord2(BaseModel):
 
 class IndoorProjectDataViz2Response(BaseModel):
     results: List[VizRecord2]
+
+
+class VizRecordScatter(BaseModel):
+    group: str
+    interval_days: int
+    x: float
+    y: float
+    id: str
+
+
+class IndoorProjectDataVizScatterResponse(BaseModel):
+    results: List[VizRecordScatter]
+    traits: Dict[str, str]  # {"x": "trait_x_name", "y": "trait_y_name"}

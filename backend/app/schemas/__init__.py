@@ -32,6 +32,7 @@ from .indoor_project_data import (
     IndoorProjectDataPlant,
     IndoorProjectDataSpreadsheet,
     IndoorProjectDataSpreadsheetPlantData,
+    IndoorProjectDataVizScatterResponse,
 )
 from .job import Job, JobCreate, JobUpdate
 from .location import Location, LocationCreate, LocationUpdate

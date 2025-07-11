@@ -214,6 +214,43 @@ export interface FetchTraitModuleParams extends FetchVisualizationParams {
   targetTrait: string;
 }
 
+// Types for trait scatter plot visualization form
+export interface TraitScatterModuleFormData extends FormData {
+  targetTraitX: TargetTrait;
+  targetTraitY: TargetTrait;
+}
+
+export interface TraitScatterModuleFormProps {
+  indoorProjectId: string;
+  indoorProjectDataId: string;
+  numericColumns: NumericColumns;
+  setVisualizationData: React.Dispatch<
+    React.SetStateAction<IndoorProjectDataVizScatterAPIResponse | null>
+  >;
+}
+
+export interface FetchTraitScatterModuleParams
+  extends FetchVisualizationParams {
+  targetTraitX: string;
+  targetTraitY: string;
+}
+
+export type IndoorProjectDataVizScatterRecord = {
+  interval_days: number;
+  group: string;
+  x: number;
+  y: number;
+  id: string;
+};
+
+export type IndoorProjectDataVizScatterAPIResponse = {
+  results: IndoorProjectDataVizScatterRecord[];
+  traits: {
+    x: string;
+    y: string;
+  };
+};
+
 // Types for pot group visualization form
 export interface PotGroupModuleFormData extends FormData {}
 
