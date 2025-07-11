@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional
+from urllib.parse import urljoin
 from uuid import UUID
 
 
@@ -70,6 +71,7 @@ def generate_stac_preview(
     sci_citation: Optional[str] = None,
     license: Optional[str] = None,
     custom_titles: Optional[Dict[str, str]] = None,
+    cached_stac_metadata: Optional[Dict] = None,
 ) -> Dict:
     """Generate STAC preview metadata for a project without publishing."""
     db: Session = next(get_db())
@@ -88,19 +90,33 @@ def generate_stac_preview(
             sci_citation=sci_citation,
             license=license,
             custom_titles=custom_titles,
+            cached_stac_metadata=cached_stac_metadata,
         )
         collection = sg.collection
         items = sg.items
         failed_items = sg.failed_items
 
         # Prepare response data
+        items_dicts = [item.to_dict() for item in items]
         response_data = {
             "collection_id": project_id,
             "collection": collection.to_dict(),
-            "items": [item.to_dict() for item in items],
+            "items": items_dicts,
             "is_published": False,
             "timestamp": get_stac_timestamp(job.job),
         }
+
+        # Add browser URLs if configured
+        if settings.STAC_BROWSER_URL:
+            response_data["collection_url"] = urljoin(
+                str(settings.STAC_BROWSER_URL), f"collections/{project_id}"
+            )
+            # Add URL to each item
+            for item_dict in items_dicts:
+                item_dict["browser_url"] = urljoin(
+                    str(settings.STAC_BROWSER_URL),
+                    f"collections/{project_id}/items/{item_dict['id']}",
+                )
 
         # Add failed items if any exist
         if failed_items:
@@ -147,6 +163,7 @@ def publish_stac_catalog(
     sci_citation: Optional[str] = None,
     license: Optional[str] = None,
     custom_titles: Optional[Dict[str, str]] = None,
+    cached_stac_metadata: Optional[Dict] = None,
 ) -> Dict:
     """Publish project to STAC catalog."""
     db: Session = next(get_db())
@@ -165,6 +182,7 @@ def publish_stac_catalog(
             sci_citation=sci_citation,
             license=license,
             custom_titles=custom_titles,
+            cached_stac_metadata=cached_stac_metadata,
         )
         collection = sg.collection
         items = sg.items
@@ -208,12 +226,13 @@ def publish_stac_catalog(
 
         # Add browser URLs if configured
         if settings.STAC_BROWSER_URL and len(items) > 0:
-            response_data["collection_url"] = (
-                f"{settings.STAC_BROWSER_URL}/collections/{project_id}"
+            response_data["collection_url"] = urljoin(
+                str(settings.STAC_BROWSER_URL), f"collections/{project_id}"
             )
             for item_dict in items_dicts:
-                item_dict["browser_url"] = (
-                    f"{settings.STAC_BROWSER_URL}/collections/{project_id}/items/{item_dict['id']}"
+                item_dict["browser_url"] = urljoin(
+                    str(settings.STAC_BROWSER_URL),
+                    f"collections/{project_id}/items/{item_dict['id']}",
                 )
 
         # Add failed items if any exist
@@ -267,6 +286,7 @@ def generate_stac_preview_task(
     sci_citation: Optional[str] = None,
     license: Optional[str] = None,
     custom_titles: Optional[Dict[str, str]] = None,
+    cached_stac_metadata: Optional[Dict] = None,
     db: Optional[Session] = None,
 ) -> Dict:
     """Non-Celery function for testing STAC preview generation."""
@@ -292,19 +312,33 @@ def generate_stac_preview_task(
             sci_citation=sci_citation,
             license=license,
             custom_titles=custom_titles,
+            cached_stac_metadata=cached_stac_metadata,
         )
         collection = sg.collection
         items = sg.items
         failed_items = sg.failed_items
 
         # Prepare response data
+        items_dicts = [item.to_dict() for item in items]
         response_data = {
             "collection_id": project_id,
             "collection": collection.to_dict(),
-            "items": [item.to_dict() for item in items],
+            "items": items_dicts,
             "is_published": False,
             "timestamp": get_stac_timestamp(job.job),
         }
+
+        # Add browser URLs if configured
+        if settings.STAC_BROWSER_URL:
+            response_data["collection_url"] = urljoin(
+                str(settings.STAC_BROWSER_URL), f"collections/{project_id}"
+            )
+            # Add URL to each item
+            for item_dict in items_dicts:
+                item_dict["browser_url"] = urljoin(
+                    str(settings.STAC_BROWSER_URL),
+                    f"collections/{project_id}/items/{item_dict['id']}",
+                )
 
         # Add failed items if any exist
         if failed_items:
@@ -349,6 +383,7 @@ def publish_stac_catalog_task(
     sci_citation: Optional[str] = None,
     license: Optional[str] = None,
     custom_titles: Optional[Dict[str, str]] = None,
+    cached_stac_metadata: Optional[Dict] = None,
     db: Optional[Session] = None,
 ) -> Dict:
     """Non-Celery function for testing STAC catalog publication."""
@@ -376,6 +411,7 @@ def publish_stac_catalog_task(
             sci_citation=sci_citation,
             license=license,
             custom_titles=custom_titles,
+            cached_stac_metadata=cached_stac_metadata,
         )
         collection = sg.collection
         items = sg.items
@@ -419,12 +455,13 @@ def publish_stac_catalog_task(
 
         # Add browser URLs if configured
         if settings.STAC_BROWSER_URL and len(items) > 0:
-            response_data["collection_url"] = (
-                f"{settings.STAC_BROWSER_URL}/collections/{project_id}"
+            response_data["collection_url"] = urljoin(
+                str(settings.STAC_BROWSER_URL), f"collections/{project_id}"
             )
             for item_dict in items_dicts:
-                item_dict["browser_url"] = (
-                    f"{settings.STAC_BROWSER_URL}/collections/{project_id}/items/{item_dict['id']}"
+                item_dict["browser_url"] = urljoin(
+                    str(settings.STAC_BROWSER_URL),
+                    f"collections/{project_id}/items/{item_dict['id']}",
                 )
 
         # Add failed items if any exist

@@ -55,6 +55,7 @@ class STACGenerator:
         sci_citation: Optional[str] = None,
         license: Optional[str] = None,
         custom_titles: Optional[dict] = None,
+        cached_stac_metadata: Optional[dict] = None,
     ):
         self.db = db
         self.project_id = project_id
@@ -64,6 +65,13 @@ class STACGenerator:
             license or "CC-BY-NC-4.0"
         )  # Default to CC-BY-NC-4.0 if not provided
         self.custom_titles = custom_titles or {}
+        self.cached_stac_metadata = cached_stac_metadata
+
+        # Create a lookup dictionary for cached items by data product ID
+        self.cached_items_lookup = {}
+        if cached_stac_metadata and "items" in cached_stac_metadata:
+            for item in cached_stac_metadata["items"]:
+                self.cached_items_lookup[item["id"]] = item
 
         # Get project and flights associated with project
         self.project = self.get_project()
@@ -229,6 +237,11 @@ class STACGenerator:
         data_product: models.DataProduct,
         flight: models.Flight,
     ) -> Item:
+        data_product_id_str = str(data_product.id)
+
+        # Check if we have cached data for this data product
+        cached_item = self.cached_items_lookup.get(data_product_id_str)
+
         flight_details = {
             "flight_id": str(flight.id),
             "acquisition_date": date_to_datetime(flight.acquisition_date).isoformat(),
@@ -254,26 +267,57 @@ class STACGenerator:
         flight_properties["title"] = title
 
         if data_product.data_type == "point_cloud":
-            # Create COPC item
+            # Create COPC item - pass cached item if available
             item = pdal_to_stac.create_item(
                 path_to_copc=data_product.filepath,
                 collection_id=collection_id,
                 fallback_dt=date_to_datetime(flight.acquisition_date),
                 flight_properties=flight_properties,
+                item_id=data_product_id_str,
+                cached_item=cached_item,
             )
         else:
-            # Create STAC Asset for COG
-            bbox, asset = generate_asset_for_cog(data_product.filepath)
+            # Create STAC Asset for COG - use cached data if available
+            if cached_item:
+                # Use cached geometry, bbox, and asset
+                geometry = cached_item["geometry"]
+                bbox = cached_item["bbox"]
+                # Get the cached asset (should be the first asset)
+                cached_assets = cached_item.get("assets", {})
+                if cached_assets:
+                    # Get the first asset key and data
+                    asset_key = list(cached_assets.keys())[0]
+                    cached_asset_data = cached_assets[asset_key]
+                    # Create asset from cached data
+                    asset = Asset(
+                        href=cached_asset_data["href"],
+                        media_type=cached_asset_data.get("type", "image/tiff"),
+                        extra_fields={
+                            k: v
+                            for k, v in cached_asset_data.items()
+                            if k not in ["href", "type"]
+                        },
+                        roles=cached_asset_data.get("roles"),
+                    )
+                else:
+                    # Fallback to computing asset if no cached asset found
+                    bbox, asset = generate_asset_for_cog(data_product.filepath)
+                    geometry = bbox_to_geom(bbox)
+            else:
+                # No cached data, compute from scratch
+                bbox, asset = generate_asset_for_cog(data_product.filepath)
+                geometry = bbox_to_geom(bbox)
+
             item = Item(
-                id=str(data_product.id),
+                id=data_product_id_str,
                 collection=collection_id,
-                geometry=bbox_to_geom(bbox),
+                geometry=geometry,
                 bbox=list(bbox),
                 stac_extensions=COG_EXTENSIONS,
                 datetime=date_to_datetime(flight.acquisition_date),
                 properties={**flight_properties},
             )
-            item.add_asset(key=str(data_product.id), asset=asset)
+            item.add_asset(key=data_product_id_str, asset=asset)
 
         # Log the title from properties instead
         logger.info(f"Item title: {item.properties.get('title', 'No title set')}")
@@ -375,6 +419,7 @@ def generate_item_title(
         str: Generated title for the item
     """
     data_product_id = str(data_product.id)
+
     if (
         custom_titles
         and data_product_id in custom_titles
