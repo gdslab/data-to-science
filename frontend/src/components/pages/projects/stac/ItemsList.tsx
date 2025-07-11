@@ -92,7 +92,7 @@ export default function ItemsList({ allItems, project }: ItemsListProps) {
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:text-blue-800 underline"
                         >
-                          View in STAC Browser
+                          View in STAC Browser (opens in new tab)
                         </a>
                       </p>
                     )}
