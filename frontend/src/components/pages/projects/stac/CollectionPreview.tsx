@@ -1,11 +1,14 @@
 import { STACMetadata } from './STACTypes';
+import { Project } from '../Project';
 
 interface CollectionPreviewProps {
   stacMetadata: STACMetadata;
+  project: Project;
 }
 
 export default function CollectionPreview({
   stacMetadata,
+  project,
 }: CollectionPreviewProps) {
   return (
     <div className="mb-4 p-3 bg-white rounded border border-gray-200 shadow-sm">
@@ -13,18 +16,7 @@ export default function CollectionPreview({
       <div className="ml-4">
         <p>
           <span className="font-medium">Title:</span>{' '}
-          {stacMetadata.collection_url ? (
-            <a
-              href={stacMetadata.collection_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800 underline"
-            >
-              {stacMetadata.collection.title}
-            </a>
-          ) : (
-            stacMetadata.collection.title
-          )}
+          {stacMetadata.collection.title}
         </p>
         <p>
           <span className="font-medium">Description:</span>{' '}
@@ -57,6 +49,18 @@ export default function CollectionPreview({
           <span className="font-medium">Temporal Extent:</span>{' '}
           {stacMetadata.collection.extent.temporal.interval[0].join(' to ')}
         </p>
+        {stacMetadata.collection_url && project.is_published && (
+          <p>
+            <a
+              href={stacMetadata.collection_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 underline"
+            >
+              View in STAC Browser (opens in new tab)
+            </a>
+          </p>
+        )}
       </div>
     </div>
   );

@@ -2,7 +2,8 @@ import json
 import subprocess
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+import logging
 
 from osgeo import ogr, osr
 from pystac import Asset, Item
@@ -13,6 +14,8 @@ from app.crud.crud_data_product import get_url
 
 
 osr.DontUseExceptions()
+
+logger = logging.getLogger(__name__)
 
 COPC_EXTENSIONS = ["https://stac-extensions.github.io/pointcloud/v1.0.0/schema.json"]
 
@@ -59,77 +62,111 @@ def create_item(
     collection_id: str,
     fallback_dt: datetime,
     flight_properties: Dict[str, Any],
+    item_id: str,
+    cached_item: Optional[Dict[str, Any]] = None,
 ) -> Item:
-    # First, validate that the point cloud has a coordinate system
-    if not validate_coordinate_system(path_to_copc):
-        raise ValueError(
-            f"Point cloud does not have a valid coordinate system and cannot be published to STAC"
-        )
-
-    # pdal info --all call references hexbin, stats, and info filters
-    r = pdal.Reader.copc(path_to_copc)
-    hb = pdal.Filter.hexbin()
-    s = pdal.Filter.stats()
-    i = pdal.Filter.info()
-
-    pipeline: pdal.Pipeline = r | hb | s | i
-
-    count = pipeline.execute()
-
-    boundary = pipeline.metadata["metadata"][hb.type]
-    stats = pipeline.metadata["metadata"][s.type]
-    info = pipeline.metadata["metadata"][i.type]
-    copc = pipeline.metadata["metadata"][r.type]
+    # Unique UUID for COPC
+    copc_uuid = Path(path_to_copc).stem.replace(".copc", "")
 
     # Create STAC Asset for COPC
     copc_url = get_url(path_to_copc, get_static_dir())
     asset = Asset(href=copc_url)
 
-    # Get geometry from boundary if possible, fallback to stats bbox
-    geometry = None
+    # Check if we can use cached data to avoid expensive PDAL operations
+    if cached_item:
+        logger.info(f"Using cached STAC metadata for point cloud {copc_uuid}")
 
-    try:
-        geometry = convertGeometry(
-            boundary["boundary_json"], copc["comp_spatialreference"]
-        )
-    except KeyError:
-        geometry = stats["bbox"]["EPSG:4326"]["boundary"]
-    finally:
-        if not geometry:
-            raise ValueError("Unable to find geometry")
+        # Extract cached properties and geometry
+        cached_properties = cached_item.get("properties", {})
+        geometry = cached_item.get("geometry")
+        bbox = cached_item.get("bbox")
 
-    # Get bounding box
-    bbox = None
-    try:
-        bbox = convertBBox(stats["bbox"]["EPSG:4326"]["bbox"])
-    except KeyError:
-        bbox = convertBBox(boundary["boundary_json"])
-    finally:
-        if not bbox:
-            raise ValueError("Unable to find bounding box")
-
-    # Unique UUID for COPC
-    copc_uuid = Path(path_to_copc).stem.replace(".copc", "")
-
-    # Extra properties for STAC Item
-    try:
+        # Use cached point cloud statistics and properties
         properties = {
-            "pc:count": count,
-            "pc:density": boundary.get("avg_pt_per_sq_unit", 0),
-            "pc:schemas": info["schema"]["dimensions"],
-            "pc:statistics": stats["statistic"],
-            "pc:type": "point_cloud",
-            "datetime": capture_date(copc),
-            "sensor_type": "flight.sensor",
+            "pc:count": cached_properties.get("pc:count"),
+            "pc:density": cached_properties.get("pc:density"),
+            "pc:schemas": cached_properties.get("pc:schemas"),
+            "pc:statistics": cached_properties.get("pc:statistics"),
+            "pc:type": cached_properties.get("pc:type", "point_cloud"),
+            "datetime": cached_properties.get("datetime"),
+            "sensor_type": flight_properties["flight_details"][
+                "sensor"
+            ],  # Always use latest flight properties
         }
-    except KeyError:
-        raise ValueError("Unable to find properties")
-    except Exception as e:
-        raise ValueError(f"Error creating properties: {e}")
+
+        # Validate we have the essential cached data
+        if not geometry or not bbox:
+            logger.warning(
+                f"Cached item missing essential geometry/bbox data for {copc_uuid}, falling back to computation"
+            )
+            cached_item = None  # Force fallback to computation
+
+    if not cached_item:
+        logger.info(f"Computing STAC metadata for point cloud {copc_uuid}")
+
+        # First, validate that the point cloud has a coordinate system
+        if not validate_coordinate_system(path_to_copc):
+            raise ValueError(
+                f"Point cloud does not have a valid coordinate system and cannot be published to STAC"
+            )
+
+        # pdal info --all call references hexbin, stats, and info filters
+        r = pdal.Reader.copc(path_to_copc)
+        hb = pdal.Filter.hexbin()
+        s = pdal.Filter.stats()
+        i = pdal.Filter.info()
+
+        pipeline: pdal.Pipeline = r | hb | s | i
+
+        count = pipeline.execute()
+
+        boundary = pipeline.metadata["metadata"][hb.type]
+        stats = pipeline.metadata["metadata"][s.type]
+        info = pipeline.metadata["metadata"][i.type]
+        copc = pipeline.metadata["metadata"][r.type]
+
+        # Get geometry from boundary if possible, fallback to stats bbox
+        geometry = None
+
+        try:
+            geometry = convertGeometry(
+                boundary["boundary_json"], copc["comp_spatialreference"]
+            )
+        except KeyError:
+            geometry = stats["bbox"]["EPSG:4326"]["boundary"]
+        finally:
+            if not geometry:
+                raise ValueError("Unable to find geometry")
+
+        # Get bounding box
+        bbox = None
+        try:
+            bbox = convertBBox(stats["bbox"]["EPSG:4326"]["bbox"])
+        except KeyError:
+            bbox = convertBBox(boundary["boundary_json"])
+        finally:
+            if not bbox:
+                raise ValueError("Unable to find bounding box")
+
+        # Extra properties for STAC Item
+        try:
+            properties = {
+                "pc:count": count,
+                "pc:density": boundary.get("avg_pt_per_sq_unit", 0),
+                "pc:schemas": info["schema"]["dimensions"],
+                "pc:statistics": stats["statistic"],
+                "pc:type": "point_cloud",
+                "datetime": capture_date(copc),
+                "sensor_type": flight_properties["flight_details"]["sensor"],
+            }
+        except KeyError:
+            raise ValueError("Unable to find properties")
+        except Exception as e:
+            raise ValueError(f"Error creating properties: {e}")
 
     # Create STAC Item for COPC
     item = Item(
-        id=copc_uuid,
+        id=item_id,
         collection=collection_id,
         geometry=geometry,
         bbox=bbox,
@@ -137,7 +174,7 @@ def create_item(
         datetime=fallback_dt,
         properties={**flight_properties, **properties},
     )
-    item.add_asset(key=copc_uuid, asset=asset)
+    item.add_asset(key=item_id, asset=asset)
 
     return item
 

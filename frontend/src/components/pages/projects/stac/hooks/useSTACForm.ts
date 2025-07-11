@@ -62,7 +62,31 @@ export function useSTACForm(
         }
       });
 
-      setFormState((prev) => ({ ...prev, customTitles: existingTitles }));
+      setFormState((prev) => {
+        // Merge user input with server data on a per-item basis
+        // For each item, prefer user input if it exists and differs from server data
+        const mergedCustomTitles: Record<string, string> = {
+          ...existingTitles,
+        };
+
+        // Preserve user input for items that haven't been synced to server yet
+        Object.keys(prev.customTitles).forEach((itemId) => {
+          const userTitle = prev.customTitles[itemId];
+          const serverTitle = existingTitles[itemId];
+
+          // Keep user input if:
+          // 1. Server doesn't have this title yet, OR
+          // 2. User has modified it since the last server sync
+          if (!serverTitle || userTitle !== serverTitle) {
+            mergedCustomTitles[itemId] = userTitle;
+          }
+        });
+
+        return {
+          ...prev,
+          customTitles: mergedCustomTitles,
+        };
+      });
     }
   }, [stacMetadata]);
 

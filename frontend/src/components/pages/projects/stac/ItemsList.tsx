@@ -1,10 +1,12 @@
 import { CombinedSTACItem } from './STACTypes';
+import { Project } from '../Project';
 
 interface ItemsListProps {
   allItems: CombinedSTACItem[];
+  project: Project;
 }
 
-export default function ItemsList({ allItems }: ItemsListProps) {
+export default function ItemsList({ allItems, project }: ItemsListProps) {
   return (
     <div>
       <h4 className="font-semibold mb-2">Items ({allItems.length})</h4>
@@ -66,18 +68,6 @@ export default function ItemsList({ allItems }: ItemsListProps) {
                         {item.flightName}
                       </p>
                     )}
-                    {item.browserUrl && (
-                      <p>
-                        <a
-                          href={item.browserUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 underline"
-                        >
-                          STAC link
-                        </a>
-                      </p>
-                    )}
                     <p>
                       <span className="font-medium">Data Type:</span>{' '}
                       {item.dataType}
@@ -94,6 +84,18 @@ export default function ItemsList({ allItems }: ItemsListProps) {
                     <p>
                       <span className="font-medium">Sensor:</span> {item.sensor}
                     </p>
+                    {item.browserUrl && project.is_published && (
+                      <p>
+                        <a
+                          href={item.browserUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 underline"
+                        >
+                          View in STAC Browser (opens in new tab)
+                        </a>
+                      </p>
+                    )}
                   </>
                 ) : (
                   <div className="mt-2">
