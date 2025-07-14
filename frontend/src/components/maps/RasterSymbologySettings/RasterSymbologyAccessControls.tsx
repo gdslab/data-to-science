@@ -268,7 +268,7 @@ export default function RasterSymbologyAccessControls({
                   setQrCode={setQrCode}
                   title="Show QR Code"
                   titleOnSubmission="Generating QR Code..."
-                  url={window.origin + `/sharemap?file_id=${dataProduct.id}`}
+                  url={window.origin + `/sharepotree?file_id=${dataProduct.id}`}
                 />
               </div>
             </>
