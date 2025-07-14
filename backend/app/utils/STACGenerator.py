@@ -291,7 +291,10 @@ class STACGenerator:
                     # Create asset from cached data
                     asset = Asset(
                         href=cached_asset_data["href"],
-                        media_type=cached_asset_data.get("type", "image/tiff"),
+                        media_type=cached_asset_data.get(
+                            "type",
+                            "image/tiff; application=geotiff; profile=cloud-optimized",
+                        ),
                         extra_fields={
                             k: v
                             for k, v in cached_asset_data.items()
@@ -462,9 +465,9 @@ def generate_asset_for_cog(
     # Generate STAC Asset
     asset = Asset(
         href=cog_url,
-        media_type="image/tiff",
+        media_type="image/tiff; application=geotiff; profile=cloud-optimized",
         extra_fields={**proj_info, **raster_info, **eo_info},
-        roles=None,
+        roles=["data"],
     )
 
     return bbox, asset
