@@ -1,11 +1,17 @@
 import { Fragment } from 'react';
 
 export default function PotreeViewer({ copcPath }: { copcPath: string }) {
+  // Detect mobile device outside of iframe content
+  const isMobile =
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent
+    ) || window.innerWidth < 768;
+
   const initialContent = `<!DOCTYPE html>
   <html lang="en">
     <head>
       <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0" />
 
       <link href="/potree/libs/potree/potree.css" rel="stylesheet" />
       <link href="/potree/libs/jquery-ui/jquery-ui.min.css" rel="stylesheet" />
@@ -14,6 +20,41 @@ export default function PotreeViewer({ copcPath }: { copcPath: string }) {
       <link href="/potree/libs/jstree/themes/mixed/style.css" rel="stylesheet" />
 
       <style>	
+        body {
+          margin: 0;
+          padding: 0;
+          overflow: hidden;
+          /* Mobile touch optimizations */
+          touch-action: manipulation;
+          user-select: none;
+          -webkit-user-select: none;
+          -webkit-touch-callout: none;
+        }
+        
+        .potree_container {
+          width: 100%;
+          height: 100vh;
+          min-height: 300px;
+          overflow: hidden;
+        }
+        
+        #potree_render_area {
+          width: 100%;
+          height: 100%;
+          min-height: inherit;
+        }
+
+        #potree_render_area,
+        #potree_render_area canvas {
+          touch-action: none;
+          outline: none;
+          -webkit-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+          user-select: none;
+          cursor: crosshair;
+        }
+        
         #potree_toolbar {
           position: absolute; 
           z-index: 10000; 
@@ -25,6 +66,9 @@ export default function PotreeViewer({ copcPath }: { copcPath: string }) {
           font-family: "system-ui";
           border-radius: 0em 0em 0.3em 0.3em;
           display: flex;
+          /* Mobile responsive toolbar */
+          flex-wrap: wrap;
+          max-width: calc(100vw - 120px);
         }
 
         .potree_toolbar_label {
@@ -39,11 +83,71 @@ export default function PotreeViewer({ copcPath }: { copcPath: string }) {
           margin: 5px 10px;
           width: 1px;
         }
+        
+        /* Mobile-specific toolbar adjustments */
+        @media (max-width: 768px) {
+          #potree_toolbar {
+            left: 60px;  /* Increased from 10px to provide space for sidebar menu button */
+            top: 10px;
+            font-size: 12px;
+            padding: 0.2em 0.5em;
+            max-width: calc(100vw - 80px);  /* Adjusted for new left position */
+          }
+          
+          .annotation-action-icon {
+            width: 1.5em !important;
+            height: auto !important;
+          }
+        }
+        
+        /* Loading indicator */
+        .loading-indicator {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: rgba(0,0,0,0.7);
+          color: white;
+          padding: 10px 20px;
+          border-radius: 5px;
+          font-size: 14px;
+          z-index: 20000;
+        }
 	    </style>
 
       <base target="_blank">
     </head>
     <body>
+      <div id="loading" class="loading-indicator">${
+        isMobile
+          ? 'Loading point cloud (mobile mode)...'
+          : 'Loading point cloud...'
+      }</div>
+      
+      <script>
+        // Mobile device detection (passed from parent)
+        const isMobile = ${isMobile};
+        
+        // WebGL support check
+        function checkWebGLSupport() {
+          const canvas = document.createElement('canvas');
+          const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+          if (!gl) {
+            const loadingEl = document.getElementById('loading');
+            if (loadingEl) {
+              loadingEl.textContent = 'WebGL not supported on this device';
+              loadingEl.style.background = 'rgba(255,0,0,0.8)';
+            }
+            return false;
+          }
+          return true;
+        }
+        
+        if (!checkWebGLSupport()) {
+          console.error('WebGL not supported');
+        }
+      </script>
+      
       <script src='/potree/libs/jquery/jquery-3.1.1.min.js'></script>
       <script src='/potree/libs/spectrum/spectrum.js'></script>
       <script src='/potree/libs/jquery-ui/jquery-ui.min.js'></script>
@@ -67,14 +171,31 @@ export default function PotreeViewer({ copcPath }: { copcPath: string }) {
 
       <script type="module">
         import * as THREE from "/potree/libs/three.js/build/three.module.js";
+        
         window.viewer = new Potree.Viewer(document.getElementById("potree_render_area"));
 
-        viewer.setEDLEnabled(true);
-        viewer.setFOV(60);
-        viewer.setPointBudget(2_000_000);
+        // Mobile-specific optimizations
+        if (isMobile) {
+          // Mobile optimizations: reduce quality and performance demands
+          viewer.setEDLEnabled(false);        // Disable expensive effects
+          viewer.setPointBudget(500_000);     // Much lower point budget
+          viewer.useHQ = false;               // Disable high quality mode
+          viewer.setFOV(70);                  // Slightly wider FOV for mobile
+        } else {
+          // Desktop settings (original)
+          viewer.setEDLEnabled(true);
+          viewer.setPointBudget(2_000_000);
+          viewer.useHQ = true;
+          viewer.setFOV(60);
+        }
+        
         viewer.loadSettingsFromURL();
-        viewer.useHQ = true;
-        viewer.setControls(viewer.earthControls);
+        
+        if (isMobile) {
+          viewer.setControls(viewer.orbitControls);
+        } else {
+          viewer.setControls(viewer.earthControls);
+        }
 
         // viewer.setDescription('Loading Entwine-generated EPT format');
 
@@ -87,14 +208,46 @@ export default function PotreeViewer({ copcPath }: { copcPath: string }) {
         const name = 'Potree';
 
         Potree.loadPointCloud(path, name, function(e) {
-          viewer.scene.addPointCloud(e.pointcloud);
+          try {
+            if (e.type === 'loading_failed') {
+              throw new Error('Failed to load point cloud: ' + (e.message || 'Unknown error'));
+            }
+            
+            const pointcloud = e.pointcloud;
+            if (!pointcloud) {
+              throw new Error('Point cloud object is null');
+            }
+            
+            viewer.scene.addPointCloud(pointcloud);
 
-          let material = e.pointcloud.material;
-          material.size = 1;
-          material.shape = Potree.PointShape.CIRCLE;
-          material.pointSizeType = Potree.PointSizeType.ADAPTIVE;
+            let material = pointcloud.material;
+            
+            // Mobile-specific material settings
+            if (isMobile) {
+              material.size = 2;  // Larger points for mobile touch
+              material.pointSizeType = Potree.PointSizeType.FIXED;
+            } else {
+              material.size = 1;
+              material.pointSizeType = Potree.PointSizeType.ADAPTIVE;
+            }
+            
+            material.shape = Potree.PointShape.CIRCLE;
 
-          viewer.fitToScreen(0.5);
+            viewer.fitToScreen(0.5);
+            
+            // Remove loading indicator
+            const loadingEl = document.getElementById('loading');
+            if (loadingEl) {
+              loadingEl.remove();
+            }
+          } catch (error) {
+            console.error('Point cloud loading error:', error);
+            const loadingEl = document.getElementById('loading');
+            if (loadingEl) {
+              loadingEl.textContent = 'Error loading point cloud: ' + error.message;
+              loadingEl.style.background = 'rgba(255,0,0,0.8)';
+            }
+          }
         });
       </script>
 
@@ -268,11 +421,15 @@ export default function PotreeViewer({ copcPath }: { copcPath: string }) {
         }
       
         { // POINT BUDGET
+          const minBudget = isMobile ? 50_000 : 100_000;
+          const maxBudget = isMobile ? 1_000_000 : 2_000_000;
+          const stepBudget = isMobile ? 50_000 : 100_000;
+          
           elToolbar.find('#sldPointBudget').slider({
             value: viewer.getPointBudget(),
-            min: 100_000,
-            max: 2_000_000,
-            step: 100_000,
+            min: minBudget,
+            max: maxBudget,
+            step: stepBudget,
             slide: (event, ui) => { viewer.setPointBudget(ui.value); }
           });
       
@@ -289,7 +446,11 @@ export default function PotreeViewer({ copcPath }: { copcPath: string }) {
   </html>`;
   return (
     <Fragment>
-      <iframe className="h-full w-full" srcDoc={initialContent}></iframe>
+      <iframe
+        className="h-full w-full touch-none"
+        srcDoc={initialContent}
+        sandbox="allow-same-origin allow-scripts allow-popups allow-pointer-lock allow-modals allow-forms"
+      ></iframe>
     </Fragment>
   );
 }
