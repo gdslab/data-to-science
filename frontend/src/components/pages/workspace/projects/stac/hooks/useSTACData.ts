@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { STACMetadata, CombinedSTACItem } from '../STACTypes';
-import { usePolling } from '../../../../hooks/usePolling';
-import { Status } from '../../../../Alert';
-import api from '../../../../../api';
+import { usePolling } from '../../../../../hooks/usePolling';
+import { Status } from '../../../../../Alert';
+import api from '../../../../../../api';
 
 interface STACRequestPayload {
   sci_doi?: string;

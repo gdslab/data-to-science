@@ -1,5 +1,5 @@
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
-import { Button } from '../../../Buttons';
+import { Button } from '../../../../Buttons';
 import { Project } from '../Project';
 
 interface ActionButtonsProps {

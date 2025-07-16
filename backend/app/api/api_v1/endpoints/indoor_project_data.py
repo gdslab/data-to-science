@@ -3,6 +3,7 @@ import os
 from datetime import datetime, timedelta, date
 from typing import Any, Dict, List, Optional, Union, Sequence, Tuple
 
+import numpy as np
 import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import UUID4, ValidationError
@@ -237,22 +238,11 @@ def read_indoor_project_data_plant(
             detail="Only RGB data supported at this time",
         )
 
-    # Check if we have images for this experiment
+    # Get all tar files for this project to find images
     indoor_project_files = crud.indoor_project_data.read_multi_by_id(
         db, indoor_project_id=indoor_project_id
     )
-    image_file_id: Union[UUID4, None] = None
-    image_directory_structure: Union[Dict, None] = None
-    if len(indoor_project_files) > 0:
-        for file in indoor_project_files:
-            if file.file_type == ".tar":
-                if (
-                    file.directory_structure.get("name")
-                    and file.directory_structure.get("children")
-                    and len(file.directory_structure["children"]) > 0
-                ):
-                    image_directory_structure = file.directory_structure
-                    image_file_id = file.id
+    tar_files = [file for file in indoor_project_files if file.file_type == ".tar"]
     try:
         # read "PPEW" worksheet into pandas dataframe
         ppew_df = pd.read_excel(
@@ -356,12 +346,15 @@ def read_indoor_project_data_plant(
     # pot_side_all_df.columns = pot_side_all_df.columns.str.replace(" ", "_")
     pot_side_avg_df.columns = pot_side_avg_df.columns.str.replace(" ", "_")
 
-    # convert planting date to datetime string YYYY-mm-dd HH:MM:SS
-    pot_ppew_df["planting_date"] = (
-        pot_ppew_df["planting_date"].apply(parse_date).dt.strftime("%Y-%m-%d %H:%M:%S")
-    )
+    # convert planting date to datetime object - use copy to avoid SettingWithCopyWarning
+    pot_ppew_df = pot_ppew_df.copy()
+    pot_ppew_df["planting_date"] = pot_ppew_df["planting_date"].apply(parse_date)
+    # Convert pandas Timestamp to Python datetime - use iloc to avoid FutureWarning
+    pot_ppew_df["planting_date"] = pot_ppew_df["planting_date"].iloc[0].to_pydatetime()
 
-    # convert scan date to date string YYYY-mm-dd
+    # convert scan date to date string YYYY-mm-dd - use copy to avoid SettingWithCopyWarning
+    pot_top_df = pot_top_df.copy()
+    pot_side_avg_df = pot_side_avg_df.copy()
     pot_top_df["scan_date"] = pot_top_df["scan_date"].dt.strftime("%Y-%m-%d")
     # pot_side_all_df["scan_date"] = pot_side_all_df["scan_date"].dt.strftime("%Y-%m-%d")
     pot_side_avg_df["scan_date"] = pot_side_avg_df["scan_date"].dt.strftime("%Y-%m-%d")
@@ -380,12 +373,21 @@ def read_indoor_project_data_plant(
         lambda col: col.fillna("") if col.dtype == "object" else col.fillna(-9999)
     )
 
+    # Ensure treatment is always a string
+    if "treatment" in pot_ppew_df.columns:
+        pot_ppew_df["treatment"] = pot_ppew_df["treatment"].astype(str)
+    if "treatment" in pot_top_df.columns:
+        pot_top_df["treatment"] = pot_top_df["treatment"].astype(str)
+    if "treatment" in pot_side_avg_df.columns:
+        pot_side_avg_df["treatment"] = pot_side_avg_df["treatment"].astype(str)
+
     # columns to send to client from ppew worksheet
     ppew_columns_of_interest = [
         "exp_id",
         "treatment",
         "species_name",
         "entry",
+        "replicate_number",
         "pot_barcode",
         "planting_date",
         "pottype",
@@ -396,75 +398,88 @@ def read_indoor_project_data_plant(
         "pi",
     ]
 
+    # Get treatment from PPEW data to find matching tar file
+    plant_treatment = ""
+    if "treatment" in pot_ppew_df.columns:
+        plant_treatment = (
+            str(pot_ppew_df["treatment"].iloc[0]) if not pot_ppew_df.empty else ""
+        )
+
+    # Find the matching tar file for this plant's treatment
+    matching_tar_file = find_matching_tar_file(plant_treatment, tar_files)
+
     # create dict with unique values from columns of interest
-    ppew_summary = {}
+    ppew_summary: Dict[str, Any] = {}
     for column in ppew_columns_of_interest:
         if column in pot_ppew_df.columns:
-            ppew_summary[column] = pot_ppew_df[column].values[0]
+            # Check if DataFrame is empty before accessing values
+            if pot_ppew_df.empty:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="PPEW worksheet is empty",
+                )
+            value = pot_ppew_df[column].iloc[0]
+            # Handle missing values for numeric fields
+            if pd.isna(value):
+                if column in ["exp_id", "replicate_number", "year"]:
+                    ppew_summary[column] = 0
+                elif column == "planting_date":
+                    ppew_summary[column] = datetime.now()
+                elif column == "treatment":
+                    ppew_summary[column] = ""
+                else:
+                    ppew_summary[column] = ""
+            else:
+                # Convert to appropriate type
+                if column in ["exp_id", "replicate_number", "year"]:
+                    ppew_summary[column] = int(value)
+                elif column == "planting_date":
+                    # Ensure it's a Python datetime object
+                    ppew_summary[column] = convert_timestamp_to_datetime(value)
+                elif column == "treatment":
+                    # Ensure treatment is always a string
+                    ppew_summary[column] = str(value) if value is not None else ""
+                else:
+                    ppew_summary[column] = str(value) if value is not None else ""
         else:
-            ppew_summary[column] = ""
+            # Handle missing columns
+            if column in ["exp_id", "replicate_number", "year"]:
+                ppew_summary[column] = 0
+            elif column == "planting_date":
+                ppew_summary[column] = datetime.now()
+            elif column == "treatment":
+                ppew_summary[column] = ""
+            else:
+                ppew_summary[column] = ""
 
     top_records = pot_top_df.to_dict(orient="records")
     side_avg_records = pot_side_avg_df.to_dict(orient="records")
 
-    if image_directory_structure and image_file_id:
-        for record in top_records:
-            record["images"] = []
-            search_term_parts = record["filename"].split("_")
-            if len(search_term_parts) < 4:
-                break
-            search_term = (
-                search_term_parts[0]
-                + "_"
-                + "R"
-                + "_"
-                + search_term_parts[2]
-                + "_"
-                + search_term_parts[3]
-                + "_"
-                + "RGB-Top"
-            )
-            for image_file in image_directory_structure["children"]:
-                # print(f"image_file: {image_file}")
-                # print(f"search_term: {search_term}")
-                if search_term in image_file["name"]:
-                    record["images"].append(
-                        construct_image_path(
-                            indoor_project_id=str(indoor_project_id),
-                            indoor_project_data_id=str(image_file_id),
-                            root_name=image_directory_structure["name"],
-                            filename=image_file["name"],
-                        )
-                    )
+    # Ensure treatment is string in all records
+    for record in top_records:
+        if "treatment" in record:
+            record["treatment"] = str(record["treatment"])
+    for record in side_avg_records:
+        if "treatment" in record:
+            record["treatment"] = str(record["treatment"])
 
-        for record in side_avg_records:
-            record["images"] = []
-            search_term_parts = record["filename"].split("_")
-            if len(search_term_parts) < 4:
-                break
-            search_term = (
-                search_term_parts[0]
-                + "_"
-                + "R"
-                + "_"
-                + search_term_parts[2]
-                + "_"
-                + search_term_parts[3]
-                + "_"
-                + "RGB-Side"
-            )
-            for image_file in image_directory_structure["children"]:
-                # print(f"image_file: {image_file}")
-                # print(f"search_term: {search_term}")
-                if search_term in image_file["name"]:
-                    record["images"].append(
-                        construct_image_path(
-                            indoor_project_id=str(indoor_project_id),
-                            indoor_project_data_id=str(image_file_id),
-                            root_name=image_directory_structure["name"],
-                            filename=image_file["name"],
-                        )
-                    )
+    # Find matching images for top records using the specific tar file
+    for record in top_records:
+        record["images"] = find_matching_images_for_record(
+            record=record,
+            tar_file=matching_tar_file,
+            indoor_project_id=str(indoor_project_id),
+            image_type="RGB-Top",
+        )
+
+    # Find matching images for side average records using the specific tar file
+    for record in side_avg_records:
+        record["images"] = find_matching_images_for_record(
+            record=record,
+            tar_file=matching_tar_file,
+            indoor_project_id=str(indoor_project_id),
+            image_type="RGB-Side",
+        )
 
     payload = {
         "ppew": ppew_summary,
@@ -472,6 +487,9 @@ def read_indoor_project_data_plant(
         # "side_all": side_all_records,
         "side_avg": side_avg_records,
     }
+
+    # Convert numpy types to Python types for JSON serialization
+    payload = convert_numpy_types(payload)
 
     try:
         # validate spreadsheet data
@@ -526,12 +544,22 @@ def read_indoor_project_data_plant_for_viz(
     )
 
     # Merge "description" column from PPEW dataframe with top/side dataframe
-    img_df = pd.merge(
-        img_df,
-        ppew_df[["pot_barcode", "description"]],
-        on="pot_barcode",
-        how="inner",
-    )
+    # Check if description column exists in PPEW dataframe
+    if "description" in ppew_df.columns:
+        img_df = pd.merge(
+            img_df,
+            ppew_df[["pot_barcode", "description"]],
+            on="pot_barcode",
+            how="inner",
+        )
+    else:
+        # If description column doesn't exist, just use pot_barcode
+        img_df = pd.merge(
+            img_df,
+            ppew_df[["pot_barcode"]],
+            on="pot_barcode",
+            how="inner",
+        )
 
     # Groups records and computes mean hsv
     grouped_mean_hsv_df = group_and_average_hsv(
@@ -595,12 +623,22 @@ def read_indoor_project_data_plant_for_viz2(
     )
 
     # Merge "description" column from PPEW dataframe with top/side dataframe
-    img_df = pd.merge(
-        img_df,
-        ppew_df[["pot_barcode", "description"]],
-        on="pot_barcode",
-        how="inner",
-    )
+    # Check if description column exists in PPEW dataframe
+    if "description" in ppew_df.columns:
+        img_df = pd.merge(
+            img_df,
+            ppew_df[["pot_barcode", "description"]],
+            on="pot_barcode",
+            how="inner",
+        )
+    else:
+        # If description column doesn't exist, just use pot_barcode
+        img_df = pd.merge(
+            img_df,
+            ppew_df[["pot_barcode"]],
+            on="pot_barcode",
+            how="inner",
+        )
 
     # Groups records and computes mean hsv
     grouped_mean_hsv_df = group_and_average_hsv(
@@ -672,12 +710,22 @@ def read_indoor_project_data_plant_for_scatter(
     )
 
     # Merge "description" column from PPEW dataframe with top/side dataframe
-    img_df = pd.merge(
-        img_df,
-        ppew_df[["pot_barcode", "description"]],
-        on="pot_barcode",
-        how="inner",
-    )
+    # Check if description column exists in PPEW dataframe
+    if "description" in ppew_df.columns:
+        img_df = pd.merge(
+            img_df,
+            ppew_df[["pot_barcode", "description"]],
+            on="pot_barcode",
+            how="inner",
+        )
+    else:
+        # If description column doesn't exist, just use pot_barcode
+        img_df = pd.merge(
+            img_df,
+            ppew_df[["pot_barcode"]],
+            on="pot_barcode",
+            how="inner",
+        )
 
     # Process data for scatter plot
     scatter_df = group_and_average_scatter(
@@ -857,8 +905,14 @@ def format_columns(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = df.columns.str.replace(" ", "_")
 
     # Create str columns for pot_barcode and exp_id (may be used for grouping)
-    df["exp_id"] = df["exp_id"].astype(str)
-    df["pot_barcode"] = df["pot_barcode"].astype(str)
+    if "exp_id" in df.columns:
+        df["exp_id"] = df["exp_id"].astype(str)
+    if "pot_barcode" in df.columns:
+        df["pot_barcode"] = df["pot_barcode"].astype(str)
+
+    # Ensure treatment is always a string
+    if "treatment" in df.columns:
+        df["treatment"] = df["treatment"].astype(str)
 
     return df
 
@@ -867,7 +921,7 @@ def group_and_average_scatter(
     df: pd.DataFrame,
     date_intervals: List[int],
     group_by: str,
-    planting_date: datetime,
+    planting_date: date,
     trait_x: str,
     trait_y: str,
 ) -> pd.DataFrame:
@@ -878,7 +932,7 @@ def group_and_average_scatter(
         df (pd.DataFrame): Measurements for all pots.
         date_intervals (List[int]): Days after planting date when measurements were collected.
         group_by (str): Grouping criteria such as 'treatment' or 'description.'
-        planting_date (datetime): Initial planting date.
+        planting_date (date): Initial planting date.
         trait_x (str): Trait for X axis.
         trait_y (str): Trait for Y axis.
 
@@ -954,6 +1008,8 @@ def group_and_average_scatter(
     # Rename grouping criteria column(s) to 'group' for consistent output
     if group_by in {"treatment", "description", "exp_id", "pot_barcode"}:
         scatter_df = scatter_df.rename(columns={group_by: "group"})
+        # Ensure group values are strings
+        scatter_df["group"] = scatter_df["group"].astype(str)
     elif group_by == "treatment_description":
         scatter_df = scatter_df.assign(
             group=scatter_df["treatment"].astype(str)
@@ -977,7 +1033,7 @@ def group_and_average_hsv(
     df: pd.DataFrame,
     date_intervals: List[int],
     group_by: str,
-    planting_date: datetime,
+    planting_date: date,
     trait: Optional[str] = None,
 ) -> pd.DataFrame:
     """For each day measurements were collected, group records based on group_by
@@ -988,7 +1044,7 @@ def group_and_average_hsv(
         df (pd.DataFrame): Measurements for all pots.
         date_intervals (List[int]): Days after planting date when measurements were collected.
         group_by (str): Grouping criteria such as 'treatment' or 'description.'
-        planting_date (datetime): Initial planting date.
+        planting_date (date): Initial planting date.
 
     Raises:
         HTTPException: Raised if the grouping criteria is not recognized.
@@ -1048,6 +1104,8 @@ def group_and_average_hsv(
     # Rename grouping criteria column(s) to 'group' for consistent output
     if group_by in {"treatment", "description", "exp_id", "pot_barcode"}:
         grouped_mean_hsv_df = grouped_mean_hsv_df.rename(columns={group_by: "group"})
+        # Ensure group values are strings
+        grouped_mean_hsv_df["group"] = grouped_mean_hsv_df["group"].astype(str)
     elif group_by == "treatment_description":
         grouped_mean_hsv_df = grouped_mean_hsv_df.assign(
             group=grouped_mean_hsv_df["treatment"].astype(str)
@@ -1062,7 +1120,7 @@ def group_and_average_hsv(
 
 def process_date_columns(
     dataDf: pd.DataFrame, refDf: pd.DataFrame
-) -> Tuple[pd.DataFrame, datetime, List[int]]:
+) -> Tuple[pd.DataFrame, date, List[int]]:
     # Convert scan date from timestamp to date so we can compare with planting date
     dataDf["scan_date"] = dataDf["scan_date"].dt.date
 
@@ -1072,7 +1130,16 @@ def process_date_columns(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Planting date in PPEW worksheet must be same for all records",
         )
-    planting_date = refDf.planting_date[0].date()
+
+    # Check if DataFrame is empty or has no planting_date column
+    if refDf.empty or "planting_date" not in refDf.columns:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="PPEW worksheet is empty or missing planting_date column",
+        )
+
+    # Use iloc[0] to safely get the first value
+    planting_date = parse_date(refDf.planting_date.iloc[0]).date()
 
     # Use "dfp" column (age of plants from planting time of imaging) for x-axis
     date_intervals = sorted([int(n) for n in dataDf["dfp"].unique()])
@@ -1113,6 +1180,155 @@ def normalize_group_by(group_by: schemas.indoor_project_data.GroupBy) -> str:
     return group_by_lower
 
 
+def convert_numpy_types(obj: Any) -> Any:
+    """Convert numpy types to Python types for JSON serialization.
+
+    Args:
+        obj: Object that may contain numpy types
+
+    Returns:
+        Object with numpy types converted to Python types
+    """
+    import numpy as np
+    import pandas as pd
+
+    if isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, np.floating):
+        return float(obj)
+    elif isinstance(obj, np.datetime64):
+        return obj.astype(datetime)
+    elif isinstance(obj, pd.Timestamp):
+        return obj.to_pydatetime()
+    elif isinstance(obj, (int, float)) and obj > 1e10:
+        # Handle large timestamp values that might be nanoseconds/milliseconds
+        return convert_timestamp_to_datetime(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, dict):
+        return {key: convert_numpy_types(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_numpy_types(item) for item in obj]
+    else:
+        return obj
+
+
+def convert_timestamp_to_datetime(value: Any) -> datetime:
+    """Convert various timestamp formats to Python datetime.
+
+    Args:
+        value: Value that might be a timestamp in various formats
+
+    Returns:
+        datetime: Python datetime object
+    """
+    import numpy as np
+    import pandas as pd
+
+    if isinstance(value, datetime):
+        return value
+    elif isinstance(value, pd.Timestamp):
+        return value.to_pydatetime()
+    elif isinstance(value, np.datetime64):
+        return value.astype(datetime)
+    elif isinstance(value, (int, float)):
+        # Handle Unix timestamps (seconds or nanoseconds)
+        if value > 1e12:  # Likely nanoseconds
+            value = value / 1e9
+        elif value > 1e10:  # Likely milliseconds
+            value = value / 1e3
+        return datetime.fromtimestamp(value)
+    else:
+        # Try to parse as string
+        return parse_date(str(value))
+
+
+def find_matching_tar_file(
+    treatment: str,
+    tar_files: List[models.IndoorProjectData],
+) -> Optional[models.IndoorProjectData]:
+    """Find the tar file that matches the given treatment (case-insensitive).
+
+    Args:
+        treatment (str): Treatment value to match.
+        tar_files (List[models.IndoorProjectData]): List of tar files to search.
+
+    Returns:
+        Optional[models.IndoorProjectData]: Matching tar file or None if not found.
+    """
+    treatment_lower = treatment.lower().strip()
+
+    for tar_file in tar_files:
+        if tar_file.treatment:
+            tar_treatment_lower = tar_file.treatment.lower().strip()
+            if tar_treatment_lower == treatment_lower:
+                return tar_file
+
+    return None
+
+
+def find_matching_images_for_record(
+    record: Dict[str, Any],
+    tar_file: Optional[models.IndoorProjectData],
+    indoor_project_id: str,
+    image_type: str,
+) -> List[str]:
+    """Find matching images for a record by searching in a specific tar file.
+
+    Args:
+        record (Dict[str, Any]): Record containing filename info.
+        tar_file (Optional[models.IndoorProjectData]): Tar file to search in.
+        indoor_project_id (str): Indoor project ID.
+        image_type (str): Type of image to search for (e.g., "RGB-Top", "RGB-Side").
+
+    Returns:
+        List[str]: List of image paths that match the record.
+    """
+    matching_images: List[str] = []
+
+    if not tar_file:
+        return matching_images
+
+    # Extract search term from filename
+    search_term_parts = record["filename"].split("_")
+    if len(search_term_parts) < 4:
+        return matching_images
+
+    search_term = (
+        search_term_parts[0]
+        + "_"
+        + "R"
+        + "_"
+        + search_term_parts[2]
+        + "_"
+        + search_term_parts[3]
+        + "_"
+        + image_type
+    )
+
+    # Construct path to images directory for this tar file
+    images_dir = os.path.join(
+        get_static_dir(),
+        "indoor_projects",
+        indoor_project_id,
+        "uploaded",
+        str(tar_file.id),
+        "images",
+    )
+
+    if not os.path.exists(images_dir):
+        return matching_images
+
+    # Search for matching images in this tar file's images directory
+    for filename in os.listdir(images_dir):
+        if search_term in filename:
+            image_path = os.path.join(images_dir, filename)
+            if os.path.exists(image_path):
+                matching_images.append(image_path)
+
+    return matching_images
+
+
 def construct_image_path(
     indoor_project_id: str,
     indoor_project_data_id: str,
@@ -1137,7 +1353,7 @@ def construct_image_path(
         indoor_project_id,
         "uploaded",
         indoor_project_data_id,
-        root_name,
+        "images",
         filename,
     )
 

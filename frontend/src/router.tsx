@@ -52,8 +52,8 @@ import ProjectLayout from './components/pages/workspace/projects/ProjectLayout';
 import ProjectModules from './components/pages/workspace/projects/ProjectModules';
 import ProjectSTACPublishing, {
   loader as stacPublishingLoader,
-} from './components/pages/projects/stac/ProjectSTACPublishing';
-import STACDisabled from './components/pages/projects/stac/STACDisabled';
+} from './components/pages/workspace/projects/stac/ProjectSTACPublishing';
+import STACDisabled from './components/pages/workspace/projects/stac/STACDisabled';
 import RegistrationForm from './components/pages/auth/RegistrationForm';
 import { RasterSymbologyProvider } from './components/maps/RasterSymbologyContext';
 import SharePotreeViewer from './components/maps/SharePotreeViewer';

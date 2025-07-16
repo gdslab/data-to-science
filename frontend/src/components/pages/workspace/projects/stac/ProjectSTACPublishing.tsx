@@ -19,7 +19,7 @@ import {
   STACPreviewPanel,
 } from './components';
 
-import api from '../../../../api';
+import api from '../../../../../api';
 
 export async function loader({ params }: LoaderFunctionArgs) {
   try {

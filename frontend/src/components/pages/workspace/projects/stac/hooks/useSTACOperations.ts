@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Status } from '../../../../Alert';
+import { Status } from '../../../../../Alert';
 
 type OperationType =
   | 'idle'

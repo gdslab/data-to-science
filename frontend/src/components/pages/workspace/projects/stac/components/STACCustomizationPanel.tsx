@@ -1,4 +1,4 @@
-import Alert, { Status } from '../../../../Alert';
+import Alert, { Status } from '../../../../../Alert';
 import { Project } from '../../Project';
 import ScientificCitationForm from '../ScientificCitationForm';
 import STACItemTitlesForm from '../STACItemTitlesForm';

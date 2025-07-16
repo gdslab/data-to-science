@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useRevalidator } from 'react-router-dom';
-import api from '../../../../../api';
-import { Status } from '../../../../Alert';
+import api from '../../../../../../api';
+import { Status } from '../../../../../Alert';
 
 type ActionType = 'publish' | 'update' | 'unpublish';
 
