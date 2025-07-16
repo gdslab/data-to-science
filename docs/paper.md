@@ -10,25 +10,25 @@ tags:
 authors:
   - name: Minyoung Jung
     affiliation: '1'
-    orcid: https://orcid.org/0000-0002-6419-5236
+    orcid: 0000-0002-6419-5236
   - name: Benjamin G. Hancock
     affiliation: '1'
-    orcid: https://orcid.org/0009-0005-9457-3479
+    orcid: 0009-0005-9457-3479
   - name: Zhenyu C. Qian
     affiliation: '2'
-    orcid: https://orcid.org/0000-0002-7310-8608
+    orcid: 0000-0002-7310-8608
   - name: Na Zhuo
     affiliation: '2'
   - name: Ziqian Gong
     affiliation: '2'
   - name: Jarrod S. Doucette
     affiliation: '3'
-    orcid: https://orcid.org/0000-0003-4027-2417
+    orcid: 0000-0003-4027-2417
   - name: Jinha Jung
     affiliation: '1'
     corresponding: true
     email: jinha@purdue.edu
-    orcid: https://orcid.org/0000-0003-1176-3540
+    orcid: 0000-0003-1176-3540
 
 affiliations:
   - index: 1
