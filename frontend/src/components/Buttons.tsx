@@ -332,6 +332,7 @@ export function DownloadQRButton({
         { responseType: 'blob' }
       );
       if (response.data) {
+        setIsFetchingShortUrl(false);
         closeShareButton();
         setQrCode(response.data);
         setTimeout(() => setButtonText(title), 2000);
