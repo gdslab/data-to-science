@@ -93,10 +93,10 @@ def test_create_multi_team_members_adds_project_members(db: Session) -> None:
     )
     # Fetch project members
     project_members1 = crud.project_member.get_list_of_project_members(
-        db, project_id=project1.id
+        db, project_uuid=project1.id
     )
     project_members2 = crud.project_member.get_list_of_project_members(
-        db, project_id=project2.id
+        db, project_uuid=project2.id
     )
     assert new_team_members
     assert len(new_team_members) == 4  # Three new team members plus owner
@@ -131,7 +131,7 @@ def test_no_duplicate_project_members_when_multiple_teams_assigned(db: Session) 
     # Create project with team1 association initially
     project = create_project(db, team_id=team1.id, owner_id=team_owner.id)
     project_members = crud.project_member.get_list_of_project_members(
-        db, project_id=project.id
+        db, project_uuid=project.id
     )
     assert len(project_members) == 6
     for project_member in project_members:
@@ -142,7 +142,7 @@ def test_no_duplicate_project_members_when_multiple_teams_assigned(db: Session) 
     )
     assert updated_project.team_id is None
     project_members_after_team_removal = (
-        crud.project_member.get_list_of_project_members(db, project_id=project.id)
+        crud.project_member.get_list_of_project_members(db, project_uuid=project.id)
     )
     assert len(project_members_after_team_removal) == 6
     # Assign team2 to the project
@@ -154,7 +154,7 @@ def test_no_duplicate_project_members_when_multiple_teams_assigned(db: Session) 
         user_id=team_owner.id,
     )
     project_members_after_new_team_assignment = (
-        crud.project_member.get_list_of_project_members(db, project_id=project.id)
+        crud.project_member.get_list_of_project_members(db, project_uuid=project.id)
     )
     crud.team_member.get_list_of_team_members(db, team_id=team2.id)
     assert len(project_members_after_new_team_assignment) == 7
@@ -262,7 +262,7 @@ def test_update_team_member_role_also_updates_project_member_role(db: Session) -
     )
     # Fetch project members
     project_members = crud.project_member.get_list_of_project_members(
-        db, project_id=project.id
+        db, project_uuid=project.id
     )
     assert member_owner_updated
     assert member_owner_updated.role == Role.OWNER
@@ -319,7 +319,7 @@ def test_update_team_member_role_of_project_creator_does_not_update_project_memb
     )
     # Attempt to downgrade project member role to "viewer"
     project_member = crud.project_member.get_by_project_and_member_id(
-        db, project_id=project.id, member_id=team_member_and_project_owner.id
+        db, project_uuid=project.id, member_id=team_member_and_project_owner.id
     )
     assert project_member
     project_member_in = schemas.ProjectMemberUpdate(role=Role.VIEWER)

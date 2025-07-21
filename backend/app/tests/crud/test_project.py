@@ -68,7 +68,7 @@ def test_create_project_with_team(db: Session) -> None:
     assert project.team_id == team.id
     # Get project members
     project_members = crud.project_member.get_list_of_project_members(
-        db, project_id=project.id
+        db, project_uuid=project.id
     )
     assert len(project_members) == 3
     for project_member in project_members:
@@ -99,7 +99,7 @@ def test_create_project_creates_project_member_for_owner(db: Session) -> None:
     user = create_user(db)
     project = create_project(db, owner_id=user.id)
     project_member = crud.project_member.get_by_project_and_member_id(
-        db, project_id=project.id, member_id=user.id
+        db, project_uuid=project.id, member_id=user.id
     )
     assert project_member
     assert project_member.role == Role.OWNER
@@ -313,7 +313,7 @@ def test_update_project_with_team(db: Session) -> None:
 
     # Get project members
     project_members = crud.project_member.get_list_of_project_members(
-        db, project_id=project.id
+        db, project_uuid=project.id
     )
     assert project_members
     # Team owner, team manager, team viewer, and project owner

@@ -85,15 +85,15 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
             if project:
                 # Check if user already project member
                 project_member = crud.project_member.get_by_project_and_member_id(
-                    db, project_id=project.id, member_id=user_obj.id
+                    db, project_uuid=project.id, member_id=user_obj.id
                 )
                 # Add as project member if not already
                 if not project_member:
                     # Set project role to owner if this user is team owner
                     if is_team_owner:
-                        project_role = "owner"
+                        project_role = Role.OWNER
                     else:
-                        project_role = "viewer"
+                        project_role = Role.VIEWER
                     # Create project member
                     crud.project_member.create_with_project(
                         db,
@@ -164,7 +164,7 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
                             (team_member.member_id, team_member.role)
                             for team_member in team_member_objs
                         ],
-                        project_id=project.id,
+                        project_uuid=project.id,
                     )
 
             # Return list of team members

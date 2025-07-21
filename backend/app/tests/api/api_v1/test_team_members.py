@@ -467,7 +467,7 @@ def test_downgrade_team_member_with_project_creator_role_fails(
     assert response.status_code == status.HTTP_200_OK
     # Confirm project member role remains "owner"
     project_member = crud.project_member.get_by_project_and_member_id(
-        db, project_id=project.id, member_id=team_manager.id
+        db, project_uuid=project.id, member_id=team_manager.id
     )
     assert project_member
     assert project_member.role == Role.OWNER

@@ -280,7 +280,7 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
             project_id = session.scalars(statement).unique().all()
             if len(project_id) == 1:
                 project_member = crud.project_member.get_by_project_and_member_id(
-                    db, project_id=project_id[0], member_id=user_id
+                    db, project_uuid=project_id[0], member_id=user_id
                 )
                 if project_member:
                     return True

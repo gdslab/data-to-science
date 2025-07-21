@@ -362,7 +362,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     (team_member.member_id, team_member.role)
                     for team_member in team_members
                 ],
-                project_id=project_id,
+                project_uuid=project_id,
             )
 
         # Finish updating project
@@ -370,7 +370,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         try:
             # Get project role for user updating project
             project_member = crud.project_member.get_by_project_and_member_id(
-                db, project_id=project_id, member_id=user_id
+                db, project_uuid=project_id, member_id=user_id
             )
             if project_member:
                 setattr(updated_project, "role", project_member.role)

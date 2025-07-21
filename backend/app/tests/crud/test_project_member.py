@@ -42,7 +42,7 @@ def test_create_project_members_with_different_roles(db: Session) -> None:
         db, member_id=project_viewer.id, project_id=project.id
     )
     owner_in_db = crud.project_member.get_by_project_and_member_id(
-        db, project_id=project.id, member_id=project_owner.id
+        db, project_uuid=project.id, member_id=project_owner.id
     )
     manager_in_db = crud.project_member.get(db, id=manager_role.id)
     viewer_in_db = crud.project_member.get(db, id=viewer_role.id)
@@ -61,7 +61,7 @@ def test_create_project_members(db: Session) -> None:
         team_members.append((team_member.member_id, Role.VIEWER))
     project = create_project(db, owner_id=project_owner.id, team_id=team.id)
     project_members = crud.project_member.create_multi_with_project(
-        db, new_members=team_members, project_id=project.id
+        db, new_members=team_members, project_uuid=project.id
     )
     assert isinstance(project_members, list)
     assert len(project_members) == 6  # owner + five added project members
@@ -71,7 +71,7 @@ def test_get_project_member(db: Session) -> None:
     owner = create_user(db)
     project = create_project(db, owner_id=owner.id)
     owner_in_db = crud.project_member.get_by_project_and_member_id(
-        db, member_id=owner.id, project_id=project.id
+        db, member_id=owner.id, project_uuid=project.id
     )
     assert owner_in_db
     assert owner_in_db.member_id == owner.id
@@ -86,7 +86,7 @@ def test_get_list_of_project_members(db: Session) -> None:
     member1 = create_project_member(db, project_id=project.id)
     member2 = create_project_member(db, project_id=project.id)
     project_members = crud.project_member.get_list_of_project_members(
-        db, project_id=project.id
+        db, project_uuid=project.id
     )
     assert type(project_members) is list
     assert len(project_members) == 3  # owner + two added project members
@@ -121,7 +121,7 @@ def test_get_list_of_project_members_with_specific_role(db: Session) -> None:
     )
     member3 = create_project_member(db, project_id=project.id)
     project_members = crud.project_member.get_list_of_project_members(
-        db, project_id=project.id, role=Role.MANAGER
+        db, project_uuid=project.id, role=Role.MANAGER
     )
     assert type(project_members) is list
     assert len(project_members) == 2
@@ -135,7 +135,7 @@ def test_get_list_of_project_members_from_deactivated_project(db: Session) -> No
     create_project_member(db, project_id=project.id)
     crud.project.deactivate(db, project_id=project.id, user_id=project.owner_id)
     project_members = crud.project_member.get_list_of_project_members(
-        db, project_id=project.id
+        db, project_uuid=project.id
     )
     assert type(project_members) is list
     assert len(project_members) == 0
@@ -159,7 +159,7 @@ def test_update_project_owner_member_role(db: Session) -> None:
     project_owner = create_user(db)
     project = create_project(db, owner_id=project_owner.id)
     project_member = crud.project_member.get_by_project_and_member_id(
-        db, project_id=project.id, member_id=project_owner.id
+        db, project_uuid=project.id, member_id=project_owner.id
     )
     assert project_member
     project_member_in_update = ProjectMemberUpdate(role=Role.MANAGER)
@@ -175,7 +175,7 @@ def test_update_role_for_only_project_owner(db: Session) -> None:
     owner = create_user(db)
     project = create_project(db, owner_id=owner.id)
     project_owner = crud.project_member.get_by_project_and_member_id(
-        db, project_id=project.id, member_id=owner.id
+        db, project_uuid=project.id, member_id=owner.id
     )
     assert project_owner
     project_owner_in_update = ProjectMemberUpdate(role=Role.MANAGER)
@@ -205,7 +205,7 @@ def test_delete_project_members(db: Session) -> None:
         create_project_member(db, project_id=project.id)
         create_project_member(db, project_id=other_project.id)
     removed_project_members = crud.project_member.delete_multi(
-        db, project_id=project.id, team_id=team.id
+        db, project_uuid=project.id, team_id=team.id
     )
     assert isinstance(removed_project_members, list)
     assert len(removed_project_members) == 5
