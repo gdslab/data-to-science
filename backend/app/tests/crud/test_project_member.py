@@ -3,8 +3,9 @@ from pydantic import ValidationError
 from sqlalchemy.exc import DataError
 from sqlalchemy.orm import Session
 
-from app import crud
-from app.schemas.project_member import ProjectMemberUpdate
+from app import crud, models
+from app.models.project_type import ProjectType
+from app.schemas.project_member import ProjectMemberCreate, ProjectMemberUpdate
 from app.schemas.role import Role
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
@@ -21,6 +22,8 @@ def test_create_project_member(db: Session) -> None:
     assert project_member
     assert user.id == project_member.member_id
     assert project.id == project_member.project_id
+    assert project_member.project_type == ProjectType.PROJECT
+    assert project_member.project_uuid == project.id
     assert project_member.role == Role.VIEWER  # default role
 
 
@@ -72,6 +75,8 @@ def test_get_project_member(db: Session) -> None:
     )
     assert owner_in_db
     assert owner_in_db.member_id == owner.id
+    assert owner_in_db.project_type == ProjectType.PROJECT
+    assert owner_in_db.project_uuid == project.id
     assert owner_in_db.role == Role.OWNER
 
 
@@ -91,6 +96,8 @@ def test_get_list_of_project_members(db: Session) -> None:
             or member1.member_id == project_member.member_id
             or member2.member_id == project_member.member_id
         )
+        assert project_member.project_type == ProjectType.PROJECT
+        assert project_member.project_uuid == project.id
         assert (
             project_member.member_id == owner.id
             and project_member.role == Role.OWNER
@@ -209,3 +216,36 @@ def test_delete_project_members(db: Session) -> None:
 def test_assign_project_member_invalid_role(db: Session) -> None:
     with pytest.raises(DataError):
         create_project_member(db, role="invalid-role")  # type: ignore
+
+
+def test_assign_project_member_invalid_project_type(db: Session) -> None:
+    project_owner = create_user(db)
+    project = create_project(db, owner_id=project_owner.id)
+    user = create_user(db)
+
+    # Test creating project member with invalid project_type
+    with pytest.raises(DataError):
+        crud.project_member.create_with_project(
+            db,
+            obj_in=ProjectMemberCreate(member_id=user.id),
+            project_id=project.id,
+            project_type="INVALID_TYPE",  # type: ignore
+        )
+
+
+def test_project_member_target_project_property(db: Session) -> None:
+    project_owner = create_user(db)
+    project = create_project(db, owner_id=project_owner.id)
+    user = create_user(db)
+    project_member = create_project_member(db, member_id=user.id, project_id=project.id)
+
+    # Get the project_member from the database within a session context
+    with db as session:
+        project_member_in_session = session.get(models.ProjectMember, project_member.id)
+        assert project_member_in_session is not None
+
+        # Test that target_project property returns the correct project
+        target_project = project_member_in_session.target_project
+        assert target_project is not None
+        assert target_project.id == project.id
+        assert target_project.title == project.title

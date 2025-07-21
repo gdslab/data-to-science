@@ -12,6 +12,7 @@ from app.crud.base import CRUDBase
 from app.crud.crud_team_member import set_name_and_email_attr, set_url_attr
 from app.models.project import Project
 from app.models.project_member import ProjectMember
+from app.models.project_type import ProjectType
 from app.models.team import Team
 from app.models.user import User
 from app.schemas.project_member import ProjectMemberCreate, ProjectMemberUpdate
@@ -28,7 +29,12 @@ class CRUDProjectMember(
     CRUDBase[ProjectMember, ProjectMemberCreate, ProjectMemberUpdate]
 ):
     def create_with_project(
-        self, db: Session, *, obj_in: ProjectMemberCreate, project_id: UUID
+        self,
+        db: Session,
+        *,
+        obj_in: ProjectMemberCreate,
+        project_id: UUID,
+        project_type: ProjectType = ProjectType.PROJECT
     ) -> Optional[ProjectMember]:
         if obj_in.email:
             statement = select(User).where(
@@ -65,7 +71,11 @@ class CRUDProjectMember(
             else:
                 role = Role.VIEWER
             project_member = ProjectMember(
-                member_id=user_obj.id, project_id=project_id, role=role
+                member_id=user_obj.id,
+                project_id=project_id,
+                project_type=project_type,
+                project_uuid=project_id,
+                role=role,
             )
             session.add(project_member)
             session.commit()
@@ -75,7 +85,11 @@ class CRUDProjectMember(
         return project_member
 
     def create_multi_with_project(
-        self, db: Session, new_members: List[Tuple[UUID, Role]], project_id: UUID
+        self,
+        db: Session,
+        new_members: List[Tuple[UUID, Role]],
+        project_id: UUID,
+        project_type: ProjectType = ProjectType.PROJECT,
     ) -> Sequence[ProjectMember]:
         current_members = self.get_list_of_project_members(db, project_id=project_id)
         current_member_ids = [cm.member_id for cm in current_members]
@@ -88,6 +102,8 @@ class CRUDProjectMember(
                         "member_id": project_member[0],
                         "role": project_member[1],
                         "project_id": project_id,
+                        "project_type": project_type,
+                        "project_uuid": project_id,
                     }
                 )
         if len(project_members) > 0:
