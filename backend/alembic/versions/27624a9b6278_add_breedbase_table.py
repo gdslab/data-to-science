@@ -1,7 +1,7 @@
 """add breedbase table
 
 Revision ID: 27624a9b6278
-Revises: 36e70891a65f
+Revises: 5c0f233cab5a
 Create Date: 2025-05-18 22:32:52.059271
 
 """

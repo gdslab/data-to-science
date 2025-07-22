@@ -33,7 +33,7 @@ def create_flight(
             status_code=status.HTTP_404_NOT_FOUND, detail="Pilot not found"
         )
     pilot_is_project_member = crud.project_member.get_by_project_and_member_id(
-        db, project_id=project_id, member_id=pilot_id
+        db, project_uuid=project_id, member_id=pilot_id
     )
     if not pilot_is_project_member:
         raise HTTPException(
@@ -110,7 +110,7 @@ def update_flight_project(
 ) -> Any:
     # check if user has permission to read/write to destination project
     project_membership = crud.project_member.get_by_project_and_member_id(
-        db, project_id=destination_project_id, member_id=current_user.id
+        db, project_uuid=destination_project_id, member_id=current_user.id
     )
     # raise exception if not project member or member without owner/manager role
     if not project_membership or project_membership.role != Role.OWNER:

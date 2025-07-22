@@ -81,7 +81,7 @@ class CRUDCampaign(CRUDBase[Campaign, CampaignCreate, CampaignUpdate]):
                 if campaign_in.lead_id:
                     # check if lead_id is associated with project member
                     lead_user = crud.project_member.get_by_project_and_member_id(
-                        db, project_id=project_id, member_id=campaign_in.lead_id
+                        db, project_uuid=project_id, member_id=campaign_in.lead_id
                     )
                     if not lead_user:
                         return None

@@ -21,6 +21,8 @@ from app.models.project import Project
 from app.models.project_like import ProjectLike
 from app.models.project_member import ProjectMember
 from app.models.project_module import ProjectModule
+from app.models.project_type import ProjectType
+from app.models.team import Team
 from app.models.team_member import TeamMember
 from app.models.user import User
 from app.models.utils.utcnow import utcnow
@@ -31,7 +33,8 @@ from app.schemas.project import (
     Project as ProjectSchema,
     Projects,
 )
-from app.schemas.role import Role
+from app.schemas.project_member import ProjectMemberCreate
+from app.schemas.team_member import Role
 
 
 logger = logging.getLogger("__name__")
@@ -94,7 +97,11 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         setattr(project_db_obj, "role", "owner")
         # add project memebers to db
         member_db_obj = ProjectMember(
-            member_id=owner_id, project_id=project_db_obj.id, role=Role.OWNER
+            member_id=owner_id,
+            project_id=project_db_obj.id,
+            project_type=ProjectType.PROJECT,
+            project_uuid=project_db_obj.id,
+            role=Role.OWNER,
         )
         with db as session:
             session.add(member_db_obj)
@@ -110,6 +117,8 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                         ProjectMember(
                             member_id=team_member.member_id,
                             project_id=project_db_obj.id,
+                            project_type=ProjectType.PROJECT,
+                            project_uuid=project_db_obj.id,
                             role=team_member.role,
                         )
                     )
@@ -353,7 +362,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     (team_member.member_id, team_member.role)
                     for team_member in team_members
                 ],
-                project_id=project_id,
+                project_uuid=project_id,
             )
 
         # Finish updating project
@@ -361,7 +370,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         try:
             # Get project role for user updating project
             project_member = crud.project_member.get_by_project_and_member_id(
-                db, project_id=project_id, member_id=user_id
+                db, project_uuid=project_id, member_id=user_id
             )
             if project_member:
                 setattr(updated_project, "role", project_member.role)

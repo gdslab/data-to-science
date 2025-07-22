@@ -446,7 +446,7 @@ def test_remove_project_owner_as_project_member_fails(
     project = create_project(db, owner_id=current_user.id)
     # get project member instance for current user/project owner
     project_member = crud.project_member.get_by_project_and_member_id(
-        db, project_id=project.id, member_id=current_user.id
+        db, project_uuid=project.id, member_id=current_user.id
     )
     assert project_member is not None
     # attempt to remove current user from project member table

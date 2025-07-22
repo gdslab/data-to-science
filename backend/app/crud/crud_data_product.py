@@ -99,7 +99,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             elif data_product and user_id:
                 project_id = data_product.flight.project_id
                 project_member = crud.project_member.get_by_project_and_member_id(
-                    db, project_id=project_id, member_id=user_id
+                    db, project_uuid=project_id, member_id=user_id
                 )
                 if project_member:
                     set_bbox_attr(data_product)

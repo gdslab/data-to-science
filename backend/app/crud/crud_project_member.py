@@ -12,6 +12,7 @@ from app.crud.base import CRUDBase
 from app.crud.crud_team_member import set_name_and_email_attr, set_url_attr
 from app.models.project import Project
 from app.models.project_member import ProjectMember
+from app.models.project_type import ProjectType
 from app.models.team import Team
 from app.models.user import User
 from app.schemas.project_member import ProjectMemberCreate, ProjectMemberUpdate
@@ -28,7 +29,12 @@ class CRUDProjectMember(
     CRUDBase[ProjectMember, ProjectMemberCreate, ProjectMemberUpdate]
 ):
     def create_with_project(
-        self, db: Session, *, obj_in: ProjectMemberCreate, project_id: UUID
+        self,
+        db: Session,
+        *,
+        obj_in: ProjectMemberCreate,
+        project_id: UUID,
+        project_type: ProjectType = ProjectType.PROJECT
     ) -> Optional[ProjectMember]:
         if obj_in.email:
             statement = select(User).where(
@@ -65,7 +71,11 @@ class CRUDProjectMember(
             else:
                 role = Role.VIEWER
             project_member = ProjectMember(
-                member_id=user_obj.id, project_id=project_id, role=role
+                member_id=user_obj.id,
+                project_id=project_id,
+                project_type=project_type,
+                project_uuid=project_id,
+                role=role,
             )
             session.add(project_member)
             session.commit()
@@ -75,9 +85,15 @@ class CRUDProjectMember(
         return project_member
 
     def create_multi_with_project(
-        self, db: Session, new_members: List[Tuple[UUID, Role]], project_id: UUID
+        self,
+        db: Session,
+        new_members: List[Tuple[UUID, Role]],
+        project_uuid: UUID,
+        project_type: ProjectType = ProjectType.PROJECT,
     ) -> Sequence[ProjectMember]:
-        current_members = self.get_list_of_project_members(db, project_id=project_id)
+        current_members = self.get_list_of_project_members(
+            db, project_uuid=project_uuid, project_type=project_type
+        )
         current_member_ids = [cm.member_id for cm in current_members]
         project_members = []
         for project_member in new_members:
@@ -87,22 +103,31 @@ class CRUDProjectMember(
                     {
                         "member_id": project_member[0],
                         "role": project_member[1],
-                        "project_id": project_id,
+                        "project_type": project_type,
+                        "project_uuid": project_uuid,
+                        "project_id": project_uuid,
                     }
                 )
         if len(project_members) > 0:
             with db as session:
                 session.execute(insert(ProjectMember).values(project_members))
                 session.commit()
-        return self.get_list_of_project_members(db, project_id=project_id)
+        return self.get_list_of_project_members(
+            db, project_uuid=project_uuid, project_type=project_type
+        )
 
     def get_by_project_and_member_id(
-        self, db: Session, project_id: UUID, member_id: UUID
+        self,
+        db: Session,
+        project_uuid: UUID,
+        member_id: UUID,
+        project_type: ProjectType = ProjectType.PROJECT,
     ) -> ProjectMember | None:
         statement: Select = (
             select(ProjectMember, Bundle("user", User.id))
             .join(ProjectMember.member)
-            .where(ProjectMember.project_id == project_id)
+            .where(ProjectMember.project_uuid == project_uuid)
+            .where(ProjectMember.project_type == project_type)
             .where(ProjectMember.member_id == member_id)
         )
         with db as session:
@@ -113,7 +138,12 @@ class CRUDProjectMember(
         return None
 
     def get_list_of_project_members(
-        self, db: Session, *, project_id: UUID, role: Optional[Role] = None
+        self,
+        db: Session,
+        *,
+        project_uuid: UUID,
+        project_type: ProjectType = ProjectType.PROJECT,
+        role: Optional[Role] = None
     ) -> Sequence[ProjectMember]:
         statement: Select = (
             select(
@@ -122,7 +152,8 @@ class CRUDProjectMember(
             )
             .join(ProjectMember.project)
             .join(ProjectMember.member)
-            .where(ProjectMember.project_id == project_id)
+            .where(ProjectMember.project_uuid == project_uuid)
+            .where(ProjectMember.project_type == project_type)
             .where(Project.is_active)
         )
         if role:
@@ -207,13 +238,18 @@ class CRUDProjectMember(
             }
 
     def delete_multi(
-        self, db: Session, project_id: UUID, team_id: UUID
+        self,
+        db: Session,
+        project_uuid: UUID,
+        team_id: UUID,
+        project_type: ProjectType = ProjectType.PROJECT,
     ) -> Sequence[ProjectMember]:
         statement = (
             select(ProjectMember)
             .join(Project)
             .join(Team)
-            .where(Project.id == project_id)
+            .where(ProjectMember.project_uuid == project_uuid)
+            .where(ProjectMember.project_type == project_type)
             .where(Team.id == team_id)
             .where(ProjectMember.role != Role.OWNER)
         )
