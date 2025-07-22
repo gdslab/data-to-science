@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api.deps import get_current_user, get_current_approved_user
 from app.core.config import settings
+from app.models.project_type import ProjectType
 from app.schemas.role import Role
 from app.schemas.team import TeamUpdate
 from app.schemas.team_member import TeamMemberCreate, TeamMemberUpdate
@@ -64,7 +65,7 @@ def test_create_team_with_project(
     assert project_in_db
     assert str(project_in_db.team_id) == team["id"]
     project_members = crud.project_member.get_list_of_project_members(
-        db, project_id=project.id
+        db, project_uuid=project.id, project_type=ProjectType.PROJECT
     )
     assert len(project_members) == 1
     assert current_user.id == project_members[0].member_id
@@ -314,7 +315,7 @@ def test_remove_team_with_project(
     project = create_project(db, team_id=team.id, owner_id=current_user.id)
     # get list of project members (should include owner plus five team members, 6)
     project_members_before_team_deleted = (
-        crud.project_member.get_list_of_project_members(db, project_id=project.id)
+        crud.project_member.get_list_of_project_members(db, project_uuid=project.id)
     )
     # delete the team
     response = client.delete(f"{settings.API_V1_STR}/teams/{team.id}")
@@ -324,7 +325,7 @@ def test_remove_team_with_project(
     assert team_in_db is None
     # get list of project members (should still be 6 members)
     project_members_after_team_deleted = (
-        crud.project_member.get_list_of_project_members(db, project_id=project.id)
+        crud.project_member.get_list_of_project_members(db, project_uuid=project.id)
     )
     project_after_team_deleted = crud.project.get(db, id=project.id)
     assert len(project_members_before_team_deleted) == 6

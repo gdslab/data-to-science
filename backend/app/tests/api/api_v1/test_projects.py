@@ -556,7 +556,7 @@ def test_update_project_without_team_with_a_team(
     assert response_project["team_id"] == str(team.id)
     # confirm team members are now in project members table
     project_members = crud.project_member.get_list_of_project_members(
-        db, project_id=project.id
+        db, project_uuid=project.id
     )
     for project_member in project_members:
         if project_member.role != Role.OWNER:
@@ -588,7 +588,7 @@ def test_update_project_with_new_team_replacing_old_team(
     response_data = response.json()
     assert response_data["team_id"] == str(new_team.id)
     project_members = crud.project_member.get_list_of_project_members(
-        db, project_id=project.id
+        db, project_uuid=project.id
     )
     assert len(project_members) == 11  # ten team members plus owner
     for project_member in project_members:
@@ -733,10 +733,14 @@ def test_dropping_team_from_project(
     response_data = response.json()
     assert response_data["team_id"] is None
     project_members = crud.project_member.get_list_of_project_members(
-        db, project_id=project.id
+        db, project_uuid=project.id
     )
     assert len(project_members) == 6  # number of project members should remain same
-    assert project_members[0].member_id == current_user.id
+    # Verify current user is still in the project members list
+    current_user_in_members = any(
+        member.member_id == current_user.id for member in project_members
+    )
+    assert current_user_in_members
 
 
 def test_update_project_with_new_team_without_belonging_to_team(

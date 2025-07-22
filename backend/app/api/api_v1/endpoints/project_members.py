@@ -50,7 +50,7 @@ def create_project_members(
     new_members = [(project_member, Role.VIEWER) for project_member in project_members]
     # Create project member objects
     project_member_objs = crud.project_member.create_multi_with_project(
-        db, new_members=new_members, project_id=project_id
+        db, new_members=new_members, project_uuid=project_id
     )
 
     return project_member_objs
@@ -63,7 +63,7 @@ def read_project_member(
     project: models.Project = Depends(deps.can_read_project),
 ) -> Any:
     project_member = crud.project_member.get_by_project_and_member_id(
-        db, project_id=project.id, member_id=project_member_id
+        db, project_uuid=project.id, member_id=project_member_id
     )
     if not project_member:
         raise HTTPException(
@@ -78,7 +78,7 @@ def read_project_members(
     project: models.Project = Depends(deps.can_read_project),
 ) -> Any:
     project_members = crud.project_member.get_list_of_project_members(
-        db, project_id=project.id
+        db, project_uuid=project.id
     )
 
     return project_members

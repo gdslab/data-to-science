@@ -43,7 +43,7 @@ def test_create_team_with_project(db: Session) -> None:
     assert stored_project.team_id == team.id
     # Verify project members table includes team members
     project_members = crud.project_member.get_list_of_project_members(
-        db, project_id=stored_project.id
+        db, project_uuid=stored_project.id
     )
     assert len(project_members) == 3  # project/team owner plus two team members
     for project_member in project_members:
