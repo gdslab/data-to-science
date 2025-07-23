@@ -35,8 +35,9 @@ class Settings(BaseSettings):
             raise ValueError(f"{field_name} must be at least 32 characters long")
         return v
 
-    # 60 minutes * 24 hours * 8 days = 8 days
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
+    # 15 minutes
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
     API_PROJECT_NAME: str = ""
     API_DOMAIN: str = ""
