@@ -4,6 +4,7 @@ import hashlib
 import time
 import os
 import logging
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, cast, Dict, Optional, Tuple, Literal
 from uuid import UUID
@@ -19,8 +20,10 @@ from passlib.context import CryptContext
 from passlib.hash import sha256_crypt
 from sqlalchemy.orm import Session
 
+from app import crud
 from app.core.config import settings
 from app.models.single_use_token import SingleUseToken
+from app.schemas.refresh_token import RefreshTokenCreate
 
 logger = logging.getLogger("__name__")
 
@@ -43,15 +46,43 @@ def create_access_token(subject: str | Any, expire: datetime | None = None) -> s
     return encoded_jwt
 
 
-def create_refresh_token(subject: str | Any, expire: datetime | None = None) -> str:
+def create_refresh_token(
+    db: Session, subject: str | Any, expire: datetime | None = None
+) -> str:
     """Create JWT refresh token with expiration defined in settings."""
+    # Create a unique identifier for the token
+    jti = uuid.uuid4()
+
+    # Set expiration date
+    now = datetime.now(timezone.utc)
     if not expire:
-        expire = datetime.now(timezone.utc) + timedelta(
-            days=settings.REFRESH_TOKEN_EXPIRE_DAYS
-        )
-    to_encode = {"exp": expire, "sub": str(subject), "type": "refresh"}
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+        expire = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+
+    # Create payload
+    to_encode = {
+        "sub": str(subject),
+        "jti": str(jti),
+        "iat": now,
+        "exp": expire,
+        "type": "refresh",
+    }
+
+    # Encode token
+    token = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
+
+    # Handle subject being either string or UUID
+    if isinstance(subject, UUID):
+        user_uuid = subject
+    else:
+        user_uuid = UUID(subject)
+
+    # Store token in database
+    refresh_token_create = RefreshTokenCreate(
+        jti=jti, user_id=user_uuid, issued_at=now, expires_at=expire
+    )
+    crud.refresh_token.create(db, obj_in=refresh_token_create)
+
+    return token
 
 
 def decode_token(token: str) -> dict[str, Any]:

@@ -1,7 +1,8 @@
 import logging
-import os
 import secrets
-from typing import Any, Annotated, Literal
+from datetime import datetime, timezone
+from typing import Any, Annotated
+from uuid import UUID
 
 from fastapi import (
     APIRouter,
@@ -54,7 +55,7 @@ def login_access_token(
             status_code=status.HTTP_403_FORBIDDEN, detail="Account requires approval"
         )
     access_token = security.create_access_token(user.id)
-    refresh_token = security.create_refresh_token(user.id)
+    refresh_token = security.create_refresh_token(db, user.id)
 
     # Set authentication cookies
     security.set_auth_cookies(response, access_token, refresh_token)
@@ -70,32 +71,58 @@ def refresh_access_token(
 ) -> Any:
     """Refresh access token using refresh token."""
     # Check if refresh token is provided
-    if not refresh_token:
+    if not refresh_token or not refresh_token.startswith("Bearer "):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token not found"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token missing or malformed",
         )
-    # Check if refresh token starts with "Bearer "
-    if not refresh_token.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
-        )
+
     # Remove "Bearer " prefix and strip whitespace
     token = refresh_token.removeprefix("Bearer ").strip()
 
     # Validate token and get payload
     payload = security.validate_token_and_get_payload(token, "refresh")
 
+    # Require a jti claim in the payload
+    jti_str = payload.get("jti")
+    if not jti_str:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token payload missing jti",
+        )
+    jti = UUID(jti_str)
+
+    # Check if token is revoked
+    db_token = crud.refresh_token.get_by_jti(db, jti=jti)
+    if (
+        not db_token
+        or db_token.revoked
+        or db_token.expires_at < datetime.now(timezone.utc)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token revoked or expired",
+        )
+
+    # Revoke the old refresh token
+    crud.refresh_token.revoke(db, jti=jti)
+
     # Get user from payload
     user = security.get_user_from_token_payload(db, payload)
 
     # Issue new access token
     new_access_token = security.create_access_token(user.id)
-    new_refresh_token = security.create_refresh_token(user.id)
+    new_refresh_token = security.create_refresh_token(db, user.id)
 
     # Set authentication cookies
     security.set_auth_cookies(response, new_access_token, new_refresh_token)
 
-    return {"msg": "Access token refreshed"}
+    return {
+        "access_token": new_access_token,
+        "refresh_token": new_refresh_token,
+        "token_type": "bearer",
+        "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # seconds
+    }
 
 
 @router.get("/remove-access-token")

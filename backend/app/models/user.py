@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from .team_member import TeamMember
     from .project import Project
     from .project_member import ProjectMember
+    from .refresh_token import RefreshToken
     from .upload import Upload
     from .user_extension import UserExtension
 
@@ -69,6 +70,9 @@ class User(Base):
     )
     projects: Mapped[List["Project"]] = relationship(
         back_populates="owner", cascade="all, delete"
+    )
+    refresh_tokens: Mapped[List["RefreshToken"]] = relationship(
+        back_populates="user", cascade="all, delete"
     )
     team_memberships: Mapped[List["TeamMember"]] = relationship(back_populates="member")
     teams: Mapped[List["Team"]] = relationship(

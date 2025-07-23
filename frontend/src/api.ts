@@ -1,7 +1,7 @@
 import axios, { AxiosError, AxiosInstance } from 'axios';
 
 // Create an axios instance with default api settings
-const api = axios.create({
+const api: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_V1_STR,
   withCredentials: true, // Include JWT access cookie with requests
   headers: {
