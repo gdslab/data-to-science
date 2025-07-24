@@ -46,6 +46,9 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
   const [popupInfo, setPopupInfo] = useState<
     PopupInfoProps | { [key: string]: any } | null
   >(null);
+  const [config, setConfig] = useState<{ osmLabelFilter?: string } | null>(
+    null
+  );
 
   const {
     activeDataProduct,
@@ -58,6 +61,19 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
   const symbologyContext = useRasterSymbologyContext();
 
   const { state } = useLocation();
+
+  // Load config for osmLabelFilter
+  useEffect(() => {
+    fetch('/config.json')
+      .then((response) => response.json())
+      .then((loadedConfig) => {
+        setConfig({ osmLabelFilter: loadedConfig.osmLabelFilter });
+      })
+      .catch((error) => {
+        console.error('Failed to load config.json:', error);
+        setConfig({}); // Set empty config on error
+      });
+  }, []);
 
   // Set map state to ready if user has zero projects
   useEffect(() => {
@@ -182,8 +198,8 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
   const mapStyle = useMemo(() => {
     return mapboxAccessToken
       ? getMapboxSatelliteBasemapStyle(mapboxAccessToken)
-      : getWorldImageryTopoBasemapStyle(maptilerApiKey);
-  }, [mapboxAccessToken, maptilerApiKey]);
+      : getWorldImageryTopoBasemapStyle(maptilerApiKey, config || undefined);
+  }, [mapboxAccessToken, maptilerApiKey, config]);
 
   return (
     <Map
