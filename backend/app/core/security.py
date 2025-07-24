@@ -206,7 +206,7 @@ def get_user_from_token_payload(db: Session, payload: dict[str, Any]):
     from app import crud
 
     # Get user from database
-    user = crud.user.get(db, id=user_uuid)
+    user = crud.user.get_by_id(db, user_id=user_uuid)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
