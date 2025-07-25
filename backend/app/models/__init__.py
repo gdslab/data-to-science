@@ -19,6 +19,7 @@ from .project_member import ProjectMember
 from .project_module import ProjectModule
 from .project_type import ProjectType
 from .raw_data import RawData
+from .refresh_token import RefreshToken
 from .shortened_url import ShortenedUrl
 from .single_use_token import SingleUseToken
 from .team import Team

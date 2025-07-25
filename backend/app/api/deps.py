@@ -6,9 +6,7 @@ from uuid import UUID
 from fastapi import BackgroundTasks, Depends, HTTPException, Request, status
 from fastapi.security import APIKeyHeader
 from fastapi_mail import MessageSchema, MessageType
-from jose import jwt
-from jose.exceptions import JWTError
-from pydantic import EmailStr, ValidationError
+from pydantic import EmailStr
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
@@ -60,22 +58,6 @@ def get_db() -> Generator:
         db.close()
 
 
-def decode_jwt(token: str) -> schemas.TokenPayload:
-    try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
-        )
-        token_data = schemas.TokenPayload(**payload)
-    except (JWTError, ValidationError):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access forbidden",
-        )
-    except Exception as e:
-        logger.exception("Failed to decode jwt")
-    return token_data
-
-
 def send_email(
     subject: str,
     recipients: list[EmailStr],
@@ -109,15 +91,12 @@ def verify_user_account(current_user: Optional[models.User]) -> models.User:
 def get_current_user(
     db: Session = Depends(get_db), token: str = Depends(reusable_oauth2)
 ) -> models.User:
-    token_data = decode_jwt(token)
-    if token_data.sub:
-        user = crud.user.get_by_id(db, user_id=token_data.sub)
-    else:
-        user = None
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Account not found"
-        )
+    # Validate token and get payload
+    payload = security.validate_token_and_get_payload(token, "access")
+
+    # Get user from payload
+    user = security.get_user_from_token_payload(db, payload)
+
     return user
 
 
@@ -143,9 +122,10 @@ def get_current_approved_user_by_jwt_or_api_key(
 
     # find user with jwt token
     if token and isinstance(token, str):
-        token_data = decode_jwt(token)
-        if token_data.sub:
-            user = crud.user.get_by_id(db, user_id=token_data.sub)
+        # Validate token and get payload
+        payload = security.validate_token_and_get_payload(token, "access")
+        # Get user from payload
+        user = security.get_user_from_token_payload(db, payload)
 
     # if user not found with jwt token, try api key
     if not user and api_key and isinstance(api_key, str):
@@ -176,9 +156,14 @@ def get_optional_current_user(
 
     # find user with jwt token
     if token and isinstance(token, str):
-        token_data = decode_jwt(token)
-        if token_data.sub:
-            user = crud.user.get_by_id(db, user_id=token_data.sub)
+        try:
+            # Validate token and get payload
+            payload = security.validate_token_and_get_payload(token, "access")
+            # Get user from payload
+            user = security.get_user_from_token_payload(db, payload)
+        except HTTPException:
+            # Token validation failed, continue to try API key
+            pass
 
     # if user not found with jwt token, try api key
     if not user and api_key and isinstance(api_key, str):

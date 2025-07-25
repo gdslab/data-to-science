@@ -1,5 +1,37 @@
 import { StyleSpecification } from 'maplibre-gl';
 
+// Define config interface
+interface MapConfig {
+  osmLabelFilter?: string;
+}
+
+// Helper function to parse osmLabelFilter and create country filters for a specific scale
+const createA2Filter = (
+  osmLabelFilter: string | undefined,
+  scale: string
+): any[] => {
+  if (!osmLabelFilter) {
+    return []; // No additional filters if osmLabelFilter is not provided
+  }
+
+  // Parse filter string into country codes for this scale
+  const filterEntries = osmLabelFilter.split(',').map((entry) => entry.trim());
+  const countriesForScale = filterEntries
+    .filter((entry) => entry.endsWith(`_${scale}`))
+    .map((entry) => entry.replace(`_${scale}`, ''));
+
+  if (countriesForScale.length === 0) {
+    return []; // No filters for this scale
+  }
+
+  // Create filter conditions to exclude these countries
+  return countriesForScale.map((countryCode) => [
+    '!=',
+    ['get', 'iso_a2'],
+    countryCode,
+  ]);
+};
+
 const getMapboxSatelliteBasemapStyle = (
   mapboxAccessToken: string
 ): StyleSpecification => ({
@@ -46,7 +78,8 @@ const osmBasemapStyle: StyleSpecification = {
 };
 
 const getWorldImageryTopoBasemapStyle = (
-  maptilerApiKey?: string
+  maptilerApiKey?: string,
+  config?: MapConfig
 ): StyleSpecification => {
   const baseStyle: StyleSpecification = {
     version: 8,
@@ -84,6 +117,7 @@ const getWorldImageryTopoBasemapStyle = (
     };
 
     // Continent scale labels (zoom 1-5)
+    const continentFilters = createA2Filter(config?.osmLabelFilter, 'S1');
     baseStyle.layers.push({
       id: 'continent-labels',
       type: 'symbol',
@@ -91,7 +125,11 @@ const getWorldImageryTopoBasemapStyle = (
       'source-layer': 'place',
       minzoom: 1,
       maxzoom: 5,
-      filter: ['in', ['get', 'class'], ['literal', ['country', 'city']]],
+      filter: [
+        'all',
+        ['in', ['get', 'class'], ['literal', ['country', 'city']]],
+        ...continentFilters,
+      ],
       layout: {
         'text-field': ['get', 'name'],
         'text-size': [
@@ -104,7 +142,7 @@ const getWorldImageryTopoBasemapStyle = (
           ['interpolate', ['linear'], ['get', 'rank'], 1, 16, 5, 12],
           14,
         ],
-        'text-font': ['Open Sans Regular'],
+        'text-font': ['Open Sans Bold'],
         'text-anchor': 'center',
         'text-max-width': 8,
         'symbol-spacing': 300,
@@ -118,6 +156,7 @@ const getWorldImageryTopoBasemapStyle = (
     });
 
     // Regional scale labels (zoom 4-9)
+    const regionalFilters = createA2Filter(config?.osmLabelFilter, 'S2');
     baseStyle.layers.push({
       id: 'regional-labels',
       type: 'symbol',
@@ -126,9 +165,9 @@ const getWorldImageryTopoBasemapStyle = (
       minzoom: 4,
       maxzoom: 9,
       filter: [
-        'in',
-        ['get', 'class'],
-        ['literal', ['country', 'city', 'town']],
+        'all',
+        ['in', ['get', 'class'], ['literal', ['country', 'city', 'town']]],
+        ...regionalFilters,
       ],
       layout: {
         'text-field': ['get', 'name'],
@@ -144,7 +183,7 @@ const getWorldImageryTopoBasemapStyle = (
           12,
           14,
         ],
-        'text-font': ['Open Sans Regular'],
+        'text-font': ['Open Sans Semibold'],
         'text-anchor': 'center',
         'text-max-width': 10,
         'symbol-spacing': 250,
@@ -158,7 +197,8 @@ const getWorldImageryTopoBasemapStyle = (
     });
 
     // City/local scale labels (zoom 8-13)
-    baseStyle.layers.push({
+    const cityFilters = createA2Filter(config?.osmLabelFilter, 'S3');
+    const cityLayer: any = {
       id: 'city-local-labels',
       type: 'symbol',
       source: 'osm-labels',
@@ -181,7 +221,7 @@ const getWorldImageryTopoBasemapStyle = (
           12,
           14,
         ],
-        'text-font': ['Open Sans Semibold'],
+        'text-font': ['Open Sans Regular'],
         'text-anchor': 'center',
         'text-max-width': 12,
         'symbol-spacing': 200,
@@ -192,10 +232,18 @@ const getWorldImageryTopoBasemapStyle = (
         'text-halo-color': '#000000',
         'text-halo-width': 1.5,
       },
-    });
+    };
+
+    // Add filter only if there are filters to apply
+    if (cityFilters.length > 0) {
+      cityLayer.filter = ['all', ...cityFilters];
+    }
+
+    baseStyle.layers.push(cityLayer);
 
     // Street level labels (zoom 13+)
-    baseStyle.layers.push({
+    const streetFilters = createA2Filter(config?.osmLabelFilter, 'S4');
+    const streetLayer: any = {
       id: 'street-level-labels',
       type: 'symbol',
       source: 'osm-labels',
@@ -217,7 +265,7 @@ const getWorldImageryTopoBasemapStyle = (
           14,
           16,
         ],
-        'text-font': ['Open Sans Bold'],
+        'text-font': ['Open Sans Regular'],
         'text-anchor': 'center',
         'text-max-width': 15,
         'symbol-spacing': 150,
@@ -228,7 +276,14 @@ const getWorldImageryTopoBasemapStyle = (
         'text-halo-color': '#000000',
         'text-halo-width': 2,
       },
-    });
+    };
+
+    // Add filter only if there are filters to apply
+    if (streetFilters.length > 0) {
+      streetLayer.filter = ['all', ...streetFilters];
+    }
+
+    baseStyle.layers.push(streetLayer);
   }
 
   return baseStyle;

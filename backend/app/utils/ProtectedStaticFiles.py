@@ -10,7 +10,8 @@ from sqlalchemy.orm import Session
 from app.utils.staticfiles import RangedStaticFiles
 
 from app import crud
-from app.api.deps import decode_jwt, can_read_project
+from app.api.deps import can_read_project
+from app.core import security
 from app.db.session import SessionLocal
 from app.models.data_product import DataProduct
 from app.schemas.api_key import APIKeyUpdate
@@ -130,10 +131,21 @@ async def verify_static_file_access(request: Request) -> None:
     access_token = request.cookies.get("access_token")
     if not access_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-    token_data = decode_jwt(access_token.split(" ")[1])
-    if token_data.sub:
-        user = crud.user.get(SessionLocal(), id=token_data.sub)
-    if not token_data.sub or not user:
+
+    # Extract token from "Bearer <token>" format
+    token = access_token.split(" ")[1]
+
+    # Validate token and get payload
+    payload = security.validate_token_and_get_payload(token, "access")
+
+    # Get user from payload
+    db = SessionLocal()
+    try:
+        user = security.get_user_from_token_payload(db, payload)
+    finally:
+        db.close()
+
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="user not found"
         )
