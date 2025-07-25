@@ -15,6 +15,9 @@ export default function DashboardMap() {
   const [mapboxAccessToken, setMapboxAccessToken] = useState('');
   const [maptilerApiKey, setMaptilerApiKey] = useState('');
   const [popupInfo, setPopupInfo] = useState<PopupInfoProps | null>(null);
+  const [config, setConfig] = useState<{ osmLabelFilter?: string } | null>(
+    null
+  );
 
   useEffect(() => {
     if (
@@ -23,16 +26,18 @@ export default function DashboardMap() {
     ) {
       fetch('/config.json')
         .then((response) => response.json())
-        .then((config) => {
-          if (config.mapboxAccessToken) {
-            setMapboxAccessToken(config.mapboxAccessToken);
+        .then((loadedConfig) => {
+          if (loadedConfig.mapboxAccessToken) {
+            setMapboxAccessToken(loadedConfig.mapboxAccessToken);
           }
-          if (config.maptilerApiKey) {
-            setMaptilerApiKey(config.maptilerApiKey);
+          if (loadedConfig.maptilerApiKey) {
+            setMaptilerApiKey(loadedConfig.maptilerApiKey);
           }
+          setConfig({ osmLabelFilter: loadedConfig.osmLabelFilter });
         })
         .catch((error) => {
           console.error('Failed to load config.json:', error);
+          setConfig({}); // Set empty config on error
         });
     } else {
       if (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN) {
@@ -41,6 +46,16 @@ export default function DashboardMap() {
       if (import.meta.env.VITE_MAPTILER_API_KEY) {
         setMaptilerApiKey(import.meta.env.VITE_MAPTILER_API_KEY);
       }
+      // Still need to load config for osmLabelFilter even if using env vars
+      fetch('/config.json')
+        .then((response) => response.json())
+        .then((loadedConfig) => {
+          setConfig({ osmLabelFilter: loadedConfig.osmLabelFilter });
+        })
+        .catch((error) => {
+          console.error('Failed to load config.json:', error);
+          setConfig({}); // Set empty config on error
+        });
     }
   }, []);
 
@@ -75,8 +90,8 @@ export default function DashboardMap() {
   const mapStyle = useMemo(() => {
     return mapboxAccessToken
       ? getMapboxSatelliteBasemapStyle(mapboxAccessToken)
-      : getWorldImageryTopoBasemapStyle(maptilerApiKey);
-  }, [mapboxAccessToken, maptilerApiKey]);
+      : getWorldImageryTopoBasemapStyle(maptilerApiKey, config || undefined);
+  }, [mapboxAccessToken, maptilerApiKey, config]);
 
   return (
     <Map
