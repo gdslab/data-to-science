@@ -75,7 +75,12 @@ def run(in_point_cloud: str, out_raster: str, params: dict) -> str:
 
         crs = las.header.parse_crs()
         srs_out = osr.SpatialReference()
-        srs_out.ImportFromEPSG(int(crs.to_epsg()))
+        try:
+            srs_out.ImportFromEPSG(int(crs.to_epsg()))
+        except TypeError:
+            srs_out.ImportFromWkt(crs.to_wkt())
+        except Exception as e:
+            raise ValueError(f"Error importing CRS: {e}")
 
         x = np.array(las.x)
         y = np.array(las.y)
@@ -210,7 +215,11 @@ if __name__ == "__main__":
         help="CHM resolution",
     )
     parser.add_argument(
-        "--chm_percentile", type=float, required=True, default=98.0, help="CHM percentile"
+        "--chm_percentile",
+        type=float,
+        required=True,
+        default=98.0,
+        help="CHM percentile",
     )
 
     args = parser.parse_args()
