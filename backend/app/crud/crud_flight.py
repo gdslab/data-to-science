@@ -151,7 +151,8 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                 for data_product in flight.data_products:
                     if data_product.filepath != "null":
                         if (
-                            data_product.data_type == "point_cloud"
+                            data_product.data_type == "panoramic"
+                            or data_product.data_type == "point_cloud"
                             or data_product.data_type != "point_cloud"
                             and data_product.stac_properties
                         ):
@@ -174,7 +175,11 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                             ).scalar_one_or_none()
                             if user_style:
                                 set_user_style_attr(data_product, user_style.settings)
-                            if has_raster and data_product.data_type != "point_cloud":
+                            if (
+                                has_raster
+                                and data_product.data_type != "point_cloud"
+                                and data_product.data_type != "panoramic"
+                            ):
                                 has_required_data_type = True
                 flight.data_products = available_data_products
 
