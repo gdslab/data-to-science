@@ -9,7 +9,9 @@ import { sorter } from '../../utils';
 type ComparisonMapControlProps = {
   flights: Flight[];
   mapComparisonState: MapComparisonState;
-  setMapComparisonState: React.Dispatch<React.SetStateAction<MapComparisonState>>;
+  setMapComparisonState: React.Dispatch<
+    React.SetStateAction<MapComparisonState>
+  >;
   side: 'left' | 'right';
 };
 
@@ -25,7 +27,9 @@ export default function CompareMapControl({
       .filter(
         (flight) =>
           flight.data_products.filter(
-            (data_product) => data_product.data_type !== 'point_cloud'
+            (data_product) =>
+              data_product.data_type !== 'point_cloud' &&
+              data_product.data_type !== 'panoramic'
           ).length > 0
       )
       .sort((a, b) => sorter(a.acquisition_date, b.acquisition_date));
@@ -34,7 +38,9 @@ export default function CompareMapControl({
   // create flight options for remaining flights that have raster data products
   const flightOptions = useMemo(() => {
     return flightsWithRasters.map((flight) => ({
-      label: `${flight.acquisition_date}${flight.name ? ` (${flight.name})` : ''}`,
+      label: `${flight.acquisition_date}${
+        flight.name ? ` (${flight.name})` : ''
+      }`,
       value: flight.id,
     }));
   }, [flightsWithRasters]);
@@ -47,7 +53,9 @@ export default function CompareMapControl({
   const findSelectedFlight = (flightId: string | undefined): Flight | null => {
     if (!flightId) return null;
 
-    const selectedFlight = flightsWithRasters.filter(({ id }) => id === flightId);
+    const selectedFlight = flightsWithRasters.filter(
+      ({ id }) => id === flightId
+    );
     if (selectedFlight.length > 0) {
       return selectedFlight[0];
     } else {
@@ -58,7 +66,10 @@ export default function CompareMapControl({
   // raster data product options for currently selected flight
   const dataProductOptions = useMemo(() => {
     return findSelectedFlight(mapComparisonState[side].flightId)
-      ?.data_products.filter(({ data_type }) => data_type !== 'point_cloud')
+      ?.data_products.filter(
+        ({ data_type }) =>
+          data_type !== 'point_cloud' && data_type !== 'panoramic'
+      )
       .map((dataProduct) => ({
         label: dataProduct.data_type,
         value: dataProduct.id,
@@ -134,7 +145,10 @@ export default function CompareMapControl({
                 Select data product
               </option>
               {dataProductOptions.map((dataProductOption) => (
-                <option key={dataProductOption.value} value={dataProductOption.value}>
+                <option
+                  key={dataProductOption.value}
+                  value={dataProductOption.value}
+                >
                   {dataProductOption.label.toUpperCase()}
                 </option>
               ))}

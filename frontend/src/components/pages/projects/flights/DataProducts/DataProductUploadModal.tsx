@@ -55,7 +55,9 @@ export default function DataProductUploadModal({
     setUploadHistory(currentUploadHistory);
   }
 
-  if (['dem', 'ortho', 'point_cloud', 'other'].indexOf(dtype) > -1) {
+  if (
+    ['dem', 'ortho', 'panoramic', 'point_cloud', 'other'].indexOf(dtype) > -1
+  ) {
     uploadType = 'dataProduct';
   } else {
     throw new Error('unknown data type');

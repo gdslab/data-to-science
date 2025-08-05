@@ -12,7 +12,12 @@ from app.api.api_v1.endpoints.raw_data import get_raw_data_dir
 from app.api.utils import get_data_product_dir
 from app.schemas.job import State, Status
 from app.tasks.post_upload_tasks import generate_point_cloud_preview
-from app.tasks.upload_tasks import upload_geotiff, upload_point_cloud, upload_raw_data
+from app.tasks.upload_tasks import (
+    upload_geotiff,
+    upload_panoramic,
+    upload_point_cloud,
+    upload_raw_data,
+)
 
 logger = logging.getLogger("__name__")
 
@@ -21,6 +26,11 @@ SUPPORTED_EXTENSIONS = {
     ".las",
     ".laz",
     ".copc.laz",
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".webp",
+    ".avif",
 }
 
 
@@ -117,6 +127,11 @@ def process_data_product_uploaded_to_tusd(
         upload_point_cloud.apply_async(
             args=(str(storage_path), destination_filepath, job.id, data_product.id),
             link=generate_point_cloud_preview.s(),
+        )
+    elif dtype == "panoramic":
+        # start panoramic process in background
+        upload_panoramic.apply_async(
+            args=(str(storage_path), destination_filepath, job.id, data_product.id),
         )
     else:
         # start geotiff process in background

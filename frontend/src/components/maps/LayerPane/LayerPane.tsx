@@ -37,7 +37,9 @@ export default function LayerPane({
   // Hide the pane when a point cloud is active or when the compare tool is active
   useEffect(() => {
     if (
-      (activeDataProduct && activeDataProduct.data_type === 'point_cloud') ||
+      (activeDataProduct &&
+        (activeDataProduct.data_type === 'point_cloud' ||
+          activeDataProduct.data_type === 'panoramic')) ||
       activeMapTool === 'compare'
     ) {
       toggleHidePane(true);

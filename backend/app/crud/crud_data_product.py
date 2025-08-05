@@ -127,7 +127,10 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             updated_data_products = []
             for data_product in data_products:
                 # if not a point cloud, find user style settings for data product
-                if data_product.data_type != "point_cloud":
+                if (
+                    data_product.data_type != "point_cloud"
+                    and data_product.data_type != "panoramic"
+                ):
                     user_style_query = select(UserStyle).where(
                         and_(
                             UserStyle.data_product_id == data_product.id,
@@ -175,6 +178,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                 and_(
                     DataProduct.id == data_product_id,
                     func.lower(DataProduct.data_type) != "point_cloud",
+                    func.lower(DataProduct.data_type) != "panoramic",
                     DataProduct.is_active == True,
                 )
             )
@@ -245,6 +249,7 @@ def set_bbox_attr(data_product: DataProduct) -> None:
     # Skip if not a raster data product
     if (
         data_product.data_type != "point_cloud"
+        and data_product.data_type != "panoramic"
         and Path(data_product.filepath).suffix == ".tif"
     ):
         try:

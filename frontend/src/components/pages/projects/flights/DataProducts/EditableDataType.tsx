@@ -69,7 +69,8 @@ export default function EditableDataType({
       <div className="flex items-center justify-center gap-2">
         <span>{dataProduct.data_type.split('_').join(' ').toUpperCase()}</span>
         {(projectRole === 'owner' || projectRole === 'manager') &&
-          dataProduct.data_type.toLowerCase() !== 'point_cloud' && (
+          dataProduct.data_type.toLowerCase() !== 'point_cloud' &&
+          dataProduct.data_type.toLowerCase() !== 'panoramic' && (
             <button onClick={toggleIsEditing}>
               <PencilIcon className="h-3 w-3" />
             </button>
