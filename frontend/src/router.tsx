@@ -50,6 +50,7 @@ import ProjectSTACPublishing, {
 import STACDisabled from './components/pages/projects/stac/STACDisabled';
 import RegistrationForm from './components/pages/auth/RegistrationForm';
 import { RasterSymbologyProvider } from './components/maps/RasterSymbologyContext';
+import SharePanoViewer from './components/maps/SharePanoViewer';
 import SharePotreeViewer from './components/maps/SharePotreeViewer';
 import Teams, { loader as teamsLoader } from './components/pages/teams/Teams';
 import TeamCreate, {
@@ -109,6 +110,11 @@ export const router = createBrowserRouter(
               ),
             },
           ],
+        },
+        {
+          path: '/sharepano',
+          element: <RootProtected />,
+          children: [{ path: '/sharepano', element: <SharePanoViewer /> }],
         },
         {
           path: '/sharepotree',
