@@ -214,7 +214,9 @@ def upload_panoramic(
     crud.data_product.update(
         db,
         db_obj=data_product,
-        obj_in=DataProductUpdate(filepath=str(out_image)),
+        obj_in=DataProductUpdate(
+            filepath=str(out_image), is_initial_processing_completed=True
+        ),
     )
 
     # update job to indicate process finished
