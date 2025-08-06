@@ -51,7 +51,8 @@ export default function DataProductCard({
             {/* preview image */}
             <div className="relative flex items-center justify-center bg-accent3/20">
               {dataProduct.status === 'SUCCESS' &&
-              isGeoTIFF(dataProduct.data_type) ? (
+              (isGeoTIFF(dataProduct.data_type) ||
+                dataProduct.data_type === 'panoramic') ? (
                 <div className="flex items-center justify-center w-full h-48">
                   <img
                     className="object-scale-down h-full"
@@ -163,15 +164,16 @@ export default function DataProductCard({
                 <EyeIcon className="h-6 w-6" />
                 <span>View</span>
               </div>
-              {(projectRole === 'manager' || projectRole === 'owner') && (
-                <>
-                  <span className="text-slate-300">|</span>
-                  <ToolboxModal
-                    dataProduct={dataProduct}
-                    otherDataProducts={otherDataProducts}
-                  />
-                </>
-              )}
+              {dataProduct.data_type !== 'panoramic' &&
+                (projectRole === 'manager' || projectRole === 'owner') && (
+                  <>
+                    <span className="text-slate-300">|</span>
+                    <ToolboxModal
+                      dataProduct={dataProduct}
+                      otherDataProducts={otherDataProducts}
+                    />
+                  </>
+                )}
             </div>
           </div>
         </Card>

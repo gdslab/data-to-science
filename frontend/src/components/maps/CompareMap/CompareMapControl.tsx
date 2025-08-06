@@ -27,7 +27,9 @@ export default function CompareMapControl({
       .filter(
         (flight) =>
           flight.data_products.filter(
-            (data_product) => data_product.data_type !== 'point_cloud'
+            (data_product) =>
+              data_product.data_type !== 'point_cloud' &&
+              data_product.data_type !== 'panoramic'
           ).length > 0
       )
       .sort((a, b) => sorter(a.acquisition_date, b.acquisition_date));
@@ -64,7 +66,10 @@ export default function CompareMapControl({
   // raster data product options for currently selected flight
   const dataProductOptions = useMemo(() => {
     return findSelectedFlight(mapComparisonState[side].flightId)
-      ?.data_products.filter(({ data_type }) => data_type !== 'point_cloud')
+      ?.data_products.filter(
+        ({ data_type }) =>
+          data_type !== 'point_cloud' && data_type !== 'panoramic'
+      )
       .map((dataProduct) => ({
         label: dataProduct.data_type,
         value: dataProduct.id,

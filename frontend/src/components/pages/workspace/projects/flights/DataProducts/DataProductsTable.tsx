@@ -23,7 +23,7 @@ import { DataProduct } from '../../Project';
 import EditableDataType from './EditableDataType';
 
 export function isGeoTIFF(dataType: string): boolean {
-  return dataType !== 'point_cloud';
+  return dataType !== 'point_cloud' && dataType !== 'panoramic';
 }
 
 export function getDataProductName(dataType: string): string {
@@ -32,6 +32,8 @@ export function getDataProductName(dataType: string): string {
       return 'DSM';
     case 'ortho':
       return 'Orthomosaic';
+    case 'panoramic':
+      return 'Panoramic';
     case 'point_cloud':
       return 'Point Cloud';
     default:
@@ -112,23 +114,39 @@ function getDataProductActions(
     label: 'View',
   });
 
-  if (role === 'owner') {
-    return data.map((dataProduct) => [
-      getViewAction(dataProduct),
-      getToolboxAction(dataProduct),
-      getDownloadAction(dataProduct),
-      getShareAction(dataProduct),
-      getDeleteAction(dataProduct),
-    ]);
-  } else if (role === 'manager') {
-    return data.map((dataProduct) => [
-      getViewAction(dataProduct),
-      getDownloadAction(dataProduct),
-      getToolboxAction(dataProduct),
-    ]);
-  } else {
-    return data.map((dataProduct) => [getViewAction(dataProduct)]);
-  }
+  return data.map((dataProduct) => {
+    // For panoramic data products, only show view, download, and delete (for owners)
+    if (dataProduct.data_type === 'panoramic') {
+      const actions = [
+        getViewAction(dataProduct),
+        getDownloadAction(dataProduct),
+      ];
+      if (role === 'owner') {
+        actions.push(getDeleteAction(dataProduct));
+        actions.push(getShareAction(dataProduct));
+      }
+      return actions;
+    }
+
+    // For all other data products, use the original role-based logic
+    if (role === 'owner') {
+      return [
+        getViewAction(dataProduct),
+        getToolboxAction(dataProduct),
+        getDownloadAction(dataProduct),
+        getShareAction(dataProduct),
+        getDeleteAction(dataProduct),
+      ];
+    } else if (role === 'manager') {
+      return [
+        getViewAction(dataProduct),
+        getDownloadAction(dataProduct),
+        getToolboxAction(dataProduct),
+      ];
+    } else {
+      return [getViewAction(dataProduct)];
+    }
+  });
 }
 
 function DataTypeSelect({
@@ -197,7 +215,8 @@ export default function DataProductsTable({
                       className="h-full flex items-center justify-center"
                     >
                       {dataset.status === 'SUCCESS' &&
-                      isGeoTIFF(dataset.data_type) ? (
+                      (isGeoTIFF(dataset.data_type) ||
+                        dataset.data_type === 'panoramic') ? (
                         <div className="h-full">
                           <img
                             className="w-full max-h-28"

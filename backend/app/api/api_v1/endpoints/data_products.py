@@ -269,8 +269,21 @@ def update_data_product_data_type(
         upload_dir=upload_dir,
         user_id=current_user.id,
     )
-    # reject request if point cloud
-    if data_product.data_type.lower() == "point_cloud":
+    if not data_product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
+        )
+
+    if not data_type_in.data_type:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Data type is required"
+        )
+
+    # reject request if point cloud or panoramic
+    if (
+        data_product.data_type.lower() == "point_cloud"
+        or data_product.data_type.lower() == "panoramic"
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot change point cloud data type",

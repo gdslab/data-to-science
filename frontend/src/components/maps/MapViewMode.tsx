@@ -5,6 +5,7 @@ import { useMapContext } from './MapContext';
 import { MapLayer } from '../pages/workspace/projects/Project';
 import CompareMap from './CompareMap';
 import HomeMap from './HomeMap';
+import PanoViewer from './PanoViewer';
 import PotreeViewer from './PotreeViewer';
 import { useMapLayerContext } from './MapLayersContext';
 
@@ -99,9 +100,13 @@ export default function MapViewMode() {
     return <CompareMap />;
   } else if (
     !activeDataProduct ||
-    (activeDataProduct && activeDataProduct.data_type !== 'point_cloud')
+    (activeDataProduct &&
+      activeDataProduct.data_type !== 'point_cloud' &&
+      activeDataProduct.data_type !== 'panoramic')
   ) {
     return <HomeMap layers={layers} />;
+  } else if (activeDataProduct.data_type === 'panoramic') {
+    return <PanoViewer imageUrl={activeDataProduct.url} />;
   } else {
     const copcPath = activeDataProduct.url;
     return <PotreeViewer copcPath={copcPath} />;

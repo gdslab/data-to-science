@@ -13,7 +13,8 @@ import { useMapContext } from './MapContext';
 
 function constructRasterTileUrl(
   dataProduct: DataProduct,
-  symbologySettings: SingleBandSymbology | MultibandSymbology | null
+  symbologySettings: SingleBandSymbology | MultibandSymbology | null,
+  tileScale: number
 ): string {
   if (!symbologySettings) return '';
 
@@ -24,7 +25,7 @@ function constructRasterTileUrl(
   const tms = 'WebMercatorQuad';
 
   // parts of path for fetching tiles
-  const resourcePath = `/cog/tiles/${tms}/{z}/{x}/{y}@2x`;
+  const resourcePath = `/cog/tiles/${tms}/{z}/{x}/{y}@${tileScale}x`;
   const basePath = window.location.origin;
   const queryParams = getTitilerQueryParams(
     cogUrl,
@@ -46,15 +47,15 @@ export default function ProjectRasterTiles({
 }) {
   const { current: map } = useMap();
 
-  const { activeDataProduct } = useMapContext();
+  const { activeDataProduct, tileScale } = useMapContext();
 
   const { state } = useRasterSymbologyContext();
 
   const { isLoaded, symbology } = state[dataProduct.id] || {};
 
   const tiles = useMemo(
-    () => [constructRasterTileUrl(dataProduct, symbology)],
-    [dataProduct, symbology]
+    () => [constructRasterTileUrl(dataProduct, symbology, tileScale)],
+    [dataProduct, symbology, tileScale]
   );
 
   if (!symbology || !isLoaded || !map || !tiles) return null;
