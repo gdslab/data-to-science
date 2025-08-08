@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import Map, {
   MapRef,
   NavigationControl,
@@ -10,6 +10,7 @@ import { point } from '@turf/helpers';
 import IForesterControl from './IForesterControl';
 import { useIForesterControlContext } from './IForesterContext';
 import { useProjectContext } from '../ProjectContext';
+import { useMapApiKeys } from '../../../maps/MapApiKeysContext';
 
 import {
   getMapboxSatelliteBasemapStyle,
@@ -25,8 +26,7 @@ export function getUniqueValues(
 }
 
 export default function IForesterMap() {
-  const [mapboxAccessToken, setMapboxAccessToken] = useState<string>('');
-  const [maptilerApiKey, setMaptilerApiKey] = useState<string>('');
+  const { mapboxAccessToken, maptilerApiKey } = useMapApiKeys();
   const { state, dispatch } = useIForesterControlContext();
   const { activeMarkerZoom, dbhMin, dbhMax, speciesSelection } = state;
   const { iforester } = useProjectContext();
@@ -66,35 +66,6 @@ export default function IForesterMap() {
       });
     }
   }, [filteredLocationsGeoJSON]);
-
-  // Load mapbox access token and maptiler api key
-  useEffect(() => {
-    if (
-      !import.meta.env.VITE_MAPBOX_ACCESS_TOKEN ||
-      !import.meta.env.VITE_MAPTILER_API_KEY
-    ) {
-      fetch('/config.json')
-        .then((response) => response.json())
-        .then((config) => {
-          if (config.mapboxAccessToken) {
-            setMapboxAccessToken(config.mapboxAccessToken);
-          }
-          if (config.maptilerApiKey) {
-            setMaptilerApiKey(config.maptilerApiKey);
-          }
-        })
-        .catch((error) => {
-          console.error('Failed to load config.json:', error);
-        });
-    } else {
-      if (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN) {
-        setMapboxAccessToken(import.meta.env.VITE_MAPBOX_ACCESS_TOKEN);
-      }
-      if (import.meta.env.VITE_MAPTILER_API_KEY) {
-        setMaptilerApiKey(import.meta.env.VITE_MAPTILER_API_KEY);
-      }
-    }
-  }, []);
 
   // Set initial selected species
   useEffect(() => {

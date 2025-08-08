@@ -12,6 +12,7 @@
   "dependencies": {
     "@emotion/styled": "^11.13.0",
     "@geoman-io/leaflet-geoman-free": "^2.14.2",
+    "@geoman-io/maplibre-geoman-free": "^0.4.8",
     "@headlessui/react": "latest",
     "@heroicons/react": "^2.0.18",
     "@hookform/resolvers": "^3.6.0",

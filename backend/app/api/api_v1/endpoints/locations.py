@@ -89,8 +89,16 @@ def upload_field_shapefile(
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    """Handles zipped shapefile upload and converts to geojson format."""
-    geojson = handle_zipped_shapefile(files.file, required_geom_type="Polygon")
+    """Handles GeoJSON file or zipped shapefile upload and converts to geojson format."""
+    if files.filename is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No file uploaded",
+        )
+    if files.filename.endswith(".geojson") or files.filename.endswith(".json"):
+        geojson = handle_geojson(files.file, required_geom_type="Polygon")
+    else:
+        geojson = handle_zipped_shapefile(files.file, required_geom_type="Polygon")
     return geojson
 
 
@@ -109,9 +117,61 @@ def upload_vector_layer_shapefile(
     return geojson
 
 
+def handle_geojson(
+    file: BinaryIO, required_geom_type: str | None = None
+) -> FeatureCollection:
+    uploaded_file = file.read()
+    geojson_dict = json.loads(uploaded_file)
+    # Check if geojson is valid Feature or FeatureCollection
+    print(geojson_dict)
+
+    # Validate the structure and create appropriate object
+    if not isinstance(geojson_dict, dict):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid geojson file - must be a valid JSON object",
+        )
+
+    geojson_type = geojson_dict.get("type")
+    if geojson_type == "FeatureCollection":
+        try:
+            geojson = FeatureCollection(**geojson_dict)
+            if required_geom_type and required_geom_type.lower() == "polygon":
+                for feature in geojson.features:
+                    if not isinstance(feature.geometry, Polygon) and not isinstance(
+                        feature.geometry, MultiPolygon
+                    ):
+                        raise ValueError("Invalid geometry type")
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid FeatureCollection: {str(e)}",
+            )
+        return geojson
+    elif geojson_type == "Feature":
+        try:
+            feature: Feature = Feature(**geojson_dict)
+            if required_geom_type and required_geom_type.lower() == "polygon":
+                if not isinstance(feature.geometry, Polygon) and not isinstance(
+                    feature.geometry, MultiPolygon
+                ):
+                    raise ValueError("Invalid geometry type")
+            return FeatureCollection(features=[feature], type="FeatureCollection")
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid Feature: {str(e)}",
+            )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid geojson file - must be a Feature or FeatureCollection",
+        )
+
+
 def handle_zipped_shapefile(
     file: BinaryIO, required_geom_type: str | None = None
-) -> dict:
+) -> FeatureCollection:
     uploaded_file = file.read()
     geojson = {}
     try:
@@ -156,7 +216,7 @@ def handle_zipped_shapefile(
             detail="Unable process shapefile",
         )
 
-    return geojson
+    return FeatureCollection(**geojson)
 
 
 def shapefile_to_geojson(

@@ -1,9 +1,9 @@
 import { ErrorMessage, useFormikContext } from 'formik';
 import { FeatureCollection } from 'geojson';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Button, OutlineButton } from '../../Buttons';
-import DrawFieldMap from '../../maps/DrawFieldMap';
+import DrawFieldMapNew from '../../maps/DrawFieldMap/DrawFieldMapNew';
 import { GeoJSONFeature } from './Project';
 import HintText from '../../HintText';
 import { useProjectContext } from './ProjectContext';
@@ -25,18 +25,68 @@ export default function ProjectFormMap({
   const [open, setOpen] = useState(false);
   const [featureCollection, setFeatureCollection] =
     useState<FeatureCollection | null>(null);
+  const [mapboxAccessToken, setMapboxAccessToken] = useState<string>('');
+  const [maptilerApiKey, setMaptilerApiKey] = useState<string>('');
 
   const { setFieldTouched, setFieldValue, setStatus } = useFormikContext();
 
   const { location } = useProjectContext();
 
+  // Load API keys from config.json or environment variables
+  useEffect(() => {
+    if (
+      !import.meta.env.VITE_MAPBOX_ACCESS_TOKEN ||
+      !import.meta.env.VITE_MAPTILER_API_KEY
+    ) {
+      fetch('/config.json')
+        .then((response) => response.json())
+        .then((config) => {
+          if (config.mapboxAccessToken) {
+            setMapboxAccessToken(config.mapboxAccessToken);
+          }
+          if (config.maptilerApiKey) {
+            setMaptilerApiKey(config.maptilerApiKey);
+          }
+        })
+        .catch((error) => {
+          console.error('Failed to load config.json:', error);
+        });
+    } else {
+      if (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN) {
+        setMapboxAccessToken(import.meta.env.VITE_MAPBOX_ACCESS_TOKEN);
+      }
+      if (import.meta.env.VITE_MAPTILER_API_KEY) {
+        setMaptilerApiKey(import.meta.env.VITE_MAPTILER_API_KEY);
+      }
+    }
+  }, []);
+
+  // Handle draw start callback
+  const handleDrawStart = () => {
+    // Clear any existing status messages
+    setStatus(null);
+  };
+
+  // Handle draw end callback
+  const handleDrawEnd = (feature: any) => {
+    // Set success status when drawing is completed
+    setStatus({
+      type: 'success',
+      msg: 'Field boundary drawn successfully. You can now create the project.',
+    });
+  };
+
   return (
     <div className="grid grid-rows-auto gap-4">
       <div className="h-96">
-        <DrawFieldMap
-          isUpdate={isUpdate}
+        <DrawFieldMapNew
           featureCollection={featureCollection}
           setFeatureCollection={setFeatureCollection}
+          mapboxAccessToken={mapboxAccessToken}
+          maptilerApiKey={maptilerApiKey}
+          featureLimit={1}
+          onDrawStart={handleDrawStart}
+          onDrawEnd={handleDrawEnd}
         />
       </div>
       <div>
@@ -55,17 +105,20 @@ export default function ProjectFormMap({
         ) : (
           <div className="mb-2">
             <HintText>
-              Use the below button to upload your field in a zipped shapefile.
+              Upload your field as a GeoJSON file or a zipped shapefile.
             </HintText>
-            <OutlineButton
-              size="sm"
-              onClick={(e) => {
-                e.preventDefault();
-                setOpen(true);
-              }}
-            >
-              Upload Shapefile (.zip)
-            </OutlineButton>
+            <div className="flex gap-2">
+              <OutlineButton
+                size="sm"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setOpen(true);
+                }}
+              >
+                Upload Field Boundary (.geojson, .json,.zip)
+              </OutlineButton>
+            </div>
+
             <ShapefileUpload
               endpoint={`${
                 import.meta.env.VITE_API_V1_STR

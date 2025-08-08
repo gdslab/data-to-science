@@ -2,6 +2,7 @@ import { AxiosResponse } from 'axios';
 import { useEffect } from 'react';
 
 import { useMapContext } from './MapContext';
+import { useMapApiKeys } from './MapApiKeysContext';
 import { MapLayer } from '../pages/projects/Project';
 import CompareMap from './CompareMap';
 import HomeMap from './HomeMap';
@@ -14,13 +15,8 @@ import { mapApiResponseToLayers } from './utils';
 import { useRasterSymbologyContext } from './RasterSymbologyContext';
 
 export default function MapViewMode() {
-  const {
-    activeDataProduct,
-    activeMapTool,
-    activeProject,
-    mapboxAccessTokenDispatch,
-    maptilerApiKeyDispatch,
-  } = useMapContext();
+  const { activeDataProduct, activeMapTool, activeProject } = useMapContext();
+  const { mapboxAccessTokenDispatch, maptilerApiKeyDispatch } = useMapApiKeys();
   const {
     state: { layers },
     dispatch,
