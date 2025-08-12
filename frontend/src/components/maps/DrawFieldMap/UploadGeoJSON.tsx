@@ -5,12 +5,14 @@ import { GeoJSON } from 'react-leaflet/GeoJSON';
 import { useLeafletContext } from '@react-leaflet/core';
 
 import { useProjectContext } from '../../pages/projects/ProjectContext';
-import { updateLocation } from './GeomanControl';
+import { updateLocation } from '../GeomanControl';
 
 interface Props {
   data: FeatureCollection;
   geomanLayer: L.Polygon<any> | null;
-  setFeatureCollection: React.Dispatch<React.SetStateAction<FeatureCollection | null>>;
+  setFeatureCollection: React.Dispatch<
+    React.SetStateAction<FeatureCollection | null>
+  >;
   setGeomanLayer: React.Dispatch<React.SetStateAction<L.Polygon<any> | null>>;
 }
 
@@ -76,7 +78,12 @@ export default function UploadGeoJSON({
         // a feature has been clicked, remove the
         // feature collection.
         layer.on('click', () => {
-          updateLocation(layer, locationDispatch, setFieldTouched, setFieldValue);
+          updateLocation(
+            layer,
+            locationDispatch,
+            setFieldTouched,
+            setFieldValue
+          );
           setFeatureCollection(null);
         });
       }}

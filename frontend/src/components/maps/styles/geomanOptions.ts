@@ -44,7 +44,8 @@ export const geomanOptions: GmOptionsPartial = {
         uiEnabled: false,
       },
       change: {
-        uiEnabled: false,
+        title: 'Edit Polygon',
+        uiEnabled: true,
       },
       rotate: {
         uiEnabled: false,

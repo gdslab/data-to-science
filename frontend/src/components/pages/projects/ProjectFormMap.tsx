@@ -3,7 +3,7 @@ import { FeatureCollection } from 'geojson';
 import { useEffect, useState } from 'react';
 
 import { Button, OutlineButton } from '../../Buttons';
-import DrawFieldMapNew from '../../maps/DrawFieldMap/DrawFieldMapNew';
+import DrawFieldMap from '../../maps/DrawFieldMap/DrawFieldMap';
 import { GeoJSONFeature } from './Project';
 import HintText from '../../HintText';
 import { useProjectContext } from './ProjectContext';
@@ -28,9 +28,10 @@ export default function ProjectFormMap({
   const [mapboxAccessToken, setMapboxAccessToken] = useState<string>('');
   const [maptilerApiKey, setMaptilerApiKey] = useState<string>('');
 
-  const { setFieldTouched, setFieldValue, setStatus } = useFormikContext();
+  const { setFieldTouched, setFieldValue, setStatus, values } =
+    useFormikContext();
 
-  const { location } = useProjectContext();
+  const { location, locationDispatch } = useProjectContext();
 
   // Load API keys from config.json or environment variables
   useEffect(() => {
@@ -61,6 +62,18 @@ export default function ProjectFormMap({
     }
   }, []);
 
+  useEffect(() => {
+    if (featureCollection && featureCollection.features.length === 1) {
+      setFieldValue('location', featureCollection.features[0]);
+      setFieldTouched('location', true);
+
+      locationDispatch({
+        type: 'set',
+        payload: featureCollection.features[0] as unknown as GeoJSONFeature,
+      });
+    }
+  }, [featureCollection, setFieldValue, setFieldTouched, locationDispatch]);
+
   // Handle draw start callback
   const handleDrawStart = () => {
     // Clear any existing status messages
@@ -68,7 +81,7 @@ export default function ProjectFormMap({
   };
 
   // Handle draw end callback
-  const handleDrawEnd = (feature: any) => {
+  const handleDrawEnd = (_feature: any) => {
     // Set success status when drawing is completed
     setStatus({
       type: 'success',
@@ -76,10 +89,20 @@ export default function ProjectFormMap({
     });
   };
 
+  // Handle edit callback
+  const handleEdit = (_feature: any) => {
+    // Set success status when editing is completed
+    setStatus({
+      type: 'success',
+      msg: 'Field boundary changes tracked. Click "Update Field" to save changes.',
+    });
+  };
+
   return (
     <div className="grid grid-rows-auto gap-4">
       <div className="h-96">
-        <DrawFieldMapNew
+        <DrawFieldMap
+          editFeature={!!location ? location : null}
           featureCollection={featureCollection}
           setFeatureCollection={setFeatureCollection}
           mapboxAccessToken={mapboxAccessToken}
@@ -87,6 +110,7 @@ export default function ProjectFormMap({
           featureLimit={1}
           onDrawStart={handleDrawStart}
           onDrawEnd={handleDrawEnd}
+          onEdit={handleEdit}
         />
       </div>
       <div>
@@ -136,15 +160,22 @@ export default function ProjectFormMap({
             onClick={async (e) => {
               e.preventDefault();
               setStatus(null);
-              if (location) {
+
+              // Get the current location from Formik form
+              const currentLocation = (values as any).location;
+
+              if (currentLocation) {
                 try {
+                  // Update the context with the current form location before submitting
+                  locationDispatch({ type: 'set', payload: currentLocation });
+
                   const response = await api.put<GeoJSONFeature>(
                     `/locations/${projectId}/${locationId}`,
-                    location
+                    currentLocation
                   );
                   if (response) {
                     setFieldTouched('location', true);
-                    setFieldValue('location', location);
+                    setFieldValue('location', currentLocation);
                     setStatus({
                       type: 'success',
                       msg: 'Field updated',
