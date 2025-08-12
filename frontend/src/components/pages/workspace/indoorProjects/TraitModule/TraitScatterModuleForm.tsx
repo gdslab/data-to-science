@@ -7,7 +7,7 @@ import {
 } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 
-import { SelectField } from '../../../../FormFields';
+import { SelectField, RadioField } from '../../../../FormFields';
 import {
   TraitScatterModuleFormData,
   TraitScatterModuleFormProps,
@@ -96,7 +96,7 @@ export default function TraitScatterModuleForm({
         <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
           <div className="flex items-start gap-8">
             {/* Camera Orientation */}
-            <SelectField
+            <RadioField
               label="Camera Orientation"
               name="cameraOrientation"
               options={cameraOrientationOptions}

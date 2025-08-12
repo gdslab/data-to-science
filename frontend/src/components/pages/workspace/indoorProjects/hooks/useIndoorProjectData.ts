@@ -69,11 +69,7 @@ export function useIndoorProjectData({
     const fetchIndoorProjectData = async () => {
       try {
         const response: AxiosResponse<IndoorProjectDataAPIResponse[]> =
-          await api.get(
-            `${
-              import.meta.env.VITE_API_V1_STR
-            }/indoor_projects/${indoorProjectId}/uploaded`
-          );
+          await api.get(`/indoor_projects/${indoorProjectId}/uploaded`);
         setIndoorProjectData(response.data);
         setIsLoadingData(false);
       } catch (error) {

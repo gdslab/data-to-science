@@ -42,10 +42,7 @@ export default function IndoorProjectDetailForm({
         end_date: endDate,
       };
 
-      await api.put(
-        `${import.meta.env.VITE_API_V1_STR}/indoor_projects`,
-        payload
-      );
+      await api.put(`/indoor_projects`, payload);
       setStatus({
         type: 'success',
         msg: 'Indoor project updated successfully',

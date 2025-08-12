@@ -12,8 +12,7 @@ export async function fetchPotGroupModuleVisualizationData({
   cameraOrientation,
   groupBy,
 }: FetchPotGroupModuleParams): Promise<IndoorProjectDataVizAPIResponse> {
-  let endpoint = `${import.meta.env.VITE_API_V1_STR}/indoor_projects/`;
-  endpoint += `${indoorProjectId}/uploaded/${indoorProjectDataId}/data_for_viz`;
+  let endpoint = `/indoor_projects/${indoorProjectId}/uploaded/${indoorProjectDataId}/data_for_viz`;
 
   try {
     const queryParams = {

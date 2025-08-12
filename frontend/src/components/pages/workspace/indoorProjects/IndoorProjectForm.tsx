@@ -77,7 +77,7 @@ export default function IndoorProjectForm({
       };
 
       const response: AxiosResponse<IndoorProjectAPIResponse> = await api.post(
-        `${import.meta.env.VITE_API_V1_STR}/indoor_projects`,
+        `/indoor_projects`,
         payload
       );
 

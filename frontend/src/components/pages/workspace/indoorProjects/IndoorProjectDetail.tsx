@@ -21,11 +21,7 @@ import IndoorProjectUploadForm from './IndoorProjectUploadForm';
 export async function loader({ params }: { params: Params<string> }) {
   try {
     const indoorProjectResponse: AxiosResponse<IndoorProjectAPIResponse> =
-      await api.get(
-        `${import.meta.env.VITE_API_V1_STR}/indoor_projects/${
-          params.indoorProjectId
-        }`
-      );
+      await api.get(`/indoor_projects/${params.indoorProjectId}`);
     if (indoorProjectResponse && indoorProjectResponse.status == 200) {
       return {
         indoorProject: indoorProjectResponse.data,

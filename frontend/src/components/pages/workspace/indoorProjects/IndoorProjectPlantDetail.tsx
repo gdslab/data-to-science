@@ -17,8 +17,7 @@ export async function loader({ params }: { params: Params<string> }) {
     const pId = params.indoorProjectPlantId;
 
     // Base indoor projects url
-    const rootApi = import.meta.env.VITE_API_V1_STR;
-    const baseUrl = `${rootApi}/indoor_projects/${id}/uploaded`;
+    const baseUrl = `/indoor_projects/${id}/uploaded`;
 
     // Endpoint for fetching plant details
     const plantDetailEndpoint = `${baseUrl}/${dId}/plants/${pId}`;

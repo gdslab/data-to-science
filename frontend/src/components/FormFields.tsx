@@ -93,6 +93,44 @@ export function SelectField({
   );
 }
 
+export function RadioField({
+  label,
+  name,
+  options,
+  required = true,
+}: InputSelectField) {
+  return (
+    <ConnectForm>
+      {({ formState: { errors }, register }) => (
+        <div>
+          <label className={styles.label}>
+            {label}
+            {required && '*'}
+          </label>
+          <div className="flex flex-col gap-2">
+            {options.map((opt, i) => (
+              <label key={i} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  value={opt.value}
+                  {...register(name)}
+                  className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-purple-500 focus:ring-2 cursor-pointer"
+                />
+                <span className="text-sm text-gray-700">{opt.label}</span>
+              </label>
+            ))}
+          </div>
+          {errors[name] && (
+            <p role="alert" className={styles.error}>
+              {errors[name].message}
+            </p>
+          )}
+        </div>
+      )}
+    </ConnectForm>
+  );
+}
+
 export function TextAreaField({
   label,
   name,

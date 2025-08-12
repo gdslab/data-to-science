@@ -13,8 +13,7 @@ export async function fetchTraitModuleVisualizationData({
   groupBy,
   targetTrait,
 }: FetchTraitModuleParams): Promise<IndoorProjectDataViz2APIResponse> {
-  let endpoint = `${import.meta.env.VITE_API_V1_STR}/indoor_projects/`;
-  endpoint += `${indoorProjectId}/uploaded/${indoorProjectDataId}/data_for_viz2`;
+  let endpoint = `/indoor_projects/${indoorProjectId}/uploaded/${indoorProjectDataId}/data_for_viz2`;
 
   try {
     const queryParams = {

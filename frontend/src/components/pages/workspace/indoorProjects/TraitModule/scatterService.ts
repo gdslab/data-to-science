@@ -14,8 +14,7 @@ export async function fetchTraitScatterModuleVisualizationData({
   targetTraitX,
   targetTraitY,
 }: FetchTraitScatterModuleParams): Promise<IndoorProjectDataVizScatterAPIResponse> {
-  let endpoint = `${import.meta.env.VITE_API_V1_STR}/indoor_projects/`;
-  endpoint += `${indoorProjectId}/uploaded/${indoorProjectDataId}/data_for_scatter`;
+  let endpoint = `/indoor_projects/${indoorProjectId}/uploaded/${indoorProjectDataId}/data_for_scatter`;
 
   try {
     const queryParams = {
