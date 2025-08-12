@@ -55,6 +55,18 @@ export default function DrawFieldMap({
   const { setFieldValue, setFieldTouched } = useFormikContext();
   const { locationDispatch } = useProjectContext();
 
+  // Utility: ensure a feature is a Polygon (convert first polygon of MultiPolygon)
+  const normalizeToPolygon = (feature: any) => {
+    if (feature?.geometry?.type !== 'MultiPolygon') return feature;
+    return {
+      ...feature,
+      geometry: {
+        type: 'Polygon',
+        coordinates: feature.geometry.coordinates[0],
+      },
+    };
+  };
+
   // Load config for osmLabelFilter
   useEffect(() => {
     fetch('/config.json')
@@ -109,17 +121,7 @@ export default function DrawFieldMap({
 
   // Handle draw end - update formik location field with drawn feature
   const handleDrawEnd = (feature: any) => {
-    // Convert MultiPolygon to Polygon if needed
-    let convertedFeature = feature;
-    if (feature.geometry.type === 'MultiPolygon') {
-      convertedFeature = {
-        ...feature,
-        geometry: {
-          type: 'Polygon',
-          coordinates: feature.geometry.coordinates[0], // Take the first polygon
-        },
-      };
-    }
+    const convertedFeature = normalizeToPolygon(feature);
 
     // Update formik location field
     setFieldValue('location', convertedFeature);
@@ -136,17 +138,7 @@ export default function DrawFieldMap({
 
   // Handle edit - update formik location field with edited feature
   const handleEdit = (feature: any) => {
-    // Convert MultiPolygon to Polygon if needed
-    let convertedFeature = feature;
-    if (feature.geometry.type === 'MultiPolygon') {
-      convertedFeature = {
-        ...feature,
-        geometry: {
-          type: 'Polygon',
-          coordinates: feature.geometry.coordinates[0], // Take the first polygon
-        },
-      };
-    }
+    const convertedFeature = normalizeToPolygon(feature);
 
     // Update formik location field only - don't update context until user clicks Update Field
     setFieldValue('location', convertedFeature);

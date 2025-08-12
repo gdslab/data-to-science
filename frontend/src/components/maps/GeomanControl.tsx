@@ -1,7 +1,7 @@
 import '@geoman-io/maplibre-geoman-free/dist/maplibre-geoman.css';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useMap } from 'react-map-gl';
 import {
   GeoJsonImportFeature,
@@ -35,6 +35,7 @@ export default function GeomanControl({
   const geomanRef = useRef<Geoman | null>(null);
   const drawnFeaturesCount = useRef(0);
   const initializedRef = useRef(false);
+  const [geomanReady, setGeomanReady] = useState(false);
 
   const clearAllGeomanFeatures = (geoman: Geoman | null) => {
     if (!geoman) return;
@@ -117,6 +118,7 @@ export default function GeomanControl({
       try {
         geomanRef.current = new Geoman(mapInstance, geomanOptions);
         initializedRef.current = true;
+        setGeomanReady(true);
 
         // Import existing feature if it exists
         if (editFeature) {
@@ -143,12 +145,8 @@ export default function GeomanControl({
     }
 
     return () => {
-      // Remove event listeners
+      // Remove only the load listener here; gm listeners are managed in the other effect
       mapInstance.off('load', initializeGeoman);
-      mapInstance.off('gm:drawstart', handleDrawStart);
-      mapInstance.off('gm:create', handleDrawEnd);
-      mapInstance.off('gm:editend', handleEdit);
-      mapInstance.off('gm:remove', handleRemove);
 
       // Clean up Geoman instance
       if (map && geomanRef.current) {
@@ -158,6 +156,7 @@ export default function GeomanControl({
             geomanRef.current = null;
           }
           initializedRef.current = false;
+          setGeomanReady(false);
         } catch (error) {
           console.warn('Error destroying Geoman instance:', error);
         }
@@ -167,7 +166,7 @@ export default function GeomanControl({
 
   // Update event handlers when callbacks change
   useEffect(() => {
-    if (!map || !geomanRef.current) return;
+    if (!map || !geomanReady || !geomanRef.current) return;
 
     const mapInstance = map.getMap();
 
@@ -182,7 +181,22 @@ export default function GeomanControl({
     mapInstance.on('gm:create', handleDrawEnd);
     mapInstance.on('gm:editend', handleEdit);
     mapInstance.on('gm:remove', handleRemove);
-  }, [map, handleDrawStart, handleDrawEnd, handleEdit, handleRemove]);
+
+    // Cleanup listeners on unmount or when callbacks change
+    return () => {
+      mapInstance.off('gm:drawstart', handleDrawStart);
+      mapInstance.off('gm:create', handleDrawEnd);
+      mapInstance.off('gm:editend', handleEdit);
+      mapInstance.off('gm:remove', handleRemove);
+    };
+  }, [
+    map,
+    geomanReady,
+    handleDrawStart,
+    handleDrawEnd,
+    handleEdit,
+    handleRemove,
+  ]);
 
   // Import editFeature when it changes
   useEffect(() => {
