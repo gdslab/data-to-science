@@ -284,6 +284,53 @@ const getWorldImageryTopoBasemapStyle = (
     }
 
     baseStyle.layers.push(streetLayer);
+
+    // Add road labels (street names) - zoom 12+
+    const roadLabelLayer: any = {
+      id: 'road-labels',
+      type: 'symbol',
+      source: 'osm-labels',
+      'source-layer': 'transportation_name',
+      minzoom: 12,
+      layout: {
+        'text-field': ['get', 'name'],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 12, 10, 18, 14],
+        'text-font': ['Open Sans Regular'],
+        'text-transform': 'uppercase',
+        'text-letter-spacing': 0.05,
+        'text-offset': [0, 1.5],
+        'text-anchor': 'top',
+        'symbol-placement': 'line',
+        'text-max-width': 8,
+      },
+      paint: {
+        'text-color': '#ffffff',
+        'text-halo-color': '#000000',
+        'text-halo-width': 1.5,
+      },
+    };
+
+    // Add road network lines for better visibility - zoom 12+
+    const roadNetworkLayer: any = {
+      id: 'road-network',
+      type: 'line',
+      source: 'osm-labels',
+      'source-layer': 'transportation',
+      minzoom: 12,
+      filter: [
+        'in',
+        ['get', 'class'],
+        ['literal', ['street', 'primary', 'secondary', 'tertiary']],
+      ],
+      paint: {
+        'line-color': '#ffffff',
+        'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.5, 18, 2],
+        'line-opacity': 0.4,
+      },
+    };
+
+    baseStyle.layers.push(roadNetworkLayer);
+    baseStyle.layers.push(roadLabelLayer);
   }
 
   return baseStyle;

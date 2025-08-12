@@ -7,6 +7,7 @@ import CompareMapControl from './CompareMapControl';
 import CompareModeControl from './CompareModeControl';
 import ProjectBoundary from '../ProjectBoundary';
 import { useMapContext } from '../MapContext';
+import { useMapApiKeys } from '../MapApiKeysContext';
 import ProjectRasterTiles from '../ProjectRasterTiles';
 import { DataProduct } from '../../pages/projects/Project';
 import { useRasterSymbologyContext } from '../RasterSymbologyContext';
@@ -72,8 +73,8 @@ export default function CompareMap() {
   const [mode, setMode] = useState<Mode>('split-screen');
   const [activeProjectBBox, setActiveProjectBBox] = useState<BBox | null>(null);
 
-  const { activeProject, flights, mapboxAccessToken, maptilerApiKey } =
-    useMapContext();
+  const { activeProject, flights } = useMapContext();
+  const { mapboxAccessToken, maptilerApiKey } = useMapApiKeys();
 
   const { state: symbologyState, dispatch } = useRasterSymbologyContext();
 

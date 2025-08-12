@@ -3,6 +3,7 @@ import { useState } from 'react';
 import LayerPane from './LayerPane';
 
 import { MapContextProvider } from './MapContext';
+import { MapApiKeysContextProvider } from './MapApiKeysContext';
 import { MapLayerProvider } from './MapLayersContext';
 import MapViewMode from './MapViewMode';
 import ProjectLoader from './ProjectLoader';
@@ -16,27 +17,32 @@ export default function MapLayout() {
   const [hidePane, toggleHidePane] = useState(false);
 
   return (
-    <MapContextProvider>
-      <ProjectLoader />
-      <MapLayerProvider>
-        <RasterSymbologyProvider>
-          {/* sidebar */}
-          <div className="flex flex-row h-full">
-            <div
-              className={classNames(
-                hidePane ? 'w-[48px]' : 'w-[450px]',
-                'shrink-0 bg-slate-100'
-              )}
-            >
-              <LayerPane hidePane={hidePane} toggleHidePane={toggleHidePane} />
+    <MapApiKeysContextProvider>
+      <MapContextProvider>
+        <ProjectLoader />
+        <MapLayerProvider>
+          <RasterSymbologyProvider>
+            {/* sidebar */}
+            <div className="flex flex-row h-full">
+              <div
+                className={classNames(
+                  hidePane ? 'w-[48px]' : 'w-[450px]',
+                  'shrink-0 bg-slate-100'
+                )}
+              >
+                <LayerPane
+                  hidePane={hidePane}
+                  toggleHidePane={toggleHidePane}
+                />
+              </div>
+              {/* page content */}
+              <div className="w-full">
+                <MapViewMode />
+              </div>
             </div>
-            {/* page content */}
-            <div className="w-full">
-              <MapViewMode />
-            </div>
-          </div>
-        </RasterSymbologyProvider>
-      </MapLayerProvider>
-    </MapContextProvider>
+          </RasterSymbologyProvider>
+        </MapLayerProvider>
+      </MapContextProvider>
+    </MapApiKeysContextProvider>
   );
 }
