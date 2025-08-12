@@ -6,14 +6,14 @@ import ColorMapSelect from './ColorMapSelect';
 
 import { IndoorProjectDataVizScatterAPIResponse } from '../IndoorProject';
 
-import { titleCaseConversion } from '../utils';
+import { titleCaseConversion, nivoCategoricalColors } from '../utils';
 
 export default function TraitScatterModuleDataVisualization({
   data,
 }: {
   data: IndoorProjectDataVizScatterAPIResponse;
 }) {
-  const [colorOption, setColorOption] = useState('greens');
+  const [colorOption, setColorOption] = useState('paired');
 
   // Transform data for Nivo scatter plot format
   const scatterData = useMemo(() => {
@@ -41,6 +41,11 @@ export default function TraitScatterModuleDataVisualization({
     return [...new Set(data.results.map((item) => item.group))];
   }, [data.results]);
 
+  // Find the 'paired' color scheme option
+  const pairedColorOption = nivoCategoricalColors.find(
+    (option) => option.value === 'paired'
+  );
+
   return (
     <div className="bg-white p-4">
       {scatterData.length > 0 && (
@@ -51,7 +56,7 @@ export default function TraitScatterModuleDataVisualization({
             xScale={{ type: 'linear', min: 'auto', max: 'auto' }}
             yScale={{ type: 'linear', min: 'auto', max: 'auto' }}
             colors={{ scheme: colorOption as ColorSchemeId }}
-            blendMode="multiply"
+            blendMode="normal"
             axisTop={null}
             axisRight={null}
             axisBottom={{
@@ -67,7 +72,7 @@ export default function TraitScatterModuleDataVisualization({
               tickPadding: 5,
               tickRotation: 0,
               legend: titleCaseConversion(data.traits.y),
-              legendOffset: -60,
+              legendOffset: -75,
               legendPosition: 'middle',
             }}
             theme={{
@@ -162,6 +167,7 @@ export default function TraitScatterModuleDataVisualization({
         <ColorMapSelect
           colorPreviewCount={uniqueGroups.length}
           setColorOption={setColorOption}
+          defaultValue={pairedColorOption}
         />
       </div>
     </div>

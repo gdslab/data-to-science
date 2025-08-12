@@ -7,11 +7,13 @@ import { nivoSequentialColors, nivoColorMapGroupedOptions } from '../utils';
 type ColorMapSelectProps = {
   colorPreviewCount?: number;
   setColorOption: React.Dispatch<React.SetStateAction<string>>;
+  defaultValue?: ColorMapOption;
 };
 
 export default function ColorMapSelect({
   setColorOption,
   colorPreviewCount,
+  defaultValue,
 }: ColorMapSelectProps) {
   const handleChange = (colorOption: SingleValue<ColorMapOption>) => {
     if (colorOption) {
@@ -76,7 +78,7 @@ export default function ColorMapSelect({
           },
         })}
         isSearchable
-        defaultValue={nivoSequentialColors[1]}
+        defaultValue={defaultValue || nivoSequentialColors[1]}
         options={nivoColorMapGroupedOptions}
         onChange={handleChange}
         formatOptionLabel={formatOptionLabel}
