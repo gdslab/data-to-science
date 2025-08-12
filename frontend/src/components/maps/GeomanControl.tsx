@@ -9,7 +9,6 @@ import {
   Geoman,
 } from '@geoman-io/maplibre-geoman-free';
 
-import { LocationAction } from '../pages/projects/ProjectContext/actions';
 import { geomanOptions } from './styles/geomanOptions';
 import { GeoJSONFeature } from '../pages/projects/Project';
 import { fitMapToGeoJSON } from './utils';
@@ -37,6 +36,17 @@ export default function GeomanControl({
   const drawnFeaturesCount = useRef(0);
   const initializedRef = useRef(false);
 
+  const clearAllGeomanFeatures = (geoman: Geoman | null) => {
+    if (!geoman) return;
+    try {
+      geoman.features.forEach((featureData) => {
+        geoman.features.delete(featureData.id);
+      });
+    } catch (error) {
+      console.warn('Error removing existing features:', error);
+    }
+  };
+
   // Memoize event handlers to prevent unnecessary re-renders
   const handleDrawStart = useCallback(
     (_event: any) => {
@@ -44,16 +54,7 @@ export default function GeomanControl({
       drawnFeaturesCount.current = 0;
 
       // Remove any existing polygons when drawing starts
-      if (geomanRef.current) {
-        try {
-          // Remove all existing features
-          geomanRef.current.features.forEach((featureData) => {
-            geomanRef.current?.features.delete(featureData.id);
-          });
-        } catch (error) {
-          console.warn('Error removing existing features:', error);
-        }
-      }
+      clearAllGeomanFeatures(geomanRef.current);
 
       if (onDrawStart) {
         onDrawStart();
@@ -129,12 +130,6 @@ export default function GeomanControl({
             );
           });
         }
-
-        // Add event listeners for drawing events
-        mapInstance.on('gm:drawstart', handleDrawStart);
-        mapInstance.on('gm:create', handleDrawEnd);
-        mapInstance.on('gm:editend', handleEdit);
-        mapInstance.on('gm:remove', handleRemove);
       } catch (error) {
         console.error('Error initializing Geoman:', error);
       }
@@ -167,7 +162,6 @@ export default function GeomanControl({
           console.warn('Error destroying Geoman instance:', error);
         }
       }
-      geomanRef.current = null;
     };
   }, [map]); // Only depend on map, not on callbacks
 
@@ -192,13 +186,10 @@ export default function GeomanControl({
 
   // Import editFeature when it changes
   useEffect(() => {
-    console.log('editFeature', editFeature);
     if (editFeature && geomanRef.current) {
       try {
         // Clear any existing features
-        geomanRef.current.features.forEach((featureData) => {
-          geomanRef.current?.features.delete(featureData.id);
-        });
+        clearAllGeomanFeatures(geomanRef.current);
 
         // Import the new editFeature
         geomanRef.current.features.importGeoJsonFeature(
@@ -225,41 +216,9 @@ export default function GeomanControl({
       drawnFeaturesCount.current = 0;
 
       // Remove any existing drawn polygons when files are uploaded
-      if (geomanRef.current) {
-        try {
-          // Remove all existing features
-          geomanRef.current.features.forEach((featureData) => {
-            geomanRef.current?.features.delete(featureData.id);
-          });
-        } catch (error) {
-          console.warn(
-            'Error removing existing features when disabled:',
-            error
-          );
-        }
-      }
+      clearAllGeomanFeatures(geomanRef.current);
     }
   }, [disabled]);
 
   return null;
-}
-
-export function updateLocation(
-  layer: L.Polygon,
-  locationDispatch: React.Dispatch<LocationAction>,
-  setFieldTouched,
-  setFieldValue
-): void {
-  let layerGeoJSON = layer.toGeoJSON();
-  const layerCenter = layer.getCenter();
-  layerGeoJSON.properties = {
-    center_x: layerCenter.lng,
-    center_y: layerCenter.lat,
-  };
-  locationDispatch({
-    type: 'set',
-    payload: layerGeoJSON,
-  });
-  setFieldTouched('location', true);
-  setFieldValue('location', layerGeoJSON);
 }

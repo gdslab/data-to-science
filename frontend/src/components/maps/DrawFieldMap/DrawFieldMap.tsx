@@ -187,10 +187,6 @@ export default function DrawFieldMap({
         setFieldValue('location', features[0]);
         setFieldTouched('location', true);
 
-        console.log('features[0]', features[0]);
-        console.log('typeof features[0]', typeof features[0]);
-        console.log('features[0].toJSON()', features[0].toJSON());
-
         // Update ProjectContext location state
         locationDispatch({
           type: 'set',
