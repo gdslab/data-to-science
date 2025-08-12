@@ -75,8 +75,9 @@ export function SelectField({
             {...register(name)}
             aria-invalid={errors[name] ? 'true' : 'false'}
           >
+            <option value="">Select an option...</option>
             {options.map((opt, i) => (
-              <option key={i} disabled={!opt.value} value={opt.value}>
+              <option key={i} value={opt.value}>
                 {opt.label}
               </option>
             ))}

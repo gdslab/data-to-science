@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import {
   FormProvider,
   SubmitHandler,
@@ -68,6 +69,21 @@ export default function TraitScatterModuleForm({
   const targetTraitYOptions = targetTraitOptions.filter(
     (option) => option.value !== selectedTraitX
   );
+
+  // Clear Y trait if it becomes the same as X trait or if it's no longer valid
+  useEffect(() => {
+    if (selectedTraitX && selectedTraitY && selectedTraitX === selectedTraitY) {
+      methods.setValue('targetTraitY', '');
+    }
+
+    // Also clear Y trait if its current value is no longer in the available options
+    if (
+      selectedTraitY &&
+      !targetTraitYOptions.some((option) => option.value === selectedTraitY)
+    ) {
+      methods.setValue('targetTraitY', '');
+    }
+  }, [selectedTraitX, selectedTraitY, targetTraitYOptions, methods]);
 
   // Handle the form submission
   const onSubmit: SubmitHandler<TraitScatterModuleFormData> = async (
