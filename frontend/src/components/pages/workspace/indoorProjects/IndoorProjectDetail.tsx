@@ -1,7 +1,8 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import { Params, useLoaderData } from 'react-router-dom';
 import { Tab } from '@headlessui/react';
 
+import api from '../../../../api';
 import Alert from '../../../Alert';
 import { IndoorProjectAPIResponse } from './IndoorProject.d';
 import IndoorProjectPageLayout from './IndoorProjectPageLayout';
@@ -20,7 +21,7 @@ import IndoorProjectUploadForm from './IndoorProjectUploadForm';
 export async function loader({ params }: { params: Params<string> }) {
   try {
     const indoorProjectResponse: AxiosResponse<IndoorProjectAPIResponse> =
-      await axios.get(
+      await api.get(
         `${import.meta.env.VITE_API_V1_STR}/indoor_projects/${
           params.indoorProjectId
         }`

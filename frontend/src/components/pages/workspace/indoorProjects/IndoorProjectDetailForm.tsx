@@ -1,8 +1,9 @@
-import axios, { isAxiosError } from 'axios';
+import { isAxiosError } from 'axios';
 import { useState } from 'react';
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 
+import api from '../../../../api';
 import Alert, { Status } from '../../../Alert';
 import { IndoorProjectAPIResponse } from './IndoorProject';
 import { IndoorProjectFormInput, validationSchema } from './IndoorProjectForm';
@@ -41,7 +42,7 @@ export default function IndoorProjectDetailForm({
         end_date: endDate,
       };
 
-      await axios.put(
+      await api.put(
         `${import.meta.env.VITE_API_V1_STR}/indoor_projects`,
         payload
       );

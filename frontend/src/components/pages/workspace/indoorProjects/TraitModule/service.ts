@@ -1,5 +1,6 @@
-import axios, { AxiosResponse, isAxiosError } from 'axios';
+import { AxiosResponse, isAxiosError } from 'axios';
 
+import api from '../../../../../api';
 import {
   FetchTraitModuleParams,
   IndoorProjectDataViz2APIResponse,
@@ -22,7 +23,7 @@ export async function fetchTraitModuleVisualizationData({
       trait: targetTrait,
     };
     const results: AxiosResponse<IndoorProjectDataViz2APIResponse> =
-      await axios.get(endpoint, { params: queryParams });
+      await api.get(endpoint, { params: queryParams });
     return results.data;
   } catch (error) {
     if (isAxiosError(error)) {

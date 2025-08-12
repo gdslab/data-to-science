@@ -1,7 +1,9 @@
 import { useState, useEffect, Dispatch, SetStateAction } from 'react';
-import axios, { AxiosResponse, isAxiosError } from 'axios';
+import { AxiosResponse, isAxiosError } from 'axios';
 
 import { fetchPotGroupModuleVisualizationData } from '../PotGroupModule/service';
+
+import api from '../../../../../api';
 
 import {
   IndoorProjectDataAPIResponse,
@@ -67,7 +69,7 @@ export function useIndoorProjectData({
     const fetchIndoorProjectData = async () => {
       try {
         const response: AxiosResponse<IndoorProjectDataAPIResponse[]> =
-          await axios.get(
+          await api.get(
             `${
               import.meta.env.VITE_API_V1_STR
             }/indoor_projects/${indoorProjectId}/uploaded`
@@ -105,10 +107,8 @@ export function useIndoorProjectData({
     ) => {
       try {
         const response: AxiosResponse<IndoorProjectDataSpreadsheetAPIResponse> =
-          await axios.get(
-            `${
-              import.meta.env.VITE_API_V1_STR
-            }/indoor_projects/${indoorProjectId}/uploaded/${indoorProjectDataId}`
+          await api.get(
+            `/indoor_projects/${indoorProjectId}/uploaded/${indoorProjectDataId}`
           );
         setIndoorProjectDataSpreadsheet({
           records: response.data.records,
@@ -206,11 +206,7 @@ export function useIndoorProjectData({
     const fetchIndoorProjectData = async () => {
       try {
         const response: AxiosResponse<IndoorProjectDataAPIResponse[]> =
-          await axios.get(
-            `${
-              import.meta.env.VITE_API_V1_STR
-            }/indoor_projects/${indoorProjectId}/uploaded`
-          );
+          await api.get(`/indoor_projects/${indoorProjectId}/uploaded`);
         setIndoorProjectData(response.data);
         setIsLoadingData(false);
       } catch (error) {

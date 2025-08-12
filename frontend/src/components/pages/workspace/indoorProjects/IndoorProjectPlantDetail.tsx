@@ -1,6 +1,7 @@
-import axios, { AxiosResponse, isAxiosError } from 'axios';
+import { AxiosResponse, isAxiosError } from 'axios';
 import { Link, Params, useLoaderData, useParams } from 'react-router-dom';
 
+import api from '../../../../api';
 import IndoorProjectPageLayout from './IndoorProjectPageLayout';
 import {
   IndoorProjectDataPlantAPIResponse,
@@ -39,11 +40,11 @@ export async function loader({ params }: { params: Params<string> }) {
 
     // Make requests
     const detailResponse: AxiosResponse<IndoorProjectDataPlantAPIResponse> =
-      await axios.get(plantDetailEndpoint);
+      await api.get(plantDetailEndpoint);
     const chartTopResponse: AxiosResponse<IndoorProjectDataVizAPIResponse> =
-      await axios.get(plantChartEndpoint, { params: plantChartTopQueryParams });
+      await api.get(plantChartEndpoint, { params: plantChartTopQueryParams });
     const chartSideResponse: AxiosResponse<IndoorProjectDataVizAPIResponse> =
-      await axios.get(plantChartEndpoint, {
+      await api.get(plantChartEndpoint, {
         params: plantChartSideQueryParams,
       });
 

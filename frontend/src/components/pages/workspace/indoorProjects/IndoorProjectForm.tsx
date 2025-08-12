@@ -1,10 +1,11 @@
-import axios, { AxiosResponse, isAxiosError } from 'axios';
+import { AxiosResponse, isAxiosError } from 'axios';
 import React, { useEffect, useState } from 'react';
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import * as Yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 
+import api from '../../../../api';
 import Alert, { Status } from '../../../Alert';
 import { Button } from '../../../Buttons';
 import { InputField } from '../../../FormFields';
@@ -75,11 +76,10 @@ export default function IndoorProjectForm({
         end_date: endDate,
       };
 
-      const response: AxiosResponse<IndoorProjectAPIResponse> =
-        await axios.post(
-          `${import.meta.env.VITE_API_V1_STR}/indoor_projects`,
-          payload
-        );
+      const response: AxiosResponse<IndoorProjectAPIResponse> = await api.post(
+        `${import.meta.env.VITE_API_V1_STR}/indoor_projects`,
+        payload
+      );
 
       if (response && response.status == 201) {
         navigate(`/indoor_projects/${response.data.id}`);

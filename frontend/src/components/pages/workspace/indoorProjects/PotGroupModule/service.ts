@@ -1,5 +1,6 @@
-import axios, { AxiosResponse, isAxiosError } from 'axios';
+import { AxiosResponse, isAxiosError } from 'axios';
 
+import api from '../../../../../api';
 import {
   FetchPotGroupModuleParams,
   IndoorProjectDataVizAPIResponse,
@@ -20,7 +21,7 @@ export async function fetchPotGroupModuleVisualizationData({
       group_by: groupBy,
     };
     const results: AxiosResponse<IndoorProjectDataVizAPIResponse> =
-      await axios.get(endpoint, { params: queryParams });
+      await api.get(endpoint, { params: queryParams });
     return results.data;
   } catch (error) {
     if (isAxiosError(error)) {
