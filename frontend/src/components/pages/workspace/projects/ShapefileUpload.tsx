@@ -23,7 +23,9 @@ interface ShapefileUpload {
   open: boolean;
   onSuccess: () => void;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  setUploadResponse: React.Dispatch<React.SetStateAction<FeatureCollection | null>>;
+  setUploadResponse: React.Dispatch<
+    React.SetStateAction<FeatureCollection | null>
+  >;
 }
 
 export default function ShapefileUpload({
@@ -36,7 +38,7 @@ export default function ShapefileUpload({
   const [uppy] = useState(() => createUppy(endpoint));
 
   const restrictions = {
-    allowedFileTypes: ['.zip'],
+    allowedFileTypes: ['.geojson', '.json', '.zip'],
     maxNumberOfFiles: 1,
     minNumberOfFiles: 1,
   };
@@ -80,7 +82,10 @@ export default function ShapefileUpload({
       let errorDetails = '';
       if (typeof response.body.detail === 'string') {
         errorDetails = response.body.detail;
-      } else if (response.status === 422 && Array.isArray(response.body.detail)) {
+      } else if (
+        response.status === 422 &&
+        Array.isArray(response.body.detail)
+      ) {
         response.body.detail.forEach((err, idx) => {
           errorDetails = `${err.loc[1]}: ${err.msg}`;
           errorDetails += idx < response.body.detail.length - 1 ? '; ' : '';
@@ -116,7 +121,9 @@ export default function ShapefileUpload({
       proudlyDisplayPoweredByUppy={false}
       disableThumbnailGenerator={true}
       locale={{
-        strings: { dropPasteFiles: 'Drop zip file here or %{browseFiles}' },
+        strings: {
+          dropPasteFiles: 'Drop GeoJSON or zip file here or %{browseFiles}',
+        },
       }}
     />
   );

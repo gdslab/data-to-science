@@ -32,8 +32,6 @@ export type ProjectsVisibleAction = { type: string; payload: string[] };
 
 export type GeoRasterIdAction = { type: string };
 
-export type MapboxAccessTokenAction = { type: string; payload: string };
-
 export type SymbologySettingsAction = {
   type: string;
   payload: SymbologySettings;

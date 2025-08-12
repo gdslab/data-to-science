@@ -1,4 +1,12 @@
-import { FeatureCollection, Point, Polygon } from 'geojson';
+import {
+  Feature,
+  FeatureCollection,
+  Geometry,
+  GeoJsonProperties,
+  Point,
+  Polygon,
+} from 'geojson';
+import maplibregl, { Map } from 'maplibre-gl';
 
 import {
   DataProduct,
@@ -490,11 +498,74 @@ const isElevationDataProduct = (dataProduct: DataProduct): boolean => {
   );
 };
 
+/**
+ * Fit a MapLibre map view to the bounds of a GeoJSON Feature or Geometry.
+ *
+ * @param map - The MapLibre GL map instance
+ * @param geo - A GeoJSON Feature or Geometry object
+ * @param padding - Optional padding in pixels (default: 40)
+ * @param duration - Optional animation duration in ms (default: 500)
+ */
+const fitMapToGeoJSON = (
+  map: Map,
+  geo: Geometry | Feature<Geometry, GeoJsonProperties> | FeatureCollection,
+  padding = 40,
+  duration = 500
+) => {
+  const bounds = new maplibregl.LngLatBounds();
+
+  const pushCoord = (c: number[]) => {
+    if (Array.isArray(c) && c.length >= 2) {
+      bounds.extend([c[0], c[1]]);
+    }
+  };
+
+  const extendFromGeometry = (geometry: Geometry) => {
+    switch (geometry.type) {
+      case 'Point':
+        pushCoord(geometry.coordinates as number[]);
+        break;
+      case 'MultiPoint':
+      case 'LineString':
+        (geometry.coordinates as number[][]).forEach(pushCoord);
+        break;
+      case 'MultiLineString':
+      case 'Polygon':
+        (geometry.coordinates as number[][][]).forEach((ring) =>
+          ring.forEach(pushCoord)
+        );
+        break;
+      case 'MultiPolygon':
+        (geometry.coordinates as number[][][][]).forEach((poly) =>
+          poly.forEach((ring) => ring.forEach(pushCoord))
+        );
+        break;
+      default:
+        console.warn('Unsupported geometry type:', geometry.type);
+    }
+  };
+
+  if ('type' in geo) {
+    if (geo.type === 'Feature') {
+      extendFromGeometry(geo.geometry);
+    } else if (geo.type === 'FeatureCollection') {
+      geo.features.forEach((f) => extendFromGeometry(f.geometry));
+    } else {
+      extendFromGeometry(geo as Geometry);
+    }
+  }
+
+  if (!bounds.isEmpty()) {
+    map.fitBounds(bounds, { padding, duration });
+  }
+};
+
 export {
   areProjectsEqual,
   calculateBoundsFromGeoJSON,
   createDefaultSingleBandSymbology,
   createDefaultMultibandSymbology,
+  fitMapToGeoJSON,
   getCategory,
   getDefaultStyle,
   getHillshade,

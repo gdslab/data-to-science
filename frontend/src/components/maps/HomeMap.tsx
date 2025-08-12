@@ -19,6 +19,7 @@ import ProjectVectorTiles from './ProjectVectorTiles';
 
 // import { BBox } from './Maps';
 import { useMapContext } from './MapContext';
+import { useMapApiKeys } from './MapApiKeysContext';
 import { MapLayerProps } from './MapLayersContext';
 import {
   SingleBandSymbology,
@@ -53,11 +54,10 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
   const {
     activeDataProduct,
     activeProject,
-    mapboxAccessToken,
-    maptilerApiKey,
     projects,
     projectsVisibleDispatch,
   } = useMapContext();
+  const { mapboxAccessToken, maptilerApiKey } = useMapApiKeys();
   const symbologyContext = useRasterSymbologyContext();
 
   const { state } = useLocation();
