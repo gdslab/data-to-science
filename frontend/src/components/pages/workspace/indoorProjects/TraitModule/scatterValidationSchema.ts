@@ -21,7 +21,7 @@ const scatterValidationSchema = Yup.object({
     .required('Y trait is required')
     .test(
       'different-traits',
-      'X and Y traits must be different',
+      'X and Y traits must be different for a scatter plot',
       function (value) {
         return value !== this.parent.targetTraitX;
       }

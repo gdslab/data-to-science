@@ -29,6 +29,7 @@ export default function TraitScatterModuleForm({
   const methods = useForm<TraitScatterModuleFormData>({
     defaultValues: scatterDefaultValues,
     resolver: yupResolver(scatterValidationSchema),
+    mode: 'onSubmit', // Only validate on submit to prevent loops
   });
 
   // Get the form methods
@@ -61,29 +62,9 @@ export default function TraitScatterModuleForm({
       ? numericColumns.top.map((col) => ({ label: col, value: col }))
       : numericColumns.side.map((col) => ({ label: col, value: col }));
 
-  // Filter out already selected traits to avoid duplication
-  const targetTraitXOptions = targetTraitOptions.filter(
-    (option) => option.value !== selectedTraitY
-  );
-
-  const targetTraitYOptions = targetTraitOptions.filter(
-    (option) => option.value !== selectedTraitX
-  );
-
-  // Clear Y trait if it becomes the same as X trait or if it's no longer valid
-  useEffect(() => {
-    if (selectedTraitX && selectedTraitY && selectedTraitX === selectedTraitY) {
-      methods.setValue('targetTraitY', '');
-    }
-
-    // Also clear Y trait if its current value is no longer in the available options
-    if (
-      selectedTraitY &&
-      !targetTraitYOptions.some((option) => option.value === selectedTraitY)
-    ) {
-      methods.setValue('targetTraitY', '');
-    }
-  }, [selectedTraitX, selectedTraitY, targetTraitYOptions, methods]);
+  // Use the same options for both X and Y traits (no filtering)
+  const targetTraitXOptions = targetTraitOptions;
+  const targetTraitYOptions = targetTraitOptions;
 
   // Handle the form submission
   const onSubmit: SubmitHandler<TraitScatterModuleFormData> = async (

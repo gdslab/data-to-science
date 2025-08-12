@@ -112,7 +112,6 @@ export default function TraitScatterModuleDataVisualization({
                 itemsSpacing: 5,
                 itemDirection: 'left-to-right',
                 symbolSize: 12,
-                symbolShape: 'circle',
                 itemOpacity: 0.85,
                 effects: [
                   {
@@ -168,6 +167,7 @@ export default function TraitScatterModuleDataVisualization({
           colorPreviewCount={uniqueGroups.length}
           setColorOption={setColorOption}
           defaultValue={pairedColorOption}
+          categoricalOnly={true}
         />
       </div>
     </div>

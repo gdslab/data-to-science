@@ -2,18 +2,24 @@ import Select, { SingleValue } from 'react-select';
 
 import { ColorMapOption } from '../../../../maps/RasterSymbologySettings/cmaps';
 import { nivoColorSchemeMap } from './nivoColorSchemeMap';
-import { nivoSequentialColors, nivoColorMapGroupedOptions } from '../utils';
+import {
+  nivoSequentialColors,
+  nivoColorMapGroupedOptions,
+  nivoCategoricalColors,
+} from '../utils';
 
 type ColorMapSelectProps = {
   colorPreviewCount?: number;
   setColorOption: React.Dispatch<React.SetStateAction<string>>;
   defaultValue?: ColorMapOption;
+  categoricalOnly?: boolean;
 };
 
 export default function ColorMapSelect({
   setColorOption,
   colorPreviewCount,
   defaultValue,
+  categoricalOnly = false,
 }: ColorMapSelectProps) {
   const handleChange = (colorOption: SingleValue<ColorMapOption>) => {
     if (colorOption) {
@@ -57,6 +63,11 @@ export default function ColorMapSelect({
     );
   };
 
+  // Determine which options to use based on categoricalOnly prop
+  const options = categoricalOnly
+    ? [{ label: 'Categorical Colors', options: nivoCategoricalColors }]
+    : nivoColorMapGroupedOptions;
+
   return (
     <fieldset>
       <legend>Color scheme:</legend>
@@ -79,7 +90,7 @@ export default function ColorMapSelect({
         })}
         isSearchable
         defaultValue={defaultValue || nivoSequentialColors[1]}
-        options={nivoColorMapGroupedOptions}
+        options={options}
         onChange={handleChange}
         formatOptionLabel={formatOptionLabel}
         menuPlacement="top"
