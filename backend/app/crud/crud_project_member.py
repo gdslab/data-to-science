@@ -1,4 +1,4 @@
-from typing import List, Optional, Sequence, Tuple, TypedDict
+from typing import List, Optional, Sequence, Tuple, TypedDict, Union
 from uuid import UUID
 
 from fastapi import status
@@ -10,6 +10,7 @@ from sqlalchemy.sql.selectable import Select
 from app import crud
 from app.crud.base import CRUDBase
 from app.crud.crud_team_member import set_name_and_email_attr, set_url_attr
+from app.models.indoor_project import IndoorProject
 from app.models.project import Project
 from app.models.project_member import ProjectMember
 from app.models.project_type import ProjectType
@@ -33,7 +34,7 @@ class CRUDProjectMember(
         db: Session,
         *,
         obj_in: ProjectMemberCreate,
-        project_id: UUID,
+        project_uuid: UUID,
         project_type: ProjectType = ProjectType.PROJECT
     ) -> Optional[ProjectMember]:
         if obj_in.email:
@@ -53,14 +54,29 @@ class CRUDProjectMember(
             if not user_obj:
                 return None
 
-        # Query project by id
-        with db as session:
-            project = crud.project.get(db, id=project_id)
-            if not project:
-                return None
+        # Query project by id and type
+        is_project_owner = False
+        project = None
+        indoor_project = None
 
-        # Check if user is project owner
-        is_project_owner = project.owner_id == user_obj.id
+        with db as session:
+            if project_type == ProjectType.PROJECT:
+                project = crud.project.get(db, id=project_uuid)
+                if project:
+                    is_project_owner = project.owner_id == user_obj.id
+            elif project_type == ProjectType.INDOOR_PROJECT:
+                indoor_project = crud.indoor_project.get(db, id=project_uuid)
+                if indoor_project:
+                    is_project_owner = indoor_project.owner_id == user_obj.id
+            # For invalid project types, we don't return None here - let the database constraint handle it
+
+            # Only check project existence for valid project types
+            if project_type in [ProjectType.PROJECT, ProjectType.INDOOR_PROJECT]:
+                if not (
+                    project
+                    or (project_type == ProjectType.INDOOR_PROJECT and indoor_project)
+                ):
+                    return None
 
         # Add project member
         with db as session:
@@ -72,9 +88,8 @@ class CRUDProjectMember(
                 role = Role.VIEWER
             project_member = ProjectMember(
                 member_id=user_obj.id,
-                project_id=project_id,
                 project_type=project_type,
-                project_uuid=project_id,
+                project_uuid=project_uuid,
                 role=role,
             )
             session.add(project_member)
@@ -105,7 +120,6 @@ class CRUDProjectMember(
                         "role": project_member[1],
                         "project_type": project_type,
                         "project_uuid": project_uuid,
-                        "project_id": project_uuid,
                     }
                 )
         if len(project_members) > 0:
@@ -150,12 +164,21 @@ class CRUDProjectMember(
                 ProjectMember,
                 Bundle("user", User.id, User.first_name, User.last_name, User.email),
             )
-            .join(ProjectMember.project)
             .join(ProjectMember.member)
             .where(ProjectMember.project_uuid == project_uuid)
             .where(ProjectMember.project_type == project_type)
-            .where(Project.is_active)
         )
+
+        # Conditionally join the correct project relationship based on project_type
+        if project_type == ProjectType.PROJECT:
+            statement = statement.join(ProjectMember.uas_project).where(
+                Project.is_active
+            )
+        elif project_type == ProjectType.INDOOR_PROJECT:
+            statement = statement.join(ProjectMember.indoor_project).where(
+                IndoorProject.is_active
+            )
+
         if role:
             statement = statement.where(ProjectMember.role == role)
         project_members: list[ProjectMember] = []
@@ -188,13 +211,8 @@ class CRUDProjectMember(
             # Merge project member obj into session
             project_member_obj = session.merge(project_member_obj)
 
-            # Get project
-            project_statement = (
-                select(Project)
-                .where(Project.id == project_member_obj.project_id)
-                .where(Project.is_active == true())
-            )
-            project = session.execute(project_statement).scalar_one_or_none()
+            # Get project using the target_project property
+            project = project_member_obj.target_project
             if not project:
                 return {
                     "response_code": status.HTTP_404_NOT_FOUND,
@@ -202,10 +220,19 @@ class CRUDProjectMember(
                     "result": None,
                 }
 
+            # Check if project is active
+            if hasattr(project, "is_active") and not project.is_active:
+                return {
+                    "response_code": status.HTTP_404_NOT_FOUND,
+                    "message": "Project is not active",
+                    "result": None,
+                }
+
             # Get all project owners
             owners_statement = (
                 select(ProjectMember)
-                .where(ProjectMember.project_id == project.id)
+                .where(ProjectMember.project_uuid == project_member_obj.project_uuid)
+                .where(ProjectMember.project_type == project_member_obj.project_type)
                 .where(ProjectMember.role == Role.OWNER)
             )
             project_owners = session.execute(owners_statement).scalars().all()
@@ -244,15 +271,24 @@ class CRUDProjectMember(
         team_id: UUID,
         project_type: ProjectType = ProjectType.PROJECT,
     ) -> Sequence[ProjectMember]:
+        # Build the base statement
         statement = (
             select(ProjectMember)
-            .join(Project)
-            .join(Team)
             .where(ProjectMember.project_uuid == project_uuid)
             .where(ProjectMember.project_type == project_type)
-            .where(Team.id == team_id)
             .where(ProjectMember.role != Role.OWNER)
         )
+
+        # Conditionally join the correct project relationship based on project_type
+        if project_type == ProjectType.PROJECT:
+            statement = statement.join(ProjectMember.uas_project).where(
+                Project.team_id == team_id
+            )
+        elif project_type == ProjectType.INDOOR_PROJECT:
+            statement = statement.join(ProjectMember.indoor_project).where(
+                IndoorProject.team_id == team_id
+            )
+
         with db as session:
             project_members = session.scalars(statement).all()
             if len(project_members) > 0:

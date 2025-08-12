@@ -45,7 +45,7 @@ def test_create_campaign_with_project_manager_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db, owner_id=project_owner.id)
     create_project_member(
-        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_uuid=project.id
     )
     response = client.post(f"{PROJECTS_API_URL}/{project.id}/campaigns")
     assert response.status_code == status.HTTP_201_CREATED
@@ -58,7 +58,7 @@ def test_create_campaign_with_project_viewer_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db, owner_id=project_owner.id)
     create_project_member(
-        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_uuid=project.id
     )
     response = client.post(f"{PROJECTS_API_URL}/{project.id}/campaigns")
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -93,7 +93,7 @@ def test_read_campaign_by_project_id_with_project_manager_role(
     project_owner = create_user(db)
     project = create_project(db, owner_id=project_owner.id)
     create_project_member(
-        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_uuid=project.id
     )
     campaign = create_campaign(db, project_id=project.id, lead_id=project_owner.id)
     response = client.get(f"{PROJECTS_API_URL}/{project.id}/campaigns")
@@ -110,7 +110,7 @@ def test_read_campaign_by_project_id_with_project_viewer_role(
     project_owner = create_user(db)
     project = create_project(db, owner_id=project_owner.id)
     create_project_member(
-        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_uuid=project.id
     )
     campaign = create_campaign(db, project_id=project.id, lead_id=project_owner.id)
     response = client.get(f"{PROJECTS_API_URL}/{project.id}/campaigns")
@@ -150,7 +150,7 @@ def test_read_campaign_with_project_manager_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db, owner_id=project_owner.id)
     create_project_member(
-        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_uuid=project.id
     )
     campaign = create_campaign(db, project_id=project.id)
     response = client.get(f"{PROJECTS_API_URL}/{project.id}/campaigns/{campaign.id}")
@@ -166,7 +166,7 @@ def test_read_campaign_with_project_viewer_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db, owner_id=project_owner.id)
     create_project_member(
-        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_uuid=project.id
     )
     campaign = create_campaign(db, project_id=project.id)
     response = client.get(f"{PROJECTS_API_URL}/{project.id}/campaigns/{campaign.id}")
@@ -205,7 +205,7 @@ def test_update_campaign_with_project_owner_role(
     # create user that will be new lead
     new_lead_user = create_user(db)
     # add user as project member
-    create_project_member(db, member_id=new_lead_user.id, project_id=project.id)
+    create_project_member(db, member_id=new_lead_user.id, project_uuid=project.id)
     update_data = jsonable_encoder({"lead_id": new_lead_user.id})
     response = client.put(
         f"{PROJECTS_API_URL}/{project.id}/campaigns/{campaign.id}", json=update_data
@@ -224,13 +224,13 @@ def test_update_campaign_with_project_manager_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db, owner_id=project_owner.id)
     create_project_member(
-        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_uuid=project.id
     )
     campaign = create_campaign(db, project_id=project.id)
     # create user that will be new lead
     new_lead_user = create_user(db)
     # add user as project member
-    create_project_member(db, member_id=new_lead_user.id, project_id=project.id)
+    create_project_member(db, member_id=new_lead_user.id, project_uuid=project.id)
     update_data = jsonable_encoder({"lead_id": new_lead_user.id})
     response = client.put(
         f"{PROJECTS_API_URL}/{project.id}/campaigns/{campaign.id}", json=update_data
@@ -245,13 +245,13 @@ def test_update_campaign_with_project_viewer_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db, owner_id=project_owner.id)
     create_project_member(
-        db, Role.VIEWER, member_id=current_user.id, project_id=project.id
+        db, Role.VIEWER, member_id=current_user.id, project_uuid=project.id
     )
     campaign = create_campaign(db, project_id=project.id)
     # create user that will be new lead
     new_lead_user = create_user(db)
     # add user as project member
-    create_project_member(db, member_id=new_lead_user.id, project_id=project.id)
+    create_project_member(db, member_id=new_lead_user.id, project_uuid=project.id)
     update_data = jsonable_encoder({"lead_id": new_lead_user.id})
     response = client.put(
         f"{PROJECTS_API_URL}/{project.id}/campaigns/{campaign.id}", json=update_data
@@ -268,7 +268,7 @@ def test_update_campaign_without_project_role(
     # create user that will be new lead
     new_lead_user = create_user(db)
     # add user as project member
-    create_project_member(db, member_id=new_lead_user.id, project_id=project.id)
+    create_project_member(db, member_id=new_lead_user.id, project_uuid=project.id)
     update_data = jsonable_encoder({"lead_id": new_lead_user.id})
     response = client.put(
         f"{PROJECTS_API_URL}/{project.id}/campaigns/{campaign.id}", json=update_data
@@ -303,7 +303,7 @@ def test_deactivate_campaign_with_project_manager_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db, owner_id=project_owner.id)
     create_project_member(
-        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_uuid=project.id
     )
     campaign = create_campaign(db, project_id=project.id)
     response = client.delete(f"{PROJECTS_API_URL}/{project.id}/campaigns/{campaign.id}")
@@ -317,7 +317,7 @@ def test_deactivate_campaign_with_project_viewer_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db, owner_id=project_owner.id)
     create_project_member(
-        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_uuid=project.id
     )
     campaign = create_campaign(db, project_id=project.id)
     response = client.delete(f"{PROJECTS_API_URL}/{project.id}/campaigns/{campaign.id}")
@@ -362,7 +362,7 @@ def test_download_campaign_template_with_project_manager_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db, owner_id=project_owner.id)
     create_project_member(
-        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_uuid=project.id
     )
     campaign = create_campaign(db, project_id=project.id, include_form_data=True)
     data = {"timepoints": [{"measurement": 0, "treatment": 0, "timepoint": 0}]}
@@ -387,7 +387,7 @@ def test_download_campaign_template_with_project_viewer_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db, owner_id=project_owner.id)
     create_project_member(
-        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_uuid=project.id
     )
     campaign = create_campaign(db, project_id=project.id, include_form_data=True)
     data = {"timepoints": [{"measurement": 0, "treatment": 0, "timepoint": 0}]}

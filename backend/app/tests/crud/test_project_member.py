@@ -1,5 +1,4 @@
 import pytest
-from pydantic import ValidationError
 from sqlalchemy.exc import DataError
 from sqlalchemy.orm import Session
 
@@ -18,10 +17,12 @@ def test_create_project_member(db: Session) -> None:
     project_owner = create_user(db)
     project = create_project(db, owner_id=project_owner.id)
     user = create_user(db)
-    project_member = create_project_member(db, member_id=user.id, project_id=project.id)
+    project_member = create_project_member(
+        db, member_id=user.id, project_uuid=project.id
+    )
     assert project_member
     assert user.id == project_member.member_id
-    assert project.id == project_member.project_id
+    assert project.id == project_member.project_uuid
     assert project_member.project_type == ProjectType.PROJECT
     assert project_member.project_uuid == project.id
     assert project_member.role == Role.VIEWER  # default role
@@ -33,13 +34,13 @@ def test_create_project_members_with_different_roles(db: Session) -> None:
     project_viewer = create_user(db)
     project = create_project(db, owner_id=project_owner.id)
     manager_role = create_project_member(
-        db, member_id=project_manager.id, project_id=project.id
+        db, member_id=project_manager.id, project_uuid=project.id
     )
     crud.project_member.update_project_member(
         db, manager_role, ProjectMemberUpdate(role=Role.MANAGER)
     )
     viewer_role = create_project_member(
-        db, member_id=project_viewer.id, project_id=project.id
+        db, member_id=project_viewer.id, project_uuid=project.id
     )
     owner_in_db = crud.project_member.get_by_project_and_member_id(
         db, project_uuid=project.id, member_id=project_owner.id
@@ -83,8 +84,8 @@ def test_get_project_member(db: Session) -> None:
 def test_get_list_of_project_members(db: Session) -> None:
     owner = create_user(db)
     project = create_project(db, owner_id=owner.id)
-    member1 = create_project_member(db, project_id=project.id)
-    member2 = create_project_member(db, project_id=project.id)
+    member1 = create_project_member(db, project_uuid=project.id)
+    member2 = create_project_member(db, project_uuid=project.id)
     project_members = crud.project_member.get_list_of_project_members(
         db, project_uuid=project.id
     )
@@ -111,15 +112,15 @@ def test_get_list_of_project_members(db: Session) -> None:
 def test_get_list_of_project_members_with_specific_role(db: Session) -> None:
     owner = create_user(db)
     project = create_project(db, owner_id=owner.id)
-    member1 = create_project_member(db, project_id=project.id)
+    member1 = create_project_member(db, project_uuid=project.id)
     crud.project_member.update_project_member(
         db, member1, ProjectMemberUpdate(role=Role.MANAGER)
     )
-    member2 = create_project_member(db, project_id=project.id)
+    member2 = create_project_member(db, project_uuid=project.id)
     crud.project_member.update_project_member(
         db, member2, ProjectMemberUpdate(role=Role.MANAGER)
     )
-    member3 = create_project_member(db, project_id=project.id)
+    member3 = create_project_member(db, project_uuid=project.id)
     project_members = crud.project_member.get_list_of_project_members(
         db, project_uuid=project.id, role=Role.MANAGER
     )
@@ -131,8 +132,8 @@ def test_get_list_of_project_members_with_specific_role(db: Session) -> None:
 
 def test_get_list_of_project_members_from_deactivated_project(db: Session) -> None:
     project = create_project(db)
-    create_project_member(db, project_id=project.id)
-    create_project_member(db, project_id=project.id)
+    create_project_member(db, project_uuid=project.id)
+    create_project_member(db, project_uuid=project.id)
     crud.project.deactivate(db, project_id=project.id, user_id=project.owner_id)
     project_members = crud.project_member.get_list_of_project_members(
         db, project_uuid=project.id
@@ -201,9 +202,9 @@ def test_delete_project_members(db: Session) -> None:
     team = create_team(db, owner_id=project_owner.id)
     project = create_project(db, team_id=team.id, owner_id=project_owner.id)
     other_project = create_project(db, team_id=team.id, owner_id=project_owner.id)
-    for i in range(0, 5):
-        create_project_member(db, project_id=project.id)
-        create_project_member(db, project_id=other_project.id)
+    for _ in range(0, 5):
+        create_project_member(db, project_uuid=project.id)
+        create_project_member(db, project_uuid=other_project.id)
     removed_project_members = crud.project_member.delete_multi(
         db, project_uuid=project.id, team_id=team.id
     )
@@ -228,7 +229,7 @@ def test_assign_project_member_invalid_project_type(db: Session) -> None:
         crud.project_member.create_with_project(
             db,
             obj_in=ProjectMemberCreate(member_id=user.id),
-            project_id=project.id,
+            project_uuid=project.id,
             project_type="INVALID_TYPE",  # type: ignore
         )
 
@@ -237,7 +238,9 @@ def test_project_member_target_project_property(db: Session) -> None:
     project_owner = create_user(db)
     project = create_project(db, owner_id=project_owner.id)
     user = create_user(db)
-    project_member = create_project_member(db, member_id=user.id, project_id=project.id)
+    project_member = create_project_member(
+        db, member_id=user.id, project_uuid=project.id
+    )
 
     # Get the project_member from the database within a session context
     with db as session:

@@ -14,14 +14,14 @@ def create_project_member(
     role: Role = Role.VIEWER,
     email: str | None = None,
     member_id: UUID | None = None,
-    project_id: UUID | None = None,
+    project_uuid: UUID | None = None,
 ) -> models.ProjectMember:
     if member_id is None and email is None:
         user = create_user(db)
         member_id = user.id
-    if project_id is None:
+    if project_uuid is None:
         project = create_project(db)
-        project_id = project.id
+        project_uuid = project.id
     if member_id:
         project_member_in = ProjectMemberCreate(member_id=member_id)
     if email:
@@ -30,7 +30,7 @@ def create_project_member(
 
     # Create project member
     project_member = crud.project_member.create_with_project(
-        db, obj_in=project_member_in, project_id=project_id
+        db, obj_in=project_member_in, project_uuid=project_uuid
     )
     if project_member is None:
         raise ValueError("Failed to create project member")

@@ -32,7 +32,7 @@ def test_create_project_member_by_email_with_project_owner_role(
     response.status_code == 201
     response_data = response.json()
     new_member.id == response_data["member_id"]
-    project.id == response_data["project_id"]
+    project.id == response_data["project_uuid"]
 
 
 def test_create_project_member_by_user_id_with_project_owner_role(
@@ -48,7 +48,7 @@ def test_create_project_member_by_user_id_with_project_owner_role(
     assert response.status_code == 201
     response_data = response.json()
     new_member.id == response_data["member_id"]
-    project.id == response_data["project_id"]
+    project.id == response_data["project_uuid"]
 
 
 def test_create_project_member_without_project_access(
@@ -83,7 +83,7 @@ def test_create_project_member_with_invalid_role(
 
     with pytest.raises(DataError):
         create_project_member(
-            db, email=current_user.email, project_id=project.id, role="invalid-role"  # type: ignore
+            db, email=current_user.email, project_uuid=project.id, role="invalid-role"  # type: ignore
         )
 
 
@@ -115,7 +115,7 @@ def test_create_project_members_with_project_manager_role(
     )
     project = create_project(db)
     create_project_member(
-        db, member_id=current_user.id, project_id=project.id, role=Role.MANAGER
+        db, member_id=current_user.id, project_uuid=project.id, role=Role.MANAGER
     )
     new_member1 = create_user(db)
     new_member2 = create_user(db)
@@ -136,7 +136,7 @@ def test_create_project_members_with_project_viewer_role(
     )
     project = create_project(db)
     create_project_member(
-        db, member_id=current_user.id, project_id=project.id, role=Role.VIEWER
+        db, member_id=current_user.id, project_uuid=project.id, role=Role.VIEWER
     )
     new_member1 = create_user(db)
     new_member2 = create_user(db)
@@ -175,7 +175,7 @@ def test_get_project_member_with_project_owner_role(
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     assert response_data["member_id"] == str(current_user.id)
-    assert response_data["project_id"] == str(project.id)
+    assert response_data["project_uuid"] == str(project.id)
     assert response_data["role"] == "owner"
 
 
@@ -187,7 +187,7 @@ def test_get_project_member_with_project_manager_role(
     )
     project = create_project(db)
     project_member = create_project_member(
-        db, member_id=current_user.id, project_id=project.id
+        db, member_id=current_user.id, project_uuid=project.id
     )
     crud.project_member.update(
         db, db_obj=project_member, obj_in=ProjectMemberUpdate(role=Role.MANAGER)
@@ -196,7 +196,7 @@ def test_get_project_member_with_project_manager_role(
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     assert response_data["member_id"] == str(current_user.id)
-    assert response_data["project_id"] == str(project.id)
+    assert response_data["project_uuid"] == str(project.id)
     assert response_data["role"] == "manager"
 
 
@@ -208,13 +208,13 @@ def test_get_project_member_with_project_viewer_role(
     )
     project = create_project(db)
     create_project_member(
-        db, member_id=current_user.id, project_id=project.id, role=Role.VIEWER
+        db, member_id=current_user.id, project_uuid=project.id, role=Role.VIEWER
     )
     response = client.get(f"{API_URL}/{project.id}/members/{current_user.id}")
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     assert response_data["member_id"] == str(current_user.id)
-    assert response_data["project_id"] == str(project.id)
+    assert response_data["project_uuid"] == str(project.id)
     assert response_data["role"] == "viewer"
 
 
@@ -239,8 +239,8 @@ def test_get_project_members(
     project = create_project(db, owner_id=current_user.id)
     user2 = create_user(db)
     user3 = create_user(db)
-    create_project_member(db, email=user2.email, project_id=project.id)
-    create_project_member(db, email=user3.email, project_id=project.id)
+    create_project_member(db, email=user2.email, project_uuid=project.id)
+    create_project_member(db, email=user3.email, project_uuid=project.id)
     response = client.get(f"{API_URL}/{project.id}/members")
     assert response.status_code == 200
     response_data = response.json()
@@ -260,7 +260,7 @@ def test_get_project_members_without_project_access(
     project_owner = create_user(db)
     project = create_project(db, owner_id=project_owner.id)
     for i in range(0, 3):
-        create_project_member(db, project_id=project.id)
+        create_project_member(db, project_uuid=project.id)
     response = client.get(f"{API_URL}/{project.id}/members")
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -296,7 +296,7 @@ def test_update_project_member_with_project_manager_role(
         get_current_user(db, normal_user_access_token),
     )
     create_project_member(
-        db, email=current_user.email, project_id=project.id, role=Role.MANAGER
+        db, email=current_user.email, project_uuid=project.id, role=Role.MANAGER
     )
     # Create project member with viewer role
     project_member = create_project_member(db, role=Role.VIEWER)
@@ -318,7 +318,7 @@ def test_update_project_member_with_project_viewer_role(
         get_current_user(db, normal_user_access_token),
     )
     create_project_member(
-        db, email=current_user.email, project_id=project.id, role=Role.VIEWER
+        db, email=current_user.email, project_uuid=project.id, role=Role.VIEWER
     )
     # Create project member with viewer role
     project_member = create_project_member(db, role=Role.VIEWER)
@@ -376,7 +376,7 @@ def test_remove_project_member_with_project_owner_role(
         get_current_user(db, normal_user_access_token),
     )
     project = create_project(db, owner_id=current_user.id)
-    project_member = create_project_member(db, project_id=project.id, role=Role.OWNER)
+    project_member = create_project_member(db, project_uuid=project.id, role=Role.OWNER)
     response = client.delete(f"{API_URL}/{project.id}/members/{project_member.id}")
     assert response.status_code == status.HTTP_200_OK
     project_member_in_db = crud.project_member.get(db, id=project_member.id)
@@ -391,9 +391,9 @@ def test_remove_project_member_with_project_manager_role(
     )
     project = create_project(db)
     create_project_member(
-        db, email=current_user.email, project_id=project.id, role=Role.MANAGER
+        db, email=current_user.email, project_uuid=project.id, role=Role.MANAGER
     )
-    project_member = create_project_member(db, project_id=project.id, role=Role.OWNER)
+    project_member = create_project_member(db, project_uuid=project.id, role=Role.OWNER)
     response = client.delete(f"{API_URL}/{project.id}/members/{project_member.id}")
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -406,9 +406,9 @@ def test_remove_project_member_with_project_viewer_role(
     )
     project = create_project(db)
     create_project_member(
-        db, email=current_user.email, project_id=project.id, role=Role.VIEWER
+        db, email=current_user.email, project_uuid=project.id, role=Role.VIEWER
     )
-    project_member = create_project_member(db, project_id=project.id, role=Role.OWNER)
+    project_member = create_project_member(db, project_uuid=project.id, role=Role.OWNER)
     response = client.delete(f"{API_URL}/{project.id}/members/{project_member.id}")
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -418,7 +418,7 @@ def test_remove_project_member_without_project_access(
 ) -> None:
     project_owner = create_user(db)
     project = create_project(db, owner_id=project_owner.id)
-    project_member = create_project_member(db, project_id=project.id)
+    project_member = create_project_member(db, project_uuid=project.id)
     response = client.delete(f"{API_URL}/{project.id}/members/{project_member.id}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -430,7 +430,7 @@ def test_remove_project_member_that_does_not_exist(
         get_current_user(db, normal_user_access_token),
     )
     project = create_project(db, owner_id=current_user.id)
-    project_member = create_project_member(db, project_id=project.id, role=Role.OWNER)
+    project_member = create_project_member(db, project_uuid=project.id, role=Role.OWNER)
     crud.project_member.remove(db, id=project_member.id)
     response = client.delete(f"{API_URL}/{project.id}/members/{project_member.id}")
     assert response.status_code == status.HTTP_404_NOT_FOUND

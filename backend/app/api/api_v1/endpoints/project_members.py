@@ -22,7 +22,7 @@ def create_project_member(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     project_member = crud.project_member.create_with_project(
-        db, obj_in=project_member_in, project_id=project.id
+        db, obj_in=project_member_in, project_uuid=project.id
     )
     if not project_member:
         raise HTTPException(

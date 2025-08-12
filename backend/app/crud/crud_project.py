@@ -33,8 +33,8 @@ from app.schemas.project import (
     Project as ProjectSchema,
     Projects,
 )
-from app.schemas.project_member import ProjectMemberCreate
-from app.schemas.team_member import Role
+from app.schemas.role import Role
+from app.utils.team_utils import is_team_owner
 
 
 logger = logging.getLogger("__name__")
@@ -98,7 +98,6 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         # add project memebers to db
         member_db_obj = ProjectMember(
             member_id=owner_id,
-            project_id=project_db_obj.id,
             project_type=ProjectType.PROJECT,
             project_uuid=project_db_obj.id,
             role=Role.OWNER,
@@ -116,7 +115,6 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     project_members.append(
                         ProjectMember(
                             member_id=team_member.member_id,
-                            project_id=project_db_obj.id,
                             project_type=ProjectType.PROJECT,
                             project_uuid=project_db_obj.id,
                             role=team_member.role,
@@ -528,47 +526,6 @@ def has_flight_with_raster_data_project(project: Project) -> bool:
                     has_at_least_one_raster_data_product = True
 
     return has_at_least_one_raster_data_product
-
-
-def is_team_member(user_id: UUID, team_members: Sequence[TeamMember]) -> bool:
-    """Returns True if user_id matches a user on a team.
-
-    Args:
-        user_id (UUID): User ID to check for on a team.
-        team_members (Sequence[TeamMember]): List of team members.
-
-    Returns:
-        bool: True if the user ID matches a user in the team member list, otherwise False.
-    """
-    for team_member in team_members:
-        if team_member.member_id == user_id:
-            return True
-    return False
-
-
-def is_team_owner(
-    user_id: UUID, team_members: Sequence[TeamMember], include_manager: bool = False
-) -> bool:
-    """Returns True if user_id matches a user on a team and is the team owner.
-
-    Args:
-        user_id (UUID): User ID to check for on a team.
-        team_members (Sequence[TeamMember]): List of team members.
-        include_manager (bool): Whether to include manager role in check.
-    Returns:
-        bool: True if the user ID matches a user in the team member list and is the team owner,
-        otherwise False.
-    """
-    for team_member in team_members:
-        if team_member.member_id == user_id and team_member.role == Role.OWNER:
-            return True
-        if (
-            include_manager
-            and team_member.member_id == user_id
-            and team_member.role == Role.MANAGER
-        ):
-            return True
-    return False
 
 
 project = CRUDProject(Project)

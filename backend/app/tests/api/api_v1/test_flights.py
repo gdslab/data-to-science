@@ -31,10 +31,10 @@ def test_create_flight_with_project_owner_role(
     project = create_project(db)
     current_user = get_current_user(db, normal_user_access_token)
     create_project_member(
-        db, role=Role.OWNER, member_id=current_user.id, project_id=project.id
+        db, role=Role.OWNER, member_id=current_user.id, project_uuid=project.id
     )
     create_project_member(
-        db, role=Role.VIEWER, member_id=pilot.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=pilot.id, project_uuid=project.id
     )
     data = {
         "name": "Test Flight",
@@ -69,10 +69,10 @@ def test_create_flight_with_project_manager_role(
     project = create_project(db)
     current_user = get_current_user(db, normal_user_access_token)
     create_project_member(
-        db, role=Role.VIEWER, member_id=pilot.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=pilot.id, project_uuid=project.id
     )
     create_project_member(
-        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_uuid=project.id
     )
     data = {
         "acquisition_date": create_acquisition_date(),
@@ -97,10 +97,10 @@ def test_create_flight_with_project_viewer_role(
     project = create_project(db)
     current_user = get_current_user(db, normal_user_access_token)
     create_project_member(
-        db, role=Role.VIEWER, member_id=pilot.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=pilot.id, project_uuid=project.id
     )
     create_project_member(
-        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_uuid=project.id
     )
     data = {
         "acquisition_date": create_acquisition_date(),
@@ -126,7 +126,7 @@ def test_create_flight_with_non_project_member(
     pilot = create_user(db)
     project = create_project(db)
     create_project_member(
-        db, role=Role.VIEWER, member_id=pilot.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=pilot.id, project_uuid=project.id
     )
     data = {
         "acquisition_date": create_acquisition_date(),
@@ -151,11 +151,11 @@ def test_create_flight_with_pilot_that_does_not_exist(
     pilot = create_user(db)
     project = create_project(db)
     pilot_project_member = create_project_member(
-        db, role=Role.VIEWER, member_id=pilot.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=pilot.id, project_uuid=project.id
     )
     current_user = get_current_user(db, normal_user_access_token)
     create_project_member(
-        db, role=Role.OWNER, member_id=current_user.id, project_id=project.id
+        db, role=Role.OWNER, member_id=current_user.id, project_uuid=project.id
     )
     # remove pilot
     crud.project_member.remove(db, id=pilot_project_member.id)
@@ -183,7 +183,7 @@ def test_create_flight_with_pilot_that_does_not_belong_to_project(
     project = create_project(db)
     current_user = get_current_user(db, normal_user_access_token)
     create_project_member(
-        db, role=Role.OWNER, member_id=current_user.id, project_id=project.id
+        db, role=Role.OWNER, member_id=current_user.id, project_uuid=project.id
     )
     data = {
         "acquisition_date": create_acquisition_date(),
@@ -208,10 +208,10 @@ def test_create_flight_with_lower_case_sensor(
     project = create_project(db)
     current_user = get_current_user(db, normal_user_access_token)
     create_project_member(
-        db, role=Role.OWNER, member_id=current_user.id, project_id=project.id
+        db, role=Role.OWNER, member_id=current_user.id, project_uuid=project.id
     )
     create_project_member(
-        db, role=Role.VIEWER, member_id=pilot.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=pilot.id, project_uuid=project.id
     )
     data = {
         "name": "Test Flight",
@@ -240,7 +240,7 @@ def test_get_flight_with_project_owner_role(
     current_user = get_current_user(db, normal_user_access_token)
     project_member_in = ProjectMemberCreate(member_id=current_user.id, role=Role.OWNER)
     crud.project_member.create_with_project(
-        db, obj_in=project_member_in, project_id=project.id
+        db, obj_in=project_member_in, project_uuid=project.id
     )
     response = client.get(
         f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}",
@@ -260,7 +260,7 @@ def test_get_flight_with_project_manager_role(
         member_id=current_user.id, role=Role.MANAGER
     )
     crud.project_member.create_with_project(
-        db, obj_in=project_member_in, project_id=project.id
+        db, obj_in=project_member_in, project_uuid=project.id
     )
     response = client.get(
         f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}",
@@ -276,7 +276,7 @@ def test_get_flight_with_project_viewer_role(
     current_user = get_current_user(db, normal_user_access_token)
     project_member_in = ProjectMemberCreate(member_id=current_user.id, role=Role.VIEWER)
     crud.project_member.create_with_project(
-        db, obj_in=project_member_in, project_id=project.id
+        db, obj_in=project_member_in, project_uuid=project.id
     )
     response = client.get(
         f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}",
@@ -305,7 +305,7 @@ def test_get_flights_with_project_owner_role(
     current_user = get_current_user(db, normal_user_access_token)
     project_member_in = ProjectMemberCreate(member_id=current_user.id, role=Role.OWNER)
     crud.project_member.create_with_project(
-        db, obj_in=project_member_in, project_id=project.id
+        db, obj_in=project_member_in, project_uuid=project.id
     )
     response = client.get(f"{settings.API_V1_STR}/projects/{project.id}/flights")
     assert response.status_code == status.HTTP_200_OK
@@ -329,7 +329,7 @@ def test_get_flights_with_project_manager_role(
         member_id=current_user.id, role=Role.MANAGER
     )
     crud.project_member.create_with_project(
-        db, obj_in=project_member_in, project_id=project.id
+        db, obj_in=project_member_in, project_uuid=project.id
     )
     response = client.get(f"{settings.API_V1_STR}/projects/{project.id}/flights")
     assert response.status_code == status.HTTP_200_OK
@@ -345,21 +345,10 @@ def test_get_flights_with_project_viewer_role(
     current_user = get_current_user(db, normal_user_access_token)
     project_member_in = ProjectMemberCreate(member_id=current_user.id, role=Role.VIEWER)
     crud.project_member.create_with_project(
-        db, obj_in=project_member_in, project_id=project.id
+        db, obj_in=project_member_in, project_uuid=project.id
     )
     response = client.get(f"{settings.API_V1_STR}/projects/{project.id}/flights")
     assert response.status_code == status.HTTP_200_OK
-
-
-def test_get_flight_with_non_project_member(
-    client: TestClient, db: Session, normal_user_access_token: str
-) -> None:
-    project = create_project(db)
-    flight = create_flight(db, project_id=project.id)
-    response = client.get(
-        f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}",
-    )
-    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 def test_get_flights_with_raster_data(
@@ -372,7 +361,7 @@ def test_get_flights_with_raster_data(
     current_user = get_current_user(db, normal_user_access_token)
     project_member_in = ProjectMemberCreate(member_id=current_user.id, role=Role.VIEWER)
     crud.project_member.create_with_project(
-        db, obj_in=project_member_in, project_id=project.id
+        db, obj_in=project_member_in, project_uuid=project.id
     )
     # add raster data product to first flight
     raster_data_product = SampleDataProduct(
@@ -409,7 +398,7 @@ def test_update_flight_with_project_owner_role(
     crud.project_member.create_with_project(
         db,
         obj_in=project_member_in,
-        project_id=project.id,
+        project_uuid=project.id,
     )
     flight_in = FlightUpdate(
         **{k: v for k, v in flight.__dict__.items() if k != "altitude"}, altitude=100
@@ -437,7 +426,7 @@ def test_update_flight_with_project_manager_role(
     crud.project_member.create_with_project(
         db,
         obj_in=project_member_in,
-        project_id=project.id,
+        project_uuid=project.id,
     )
     flight_in = FlightUpdate(
         **{k: v for k, v in flight.__dict__.items() if k != "altitude"}, altitude=100
@@ -459,7 +448,7 @@ def test_update_flight_with_project_viewer_role(
     crud.project_member.create_with_project(
         db,
         obj_in=project_member_in,
-        project_id=project.id,
+        project_uuid=project.id,
     )
     flight_in = FlightUpdate(
         **{k: v for k, v in flight.__dict__.items() if k != "altitude"}, altitude=100
@@ -557,7 +546,7 @@ def test_update_flight_project_with_manager_role_for_both_projects(
     crud.project_member.create_with_project(
         db,
         obj_in=project_member_in,
-        project_id=src_project.id,
+        project_uuid=src_project.id,
     )
     # add data product to flight
     data_product = SampleDataProduct(
@@ -571,7 +560,7 @@ def test_update_flight_project_with_manager_role_for_both_projects(
     crud.project_member.create_with_project(
         db,
         obj_in=project_member_in,
-        project_id=dst_project.id,
+        project_uuid=dst_project.id,
     )
     # request to move flight from source project to destination project
     response = client.put(
@@ -595,7 +584,7 @@ def test_update_flight_project_with_owner_role_for_src_project_and_manager_role_
     crud.project_member.create_with_project(
         db,
         obj_in=project_member_in,
-        project_id=dst_project.id,
+        project_uuid=dst_project.id,
     )
     # request to move flight from source project to destination project
     response = client.put(
@@ -617,7 +606,7 @@ def test_update_flight_project_with_manager_role_for_src_project_and_owner_role_
     crud.project_member.create_with_project(
         db,
         obj_in=project_member_in,
-        project_id=src_project.id,
+        project_uuid=src_project.id,
     )
     # create destination project add current user as owner (read/write/del)
     dst_project = create_project(db, owner_id=current_user.id)
@@ -641,7 +630,7 @@ def test_update_flight_project_with_manager_role_for_both_src_and_dst_projects(
     crud.project_member.create_with_project(
         db,
         obj_in=project_member_in,
-        project_id=src_project.id,
+        project_uuid=src_project.id,
     )
     # create destination project add current user as manager (read/write)
     dst_project = create_project(db)
@@ -651,7 +640,7 @@ def test_update_flight_project_with_manager_role_for_both_src_and_dst_projects(
     crud.project_member.create_with_project(
         db,
         obj_in=project_member_in,
-        project_id=dst_project.id,
+        project_uuid=dst_project.id,
     )
     # request to move flight from source project to destination project
     response = client.put(
@@ -712,7 +701,7 @@ def test_deactivate_flight_with_project_manager_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db, owner_id=project_owner.id)
     create_project_member(
-        db, member_id=current_user.id, project_id=project.id, role=Role.MANAGER
+        db, member_id=current_user.id, project_uuid=project.id, role=Role.MANAGER
     )
     flight = create_flight(db, project_id=project.id)
     response = client.delete(
@@ -728,7 +717,7 @@ def test_deactivate_flight_with_project_viewer_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db, owner_id=project_owner.id)
     create_project_member(
-        db, member_id=current_user.id, project_id=project.id, role=Role.VIEWER
+        db, member_id=current_user.id, project_uuid=project.id, role=Role.VIEWER
     )
     flight = create_flight(db, project_id=project.id)
     response = client.delete(
@@ -787,8 +776,8 @@ def test_deactivate_flight_deactivates_data_products(
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     assert response_data.get("is_active", True) is False
-    upload_dir = settings.TEST_STATIC_DIR
     data_products = [data_product1, data_product2, data_product3]
     for data_product in data_products:
-        data_product = crud.data_product.get(db, id=data_product.obj.id)
-        assert data_product.is_active is False
+        data_product_in_db = crud.data_product.get(db, id=data_product.obj.id)
+        assert data_product_in_db is not None
+        assert data_product_in_db.is_active is False

@@ -10,7 +10,7 @@ import { point } from '@turf/helpers';
 import IForesterControl from './IForesterControl';
 import { useIForesterControlContext } from './IForesterContext';
 import { useProjectContext } from '../ProjectContext';
-import { useMapApiKeys } from '../../../maps/MapApiKeysContext';
+import { useMapApiKeys } from '../../../../maps/MapApiKeysContext';
 
 import {
   getMapboxSatelliteBasemapStyle,

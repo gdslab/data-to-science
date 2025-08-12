@@ -36,6 +36,13 @@ class IndoorProject(Base):
     # relationships
     owner: Mapped["User"] = relationship(back_populates="indoor_projects")
     team: Mapped["Team"] = relationship(back_populates="indoor_projects")
+    indoor_members: Mapped[List["ProjectMember"]] = relationship(
+        "ProjectMember",
+        back_populates="indoor_project",
+        cascade="all, delete-orphan",
+        primaryjoin="and_(ProjectMember.project_type == 'INDOOR_PROJECT', ProjectMember.project_uuid == IndoorProject.id)",
+        foreign_keys="[ProjectMember.project_uuid]",
+    )
 
     def __repr__(self) -> str:
         return (

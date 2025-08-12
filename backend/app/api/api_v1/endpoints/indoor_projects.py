@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Sequence
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import UUID4
 from sqlalchemy.orm import Session
 
@@ -24,6 +24,12 @@ def create_indoor_project(
     """
     Create new indoor project for current user.
     """
+    if current_user.is_demo:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Demo accounts cannot create indoor projects",
+        )
+
     indoor_project = crud.indoor_project.create_with_owner(
         db, obj_in=indoor_project_in, owner_id=current_user.id
     )

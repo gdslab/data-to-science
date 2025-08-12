@@ -328,7 +328,7 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
                             # Update project member role for non-owners
                             bulk_update_project_members = (
                                 update(ProjectMember)
-                                .where(ProjectMember.project_id == project.id)
+                                .where(ProjectMember.project_uuid == project.id)
                                 .where(ProjectMember.member_id == team_member.member_id)
                                 .values(role=updated_team_member.role)
                             )

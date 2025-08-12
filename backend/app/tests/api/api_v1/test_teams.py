@@ -102,7 +102,7 @@ def test_create_team_with_project_by_project_manager(
     project = create_project(db, owner_id=project_owner.id)
     # Add current user as project member with manager role
     create_project_member(
-        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_uuid=project.id
     )
     data = {
         "title": random_team_name(),

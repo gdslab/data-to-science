@@ -3,13 +3,6 @@ import { FeatureCollection } from 'geojson';
 import { useEffect, useMemo, useState, useRef } from 'react';
 import bbox from '@turf/bbox';
 
-<<<<<<< HEAD
-import GeocoderControl from './GeocoderControl';
-import GeomanControl from './GeomanControl';
-import MapLayersControl from './MapLayersControl';
-import UploadGeoJSON from './UploadGeoJSON';
-import { useProjectContext } from '../../pages/workspace/projects/ProjectContext';
-=======
 import Map, {
   GeolocateControl,
   NavigationControl,
@@ -20,9 +13,8 @@ import Map, {
 } from 'react-map-gl/maplibre';
 
 import GeomanControl from '../GeomanControl';
-import { GeoJSONFeature } from '../../pages/projects/Project';
-import { useProjectContext } from '../../pages/projects/ProjectContext';
->>>>>>> main
+import { GeoJSONFeature } from '../../pages/workspace/projects/Project';
+import { useProjectContext } from '../../pages/workspace/projects/ProjectContext';
 
 import {
   getMapboxSatelliteBasemapStyle,

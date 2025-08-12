@@ -47,16 +47,13 @@ class Project(Base):
         DateTime(timezone=True), nullable=True
     )
 
-    uas_members: Mapped[List["ProjectMember"]] = relationship(
+    # Relationships
+    members: Mapped[List["ProjectMember"]] = relationship(
         "ProjectMember",
         back_populates="uas_project",
         cascade="all, delete-orphan",
         primaryjoin="and_(ProjectMember.project_type == 'PROJECT', ProjectMember.project_uuid == Project.id)",
         foreign_keys="[ProjectMember.project_uuid]",
-    )
-    # TODO: Remove this relationship after migration
-    members: Mapped[List["ProjectMember"]] = relationship(
-        back_populates="project", cascade="all, delete-orphan"
     )
     modules: Mapped[List["ProjectModule"]] = relationship(back_populates="project")
     location: Mapped["Location"] = relationship(back_populates="project")

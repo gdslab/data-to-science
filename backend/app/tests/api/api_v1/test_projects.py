@@ -262,7 +262,7 @@ def test_get_project_with_manager_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
     create_project_member(
-        db, email=current_user.email, project_id=project.id, role=Role.MANAGER
+        db, email=current_user.email, project_uuid=project.id, role=Role.MANAGER
     )
     response = client.get(f"{API_URL}/{project.id}")
     assert response.status_code == status.HTTP_200_OK
@@ -274,7 +274,7 @@ def test_get_project_with_viewer_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
     create_project_member(
-        db, email=current_user.email, project_id=project.id, role=Role.VIEWER
+        db, email=current_user.email, project_uuid=project.id, role=Role.VIEWER
     )
     response = client.get(f"{API_URL}/{project.id}")
     assert response.status_code == status.HTTP_200_OK
@@ -299,7 +299,7 @@ def test_get_projects(
     project2 = create_project(db)
     project2_member_in = ProjectMemberCreate(member_id=current_user.id)
     crud.project_member.create_with_project(
-        db, obj_in=project2_member_in, project_id=project2.id
+        db, obj_in=project2_member_in, project_uuid=project2.id
     )
     create_project(db)
     response = client.get(API_URL)
@@ -386,9 +386,9 @@ def test_get_projects_with_specific_data_type(
     project3 = create_project(db)
     projects = [project1, project2, project3]
     # add user as project member to all three projects
-    create_project_member(db, member_id=current_user.id, project_id=project1.id)
-    create_project_member(db, member_id=current_user.id, project_id=project2.id)
-    create_project_member(db, member_id=current_user.id, project_id=project3.id)
+    create_project_member(db, member_id=current_user.id, project_uuid=project1.id)
+    create_project_member(db, member_id=current_user.id, project_uuid=project2.id)
+    create_project_member(db, member_id=current_user.id, project_uuid=project3.id)
     # create flight for each project
     for project_idx, project in enumerate(projects):
         flight = create_flight(db, project_id=project.id)
@@ -456,7 +456,7 @@ def test_update_project_with_manager_role(
         member_id=current_user.id, role=Role.MANAGER
     )
     crud.project_member.create_with_project(
-        db, obj_in=project_member_in, project_id=project.id
+        db, obj_in=project_member_in, project_uuid=project.id
     )
     location = create_location(db)
     assert hasattr(location, "properties")
@@ -491,7 +491,7 @@ def test_update_project_with_viewer_role(
     # add current user to project
     project_member_in = ProjectMemberCreate(member_id=current_user.id)
     crud.project_member.create_with_project(
-        db, obj_in=project_member_in, project_id=project.id
+        db, obj_in=project_member_in, project_uuid=project.id
     )
     location = create_location(db)
     assert hasattr(location, "properties")
@@ -786,7 +786,7 @@ def test_deactivate_project_with_manager_role(
     )
     project = create_project(db, owner_id=owner.id)
     create_project_member(
-        db, email=current_user.email, project_id=project.id, role=Role.MANAGER
+        db, email=current_user.email, project_uuid=project.id, role=Role.MANAGER
     )
     response = client.delete(f"{API_URL}/{project.id}")
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -836,7 +836,7 @@ def test_get_deactivated_project_by_project_member(
         get_current_user(db, normal_user_access_token)
     )
     project = create_project(db, owner_id=owner.id)
-    create_project_member(db, email=current_user.email, project_id=project.id)
+    create_project_member(db, email=current_user.email, project_uuid=project.id)
     crud.project.deactivate(db, project_id=project.id, user_id=owner.id)
     response = client.get(f"{API_URL}/{project.id}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
