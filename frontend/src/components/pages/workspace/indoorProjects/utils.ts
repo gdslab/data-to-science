@@ -149,6 +149,37 @@ const titleCaseConversion = (str: string): string => {
   return str.slice(0, 1).toUpperCase() + str.slice(1, str.length);
 };
 
+/**
+ * Triggers a client-side CSV download given headers and rows.
+ */
+const downloadCSV = (
+  filename: string,
+  headers: Array<string | number>,
+  rows: Array<Array<unknown>>
+): void => {
+  const escapeCell = (value: unknown): string => {
+    if (value === null || value === undefined) return '';
+    const str = String(value);
+    const escaped = str.replace(/"/g, '""');
+    const needsQuotes = /[",\n]/.test(escaped);
+    return needsQuotes ? `"${escaped}"` : escaped;
+  };
+
+  const csv = [headers, ...rows]
+    .map((row) => row.map(escapeCell).join(','))
+    .join('\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
 export {
   getNormalizedAndStretchedValues,
   getTextColor,
@@ -156,4 +187,5 @@ export {
   nivoColorMapGroupedOptions,
   nivoSequentialColors,
   titleCaseConversion,
+  downloadCSV,
 };

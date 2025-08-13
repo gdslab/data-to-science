@@ -10,6 +10,7 @@ import { useIndoorProjectContext } from '../IndoorProjectContext';
 
 import { getNormalizedAndStretchedValues, getTextColor } from '../utils';
 import ImageSequenceSlider from './ImageSequenceSlider';
+import { downloadPotGroupCSV } from './csv';
 // import { InformationCircleIcon } from '@heroicons/react/24/solid';
 
 export default function PotGroupModuleDataVisualization({
@@ -46,6 +47,8 @@ export default function PotGroupModuleDataVisualization({
   };
 
   const getFilename = (url: string) => url.split('/').pop() || url;
+
+  const handleDownloadCSV = () => downloadPotGroupCSV(data);
 
   return (
     <div className="relative max-h-96 flex flex-col gap-1.5 py-4 border-2 border-gray-300 bg-white rounded-md overflow-auto">
@@ -141,7 +144,7 @@ export default function PotGroupModuleDataVisualization({
           </div>
         );
       })}
-      <div className="min-w-max flex items-center px-4 py-4">
+      <div className="min-w-max flex items-center px-4 py-5">
         <div className="flex justify-between gap-0.5">
           <div className="relative w-36 p-2.5 flex flex-col text-center" />
           {result[0]?.map(({ interval_days }) => (
@@ -157,6 +160,12 @@ export default function PotGroupModuleDataVisualization({
         </div>
         <div className="text-center">Days after planting</div>
       </div>
+      <button
+        onClick={handleDownloadCSV}
+        className="absolute bottom-2 right-2 px-3 py-1.5 bg-sky-600 text-white rounded shadow hover:bg-sky-700"
+      >
+        Download CSV
+      </button>
     </div>
   );
 }
