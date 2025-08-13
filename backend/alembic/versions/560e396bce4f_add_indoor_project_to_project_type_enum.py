@@ -22,10 +22,6 @@ def upgrade() -> None:
     op.execute("ALTER TYPE project_type_enum ADD VALUE 'INDOOR_PROJECT'")
 
     # 2) Remove the project_id column (it's problematic for polymorphic relationships)
-    # First drop any constraints that reference this column
-    op.drop_constraint("unique_to_project", "project_members", type_="unique")
-
-    # Then drop the column
     op.drop_column("project_members", "project_id")
 
 

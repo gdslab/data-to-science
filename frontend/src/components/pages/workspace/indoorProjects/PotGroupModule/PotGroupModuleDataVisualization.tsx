@@ -24,6 +24,8 @@ export default function PotGroupModuleDataVisualization({
     dispatch,
   } = useIndoorProjectContext();
 
+  console.log('selectedDAP in PotGroupModuleDataVisualization', selectedDAP);
+
   const result = useMemo(() => {
     const grouped = data.results.reduce((acc, item) => {
       (acc[item.group] ??= []).push(item);
@@ -74,7 +76,7 @@ export default function PotGroupModuleDataVisualization({
                           stretchedV
                         )} ${
                           record.interval_days === selectedDAP
-                            ? 'transform -translate-y-1 shadow-lg'
+                            ? 'transform shadow-lg'
                             : ''
                         }`}
                         style={{

@@ -5,6 +5,7 @@ import {
   useReducer,
   ReactNode,
 } from 'react';
+import { Outlet } from 'react-router-dom';
 
 /**
  * State interface for the Indoor Project context
@@ -51,7 +52,7 @@ const reducer = (
 };
 
 interface IndoorProjectProviderProps {
-  children: ReactNode;
+  children?: ReactNode;
 }
 
 /**
@@ -62,7 +63,7 @@ const IndoorProjectProvider = ({ children }: IndoorProjectProviderProps) => {
 
   return (
     <IndoorProjectContext.Provider value={{ state, dispatch }}>
-      {children}
+      {children ?? <Outlet />}
     </IndoorProjectContext.Provider>
   );
 };

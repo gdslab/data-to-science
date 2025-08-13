@@ -23,6 +23,8 @@ export default function PotModuleDataVisualization({
     dispatch,
   } = useIndoorProjectContext();
 
+  console.log('selectedDAP in PotModuleDataVisualization', selectedDAP);
+
   // Get unique treatments from spreadsheet
   const treatments = useMemo(
     () => [...new Set(indoorProjectDataSpreadsheet.summary.treatment)],
@@ -53,8 +55,13 @@ export default function PotModuleDataVisualization({
   );
 
   useEffect(() => {
-    dispatch({ type: 'SET_SELECTED_DAP', payload: marks[0]?.value || 0 });
-  }, [marks]);
+    if (!marks || marks.length === 0) return;
+    const currentIsValid =
+      selectedDAP !== null && marks.some((m) => m.value === selectedDAP);
+    if (selectedDAP === null || !currentIsValid) {
+      dispatch({ type: 'SET_SELECTED_DAP', payload: marks[0]?.value || 0 });
+    }
+  }, [marks, selectedDAP, dispatch]);
 
   // Format the slider value to display as days
   function valuetext(value: number) {
