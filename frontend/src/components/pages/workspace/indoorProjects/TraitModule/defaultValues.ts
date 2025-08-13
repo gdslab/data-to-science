@@ -2,7 +2,8 @@ import { TraitModuleFormData } from '../IndoorProject';
 
 const defaultValues: TraitModuleFormData = {
   cameraOrientation: 'top',
-  groupBy: 'treatment',
+  plottedBy: 'groups',
+  accordingTo: 'treatment',
   targetTrait: '',
 };
 

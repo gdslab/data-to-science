@@ -169,29 +169,38 @@ export type CameraOrientationOptions = {
   value: CameraOrientation;
 }[];
 
-export type GroupBy =
+export type PlottedBy = 'groups' | 'pots';
+
+export type PlottedByOptions = {
+  label: string;
+  value: PlottedBy;
+}[];
+
+export type AccordingTo =
   | 'treatment'
   | 'description'
   | 'treatment_description'
-  | 'all_pots'
-  | 'single_pot';
+  | 'all'
+  | string; // For individual pot IDs
 
-export type GroupByOptions = {
+export type AccordingToOptions = {
   label: string;
-  value: GroupBy;
+  value: AccordingTo;
 }[];
 
 // Generic type for form data
 type FormData = {
   cameraOrientation: CameraOrientation;
-  groupBy: GroupBy;
+  plottedBy: PlottedBy;
+  accordingTo: AccordingTo;
 };
 
 interface FetchVisualizationParams {
   indoorProjectId: string;
   indoorProjectDataId: string;
   cameraOrientation: string;
-  groupBy: string;
+  plottedBy: string;
+  accordingTo: string;
 }
 
 // Types for trait visualization form

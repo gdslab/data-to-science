@@ -13,7 +13,12 @@ import {
   TraitScatterModuleFormProps,
 } from '../IndoorProject';
 
-import { cameraOrientationOptions, groupByOptions } from '../formOptions';
+import {
+  cameraOrientationOptions,
+  plottedByOptions,
+  groupsAccordingToOptions,
+  potsAccordingToOptions,
+} from '../formOptions';
 
 import scatterDefaultValues from './scatterDefaultValues';
 import { fetchTraitScatterModuleVisualizationData } from './scatterService';
@@ -35,6 +40,7 @@ export default function TraitScatterModuleForm({
   // Get the form methods
   const {
     control,
+    setValue,
     formState: { isSubmitting },
     handleSubmit,
   } = methods;
@@ -43,6 +49,12 @@ export default function TraitScatterModuleForm({
   const selectedCameraOrientation = useWatch({
     control,
     name: 'cameraOrientation',
+  });
+
+  // Get the selected plotted by option
+  const selectedPlottedBy = useWatch({
+    control,
+    name: 'plottedBy',
   });
 
   // Get selected traits to avoid duplication
@@ -56,6 +68,15 @@ export default function TraitScatterModuleForm({
     name: 'targetTraitY',
   });
 
+  // Reset accordingTo when plottedBy changes
+  useEffect(() => {
+    if (selectedPlottedBy === 'groups') {
+      setValue('accordingTo', 'treatment');
+    } else if (selectedPlottedBy === 'pots') {
+      setValue('accordingTo', 'all');
+    }
+  }, [selectedPlottedBy, setValue]);
+
   // Only show the numeric target trait options for the selected camera orientation
   const targetTraitOptions =
     selectedCameraOrientation === 'top'
@@ -65,6 +86,12 @@ export default function TraitScatterModuleForm({
   // Use the same options for both X and Y traits (no filtering)
   const targetTraitXOptions = targetTraitOptions;
   const targetTraitYOptions = targetTraitOptions;
+
+  // Dynamic according to options based on plotted by selection
+  const accordingToOptions =
+    selectedPlottedBy === 'groups'
+      ? groupsAccordingToOptions
+      : potsAccordingToOptions;
 
   // Handle the form submission
   const onSubmit: SubmitHandler<TraitScatterModuleFormData> = async (
@@ -79,7 +106,8 @@ export default function TraitScatterModuleForm({
         indoorProjectId,
         indoorProjectDataId,
         cameraOrientation: values.cameraOrientation,
-        groupBy: values.groupBy,
+        plottedBy: values.plottedBy,
+        accordingTo: values.accordingTo,
         targetTraitX: values.targetTraitX,
         targetTraitY: values.targetTraitY,
       });
@@ -101,11 +129,17 @@ export default function TraitScatterModuleForm({
               name="cameraOrientation"
               options={cameraOrientationOptions}
             />
-            {/* Group By */}
+            {/* Plotted By */}
+            <RadioField
+              label="Plotted By"
+              name="plottedBy"
+              options={plottedByOptions}
+            />
+            {/* According To */}
             <SelectField
-              label="Group By"
-              name="groupBy"
-              options={groupByOptions}
+              label="According To"
+              name="accordingTo"
+              options={accordingToOptions}
             />
             {/* X Axis Trait */}
             <SelectField

@@ -159,7 +159,8 @@ export function useIndoorProjectData({
           indoorProjectId,
           indoorProjectDataId,
           cameraOrientation: 'side',
-          groupBy: 'single_pot',
+          plottedBy: 'pots',
+          accordingTo: 'single_pot',
         });
 
         if (isMounted) {

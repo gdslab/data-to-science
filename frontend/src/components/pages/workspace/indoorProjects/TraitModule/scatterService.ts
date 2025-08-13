@@ -10,7 +10,8 @@ export async function fetchTraitScatterModuleVisualizationData({
   indoorProjectId,
   indoorProjectDataId,
   cameraOrientation,
-  groupBy,
+  plottedBy,
+  accordingTo,
   targetTraitX,
   targetTraitY,
 }: FetchTraitScatterModuleParams): Promise<IndoorProjectDataVizScatterAPIResponse> {
@@ -19,7 +20,8 @@ export async function fetchTraitScatterModuleVisualizationData({
   try {
     const queryParams = {
       camera_orientation: cameraOrientation,
-      group_by: groupBy,
+      plotted_by: plottedBy,
+      according_to: accordingTo,
       trait_x: targetTraitX,
       trait_y: targetTraitY,
     };

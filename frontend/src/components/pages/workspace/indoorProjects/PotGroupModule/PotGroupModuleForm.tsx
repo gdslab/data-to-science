@@ -1,4 +1,10 @@
-import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
+import { useEffect } from 'react';
+import {
+  FormProvider,
+  SubmitHandler,
+  useForm,
+  useWatch,
+} from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 
 import { SelectField, RadioField } from '../../../../FormFields';
@@ -7,7 +13,12 @@ import {
   PotGroupModuleFormProps,
 } from '../IndoorProject';
 
-import { cameraOrientationOptions, groupByOptions } from '../formOptions';
+import {
+  cameraOrientationOptions,
+  plottedByOptions,
+  groupsAccordingToOptions,
+  potsAccordingToOptions,
+} from '../formOptions';
 
 import defaultValues from './defaultValues';
 import { fetchPotGroupModuleVisualizationData } from './service';
@@ -26,9 +37,32 @@ export default function PotGroupModuleForm({
 
   // Get the form methods
   const {
+    control,
+    setValue,
     formState: { isSubmitting },
     handleSubmit,
   } = methods;
+
+  // Get the selected plotted by option
+  const selectedPlottedBy = useWatch({
+    control,
+    name: 'plottedBy',
+  });
+
+  // Reset accordingTo when plottedBy changes
+  useEffect(() => {
+    if (selectedPlottedBy === 'groups') {
+      setValue('accordingTo', 'treatment');
+    } else if (selectedPlottedBy === 'pots') {
+      setValue('accordingTo', 'all');
+    }
+  }, [selectedPlottedBy, setValue]);
+
+  // Dynamic according to options based on plotted by selection
+  const accordingToOptions =
+    selectedPlottedBy === 'groups'
+      ? groupsAccordingToOptions
+      : potsAccordingToOptions;
 
   // Handle the form submission
   const onSubmit: SubmitHandler<PotGroupModuleFormData> = async (values) => {
@@ -41,7 +75,8 @@ export default function PotGroupModuleForm({
         indoorProjectId,
         indoorProjectDataId,
         cameraOrientation: values.cameraOrientation,
-        groupBy: values.groupBy,
+        plottedBy: values.plottedBy,
+        accordingTo: values.accordingTo,
       });
       setVisualizationData(data);
     } catch (error) {
@@ -61,11 +96,17 @@ export default function PotGroupModuleForm({
               name="cameraOrientation"
               options={cameraOrientationOptions}
             />
-            {/* Group By */}
+            {/* Plotted By */}
+            <RadioField
+              label="Plotted By"
+              name="plottedBy"
+              options={plottedByOptions}
+            />
+            {/* According To */}
             <SelectField
-              label="Group By"
-              name="groupBy"
-              options={groupByOptions}
+              label="According To"
+              name="accordingTo"
+              options={accordingToOptions}
             />
           </div>
           {/* Submit button */}

@@ -83,6 +83,9 @@ export default function PotModuleDataVisualization({
 
   if (!selectedDAP) return null;
 
+  console.log(indoorProjectDataSpreadsheet);
+  console.log('group', potsOnDayInterval);
+
   return (
     <ShapeProvider treatments={treatments}>
       <div className="flex gap-4 p-4">

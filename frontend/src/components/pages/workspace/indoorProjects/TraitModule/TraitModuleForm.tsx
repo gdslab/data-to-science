@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import {
   FormProvider,
   SubmitHandler,
@@ -9,7 +10,12 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { SelectField, RadioField } from '../../../../FormFields';
 import { TraitModuleFormData, TraitModuleFormProps } from '../IndoorProject';
 
-import { cameraOrientationOptions, groupByOptions } from '../formOptions';
+import {
+  cameraOrientationOptions,
+  plottedByOptions,
+  groupsAccordingToOptions,
+  potsAccordingToOptions,
+} from '../formOptions';
 
 import defaultValues from './defaultValues';
 import { fetchTraitModuleVisualizationData } from './service';
@@ -30,6 +36,7 @@ export default function TraitModuleForm({
   // Get the form methods
   const {
     control,
+    setValue,
     formState: { isSubmitting },
     handleSubmit,
   } = methods;
@@ -40,11 +47,32 @@ export default function TraitModuleForm({
     name: 'cameraOrientation',
   });
 
+  // Get the selected plotted by option
+  const selectedPlottedBy = useWatch({
+    control,
+    name: 'plottedBy',
+  });
+
+  // Reset accordingTo when plottedBy changes
+  useEffect(() => {
+    if (selectedPlottedBy === 'groups') {
+      setValue('accordingTo', 'treatment');
+    } else if (selectedPlottedBy === 'pots') {
+      setValue('accordingTo', 'all');
+    }
+  }, [selectedPlottedBy, setValue]);
+
   // Only show the numeric target trait options for the selected camera orientation
   const targetTraitOptions =
     selectedCameraOrientation === 'top'
       ? numericColumns.top.map((col) => ({ label: col, value: col }))
       : numericColumns.side.map((col) => ({ label: col, value: col }));
+
+  // Dynamic according to options based on plotted by selection
+  const accordingToOptions =
+    selectedPlottedBy === 'groups'
+      ? groupsAccordingToOptions
+      : potsAccordingToOptions;
 
   // Handle the form submission
   const onSubmit: SubmitHandler<TraitModuleFormData> = async (values) => {
@@ -57,7 +85,8 @@ export default function TraitModuleForm({
         indoorProjectId,
         indoorProjectDataId,
         cameraOrientation: values.cameraOrientation,
-        groupBy: values.groupBy,
+        plottedBy: values.plottedBy,
+        accordingTo: values.accordingTo,
         targetTrait: values.targetTrait,
       });
       setVisualizationData(data);
@@ -78,11 +107,17 @@ export default function TraitModuleForm({
               name="cameraOrientation"
               options={cameraOrientationOptions}
             />
-            {/* Group By */}
+            {/* Plotted By */}
+            <RadioField
+              label="Plotted By"
+              name="plottedBy"
+              options={plottedByOptions}
+            />
+            {/* According To */}
             <SelectField
-              label="Group By"
-              name="groupBy"
-              options={groupByOptions}
+              label="According To"
+              name="accordingTo"
+              options={accordingToOptions}
             />
             {/* Target Trait */}
             <SelectField

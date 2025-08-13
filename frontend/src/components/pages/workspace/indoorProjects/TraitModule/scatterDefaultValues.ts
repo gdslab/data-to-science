@@ -2,7 +2,8 @@ import { TraitScatterModuleFormData } from '../IndoorProject';
 
 const scatterDefaultValues: TraitScatterModuleFormData = {
   cameraOrientation: 'top',
-  groupBy: 'treatment',
+  plottedBy: 'groups',
+  accordingTo: 'treatment',
   targetTraitX: '',
   targetTraitY: '',
 };

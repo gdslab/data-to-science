@@ -2,7 +2,8 @@ import { PotGroupModuleFormData } from '../IndoorProject';
 
 const defaultValues: PotGroupModuleFormData = {
   cameraOrientation: 'top',
-  groupBy: 'treatment',
+  plottedBy: 'groups',
+  accordingTo: 'treatment',
 };
 
 export default defaultValues;

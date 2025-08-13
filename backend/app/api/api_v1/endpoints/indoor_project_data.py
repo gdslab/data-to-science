@@ -18,6 +18,41 @@ logger = logging.getLogger("__name__")
 router = APIRouter()
 
 
+def validate_plotted_by_according_to_combination(plotted_by, according_to):
+    """
+    Validates the combination of plotted_by and according_to parameters.
+
+    Args:
+        plotted_by: PlottedBy enum value
+        according_to: AccordingTo enum value
+
+    Returns:
+        str: The group_by value for the valid combination
+
+    Raises:
+        HTTPException: If the combination is invalid
+    """
+    # Define valid combinations of plotted_by and according_to
+    VALID_COMBINATIONS = {
+        ("groups", "treatment"): "treatment",
+        ("groups", "description"): "description",
+        ("groups", "treatment_description"): "treatment_description",
+        ("pots", "all"): "all_pots",
+        ("pots", "single_pot"): "single_pot",
+    }
+
+    # Check if the combination is valid
+    combination = (plotted_by.value, according_to.value)
+    if combination not in VALID_COMBINATIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid combination: plotted_by='{plotted_by.value}' and according_to='{according_to.value}'. "
+            f"Valid combinations are: {list(VALID_COMBINATIONS.keys())}",
+        )
+
+    return VALID_COMBINATIONS[combination]
+
+
 @router.get(
     "",
     response_model=Sequence[schemas.IndoorProjectData],
@@ -510,7 +545,8 @@ def read_indoor_project_data_plant_for_viz(
     indoor_project_id: UUID4,
     indoor_project_data_id: UUID4,
     camera_orientation: schemas.indoor_project_data.CameraOrientation,
-    group_by: schemas.indoor_project_data.GroupBy,
+    according_to: schemas.indoor_project_data.AccordingTo,
+    plotted_by: schemas.indoor_project_data.PlottedBy,
     pot_barcode: Optional[int] = None,
     indoor_project: models.IndoorProject = Depends(
         deps.can_read_write_delete_indoor_project
@@ -561,6 +597,8 @@ def read_indoor_project_data_plant_for_viz(
             how="inner",
         )
 
+    group_by = validate_plotted_by_according_to_combination(plotted_by, according_to)
+
     # Groups records and computes mean hsv
     grouped_mean_hsv_df = group_and_average_hsv(
         df=img_df,
@@ -584,7 +622,8 @@ def read_indoor_project_data_plant_for_viz2(
     indoor_project_id: UUID4,
     indoor_project_data_id: UUID4,
     camera_orientation: schemas.indoor_project_data.CameraOrientation,
-    group_by: schemas.indoor_project_data.GroupBy,
+    according_to: schemas.indoor_project_data.AccordingTo,
+    plotted_by: schemas.indoor_project_data.PlottedBy,
     trait: str,
     indoor_project: models.IndoorProject = Depends(
         deps.can_read_write_delete_indoor_project
@@ -616,6 +655,8 @@ def read_indoor_project_data_plant_for_viz2(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"{trait} is not present in worksheet",
         )
+
+    group_by = validate_plotted_by_according_to_combination(plotted_by, according_to)
 
     # Convert 'scan_date' to date, find planting date, and date intervals
     img_df, planting_date, date_intervals = process_date_columns(
@@ -664,7 +705,8 @@ def read_indoor_project_data_plant_for_scatter(
     indoor_project_id: UUID4,
     indoor_project_data_id: UUID4,
     camera_orientation: schemas.indoor_project_data.CameraOrientation,
-    group_by: schemas.indoor_project_data.GroupBy,
+    according_to: schemas.indoor_project_data.AccordingTo,
+    plotted_by: schemas.indoor_project_data.PlottedBy,
     trait_x: str,
     trait_y: str,
     indoor_project: models.IndoorProject = Depends(
@@ -703,6 +745,8 @@ def read_indoor_project_data_plant_for_scatter(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"{trait_y} is not present in worksheet",
         )
+
+    group_by = validate_plotted_by_according_to_combination(plotted_by, according_to)
 
     # Convert 'scan_date' to date, find planting date, and date intervals
     img_df, planting_date, date_intervals = process_date_columns(
@@ -1147,12 +1191,12 @@ def process_date_columns(
     return dataDf, planting_date, date_intervals
 
 
-def normalize_group_by(group_by: schemas.indoor_project_data.GroupBy) -> str:
+def normalize_group_by(group_by: str) -> str:
     """Convert 'group_by' to lowercase and update the value for 'all_pots' and
     'single_pot.'
 
     Args:
-        group_by (schemas.indoor_project_data.GroupBy): Grouping criteria.
+        group_by (str): Grouping criteria.
 
     Raises:
         ValueError: Raise if unknown group_by value.
@@ -1161,7 +1205,7 @@ def normalize_group_by(group_by: schemas.indoor_project_data.GroupBy) -> str:
         str: Normalized 'group_by' value.
     """
     # Normalize the input once
-    group_by_value = group_by.value.lower()
+    group_by_value = group_by.lower()
 
     # Mapping from valid group_by values to the desired output
     mapping = {

@@ -321,17 +321,23 @@ class CameraOrientation(str, Enum):
     side = "side"
 
 
-class GroupBy(str, Enum):
+class AccordingTo(str, Enum):
     treatment = "treatment"
     description = "description"
     treatment_description = "treatment_description"
-    all_pots = "all_pots"
+    all_pots = "all"
     single_pot = "single_pot"
+
+
+class PlottedBy(str, Enum):
+    groups = "groups"
+    pots = "pots"
 
 
 class IndoorProjectDataVizForm(BaseModel):
     camera_orientation: CameraOrientation = CameraOrientation.top
-    group_by: GroupBy = GroupBy.treatment
+    according_to: AccordingTo = AccordingTo.treatment
+    plotted_by: PlottedBy = PlottedBy.groups
 
 
 class IndoorProjectDataViz2Form(IndoorProjectDataVizForm):

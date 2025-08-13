@@ -10,7 +10,8 @@ export async function fetchTraitModuleVisualizationData({
   indoorProjectId,
   indoorProjectDataId,
   cameraOrientation,
-  groupBy,
+  plottedBy,
+  accordingTo,
   targetTrait,
 }: FetchTraitModuleParams): Promise<IndoorProjectDataViz2APIResponse> {
   let endpoint = `/indoor_projects/${indoorProjectId}/uploaded/${indoorProjectDataId}/data_for_viz2`;
@@ -18,7 +19,8 @@ export async function fetchTraitModuleVisualizationData({
   try {
     const queryParams = {
       camera_orientation: cameraOrientation,
-      group_by: groupBy,
+      plotted_by: plottedBy,
+      according_to: accordingTo,
       trait: targetTrait,
     };
     const results: AxiosResponse<IndoorProjectDataViz2APIResponse> =
