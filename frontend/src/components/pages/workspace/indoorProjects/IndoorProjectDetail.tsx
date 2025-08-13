@@ -1,6 +1,7 @@
 import { AxiosResponse } from 'axios';
 import { Params, useLoaderData } from 'react-router-dom';
 import { Tab } from '@headlessui/react';
+import { useEffect, useState } from 'react';
 
 import api from '../../../../api';
 import Alert from '../../../Alert';
@@ -52,6 +53,11 @@ export default function IndoorProjectDetail() {
     setTraitScatterModuleVisualizationData,
     refetch,
   } = useIndoorProjectData({ indoorProjectId: indoorProject.id });
+  const [isUploadPaneCollapsed, setIsUploadPaneCollapsed] = useState(
+    !!indoorProjectDataSpreadsheet
+  );
+  const [hasUserToggledUploadPane, setHasUserToggledUploadPane] =
+    useState(false);
   const indoorProjectDataId = indoorProjectData.find(
     ({ file_type }) => file_type === '.xlsx'
   )?.id;
@@ -65,14 +71,39 @@ export default function IndoorProjectDetail() {
   console.log('isLoading', isLoading);
   console.log('indoorProjectData', indoorProjectData);
 
+  useEffect(() => {
+    if (!hasUserToggledUploadPane) {
+      setIsUploadPaneCollapsed(!!indoorProjectDataSpreadsheet);
+    }
+  }, [indoorProjectDataSpreadsheet, hasUserToggledUploadPane]);
+
   return (
     <IndoorProjectPageLayout>
       <div className="flex flex-col gap-4 h-full">
         {/* Project title and description */}
         <div className="flex flex-col gap-2 flex-shrink-0">
-          <h2 className="truncate" title={indoorProject.title}>
-            {indoorProject.title}
-          </h2>
+          <div className="flex items-start justify-between gap-2">
+            <h2 className="truncate" title={indoorProject.title}>
+              {indoorProject.title}
+            </h2>
+            <button
+              type="button"
+              onClick={() => {
+                setHasUserToggledUploadPane(true);
+                setIsUploadPaneCollapsed((v) => !v);
+              }}
+              className="inline-flex items-center rounded-lg bg-gray-800 hover:bg-gray-700 text-white py-2 px-3 text-sm flex-shrink-0"
+              aria-pressed={isUploadPaneCollapsed}
+              aria-label={
+                isUploadPaneCollapsed ? 'Show upload form' : 'Hide upload form'
+              }
+              title={
+                isUploadPaneCollapsed ? 'Show upload form' : 'Hide upload form'
+              }
+            >
+              {isUploadPaneCollapsed ? 'Show upload form' : 'Hide upload form'}
+            </button>
+          </div>
           <p className="text-gray-600 line-clamp-3">
             {indoorProject.description}
           </p>
@@ -81,7 +112,13 @@ export default function IndoorProjectDetail() {
 
         <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
           {/* Upload form */}
-          <div className="flex flex-col w-full lg:w-1/3 gap-8 p-4 border-b lg:border-b-0 lg:border-r border-gray-700 h-auto lg:h-full">
+          <div
+            className={`${
+              isUploadPaneCollapsed
+                ? 'hidden'
+                : 'flex flex-col w-full lg:w-1/3 gap-8 p-4 border-b lg:border-b-0 lg:border-r border-gray-700 h-auto lg:h-full'
+            }`}
+          >
             <IndoorProjectUploadForm
               indoorProjectId={indoorProject.id}
               indoorProjectData={indoorProjectData}
@@ -92,7 +129,11 @@ export default function IndoorProjectDetail() {
             />
           </div>
           {/* Data visualization */}
-          <div className="flex flex-col w-full lg:w-2/3 gap-8 p-4 h-auto lg:h-full">
+          <div
+            className={`flex flex-col w-full ${
+              isUploadPaneCollapsed ? 'lg:w-full' : 'lg:w-2/3'
+            } gap-8 p-4 h-auto lg:h-full`}
+          >
             {isLoading && <LoadingBars />}
 
             {!isLoading && indoorProjectData.length === 0 && (

@@ -103,8 +103,6 @@ export default function IndoorProjectPlantDetail() {
   )
     return null;
 
-  console.log(indoorProjectPlant);
-
   const topImages: Record<string, string[]> = indoorProjectPlant.top.reduce(
     (acc, { dfp, images }) => ({
       ...acc,
