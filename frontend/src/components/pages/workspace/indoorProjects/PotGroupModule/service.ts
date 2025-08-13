@@ -12,6 +12,7 @@ export async function fetchPotGroupModuleVisualizationData({
   cameraOrientation,
   plottedBy,
   accordingTo,
+  potBarcode,
 }: FetchPotGroupModuleParams): Promise<IndoorProjectDataVizAPIResponse> {
   let endpoint = `/indoor_projects/${indoorProjectId}/uploaded/${indoorProjectDataId}/data_for_viz`;
 
@@ -20,6 +21,7 @@ export async function fetchPotGroupModuleVisualizationData({
       camera_orientation: cameraOrientation,
       plotted_by: plottedBy,
       according_to: accordingTo,
+      ...(potBarcode !== undefined ? { pot_barcode: potBarcode } : {}),
     };
     const results: AxiosResponse<IndoorProjectDataVizAPIResponse> =
       await api.get(endpoint, { params: queryParams });

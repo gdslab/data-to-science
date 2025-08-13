@@ -201,6 +201,7 @@ interface FetchVisualizationParams {
   cameraOrientation: string;
   plottedBy: string;
   accordingTo: string;
+  potBarcode?: number;
 }
 
 // Types for trait visualization form
@@ -214,6 +215,7 @@ export interface TraitModuleFormProps {
   indoorProjectId: string;
   indoorProjectDataId: string;
   numericColumns: NumericColumns;
+  potBarcodes: number[];
   setVisualizationData: React.Dispatch<
     React.SetStateAction<IndoorProjectDataViz2APIResponse | null>
   >;
@@ -233,6 +235,7 @@ export interface TraitScatterModuleFormProps {
   indoorProjectId: string;
   indoorProjectDataId: string;
   numericColumns: NumericColumns;
+  potBarcodes: number[];
   setVisualizationData: React.Dispatch<
     React.SetStateAction<IndoorProjectDataVizScatterAPIResponse | null>
   >;
@@ -266,6 +269,7 @@ export interface PotGroupModuleFormData extends FormData {}
 export interface PotGroupModuleFormProps {
   indoorProjectId: string;
   indoorProjectDataId: string;
+  potBarcodes: number[];
   setVisualizationData: React.Dispatch<
     React.SetStateAction<IndoorProjectDataVizAPIResponse | null>
   >;

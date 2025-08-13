@@ -17,7 +17,6 @@ import {
   cameraOrientationOptions,
   plottedByOptions,
   groupsAccordingToOptions,
-  potsAccordingToOptions,
 } from '../formOptions';
 
 import scatterDefaultValues from './scatterDefaultValues';
@@ -28,6 +27,7 @@ export default function TraitScatterModuleForm({
   indoorProjectId,
   indoorProjectDataId,
   numericColumns,
+  potBarcodes,
   setVisualizationData,
 }: TraitScatterModuleFormProps) {
   // Initialize the form
@@ -57,16 +57,16 @@ export default function TraitScatterModuleForm({
     name: 'plottedBy',
   });
 
-  // Get selected traits to avoid duplication
-  const selectedTraitX = useWatch({
-    control,
-    name: 'targetTraitX',
-  });
+  // // Get selected traits to avoid duplication
+  // const selectedTraitX = useWatch({
+  //   control,
+  //   name: 'targetTraitX',
+  // });
 
-  const selectedTraitY = useWatch({
-    control,
-    name: 'targetTraitY',
-  });
+  // const selectedTraitY = useWatch({
+  //   control,
+  //   name: 'targetTraitY',
+  // });
 
   // Reset accordingTo when plottedBy changes
   useEffect(() => {
@@ -91,7 +91,12 @@ export default function TraitScatterModuleForm({
   const accordingToOptions =
     selectedPlottedBy === 'groups'
       ? groupsAccordingToOptions
-      : potsAccordingToOptions;
+      : [{ label: 'All', value: 'all' }].concat(
+          (Array.isArray(potBarcodes) ? potBarcodes : []).map((bc) => ({
+            label: String(bc),
+            value: String(bc),
+          }))
+        );
 
   // Handle the form submission
   const onSubmit: SubmitHandler<TraitScatterModuleFormData> = async (
@@ -102,14 +107,21 @@ export default function TraitScatterModuleForm({
     if (!indoorProjectDataId) return;
 
     try {
+      const numericBarcode = Number(values.accordingTo);
+      const isSinglePot =
+        selectedPlottedBy === 'pots' &&
+        values.accordingTo !== 'all' &&
+        Number.isFinite(numericBarcode);
+
       const data = await fetchTraitScatterModuleVisualizationData({
         indoorProjectId,
         indoorProjectDataId,
         cameraOrientation: values.cameraOrientation,
         plottedBy: values.plottedBy,
-        accordingTo: values.accordingTo,
+        accordingTo: isSinglePot ? 'single_pot' : values.accordingTo,
         targetTraitX: values.targetTraitX,
         targetTraitY: values.targetTraitY,
+        potBarcode: isSinglePot ? numericBarcode : undefined,
       });
       setVisualizationData(data);
     } catch (error) {

@@ -1,7 +1,7 @@
 import { AxiosResponse } from 'axios';
 import { Params, useLoaderData } from 'react-router-dom';
-import { Tab } from '@headlessui/react';
 import { useEffect, useState } from 'react';
+import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 
 import api from '../../../../api';
 import Alert from '../../../Alert';
@@ -68,14 +68,16 @@ export default function IndoorProjectDetail() {
       </div>
     );
 
-  console.log('isLoading', isLoading);
-  console.log('indoorProjectData', indoorProjectData);
-
   useEffect(() => {
     if (!hasUserToggledUploadPane) {
       setIsUploadPaneCollapsed(!!indoorProjectDataSpreadsheet);
     }
   }, [indoorProjectDataSpreadsheet, hasUserToggledUploadPane]);
+
+  const potBarcodes = indoorProjectDataSpreadsheet?.summary?.pot_barcode || [];
+
+  console.log('spreadsheet', indoorProjectDataSpreadsheet);
+  console.log('potModuleVisualizationData', potModuleVisualizationData);
 
   return (
     <IndoorProjectPageLayout>
@@ -164,8 +166,8 @@ export default function IndoorProjectDetail() {
                     : 'Not available'}
                 </span>
 
-                <Tab.Group>
-                  <Tab.List className="flex space-x-1 rounded-xl bg-gray-800 p-1">
+                <TabGroup>
+                  <TabList className="flex space-x-1 rounded-xl bg-gray-800 p-1">
                     <Tab
                       className={({ selected }) =>
                         `w-full rounded-lg py-2.5 px-3 text-sm font-medium leading-5 text-white transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 ${
@@ -210,9 +212,9 @@ export default function IndoorProjectDetail() {
                     >
                       Trait Scatter
                     </Tab>
-                  </Tab.List>
-                  <Tab.Panels className="mt-4">
-                    <Tab.Panel className="rounded-xl bg-gray-50 p-4 focus:outline-none">
+                  </TabList>
+                  <TabPanels className="mt-4">
+                    <TabPanel className="rounded-xl bg-gray-50 p-4 focus:outline-none">
                       {indoorProjectDataSpreadsheet &&
                         potModuleVisualizationData && (
                           <div className="max-h-[450px] flex flex-wrap justify-start gap-4 overflow-auto">
@@ -225,12 +227,13 @@ export default function IndoorProjectDetail() {
                             />
                           </div>
                         )}
-                    </Tab.Panel>
-                    <Tab.Panel className="rounded-xl bg-gray-50 p-4 focus:outline-none">
+                    </TabPanel>
+                    <TabPanel className="rounded-xl bg-gray-50 p-4 focus:outline-none">
                       {indoorProjectDataId && (
                         <PotGroupModuleForm
                           indoorProjectId={indoorProject.id}
                           indoorProjectDataId={indoorProjectDataId}
+                          potBarcodes={potBarcodes}
                           setVisualizationData={
                             setPotGroupModuleVisualizationData
                           }
@@ -243,8 +246,8 @@ export default function IndoorProjectDetail() {
                           />
                         </div>
                       )}
-                    </Tab.Panel>
-                    <Tab.Panel className="rounded-xl bg-gray-50 p-4 focus:outline-none">
+                    </TabPanel>
+                    <TabPanel className="rounded-xl bg-gray-50 p-4 focus:outline-none">
                       {indoorProjectDataSpreadsheet && indoorProjectDataId && (
                         <TraitModuleForm
                           indoorProjectId={indoorProject.id}
@@ -252,6 +255,7 @@ export default function IndoorProjectDetail() {
                           numericColumns={
                             indoorProjectDataSpreadsheet.numeric_columns
                           }
+                          potBarcodes={potBarcodes}
                           setVisualizationData={setTraitModuleVisualizationData}
                         />
                       )}
@@ -262,8 +266,8 @@ export default function IndoorProjectDetail() {
                           />
                         </div>
                       )}
-                    </Tab.Panel>
-                    <Tab.Panel className="rounded-xl bg-gray-50 p-4 focus:outline-none">
+                    </TabPanel>
+                    <TabPanel className="rounded-xl bg-gray-50 p-4 focus:outline-none">
                       {indoorProjectDataSpreadsheet && indoorProjectDataId && (
                         <TraitScatterModuleForm
                           indoorProjectId={indoorProject.id}
@@ -271,6 +275,7 @@ export default function IndoorProjectDetail() {
                           numericColumns={
                             indoorProjectDataSpreadsheet.numeric_columns
                           }
+                          potBarcodes={potBarcodes}
                           setVisualizationData={
                             setTraitScatterModuleVisualizationData
                           }
@@ -283,9 +288,9 @@ export default function IndoorProjectDetail() {
                           />
                         </div>
                       )}
-                    </Tab.Panel>
-                  </Tab.Panels>
-                </Tab.Group>
+                    </TabPanel>
+                  </TabPanels>
+                </TabGroup>
               </div>
             )}
 

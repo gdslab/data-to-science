@@ -17,7 +17,6 @@ import {
   cameraOrientationOptions,
   plottedByOptions,
   groupsAccordingToOptions,
-  potsAccordingToOptions,
 } from '../formOptions';
 
 import defaultValues from './defaultValues';
@@ -27,6 +26,7 @@ import validationSchema from './validationSchema';
 export default function PotGroupModuleForm({
   indoorProjectId,
   indoorProjectDataId,
+  potBarcodes,
   setVisualizationData,
 }: PotGroupModuleFormProps) {
   // Initialize the form
@@ -62,7 +62,12 @@ export default function PotGroupModuleForm({
   const accordingToOptions =
     selectedPlottedBy === 'groups'
       ? groupsAccordingToOptions
-      : potsAccordingToOptions;
+      : [{ label: 'All', value: 'all' }].concat(
+          (Array.isArray(potBarcodes) ? potBarcodes : []).map((bc) => ({
+            label: String(bc),
+            value: String(bc),
+          }))
+        );
 
   // Handle the form submission
   const onSubmit: SubmitHandler<PotGroupModuleFormData> = async (values) => {
@@ -71,12 +76,20 @@ export default function PotGroupModuleForm({
     if (!indoorProjectDataId) return;
 
     try {
+      const selectedAccordingTo = values.accordingTo;
+      const numericBarcode = Number(selectedAccordingTo);
+      const isSinglePot =
+        selectedPlottedBy === 'pots' &&
+        selectedAccordingTo !== 'all' &&
+        Number.isFinite(numericBarcode);
+
       const data = await fetchPotGroupModuleVisualizationData({
         indoorProjectId,
         indoorProjectDataId,
         cameraOrientation: values.cameraOrientation,
         plottedBy: values.plottedBy,
-        accordingTo: values.accordingTo,
+        accordingTo: isSinglePot ? 'single_pot' : values.accordingTo,
+        potBarcode: isSinglePot ? numericBarcode : undefined,
       });
       setVisualizationData(data);
     } catch (error) {

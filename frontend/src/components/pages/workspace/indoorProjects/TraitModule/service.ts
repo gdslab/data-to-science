@@ -13,16 +13,20 @@ export async function fetchTraitModuleVisualizationData({
   plottedBy,
   accordingTo,
   targetTrait,
+  potBarcode,
 }: FetchTraitModuleParams): Promise<IndoorProjectDataViz2APIResponse> {
   let endpoint = `/indoor_projects/${indoorProjectId}/uploaded/${indoorProjectDataId}/data_for_viz2`;
 
   try {
-    const queryParams = {
+    const queryParams: Record<string, any> = {
       camera_orientation: cameraOrientation,
       plotted_by: plottedBy,
       according_to: accordingTo,
       trait: targetTrait,
     };
+    if (potBarcode !== undefined) {
+      queryParams.pot_barcode = potBarcode;
+    }
     const results: AxiosResponse<IndoorProjectDataViz2APIResponse> =
       await api.get(endpoint, { params: queryParams });
     return results.data;

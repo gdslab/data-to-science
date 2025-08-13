@@ -625,6 +625,7 @@ def read_indoor_project_data_plant_for_viz2(
     according_to: schemas.indoor_project_data.AccordingTo,
     plotted_by: schemas.indoor_project_data.PlottedBy,
     trait: str,
+    pot_barcode: Optional[int] = None,
     indoor_project: models.IndoorProject = Depends(
         deps.can_read_write_delete_indoor_project
     ),
@@ -640,7 +641,9 @@ def read_indoor_project_data_plant_for_viz2(
     # Confirm spreadsheet has required sheets and records
     try:
         ppew_df, img_df = validate_spreadsheet(
-            spreadsheet_file=spreadsheet_file, camera_orientation=camera_orientation
+            spreadsheet_file=spreadsheet_file,
+            camera_orientation=camera_orientation,
+            pot_barcode=pot_barcode,
         )
     except Exception as e:
         raise e
@@ -709,6 +712,7 @@ def read_indoor_project_data_plant_for_scatter(
     plotted_by: schemas.indoor_project_data.PlottedBy,
     trait_x: str,
     trait_y: str,
+    pot_barcode: Optional[int] = None,
     indoor_project: models.IndoorProject = Depends(
         deps.can_read_write_delete_indoor_project
     ),
@@ -724,7 +728,9 @@ def read_indoor_project_data_plant_for_scatter(
     # Confirm spreadsheet has required sheets and records
     try:
         ppew_df, img_df = validate_spreadsheet(
-            spreadsheet_file=spreadsheet_file, camera_orientation=camera_orientation
+            spreadsheet_file=spreadsheet_file,
+            camera_orientation=camera_orientation,
+            pot_barcode=pot_barcode,
         )
     except Exception as e:
         raise e
@@ -779,6 +785,7 @@ def read_indoor_project_data_plant_for_scatter(
         planting_date=planting_date,
         trait_x=trait_x.lower(),
         trait_y=trait_y.lower(),
+        pot_barcode=pot_barcode,
     )
 
     # Convert dataframe to dictionary
@@ -968,6 +975,7 @@ def group_and_average_scatter(
     planting_date: date,
     trait_x: str,
     trait_y: str,
+    pot_barcode: Optional[int] = None,
 ) -> pd.DataFrame:
     """For each day measurements were collected, group records based on group_by
     criteria and return individual data points for scatter plot with x and y values.
@@ -1008,38 +1016,68 @@ def group_and_average_scatter(
     # Target both traits for scatter plot
     columns_of_interest = [trait_x, trait_y]
 
-    # Also need grouping columns and pot_barcode for unique IDs
-    required_columns = valid_groupings[group_by] + columns_of_interest + ["pot_barcode"]
-
+    # Initialize all_results list
     all_results = []
 
-    for days in date_intervals:
-        # Compute end date for the current interval
-        end_date = planting_date + timedelta(days=days)
+    # Check if we're dealing with a single pot (when pot_barcode parameter is provided)
+    is_single_pot = pot_barcode is not None
 
-        # Select records within the current date interval
-        current_df = filtered_df[filtered_df["scan_date"] <= end_date]
+    if is_single_pot:
+        # For single pot, use dfp values directly to get unique measurements
 
-        if len(current_df) == 0:
-            continue
-
-        # Get the latest record for each pot within this interval
-        latest_records = current_df.groupby("pot_barcode").tail(1)
+        # Get unique dfp values and their corresponding trait values
+        unique_dfp_records = filtered_df.groupby("dfp").first().reset_index()
 
         # Select only the columns we need
-        result_df = latest_records[required_columns].copy()
+        required_columns = ["dfp", "pot_barcode"] + columns_of_interest
+        result_df = unique_dfp_records[required_columns].copy()
 
-        # Add the interval days to the results
-        result_df["interval_days"] = days
+        # Add interval days (use dfp values)
+        result_df["interval_days"] = result_df["dfp"]
 
         # Create unique ID for each data point
-        result_df["id"] = (
-            result_df["pot_barcode"].astype(str)
-            + "_"
-            + result_df["interval_days"].astype(str)
+        pot_barcode_str = str(result_df.iloc[0]["pot_barcode"]).strip()
+        result_df["id"] = result_df.apply(
+            lambda row: f"{pot_barcode_str}_{row['dfp']}", axis=1
         )
 
         all_results.append(result_df)
+    else:
+        # For multiple pots, use the original logic
+
+        # Also need grouping columns and pot_barcode for unique IDs
+        required_columns = (
+            valid_groupings[group_by] + columns_of_interest + ["pot_barcode"]
+        )
+
+        for days in date_intervals:
+            # Compute end date for the current interval
+            end_date = planting_date + timedelta(days=days)
+
+            # Select records within the current date interval
+            current_df = filtered_df[filtered_df["scan_date"] <= end_date]
+
+            if len(current_df) == 0:
+                continue
+
+            # Get the latest record for each pot within this interval
+            latest_records = (
+                current_df.groupby("pot_barcode").tail(1).reset_index(drop=True)
+            )
+
+            # Select only the columns we need
+            result_df = latest_records[required_columns].copy()
+
+            # Add the interval days to the results
+            result_df["interval_days"] = days
+
+            # Create unique ID for each data point
+            result_df["id"] = result_df.apply(
+                lambda row: f"{str(row['pot_barcode']).strip()}_{row['interval_days']}",
+                axis=1,
+            )
+
+            all_results.append(result_df)
 
     if not all_results:
         # Return empty dataframe with correct columns if no data

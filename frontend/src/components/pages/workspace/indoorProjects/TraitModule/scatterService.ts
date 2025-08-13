@@ -14,17 +14,23 @@ export async function fetchTraitScatterModuleVisualizationData({
   accordingTo,
   targetTraitX,
   targetTraitY,
+  potBarcode,
 }: FetchTraitScatterModuleParams): Promise<IndoorProjectDataVizScatterAPIResponse> {
   let endpoint = `/indoor_projects/${indoorProjectId}/uploaded/${indoorProjectDataId}/data_for_scatter`;
 
   try {
-    const queryParams = {
+    const queryParams: Record<string, any> = {
       camera_orientation: cameraOrientation,
       plotted_by: plottedBy,
       according_to: accordingTo,
       trait_x: targetTraitX,
       trait_y: targetTraitY,
     };
+
+    // Add pot_barcode to query params if provided
+    if (potBarcode !== undefined) {
+      queryParams.pot_barcode = potBarcode;
+    }
     const results: AxiosResponse<IndoorProjectDataVizScatterAPIResponse> =
       await api.get(endpoint, { params: queryParams });
     return results.data;
