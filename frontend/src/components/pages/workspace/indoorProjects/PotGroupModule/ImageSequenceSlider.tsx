@@ -12,7 +12,7 @@ interface ImageSequenceSliderProps {
  * @returns The rotation angle as an integer, or Infinity if no angle is found.
  */
 const getAngle = (filename: string) => {
-  const match = filename.match(/(?:SideBottom|SideFull)-(\d+)/);
+  const match = filename.match(/(?:SideBottom|SideFull|SideSmall)-(\d+)/);
   return match ? parseInt(match[1], 10) : Infinity;
 };
 
