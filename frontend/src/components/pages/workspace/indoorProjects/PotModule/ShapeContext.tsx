@@ -1,6 +1,12 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 
-export type Shape = 'circle' | 'rounded-square' | 'hexagon' | 'diamond';
+export type Shape =
+  | 'circle'
+  | 'circle-filled'
+  | 'rounded-square'
+  | 'rounded-square-filled'
+  | 'diamond'
+  | 'diamond-filled';
 
 interface ShapeContextType {
   shapes: Record<string, Shape>;
@@ -17,12 +23,20 @@ export function ShapeProvider({
   treatments: string[];
 }) {
   // Initialize shapes for each treatment
+  const availableShapes: Shape[] = [
+    'circle',
+    'circle-filled',
+    'rounded-square',
+    'rounded-square-filled',
+    'diamond',
+    'diamond-filled',
+  ];
   const initialShapes = treatments.reduce(
-    (acc, treatment) => ({
-      ...acc,
-      [treatment]: 'circle',
-    }),
-    {}
+    (acc: Record<string, Shape>, treatment, index) => {
+      acc[treatment] = availableShapes[index % availableShapes.length];
+      return acc;
+    },
+    {} as Record<string, Shape>
   );
 
   const [shapes, setShapes] = useState<Record<string, Shape>>(initialShapes);

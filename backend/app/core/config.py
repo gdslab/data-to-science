@@ -36,7 +36,7 @@ class Settings(BaseSettings):
         return v
 
     # 15 minutes
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 120
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
     API_PROJECT_NAME: str = ""

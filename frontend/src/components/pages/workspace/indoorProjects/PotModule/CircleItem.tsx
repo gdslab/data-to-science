@@ -14,15 +14,14 @@ export default function CircleItem({
   const { shapes } = useShapeContext();
   const { hue, saturation, intensity } = hsvColor;
   const color = chroma.hsv(hue, saturation, intensity).hex();
-  const isSaturated = treatment.toLowerCase() === 'saturated';
   const selectedShape = shapes[treatment];
+  const isFilled = selectedShape.endsWith('-filled');
 
-  const shapeClasses = {
+  const baseShapeClasses = {
     circle: 'rounded-full',
     'rounded-square': 'rounded-lg',
-    hexagon: 'clip-hexagon',
     diamond: 'rotate-45',
-  };
+  } as const;
 
   return (
     <Link to={url}>
@@ -30,16 +29,21 @@ export default function CircleItem({
         <div
           className={clsx(
             'w-full h-full flex items-center justify-center shadow-md',
-            shapeClasses[selectedShape],
+            baseShapeClasses[
+              selectedShape.replace('-filled', '') as
+                | 'circle'
+                | 'rounded-square'
+                | 'diamond'
+            ],
             {
-              'text-white': isSaturated,
-              'text-black': !isSaturated,
-              'scale-75': selectedShape === 'diamond',
+              'text-white': isFilled,
+              'text-black': !isFilled,
+              'scale-75': selectedShape.startsWith('diamond'),
             }
           )}
           style={{
-            backgroundColor: isSaturated ? color : 'none',
-            border: `8px solid ${color}`,
+            backgroundColor: isFilled ? color : 'transparent',
+            border: isFilled ? 'none' : `8px solid ${color}`,
           }}
           title={`H: ${hue?.toFixed(2)}, S: ${saturation?.toFixed(
             2

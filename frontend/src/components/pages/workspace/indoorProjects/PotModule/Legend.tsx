@@ -1,21 +1,33 @@
-import { Menu } from '@headlessui/react';
+import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import './shapes.css';
 import { useShapeContext, Shape } from './ShapeContext';
 
 const shapes: { value: Shape; label: string }[] = [
-  { value: 'circle', label: 'Circle' },
-  { value: 'rounded-square', label: 'Rounded Square' },
-  { value: 'hexagon', label: 'Hexagon' },
-  { value: 'diamond', label: 'Diamond' },
+  { value: 'circle', label: 'Circle (Hollow)' },
+  { value: 'circle-filled', label: 'Circle (Filled)' },
+  { value: 'rounded-square', label: 'Rounded Square (Hollow)' },
+  { value: 'rounded-square-filled', label: 'Rounded Square (Filled)' },
+  { value: 'diamond', label: 'Diamond (Hollow)' },
+  { value: 'diamond-filled', label: 'Diamond (Filled)' },
 ];
 
-const shapeClasses = {
+const baseShapeClasses: Record<Exclude<Shape, `${string}-filled`>, string> = {
   circle: 'rounded-full',
   'rounded-square': 'rounded-lg',
-  hexagon: 'clip-hexagon',
   diamond: 'rotate-45',
 };
+
+function getShapeClass(shape: Shape, borderClass: string): string {
+  const isFilled = shape.endsWith('-filled');
+  const base = shape.replace('-filled', '') as Exclude<
+    Shape,
+    `${string}-filled`
+  >;
+  const fillOrBorder = isFilled ? 'bg-black' : `${borderClass} border-black`;
+  const scaleForDiamond = base === 'diamond' ? 'scale-90' : '';
+  return `${baseShapeClasses[base]} ${fillOrBorder} ${scaleForDiamond}`.trim();
+}
 
 function ShapeSelector({ treatment }: { treatment: string }) {
   const { shapes: selectedShapes, setShape } = useShapeContext();
@@ -23,21 +35,20 @@ function ShapeSelector({ treatment }: { treatment: string }) {
 
   return (
     <Menu as="div" className="relative">
-      <Menu.Button className="flex items-center gap-4 hover:bg-gray-100 p-2 rounded-lg">
+      <MenuButton className="flex items-center gap-4 hover:bg-gray-100 p-2 rounded-lg min-w-0">
         <div
-          className={`h-12 w-12 ${shapeClasses[selectedShape]} ${
-            treatment.toLowerCase() === 'saturated'
-              ? 'bg-black'
-              : 'border-8 border-black'
-          }`}
+          className={`inline-flex items-center justify-center h-10 w-10 ${getShapeClass(
+            selectedShape,
+            'border-4'
+          )}`}
         />
-        <span className="capitalize">{treatment}</span>
+        <span className="capitalize truncate flex-1 min-w-0">{treatment}</span>
         <ChevronDownIcon className="h-5 w-5" />
-      </Menu.Button>
-      <Menu.Items className="absolute z-10 mt-2 w-56 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+      </MenuButton>
+      <MenuItems className="absolute z-10 mt-2 w-56 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
         <div className="py-1">
           {shapes.map((shape) => (
-            <Menu.Item key={shape.value}>
+            <MenuItem key={shape.value}>
               {({ active }) => (
                 <button
                   onClick={() => setShape(treatment, shape.value)}
@@ -46,19 +57,18 @@ function ShapeSelector({ treatment }: { treatment: string }) {
                   } flex items-center gap-4 w-full px-4 py-2 text-left`}
                 >
                   <div
-                    className={`h-8 w-8 ${shapeClasses[shape.value]} ${
-                      treatment.toLowerCase() === 'saturated'
-                        ? 'bg-black'
-                        : 'border-4 border-black'
-                    }`}
+                    className={`inline-flex items-center justify-center h-6 w-6 ${getShapeClass(
+                      shape.value,
+                      'border-2'
+                    )}`}
                   />
                   <span>{shape.label}</span>
                 </button>
               )}
-            </Menu.Item>
+            </MenuItem>
           ))}
         </div>
-      </Menu.Items>
+      </MenuItems>
     </Menu>
   );
 }
