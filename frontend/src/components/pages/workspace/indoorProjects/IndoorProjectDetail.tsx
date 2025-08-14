@@ -15,7 +15,7 @@ import PotGroupModuleDataVisualization from './PotGroupModule/PotGroupModuleData
 import TraitModuleForm from './TraitModule/TraitModuleForm';
 import TraitModuleDataVisualization from './TraitModule/TraitModuleDataVisualization';
 import TraitScatterModuleForm from './TraitModule/TraitScatterModuleForm';
-import TraitScatterModuleDataVisualization from './TraitModule/TraitScatterModuleDataVisualization';
+import TraitScatterModuleDataVisualization from './TraitModule/TraitScatterModule';
 import { useIndoorProjectData } from './hooks/useIndoorProjectData';
 import IndoorProjectUploadForm from './IndoorProjectUploadForm';
 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { PlantDetailAndChart } from '../types';
-import TraitScatterModuleDataVisualization from '../../TraitModule/TraitScatterModuleDataVisualization';
+import TraitScatterModuleDataVisualization from '../../TraitModule/TraitScatterModule/TraitScatterModuleDataVisualization';
 import { fetchTraitScatterModuleVisualizationData } from '../../TraitModule/scatterService';
 import { IndoorProjectDataVizScatterAPIResponse } from '../../IndoorProject';
 

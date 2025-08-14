@@ -49,7 +49,13 @@ export default function CircleItem({
             2
           )}, V: ${intensity?.toFixed(2)}`}
         >
-          <span className={selectedShape === 'diamond' ? '-rotate-45' : ''}>
+          <span
+            className={
+              selectedShape === 'diamond' || selectedShape === 'diamond-filled'
+                ? '-rotate-45'
+                : ''
+            }
+          >
             {group.group}
           </span>
         </div>

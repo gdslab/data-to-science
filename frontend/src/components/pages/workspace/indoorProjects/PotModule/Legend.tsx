@@ -45,28 +45,33 @@ function ShapeSelector({ treatment }: { treatment: string }) {
         <span className="capitalize truncate flex-1 min-w-0">{treatment}</span>
         <ChevronDownIcon className="h-5 w-5" />
       </MenuButton>
-      <MenuItems className="absolute z-10 mt-2 w-56 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-        <div className="py-1">
-          {shapes.map((shape) => (
-            <MenuItem key={shape.value}>
-              {({ active }) => (
-                <button
-                  onClick={() => setShape(treatment, shape.value)}
-                  className={`${
-                    active ? 'bg-gray-100' : ''
-                  } flex items-center gap-4 w-full px-4 py-2 text-left`}
-                >
-                  <div
-                    className={`inline-flex items-center justify-center h-6 w-6 ${getShapeClass(
-                      shape.value,
-                      'border-2'
-                    )}`}
-                  />
-                  <span>{shape.label}</span>
-                </button>
-              )}
-            </MenuItem>
-          ))}
+      <MenuItems className="absolute z-10 mt-2 right-0 w-96 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+        <div className="p-2">
+          <div className="grid grid-cols-3 gap-1">
+            {shapes.map((shape) => (
+              <MenuItem key={shape.value}>
+                {({ active }) => (
+                  <button
+                    onClick={() => setShape(treatment, shape.value)}
+                    className={`${
+                      active ? 'bg-gray-100' : ''
+                    } flex flex-col items-center gap-1 p-1 rounded-lg hover:bg-gray-50`}
+                    title={shape.label}
+                  >
+                    <div
+                      className={`inline-flex items-center justify-center h-6 w-6 ${getShapeClass(
+                        shape.value,
+                        'border-2'
+                      )}`}
+                    />
+                    <span className="text-xs text-center leading-tight">
+                      {shape.label}
+                    </span>
+                  </button>
+                )}
+              </MenuItem>
+            ))}
+          </div>
         </div>
       </MenuItems>
     </Menu>
