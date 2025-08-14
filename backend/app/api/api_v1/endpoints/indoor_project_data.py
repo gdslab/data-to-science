@@ -302,19 +302,6 @@ def read_indoor_project_data_plant(
             detail="Spreadsheet missing 'Top' worksheet",
         )
 
-    # try:
-    #     # read "Side All" worksheet into pandas dataframe
-    #     side_all_df = pd.read_excel(
-    #         spreadsheet_file.file_path,
-    #         sheet_name="Side all",
-    #         dtype={"VARIETY": str},
-    #     )
-    # except ValueError:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_400_BAD_REQUEST,
-    #         detail="Spreadsheet missing 'Side all' worksheet",
-    #     )
-
     try:
         # read "Side Average" worksheet into pandas dataframe
         side_avg_df = pd.read_excel(
@@ -348,13 +335,6 @@ def read_indoor_project_data_plant(
             detail="Top worksheet has zero records",
         )
 
-    # raise exception if no records in Side all worksheet
-    # if len(pot_side_all_df) == 0:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_400_BAD_REQUEST,
-    #         detail="Side all worksheet has zero records",
-    #     )
-
     # raise exception if no records in Side average worksheet
     if len(pot_side_avg_df) == 0:
         raise HTTPException(
@@ -372,13 +352,11 @@ def read_indoor_project_data_plant(
     # convert column names to all lowercase characters
     pot_ppew_df.columns = pot_ppew_df.columns.str.lower()
     pot_top_df.columns = pot_top_df.columns.str.lower()
-    # pot_side_all_df.columns = pot_side_all_df.columns.str.lower()
     pot_side_avg_df.columns = pot_side_avg_df.columns.str.lower()
 
     # replace any spaces in column names with underscores
     pot_ppew_df.columns = pot_ppew_df.columns.str.replace(" ", "_")
     pot_top_df.columns = pot_top_df.columns.str.replace(" ", "_")
-    # pot_side_all_df.columns = pot_side_all_df.columns.str.replace(" ", "_")
     pot_side_avg_df.columns = pot_side_avg_df.columns.str.replace(" ", "_")
 
     # convert planting date to datetime object - use copy to avoid SettingWithCopyWarning
@@ -391,7 +369,6 @@ def read_indoor_project_data_plant(
     pot_top_df = pot_top_df.copy()
     pot_side_avg_df = pot_side_avg_df.copy()
     pot_top_df["scan_date"] = pot_top_df["scan_date"].dt.strftime("%Y-%m-%d")
-    # pot_side_all_df["scan_date"] = pot_side_all_df["scan_date"].dt.strftime("%Y-%m-%d")
     pot_side_avg_df["scan_date"] = pot_side_avg_df["scan_date"].dt.strftime("%Y-%m-%d")
 
     # replace nan with "" for object columns and -9999 for numeric columns
@@ -401,9 +378,6 @@ def read_indoor_project_data_plant(
     pot_top_df = pot_top_df.apply(
         lambda col: col.fillna("") if col.dtype == "object" else col.fillna(-9999)
     )
-    # pot_side_all_df = pot_side_all_df.apply(
-    #     lambda col: col.fillna("") if col.dtype == "object" else col.fillna(-9999)
-    # )
     pot_side_avg_df = pot_side_avg_df.apply(
         lambda col: col.fillna("") if col.dtype == "object" else col.fillna(-9999)
     )
@@ -498,28 +472,24 @@ def read_indoor_project_data_plant(
         if "treatment" in record:
             record["treatment"] = str(record["treatment"])
 
-    # Find matching images for top records using the specific tar file
-    for record in top_records:
-        record["images"] = find_matching_images_for_record(
-            record=record,
-            tar_file=matching_tar_file,
-            indoor_project_id=str(indoor_project_id),
-            image_type="RGB-Top",
-        )
+    # Attach matching images for top and side records with a single directory scan per set
+    attach_images_bulk(
+        records=top_records,
+        tar_file=matching_tar_file,
+        indoor_project_id=str(indoor_project_id),
+        image_type="RGB-Top",
+    )
 
-    # Find matching images for side average records using the specific tar file
-    for record in side_avg_records:
-        record["images"] = find_matching_images_for_record(
-            record=record,
-            tar_file=matching_tar_file,
-            indoor_project_id=str(indoor_project_id),
-            image_type="RGB-Side",
-        )
+    attach_images_bulk(
+        records=side_avg_records,
+        tar_file=matching_tar_file,
+        indoor_project_id=str(indoor_project_id),
+        image_type="RGB-Side",
+    )
 
     payload = {
         "ppew": ppew_summary,
         "top": top_records,
-        # "side_all": side_all_records,
         "side_avg": side_avg_records,
     }
 
@@ -1409,6 +1379,73 @@ def find_matching_images_for_record(
                 matching_images.append(image_path)
 
     return matching_images
+
+
+def attach_images_bulk(
+    records: List[Dict[str, Any]],
+    tar_file: Optional[models.IndoorProjectData],
+    indoor_project_id: str,
+    image_type: str,
+) -> None:
+    """Attach matching images to each record by scanning the images directory once.
+
+    Args:
+        records: Records containing filename info; will be mutated with an "images" key.
+        tar_file: Tar file to search in.
+        indoor_project_id: Indoor project ID.
+        image_type: "RGB-Top" or "RGB-Side".
+    """
+    if not tar_file:
+        for record in records:
+            record["images"] = []
+        return
+
+    images_dir = os.path.join(
+        get_static_dir(),
+        "indoor_projects",
+        indoor_project_id,
+        "uploaded",
+        str(tar_file.id),
+        "images",
+    )
+
+    if not os.path.exists(images_dir):
+        for record in records:
+            record["images"] = []
+        return
+
+    try:
+        filenames = os.listdir(images_dir)
+    except FileNotFoundError:
+        for record in records:
+            record["images"] = []
+        return
+
+    for record in records:
+        record_images: List[str] = []
+        filename_value = record.get("filename")
+        if isinstance(filename_value, str):
+            parts = filename_value.split("_")
+            if len(parts) >= 4:
+                search_term = (
+                    parts[0]
+                    + "_"
+                    + "R"
+                    + "_"
+                    + parts[2]
+                    + "_"
+                    + parts[3]
+                    + "_"
+                    + image_type
+                )
+
+                for fname in filenames:
+                    if search_term in fname:
+                        image_path = os.path.join(images_dir, fname)
+                        if os.path.exists(image_path):
+                            record_images.append(image_path)
+
+        record["images"] = record_images
 
 
 def construct_image_path(
