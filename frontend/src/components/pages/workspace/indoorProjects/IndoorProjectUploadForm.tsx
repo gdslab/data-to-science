@@ -50,13 +50,13 @@ export default function IndoorProjectUploadForm({
             data.
           </p>
           <hr className="my-3 border-gray-300" />
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
+          <div className="flex items-start justify-between min-w-0">
+            <div className="flex-1 min-w-0">
               {indoorProjectData.find((data) => data.file_type === '.xlsx') ? (
                 <>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
                     <DocumentIcon className="w-4 h-4 text-gray-400" />
-                    <div className="min-w-0 max-w-md">
+                    <div className="flex-1 min-w-0 overflow-hidden">
                       <a
                         href={
                           indoorProjectData.find(
@@ -65,11 +65,11 @@ export default function IndoorProjectUploadForm({
                         }
                         download
                         className="font-medium text-blue-600 hover:text-blue-800 hover:underline truncate block"
-                        title={`Download: ${
+                        title={
                           indoorProjectData.find(
                             (data) => data.file_type === '.xlsx'
                           )?.original_filename
-                        }`}
+                        }
                       >
                         {
                           indoorProjectData.find(
@@ -104,7 +104,7 @@ export default function IndoorProjectUploadForm({
             <button
               type="button"
               onClick={() => setIsUploadModalOpen(true)}
-              className="ml-4 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="ml-4 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shrink-0"
               title="Upload Spreadsheet"
             >
               Upload File
@@ -132,19 +132,19 @@ export default function IndoorProjectUploadForm({
                     Upload TAR archive containing treatment data.
                   </p>
                   <hr className="my-3 border-gray-300" />
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
+                  <div className="flex items-start justify-between min-w-0">
+                    <div className="flex-1 min-w-0">
                       {uploadedData ? (
                         uploadedData.is_initial_processing_completed ? (
                           <>
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
                               <DocumentIcon className="w-4 h-4 text-gray-400" />
-                              <div className="min-w-0 max-w-md">
+                              <div className="flex-1 min-w-0 overflow-hidden">
                                 <a
                                   href={uploadedData.file_path}
                                   download
                                   className="font-medium text-blue-600 hover:text-blue-800 hover:underline truncate block"
-                                  title={`Download: ${uploadedData.original_filename}`}
+                                  title={uploadedData.original_filename}
                                 >
                                   {uploadedData.original_filename}
                                 </a>
@@ -186,7 +186,7 @@ export default function IndoorProjectUploadForm({
                         setActiveTreatment(treatment);
                         setIsUploadModalOpen(true);
                       }}
-                      className="ml-4 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      className="ml-4 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shrink-0"
                       title="Upload TAR archive"
                     >
                       Upload File
