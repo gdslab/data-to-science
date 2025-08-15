@@ -27,12 +27,12 @@ interface IndoorProjectContextType {
 }
 
 export async function getProjectMembers(
-  projectId: string,
+  indoorProjectId: string,
   dispatch: React.Dispatch<IndoorProjectAction>
 ) {
   try {
     const response: AxiosResponse<any[]> = await api.get(
-      `/projects/${projectId}/members`
+      `/indoor_projects/${indoorProjectId}/members`
     );
     if (response) {
       dispatch({ type: 'SET_PROJECT_MEMBERS', payload: response.data });

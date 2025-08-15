@@ -99,6 +99,11 @@ api_router.include_router(
     tags=["project_members"],
 )
 api_router.include_router(
+    project_members.indoor_router,
+    prefix="/indoor_projects/{indoor_project_id}/members",
+    tags=["project_members"],
+)
+api_router.include_router(
     vector_layers.router,
     prefix="/projects/{project_id}/vector_layers",
     tags=["vector_layers"],

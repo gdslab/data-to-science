@@ -35,7 +35,7 @@ class CRUDProjectMember(
         *,
         obj_in: ProjectMemberCreate,
         project_uuid: UUID,
-        project_type: ProjectType = ProjectType.PROJECT
+        project_type: ProjectType = ProjectType.PROJECT,
     ) -> Optional[ProjectMember]:
         if obj_in.email:
             statement = select(User).where(
@@ -157,7 +157,7 @@ class CRUDProjectMember(
         *,
         project_uuid: UUID,
         project_type: ProjectType = ProjectType.PROJECT,
-        role: Optional[Role] = None
+        role: Optional[Role] = None,
     ) -> Sequence[ProjectMember]:
         statement: Select = (
             select(
