@@ -18,6 +18,7 @@ import TraitScatterModuleForm from './TraitModule/TraitScatterModuleForm';
 import TraitScatterModuleDataVisualization from './TraitModule/TraitScatterModule';
 import { useIndoorProjectData } from './hooks/useIndoorProjectData';
 import IndoorProjectUploadForm from './IndoorProjectUploadForm';
+import { useIndoorProjectContext } from './IndoorProjectContext';
 
 export async function loader({ params }: { params: Params<string> }) {
   try {
@@ -58,6 +59,11 @@ export default function IndoorProjectDetail() {
   );
   const [hasUserToggledUploadPane, setHasUserToggledUploadPane] =
     useState(false);
+
+  const {
+    state: { projectMembers },
+  } = useIndoorProjectContext();
+
   const indoorProjectDataId = indoorProjectData.find(
     ({ file_type }) => file_type === '.xlsx'
   )?.id;
@@ -76,8 +82,7 @@ export default function IndoorProjectDetail() {
 
   const potBarcodes = indoorProjectDataSpreadsheet?.summary?.pot_barcode || [];
 
-  console.log('spreadsheet', indoorProjectDataSpreadsheet);
-  console.log('potModuleVisualizationData', potModuleVisualizationData);
+  console.log('projectMembers', projectMembers);
 
   return (
     <IndoorProjectPageLayout>
