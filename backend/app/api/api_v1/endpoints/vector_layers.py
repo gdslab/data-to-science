@@ -175,7 +175,7 @@ def read_vector_layer(
     ],
 )
 def read_vector_layers(
-    project: models.Project = Depends(deps.can_read_project),
+    project: models.Project = Depends(deps.can_read_project_with_jwt_or_api_key),
     format: str = Query(None),
     db: Session = Depends(deps.get_db),
 ) -> Any:
@@ -236,7 +236,7 @@ def download_vector_layer(
     layer_id: str,
     background_tasks: BackgroundTasks,
     format: str = Query("json", pattern="^(json|shp)$"),
-    project: models.Project = Depends(deps.can_read_project),
+    project: models.Project = Depends(deps.can_read_project_with_jwt_or_api_key),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     # Fetch GeoJSON features for vector layer

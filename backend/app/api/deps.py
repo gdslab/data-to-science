@@ -301,6 +301,23 @@ def can_read_write_project(
     return project
 
 
+def can_read_project_with_jwt_or_api_key(
+    project_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_approved_user_by_jwt_or_api_key),
+) -> schemas.Project:
+    """Return project if current user is project owner, manager, or viewer."""
+    if current_user.is_demo:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+        )
+    project_response = crud.project.get_user_project(
+        db, user_id=current_user.id, project_id=project_id, permission="r"
+    )
+    project = verify_resource_response(project_response, "Project")
+    return project
+
+
 def can_read_write_project_with_jwt_or_api_key(
     project_id: UUID,
     db: Session = Depends(get_db),
