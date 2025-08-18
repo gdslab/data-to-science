@@ -17,8 +17,10 @@ study_router = APIRouter()
 def create_breedbase_connection(
     project_id: UUID,
     breedbase_connection_in: schemas.BreedbaseConnectionCreate,
-    project: models.Project = Depends(deps.can_read_write_project),
-    current_user: models.User = Depends(deps.get_current_approved_user),
+    project: models.Project = Depends(deps.can_read_write_project_with_jwt_or_api_key),
+    current_user: models.User = Depends(
+        deps.get_current_approved_user_by_jwt_or_api_key
+    ),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     breedbase_connection = crud.breedbase_connection.create_with_project(
@@ -41,7 +43,9 @@ def read_breedbase_connection(
 def read_breedbase_connection_by_study_id(
     study_id: str,
     db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_approved_user),
+    current_user: models.User = Depends(
+        deps.get_current_approved_user_by_jwt_or_api_key
+    ),
 ) -> Any:
     breedbase_connections = crud.breedbase_connection.get_by_study_id(
         db, study_id=study_id, user_id=current_user.id
@@ -52,7 +56,7 @@ def read_breedbase_connection_by_study_id(
 @router.get("", response_model=List[schemas.BreedbaseConnection])
 def read_breedbase_connections(
     db: Session = Depends(deps.get_db),
-    project: models.Project = Depends(deps.can_read_project),
+    project: models.Project = Depends(deps.can_read_project_with_jwt_or_api_key),
 ) -> Any:
     breedbase_connections = crud.breedbase_connection.get_multi_by_project_id(
         db, project_id=project.id
@@ -65,7 +69,7 @@ def update_breedbase_connection(
     breedbase_connection_id: UUID,
     breedbase_connection_in: schemas.BreedbaseConnectionUpdate,
     db: Session = Depends(deps.get_db),
-    project: models.Project = Depends(deps.can_read_write_project),
+    project: models.Project = Depends(deps.can_read_write_project_with_jwt_or_api_key),
 ) -> Any:
     # Get breedbase connection
     breedbase_connection = crud.breedbase_connection.get(db, id=breedbase_connection_id)
@@ -86,7 +90,7 @@ def update_breedbase_connection(
 def delete_breedbase_connection(
     breedbase_connection_id: UUID,
     db: Session = Depends(deps.get_db),
-    project: models.Project = Depends(deps.can_read_write_project),
+    project: models.Project = Depends(deps.can_read_write_project_with_jwt_or_api_key),
 ) -> Any:
     # Get breedbase connection
     breedbase_connection = crud.breedbase_connection.get(db, id=breedbase_connection_id)
