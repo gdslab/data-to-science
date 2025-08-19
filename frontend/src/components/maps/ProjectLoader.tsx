@@ -11,6 +11,8 @@ export default function ProjectLoader() {
   const { projectsDispatch, projectsLoadedDispatch, projects } =
     useMapContext();
 
+  console.log('projects', projects);
+
   useEffect(() => {
     const fetchProjects = async () => {
       try {

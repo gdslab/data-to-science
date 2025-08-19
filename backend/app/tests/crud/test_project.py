@@ -239,6 +239,29 @@ def test_get_all_projects(db: Session) -> None:
         assert project.id in [project1.id, project2.id, project3.id]
 
 
+def test_get_user_projects_includes_team(db: Session) -> None:
+    user = create_user(db)
+    team = create_team(db, owner_id=user.id)
+    project = create_project(db, owner_id=user.id, team_id=team.id)
+    projects = crud.project.get_user_projects(db, user=user)
+    assert len(projects) == 1
+    assert hasattr(projects[0], "team")
+    assert projects[0].team is not None
+    assert projects[0].team.id == team.id
+
+
+def test_get_all_projects_includes_team(db: Session) -> None:
+    user = create_user(db, is_superuser=True)
+    team = create_team(db, owner_id=user.id)
+    project = create_project(db, owner_id=user.id, team_id=team.id)
+    projects = crud.project.get_user_projects(db, user=user, include_all=True)
+    assert len(projects) >= 1
+    matched = next((p for p in projects if p.id == project.id), None)
+    assert matched is not None
+    assert matched.team is not None
+    assert matched.team.id == team.id
+
+
 def test_update_project(db: Session) -> None:
     project = create_project(db)
     new_title = random_team_name()

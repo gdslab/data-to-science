@@ -8,7 +8,7 @@ from fastapi import status
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import and_, func, select, update
 from sqlalchemy.exc import MultipleResultsFound
-from sqlalchemy.orm import joinedload, Session
+from sqlalchemy.orm import joinedload, selectinload, Session
 
 from app import crud
 from app.crud.base import CRUDBase
@@ -262,6 +262,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 )
                 .join(Project.location)
                 .where(Project.is_active)
+                .options(selectinload(Project.team))
             )
         else:
             statement = (
@@ -283,6 +284,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 .join(Project.members)
                 .join(Project.location)
                 .where(and_(Project.is_active, ProjectMember.member_id == user.id))
+                .options(selectinload(Project.team))
             )
         with db as session:
             final_projects = []
