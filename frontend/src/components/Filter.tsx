@@ -156,7 +156,7 @@ export default function Filter({
                         </span>
                       </label>
                       {isParent && parentChecked && sublistCategories && (
-                        <ul className="mt-2 ml-6 space-y-1">
+                        <ul className="mt-2 ml-6 space-y-1 h-60 overflow-y-auto">
                           {sublistCategories.map((sub) => (
                             <li key={sub.value}>
                               <label
