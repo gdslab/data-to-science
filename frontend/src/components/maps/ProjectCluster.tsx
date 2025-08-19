@@ -32,7 +32,8 @@ export default function ProjectCluster({
   includeAll = false,
   setIsMapReady,
 }: ProjectClusterProps) {
-  const { projects, projectsLoaded, projectFilterSelection } = useMapContext();
+  const { projects, projectsLoaded, projectFilterSelection, selectedTeamIds } =
+    useMapContext();
 
   const [geojsonData, setGeojsonData] =
     useState<ProjectFeatureCollection | null>(null);
@@ -59,8 +60,17 @@ export default function ProjectCluster({
       );
     }
 
+    if (
+      projectFilterSelection.includes('myTeams') &&
+      selectedTeamIds.length > 0
+    ) {
+      filteredProjects = filteredProjects.filter(
+        (project) => project.team && selectedTeamIds.includes(project.team.id)
+      );
+    }
+
     return filteredProjects;
-  }, [projects, projectFilterSelection]);
+  }, [projects, projectFilterSelection, selectedTeamIds]);
 
   const projectsFeatureCollection = useMemo(() => {
     if (!filteredProjects || filteredProjects.length === 0) return null;

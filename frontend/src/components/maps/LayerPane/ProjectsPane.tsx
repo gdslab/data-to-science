@@ -34,14 +34,14 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
   const [sortSelection, setSortSelection] = useState<SortSelection>(
     getSortPreferenceFromLocalStorage('sortPreference')
   );
-  const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
-
   const {
     activeDataProductDispatch,
     activeProjectDispatch,
     projectFilterSelection,
     projectFilterSelectionDispatch,
     projectsVisible,
+    selectedTeamIds,
+    selectedTeamIdsDispatch,
   } = useMapContext();
 
   // Filter projects by filter selection
@@ -187,7 +187,9 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
                   sublistParentValue="myTeams"
                   sublistCategories={teamCategories}
                   sublistSelected={selectedTeamIds}
-                  setSublistSelected={setSelectedTeamIds}
+                  setSublistSelected={(teamIds) =>
+                    selectedTeamIdsDispatch({ type: 'set', payload: teamIds })
+                  }
                 />
                 <Sort
                   sortSelection={sortSelection}

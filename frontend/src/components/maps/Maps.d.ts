@@ -21,6 +21,8 @@ export type FlightsAction = { type: string; payload: Flight[] };
 
 export type ProjectFilterSelectionAction = { type: string; payload?: string[] };
 
+export type SelectedTeamIdsAction = { type: string; payload: string[] };
+
 export type ProjectsAction = { type: string; payload: Project[] | null };
 
 export type ProjectsLoadedAction = {
