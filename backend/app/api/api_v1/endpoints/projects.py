@@ -78,9 +78,11 @@ def create_project(
 def read_project(
     project_id: UUID,
     format: str = Query("json", pattern="^(json|geojson)$"),
-    current_user: models.User = Depends(deps.get_current_approved_user),
+    current_user: models.User = Depends(
+        deps.get_current_approved_user_by_jwt_or_api_key
+    ),
     db: Session = Depends(deps.get_db),
-    project: schemas.Project = Depends(deps.can_read_project),
+    project: schemas.Project = Depends(deps.can_read_project_with_jwt_or_api_key),
 ) -> Any:
     """Retrieve project by id."""
     if format == "geojson":
