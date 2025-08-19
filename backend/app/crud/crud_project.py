@@ -178,6 +178,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             .where(Project.id == project_id)
             .where(Project.is_active)
             .where(ProjectMember.member_id == user_id)
+            .options(selectinload(Project.owner))
         )
         with db as session:
             try:
@@ -224,6 +225,12 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 setattr(project[0], "flight_count", flight_count)
                 setattr(project[0], "most_recent_flight", most_recent_flight)
                 setattr(project[0], "data_product_count", data_product_count)
+                # Add project owner name (from eager-loaded relationship)
+                setattr(
+                    project[0],
+                    "created_by",
+                    project[0].owner.full_name if project[0].owner else None,
+                )
                 return {
                     "response_code": status.HTTP_200_OK,
                     "message": "Project fetched successfully",
