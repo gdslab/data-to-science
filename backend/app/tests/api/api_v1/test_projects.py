@@ -254,6 +254,9 @@ def test_get_project_with_owner_role(
     assert str(project.harvest_date) == response_data["harvest_date"]
     assert response_data["location_id"]
     assert response_data["role"] == "owner"
+    # created_by should be owner's full name
+    owner_full_name = f"{current_user.first_name} {current_user.last_name}"
+    assert response_data.get("created_by") == owner_full_name
 
 
 def test_get_project_with_manager_role(
@@ -272,7 +275,8 @@ def test_get_project_with_viewer_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
-    project = create_project(db)
+    project_owner = create_user(db)
+    project = create_project(db, owner_id=project_owner.id)
     create_project_member(
         db, email=current_user.email, project_id=project.id, role=Role.VIEWER
     )
@@ -281,6 +285,9 @@ def test_get_project_with_viewer_role(
     response_data = response.json()
     assert str(project.id) == response_data["id"]
     assert response_data["role"] != "owner"
+    # created_by should be owner's full name
+    owner_full_name = f"{project_owner.first_name} {project_owner.last_name}"
+    assert response_data.get("created_by") == owner_full_name
 
 
 def test_get_project_by_non_project_member(
