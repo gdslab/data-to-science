@@ -320,6 +320,23 @@ def test_get_projects(
             assert project["role"] != "owner"
 
 
+def test_get_projects_includes_team(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    team = create_team(db, owner_id=current_user.id)
+    project = create_project(db, owner_id=current_user.id, team_id=team.id)
+    response = client.get(API_URL)
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    # Find the project and ensure team object is present
+    matched = next((p for p in response_data if p["id"] == str(project.id)), None)
+    assert matched is not None
+    assert "team" in matched
+    assert matched["team"] is not None
+    assert matched["team"]["id"] == str(team.id)
+
+
 def test_get_projects_with_flights(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:

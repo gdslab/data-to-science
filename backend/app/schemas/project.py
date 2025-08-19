@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, field_validator, ValidationInfo, UUID4
 
 from app.schemas.location import LocationCreate
 from app.schemas.role import Role
+from app.schemas.team import Team
 
 
 # shared properties
@@ -76,7 +77,7 @@ class Centroid(BaseModel):
 
 
 # schema returned when multiple projects requested
-class Projects(BaseModel):
+class Projects(BaseModel, from_attributes=True):
     id: UUID4
     centroid: Centroid
     description: str
@@ -89,6 +90,7 @@ class Projects(BaseModel):
     role: Role
     title: str
     liked: Optional[bool] = False
+    team: Optional[Team] = None
 
 
 # additional properties stored in DB

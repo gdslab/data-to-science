@@ -32,7 +32,7 @@ export default function CountBadge({
       )}
     >
       {icon}
-      <p className="whitespace-nowrap text-sm">
+      <p className="whitespace-nowrap text-xs">
         {count} {label}
       </p>
     </span>

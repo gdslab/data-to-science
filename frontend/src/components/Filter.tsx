@@ -7,6 +7,10 @@ export default function Filter({
   isOpen,
   onOpen,
   onClose,
+  sublistParentValue,
+  sublistCategories,
+  sublistSelected,
+  setSublistSelected,
 }: {
   categories: { label: string; value: string }[];
   selectedCategory: string[];
@@ -14,6 +18,10 @@ export default function Filter({
   isOpen: boolean;
   onOpen: () => void;
   onClose: () => void;
+  sublistParentValue?: string;
+  sublistCategories?: { label: string; value: string }[];
+  sublistSelected?: string[];
+  setSublistSelected?: (selected: string[]) => void;
 }) {
   const detailsRef = useRef<HTMLDetailsElement>(null);
 
@@ -40,9 +48,29 @@ export default function Filter({
     if (e.target.checked) {
       setSelectedCategory([...selectedCategory, e.target.value]);
     } else {
-      setSelectedCategory([
-        ...selectedCategory.filter((category) => category !== e.target.value),
-      ]);
+      const next = selectedCategory.filter(
+        (category) => category !== e.target.value
+      );
+      setSelectedCategory(next);
+      if (
+        sublistParentValue &&
+        setSublistSelected &&
+        sublistSelected &&
+        e.target.value === sublistParentValue
+      ) {
+        setSublistSelected([]);
+      }
+    }
+  }
+
+  function onSubChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!setSublistSelected || !sublistSelected) return;
+    if (e.target.checked) {
+      setSublistSelected([...sublistSelected, e.target.value]);
+    } else {
+      setSublistSelected(
+        sublistSelected.filter((value) => value !== e.target.value)
+      );
     }
   }
 
@@ -93,34 +121,73 @@ export default function Filter({
                 <button
                   type="button"
                   className="text-sm text-gray-900 underline underline-offset-4"
-                  onClick={() => setSelectedCategory([])}
+                  onClick={() => {
+                    setSelectedCategory([]);
+                    if (setSublistSelected) setSublistSelected([]);
+                  }}
                 >
                   Reset
                 </button>
               </header>
 
               <ul className="space-y-1 border-t border-gray-200 p-4">
-                {categories.map((category) => (
-                  <li key={category.value}>
-                    <label
-                      htmlFor={category.value}
-                      className="inline-flex items-center gap-2"
-                    >
-                      <input
-                        type="checkbox"
-                        id={category.value}
-                        className="size-5 rounded text-accent2 border-gray-300"
-                        value={category.value}
-                        checked={selectedCategory.indexOf(category.value) > -1}
-                        onChange={onChange}
-                      />
-                      <span className="text-sm font-medium text-gray-700">
-                        {' '}
-                        {category.label}{' '}
-                      </span>
-                    </label>
-                  </li>
-                ))}
+                {categories.map((category) => {
+                  const isParent =
+                    sublistParentValue && category.value === sublistParentValue;
+                  const parentChecked =
+                    selectedCategory.indexOf(category.value) > -1;
+                  return (
+                    <li key={category.value}>
+                      <label
+                        htmlFor={category.value}
+                        className="inline-flex items-center gap-2"
+                      >
+                        <input
+                          type="checkbox"
+                          id={category.value}
+                          className="size-5 rounded text-accent2 border-gray-300"
+                          value={category.value}
+                          checked={parentChecked}
+                          onChange={onChange}
+                        />
+                        <span className="text-sm font-medium text-gray-700">
+                          {' '}
+                          {category.label}{' '}
+                        </span>
+                      </label>
+                      {isParent && parentChecked && sublistCategories && (
+                        <ul className="mt-2 ml-6 space-y-1">
+                          {sublistCategories.map((sub) => (
+                            <li key={sub.value}>
+                              <label
+                                htmlFor={`${category.value}-${sub.value}`}
+                                className="inline-flex items-center gap-2"
+                              >
+                                <input
+                                  type="checkbox"
+                                  id={`${category.value}-${sub.value}`}
+                                  className="size-4 rounded text-accent2 border-gray-300"
+                                  value={sub.value}
+                                  checked={
+                                    !!sublistSelected &&
+                                    sublistSelected.indexOf(sub.value) > -1
+                                  }
+                                  onChange={onSubChange}
+                                />
+                                <span
+                                  className="text-sm text-gray-700 inline-block w-[120px] truncate"
+                                  title={sub.label}
+                                >
+                                  {sub.label}
+                                </span>
+                              </label>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           </div>
