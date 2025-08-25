@@ -23,11 +23,17 @@ import { DataProduct } from '../../Project';
 import EditableDataType from './EditableDataType';
 
 export function isGeoTIFF(dataType: string): boolean {
-  return dataType !== 'point_cloud' && dataType !== 'panoramic';
+  return (
+    dataType !== 'point_cloud' &&
+    dataType !== 'panoramic' &&
+    dataType !== '3dgs'
+  );
 }
 
 export function getDataProductName(dataType: string): string {
   switch (dataType) {
+    case '3dgs':
+      return '3DGS';
     case 'dsm':
       return 'DSM';
     case 'ortho':
@@ -115,8 +121,11 @@ function getDataProductActions(
   });
 
   return data.map((dataProduct) => {
-    // For panoramic data products, only show view, download, and delete (for owners)
-    if (dataProduct.data_type === 'panoramic') {
+    // For panoramic and 3DGS data products, only show view, download, and delete (for owners)
+    if (
+      dataProduct.data_type === 'panoramic' ||
+      dataProduct.data_type === '3dgs'
+    ) {
       const actions = [
         getViewAction(dataProduct),
         getDownloadAction(dataProduct),

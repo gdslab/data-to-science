@@ -70,7 +70,8 @@ export default function EditableDataType({
         <span>{dataProduct.data_type.split('_').join(' ').toUpperCase()}</span>
         {(projectRole === 'owner' || projectRole === 'manager') &&
           dataProduct.data_type.toLowerCase() !== 'point_cloud' &&
-          dataProduct.data_type.toLowerCase() !== 'panoramic' && (
+          dataProduct.data_type.toLowerCase() !== 'panoramic' &&
+          dataProduct.data_type.toLowerCase() !== '3dgs' && (
             <button onClick={toggleIsEditing}>
               <PencilIcon className="h-3 w-3" />
             </button>

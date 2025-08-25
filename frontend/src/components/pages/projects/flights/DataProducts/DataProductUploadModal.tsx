@@ -56,7 +56,9 @@ export default function DataProductUploadModal({
   }
 
   if (
-    ['dem', 'ortho', 'panoramic', 'point_cloud', 'other'].indexOf(dtype) > -1
+    ['3dgs', 'dem', 'ortho', 'panoramic', 'point_cloud', 'other'].indexOf(
+      dtype
+    ) > -1
   ) {
     uploadType = 'dataProduct';
   } else {

@@ -248,6 +248,31 @@ export default function RasterSymbologyAccessControls({
               </div>
             </div>
           )}
+          {dataProduct.data_type === '3dgs' && (
+            <>
+              <div className="col-span-2">
+                <CopyURLButton
+                  copyText="Copy Share URL"
+                  copiedText="Copied"
+                  url={window.origin + `/share3dgs?file_id=${dataProduct.id}`}
+                  title="Copy link that can be used to share the 3D Gaussian Splatting image"
+                />
+              </div>
+              <div className="col-span-2">
+                <DownloadQRButton
+                  closeShareButton={() => setIsOpen(false)}
+                  dataProductId={dataProduct.id}
+                  flightId={dataProduct.flight_id}
+                  projectId={project.id}
+                  setStatus={setStatus}
+                  setQrCode={setQrCode}
+                  title="Show QR Code"
+                  titleOnSubmission="Generating QR Code..."
+                  url={window.origin + `/share3dgs?file_id=${dataProduct.id}`}
+                />
+              </div>
+            </>
+          )}
           {dataProduct.data_type === 'panoramic' && (
             <>
               <div className="col-span-2">

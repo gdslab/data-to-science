@@ -280,14 +280,22 @@ def update_data_product_data_type(
         )
 
     # reject request if point cloud or panoramic
-    if (
-        data_product.data_type.lower() == "point_cloud"
-        or data_product.data_type.lower() == "panoramic"
-    ):
+    if data_product.data_type.lower() == "point_cloud":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot change point cloud data type",
         )
+    if data_product.data_type.lower() == "panoramic":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot change panoramic data type",
+        )
+    if data_product.data_type.lower() == "3dgs":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot change 3D Gaussian Splatting data type",
+        )
+
     updated_data_product = crud.data_product.update_data_type(
         db, data_product_id=data_product_id, new_data_type=data_type_in.data_type
     )

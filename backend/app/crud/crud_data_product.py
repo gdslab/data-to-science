@@ -130,6 +130,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                 if (
                     data_product.data_type != "point_cloud"
                     and data_product.data_type != "panoramic"
+                    and data_product.data_type != "3dgs"
                 ):
                     user_style_query = select(UserStyle).where(
                         and_(
@@ -179,6 +180,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                     DataProduct.id == data_product_id,
                     func.lower(DataProduct.data_type) != "point_cloud",
                     func.lower(DataProduct.data_type) != "panoramic",
+                    func.lower(DataProduct.data_type) != "3dgs",
                     DataProduct.is_active == True,
                 )
             )
@@ -250,6 +252,7 @@ def set_bbox_attr(data_product: DataProduct) -> None:
     if (
         data_product.data_type != "point_cloud"
         and data_product.data_type != "panoramic"
+        and data_product.data_type != "3dgs"
         and Path(data_product.filepath).suffix == ".tif"
     ):
         try:

@@ -51,14 +51,49 @@ export default function DataProductCard({
             {/* preview image */}
             <div className="relative flex items-center justify-center bg-accent3/20">
               {dataProduct.status === 'SUCCESS' &&
-              (isGeoTIFF(dataProduct.data_type) ||
-                dataProduct.data_type === 'panoramic') ? (
+              isGeoTIFF(dataProduct.data_type) ? (
                 <div className="flex items-center justify-center w-full h-48">
                   <img
                     className="object-scale-down h-full"
                     src={dataProduct.url.replace('tif', 'jpg')}
                     alt="Preview of data product"
                   />
+                  <div
+                    className="absolute bottom-0 w-full text-center text-white p-1 bg-accent3/80 cursor-pointer"
+                    onClick={() => {
+                      navigator.clipboard.writeText(dataProduct.url);
+                      setIsCopied(true);
+                      setTimeout(() => {
+                        setIsCopied(false);
+                      }, 3000);
+                    }}
+                  >
+                    {isCopied ? 'Copied to clipboard' : 'Click to Copy URL'}
+                  </div>
+                </div>
+              ) : dataProduct.data_type === 'panoramic' ? (
+                <div className="flex items-center justify-center w-full h-48">
+                  <img
+                    className="object-scale-down h-full"
+                    src={dataProduct.url}
+                    alt="Preview of data product"
+                  />
+                  <div
+                    className="absolute bottom-0 w-full text-center text-white p-1 bg-accent3/80 cursor-pointer"
+                    onClick={() => {
+                      navigator.clipboard.writeText(dataProduct.url);
+                      setIsCopied(true);
+                      setTimeout(() => {
+                        setIsCopied(false);
+                      }, 3000);
+                    }}
+                  >
+                    {isCopied ? 'Copied to clipboard' : 'Click to Copy URL'}
+                  </div>
+                </div>
+              ) : dataProduct.data_type === '3dgs' ? (
+                <div className="flex items-center justify-center w-full h-48">
+                  <span>3DGS Preview</span>
                   <div
                     className="absolute bottom-0 w-full text-center text-white p-1 bg-accent3/80 cursor-pointer"
                     onClick={() => {
