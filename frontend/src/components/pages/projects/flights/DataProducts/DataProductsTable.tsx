@@ -13,14 +13,14 @@ import {
 import { Status } from '../../../../Alert';
 import { CopyURLButton } from '../../../../Buttons';
 import DataProductDeleteModal from './DataProductDeleteModal';
+import EditableDataType from './EditableDataType';
 import { useProjectContext } from '../../ProjectContext';
 import { Project } from '../../ProjectList';
 import Table, { TableBody, TableHead } from '../../../../Table';
 import ToolboxModal from './ToolboxModal';
 import DataProductShareModal from './DataProductShareModal';
-
+import PlayCanvasViewer from '../../../../maps/PlayCanvasViewer';
 import { DataProduct } from '../../Project';
-import EditableDataType from './EditableDataType';
 
 export function isGeoTIFF(dataType: string): boolean {
   return (
@@ -239,6 +239,15 @@ export default function DataProductsTable({
                             Preview photo not ready
                           </span>
                           <PhotoIcon className="h-24 w-24" />
+                        </div>
+                      ) : dataset.data_type === '3dgs' ? (
+                        <div>
+                          <span className="sr-only">
+                            Preview photo not ready
+                          </span>
+                          {dataset.url && (
+                            <PlayCanvasViewer splatUrl={dataset.url} />
+                          )}
                         </div>
                       ) : (
                         <div>No preview</div>

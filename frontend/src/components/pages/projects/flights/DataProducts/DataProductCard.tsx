@@ -15,6 +15,7 @@ import EditableDataType from './EditableDataType';
 import ToolboxModal from './ToolboxModal';
 import { useProjectContext } from '../../ProjectContext';
 import DataProductShareModal from './DataProductShareModal';
+import PlayCanvasViewer from '../../../../maps/PlayCanvasViewer';
 
 import { DataProduct } from '../../Project';
 
@@ -51,7 +52,8 @@ export default function DataProductCard({
             {/* preview image */}
             <div className="relative flex items-center justify-center bg-accent3/20">
               {dataProduct.status === 'SUCCESS' &&
-              isGeoTIFF(dataProduct.data_type) ? (
+              isGeoTIFF(dataProduct.data_type) &&
+              dataProduct.url ? (
                 <div className="flex items-center justify-center w-full h-48">
                   <img
                     className="object-scale-down h-full"
@@ -71,7 +73,7 @@ export default function DataProductCard({
                     {isCopied ? 'Copied to clipboard' : 'Click to Copy URL'}
                   </div>
                 </div>
-              ) : dataProduct.data_type === 'panoramic' ? (
+              ) : dataProduct.data_type === 'panoramic' && dataProduct.url ? (
                 <div className="flex items-center justify-center w-full h-48">
                   <img
                     className="object-scale-down h-full"
@@ -91,21 +93,9 @@ export default function DataProductCard({
                     {isCopied ? 'Copied to clipboard' : 'Click to Copy URL'}
                   </div>
                 </div>
-              ) : dataProduct.data_type === '3dgs' ? (
+              ) : dataProduct.data_type === '3dgs' && dataProduct.url ? (
                 <div className="flex items-center justify-center w-full h-48">
-                  <span>3DGS Preview</span>
-                  <div
-                    className="absolute bottom-0 w-full text-center text-white p-1 bg-accent3/80 cursor-pointer"
-                    onClick={() => {
-                      navigator.clipboard.writeText(dataProduct.url);
-                      setIsCopied(true);
-                      setTimeout(() => {
-                        setIsCopied(false);
-                      }, 3000);
-                    }}
-                  >
-                    {isCopied ? 'Copied to clipboard' : 'Click to Copy URL'}
-                  </div>
+                  <PlayCanvasViewer splatUrl={dataProduct.url} />
                 </div>
               ) : dataProduct.status === 'SUCCESS' &&
                 dataProduct.data_type === 'point_cloud' ? (

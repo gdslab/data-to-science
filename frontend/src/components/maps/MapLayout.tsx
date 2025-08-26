@@ -36,7 +36,7 @@ export default function MapLayout() {
                 />
               </div>
               {/* page content */}
-              <div className="w-full">
+              <div className="w-full h-full">
                 <MapViewMode />
               </div>
             </div>
