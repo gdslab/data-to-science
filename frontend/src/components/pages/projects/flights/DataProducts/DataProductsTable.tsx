@@ -13,21 +13,27 @@ import {
 import { Status } from '../../../../Alert';
 import { CopyURLButton } from '../../../../Buttons';
 import DataProductDeleteModal from './DataProductDeleteModal';
+import EditableDataType from './EditableDataType';
 import { useProjectContext } from '../../ProjectContext';
 import { Project } from '../../ProjectList';
 import Table, { TableBody, TableHead } from '../../../../Table';
 import ToolboxModal from './ToolboxModal';
 import DataProductShareModal from './DataProductShareModal';
-
+import PlayCanvasViewer from '../../../../maps/PlayCanvasViewer';
 import { DataProduct } from '../../Project';
-import EditableDataType from './EditableDataType';
 
 export function isGeoTIFF(dataType: string): boolean {
-  return dataType !== 'point_cloud' && dataType !== 'panoramic';
+  return (
+    dataType !== 'point_cloud' &&
+    dataType !== 'panoramic' &&
+    dataType !== '3dgs'
+  );
 }
 
 export function getDataProductName(dataType: string): string {
   switch (dataType) {
+    case '3dgs':
+      return '3DGS';
     case 'dsm':
       return 'DSM';
     case 'ortho':
@@ -115,8 +121,11 @@ function getDataProductActions(
   });
 
   return data.map((dataProduct) => {
-    // For panoramic data products, only show view, download, and delete (for owners)
-    if (dataProduct.data_type === 'panoramic') {
+    // For panoramic and 3DGS data products, only show view, download, and delete (for owners)
+    if (
+      dataProduct.data_type === 'panoramic' ||
+      dataProduct.data_type === '3dgs'
+    ) {
       const actions = [
         getViewAction(dataProduct),
         getDownloadAction(dataProduct),
@@ -230,6 +239,15 @@ export default function DataProductsTable({
                             Preview photo not ready
                           </span>
                           <PhotoIcon className="h-24 w-24" />
+                        </div>
+                      ) : dataset.data_type === '3dgs' ? (
+                        <div>
+                          <span className="sr-only">
+                            Preview photo not ready
+                          </span>
+                          {dataset.url && (
+                            <PlayCanvasViewer splatUrl={dataset.url} />
+                          )}
                         </div>
                       ) : (
                         <div>No preview</div>

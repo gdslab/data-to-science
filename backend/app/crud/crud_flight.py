@@ -153,6 +153,7 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                         if (
                             data_product.data_type == "panoramic"
                             or data_product.data_type == "point_cloud"
+                            or data_product.data_type == "3dgs"
                             or data_product.data_type != "point_cloud"
                             and data_product.stac_properties
                         ):
@@ -179,6 +180,7 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                                 has_raster
                                 and data_product.data_type != "point_cloud"
                                 and data_product.data_type != "panoramic"
+                                and data_product.data_type != "3dgs"
                             ):
                                 has_required_data_type = True
                 flight.data_products = available_data_products

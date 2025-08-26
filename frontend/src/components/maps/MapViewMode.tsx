@@ -8,6 +8,7 @@ import CompareMap from './CompareMap';
 import HomeMap from './HomeMap';
 import PanoViewer from './PanoViewer';
 import PotreeViewer from './PotreeViewer';
+import PlayCanvasViewer from './PlayCanvasViewer';
 import { useMapLayerContext } from './MapLayersContext';
 
 import api from '../../api';
@@ -98,11 +99,14 @@ export default function MapViewMode() {
     !activeDataProduct ||
     (activeDataProduct &&
       activeDataProduct.data_type !== 'point_cloud' &&
-      activeDataProduct.data_type !== 'panoramic')
+      activeDataProduct.data_type !== 'panoramic' &&
+      activeDataProduct.data_type !== '3dgs')
   ) {
     return <HomeMap layers={layers} />;
   } else if (activeDataProduct.data_type === 'panoramic') {
     return <PanoViewer imageUrl={activeDataProduct.url} />;
+  } else if (activeDataProduct.data_type === '3dgs') {
+    return <PlayCanvasViewer splatUrl={activeDataProduct.url} />;
   } else {
     const copcPath = activeDataProduct.url;
     return <PotreeViewer copcPath={copcPath} />;

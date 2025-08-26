@@ -53,7 +53,8 @@ export default function DataProductCard({
             </span>
           </div>
           {dataProduct.data_type !== 'point_cloud' &&
-          dataProduct.data_type !== 'panoramic' ? (
+          dataProduct.data_type !== 'panoramic' &&
+          dataProduct.data_type !== '3dgs' ? (
             <fieldset className="border border-solid border-slate-300 p-2">
               <legend className="block text-sm text-gray-400 font-semibold pt-1 pb-1">
                 Band Info
@@ -71,6 +72,7 @@ export default function DataProductCard({
           ) : null}
           {dataProduct.data_type !== 'point_cloud' &&
             dataProduct.data_type !== 'panoramic' &&
+            dataProduct.data_type !== '3dgs' &&
             dataProduct.stac_properties.raster.length === 1 && (
               <RasterStats
                 stats={dataProduct.stac_properties.raster[0].stats}
@@ -80,7 +82,8 @@ export default function DataProductCard({
         {activeDataProduct &&
         activeDataProduct.id === dataProduct.id &&
         dataProduct.data_type !== 'point_cloud' &&
-        dataProduct.data_type !== 'panoramic' ? (
+        dataProduct.data_type !== 'panoramic' &&
+        dataProduct.data_type !== '3dgs' ? (
           <div className="mt-2">
             <RasterSymbologySettings />
           </div>

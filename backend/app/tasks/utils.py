@@ -48,6 +48,30 @@ def get_safe_filename_prefix(input_string: str, length: int = 5) -> str:
     return prefix
 
 
+def validate_3dgs_image(
+    image_path: str,
+) -> Tuple[bool, Union[str, Dict[str, Union[str, int]]]]:
+    """Validate a 3D Gaussian Splatting image.
+
+    Args:
+        image_path (str): Path to 3D Gaussian Splatting image.
+
+    Returns:
+        bool: True if image is valid, False otherwise.
+    """
+    # Check if file has PLY extension (case insensitive)
+    if image_path.lower().endswith(".ply"):
+        return (
+            True,
+            "3D Gaussian Splatting image is a valid 3D Gaussian Splatting image",
+        )
+    else:
+        return (
+            False,
+            "3D Gaussian Splatting image is not a valid 3D Gaussian Splatting image",
+        )
+
+
 def validate_panoramic_image(
     image_path: str,
 ) -> Tuple[bool, Union[str, Dict[str, Union[str, int]]]]:
