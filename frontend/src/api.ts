@@ -70,4 +70,37 @@ api.interceptors.response.use(
   }
 );
 
+// Export utility function to refresh tokens for uploads
+let tokenCheckPromise: Promise<boolean> | null = null;
+let lastTokenCheckTs = 0;
+const TOKEN_CHECK_COOLDOWN_MS = 10000; // 10s cooldown to avoid spamming
+
+export async function refreshTokenIfNeeded(): Promise<boolean> {
+  const now = Date.now();
+  if (tokenCheckPromise) return tokenCheckPromise;
+  if (now - lastTokenCheckTs < TOKEN_CHECK_COOLDOWN_MS) return true;
+
+  tokenCheckPromise = (async () => {
+    try {
+      // Simple authenticated request; interceptor will refresh on 401
+      await api.post('/auth/test-token');
+      return true;
+    } catch (_err) {
+      // Retry once after interceptor attempted refresh
+      try {
+        await api.post('/auth/test-token');
+        return true;
+      } catch (_err2) {
+        // Interceptor should redirect on failure; signal false for callers
+        return false;
+      }
+    } finally {
+      lastTokenCheckTs = Date.now();
+      tokenCheckPromise = null;
+    }
+  })();
+
+  return tokenCheckPromise;
+}
+
 export default api;

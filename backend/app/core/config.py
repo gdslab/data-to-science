@@ -1,5 +1,4 @@
 import os
-import secrets
 from typing import Any, Optional
 
 from fastapi_mail.config import ConnectionConfig
@@ -12,8 +11,6 @@ from pydantic import (
     SecretStr,
 )
 from pydantic_settings import BaseSettings
-
-from app.core.utils import generate_secret_key
 
 
 class Settings(BaseSettings):
