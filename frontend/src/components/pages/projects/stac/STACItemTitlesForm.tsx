@@ -19,7 +19,7 @@ export default function STACItemTitlesForm({
       .split('T')[0];
     const dataType = item.properties.data_product_details.data_type;
     const sensor = item.properties.flight_details.sensor;
-    const platform = item.properties.flight_details.platform.replace(/_/g, ' ');
+    const platform = item.properties.flight_details.platform;
     return `${acquisitionDate}_${dataType}_${sensor}_${platform}`;
   };
 
@@ -31,9 +31,19 @@ export default function STACItemTitlesForm({
   };
 
   const clearCustomTitle = (itemId: string) => {
-    const newTitles = { ...customTitles };
-    delete newTitles[itemId];
-    setCustomTitles(newTitles);
+    // Find the item to generate its default title
+    const item = items.find((item) => item.id === itemId);
+    if (!item) return;
+
+    // Generate the actual default title
+    const defaultTitle = generateDefaultTitle(item);
+
+    // Set the title to the generated default instead of deleting
+    // This ensures it will override any server-stored custom title
+    setCustomTitles({
+      ...customTitles,
+      [itemId]: defaultTitle,
+    });
   };
 
   return (
@@ -46,7 +56,15 @@ export default function STACItemTitlesForm({
       <div className="space-y-4 max-h-96 overflow-y-auto">
         {items.map((item) => {
           const defaultTitle = generateDefaultTitle(item);
-          const customTitle = customTitles[item.id] || '';
+          const localCustomTitle = customTitles[item.id] || '';
+
+          // If no local custom title but item has a title that differs from default,
+          // show the item's title in the input field
+          const displayTitle =
+            localCustomTitle ||
+            (item.properties.title && item.properties.title !== defaultTitle
+              ? item.properties.title
+              : '');
 
           return (
             <div
@@ -82,18 +100,18 @@ export default function STACItemTitlesForm({
                 <input
                   id={`title-${item.id}`}
                   type="text"
-                  value={customTitle}
+                  value={displayTitle}
                   onChange={(e) => handleTitleChange(item.id, e.target.value)}
                   placeholder={defaultTitle}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-                {customTitle && (
+                {displayTitle && (
                   <button
                     type="button"
                     onClick={() => clearCustomTitle(item.id)}
                     className="mt-1 text-xs text-blue-600 hover:text-blue-800 underline"
                   >
-                    Clear (use default)
+                    Reset to default
                   </button>
                 )}
               </div>

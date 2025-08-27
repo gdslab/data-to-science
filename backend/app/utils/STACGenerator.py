@@ -61,9 +61,16 @@ class STACGenerator:
         self.project_id = project_id
         self.sci_doi = sci_doi
         self.sci_citation = sci_citation
-        self.license = (
-            license or "CC-BY-NC-4.0"
-        )  # Default to CC-BY-NC-4.0 if not provided
+        # Handle license with priority: new value, cached value, then default
+        cached_license = None
+        if (
+            cached_stac_metadata
+            and "collection" in cached_stac_metadata
+            and isinstance(cached_stac_metadata["collection"], dict)
+        ):
+            cached_license = cached_stac_metadata["collection"].get("license")
+
+        self.license = license or cached_license or "CC-BY-NC-4.0"
         self.custom_titles = custom_titles or {}
         self.cached_stac_metadata = cached_stac_metadata
 
@@ -102,8 +109,11 @@ class STACGenerator:
                     logger.error(error_msg)
 
                     # Generate title for failed item using utility function
+                    # Get cached item for this data product
+                    data_product_id_str = str(data_product.id)
+                    cached_item = self.cached_items_lookup.get(data_product_id_str)
                     title = generate_item_title(
-                        data_product, flight, self.custom_titles
+                        data_product, flight, self.custom_titles, cached_item
                     )
 
                     # Create failed item status
@@ -205,17 +215,36 @@ class STACGenerator:
         Returns:
             Collection: Project Collection.
         """
-        # Prepare scientific metadata
+        # Prepare scientific metadata with priority:
+        # 1. New values from current request (self.sci_doi, self.sci_citation)
+        # 2. Existing values from cached collection
+        # 3. No scientific metadata
         stac_extensions = []
         extra_fields = {}
 
+        # Get cached scientific metadata if available
+        cached_sci_doi = None
+        cached_sci_citation = None
+        if (
+            self.cached_stac_metadata
+            and "collection" in self.cached_stac_metadata
+            and isinstance(self.cached_stac_metadata["collection"], dict)
+        ):
+            cached_collection = self.cached_stac_metadata["collection"]
+            cached_sci_doi = cached_collection.get("sci:doi")
+            cached_sci_citation = cached_collection.get("sci:citation")
+
+        # Determine final values: prioritize new values, then cached values
+        final_sci_doi = self.sci_doi or cached_sci_doi
+        final_sci_citation = self.sci_citation or cached_sci_citation
+
         # Add scientific extension if DOI or citation is provided
-        if self.sci_doi or self.sci_citation:
+        if final_sci_doi or final_sci_citation:
             stac_extensions.append(SCIENTIFIC_EXTENSION_URI)
-            if self.sci_doi:
-                extra_fields["sci:doi"] = self.sci_doi
-            if self.sci_citation:
-                extra_fields["sci:citation"] = self.sci_citation
+            if final_sci_doi:
+                extra_fields["sci:doi"] = final_sci_doi
+            if final_sci_citation:
+                extra_fields["sci:citation"] = final_sci_citation
 
         collection = Collection(
             id=str(self.project.id),
@@ -262,8 +291,10 @@ class STACGenerator:
             },
             "flight_details": flight_details,
         }
-        # Add title to properties - use custom title if provided, otherwise use default
-        title = generate_item_title(data_product, flight, self.custom_titles)
+        # Add title to properties - use custom title if provided, then cached title, otherwise use default
+        title = generate_item_title(
+            data_product, flight, self.custom_titles, cached_item
+        )
         flight_properties["title"] = title
 
         if data_product.data_type == "point_cloud":
@@ -410,27 +441,49 @@ def generate_item_title(
     data_product: models.DataProduct,
     flight: models.Flight,
     custom_titles: Optional[dict] = None,
+    cached_item: Optional[dict] = None,
 ) -> str:
     """Generate title for a STAC item.
+
+    Priority order:
+    1. Custom title from current request (custom_titles)
+    2. Existing title from cached item (if not default pattern)
+    3. Generated default title
 
     Args:
         data_product: DataProduct object
         flight: Flight object
         custom_titles: Optional dict of custom titles keyed by data_product_id
+        cached_item: Optional cached STAC item data
 
     Returns:
         str: Generated title for the item
     """
     data_product_id = str(data_product.id)
 
+    # 1. Check for new custom title from current request
     if (
         custom_titles
         and data_product_id in custom_titles
         and custom_titles[data_product_id]
     ):
         return custom_titles[data_product_id]
-    else:
-        return f"{flight.acquisition_date}_{data_product.data_type}_{flight.sensor}_{flight.platform}"
+
+    # 2. Check for existing title in cached item
+    if (
+        cached_item
+        and "properties" in cached_item
+        and "title" in cached_item["properties"]
+    ):
+        cached_title = cached_item["properties"]["title"]
+        # Generate default title to compare against
+        default_title = f"{flight.acquisition_date}_{data_product.data_type}_{flight.sensor}_{flight.platform}"
+        # If cached title is not the default pattern, preserve it
+        if cached_title != default_title:
+            return cached_title
+
+    # 3. Generate default title
+    return f"{flight.acquisition_date}_{data_product.data_type}_{flight.sensor}_{flight.platform}"
 
 
 def generate_asset_for_cog(
