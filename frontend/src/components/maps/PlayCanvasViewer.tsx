@@ -13,16 +13,12 @@ function Scene({ splatUrl }: { splatUrl: string }) {
     distanceMin: number;
     distanceMax: number;
     distance: number;
-    mouse: { distanceSensitivity: number };
-    touch: { distanceSensitivity: number };
     focusEntity: PcEntity | null;
     frameOnStart: boolean;
   }>({
     distanceMin: 0.05,
     distanceMax: 10,
     distance: 3,
-    mouse: { distanceSensitivity: 0.1 },
-    touch: { distanceSensitivity: 0.1 },
     focusEntity: null,
     frameOnStart: true,
   });
@@ -58,14 +54,11 @@ function Scene({ splatUrl }: { splatUrl: string }) {
       Math.max(radius * 3, distanceMin + radius * 0.5),
       distanceMax - radius * 0.1
     );
-    const sensitivity = Math.min(Math.max(radius * 0.1, 0.02), 5);
 
     setControls({
       distanceMin,
       distanceMax,
       distance,
-      mouse: { distanceSensitivity: sensitivity },
-      touch: { distanceSensitivity: sensitivity },
       focusEntity: (gsplatEntityRef.current as PcEntity | null) ?? null,
       frameOnStart: true,
     });
@@ -88,8 +81,6 @@ function Scene({ splatUrl }: { splatUrl: string }) {
           distanceMin={controls.distanceMin}
           distanceMax={controls.distanceMax}
           distance={controls.distance}
-          mouse={{ distanceSensitivity: controls.mouse.distanceSensitivity }}
-          touch={{ distanceSensitivity: controls.touch.distanceSensitivity }}
           focusEntity={controls.focusEntity}
           frameOnStart={controls.frameOnStart}
         />
