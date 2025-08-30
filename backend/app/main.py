@@ -4,7 +4,7 @@ from typing import Awaitable, Callable
 
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.background import BackgroundTask
 
@@ -34,6 +34,21 @@ app.include_router(extra_router, tags=["extras"])
 
 app.mount("/static", ProtectedStaticFiles(directory=settings.STATIC_DIR), name="static")
 app.mount("/potree", StaticFiles(directory=settings.POTREE_DIR), name="potree")
+app.mount(
+    "/pc-gltf-viewer",
+    StaticFiles(directory=settings.PC_GLTF_VIEWER_DIR, html=True),
+    name="pc-gltf-viewer",
+)
+
+
+@app.get("/pc-gltf-viewer")
+def pc_gltf_viewer_redirect():
+    return RedirectResponse(url="/pc-gltf-viewer/")
+
+
+@app.get("/pc-gltf-viewer/index.html")
+def pc_gltf_viewer_index_redirect():
+    return RedirectResponse(url="/pc-gltf-viewer/")
 
 
 @app.exception_handler(HTTPException)

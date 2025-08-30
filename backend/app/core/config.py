@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     TEST_STATIC_DIR: str = "/tmp/static"
     STATIC_DIR: str = "/static"
     POTREE_DIR: str = "/app/potree"
+    PC_GLTF_VIEWER_DIR: str = "/app/pc-gltf-viewer"
 
     API_LOGDIR: str = "/app/logs"
 
