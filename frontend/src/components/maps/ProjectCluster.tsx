@@ -143,6 +143,15 @@ export default function ProjectCluster({
     // Fetch project GeoJSON data to calculate the bounds
     const bounds = calculateBoundsFromGeoJSON(geojsonData);
 
+    // Skip fitting bounds if they are invalid
+    if (!bounds) {
+      console.warn('Invalid or missing geographic bounds, skipping map fit');
+      if (setIsMapReady) {
+        setIsMapReady(true);
+      }
+      return;
+    }
+
     // Determine animation duration based on whether it's the first load
     const duration = isMapReady === undefined || isMapReady ? 1000 : 1;
 
