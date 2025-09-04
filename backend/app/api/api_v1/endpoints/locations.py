@@ -117,13 +117,59 @@ def upload_vector_layer_shapefile(
     return geojson
 
 
+def validate_geojson_coordinates(geojson: FeatureCollection) -> None:
+    """
+    Validates that all coordinates in a GeoJSON FeatureCollection are within valid geographic ranges.
+    Raises HTTPException if invalid coordinates are found.
+
+    Args:
+        geojson: The FeatureCollection to validate
+
+    Raises:
+        HTTPException: If coordinates are outside valid geographic ranges
+    """
+    for i, feature in enumerate(geojson.features):
+        if hasattr(feature.geometry, "coordinates"):
+            # Handle different geometry types
+            if feature.geometry.type == "Point":
+                coords = [feature.geometry.coordinates]
+            elif feature.geometry.type in ["LineString", "MultiPoint"]:
+                coords = feature.geometry.coordinates
+            elif feature.geometry.type in ["Polygon", "MultiLineString"]:
+                # Flatten polygon/multilinestring coordinates
+                coords = []
+                for ring in feature.geometry.coordinates:
+                    coords.extend(ring)
+            elif feature.geometry.type == "MultiPolygon":
+                # Flatten multipolygon coordinates
+                coords = []
+                for polygon in feature.geometry.coordinates:
+                    for ring in polygon:
+                        coords.extend(ring)
+            else:
+                continue  # Skip unknown geometry types
+
+            # Validate each coordinate pair
+            for coord in coords:
+                if len(coord) >= 2:
+                    lng, lat = coord[0], coord[1]
+                    if not (-180 <= lng <= 180):
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Invalid longitude {lng} in feature {i}. Must be between -180 and 180.",
+                        )
+                    if not (-90 <= lat <= 90):
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Invalid latitude {lat} in feature {i}. Must be between -90 and 90.",
+                        )
+
+
 def handle_geojson(
     file: BinaryIO, required_geom_type: str | None = None
 ) -> FeatureCollection:
     uploaded_file = file.read()
     geojson_dict = json.loads(uploaded_file)
-    # Check if geojson is valid Feature or FeatureCollection
-    print(geojson_dict)
 
     # Validate the structure and create appropriate object
     if not isinstance(geojson_dict, dict):
@@ -137,11 +183,13 @@ def handle_geojson(
         try:
             geojson = FeatureCollection(**geojson_dict)
             if required_geom_type and required_geom_type.lower() == "polygon":
-                for feature in geojson.features:
-                    if not isinstance(feature.geometry, Polygon) and not isinstance(
-                        feature.geometry, MultiPolygon
+                for feat in geojson.features:
+                    if not isinstance(feat.geometry, Polygon) and not isinstance(
+                        feat.geometry, MultiPolygon
                     ):
                         raise ValueError("Invalid geometry type")
+            # Validate geographic coordinates
+            validate_geojson_coordinates(geojson)
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -156,7 +204,12 @@ def handle_geojson(
                     feature.geometry, MultiPolygon
                 ):
                     raise ValueError("Invalid geometry type")
-            return FeatureCollection(features=[feature], type="FeatureCollection")
+            # Create FeatureCollection and validate coordinates
+            feature_collection = FeatureCollection(
+                features=[feature], type="FeatureCollection"
+            )
+            validate_geojson_coordinates(feature_collection)
+            return feature_collection
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
