@@ -52,6 +52,9 @@ def test_create_flight(db: Session) -> None:
     assert PLATFORMS[0] == flight.platform
     assert project.id == flight.project_id
     assert pilot.id == flight.pilot_id
+    assert flight.created_at is not None
+    assert flight.updated_at is not None
+    assert flight.updated_at >= flight.created_at
 
 
 def test_get_flight(db: Session) -> None:
@@ -70,6 +73,8 @@ def test_get_flight(db: Session) -> None:
     assert flight.platform == stored_flight["result"].platform
     assert flight.project_id == stored_flight["result"].project_id
     assert flight.pilot_id == stored_flight["result"].pilot_id
+    assert stored_flight["result"].created_at is not None
+    assert stored_flight["result"].updated_at is not None
 
 
 def test_get_flights(db: Session) -> None:
@@ -175,11 +180,15 @@ def test_get_flights_excluding_processing_or_failed_data_products(db: Session) -
 
 def test_update_flight(db: Session) -> None:
     flight = create_flight(db, altitude=60, sensor=SENSORS[0])
+    original_created_at = flight.created_at
+    original_updated_at = flight.updated_at
     flight_in_update = FlightUpdate(altitude=100, sensor=SENSORS[1])
     flight_update = crud.flight.update(db, db_obj=flight, obj_in=flight_in_update)
     assert flight.id == flight_update.id
     assert flight_in_update.altitude == flight_update.altitude
     assert flight_in_update.sensor == flight_update.sensor
+    assert flight_update.created_at == original_created_at
+    assert flight_update.updated_at > original_updated_at
 
 
 def test_deactivate_flight(db: Session) -> None:

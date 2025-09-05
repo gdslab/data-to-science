@@ -16,6 +16,9 @@ def test_create_raw_data(db: Session) -> None:
     assert raw_data.obj.original_filename == "myrawdata.zip"
     assert raw_data.obj.is_initial_processing_completed is True
     assert os.path.exists(raw_data.obj.filepath)
+    assert raw_data.obj.created_at is not None
+    assert raw_data.obj.updated_at is not None
+    assert raw_data.obj.updated_at >= raw_data.obj.created_at
 
 
 def test_read_raw_data(db: Session) -> None:
@@ -34,6 +37,8 @@ def test_read_raw_data(db: Session) -> None:
         stored_raw_data.is_initial_processing_completed
         == raw_data.obj.is_initial_processing_completed
     )
+    assert stored_raw_data.created_at is not None
+    assert stored_raw_data.updated_at is not None
 
 
 def test_read_multi_raw_data(db: Session) -> None:

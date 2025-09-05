@@ -69,6 +69,8 @@ class Project(ProjectInDBBase):
     most_recent_flight: Optional[date] = None
     role: Role = Role.VIEWER
     created_by: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
 
 
 # project boundary centroid

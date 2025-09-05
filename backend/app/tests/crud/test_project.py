@@ -48,6 +48,9 @@ def test_create_project_without_team(db: Session) -> None:
     assert project.owner_id == user.id
     assert project.is_active is True
     assert project.is_published is False
+    assert project.created_at is not None
+    assert project.updated_at is not None
+    assert project.updated_at >= project.created_at
 
 
 def test_create_project_with_team(db: Session) -> None:
@@ -120,6 +123,8 @@ def test_get_project_by_id(db: Session) -> None:
     assert project.owner_id == stored_project.owner_id
     assert project.is_active is True
     assert project.is_published is False
+    assert stored_project.created_at is not None
+    assert stored_project.updated_at is not None
 
 
 def test_get_project_by_user_and_project_id(db: Session) -> None:
@@ -270,6 +275,8 @@ def test_get_all_projects_includes_team(db: Session) -> None:
 
 def test_update_project(db: Session) -> None:
     project = create_project(db)
+    original_created_at = project.created_at
+    original_updated_at = project.updated_at
     new_title = random_team_name()
     new_planting_date = random_planting_date()
     project_in_update = ProjectUpdate(title=new_title, planting_date=new_planting_date)
@@ -291,6 +298,8 @@ def test_update_project(db: Session) -> None:
     assert project.planting_date == updated_project.planting_date
     assert project.description == updated_project.description
     assert project.owner_id == updated_project.owner_id
+    assert updated_project.created_at == original_created_at
+    assert updated_project.updated_at > original_updated_at
 
 
 def test_update_project_with_team(db: Session) -> None:
