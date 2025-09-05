@@ -788,43 +788,58 @@ async def get_share_potree_viewer(
         margin: 0;
         padding: 0;
         font-family: system-ui, -apple-system, sans-serif;
-        background: #f5f5f5;
+        background: #f9fafb;
         display: flex;
         align-items: center;
         justify-content: center;
         min-height: 100vh;
       }}
-      .error-container {{
-        text-align: center;
-        padding: 2rem;
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      .alert-container {{
+        border-left: 4px solid #ef4444;
+        background-color: #fef2f2;
+        border-radius: 6px;
+        padding: 1rem;
         max-width: 400px;
         margin: 1rem;
       }}
-      .error-icon {{
-        font-size: 3rem;
+      .alert-content {{
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }}
+      .alert-icon {{
+        height: 1.5rem;
+        width: 1.5rem;
+        color: #ef4444;
+        flex-shrink: 0;
+      }}
+      .alert-text {{
+        flex: 1;
+      }}
+      .alert-title {{
+        display: block;
+        font-weight: 500;
         color: #dc2626;
-        margin-bottom: 1rem;
+        margin-bottom: 0.25rem;
       }}
-      .error-title {{
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: #374151;
-        margin-bottom: 0.5rem;
-      }}
-      .error-message {{
-        color: #6b7280;
+      .alert-message {{
+        font-size: 0.875rem;
+        color: #b91c1c;
         line-height: 1.5;
       }}
     </style>
   </head>
   <body>
-    <div class="error-container">
-      <div class="error-icon">⚠️</div>
-      <div class="error-title">Access Denied</div>
-      <div class="error-message">{error_message}</div>
+    <div class="alert-container">
+      <div class="alert-content">
+        <svg class="alert-icon" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+        </svg>
+        <div class="alert-text">
+          <strong class="alert-title">Access Denied</strong>
+          <div class="alert-message">{error_message}</div>
+        </div>
+      </div>
     </div>
   </body>
 </html>"""
@@ -845,43 +860,58 @@ async def get_share_potree_viewer(
         margin: 0;
         padding: 0;
         font-family: system-ui, -apple-system, sans-serif;
-        background: #f5f5f5;
+        background: #f9fafb;
         display: flex;
         align-items: center;
         justify-content: center;
         min-height: 100vh;
       }}
-      .error-container {{
-        text-align: center;
-        padding: 2rem;
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      .alert-container {{
+        border-left: 4px solid #ef4444;
+        background-color: #fef2f2;
+        border-radius: 6px;
+        padding: 1rem;
         max-width: 400px;
         margin: 1rem;
       }}
-      .error-icon {{
-        font-size: 3rem;
+      .alert-content {{
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }}
+      .alert-icon {{
+        height: 1.5rem;
+        width: 1.5rem;
+        color: #ef4444;
+        flex-shrink: 0;
+      }}
+      .alert-text {{
+        flex: 1;
+      }}
+      .alert-title {{
+        display: block;
+        font-weight: 500;
         color: #dc2626;
-        margin-bottom: 1rem;
+        margin-bottom: 0.25rem;
       }}
-      .error-title {{
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: #374151;
-        margin-bottom: 0.5rem;
-      }}
-      .error-message {{
-        color: #6b7280;
+      .alert-message {{
+        font-size: 0.875rem;
+        color: #b91c1c;
         line-height: 1.5;
       }}
     </style>
   </head>
   <body>
-    <div class="error-container">
-      <div class="error-icon">❌</div>
-      <div class="error-title">Error</div>
-      <div class="error-message">Unable to generate URL for data product</div>
+    <div class="alert-container">
+      <div class="alert-content">
+        <svg class="alert-icon" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+        </svg>
+        <div class="alert-text">
+          <strong class="alert-title">Error</strong>
+          <div class="alert-message">Unable to generate URL for data product</div>
+        </div>
+      </div>
     </div>
   </body>
 </html>"""
