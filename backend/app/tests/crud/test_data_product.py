@@ -22,6 +22,9 @@ def test_create_data_product(db: Session) -> None:
     assert data_product.obj.stac_properties == test_stac_props_dsm
     assert data_product.obj.is_initial_processing_completed is True
     assert os.path.exists(data_product.obj.filepath)
+    assert data_product.obj.created_at is not None
+    assert data_product.obj.updated_at is not None
+    assert data_product.obj.updated_at >= data_product.obj.created_at
 
 
 def test_read_data_product(db: Session) -> None:
@@ -45,6 +48,8 @@ def test_read_data_product(db: Session) -> None:
     )
     assert hasattr(stored_data_product, "url")
     assert hasattr(stored_data_product, "user_style")
+    assert stored_data_product.created_at is not None
+    assert stored_data_product.updated_at is not None
 
 
 def test_read_public_data_product_by_id(db: Session) -> None:
@@ -132,6 +137,8 @@ def test_update_data_product_eo_bands(db: Session) -> None:
     bands_in = [{"name": "b1", "description": "Blue"}]
     # Sample data product object
     data_product = SampleDataProduct(db).obj
+    original_created_at = data_product.created_at
+    original_updated_at = data_product.updated_at
     # Original data product metadata
     original_metadata = data_product.stac_properties
     # Updated metadata
@@ -143,18 +150,24 @@ def test_update_data_product_eo_bands(db: Session) -> None:
     )
     assert updated_data_product
     assert updated_data_product.stac_properties["eo"] == bands_in
+    assert updated_data_product.created_at == original_created_at
+    assert updated_data_product.updated_at > original_updated_at
 
 
 def test_update_data_product(db: Session) -> None:
     old_data_type = "dsm"
     new_data_type = "dtm"
     data_product = SampleDataProduct(db, data_type=old_data_type)
+    original_created_at = data_product.obj.created_at
+    original_updated_at = data_product.obj.updated_at
     updated_data_product = crud.data_product.update_data_type(
         db, data_product_id=data_product.obj.id, new_data_type=new_data_type
     )
     assert updated_data_product
     assert updated_data_product.id == data_product.obj.id
     assert updated_data_product.data_type == new_data_type
+    assert updated_data_product.created_at == original_created_at
+    assert updated_data_product.updated_at > original_updated_at
 
 
 def test_update_point_cloud_data_product(db: Session) -> None:
