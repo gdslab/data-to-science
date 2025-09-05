@@ -1,15 +1,18 @@
 # extras.py
 from typing import Any, Optional, Tuple
 import json
+import os
 import subprocess
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
+from pydantic import UUID4
 from sqlalchemy.orm import Session
 
 # Your app imports
 from app import crud
 from app.api import deps
+from app.core.config import settings
 
 # Geospatial + LAS
 try:
@@ -20,8 +23,8 @@ except Exception:  # pragma: no cover
 try:
     from pyproj import CRS, Transformer
 except Exception:  # pragma: no cover
-    CRS = None
-    Transformer = None
+    CRS = None  # type: ignore
+    Transformer = None  # type: ignore
 
 extra_router = APIRouter()
 
@@ -112,24 +115,23 @@ def probe_crs_and_center(
         return None, None, f"CRS probe failed: {exc}"
 
 
-@extra_router.get("/potree-viewer", response_class=HTMLResponse)
-async def get_potree_viewer(
-    copc_path: str = Query(..., description="Path to the COPC file"),
-    is_mobile: bool = Query(
-        ...,
-        description="Whether the viewer is on a mobile device",
-    ),
-) -> HTMLResponse:
+def generate_potree_viewer_html(
+    copc_path: str,
+    is_mobile: bool,
+) -> str:
     """
-    Serves the Potree + optional Cesium viewer HTML content dynamically.
+    Generate the HTML content for the Potree + optional Cesium viewer.
 
-    Behavior:
-      - If COPC has a CRS, enable Cesium and camera sync, and inject the proj4 string + WGS84 center.
-      - If no CRS, disable Cesium and show Potree-only with a gentle banner.
+    Args:
+        copc_path: Path to the COPC file
+        is_mobile: Whether the viewer is on a mobile device
+
+    Returns:
+        HTML content as string
     """
     # Probe the CRS and dataset geographic center
     proj4_str, geo_center, diag = probe_crs_and_center(
-        copc_path.replace("http://localhost:8000", "")
+        copc_path.replace(settings.API_DOMAIN, "")
     )
     has_crs = proj4_str is not None and geo_center is not None
 
@@ -175,7 +177,7 @@ async def get_potree_viewer(
 
     JS_Z_LOW = "null" if z_low is None else f"{z_low:.3f}"
 
-    html_content = f"""<!DOCTYPE html>
+    return f"""<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -703,4 +705,188 @@ async def get_potree_viewer(
   </body>
 </html>"""
 
+
+@extra_router.get("/potree-viewer", response_class=HTMLResponse)
+async def get_potree_viewer(
+    copc_path: str = Query(..., description="Path to the COPC file"),
+    is_mobile: bool = Query(
+        ...,
+        description="Whether the viewer is on a mobile device",
+    ),
+) -> HTMLResponse:
+    """
+    Serves the Potree + optional Cesium viewer HTML content dynamically.
+
+    Behavior:
+      - If COPC has a CRS, enable Cesium and camera sync, and inject the proj4 string + WGS84 center.
+      - If no CRS, disable Cesium and show Potree-only with a gentle banner.
+    """
+    html_content = generate_potree_viewer_html(copc_path, is_mobile)
+    return HTMLResponse(content=html_content)
+
+
+@extra_router.get("/share-potree-viewer", response_class=HTMLResponse)
+async def get_share_potree_viewer(
+    file_id: UUID4 = Query(..., description="ID of the data product file"),
+    is_mobile: bool = Query(
+        ...,
+        description="Whether the viewer is on a mobile device",
+    ),
+    db: Session = Depends(deps.get_db),
+    current_user: Optional[Any] = Depends(deps.get_optional_current_user),
+) -> HTMLResponse:
+    """
+    Serves the Potree + optional Cesium viewer HTML content for shared data products.
+
+    This endpoint accepts a file_id and uses CRUD operations to retrieve the data product
+    and extract the COPC path, then generates the same viewer HTML as the regular potree-viewer.
+
+    Access Control:
+      - If data product is public: accessible to anyone
+      - If data product is private: accessible only to authenticated users who are project members
+      - Uses the same access logic as the /public endpoint
+
+    Behavior:
+      - Retrieves data product by file_id using public access + user project membership logic
+      - If COPC has a CRS, enable Cesium and camera sync, and inject the proj4 string + WGS84 center.
+      - If no CRS, disable Cesium and show Potree-only with a gentle banner.
+    """
+    # Determine upload directory
+    if os.environ.get("RUNNING_TESTS") == "1":
+        upload_dir = settings.TEST_STATIC_DIR
+    else:
+        upload_dir = settings.STATIC_DIR
+
+    # Get user ID if user is authenticated
+    user_id = None
+    if current_user:
+        user_id = current_user.id
+
+    # Retrieve the data product using the same logic as the public endpoint
+    # This checks both public access and user project membership
+    data_product = crud.data_product.get_public_data_product_by_id(
+        db, file_id=file_id, upload_dir=upload_dir, user_id=user_id
+    )
+
+    if not data_product:
+        # Return HTML error page instead of JSON for iframe display
+        if current_user:
+            error_message = (
+                "Data product not found or you do not have access to view it"
+            )
+        else:
+            error_message = "Data product not found or not publicly accessible"
+
+        error_html = f"""<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Access Denied</title>
+    <style>
+      body {{
+        margin: 0;
+        padding: 0;
+        font-family: system-ui, -apple-system, sans-serif;
+        background: #f5f5f5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+      }}
+      .error-container {{
+        text-align: center;
+        padding: 2rem;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        max-width: 400px;
+        margin: 1rem;
+      }}
+      .error-icon {{
+        font-size: 3rem;
+        color: #dc2626;
+        margin-bottom: 1rem;
+      }}
+      .error-title {{
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+      }}
+      .error-message {{
+        color: #6b7280;
+        line-height: 1.5;
+      }}
+    </style>
+  </head>
+  <body>
+    <div class="error-container">
+      <div class="error-icon">⚠️</div>
+      <div class="error-title">Access Denied</div>
+      <div class="error-message">{error_message}</div>
+    </div>
+  </body>
+</html>"""
+        return HTMLResponse(content=error_html, status_code=404)
+
+    # Extract the COPC path from the data product
+    # The URL attribute is dynamically added by set_url_attr in CRUD
+    copc_path = getattr(data_product, "url", None)
+    if not copc_path:
+        error_html = f"""<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Error</title>
+    <style>
+      body {{
+        margin: 0;
+        padding: 0;
+        font-family: system-ui, -apple-system, sans-serif;
+        background: #f5f5f5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+      }}
+      .error-container {{
+        text-align: center;
+        padding: 2rem;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        max-width: 400px;
+        margin: 1rem;
+      }}
+      .error-icon {{
+        font-size: 3rem;
+        color: #dc2626;
+        margin-bottom: 1rem;
+      }}
+      .error-title {{
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+      }}
+      .error-message {{
+        color: #6b7280;
+        line-height: 1.5;
+      }}
+    </style>
+  </head>
+  <body>
+    <div class="error-container">
+      <div class="error-icon">❌</div>
+      <div class="error-title">Error</div>
+      <div class="error-message">Unable to generate URL for data product</div>
+    </div>
+  </body>
+</html>"""
+        return HTMLResponse(content=error_html, status_code=500)
+
+    # Generate the HTML content using the reusable function
+    html_content = generate_potree_viewer_html(copc_path, is_mobile)
     return HTMLResponse(content=html_content)
