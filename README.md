@@ -85,6 +85,10 @@ These aspects make D2S a powerful tool for researchers looking to manage, share,
    - `API_DOMAIN`: Domain used for accessing the application (e.g., http://localhost or https://customdomain)
    - `CELERY_BROKER_URL`: Address for local redis service.
    - `CELERY_RESULT_BACKEND`: Address for local redis service.
+   - `ENABLE_BREEDBASE`: Enable/disable Breedbase connection endpoints (true/false).
+   - `ENABLE_CAMPAIGNS`: Enable/disable campaign management endpoints (true/false).
+   - `ENABLE_IFORESTER`: Enable/disable iForester integration endpoints (true/false).
+   - `ENABLE_STAC`: Enable/disable STAC (SpatioTemporal Asset Catalog) endpoints (true/false).
    - `EXTENSIONS`: Can be used to enable extensions. Should be left blank typically.
    - `EXTERNAL_STORAGE`: Internal mount point for external storage. Should be blank unless you have a binding mount for external storage.
    - `MAIL_ENABLED`: Enable SMTP email by changing value from 0 to 1.

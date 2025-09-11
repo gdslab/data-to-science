@@ -122,6 +122,12 @@ class Settings(BaseSettings):
     # Testing
     EMAIL_TEST_USER: EmailStr = "test@example.com"  # type: ignore
 
+    # Feature flags for optional modules
+    ENABLE_BREEDBASE: bool = False
+    ENABLE_CAMPAIGNS: bool = False
+    ENABLE_IFORESTER: bool = False
+    ENABLE_STAC: bool = False
+
     # STAC Catalog
     STAC_API_URL: Optional[AnyHttpUrl] = None
     STAC_API_TEST_URL: Optional[AnyHttpUrl] = None

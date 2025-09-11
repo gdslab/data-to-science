@@ -9,9 +9,11 @@ from app.core.config import settings
 from app.schemas.campaign import CampaignUpdate
 from app.tests.utils.campaign import create_campaign
 from app.tests.utils.project import create_project
+from app.tests.conftest import pytest_requires_campaigns
 from app.tests.utils.user import create_user
 
 
+@pytest_requires_campaigns
 def test_create_campaign(db: Session) -> None:
     user = create_user(db)
     project = create_project(db, owner_id=user.id)
@@ -23,6 +25,7 @@ def test_create_campaign(db: Session) -> None:
     assert campaign.deactivated_at is None
 
 
+@pytest_requires_campaigns
 def test_create_multiple_campaigns_in_same_project(db: Session) -> None:
     user = create_user(db)
     project = create_project(db, owner_id=user.id)
@@ -32,6 +35,7 @@ def test_create_multiple_campaigns_in_same_project(db: Session) -> None:
         campaign2 = create_campaign(db, project_id=project.id, lead_id=user.id)
 
 
+@pytest_requires_campaigns
 def test_read_campaign(db: Session) -> None:
     project = create_project(db)
     campaign = create_campaign(db, project_id=project.id)
@@ -43,6 +47,7 @@ def test_read_campaign(db: Session) -> None:
     assert campaign_in_db.id == campaign.id
 
 
+@pytest_requires_campaigns
 def test_read_campaign_by_project_id(db: Session) -> None:
     project = create_project(db)
     campaign = create_campaign(db, project_id=project.id)
@@ -52,12 +57,14 @@ def test_read_campaign_by_project_id(db: Session) -> None:
     assert campaign_in_db.id == campaign.id
 
 
+@pytest_requires_campaigns
 def test_read_campaign_by_project_id_without_campaign(db: Session) -> None:
     project = create_project(db)
     campaign_in_db = crud.campaign.get_campaign_by_project_id(db, project_id=project.id)
     assert campaign_in_db is None
 
 
+@pytest_requires_campaigns
 def test_read_campaign_ignores_deactivated_campaigns(db: Session) -> None:
     project = create_project(db)
     campaign = create_campaign(db, project_id=project.id)
@@ -68,6 +75,7 @@ def test_read_campaign_ignores_deactivated_campaigns(db: Session) -> None:
     assert not deactivated_campaign
 
 
+@pytest_requires_campaigns
 def test_update_campaign(db: Session) -> None:
     old_campaign_lead = create_user(db)
     project = create_project(db, owner_id=old_campaign_lead.id)
@@ -81,6 +89,7 @@ def test_update_campaign(db: Session) -> None:
     assert updated_campaign.lead_id == new_campaign_lead.id
 
 
+@pytest_requires_campaigns
 def test_deactivate_campaign(db: Session) -> None:
     project = create_project(db)
     campaign = create_campaign(db, project_id=project.id)

@@ -11,6 +11,7 @@ from app.api.deps import (
     get_current_approved_user_by_jwt_or_api_key,
 )
 from app.core.config import settings
+from app.tests.conftest import pytest_requires_iforester
 from app.schemas.iforester import IForesterUpdate
 from app.schemas.role import Role
 from app.tests.utils.iforester import (
@@ -24,6 +25,7 @@ from app.tests.utils.project_member import create_project_member
 from app.tests.utils.user import create_user
 
 
+@pytest_requires_iforester
 def test_create_iforester_record_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -53,6 +55,7 @@ def test_create_iforester_record_with_project_owner_role(
     assert response_data["user"] == EXAMPLE_DATA.get("user")
 
 
+@pytest_requires_iforester
 def test_create_iforester_record_with_project_owner_role_and_api_key(
     client: TestClient, db: Session, normal_user_api_key: str
 ) -> None:
@@ -73,6 +76,7 @@ def test_create_iforester_record_with_project_owner_role_and_api_key(
     assert response_data
 
 
+@pytest_requires_iforester
 def test_create_iforester_record_with_project_manager_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -91,6 +95,7 @@ def test_create_iforester_record_with_project_manager_role(
     assert response_data
 
 
+@pytest_requires_iforester
 def test_create_iforester_record_with_project_viewer_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -107,6 +112,7 @@ def test_create_iforester_record_with_project_viewer_role(
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
+@pytest_requires_iforester
 def test_create_iforester_record_without_project_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -119,6 +125,7 @@ def test_create_iforester_record_without_project_role(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+@pytest_requires_iforester
 def test_read_iforester_record_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -144,6 +151,7 @@ def test_read_iforester_record_with_project_owner_role(
     assert response_data["user"] == EXAMPLE_DATA.get("user")
 
 
+@pytest_requires_iforester
 def test_read_iforester_record_with_project_manager_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -162,6 +170,7 @@ def test_read_iforester_record_with_project_manager_role(
     assert response_data
 
 
+@pytest_requires_iforester
 def test_read_iforester_record_with_project_viewer_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -180,6 +189,7 @@ def test_read_iforester_record_with_project_viewer_role(
     assert response_data
 
 
+@pytest_requires_iforester
 def test_read_iforester_record_without_project_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -192,6 +202,7 @@ def test_read_iforester_record_without_project_role(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+@pytest_requires_iforester
 def test_read_multi_iforester_records_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -213,6 +224,7 @@ def test_read_multi_iforester_records_with_project_owner_role(
         ]
 
 
+@pytest_requires_iforester
 def test_read_multi_iforester_records_with_project_manager_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -238,6 +250,7 @@ def test_read_multi_iforester_records_with_project_manager_role(
         ]
 
 
+@pytest_requires_iforester
 def test_read_multi_iforester_records_with_project_viewer_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -263,6 +276,7 @@ def test_read_multi_iforester_records_with_project_viewer_role(
         ]
 
 
+@pytest_requires_iforester
 def test_read_multi_iforester_records_without_project_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -275,6 +289,7 @@ def test_read_multi_iforester_records_without_project_role(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+@pytest_requires_iforester
 def test_update_iforester_record_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -295,6 +310,7 @@ def test_update_iforester_record_with_project_owner_role(
     assert response_data["species"] == new_species
 
 
+@pytest_requires_iforester
 def test_update_iforester_record_with_project_manager_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -317,6 +333,7 @@ def test_update_iforester_record_with_project_manager_role(
     assert response_data
 
 
+@pytest_requires_iforester
 def test_update_iforester_record_with_project_viewer_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -337,6 +354,7 @@ def test_update_iforester_record_with_project_viewer_role(
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
+@pytest_requires_iforester
 def test_update_iforester_record_without_project_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -353,6 +371,7 @@ def test_update_iforester_record_without_project_role(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+@pytest_requires_iforester
 def test_remove_iforester_record_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -368,6 +387,7 @@ def test_remove_iforester_record_with_project_owner_role(
     assert response_data["id"] == str(iforester.id)
 
 
+@pytest_requires_iforester
 def test_remove_iforester_record_with_project_manager_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -384,6 +404,7 @@ def test_remove_iforester_record_with_project_manager_role(
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
+@pytest_requires_iforester
 def test_remove_iforester_record_with_project_viewer_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -400,6 +421,7 @@ def test_remove_iforester_record_with_project_viewer_role(
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
+@pytest_requires_iforester
 def test_remove_iforester_record_without_project_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:

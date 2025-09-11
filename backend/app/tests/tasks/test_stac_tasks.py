@@ -18,8 +18,10 @@ from app.tests.utils.project import create_project
 from app.tests.utils.flight import create_flight
 
 from app.core.config import settings
+from app.tests.conftest import pytest_requires_stac
 
 
+@pytest_requires_stac
 def test_get_stac_cache_path():
     """Test the get_stac_cache_path helper function."""
     project_id = uuid4()
@@ -36,6 +38,7 @@ def test_get_stac_cache_path():
         assert cache_path.suffix == ".json"
 
 
+@pytest_requires_stac
 def test_uuid_encoder():
     """Test the UUIDEncoder class."""
     test_uuid = uuid4()
@@ -56,6 +59,7 @@ def test_uuid_encoder():
     assert deserialized["number"] == 123
 
 
+@pytest_requires_stac
 def test_uuid_encoder_with_datetime():
     """Test the UUIDEncoder class with datetime objects."""
     from datetime import datetime
@@ -77,6 +81,7 @@ def test_uuid_encoder_with_datetime():
 
 
 @patch("app.tasks.stac_tasks.get_db")
+@pytest_requires_stac
 def test_generate_stac_preview_task_success(mock_get_db, db: Session):
     """Test successful STAC preview generation task."""
     # Setup
@@ -114,6 +119,7 @@ def test_generate_stac_preview_task_success(mock_get_db, db: Session):
 
 
 @patch("app.tasks.stac_tasks.get_db")
+@pytest_requires_stac
 def test_generate_stac_preview_task_with_parameters(mock_get_db, db: Session):
     """Test STAC preview generation task with scientific metadata and custom titles."""
     # Setup
@@ -164,6 +170,7 @@ def test_generate_stac_preview_task_with_parameters(mock_get_db, db: Session):
 
 
 @patch("app.tasks.stac_tasks.get_db")
+@pytest_requires_stac
 def test_generate_stac_preview_task_project_not_found(mock_get_db, db: Session):
     """Test STAC preview generation task with non-existent project."""
     # Setup
@@ -180,6 +187,7 @@ def test_generate_stac_preview_task_project_not_found(mock_get_db, db: Session):
 
 
 @patch("app.tasks.stac_tasks.get_db")
+@pytest_requires_stac
 def test_generate_stac_preview_task_exception_handling(mock_get_db, db: Session):
     """Test STAC preview generation task exception handling."""
     # Setup
@@ -203,6 +211,7 @@ def test_generate_stac_preview_task_exception_handling(mock_get_db, db: Session)
 
 
 @patch("app.tasks.stac_tasks.get_db")
+@pytest_requires_stac
 def test_publish_stac_catalog_task_success(mock_get_db, db: Session):
     """Test successful STAC catalog publication task."""
     # Setup
@@ -244,6 +253,7 @@ def test_publish_stac_catalog_task_success(mock_get_db, db: Session):
 
 
 @patch("app.tasks.stac_tasks.get_db")
+@pytest_requires_stac
 def test_publish_stac_catalog_task_with_parameters(mock_get_db, db: Session):
     """Test STAC catalog publication task with scientific metadata and custom titles."""
     # Setup
@@ -296,6 +306,7 @@ def test_publish_stac_catalog_task_with_parameters(mock_get_db, db: Session):
 
 
 @patch("app.tasks.stac_tasks.get_db")
+@pytest_requires_stac
 def test_publish_stac_catalog_task_project_not_found(mock_get_db, db: Session):
     """Test STAC catalog publication task with non-existent project."""
     # Setup
@@ -312,6 +323,7 @@ def test_publish_stac_catalog_task_project_not_found(mock_get_db, db: Session):
 
 
 @patch("app.tasks.stac_tasks.get_db")
+@pytest_requires_stac
 def test_publish_stac_catalog_task_exception_handling(mock_get_db, db: Session):
     """Test STAC catalog publication task exception handling."""
     # Setup
@@ -334,6 +346,7 @@ def test_publish_stac_catalog_task_exception_handling(mock_get_db, db: Session):
         assert "Publication failed" in str(exc_info.value)
 
 
+@pytest_requires_stac
 def test_cache_directory_creation():
     """Test that cache directory is created if it doesn't exist."""
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -357,6 +370,7 @@ def test_cache_directory_creation():
 
 
 @patch("app.tasks.stac_tasks.get_db")
+@pytest_requires_stac
 def test_task_with_failed_items(mock_get_db, db: Session, monkeypatch):
     """Test STAC tasks handle failed items correctly."""
     # Setup
@@ -407,6 +421,7 @@ def test_task_with_failed_items(mock_get_db, db: Session, monkeypatch):
 
 
 @patch("app.tasks.stac_tasks.get_db")
+@pytest_requires_stac
 def test_generate_stac_preview_task_with_license(mock_get_db, db: Session):
     """Test STAC preview generation task with license parameter."""
     # Setup
@@ -444,6 +459,7 @@ def test_generate_stac_preview_task_with_license(mock_get_db, db: Session):
 
 
 @patch("app.tasks.stac_tasks.get_db")
+@pytest_requires_stac
 def test_publish_stac_catalog_task_with_license(mock_get_db, db: Session):
     """Test STAC catalog publication task with license parameter."""
     # Setup
@@ -489,6 +505,7 @@ def test_publish_stac_catalog_task_with_license(mock_get_db, db: Session):
 
 
 @patch("app.tasks.stac_tasks.get_db")
+@pytest_requires_stac
 def test_generate_stac_preview_task_with_default_license(mock_get_db, db: Session):
     """Test STAC preview generation task uses default license when none provided."""
     # Setup
