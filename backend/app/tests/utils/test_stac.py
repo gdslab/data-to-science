@@ -11,12 +11,14 @@ from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.project import create_project
 from app.tests.utils.flight import create_flight
 from app.tests.utils.STACCollectionHelper import STACCollectionHelper
+from app.tests.conftest import pytest_requires_stac
 
 from app.utils.STACCollectionManager import STACCollectionManager
 from app.utils.STACGenerator import STACGenerator, date_to_datetime
 
 
 @pytest.fixture
+@pytest_requires_stac
 def stac_collection_published(
     db: Session,
 ) -> Generator[STACCollectionHelper, None, None]:
@@ -32,6 +34,7 @@ def stac_collection_published(
 
 
 @pytest.fixture
+@pytest_requires_stac
 def stac_collection_unpublished(
     db: Session,
 ) -> Generator[STACCollectionHelper, None, None]:
@@ -46,6 +49,7 @@ def stac_collection_unpublished(
     tsc.destroy()
 
 
+@pytest_requires_stac
 def test_fetch_public_metadata(db: Session) -> None:
     # Create STAC Collection on STAC API
     tsc = STACCollectionHelper(db)
@@ -62,6 +66,7 @@ def test_fetch_public_metadata(db: Session) -> None:
     assert collection["id"] == collection_id
 
 
+@pytest_requires_stac
 def test_fetch_public_metadata_with_invalid_collection_id(db: Session) -> None:
     collection_id = "invalid_collection_id"
 
@@ -72,6 +77,7 @@ def test_fetch_public_metadata_with_invalid_collection_id(db: Session) -> None:
     assert collection is None
 
 
+@pytest_requires_stac
 def test_remove_from_catalog(stac_collection_published: STACCollectionHelper) -> None:
     """Test removing a collection from the STAC catalog."""
     # Get collection ID from fixture
@@ -94,6 +100,7 @@ def test_remove_from_catalog(stac_collection_published: STACCollectionHelper) ->
     assert collection is None
 
 
+@pytest_requires_stac
 def test_remove_nonexistent_collection_from_catalog(db: Session) -> None:
     """Test attempting to remove a non-existent collection from the STAC catalog."""
     # Create STAC Collection Manager with non-existent collection ID
@@ -108,6 +115,7 @@ def test_remove_nonexistent_collection_from_catalog(db: Session) -> None:
     scm.remove_from_catalog()
 
 
+@pytest_requires_stac
 def test_publish_to_catalog(stac_collection_unpublished: STACCollectionHelper) -> None:
     # Generate STAC Collection with two items
     tsc = stac_collection_unpublished
@@ -173,6 +181,7 @@ def test_publish_to_catalog(stac_collection_unpublished: STACCollectionHelper) -
     )
 
 
+@pytest_requires_stac
 def test_stac_generator(db: Session) -> None:
     # Create new project
     project = create_project(db)
@@ -226,6 +235,7 @@ def test_stac_generator(db: Session) -> None:
         assert "sensor" in flight_details
 
 
+@pytest_requires_stac
 def test_fetch_public_items(stac_collection_published: STACCollectionHelper) -> None:
     """Test fetching items from a published collection."""
     # Get collection ID from fixture
@@ -247,6 +257,7 @@ def test_fetch_public_items(stac_collection_published: STACCollectionHelper) -> 
         assert item["collection"] == collection_id
 
 
+@pytest_requires_stac
 def test_fetch_public_item_nonexistent(
     stac_collection_published: STACCollectionHelper,
 ) -> None:
@@ -263,6 +274,7 @@ def test_fetch_public_item_nonexistent(
     assert item is None
 
 
+@pytest_requires_stac
 def test_compare_and_update_no_changes(
     stac_collection_published: STACCollectionHelper,
 ) -> None:
@@ -288,6 +300,7 @@ def test_compare_and_update_no_changes(
     assert public_collection["id"] == collection_id
 
 
+@pytest_requires_stac
 def test_compare_and_update_with_changes(
     stac_collection_published: STACCollectionHelper,
 ) -> None:
@@ -316,6 +329,7 @@ def test_compare_and_update_with_changes(
     assert public_collection["title"] == "Updated Title"
 
 
+@pytest_requires_stac
 def test_compare_and_update_no_collection() -> None:
     """Test compare_and_update when no local collection is provided."""
     # Create STAC Collection Manager without a collection
@@ -327,6 +341,7 @@ def test_compare_and_update_no_collection() -> None:
         scm.compare_and_update()
 
 
+@pytest_requires_stac
 def test_publish_to_catalog_no_collection() -> None:
     """Test publishing when no collection is provided."""
     # Create STAC Collection Manager without a collection
@@ -338,6 +353,7 @@ def test_publish_to_catalog_no_collection() -> None:
         scm.publish_to_catalog()
 
 
+@pytest_requires_stac
 def test_stac_generator_invalid_project(db: Session) -> None:
     """Test STACGenerator with an invalid project ID."""
     # Try to create STACGenerator with non-existent project
@@ -346,6 +362,7 @@ def test_stac_generator_invalid_project(db: Session) -> None:
         STACGenerator(db=db, project_id=project_id)
 
 
+@pytest_requires_stac
 def test_stac_generator_no_flights(db: Session) -> None:
     """Test STACGenerator with a project that has no flights."""
     # Create project without flights
@@ -359,6 +376,7 @@ def test_stac_generator_no_flights(db: Session) -> None:
         STACGenerator(db=db, project_id=project.id)
 
 
+@pytest_requires_stac
 def test_stac_generator_no_data_products(db: Session) -> None:
     """Test STACGenerator with a project that has flights but no data products."""
     # Create project and flight but no data products
@@ -370,6 +388,7 @@ def test_stac_generator_no_data_products(db: Session) -> None:
         STACGenerator(db=db, project_id=project.id)
 
 
+@pytest_requires_stac
 def test_stac_generator_temporal_extent_no_dates(db: Session) -> None:
     """Test STACGenerator's temporal extent when no dates are provided."""
     # Create project with flight but no planting/harvest dates
@@ -390,6 +409,7 @@ def test_stac_generator_temporal_extent_no_dates(db: Session) -> None:
     assert temporal_extent.intervals[0][1] == expected_date
 
 
+@pytest_requires_stac
 def test_stac_generator_temporal_extent_with_dates(db: Session) -> None:
     """Test STACGenerator's temporal extent when planting/harvest dates are provided."""
     # Create project with planting/harvest dates
@@ -424,6 +444,7 @@ def test_stac_generator_temporal_extent_with_dates(db: Session) -> None:
     )
 
 
+@pytest_requires_stac
 def test_fetch_public_items_full(
     stac_collection_published: STACCollectionHelper,
 ) -> None:
@@ -456,6 +477,7 @@ def test_fetch_public_items_full(
         assert "data_product_details" in item["properties"]
 
 
+@pytest_requires_stac
 def test_fetch_public_items_full_empty_collection() -> None:
     """Test fetching full items from a non-existent collection returns empty list."""
     # Create STAC Collection Manager with non-existent collection ID
@@ -468,6 +490,7 @@ def test_fetch_public_items_full_empty_collection() -> None:
     assert len(items) == 0
 
 
+@pytest_requires_stac
 def test_stac_generator_with_scientific_metadata(db: Session) -> None:
     """Test STACGenerator with scientific DOI and citation."""
     # Create new project
@@ -520,6 +543,7 @@ def test_stac_generator_with_scientific_metadata(db: Session) -> None:
     assert collection_dict.get("sci:citation") == test_citation
 
 
+@pytest_requires_stac
 def test_stac_generator_with_only_doi(db: Session) -> None:
     """Test STACGenerator with only DOI (no citation)."""
     # Create new project
@@ -551,6 +575,7 @@ def test_stac_generator_with_only_doi(db: Session) -> None:
     assert "sci:citation" not in collection_dict
 
 
+@pytest_requires_stac
 def test_stac_generator_with_only_citation(db: Session) -> None:
     """Test STACGenerator with only citation (no DOI)."""
     # Create new project
@@ -582,6 +607,7 @@ def test_stac_generator_with_only_citation(db: Session) -> None:
     assert "sci:doi" not in collection_dict
 
 
+@pytest_requires_stac
 def test_stac_generator_without_scientific_metadata(db: Session) -> None:
     """Test STACGenerator without scientific metadata (ensures backward compatibility)."""
     # Create new project
@@ -626,6 +652,7 @@ def test_stac_generator_without_scientific_metadata(db: Session) -> None:
     assert "sci:citation" not in collection_dict
 
 
+@pytest_requires_stac
 def test_stac_generator_with_custom_titles(db: Session) -> None:
     """Test STACGenerator with custom titles for STAC items."""
     # Create new project
@@ -669,6 +696,7 @@ def test_stac_generator_with_custom_titles(db: Session) -> None:
             assert item.properties["title"] == "Custom Title for Item 2"
 
 
+@pytest_requires_stac
 def test_stac_generator_with_partial_custom_titles(db: Session) -> None:
     """Test STACGenerator with custom titles for only some STAC items."""
     # Create new project
@@ -705,6 +733,7 @@ def test_stac_generator_with_partial_custom_titles(db: Session) -> None:
             assert item.properties["title"] == expected_title
 
 
+@pytest_requires_stac
 def test_stac_generator_with_empty_custom_titles(db: Session) -> None:
     """Test STACGenerator with empty custom titles (should use defaults)."""
     # Create new project
@@ -736,6 +765,7 @@ def test_stac_generator_with_empty_custom_titles(db: Session) -> None:
     assert stac_items[0].properties["title"] == expected_title
 
 
+@pytest_requires_stac
 def test_publish_to_catalog_with_scientific_metadata(db: Session) -> None:
     """Test publishing a collection with scientific metadata to the catalog."""
     # Create new project
@@ -785,6 +815,7 @@ def test_publish_to_catalog_with_scientific_metadata(db: Session) -> None:
     scm.remove_from_catalog()
 
 
+@pytest_requires_stac
 def test_stac_generator_with_custom_license(db: Session) -> None:
     """Test STACGenerator with custom license."""
     # Create new project
@@ -826,6 +857,7 @@ def test_stac_generator_with_custom_license(db: Session) -> None:
     assert stac_items[0].properties["flight_details"]["flight_id"] == str(flight.id)
 
 
+@pytest_requires_stac
 def test_stac_generator_with_default_license(db: Session) -> None:
     """Test STACGenerator uses default license when none provided."""
     # Create new project
@@ -848,6 +880,7 @@ def test_stac_generator_with_default_license(db: Session) -> None:
     assert collection_dict["license"] == "CC-BY-NC-4.0"
 
 
+@pytest_requires_stac
 def test_publish_to_catalog_with_custom_license(db: Session) -> None:
     """Test publishing a collection with custom license to the catalog."""
     # Create new project

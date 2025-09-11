@@ -33,6 +33,31 @@ SQLALCHEMY_TEST_DATABASE_URI: PostgresDsn = build_sqlalchemy_uri(db_path=TEST_DB
 
 os.environ["RUNNING_TESTS"] = "1"
 
+# Feature flag pytest markers for conditional test execution
+pytest_requires_breedbase = pytest.mark.skipif(
+    not settings.ENABLE_BREEDBASE,
+    reason="Breedbase feature disabled (ENABLE_BREEDBASE=false)",
+)
+
+pytest_requires_campaigns = pytest.mark.skipif(
+    not settings.ENABLE_CAMPAIGNS,
+    reason="Campaigns feature disabled (ENABLE_CAMPAIGNS=false)",
+)
+
+pytest_requires_mail = pytest.mark.skipif(
+    not settings.MAIL_ENABLED,
+    reason="Mail feature disabled (MAIL_ENABLED=false)",
+)
+
+pytest_requires_iforester = pytest.mark.skipif(
+    not settings.ENABLE_IFORESTER,
+    reason="iForester feature disabled (ENABLE_IFORESTER=false)",
+)
+
+pytest_requires_stac = pytest.mark.skipif(
+    not settings.ENABLE_STAC, reason="STAC feature disabled (ENABLE_STAC=false)"
+)
+
 
 @pytest.fixture(name="db")
 def db_fixture() -> Generator:

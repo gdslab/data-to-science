@@ -19,9 +19,11 @@ from app.tests.utils.extension import (
 from app.tests.utils.team import create_team
 from app.tests.utils.team_member import create_team_member
 from app.tests.utils.user import create_user
+from app.tests.conftest import pytest_requires_mail
 from app.tests.utils.utils import random_email, random_full_name, random_password
 
 
+@pytest_requires_mail
 def test_create_user_new_email(client: TestClient, db: Session) -> None:
     """Verify new user is created in database."""
     api_domain = settings.API_DOMAIN
