@@ -219,6 +219,8 @@ def start_raw_data_processing(task_data: Tuple[UUID, str]) -> None:
     """
     job_id, raw_data_identifier = task_data
 
+    rpc_client = None
+
     try:
         # Get job manager for current job
         job = JobManager(job_id=job_id)
@@ -239,5 +241,5 @@ def start_raw_data_processing(task_data: Tuple[UUID, str]) -> None:
         # update job
         job.update(status=Status.FAILED)
     finally:
-        if isinstance(rpc_client, RpcClient):
+        if rpc_client and getattr(rpc_client.connection, "is_open", False):
             rpc_client.connection.close()
