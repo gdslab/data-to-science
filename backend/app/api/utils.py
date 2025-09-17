@@ -6,10 +6,8 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 from urllib.parse import urlencode, quote_plus
 
-import laspy
 from geojson_pydantic import Feature
 from pydantic import UUID4
-from pyproj import CRS, Transformer
 from sqlalchemy.orm import Session
 
 from app import crud
@@ -343,40 +341,28 @@ def normalize_sensor_value(sensor: str) -> str:
     return sensor_mapping.get(sensor.lower(), sensor)
 
 
-def extract_crs_and_center(
-    copc_path: str,
-) -> Tuple[Optional[CRS], Optional[Tuple[float, float, float]], Optional[str]]:
+def get_copc_z_unit(crs) -> Optional[str]:
     """
-    Extracts the CRS, center, and proj4 string from a COPC file.
-
-    Args:
-        copc_path (str): Path to the COPC file.
-
-    Returns:
-        Tuple[Optional[CRS], Optional[Tuple[float,float,float]], Optional[str]]: CRS, center, and proj4 string.
+    Determine the Z-axis unit from a CRS object.
+    Returns unit name (e.g., 'metre', 'foot', 'US survey foot') or None.
     """
-    with laspy.open(copc_path) as f:
-        h = f.header
-        # CRS from header (WKT/GeoTIFF keys)
-        crs = h.parse_crs()  # -> pyproj.CRS or None
+    if crs is None:
+        return None
 
-        # compute center from header bbox (in source CRS)
-        mins = h.mins  # (x_min, y_min, z_min)
-        maxs = h.maxs  # (x_max, y_max, z_max)
-        cx, cy, cz = (
-            (mins[0] + maxs[0]) / 2,
-            (mins[1] + maxs[1]) / 2,
-            (mins[2] + maxs[2]) / 2,
-        )
+    # Look for vertical axis explicitly defined
+    for axis in crs.axis_info:
+        if axis.direction.lower() == "up":
+            return axis.unit_name
 
-        if crs is None:
-            return None, None, None
+    # Check compound CRS
+    if crs.is_compound:
+        for sub in crs.sub_crs_list:
+            if sub.is_vertical:
+                return sub.axis_info[0].unit_name
 
-        # Transform center to geographic WGS84 for Cesium camera
-        wgs84 = CRS.from_epsg(4326)
-        # Always use "always_xy=True" to keep (lon, lat) order
-        to_geo = Transformer.from_crs(crs, wgs84, always_xy=True)
-        lon, lat, z = to_geo.transform(cx, cy, cz)
+    # Fallback: assume Z uses the same unit as XY
+    # This is common in LAS/COPC when only a 2D CRS is defined
+    if len(crs.axis_info) >= 2:
+        return crs.axis_info[0].unit_name
 
-        proj4 = crs.to_proj4()  # proj4 string Potree/proj4js can use
-        return crs, (lon, lat, z), proj4
+    return None

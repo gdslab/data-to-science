@@ -1,32 +1,28 @@
 # extras.py
 from typing import Any, Optional, Tuple
+import logging
 import json
 import os
-import subprocess
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import UUID4
+from pyproj import CRS, Transformer
 from sqlalchemy.orm import Session
+import laspy
+import pdal
+import numpy as np
 
 # Your app imports
 from app import crud
 from app.api import deps
+from app.api.utils import get_copc_z_unit
 from app.core.config import settings
 
-# Geospatial + LAS
-try:
-    import laspy
-except Exception:  # pragma: no cover
-    laspy = None
-
-try:
-    from pyproj import CRS, Transformer
-except Exception:  # pragma: no cover
-    CRS = None  # type: ignore
-    Transformer = None  # type: ignore
 
 extra_router = APIRouter()
+
+logger = logging.getLogger(__name__)
 
 
 @extra_router.get("/sl/{short_id}")
@@ -47,37 +43,92 @@ async def redirect_short_url(short_id: str, db: Session = Depends(deps.get_db)) 
 
 
 def pdal_percentile_z(
-    copc_path: str, pct: int = 2, decimation: int = 50
+    copc_path: str, pct: int = 2, decimation: int = 1000
 ) -> Optional[float]:
+    """Calculate the Z-coordinate percentile from a COPC point cloud file.
+
+    This function reads a Cloud Optimized Point Cloud (COPC) file using PDAL,
+    applies decimation to reduce the point density for performance, and then
+    calculates the specified percentile of the Z (elevation) values. This is
+    commonly used for ground level estimation or terrain analysis.
+
+    The function implements a fallback strategy: if the initial decimation results
+    in fewer than 5000 points, it will retry with a lower decimation step (500)
+    to get more points for a more accurate percentile calculation.
+
+    Args:
+        copc_path (str): Path to the COPC file to process
+        pct (int, optional): Percentile to calculate (0-100). Lower values
+            (e.g., 2) are useful for finding ground level. Defaults to 2.
+        decimation (int, optional): Decimation step size - keep every Nth point
+            (e.g., 1000 means keep every 1000th point). Higher values process faster
+            but with less precision. Defaults to 1000.
+
+    Returns:
+        Optional[float]: The Z-coordinate value at the specified percentile,
+            or None if the file contains no points or produces insufficient data
+            even with reduced decimation.
     """
-    Fast near-ground proxy: low percentile of Z from a decimated sample.
-    Works for URLs (HTTP range) or local files.
-    """
-    pipeline = {
-        "pipeline": [
-            {"type": "readers.copc", "filename": copc_path},
-            {"type": "filters.decimation", "step": decimation},
-            {"type": "filters.stats", "dimensions": "Z", "percentile": [pct]},
-        ]
-    }
-    out = subprocess.check_output(
-        ["pdal", "pipeline", "--stdin", "--metadata"],
-        input=json.dumps(pipeline),
-        text=True,
+    # Check if the percentile z has been cached
+    copc_dir = os.path.dirname(copc_path)
+    percentile_z_cache_path = os.path.join(
+        copc_dir, f"percentile_z_{pct}_{decimation}.txt"
     )
-    meta = json.loads(out)["metadata"]
-    stats_nodes = [v for k, v in meta.items() if "filters.stats" in k]
-    if not stats_nodes:
-        return None
-    s = stats_nodes[0]["statistic"]
-    # use the percentile if present, else minimum
-    z_low = s.get(f"percentile{pct}", s.get("minimum"))
-    return float(z_low) if z_low is not None else None
+    if os.path.exists(percentile_z_cache_path):
+        with open(percentile_z_cache_path, "r") as f:
+            return float(f.read())
+
+    # Try with the provided decimation first, then fallback to 500 if needed
+    decimation_steps = [decimation] if decimation <= 500 else [decimation, 500]
+
+    for current_decimation in decimation_steps:
+        # Create PDAL pipeline configuration
+        # First stage: read the COPC file with limits to control memory usage
+        # Second stage: apply decimation to reduce point density for performance
+        pipeline = {
+            "pipeline": [
+                {
+                    "type": "readers.copc",
+                    "filename": copc_path,
+                    "resolution": 2.0,
+                    "count": 200000,
+                },
+                {"type": "filters.decimation", "step": current_decimation},
+            ]
+        }
+
+        # Create and execute the PDAL pipeline
+        p = pdal.Pipeline(json.dumps(pipeline))
+        p.execute()
+
+        # Get the point cloud data as a numpy array
+        arr = p.arrays[0]
+
+        # Check if any points were read from the file
+        if arr.size == 0:
+            continue  # Try next decimation step if available
+
+        # If we have sufficient points (>=5000) or this is our last attempt, proceed
+        if arr.size >= 5000 or current_decimation == decimation_steps[-1]:
+            # Need at least some points to calculate percentile
+            if arr.size == 0:
+                return None
+
+            # Calculate and return the specified percentile of Z values
+            percentile_z = float(np.percentile(arr["Z"], pct))
+            with open(percentile_z_cache_path, "w") as f:
+                f.write(str(percentile_z))
+            return percentile_z
+
+    # If we get here, all attempts failed
+    return None
 
 
 def probe_crs_and_center(
     copc_path: str,
-) -> Tuple[Optional[str], Optional[Tuple[float, float, float]], Optional[str]]:
+) -> Tuple[
+    Optional[str], Optional[Tuple[float, float, float]], Optional[str], Optional[str]
+]:
     """
     Attempt to read the COPC's CRS and compute a geographic center for Cesium.
 
@@ -85,9 +136,10 @@ def probe_crs_and_center(
       proj4_str: str | None          -> proj4 for the source CRS (for proj4js)
       geo_center: (lon, lat, z) | None  -> center in EPSG:4326 degrees + meters height
       diag: str | None               -> diagnostic message (for logging / UI)
+      z_unit: str | None             -> unit of the Z-axis
     """
     if laspy is None or CRS is None or Transformer is None:
-        return None, None, "Missing laspy/pyproj on server"
+        return None, None, "Missing laspy/pyproj on server", None
 
     try:
         with laspy.open(copc_path) as f:
@@ -95,7 +147,7 @@ def probe_crs_and_center(
             crs = hdr.parse_crs()  # pyproj.CRS or None
 
             if crs is None:
-                return None, None, "No CRS in COPC header"
+                return None, None, "No CRS in COPC header", None
 
             # Center from header mins/maxs (no point read required)
             x0, y0, z0 = hdr.mins
@@ -110,9 +162,14 @@ def probe_crs_and_center(
             lon, lat, h = to_geo.transform(cx, cy, cz)
 
             proj4_str = crs.to_proj4()
-            return proj4_str, (lon, lat, h), None
+
+            z_unit = get_copc_z_unit(crs)
+            if z_unit == "foot" or z_unit == "ft" or z_unit == "feet":
+                h = h * 0.3048
+
+            return proj4_str, (lon, lat, h), None, z_unit
     except Exception as exc:
-        return None, None, f"CRS probe failed: {exc}"
+        return None, None, f"CRS probe failed: {exc}", None
 
 
 def generate_potree_viewer_html(
@@ -130,7 +187,7 @@ def generate_potree_viewer_html(
         HTML content as string
     """
     # Probe the CRS and dataset geographic center
-    proj4_str, geo_center, diag = probe_crs_and_center(
+    proj4_str, geo_center, diag, z_unit = probe_crs_and_center(
         copc_path.replace(settings.API_DOMAIN, "")
     )
     has_crs = proj4_str is not None and geo_center is not None
@@ -150,18 +207,25 @@ def generate_potree_viewer_html(
     JS_INIT_H = f"{initial_h:.3f}"
     JS_DIAG = json.dumps(diag or "")
     JS_IS_MOBILE = "true" if is_mobile else "false"
+    JS_Z_UNIT_FACTOR = (
+        "0.3048"
+        if z_unit and any(unit in z_unit for unit in ["ft", "foot", "feet"])
+        else "1.0"
+    )
 
     # Compute z_low (try PDAL; optionally fall back to LAS header mins)
     z_low = None
     try:
-        z_low = pdal_percentile_z(copc_path, pct=2, decimation=50)
+        z_low = pdal_percentile_z(
+            copc_path.replace(settings.API_DOMAIN, ""), pct=2, decimation=50
+        )
     except Exception:
-        pass
+        logger.warning("Failed to compute z_low using pdal percentile z")
 
     # Fallback using laspy header mins[2] if you have local file access
     if z_low is None:
         try:
-            import os, laspy
+            import laspy
 
             # Extract local path from URL - keep everything from /static/projects onward
             if "/static/projects" in copc_path:
@@ -313,6 +377,7 @@ def generate_potree_viewer_html(
       const PC_DIAG = {JS_DIAG};
       const PC_IS_MOBILE = {JS_IS_MOBILE};
       const PC_Z_LOW = {JS_Z_LOW};
+      const PC_Z_UNIT_FACTOR = {JS_Z_UNIT_FACTOR};
     </script>
 
     <script src="/potree/libs/jquery/jquery-3.1.1.min.js"></script>
@@ -404,13 +469,13 @@ def generate_potree_viewer_html(
         window.toScene = proj4(mapProjection, PC_PROJ4);
 
         // Place Cesium camera near dataset center
-        const dst = Cesium.Cartesian3.fromDegrees(PC_INIT_LON, PC_INIT_LAT, (parseFloat(PC_INIT_H) || 0) + 1000.0);
+        const dst = Cesium.Cartesian3.fromDegrees(PC_INIT_LON, PC_INIT_LAT, PC_INIT_H);
         cesiumViewer.camera.setView({{
           destination: dst,
           orientation: {{
-            heading: 0,
+            heading: 10,
             pitch: -Cesium.Math.PI_OVER_TWO * 0.5,
-            roll: 0
+            roll: 0.0
           }}
         }});
       }} else {{
@@ -465,25 +530,27 @@ def generate_potree_viewer_html(
           const camera = viewer.scene.getActiveCamera();
 
           const pPos    = new THREE.Vector3(0, 0, 0).applyMatrix4(camera.matrixWorld);
-          const pUpT    = new THREE.Vector3(0, 600, 0).applyMatrix4(camera.matrixWorld);
+          const pRight  = new THREE.Vector3(600, 0, 0).applyMatrix4(camera.matrixWorld);
+          const pUp     = new THREE.Vector3(0, 600, 0).applyMatrix4(camera.matrixWorld);
           const pTarget = viewer.scene.view.getPivot();
 
           const EPSILON = 0.5;
-          window.PC_VERT_OFFSET_M = (typeof PC_Z_LOW === 'number') ? -PC_Z_LOW + EPSILON : 0;
+          window.PC_VERT_OFFSET_M = (typeof PC_Z_LOW === 'number') ? -(PC_Z_LOW * PC_Z_UNIT_FACTOR) + EPSILON : 0;
 
           const toCes = (pos) => {{
             const xy = [pos.x, pos.y];
-            const height = pos.z + (window.PC_VERT_OFFSET_M || 0);
+            const height = (pos.z * PC_Z_UNIT_FACTOR) + (window.PC_VERT_OFFSET_M || 0);
             const deg = window.toMap.forward(xy); // [lon, lat]
-            return Cesium.Cartesian3.fromDegrees(deg[0], deg[1], height);
+            return Cesium.Cartesian3.fromDegrees(...deg, height);
           }};
 
-          const cPos = toCes(pPos);
-          const cUpT = toCes(pUpT);
-          const cTar = toCes(pTarget);
+          const cPos      = toCes(pPos);
+          const cUpTarget = toCes(pUp);
+          const cTarget   = toCes(pTarget);
 
-          let cDir = Cesium.Cartesian3.subtract(cTar, cPos, new Cesium.Cartesian3());
-          let cUp  = Cesium.Cartesian3.subtract(cUpT, cPos, new Cesium.Cartesian3());
+          let cDir = Cesium.Cartesian3.subtract(cTarget, cPos, new Cesium.Cartesian3());
+          let cUp  = Cesium.Cartesian3.subtract(cUpTarget, cPos, new Cesium.Cartesian3());
+
           cDir = Cesium.Cartesian3.normalize(cDir, new Cesium.Cartesian3());
           cUp  = Cesium.Cartesian3.normalize(cUp, new Cesium.Cartesian3());
 
