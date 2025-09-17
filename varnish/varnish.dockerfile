@@ -1,5 +1,5 @@
 # Use the official varnish image as the base
-FROM varnish:latest
+FROM varnish:7
 
 # set the user to root, and install build dependencies
 USER root
