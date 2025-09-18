@@ -421,12 +421,25 @@ def generate_potree_viewer_html(
 
       // Potree viewer
       window.viewer = new Potree.Viewer(document.getElementById("potree_render_area"));
-      viewer.setEDLEnabled(true);
-      viewer.setPointBudget(2_000_000);
-      viewer.useHQ = true;
-      viewer.setFOV(60);
+
+      // Mobile-specific optimizations
+      if (PC_IS_MOBILE) {{
+        // Mobile optimizations: reduce quality and performance demands
+        viewer.setEDLEnabled(false);               // Disable expensive effects
+        viewer.setPointBudget(500_000);            // Much lower point budget
+        viewer.useHQ = false;                      // Disable high quality mode
+        viewer.setFOV(70);                         // Slightly wider FOV for mobile
+        viewer.setControls(viewer.orbitControls);  // Use simpler controls
+      }} else {{
+        viewer.setEDLEnabled(true);
+        viewer.setPointBudget(2_000_000);
+        viewer.useHQ = true;
+        viewer.setFOV(60);
+        viewer.setControls(viewer.earthControls);
+      }}
+
+      // General settings
       viewer.loadSettingsFromURL();
-      viewer.setControls(viewer.earthControls);
       viewer.setBackground(null);
       viewer.renderer.setClearColor(0x000000, 0.0);
       viewer.renderer.domElement.style.background = "transparent";
@@ -500,8 +513,15 @@ def generate_potree_viewer_html(
           viewer.scene.addPointCloud(pointcloud);
 
           const material = pointcloud.material;
-          material.size = 1;
-          material.pointSizeType = Potree.PointSizeType.ADAPTIVE;
+
+          // Mobile-specific material settings
+          if (PC_IS_MOBILE) {{
+            material.size = 2;
+            material.pointSizeType = Potree.PointSizeType.FIXED;
+          }} else {{
+            material.size = 1;
+            material.pointSizeType = Potree.PointSizeType.ADAPTIVE;
+          }}
           material.shape = Potree.PointShape.CIRCLE;
 
           viewer.fitToScreen(0.6);
