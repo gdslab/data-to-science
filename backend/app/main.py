@@ -6,6 +6,8 @@ from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from opentelemetry.instrumentation.asgi import OpenTelemetryMiddleware
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from starlette.background import BackgroundTask
 
 from app.api.api_v1.api import api_router
@@ -21,6 +23,18 @@ app = FastAPI(
     redoc_url="/developer/docs",
     title=settings.API_PROJECT_NAME,
 )
+
+if settings.ENABLE_OPENTELEMETRY:
+    try:
+        from app.telemetry import setup_tracing
+
+        setup_tracing(service_name="d2s-api")
+        FastAPIInstrumentor.instrument_app(app)  # route names, attrs
+        app.add_middleware(OpenTelemetryMiddleware)  # full ASGI coverage
+        print("OpenTelemetry tracing enabled")
+    except Exception as e:
+        print(f"Error setting up OpenTelemetry tracing: {e}")
+
 
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["GET"], allow_headers=["*"]

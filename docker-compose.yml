@@ -37,6 +37,7 @@ services:
         condition: service_healthy
     environment:
       - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
+      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel-collector:4318
     env_file:
       - backend.env
       - db.env
@@ -181,7 +182,7 @@ services:
       - db.env
 
   titiler:
-    image: ghcr.io/developmentseed/titiler:0.19.0
+    image: ghcr.io/developmentseed/titiler:0.23.0
     volumes:
       - user-data:/static
     environment:
@@ -208,6 +209,9 @@ services:
       - VSI_CACHE_SIZE=536870912
       - CPL_VSIL_CURL_ALLOWED_EXTENSIONS=.tif,.TIF,.tiff
       - CPL_VSIL_CURL_CACHE_SIZE=200000000
+      # telemetry config
+      - TITILER_API_TELEMETRY_ENABLED=True
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
 
   tusd:
     image: tusproject/tusd:latest
@@ -221,6 +225,25 @@ services:
       - frontend
       - backend
       - proxy
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "0.0.0.0:4318:4318" # OTLP HTTP receiver
+      - "0.0.0.0:13133:13133" # Health check extension
+    depends_on:
+      - jaeger
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "0.0.0.0:16686:16686" # UI
+      - "0.0.0.0:14250:14250" # OTLP gRPC (Jaeger receiver)
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
 
 volumes:
   celery-data:

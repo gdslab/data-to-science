@@ -45,6 +45,9 @@ class Settings(BaseSettings):
 
     API_LOGDIR: str = "/app/logs"
 
+    # OpenTelemetry
+    ENABLE_OPENTELEMETRY: bool = False
+
     # Provide a base URL for shortened URLs (e.g., "http://localhost:8000/s")
     SHORTENED_URL_BASE: str = API_DOMAIN + "/sl"
 
