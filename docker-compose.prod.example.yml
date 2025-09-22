@@ -269,7 +269,7 @@ services:
       - no-new-privileges=true
 
   titiler:
-    image: ghcr.io/developmentseed/titiler:0.19.0
+    image: ghcr.io/developmentseed/titiler:0.23.1
     volumes:
       - user-data:/static
     environment:
