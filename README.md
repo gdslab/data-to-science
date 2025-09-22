@@ -89,6 +89,7 @@ These aspects make D2S a powerful tool for researchers looking to manage, share,
    - `ENABLE_CAMPAIGNS`: Enable/disable campaign management endpoints (true/false).
    - `ENABLE_IFORESTER`: Enable/disable iForester integration endpoints (true/false).
    - `ENABLE_STAC`: Enable/disable STAC (SpatioTemporal Asset Catalog) endpoints (true/false).
+   - `ENABLE_OPENTELEMETRY`: Enable/disable OpenTelemetry. Must also uncomment the `otel-collector` container and toggle the `backend` and `titiler` OpenTelemetry related environment settings in the docker compose config. Disabled by default.
    - `EXTENSIONS`: Can be used to enable extensions. Should be left blank typically.
    - `EXTERNAL_STORAGE`: Internal mount point for external storage. Should be blank unless you have a binding mount for external storage.
    - `MAIL_ENABLED`: Enable SMTP email by changing value from 0 to 1.
