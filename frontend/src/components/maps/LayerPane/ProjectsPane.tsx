@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   PaperAirplaneIcon,
   StarIcon as StarIconOutline,
+  UserGroupIcon,
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 
@@ -26,20 +27,21 @@ type ProjectsPaneProps = {
 
 export default function ProjectsPane({ projects }: ProjectsPaneProps) {
   const [currentPage, setCurrentPage] = useState(0);
-  const [openComponent, setOpenComponent] = useState<'filter' | 'sort' | null>(
-    null
-  );
+  const [openComponent, setOpenComponent] = useState<
+    'filter' | 'sort' | 'teamFilter' | null
+  >(null);
   const [searchText, setSearchText] = useState('');
   const [sortSelection, setSortSelection] = useState<SortSelection>(
     getSortPreferenceFromLocalStorage('sortPreference')
   );
-
   const {
     activeDataProductDispatch,
     activeProjectDispatch,
     projectFilterSelection,
     projectFilterSelectionDispatch,
     projectsVisible,
+    selectedTeamIds,
+    selectedTeamIdsDispatch,
   } = useMapContext();
 
   // Filter projects by filter selection
@@ -60,8 +62,32 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
       );
     }
 
+    if (
+      projectFilterSelection.includes('myTeams') &&
+      selectedTeamIds.length > 0
+    ) {
+      filteredProjects = filteredProjects.filter(
+        (project) => project.team && selectedTeamIds.includes(project.team.id)
+      );
+    }
+
     return filteredProjects;
-  }, [projects, projectFilterSelection]);
+  }, [projects, projectFilterSelection, selectedTeamIds]);
+
+  const teamCategories = useMemo(() => {
+    if (!projects) return [] as { label: string; value: string }[];
+    const unique = new Map<string, string>();
+    projects.forEach((p) => {
+      if (p.team) {
+        unique.set(p.team.id, p.team.title);
+      }
+    });
+    return Array.from(unique.entries())
+      .map(([id, title]) => ({ label: title, value: id }))
+      .sort((a, b) =>
+        a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })
+      );
+  }, [projects]);
 
   // Filters projects by search text and visible projects in map extent
   const filteredVisibleProjects = useMemo(() => {
@@ -151,12 +177,19 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
                   categories={[
                     { label: 'My projects', value: 'myProjects' },
                     { label: 'Favorite projects', value: 'likedProjects' },
+                    { label: 'My teams', value: 'myTeams' },
                   ]}
                   selectedCategory={projectFilterSelection}
                   setSelectedCategory={updateProjectFilter}
                   isOpen={openComponent === 'filter'}
                   onOpen={() => setOpenComponent('filter')}
                   onClose={() => setOpenComponent(null)}
+                  sublistParentValue="myTeams"
+                  sublistCategories={teamCategories}
+                  sublistSelected={selectedTeamIds}
+                  setSublistSelected={(teamIds) =>
+                    selectedTeamIdsDispatch({ type: 'set', payload: teamIds })
+                  }
                 />
                 <Sort
                   sortSelection={sortSelection}
@@ -177,7 +210,7 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
               <li key={project.id}>
                 <LayerCard hover={true}>
                   <div
-                    className="relative"
+                    className="relative pr-4 pt-1"
                     onClick={handleProjectClick(project)}
                     title={project.title}
                   >
@@ -205,18 +238,29 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
                         </div>
                       </div>
                       <div className="flex items-center justify-center">
-                        <CountBadge
-                          count={project.flight_count}
-                          color="sky"
-                          label="Flights"
-                          icon={
-                            <PaperAirplaneIcon className="h-4 w-4 -ms-1 me-1.5" />
-                          }
-                          rank={getCategory(
-                            project.data_product_count,
-                            'flight'
-                          )}
-                        />
+                        <div className="flex flex-col items-start gap-1">
+                          <CountBadge
+                            count={project.flight_count}
+                            color="sky"
+                            label="Flights"
+                            icon={
+                              <PaperAirplaneIcon className="h-4 w-4 -ms-1 me-1.5" />
+                            }
+                            rank={getCategory(
+                              project.data_product_count,
+                              'flight'
+                            )}
+                          />
+                          {project.team ? (
+                            <span
+                              className="inline-flex items-center justify-center rounded-full px-2.5 py-0.5 bg-indigo-50 text-indigo-700"
+                              title={project.team.title}
+                            >
+                              <UserGroupIcon className="h-4 w-4 -ms-1 me-1.5" />
+                              <p className="whitespace-nowrap text-xs">Team</p>
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
                   </div>

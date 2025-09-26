@@ -7,8 +7,10 @@ from app import crud
 from app.schemas.iforester import IForesterCreate, IForesterUpdate
 from app.tests.utils.iforester import create_iforester, EXAMPLE_DATA
 from app.tests.utils.project import create_project
+from app.tests.conftest import pytest_requires_iforester
 
 
+@pytest_requires_iforester
 def test_create_iforester_record(db: Session) -> None:
     iforester = create_iforester(db)
     assert iforester
@@ -25,6 +27,7 @@ def test_create_iforester_record(db: Session) -> None:
     assert iforester.user == EXAMPLE_DATA.get("user")
 
 
+@pytest_requires_iforester
 def test_read_iforester_record(db: Session) -> None:
     iforester = create_iforester(db)
     iforester_in_db = crud.iforester.get_iforester_by_id(
@@ -44,6 +47,7 @@ def test_read_iforester_record(db: Session) -> None:
     assert iforester_in_db.user == EXAMPLE_DATA.get("user")
 
 
+@pytest_requires_iforester
 def test_read_iforester_records(db: Session) -> None:
     project = create_project(db)
     iforester1 = create_iforester(db, project_id=project.id)
@@ -58,6 +62,7 @@ def test_read_iforester_records(db: Session) -> None:
         assert iforester.id in [iforester1.id, iforester2.id, iforester3.id]
 
 
+@pytest_requires_iforester
 def test_update_iforester_record(db: Session) -> None:
     iforester = create_iforester(db)
     old_species = iforester.species
@@ -74,6 +79,7 @@ def test_update_iforester_record(db: Session) -> None:
     assert updated_iforester.species == new_species
 
 
+@pytest_requires_iforester
 def test_delete_iforester_record(db: Session) -> None:
     iforester = create_iforester(db)
     iforester_removed = crud.iforester.remove_iforester_by_id(

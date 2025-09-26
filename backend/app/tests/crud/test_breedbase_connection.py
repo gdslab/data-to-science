@@ -3,9 +3,11 @@ from sqlalchemy.orm import Session
 from app import crud, schemas
 from app.tests.utils.breedbase_connection import create_breedbase_connection
 from app.tests.utils.project import create_project
+from app.tests.conftest import pytest_requires_breedbase
 from app.tests.utils.user import create_user
 
 
+@pytest_requires_breedbase
 def test_create_breedbase_connection(db: Session) -> None:
     # Create project
     project = create_project(db)
@@ -33,6 +35,7 @@ def test_create_breedbase_connection(db: Session) -> None:
     assert breedbase_connection.study_id == study_id
 
 
+@pytest_requires_breedbase
 def test_read_breedbase_connection(db: Session) -> None:
     # Create project
     project = create_project(db)
@@ -52,6 +55,7 @@ def test_read_breedbase_connection(db: Session) -> None:
     assert breedbase_connection_from_db.base_url == breedbase_connection.base_url
 
 
+@pytest_requires_breedbase
 def test_read_breedbase_connections(db: Session) -> None:
     # Create project
     project = create_project(db)
@@ -77,6 +81,7 @@ def test_read_breedbase_connections(db: Session) -> None:
     ]
 
 
+@pytest_requires_breedbase
 def test_get_breedbase_connection_by_study_id(db: Session) -> None:
     # Create project
     project = create_project(db)
@@ -122,6 +127,7 @@ def test_get_breedbase_connection_by_study_id(db: Session) -> None:
     assert len(breedbase_connections) == 0
 
 
+@pytest_requires_breedbase
 def test_update_breedbase_connection(db: Session) -> None:
     # Create project
     project = create_project(db)
@@ -149,6 +155,7 @@ def test_update_breedbase_connection(db: Session) -> None:
     assert breedbase_connection_updated.study_id == new_study_id
 
 
+@pytest_requires_breedbase
 def test_remove_breedbase_connection(db: Session) -> None:
     # Create project
     project = create_project(db)

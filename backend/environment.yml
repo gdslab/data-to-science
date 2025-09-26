@@ -133,7 +133,6 @@ dependencies:
   - jmespath
   - joblib
   - json-c
-  - jsonschema
   - kealib
   - keyutils
   - kiwisolver
@@ -302,7 +301,6 @@ dependencies:
   - pyproj
   - pysocks
   - pystac
-  - pystac-client
   - pytest
   - pytest-cov
   - python-dateutil
@@ -323,7 +321,6 @@ dependencies:
   - readline
   - requests
   - rich
-  - rio-stac
   - rsa
   - s2n
   - s3transfer
@@ -393,3 +390,12 @@ dependencies:
   - pystac-client
   - rio-stac
   - jsonschema
+  - authlib
+  - open3d
+  - plyfile
+  - opentelemetry-sdk
+  - opentelemetry-api
+  - opentelemetry-exporter-otlp
+  - opentelemetry-instrumentation-fastapi
+  - opentelemetry-instrumentation-asgi
+prefix: /home/benh/miniforge3/envs/d2s

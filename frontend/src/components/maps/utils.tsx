@@ -24,14 +24,110 @@ import {
 type Bounds = [number, number, number, number];
 
 /**
+ * Validates if bounds are within valid geographic coordinate ranges.
+ * @param bounds Bounding box array [minLng, minLat, maxLng, maxLat].
+ * @returns True if bounds are valid, false otherwise.
+ */
+function isValidGeographicBounds(bounds: Bounds): boolean {
+  const [minLng, minLat, maxLng, maxLat] = bounds;
+
+  // Check latitude bounds (-90 to 90)
+  if (minLat < -90 || minLat > 90 || maxLat < -90 || maxLat > 90) {
+    return false;
+  }
+
+  // Check longitude bounds (-180 to 180)
+  if (minLng < -180 || minLng > 180 || maxLng < -180 || maxLng > 180) {
+    return false;
+  }
+
+  // Check that min values are less than or equal to max values
+  if (minLat > maxLat || minLng > maxLng) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Validates if a coordinate pair is within valid geographic ranges.
+ * @param lng Longitude value.
+ * @param lat Latitude value.
+ * @returns True if coordinates are valid, false otherwise.
+ */
+function isValidCoordinate(lng: number, lat: number): boolean {
+  return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+}
+
+/**
+ * Filters projects to remove those with invalid centroid coordinates.
+ * @param projects Array of projects to filter.
+ * @returns Filtered array with only projects having valid geographic coordinates.
+ */
+function filterValidProjects(projects: Project[]): Project[] {
+  return projects.filter((project) => {
+    if (!project.centroid) {
+      console.warn(
+        `Project ${project.id} missing centroid, excluding from map`
+      );
+      return false;
+    }
+
+    const isValid = isValidCoordinate(project.centroid.x, project.centroid.y);
+    if (!isValid) {
+      console.warn(
+        `Project ${project.id} has invalid coordinates (${project.centroid.x}, ${project.centroid.y}), excluding from map`
+      );
+    }
+
+    return isValid;
+  });
+}
+
+/**
+ * Filters GeoJSON features to remove those with invalid geographic coordinates.
+ * @param geojsonData Feature Collection to filter.
+ * @returns Filtered Feature Collection with only valid coordinates.
+ */
+function filterValidGeoJSONFeatures<
+  T extends ProjectFeatureCollection | FeatureCollection<Point | Polygon>
+>(geojsonData: T): T {
+  const validFeatures = geojsonData.features.filter((feature) => {
+    if (feature.geometry.type === 'Point') {
+      const [lng, lat] = feature.geometry.coordinates;
+      return isValidCoordinate(lng, lat);
+    } else if (feature.geometry.type === 'Polygon') {
+      // Check all coordinates in the polygon
+      const coordinates = feature.geometry.coordinates.flat(
+        Infinity
+      ) as number[];
+      for (let i = 0; i < coordinates.length; i += 2) {
+        const lng = coordinates[i];
+        const lat = coordinates[i + 1];
+        if (!isValidCoordinate(lng, lat)) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
+  });
+
+  return {
+    ...geojsonData,
+    features: validFeatures,
+  } as T;
+}
+
+/**
  * Calculates bounding box for features in GeoJSON Feature Collection. Supports
  * Point or Polygon geometry types.
  * @param geojsonData Feature Collection of Point or Polygon Feautres.
- * @returns Bounding box array.
+ * @returns Bounding box array if valid coordinates are found, null if no valid bounds.
  */
 function calculateBoundsFromGeoJSON(
   geojsonData: ProjectFeatureCollection | FeatureCollection<Point | Polygon>
-): Bounds {
+): Bounds | null {
   const bounds: Bounds = geojsonData.features.reduce(
     (bounds, feature) => {
       const [minLng, minLat, maxLng, maxLat] = bounds;
@@ -45,27 +141,52 @@ function calculateBoundsFromGeoJSON(
         for (let i = 0; i < coordinates.length; i += 2) {
           const lng = coordinates[i];
           const lat = coordinates[i + 1];
-          bounds[0] = Math.min(bounds[0], lng);
-          bounds[1] = Math.min(bounds[1], lat);
-          bounds[2] = Math.max(bounds[2], lng);
-          bounds[3] = Math.max(bounds[3], lat);
+
+          // Validate individual coordinates before using them
+          if (isValidCoordinate(lng, lat)) {
+            bounds[0] = Math.min(bounds[0], lng);
+            bounds[1] = Math.min(bounds[1], lat);
+            bounds[2] = Math.max(bounds[2], lng);
+            bounds[3] = Math.max(bounds[3], lat);
+          }
         }
 
         return bounds;
       } else if (feature.geometry.type === 'Point') {
         const [lng, lat] = feature.geometry.coordinates;
-        return [
-          Math.min(minLng, lng),
-          Math.min(minLat, lat),
-          Math.max(maxLng, lng),
-          Math.max(maxLat, lat),
-        ];
+
+        // Validate individual coordinates before using them
+        if (isValidCoordinate(lng, lat)) {
+          return [
+            Math.min(minLng, lng),
+            Math.min(minLat, lat),
+            Math.max(maxLng, lng),
+            Math.max(maxLat, lat),
+          ];
+        }
+
+        return bounds;
       } else {
         throw new Error('Unable to calculate bounds for GeoJSON data');
       }
     },
     [Infinity, Infinity, -Infinity, -Infinity]
   );
+
+  // Check if we found any valid coordinates (bounds would still be infinite if no valid coords)
+  if (
+    bounds[0] === Infinity ||
+    bounds[1] === Infinity ||
+    bounds[2] === -Infinity ||
+    bounds[3] === -Infinity
+  ) {
+    return null;
+  }
+
+  // Final validation of calculated bounds
+  if (!isValidGeographicBounds(bounds)) {
+    return null;
+  }
 
   return bounds;
 }
@@ -565,6 +686,8 @@ export {
   calculateBoundsFromGeoJSON,
   createDefaultSingleBandSymbology,
   createDefaultMultibandSymbology,
+  filterValidGeoJSONFeatures,
+  filterValidProjects,
   fitMapToGeoJSON,
   getCategory,
   getDefaultStyle,

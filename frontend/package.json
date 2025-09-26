@@ -25,6 +25,7 @@
     "@nivo/funnel": "^0.87.0",
     "@nivo/line": "^0.87.0",
     "@nivo/scatterplot": "^0.99.0",
+    "@playcanvas/react": "^0.7.0",
     "@turf/area": "^6.5.0",
     "@turf/bbox": "^7.2.0",
     "@turf/bbox-polygon": "^7.2.0",
@@ -48,6 +49,7 @@
     "localforage": "^1.10.0",
     "maplibre-gl": "^4.7.1",
     "papaparse": "^5.4.1",
+    "playcanvas": "^2.10.6",
     "react": "^18.2.0",
     "react-confirm": "^0.3.0",
     "react-dom": "^18.2.0",
@@ -57,6 +59,7 @@
     "react-select": "^5.8.0",
     "seedrandom": "^3.0.5",
     "swiper": "10.3.1",
+    "three": "^0.179.1",
     "uuid": "^9.0.1",
     "yup": "^1.2.0",
     "yup-password": "^0.2.2"

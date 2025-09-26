@@ -65,8 +65,10 @@ def read_flights(
     project_id: UUID,
     include_all: bool = True,
     has_raster: bool = False,
-    current_user: models.User = Depends(deps.get_current_approved_user),
-    project: schemas.Project = Depends(deps.can_read_project),
+    current_user: models.User = Depends(
+        deps.get_current_approved_user_by_jwt_or_api_key
+    ),
+    project: schemas.Project = Depends(deps.can_read_project_with_jwt_or_api_key),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Retrieve flights associated with project user can access."""

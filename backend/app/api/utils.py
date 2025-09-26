@@ -3,7 +3,7 @@ import os
 import re
 import uuid
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 from urllib.parse import urlencode, quote_plus
 
 from geojson_pydantic import Feature
@@ -370,3 +370,30 @@ def normalize_sensor_value(sensor: str) -> str:
         "other": "Other",
     }
     return sensor_mapping.get(sensor.lower(), sensor)
+
+
+def get_copc_z_unit(crs) -> Optional[str]:
+    """
+    Determine the Z-axis unit from a CRS object.
+    Returns unit name (e.g., 'metre', 'foot', 'US survey foot') or None.
+    """
+    if crs is None:
+        return None
+
+    # Look for vertical axis explicitly defined
+    for axis in crs.axis_info:
+        if axis.direction.lower() == "up":
+            return axis.unit_name
+
+    # Check compound CRS
+    if crs.is_compound:
+        for sub in crs.sub_crs_list:
+            if sub.is_vertical:
+                return sub.axis_info[0].unit_name
+
+    # Fallback: assume Z uses the same unit as XY
+    # This is common in LAS/COPC when only a 2D CRS is defined
+    if len(crs.axis_info) >= 2:
+        return crs.axis_info[0].unit_name
+
+    return None

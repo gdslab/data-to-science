@@ -29,7 +29,8 @@ export default function CompareMapControl({
           flight.data_products.filter(
             (data_product) =>
               data_product.data_type !== 'point_cloud' &&
-              data_product.data_type !== 'panoramic'
+              data_product.data_type !== 'panoramic' &&
+              data_product.data_type !== '3dgs'
           ).length > 0
       )
       .sort((a, b) => sorter(a.acquisition_date, b.acquisition_date));
@@ -68,7 +69,9 @@ export default function CompareMapControl({
     return findSelectedFlight(mapComparisonState[side].flightId)
       ?.data_products.filter(
         ({ data_type }) =>
-          data_type !== 'point_cloud' && data_type !== 'panoramic'
+          data_type !== 'point_cloud' &&
+          data_type !== 'panoramic' &&
+          data_type !== '3dgs'
       )
       .map((dataProduct) => ({
         label: dataProduct.data_type,

@@ -1,5 +1,4 @@
 import os
-import secrets
 from typing import Any, Optional
 
 from fastapi_mail.config import ConnectionConfig
@@ -12,8 +11,6 @@ from pydantic import (
     SecretStr,
 )
 from pydantic_settings import BaseSettings
-
-from app.core.utils import generate_secret_key
 
 
 class Settings(BaseSettings):
@@ -44,8 +41,12 @@ class Settings(BaseSettings):
     TEST_STATIC_DIR: str = "/tmp/static"
     STATIC_DIR: str = "/static"
     POTREE_DIR: str = "/app/potree"
+    PC_GLTF_VIEWER_DIR: str = "/app/pc-gltf-viewer"
 
     API_LOGDIR: str = "/app/logs"
+
+    # OpenTelemetry
+    ENABLE_OPENTELEMETRY: bool = False
 
     # Provide a base URL for shortened URLs (e.g., "http://localhost:8000/s")
     SHORTENED_URL_BASE: str = API_DOMAIN + "/sl"
@@ -123,6 +124,12 @@ class Settings(BaseSettings):
 
     # Testing
     EMAIL_TEST_USER: EmailStr = "test@example.com"  # type: ignore
+
+    # Feature flags for optional modules
+    ENABLE_BREEDBASE: bool = False
+    ENABLE_CAMPAIGNS: bool = False
+    ENABLE_IFORESTER: bool = False
+    ENABLE_STAC: bool = False
 
     # STAC Catalog
     STAC_API_URL: Optional[AnyHttpUrl] = None

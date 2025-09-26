@@ -5,11 +5,13 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api.deps import get_current_user, get_current_approved_user
 from app.core.config import settings
+from app.tests.conftest import pytest_requires_breedbase
 from app.tests.utils.breedbase_connection import create_breedbase_connection
 from app.tests.utils.project import create_project
 from app.tests.utils.user import create_user
 
 
+@pytest_requires_breedbase
 def test_create_breedbase_connection(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -42,6 +44,7 @@ def test_create_breedbase_connection(
     assert response_data["base_url"] == payload["base_url"]
 
 
+@pytest_requires_breedbase
 def test_read_breedbase_connection(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -70,6 +73,7 @@ def test_read_breedbase_connection(
     assert response_data["base_url"] == breedbase_connection.base_url
 
 
+@pytest_requires_breedbase
 def test_read_breedbase_connections(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -105,6 +109,7 @@ def test_read_breedbase_connections(
     ]
 
 
+@pytest_requires_breedbase
 def test_get_breedbase_connection_by_study_id(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -154,6 +159,7 @@ def test_get_breedbase_connection_by_study_id(
     assert str(breedbase_connection2.id) in connection_ids
 
 
+@pytest_requires_breedbase
 def test_get_breedbase_connection_by_study_id_unauthorized(
     client: TestClient, db: Session
 ) -> None:
@@ -172,6 +178,7 @@ def test_get_breedbase_connection_by_study_id_unauthorized(
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
+@pytest_requires_breedbase
 def test_get_breedbase_connection_by_study_id_wrong_user(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -193,6 +200,7 @@ def test_get_breedbase_connection_by_study_id_wrong_user(
     assert response_data == []
 
 
+@pytest_requires_breedbase
 def test_update_breedbase_connection(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -230,6 +238,7 @@ def test_update_breedbase_connection(
     assert response_data["base_url"] == breedbase_connection.base_url
 
 
+@pytest_requires_breedbase
 def test_remove_breedbase_connection(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:

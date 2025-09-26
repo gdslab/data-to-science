@@ -9,6 +9,7 @@ import PotreeViewer from './PotreeViewer';
 
 import { useMapApiKeys } from './MapApiKeysContext';
 import { useMapContext } from './MapContext';
+import PlayCanvasglTFViewer from './PlayCanvasglTFViewer';
 import { useMapLayerContext } from './MapLayersContext';
 import { useRasterSymbologyContext } from './RasterSymbologyContext';
 
@@ -99,11 +100,14 @@ export default function MapViewMode() {
     !activeDataProduct ||
     (activeDataProduct &&
       activeDataProduct.data_type !== 'point_cloud' &&
-      activeDataProduct.data_type !== 'panoramic')
+      activeDataProduct.data_type !== 'panoramic' &&
+      activeDataProduct.data_type !== '3dgs')
   ) {
     return <HomeMap layers={layers} />;
   } else if (activeDataProduct.data_type === 'panoramic') {
     return <PanoViewer imageUrl={activeDataProduct.url} />;
+  } else if (activeDataProduct.data_type === '3dgs') {
+    return <PlayCanvasglTFViewer src={activeDataProduct.url} />;
   } else {
     const copcPath = activeDataProduct.url;
     return <PotreeViewer copcPath={copcPath} />;

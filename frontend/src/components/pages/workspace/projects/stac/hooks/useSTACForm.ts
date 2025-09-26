@@ -40,12 +40,35 @@ export function useSTACForm(
   // Initialize form fields from existing metadata
   useEffect(() => {
     if (stacMetadata?.collection) {
-      setFormState((prev) => ({
-        ...prev,
-        sciDoi: stacMetadata.collection['sci:doi'] || '',
-        sciCitation: stacMetadata.collection['sci:citation'] || '',
-        license: (stacMetadata.collection as any).license || DEFAULT_LICENSE,
-      }));
+      setFormState((prev) => {
+        // Get server values
+        const serverSciDoi = stacMetadata.collection['sci:doi'] || '';
+        const serverSciCitation = stacMetadata.collection['sci:citation'] || '';
+        const serverLicense =
+          (stacMetadata.collection as any).license || DEFAULT_LICENSE;
+
+        // Preserve user input if it differs from server data
+        // This prevents form values from reverting after submission
+        const finalSciDoi =
+          prev.sciDoi && prev.sciDoi !== serverSciDoi
+            ? prev.sciDoi
+            : serverSciDoi;
+        const finalSciCitation =
+          prev.sciCitation && prev.sciCitation !== serverSciCitation
+            ? prev.sciCitation
+            : serverSciCitation;
+        const finalLicense =
+          prev.license && prev.license !== serverLicense
+            ? prev.license
+            : serverLicense;
+
+        return {
+          ...prev,
+          sciDoi: finalSciDoi,
+          sciCitation: finalSciCitation,
+          license: finalLicense,
+        };
+      });
     }
 
     // Initialize custom titles from STAC items

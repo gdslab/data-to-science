@@ -21,13 +21,108 @@ from app.utils.job_manager import JobManager
 from app.utils.TarProcessor import TarProcessor
 from app.schemas.data_product import DataProductUpdate
 from app.schemas.job import Status
-from app.tasks.utils import validate_panoramic_image
+from app.tasks.utils import validate_3dgs_image, validate_panoramic_image
 
 
 logger = get_task_logger(__name__)
 
 # 32 MB buffer size for copying files
 BUFFER_SIZE = 32 * 1024 * 1024
+
+
+@celery_app.task(name="upload_3dgs_task")
+def upload_3dgs(
+    storage_path: str,
+    destination_filepath: str,
+    job_id: UUID,
+    data_product_id: UUID,
+) -> None:
+    """Celery task for processing an uploaded 3D Gaussian Splatting image.
+
+    Args:
+        storage_path (str): Filepath for 3D Gaussian Splatting image in tusd storage.
+        destination_filepath (str): Filepath for 3D Gaussian Splatting image in static files.
+        job_id (UUID): Job ID for job associated with upload process.
+        data_product_id (UUID): Data product ID for uploaded 3D Gaussian Splatting image.
+    """
+    in_image = Path(storage_path)
+    out_image = Path(destination_filepath)
+
+    # copy uploaded panoramic image to static files
+    with open(storage_path, "rb") as src, open(out_image, "wb") as dst:
+        shutil.copyfileobj(src, dst, length=BUFFER_SIZE)
+
+    # get database session
+    db = next(get_db())
+
+    # retrieve job associated with this task
+    try:
+        job = JobManager(job_id=job_id)
+    except ValueError:
+        # remove uploaded file and raise exception
+        if os.path.exists(in_image):
+            shutil.rmtree(in_image.parents[1])
+        logger.error("Could not find job in DB for upload process")
+        return None
+
+    # validate uploaded 3D Gaussian Splatting image
+    is_valid, error_message = validate_3dgs_image(str(out_image))
+    if not is_valid:
+        # remove uploaded file and raise exception
+        if os.path.exists(storage_path):
+            os.remove(storage_path)
+        if os.path.exists(f"{storage_path}.info"):
+            os.remove(f"{storage_path}.info")
+        # remove output image
+        if os.path.exists(out_image):
+            os.remove(out_image)
+
+        job.update(status=Status.FAILED)
+        logger.error(f"Invalid 3D Gaussian Splatting image: {error_message}")
+        return None
+
+    # retrieve data product associated with this task
+    data_product = crud.data_product.get(db, id=data_product_id)
+
+    if not data_product:
+        # remove uploaded file and raise exception
+        if os.path.exists(storage_path):
+            os.remove(storage_path)
+        if os.path.exists(f"{storage_path}.info"):
+            os.remove(f"{storage_path}.info")
+        # remove output image
+        if os.path.exists(out_image):
+            os.remove(out_image)
+
+        job.update(status=Status.FAILED)
+        logger.error("Could not find data product in DB for upload process")
+        return None
+
+    # update job status to indicate process has started
+    job.start()
+
+    # update data product filepath to 3D Gaussian Splatting image
+    crud.data_product.update(
+        db,
+        db_obj=data_product,
+        obj_in=DataProductUpdate(
+            filepath=str(out_image), is_initial_processing_completed=True
+        ),
+    )
+
+    # update job to indicate process finished
+    job.update(status=Status.SUCCESS)
+
+    # remove the uploaded 3D Gaussian Splatting image from tusd
+    try:
+        if os.path.exists(storage_path):
+            os.remove(storage_path)
+        if os.path.exists(f"{storage_path}.info"):
+            os.remove(f"{storage_path}.info")
+    except Exception:
+        logger.exception("Unable to cleanup upload on tusd server")
+
+    return None
 
 
 @celery_app.task(name="upload_geotiff_task")

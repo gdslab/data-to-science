@@ -48,6 +48,9 @@ def test_create_project_without_team(db: Session) -> None:
     assert project.owner_id == user.id
     assert project.is_active is True
     assert project.is_published is False
+    assert project.created_at is not None
+    assert project.updated_at is not None
+    assert project.updated_at >= project.created_at
 
 
 def test_create_project_with_team(db: Session) -> None:
@@ -120,6 +123,8 @@ def test_get_project_by_id(db: Session) -> None:
     assert project.owner_id == stored_project.owner_id
     assert project.is_active is True
     assert project.is_published is False
+    assert stored_project.created_at is not None
+    assert stored_project.updated_at is not None
 
 
 def test_get_project_by_user_and_project_id(db: Session) -> None:
@@ -138,6 +143,9 @@ def test_get_project_by_user_and_project_id(db: Session) -> None:
     assert project.owner_id == stored_project["result"].owner_id
     assert project.is_active == stored_project["result"].is_active
     assert project.is_published == stored_project["result"].is_published
+    # created_by should be owner's full name
+    owner_full_name = f"{user.first_name} {user.last_name}"
+    assert stored_project["result"].created_by == owner_full_name
 
 
 def test_get_project_with_team_by_user_and_project_id(db: Session) -> None:
@@ -159,6 +167,9 @@ def test_get_project_with_team_by_user_and_project_id(db: Session) -> None:
     assert project.owner_id == stored_project["result"].owner_id
     assert project.is_active == stored_project["result"].is_active
     assert project.is_published == stored_project["result"].is_published
+    # created_by should be owner's full name
+    owner_full_name = f"{user.first_name} {user.last_name}"
+    assert stored_project["result"].created_by == owner_full_name
 
 
 def test_get_projects_by_owner(db: Session) -> None:
@@ -239,8 +250,33 @@ def test_get_all_projects(db: Session) -> None:
         assert project.id in [project1.id, project2.id, project3.id]
 
 
+def test_get_user_projects_includes_team(db: Session) -> None:
+    user = create_user(db)
+    team = create_team(db, owner_id=user.id)
+    project = create_project(db, owner_id=user.id, team_id=team.id)
+    projects = crud.project.get_user_projects(db, user=user)
+    assert len(projects) == 1
+    assert hasattr(projects[0], "team")
+    assert projects[0].team is not None
+    assert projects[0].team.id == team.id
+
+
+def test_get_all_projects_includes_team(db: Session) -> None:
+    user = create_user(db, is_superuser=True)
+    team = create_team(db, owner_id=user.id)
+    project = create_project(db, owner_id=user.id, team_id=team.id)
+    projects = crud.project.get_user_projects(db, user=user, include_all=True)
+    assert len(projects) >= 1
+    matched = next((p for p in projects if p.id == project.id), None)
+    assert matched is not None
+    assert matched.team is not None
+    assert matched.team.id == team.id
+
+
 def test_update_project(db: Session) -> None:
     project = create_project(db)
+    original_created_at = project.created_at
+    original_updated_at = project.updated_at
     new_title = random_team_name()
     new_planting_date = random_planting_date()
     project_in_update = ProjectUpdate(title=new_title, planting_date=new_planting_date)
@@ -262,6 +298,8 @@ def test_update_project(db: Session) -> None:
     assert project.planting_date == updated_project.planting_date
     assert project.description == updated_project.description
     assert project.owner_id == updated_project.owner_id
+    assert updated_project.created_at == original_created_at
+    assert updated_project.updated_at > original_updated_at
 
 
 def test_update_project_with_team(db: Session) -> None:

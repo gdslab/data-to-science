@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, field_validator, ValidationInfo, UUID4
 
 from app.schemas.location import LocationCreate
 from app.schemas.role import Role
+from app.schemas.team import Team
 
 
 # shared properties
@@ -67,6 +68,9 @@ class Project(ProjectInDBBase):
     flight_count: int = 0
     most_recent_flight: Optional[date] = None
     role: Role = Role.VIEWER
+    created_by: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
 
 
 # project boundary centroid
@@ -76,7 +80,7 @@ class Centroid(BaseModel):
 
 
 # schema returned when multiple projects requested
-class Projects(BaseModel):
+class Projects(BaseModel, from_attributes=True):
     id: UUID4
     centroid: Centroid
     description: str
@@ -89,6 +93,7 @@ class Projects(BaseModel):
     role: Role
     title: str
     liked: Optional[bool] = False
+    team: Optional[Team] = None
 
 
 # additional properties stored in DB

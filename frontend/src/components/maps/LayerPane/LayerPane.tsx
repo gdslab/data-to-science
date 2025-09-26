@@ -39,7 +39,8 @@ export default function LayerPane({
     if (
       (activeDataProduct &&
         (activeDataProduct.data_type === 'point_cloud' ||
-          activeDataProduct.data_type === 'panoramic')) ||
+          activeDataProduct.data_type === 'panoramic' ||
+          activeDataProduct.data_type === '3dgs')) ||
       activeMapTool === 'compare'
     ) {
       toggleHidePane(true);

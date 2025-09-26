@@ -3,13 +3,9 @@ from fastapi import APIRouter
 from app.api.api_v1.endpoints import (
     admin,
     auth,
-    breedbase_connections,
-    campaigns,
-    contact,
     file_permission,
     flights,
     health,
-    iforester,
     indoor_projects,
     indoor_project_data,
     locations,
@@ -27,21 +23,28 @@ from app.api.api_v1.endpoints import (
     users,
     vector_layers,
 )
+from app.core.config import settings
+
+# Conditionally import optional feature endpoints
+if settings.ENABLE_BREEDBASE:
+    from app.api.api_v1.endpoints import breedbase_connections
+
+if settings.ENABLE_CAMPAIGNS:
+    from app.api.api_v1.endpoints import campaigns
+
+if settings.MAIL_ENABLED:
+    from app.api.api_v1.endpoints import contact
+
+if settings.ENABLE_IFORESTER:
+    from app.api.api_v1.endpoints import iforester
+
+if settings.ENABLE_STAC:
+    from app.api.api_v1.endpoints import stac
+
 
 api_router = APIRouter()
 api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
-api_router.include_router(contact.router, prefix="/contact", tags=["contact"])
-api_router.include_router(
-    breedbase_connections.router,
-    prefix="/projects/{project_id}/breedbase-connections",
-    tags=["breedbase_connections"],
-)
-api_router.include_router(
-    breedbase_connections.study_router,
-    prefix="/breedbase-connections/study",
-    tags=["breedbase_connections"],
-)
 api_router.include_router(health.router, prefix="/health", tags=["health"])
 api_router.include_router(locations.router, prefix="/locations", tags=["locations"])
 api_router.include_router(public.router, prefix="/public", tags=["public"])
@@ -54,9 +57,6 @@ api_router.include_router(
     tags=["indoor_project_data"],
 )
 api_router.include_router(projects.router, prefix="/projects", tags=["projects"])
-api_router.include_router(
-    campaigns.router, prefix="/projects/{project_id}/campaigns", tags=["campaigns"]
-)
 api_router.include_router(
     flights.router, prefix="/projects/{project_id}/flights", tags=["flights"]
 )
@@ -91,9 +91,6 @@ api_router.include_router(
     tags=["utils"],
 )
 api_router.include_router(
-    iforester.router, prefix="/projects/{project_id}/iforester", tags=["iforester"]
-)
-api_router.include_router(
     project_members.router,
     prefix="/projects/{project_id}/members",
     tags=["project_members"],
@@ -114,3 +111,32 @@ api_router.include_router(
 )
 api_router.include_router(tusd.router, prefix="/tusd", tags=["tusd"])
 api_router.include_router(users.router, prefix="/users", tags=["users"])
+
+# Conditionally register optional feature endpoints
+if settings.ENABLE_BREEDBASE:
+    api_router.include_router(
+        breedbase_connections.router,
+        prefix="/projects/{project_id}/breedbase-connections",
+        tags=["breedbase_connections"],
+    )
+    api_router.include_router(
+        breedbase_connections.study_router,
+        prefix="/breedbase-connections/study",
+        tags=["breedbase_connections"],
+    )
+
+if settings.ENABLE_CAMPAIGNS:
+    api_router.include_router(
+        campaigns.router, prefix="/projects/{project_id}/campaigns", tags=["campaigns"]
+    )
+
+if settings.MAIL_ENABLED:
+    api_router.include_router(contact.router, prefix="/contact", tags=["contact"])
+
+if settings.ENABLE_IFORESTER:
+    api_router.include_router(
+        iforester.router, prefix="/projects/{project_id}/iforester", tags=["iforester"]
+    )
+
+if settings.ENABLE_STAC:
+    api_router.include_router(stac.router, prefix="/projects", tags=["stac"])

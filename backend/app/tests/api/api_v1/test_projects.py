@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api.deps import get_current_user, get_current_approved_user
 from app.core.config import settings
+from app.tests.conftest import pytest_requires_stac
 from app.schemas.data_product import DataProductCreate
 from app.schemas.project import ProjectUpdate
 from app.schemas.project_member import ProjectMemberCreate
@@ -254,6 +255,9 @@ def test_get_project_with_owner_role(
     assert str(project.harvest_date) == response_data["harvest_date"]
     assert response_data["location_id"]
     assert response_data["role"] == "owner"
+    # created_by should be owner's full name
+    owner_full_name = f"{current_user.first_name} {current_user.last_name}"
+    assert response_data.get("created_by") == owner_full_name
 
 
 def test_get_project_with_manager_role(
@@ -272,7 +276,8 @@ def test_get_project_with_viewer_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
-    project = create_project(db)
+    project_owner = create_user(db)
+    project = create_project(db, owner_id=project_owner.id)
     create_project_member(
         db, email=current_user.email, project_uuid=project.id, role=Role.VIEWER
     )
@@ -281,6 +286,9 @@ def test_get_project_with_viewer_role(
     response_data = response.json()
     assert str(project.id) == response_data["id"]
     assert response_data["role"] != "owner"
+    # created_by should be owner's full name
+    owner_full_name = f"{project_owner.first_name} {project_owner.last_name}"
+    assert response_data.get("created_by") == owner_full_name
 
 
 def test_get_project_by_non_project_member(
@@ -318,6 +326,23 @@ def test_get_projects(
             assert project["role"] == "owner"
         if str(project2.id) == project["id"]:
             assert project["role"] != "owner"
+
+
+def test_get_projects_includes_team(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    team = create_team(db, owner_id=current_user.id)
+    project = create_project(db, owner_id=current_user.id, team_id=team.id)
+    response = client.get(API_URL)
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    # Find the project and ensure team object is present
+    matched = next((p for p in response_data if p["id"] == str(project.id)), None)
+    assert matched is not None
+    assert "team" in matched
+    assert matched["team"] is not None
+    assert matched["team"]["id"] == str(team.id)
 
 
 def test_get_projects_with_flights(
@@ -872,6 +897,7 @@ def test_deactivate_project_deactivates_flights_and_data_products(
         assert deactivated_data_product.is_active is False
 
 
+@pytest_requires_stac
 def test_publish_project_to_stac_using_task(
     db: Session, normal_user_access_token: str
 ) -> None:
@@ -921,6 +947,7 @@ def test_publish_project_to_stac_using_task(
     scm.remove_from_catalog()
 
 
+@pytest_requires_stac
 def test_publish_project_to_stac_excludes_deactivated_data_products_using_task(
     db: Session, normal_user_access_token: str
 ) -> None:
@@ -971,6 +998,7 @@ def test_publish_project_to_stac_excludes_deactivated_data_products_using_task(
     scm.remove_from_catalog()
 
 
+@pytest_requires_stac
 def test_generate_stac_preview_using_task(
     db: Session, normal_user_access_token: str
 ) -> None:
@@ -1035,6 +1063,7 @@ def test_generate_stac_preview_using_task(
     assert data_product1_file_permission.is_public is False
 
 
+@pytest_requires_stac
 def test_publish_stac_with_scientific_metadata_using_task(
     db: Session, normal_user_access_token: str
 ) -> None:
@@ -1088,6 +1117,7 @@ def test_publish_stac_with_scientific_metadata_using_task(
     stac_collection_manager.remove_from_catalog()
 
 
+@pytest_requires_stac
 def test_publish_stac_with_custom_titles_using_task(
     db: Session, normal_user_access_token: str
 ) -> None:
@@ -1142,6 +1172,7 @@ def test_publish_stac_with_custom_titles_using_task(
     stac_collection_manager.remove_from_catalog()
 
 
+@pytest_requires_stac
 def test_publish_stac_with_failed_items_using_task(
     db: Session, normal_user_access_token: str, monkeypatch
 ) -> None:
@@ -1202,6 +1233,7 @@ def test_publish_stac_with_failed_items_using_task(
     stac_collection_manager.remove_from_catalog()
 
 
+@pytest_requires_stac
 def test_get_stac_cache_exists(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -1231,6 +1263,7 @@ def test_get_stac_cache_exists(
     assert response_data["items"][0]["id"] == str(data_product.obj.id)
 
 
+@pytest_requires_stac
 def test_get_stac_cache_not_exists(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -1250,6 +1283,7 @@ def test_get_stac_cache_not_exists(
     assert "No cached STAC metadata found" in response_data["detail"]
 
 
+@pytest_requires_stac
 def test_get_stac_cache_without_permission(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -1263,6 +1297,7 @@ def test_get_stac_cache_without_permission(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+@pytest_requires_stac
 def test_generate_stac_preview_async(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -1289,6 +1324,7 @@ def test_generate_stac_preview_async(
     assert str(response_data["project_id"]) == str(project.id)
 
 
+@pytest_requires_stac
 def test_generate_stac_preview_async_with_scientific_metadata(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -1321,6 +1357,7 @@ def test_generate_stac_preview_async_with_scientific_metadata(
     assert str(response_data["project_id"]) == str(project.id)
 
 
+@pytest_requires_stac
 def test_generate_stac_preview_async_with_custom_titles(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -1350,6 +1387,7 @@ def test_generate_stac_preview_async_with_custom_titles(
     assert str(response_data["project_id"]) == str(project.id)
 
 
+@pytest_requires_stac
 def test_generate_stac_preview_async_without_permission(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -1363,6 +1401,7 @@ def test_generate_stac_preview_async_without_permission(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+@pytest_requires_stac
 def test_generate_stac_preview_async_with_empty_payload(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -1388,6 +1427,7 @@ def test_generate_stac_preview_async_with_empty_payload(
     assert "STAC preview generation started" in response_data["message"]
 
 
+@pytest_requires_stac
 def test_publish_stac_async(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -1412,6 +1452,7 @@ def test_publish_stac_async(
     assert str(response_data["project_id"]) == str(project.id)
 
 
+@pytest_requires_stac
 def test_publish_stac_async_with_scientific_metadata(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -1440,6 +1481,7 @@ def test_publish_stac_async_with_scientific_metadata(
     assert str(response_data["project_id"]) == str(project.id)
 
 
+@pytest_requires_stac
 def test_publish_stac_async_with_custom_titles(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -1467,6 +1509,7 @@ def test_publish_stac_async_with_custom_titles(
     assert str(response_data["project_id"]) == str(project.id)
 
 
+@pytest_requires_stac
 def test_publish_stac_async_without_permission(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -1480,6 +1523,7 @@ def test_publish_stac_async_without_permission(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+@pytest_requires_stac
 def test_publish_stac_async_with_empty_payload(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -1503,6 +1547,7 @@ def test_publish_stac_async_with_empty_payload(
     assert "STAC catalog publication started" in response_data["message"]
 
 
+@pytest_requires_stac
 def test_stac_cache_with_failed_items_preview(
     client: TestClient, db: Session, normal_user_access_token: str, monkeypatch
 ) -> None:
@@ -1556,6 +1601,7 @@ def test_stac_cache_with_failed_items_preview(
     assert "Unable to process point cloud" in failed_item["error"]["message"]
 
 
+@pytest_requires_stac
 def test_stac_cache_path_helper():
     """Test the get_stac_cache_path helper function."""
     from app.tasks.stac_tasks import get_stac_cache_path
@@ -1571,6 +1617,7 @@ def test_stac_cache_path_helper():
     assert cache_path.name == "stac.json"
 
 
+@pytest_requires_stac
 def test_async_endpoints_with_missing_project(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -1592,6 +1639,7 @@ def test_async_endpoints_with_missing_project(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+@pytest_requires_stac
 def test_stac_cache_after_successful_publication(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -1636,6 +1684,7 @@ def test_stac_cache_after_successful_publication(
     scm.remove_from_catalog()
 
 
+@pytest_requires_stac
 def test_generate_stac_preview_async_with_license(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -1665,6 +1714,7 @@ def test_generate_stac_preview_async_with_license(
     assert str(response_data["project_id"]) == str(project.id)
 
 
+@pytest_requires_stac
 def test_publish_stac_async_with_license(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -1692,6 +1742,7 @@ def test_publish_stac_async_with_license(
     assert str(response_data["project_id"]) == str(project.id)
 
 
+@pytest_requires_stac
 def test_stac_with_license_using_task(
     db: Session, normal_user_access_token: str
 ) -> None:

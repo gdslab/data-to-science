@@ -15,6 +15,7 @@ from app.api.utils import get_data_product_dir, get_indoor_project_data_dir
 from app.schemas.job import State, Status
 from app.tasks.post_upload_tasks import generate_point_cloud_preview
 from app.tasks.upload_tasks import (
+    upload_3dgs,
     upload_geotiff,
     upload_indoor_project_data,
     upload_panoramic,
@@ -34,6 +35,7 @@ SUPPORTED_EXTENSIONS = {
     ".png",
     ".webp",
     ".avif",
+    ".ply",
 }
 
 
@@ -134,6 +136,11 @@ def process_data_product_uploaded_to_tusd(
     elif dtype == "panoramic":
         # start panoramic process in background
         upload_panoramic.apply_async(
+            args=(str(storage_path), destination_filepath, job.id, data_product.id),
+        )
+    elif dtype == "3dgs":
+        # start 3D Gaussian Splatting process in background
+        upload_3dgs.apply_async(
             args=(str(storage_path), destination_filepath, job.id, data_product.id),
         )
     else:

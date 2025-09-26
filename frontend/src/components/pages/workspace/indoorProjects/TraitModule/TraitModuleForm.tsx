@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { isAxiosError } from 'axios';
+import { useEffect, useState } from 'react';
 import {
   FormProvider,
   SubmitHandler,
@@ -8,6 +9,7 @@ import {
 import { yupResolver } from '@hookform/resolvers/yup';
 
 import { SelectField, RadioField } from '../../../../FormFields';
+import Alert, { Status } from '../../../../Alert';
 import { TraitModuleFormData, TraitModuleFormProps } from '../IndoorProject';
 
 import {
@@ -27,6 +29,9 @@ export default function TraitModuleForm({
   potBarcodes,
   setVisualizationData,
 }: TraitModuleFormProps) {
+  // Status for error/success messages
+  const [status, setStatus] = useState<Status | null>(null);
+
   // Initialize the form
   const methods = useForm<TraitModuleFormData>({
     defaultValues,
@@ -81,6 +86,7 @@ export default function TraitModuleForm({
 
   // Handle the form submission
   const onSubmit: SubmitHandler<TraitModuleFormData> = async (values) => {
+    setStatus(null); // Clear any previous status
     setVisualizationData(null);
 
     if (!indoorProjectDataId) return;
@@ -103,7 +109,20 @@ export default function TraitModuleForm({
       });
       setVisualizationData(data);
     } catch (error) {
-      throw error;
+      // Handle different types of errors
+      if (isAxiosError(error)) {
+        setStatus({
+          type: 'error',
+          msg:
+            error.response?.data?.detail ||
+            'Failed to fetch trait visualization data',
+        });
+      } else {
+        setStatus({
+          type: 'error',
+          msg: 'An unexpected error occurred while processing your request',
+        });
+      }
     }
   };
 
@@ -150,6 +169,11 @@ export default function TraitModuleForm({
           </div>
         </form>
       </FormProvider>
+      {status && (
+        <div className="mt-4">
+          <Alert alertType={status.type}>{status.msg}</Alert>
+        </div>
+      )}
     </div>
   );
 }

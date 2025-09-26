@@ -5,6 +5,7 @@ import Tus from '@uppy/tus';
 
 import '@uppy/core/dist/style.min.css';
 import '@uppy/dashboard/dist/style.min.css';
+import { refreshTokenIfNeeded } from '../../../../../../api';
 
 type DataProductInfo = {
   dtype: string;
@@ -68,19 +69,78 @@ export default function DataProductUpload({
     );
   });
 
-  uppy.on('upload', () => {
+  uppy.on('upload', async () => {
     // disable data type inputs during upload
     updateSetDisabled(true);
+
+    // Refresh token if needed before upload starts
+    const tokenRefreshed = await refreshTokenIfNeeded();
+    if (!tokenRefreshed) {
+      // Token refresh failed, cancel upload
+      uppy.cancelAll();
+      updateSetDisabled(false);
+      uppy.info(
+        {
+          message: 'Authentication required',
+          details: 'Please log in again to continue uploading.',
+        },
+        'error',
+        5000
+      );
+      return;
+    }
   });
 
-  uppy.on('upload-error', (_file, _error, response) => {
+  uppy.on('upload-error', async (_file, _error, response) => {
     // re-enable data type inputs
     updateSetDisabled(false);
+
+    // Handle auth expiry propagated as 500 from tusd hook endpoint
+    if (
+      response &&
+      response.status === 500 &&
+      response.body &&
+      response.body.detail
+    ) {
+      const detail =
+        typeof response.body.detail === 'string' ? response.body.detail : '';
+      if (detail.includes('Access token expired')) {
+        uppy.info(
+          {
+            message: 'Session expired',
+            details: 'Refreshing authentication and retrying upload...',
+          },
+          'info',
+          3000
+        );
+
+        const tokenRefreshed = await refreshTokenIfNeeded();
+        if (tokenRefreshed && _file) {
+          setTimeout(() => {
+            uppy.retryUpload(_file.id);
+          }, 1000);
+          return;
+        } else {
+          uppy.info(
+            {
+              message: 'Authentication failed',
+              details: 'Please log in again to continue uploading.',
+            },
+            'error',
+            5000
+          );
+          return;
+        }
+      }
+    }
     if (response && response.body && response.body.detail) {
       let errorDetails = '';
       if (typeof response.body.detail === 'string') {
         errorDetails = response.body.detail;
-      } else if (response.status === 422 && Array.isArray(response.body.detail)) {
+      } else if (
+        response.status === 422 &&
+        Array.isArray(response.body.detail)
+      ) {
         response.body.detail.forEach((err, idx) => {
           errorDetails = `${err.loc[1]}: ${err.msg}`;
           errorDetails += idx < response.body.detail.length - 1 ? '; ' : '';

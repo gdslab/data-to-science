@@ -92,6 +92,11 @@ export default function ProjectDetailEditForm({
                   <TextField name="title" />
                 )}
               </EditField>
+              {project.created_by && (
+                <span className="block text-sm text-gray-500">
+                  Created by: {project.created_by}
+                </span>
+              )}
               <EditField
                 fieldName="description"
                 isEditing={isEditing}

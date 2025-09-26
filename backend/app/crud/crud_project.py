@@ -8,7 +8,7 @@ from fastapi import status
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import and_, func, select, update
 from sqlalchemy.exc import MultipleResultsFound
-from sqlalchemy.orm import joinedload, Session
+from sqlalchemy.orm import joinedload, selectinload, Session
 
 from app import crud
 from app.crud.base import CRUDBase
@@ -176,6 +176,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             .where(Project.id == project_id)
             .where(Project.is_active)
             .where(ProjectMember.member_id == user_id)
+            .options(selectinload(Project.owner))
         )
         with db as session:
             try:
@@ -222,6 +223,12 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 setattr(project[0], "flight_count", flight_count)
                 setattr(project[0], "most_recent_flight", most_recent_flight)
                 setattr(project[0], "data_product_count", data_product_count)
+                # Add project owner name (from eager-loaded relationship)
+                setattr(
+                    project[0],
+                    "created_by",
+                    project[0].owner.full_name if project[0].owner else None,
+                )
                 return {
                     "response_code": status.HTTP_200_OK,
                     "message": "Project fetched successfully",
@@ -260,6 +267,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 )
                 .join(Project.location)
                 .where(Project.is_active)
+                .options(selectinload(Project.team))
             )
         else:
             statement = (
@@ -281,6 +289,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 .join(Project.members)
                 .join(Project.location)
                 .where(and_(Project.is_active, ProjectMember.member_id == user.id))
+                .options(selectinload(Project.team))
             )
         with db as session:
             final_projects = []

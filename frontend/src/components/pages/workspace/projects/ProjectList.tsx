@@ -12,6 +12,7 @@ import Sort, {
   getSortPreferenceFromLocalStorage,
   sortProjects,
 } from '../../../Sort';
+import { Team } from '../../teams/Teams';
 
 interface FieldProperties {
   id: string;
@@ -39,6 +40,7 @@ export interface Project {
   role: string;
   team_id: string;
   title: string;
+  team: Team | null;
 }
 
 export default function ProjectList({
@@ -52,9 +54,10 @@ export default function ProjectList({
   const [sortSelection, setSortSelection] = useState<SortSelection>(
     getSortPreferenceFromLocalStorage('sortPreference')
   );
-  const [openComponent, setOpenComponent] = useState<'filter' | 'sort' | null>(
-    null
-  );
+  const [openComponent, setOpenComponent] = useState<
+    'filter' | 'sort' | 'teamFilter' | null
+  >(null);
+  const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
 
   const [searchText, setSearchText] = useState('');
 
@@ -152,8 +155,17 @@ export default function ProjectList({
       );
     }
 
+    if (
+      projectFilterSelection.includes('myTeams') &&
+      selectedTeamIds.length > 0
+    ) {
+      filteredProjects = filteredProjects.filter(
+        (project) => project.team && selectedTeamIds.includes(project.team.id)
+      );
+    }
+
     return filteredProjects;
-  }, [projects, projectFilterSelection]);
+  }, [projects, projectFilterSelection, selectedTeamIds]);
 
   const filteredAndSortedProjects = useMemo(
     () =>
@@ -215,12 +227,33 @@ export default function ProjectList({
                   categories={[
                     { label: 'My projects', value: 'myProjects' },
                     { label: 'Favorite projects', value: 'likedProjects' },
+                    { label: 'My teams', value: 'myTeams' },
                   ]}
                   selectedCategory={projectFilterSelection}
                   setSelectedCategory={updateProjectFilter}
                   isOpen={openComponent === 'filter'}
                   onOpen={() => setOpenComponent('filter')}
                   onClose={() => setOpenComponent(null)}
+                  sublistParentValue="myTeams"
+                  sublistCategories={
+                    projects
+                      ? Array.from(
+                          new Map(
+                            projects
+                              .filter((p) => p.team)
+                              .map((p) => [p.team!.id, p.team!.title])
+                          ).entries()
+                        )
+                          .map(([id, title]) => ({ label: title, value: id }))
+                          .sort((a, b) =>
+                            a.label.localeCompare(b.label, undefined, {
+                              sensitivity: 'base',
+                            })
+                          )
+                      : []
+                  }
+                  sublistSelected={selectedTeamIds}
+                  setSublistSelected={setSelectedTeamIds}
                 />
                 <Sort
                   sortSelection={sortSelection}

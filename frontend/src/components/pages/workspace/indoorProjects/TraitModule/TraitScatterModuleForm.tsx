@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { isAxiosError } from 'axios';
+import { useEffect, useState } from 'react';
 import {
   FormProvider,
   SubmitHandler,
@@ -8,6 +9,7 @@ import {
 import { yupResolver } from '@hookform/resolvers/yup';
 
 import { SelectField, RadioField } from '../../../../FormFields';
+import Alert, { Status } from '../../../../Alert';
 import {
   TraitScatterModuleFormData,
   TraitScatterModuleFormProps,
@@ -30,6 +32,9 @@ export default function TraitScatterModuleForm({
   potBarcodes,
   setVisualizationData,
 }: TraitScatterModuleFormProps) {
+  // Status for error/success messages
+  const [status, setStatus] = useState<Status | null>(null);
+
   // Initialize the form
   const methods = useForm<TraitScatterModuleFormData>({
     defaultValues: scatterDefaultValues,
@@ -102,6 +107,7 @@ export default function TraitScatterModuleForm({
   const onSubmit: SubmitHandler<TraitScatterModuleFormData> = async (
     values
   ) => {
+    setStatus(null); // Clear any previous status
     setVisualizationData(null);
 
     if (!indoorProjectDataId) return;
@@ -125,7 +131,20 @@ export default function TraitScatterModuleForm({
       });
       setVisualizationData(data);
     } catch (error) {
-      throw error;
+      // Handle different types of errors
+      if (isAxiosError(error)) {
+        setStatus({
+          type: 'error',
+          msg:
+            error.response?.data?.detail ||
+            'Failed to fetch trait scatter plot data',
+        });
+      } else {
+        setStatus({
+          type: 'error',
+          msg: 'An unexpected error occurred while processing your request',
+        });
+      }
     }
   };
 
@@ -180,6 +199,11 @@ export default function TraitScatterModuleForm({
           </div>
         </form>
       </FormProvider>
+      {status && (
+        <div className="mt-4">
+          <Alert alertType={status.type}>{status.msg}</Alert>
+        </div>
+      )}
     </div>
   );
 }

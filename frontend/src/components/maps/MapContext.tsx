@@ -19,6 +19,7 @@ import {
   ProjectsLoadedAction,
   ProjectFilterSelectionAction,
   ProjectsVisibleAction,
+  SelectedTeamIdsAction,
   TileScaleAction,
 } from './Maps';
 
@@ -176,6 +177,23 @@ function projectFilterSelectionReducer(
   }
 }
 
+function selectedTeamIdsReducer(
+  state: string[],
+  action: SelectedTeamIdsAction
+) {
+  switch (action.type) {
+    case 'set': {
+      return action.payload;
+    }
+    case 'reset': {
+      return [];
+    }
+    default: {
+      return state;
+    }
+  }
+}
+
 export type ProjectsLoadedState = 'initial' | 'loading' | 'loaded' | 'error';
 
 function projectsLoadedReducer(
@@ -245,6 +263,8 @@ const context: {
   projectFilterSelectionDispatch: React.Dispatch<ProjectFilterSelectionAction>;
   projectsVisible: string[];
   projectsVisibleDispatch: React.Dispatch<ProjectsVisibleAction>;
+  selectedTeamIds: string[];
+  selectedTeamIdsDispatch: React.Dispatch<SelectedTeamIdsAction>;
   tileScale: number;
   tileScaleDispatch: React.Dispatch<TileScaleAction>;
 } = {
@@ -269,6 +289,8 @@ const context: {
   projectFilterSelectionDispatch: () => {},
   projectsVisible: [],
   projectsVisibleDispatch: () => {},
+  selectedTeamIds: [],
+  selectedTeamIdsDispatch: () => {},
   tileScale: 2,
   tileScaleDispatch: () => {},
 };
@@ -314,6 +336,10 @@ export function MapContextProvider({
   );
   const [projectsVisible, projectsVisibleDispatch] = useReducer(
     projectsVisibleReducer,
+    []
+  );
+  const [selectedTeamIds, selectedTeamIdsDispatch] = useReducer(
+    selectedTeamIdsReducer,
     []
   );
   const [tileScale, tileScaleDispatch] = useReducer(tileScaleReducer, 2);
@@ -372,6 +398,8 @@ export function MapContextProvider({
         projectsLoadedDispatch,
         projectsVisible,
         projectsVisibleDispatch,
+        selectedTeamIds,
+        selectedTeamIdsDispatch,
         tileScale,
         tileScaleDispatch,
       }}

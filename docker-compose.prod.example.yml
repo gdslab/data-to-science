@@ -65,6 +65,7 @@ services:
       - no-new-privileges=true
     environment:
       - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
+      # - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel-collector:4318
     env_file:
       - backend.env
       - db.env
@@ -268,7 +269,7 @@ services:
       - no-new-privileges=true
 
   titiler:
-    image: ghcr.io/developmentseed/titiler:0.19.0
+    image: ghcr.io/developmentseed/titiler:0.23.1
     volumes:
       - user-data:/static
     environment:
@@ -295,6 +296,9 @@ services:
       - VSI_CACHE_SIZE=536870912
       - CPL_VSIL_CURL_ALLOWED_EXTENSIONS=.tif,.TIF,.tiff
       - CPL_VSIL_CURL_CACHE_SIZE=200000000
+      # telemetry config
+      - TITILER_API_TELEMETRY_ENABLED=False
+      # - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
     healthcheck:
       test:
         [
@@ -348,6 +352,63 @@ services:
         window: 120s
     security_opt:
       - no-new-privileges=true
+
+  # otel-collector:
+  #   image: otel/opentelemetry-collector-contrib:latest
+  #   command: ["--config=/etc/otel-collector-config.yaml"]
+  #   volumes:
+  #     - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+  #   ports:
+  #     - "4318:4318" # OTLP HTTP receiver
+  #     - "13133:13133" # Health check extension
+  #   restart_policy:
+  #     condition: on-failure
+  #     delay: 5s
+  #     max_attempts: 5
+  #     window: 120s
+  #   healthcheck:
+  #     test:
+  #       [
+  #         "CMD",
+  #         "wget",
+  #         "--no-verbose",
+  #         "--tries=1",
+  #         "--spider",
+  #         "http://localhost:13133",
+  #       ]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 40s
+  #   depends_on:
+  #     - jaeger
+
+  # jaeger:
+  #   image: jaegertracing/all-in-one:latest
+  #   ports:
+  #     - "16686:16686" # UI
+  #     - "14250:14250" # OTLP gRPC (Jaeger receiver)
+  #   restart_policy:
+  #     condition: on-failure
+  #     delay: 5s
+  #     max_attempts: 5
+  #     window: 120s
+  #   healthcheck:
+  #     test:
+  #       [
+  #         "CMD",
+  #         "wget",
+  #         "--no-verbose",
+  #         "--tries=1",
+  #         "--spider",
+  #         "http://localhost:16686",
+  #       ]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 30s
+  #   environment:
+  #     - COLLECTOR_OTLP_ENABLED=true
 
 volumes:
   db-data:

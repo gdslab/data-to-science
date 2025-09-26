@@ -136,7 +136,22 @@ server {
         proxy_pass http://varnish/;
     }
 
-    location /potree {
+    location ~ ^/(potree|share-potree) {
+        proxy_set_header Host $host;
+
+        proxy_pass http://backend;
+    }
+
+    location = /pc-gltf-viewer {
+        return 301 /pc-gltf-viewer/;
+    }
+
+
+    location = /pc-gltf-viewer/index.html {
+        return 301 /pc-gltf-viewer/;
+    }
+
+    location /pc-gltf-viewer {
         proxy_set_header Host $host;
 
         proxy_pass http://backend;

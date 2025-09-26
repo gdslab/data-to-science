@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
+from app.tests.conftest import pytest_requires_campaigns
 from app.models.utils.campaign import is_uuid
 from app.schemas.role import Role
 from app.tests.utils.campaign import (
@@ -24,6 +25,7 @@ from app.tests.utils.user import create_user
 PROJECTS_API_URL = f"{settings.API_V1_STR}/projects"
 
 
+@pytest_requires_campaigns
 def test_create_campaign_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -38,6 +40,7 @@ def test_create_campaign_with_project_owner_role(
     assert response_data["deactivated_at"] is None
 
 
+@pytest_requires_campaigns
 def test_create_campaign_with_project_manager_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -51,6 +54,7 @@ def test_create_campaign_with_project_manager_role(
     assert response.status_code == status.HTTP_201_CREATED
 
 
+@pytest_requires_campaigns
 def test_create_campaign_with_project_viewer_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -64,6 +68,7 @@ def test_create_campaign_with_project_viewer_role(
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
+@pytest_requires_campaigns
 def test_create_campaign_without_project_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -73,6 +78,7 @@ def test_create_campaign_without_project_role(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+@pytest_requires_campaigns
 def test_read_campaign_by_project_id_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -86,6 +92,7 @@ def test_read_campaign_by_project_id_with_project_owner_role(
     assert response_data["lead_id"] == str(current_user.id)
 
 
+@pytest_requires_campaigns
 def test_read_campaign_by_project_id_with_project_manager_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -103,6 +110,7 @@ def test_read_campaign_by_project_id_with_project_manager_role(
     assert response_data["lead_id"] == str(project_owner.id)
 
 
+@pytest_requires_campaigns
 def test_read_campaign_by_project_id_with_project_viewer_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -120,6 +128,7 @@ def test_read_campaign_by_project_id_with_project_viewer_role(
     assert response_data["lead_id"] == str(project_owner.id)
 
 
+@pytest_requires_campaigns
 def test_read_campaign_by_project_id_without_project_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -131,6 +140,7 @@ def test_read_campaign_by_project_id_without_project_role(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+@pytest_requires_campaigns
 def test_read_campaign_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -143,6 +153,7 @@ def test_read_campaign_with_project_owner_role(
     assert response_data["id"] == str(campaign.id)
 
 
+@pytest_requires_campaigns
 def test_read_campaign_with_project_manager_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -159,6 +170,7 @@ def test_read_campaign_with_project_manager_role(
     assert response_data["id"] == str(campaign.id)
 
 
+@pytest_requires_campaigns
 def test_read_campaign_with_project_viewer_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -175,6 +187,7 @@ def test_read_campaign_with_project_viewer_role(
     assert response_data["id"] == str(campaign.id)
 
 
+@pytest_requires_campaigns
 def test_read_campaign_without_project_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -185,6 +198,7 @@ def test_read_campaign_without_project_role(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+@pytest_requires_campaigns
 def test_read_campaign_returns_none_for_deactivated_campaign(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -196,6 +210,7 @@ def test_read_campaign_returns_none_for_deactivated_campaign(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+@pytest_requires_campaigns
 def test_update_campaign_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -217,6 +232,7 @@ def test_update_campaign_with_project_owner_role(
     assert response_data["lead_id"] == str(new_lead_user.id)
 
 
+@pytest_requires_campaigns
 def test_update_campaign_with_project_manager_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -238,6 +254,7 @@ def test_update_campaign_with_project_manager_role(
     assert response.status_code == status.HTTP_200_OK
 
 
+@pytest_requires_campaigns
 def test_update_campaign_with_project_viewer_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -259,6 +276,7 @@ def test_update_campaign_with_project_viewer_role(
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
+@pytest_requires_campaigns
 def test_update_campaign_without_project_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -276,6 +294,7 @@ def test_update_campaign_without_project_role(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+@pytest_requires_campaigns
 def test_deactivate_campaign_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -296,6 +315,7 @@ def test_deactivate_campaign_with_project_owner_role(
         raise
 
 
+@pytest_requires_campaigns
 def test_deactivate_campaign_with_project_manager_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -310,6 +330,7 @@ def test_deactivate_campaign_with_project_manager_role(
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
+@pytest_requires_campaigns
 def test_deactivate_campaign_with_project_viewer_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -324,6 +345,7 @@ def test_deactivate_campaign_with_project_viewer_role(
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
+@pytest_requires_campaigns
 def test_deactivate_campaign_without_project_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -334,6 +356,7 @@ def test_deactivate_campaign_without_project_role(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+@pytest_requires_campaigns
 def test_download_campaign_template_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -355,6 +378,7 @@ def test_download_campaign_template_with_project_owner_role(
     assert os.path.exists(path_to_static_file)
 
 
+@pytest_requires_campaigns
 def test_download_campaign_template_with_project_manager_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -380,6 +404,7 @@ def test_download_campaign_template_with_project_manager_role(
     assert os.path.exists(path_to_static_file)
 
 
+@pytest_requires_campaigns
 def test_download_campaign_template_with_project_viewer_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
@@ -405,6 +430,7 @@ def test_download_campaign_template_with_project_viewer_role(
     assert os.path.exists(path_to_static_file)
 
 
+@pytest_requires_campaigns
 def test_download_campaign_template_without_project_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:

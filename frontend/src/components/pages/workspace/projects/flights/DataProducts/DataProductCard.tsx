@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowDownTrayIcon,
+  CubeIcon,
   ExclamationCircleIcon,
   EyeIcon,
   PhotoIcon,
@@ -51,8 +52,8 @@ export default function DataProductCard({
             {/* preview image */}
             <div className="relative flex items-center justify-center bg-accent3/20">
               {dataProduct.status === 'SUCCESS' &&
-              (isGeoTIFF(dataProduct.data_type) ||
-                dataProduct.data_type === 'panoramic') ? (
+              isGeoTIFF(dataProduct.data_type) &&
+              dataProduct.url ? (
                 <div className="flex items-center justify-center w-full h-48">
                   <img
                     className="object-scale-down h-full"
@@ -70,6 +71,35 @@ export default function DataProductCard({
                     }}
                   >
                     {isCopied ? 'Copied to clipboard' : 'Click to Copy URL'}
+                  </div>
+                </div>
+              ) : dataProduct.data_type === 'panoramic' && dataProduct.url ? (
+                <div className="flex items-center justify-center w-full h-48">
+                  <img
+                    className="object-scale-down h-full"
+                    src={dataProduct.url}
+                    alt="Preview of data product"
+                  />
+                  <div
+                    className="absolute bottom-0 w-full text-center text-white p-1 bg-accent3/80 cursor-pointer"
+                    onClick={() => {
+                      navigator.clipboard.writeText(dataProduct.url);
+                      setIsCopied(true);
+                      setTimeout(() => {
+                        setIsCopied(false);
+                      }, 3000);
+                    }}
+                  >
+                    {isCopied ? 'Copied to clipboard' : 'Click to Copy URL'}
+                  </div>
+                </div>
+              ) : dataProduct.data_type === '3dgs' && dataProduct.url ? (
+                <div className="flex items-center justify-center w-full h-48">
+                  <div className="flex items-center gap-2 rounded-full bg-white/80 backdrop-blur px-3 py-1.5 shadow ring-1 ring-slate-300/60">
+                    <CubeIcon className="w-6 h-6 text-slate-600" />
+                    <span className="text-lg font-semibold tracking-wide text-slate-700">
+                      3DGS
+                    </span>
                   </div>
                 </div>
               ) : dataProduct.status === 'SUCCESS' &&

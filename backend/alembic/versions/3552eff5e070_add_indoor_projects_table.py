@@ -12,7 +12,7 @@ from geoalchemy2 import Geometry
 
 # revision identifiers, used by Alembic.
 revision = "3552eff5e070"
-down_revision: str | None = "ed7ed7c6e456"
+down_revision: str | None = "884e43c58053"
 branch_labels: str | None = None
 depends_on: str | None = None
 

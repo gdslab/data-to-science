@@ -1,0 +1,27 @@
+@font-face {
+    font-family: 'Proxima Nova Regular';
+    src: url('https://playcanvas.com/static-assets/fonts/proxima_nova_regular.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Proxima Nova Light';
+    src: url('https://playcanvas.com/static-assets/fonts/proxima_nova_light.woff2') format('woff2');
+    font-weight: 200;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Proxima Nova Bold';
+    src: url('https://playcanvas.com/static-assets/fonts/proxima_nova_bold.woff2') format('woff2');
+    font-weight: bold;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Proxima Nova Thin';
+    src: url('https://playcanvas.com/static-assets/fonts/proxima_nova_thin_t.woff2') format('woff2');
+    font-weight: 100;
+    font-style: normal;
+}

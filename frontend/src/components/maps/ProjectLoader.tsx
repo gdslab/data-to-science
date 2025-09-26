@@ -5,7 +5,11 @@ import { useMapContext } from './MapContext';
 import { Project } from '../pages/workspace/projects/ProjectList';
 
 import api from '../../api';
-import { areProjectsEqual, getLocalStorageProjects } from './utils';
+import {
+  areProjectsEqual,
+  getLocalStorageProjects,
+  filterValidProjects,
+} from './utils';
 
 export default function ProjectLoader() {
   const { projectsDispatch, projectsLoadedDispatch, projects } =
@@ -17,9 +21,12 @@ export default function ProjectLoader() {
         const geojsonUrl = `/projects?include_all=${false}`;
         const response: AxiosResponse<Project[]> = await api.get(geojsonUrl);
 
+        // Filter out projects with invalid geographic coordinates
+        const validProjects = filterValidProjects(response.data);
+
         // Only update projects if they are new or differ from the current state
-        if (!projects || !areProjectsEqual(projects, response.data)) {
-          projectsDispatch({ type: 'set', payload: response.data });
+        if (!projects || !areProjectsEqual(projects, validProjects)) {
+          projectsDispatch({ type: 'set', payload: validProjects });
         }
         projectsLoadedDispatch({ type: 'set', payload: 'loaded' });
       } catch (error) {
@@ -42,7 +49,9 @@ export default function ProjectLoader() {
     // Check for cached projects in local storage
     const localStorageProjects = getLocalStorageProjects();
     if (localStorageProjects) {
-      projectsDispatch({ type: 'set', payload: localStorageProjects });
+      // Filter cached projects as well in case they contain invalid coordinates
+      const validCachedProjects = filterValidProjects(localStorageProjects);
+      projectsDispatch({ type: 'set', payload: validCachedProjects });
       projectsLoadedDispatch({ type: 'set', payload: 'loaded' });
     } else {
       projectsLoadedDispatch({ type: 'set', payload: 'loading' });
