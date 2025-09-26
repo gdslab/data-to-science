@@ -15,6 +15,7 @@ import { IndoorProjectDataVizRecord } from './IndoorProject';
  * @returns {string} Tailwind class for text color.
  */
 const getTextColor = (hue, saturation, value) => {
+  console.log('hue, saturation, value', hue, saturation, value);
   if (!hue || !saturation || !value) return 'text-black';
 
   // Convert HSV to RGB
@@ -23,7 +24,8 @@ const getTextColor = (hue, saturation, value) => {
   // Calculate contrast with white and black
   const contrastWhite = chroma.contrast(backgroundColor, 'white');
   const contrastBlack = chroma.contrast(backgroundColor, 'black');
-
+  console.log('contrastWhite', contrastWhite);
+  console.log('contrastBlack', contrastBlack);
   // Return Tailwind class based on luminance
   return contrastWhite > contrastBlack ? 'text-white' : 'text-black';
 };

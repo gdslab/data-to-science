@@ -1,6 +1,7 @@
 import chroma from 'chroma-js';
 import { useMemo } from 'react';
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/react';
+import { ArrowPathIcon } from '@heroicons/react/24/solid';
 
 import {
   IndoorProjectDataVizAPIResponse,
@@ -73,7 +74,7 @@ export default function PotGroupModuleDataVisualization({
                   return (
                     <Popover key={j} className="relative">
                       <PopoverButton
-                        className={`w-28 h-8 p-2.5 flex flex-col relative ${getTextColor(
+                        className={`w-28 h-8 flex justify-center items-center relative ${getTextColor(
                           record.hue,
                           stretchedS,
                           stretchedV
@@ -91,7 +92,7 @@ export default function PotGroupModuleDataVisualization({
                           border:
                             record.interval_days === selectedDAP
                               ? '2px solid salmon'
-                              : 'none',
+                              : '2px solid transparent',
                         }}
                         onClick={() => {
                           dispatch({
@@ -104,7 +105,20 @@ export default function PotGroupModuleDataVisualization({
                         )}, S: ${record.saturation?.toFixed(
                           2
                         )}, V: ${record.intensity?.toFixed(2)}`}
-                      />
+                      >
+                        {images && images[record.interval_days].length > 1 && (
+                          <div
+                            className={`flex justify-center items-center  ${getTextColor(
+                              record.hue,
+                              stretchedS * 100,
+                              stretchedV * 100
+                            )}`}
+                          >
+                            360&deg;&nbsp;
+                            <ArrowPathIcon className="w-4 h-4" />
+                          </div>
+                        )}
+                      </PopoverButton>
                       {images &&
                         images[record.interval_days] &&
                         images[record.interval_days].length > 0 && (
