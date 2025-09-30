@@ -2,18 +2,13 @@
 
 ## What is D2S?
 
-The Data to Science (D2S) platform at Purdue University is an innovative, open-source initiative designed to facilitate data sharing and collaboration among researchers. Developed by Jinha Jung, an associate professor of civil engineering, and his team, the platform primarily focuses on housing data from unmanned aerial vehicles (UAVs) used in agricultural and forestry research.
+The Data to Science (D2S) platform is an innovative, open-source initiative designed to facilitate data sharing and collaboration among researchers worldwide. Developed by Jinha Jung, an associate professor of civil engineering at Purdue University, and his team, the platform primarily focuses on housing data from unmanned aerial vehicles (UAVs) used in agricultural and forestry research.
 
-The D2S platform aims to create a data-driven open science community that promotes sustained innovation. Researchers can upload, manage, and share their UAV data, making it accessible to a broader audience. This collaborative approach helps in advancing research by providing a centralized repository of valuable datasets from various projects worldwide.
-
-<figure>
-  <img src="docs/assets/d2s_overview.png" alt="System Overview Diagram">
-  <figcaption>Overview of D2S System</figcaption>
-</figure>
+D2S aims to create a data-driven open science community that promotes sustained innovation. Researchers can upload, manage, and share their UAV data, making it accessible to a broader audience. This collaborative approach helps in advancing research by providing a centralized repository of valuable datasets from various projects worldwide. The platform is open-source, allowing anyone to deploy it in their own environment, ensuring flexibility and adaptability to different research needs.
 
 ## 🌟 What Makes D2S Unique?
 
-The Data to Science (D2S) platform at Purdue University stands out from other data-sharing platforms due to several unique features and approaches:
+The Data to Science (D2S) platform stands out from other data-sharing platforms due to several unique features and approaches:
 
 1. **Specialization in UAV Data:** Unlike many general data-sharing platforms, D2S is specifically designed to manage and share data from unmanned aerial vehicles (UAVs), making it particularly valuable for agricultural and forestry research.
 2. **Open-Source and Free Access:** D2S is an open-source platform, ensuring that researchers worldwide can access and contribute to the data repository without any cost barriers.
@@ -21,6 +16,7 @@ The Data to Science (D2S) platform at Purdue University stands out from other da
 4. **Alignment with Open Science Mandates:** D2S aligns with the White House Office of Technology and Policy mandates on openness in scientific enterprise, ensuring that federally funded research and supporting data are disclosed to the public at no cost.
 5. **User-Centric Development:** The platform is developed with input from its users, ensuring that the tools and features meet the specific needs of the research community. This user-driven approach helps in creating a more effective and user-friendly platform.
 6. **Training and Support:** D2S offers training workshops and support to help researchers get acquainted with the platform's tools and capabilities, ensuring they can make the most of its features.
+7. **Self-Deployment Capability:** D2S can be deployed in any environment that supports Docker, providing researchers with the flexibility to integrate the platform into their existing infrastructure. This capability ensures that the platform can be customized and scaled according to specific research requirements.
 
 These aspects make D2S a powerful tool for researchers looking to manage, share, and collaborate on UAV data, particularly in the fields of agriculture and forestry.
 
@@ -200,6 +196,10 @@ After creating the new migration, use the following command to update to the tab
 ```
 docker compose exec backend alembic upgrade head
 ```
+
+# Example Deployment
+
+An example instance of the Data to Science platform can be found at [https://ps2.d2s.org](https://ps2.d2s.org). This instance is managed by the Geospatial Data Science Lab at Purdue University and is open to the public. While this instance is available for use, the D2S platform is designed to be self-deployable, allowing researchers to host their own instances tailored to their specific needs.
 
 # 📘 Documentation
 
