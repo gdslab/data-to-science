@@ -253,7 +253,6 @@ services:
       - ./pg_tileserv.toml:/config/pg_tileserv.toml:ro
     ports:
       - 7800:7800
-    restart: always
     depends_on:
       db:
         condition: service_healthy

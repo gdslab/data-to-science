@@ -169,6 +169,7 @@ cython_debug/
 
 !backend/potree/
 frontend/public/config.json
+tusd-data/
 
 # Docker compose
 docker-compose.yml
