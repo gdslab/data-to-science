@@ -1,5 +1,14 @@
 # Data to Science
 
+<p align="center">
+  <img src="docs/assets/d2s-screenshot1.png" width="45%" />
+  <img src="docs/assets/d2s-screenshot2.png" width="45%" />
+</p>
+<p align="center">
+  <img src="docs/assets/d2s-screenshot3.png" width="45%" />
+  <img src="docs/assets/d2s-screenshot4.png" width="45%" />
+</p>
+
 ## What is D2S?
 
 The Data to Science (D2S) platform is an innovative, open-source initiative designed to facilitate data sharing and collaboration among researchers worldwide. Developed by Jinha Jung, an associate professor of civil engineering at Purdue University, and his team, the platform primarily focuses on housing data from unmanned aerial vehicles (UAVs) used in agricultural and forestry research.
@@ -45,10 +54,9 @@ These aspects make D2S a powerful tool for researchers looking to manage, share,
 ### Create tusd-data directory for uploads
 
 1. Create a folder for data to be stored during the upload process.
-
-```
-mkdir tusd-data
-```
+   ```
+   mkdir tusd-data
+   ```
 
 ### ▶️ Start the containers
 
