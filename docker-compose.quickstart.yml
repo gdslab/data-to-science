@@ -1,0 +1,409 @@
+services:
+  frontend:
+    image: d2s-app:latest
+    platform: linux/x86_64
+    depends_on:
+      - backend
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+    security_opt:
+      - no-new-privileges=true
+    env_file:
+      - frontend.env
+
+  backend:
+    image: d2s-api:latest
+    platform: linux/x86_64
+    volumes:
+      # - external-data:/srv/external-data
+      - log-data:/app/logs
+      - tusd-data:/srv/tusd-data/data
+      - user-data:/static
+    read_only: true
+    tmpfs:
+      - /var/tmp
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/v1/health"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+    security_opt:
+      - no-new-privileges=true
+    environment:
+      - TILE_SIGNING_SECRET_KEY=l7qBZUvC3nS7MB4oVs6hh8h3xyhkVb4039blrwsVYLsERqw4S8uguV30+d9ox0VaUgwegGiia1ejqqB9S6aDhA==
+      # - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel-collector:4318
+    env_file:
+      - backend.env
+      - db.env
+
+  db:
+    image: postgis/postgis:15-3.3
+    platform: linux/x86_64
+    user: postgres
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    read_only: true
+    tmpfs:
+      - /var/run/postgresql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready --username=$$POSTGRES_USER --dbname=$$POSTGRES_DB",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    environment:
+      - POSTGRES_USER=d2s
+      - POSTGRES_DB=d2s
+      - PGTZ=Etc/UTC
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+    security_opt:
+      - no-new-privileges=true
+    env_file:
+      - db.env
+
+  redis:
+    image: redis:alpine
+    platform: linux/x86_64
+    user: redis
+    read_only: true
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+    security_opt:
+      - no-new-privileges=true
+
+  celery_worker:
+    image: d2s-api:latest
+    platform: linux/x86_64
+    command: /app/celery/worker-start.sh
+    volumes:
+      # - external-data:/srv/external-data
+      - tusd-data:/srv/tusd-data/data
+      - user-data:/static
+    read_only: true
+    tmpfs:
+      - /tmp
+    depends_on:
+      - redis
+      - db
+    healthcheck:
+      test: ["CMD", "celery", "-A", "app.tasks", "inspect", "ping"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+    security_opt:
+      - no-new-privileges=true
+    environment:
+      - CELERY_WORKERS=4
+      - TILE_SIGNING_SECRET_KEY=l7qBZUvC3nS7MB4oVs6hh8h3xyhkVb4039blrwsVYLsERqw4S8uguV30+d9ox0VaUgwegGiia1ejqqB9S6aDhA==
+    env_file:
+      - backend.env
+      - db.env
+
+  celery_beat:
+    image: d2s-api:latest
+    platform: linux/x86_64
+    command: /app/celery/beat-start.sh
+    volumes:
+      - celery-data:/var/run/celery
+      - tusd-data:/srv/tusd-data/data
+      - user-data:/static
+    read_only: true
+    tmpfs:
+      - /tmp
+    depends_on:
+      - redis
+      - db
+    healthcheck:
+      test: ["CMD", "celery", "-A", "app.tasks", "inspect", "ping"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+    security_opt:
+      - no-new-privileges=true
+    environment:
+      - TILE_SIGNING_SECRET_KEY=l7qBZUvC3nS7MB4oVs6hh8h3xyhkVb4039blrwsVYLsERqw4S8uguV30+d9ox0VaUgwegGiia1ejqqB9S6aDhA==
+    env_file:
+      - backend.env
+      - db.env
+
+  proxy:
+    image: d2s-proxy:dev
+    platform: linux/x86_64
+    tmpfs:
+      - /tmp
+    ports:
+      - "127.0.0.1:8000:80"
+    depends_on:
+      - frontend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+    security_opt:
+      - no-new-privileges=true
+
+  varnish:
+    image: d2s-varnish:latest
+    tmpfs:
+      - /var/lib/varnish/varnishd:exec
+    command: "-p default_keep=300"
+    depends_on:
+      - pg_tileserv
+      - proxy
+      - titiler
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+    security_opt:
+      - no-new-privileges=true
+    environment:
+      - TILE_SIGNING_SECRET_KEY=l7qBZUvC3nS7MB4oVs6hh8h3xyhkVb4039blrwsVYLsERqw4S8uguV30+d9ox0VaUgwegGiia1ejqqB9S6aDhA==
+      - VARNISH_SIZE=2G
+
+  pg_tileserv:
+    image: pramsey/pg_tileserv:latest
+    platform: linux/x86_64
+    volumes:
+      - ./pg_tileserv.toml:/config/pg_tileserv.toml:ro
+    ports:
+      - 7800:7800
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - db.env
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+    security_opt:
+      - no-new-privileges=true
+
+  titiler:
+    image: ghcr.io/developmentseed/titiler:0.23.1
+    volumes:
+      - user-data:/static
+    environment:
+      # Application
+      - HOST=0.0.0.0
+      - PORT=8888
+      # Gunicorn / Uvicorn
+      # https://github.com/tiangolo/uvicorn-gunicorn-docker#web_concurrency
+      # - WEB_CONCURRENCY=1
+      - ACCESS_LOG=/var/log/titiler-access.log
+      - ERROR_LOG=/var/log/titiler-error.log
+      # https://github.com/tiangolo/uvicorn-gunicorn-docker#workers_per_core
+      - WORKERS_PER_CORE=1
+      # GDAL config
+      - CPL_TMPDIR=/tmp
+      - GDAL_CACHEMAX=75%
+      - GDAL_INGESTED_BYTES_AT_OPEN=32768
+      - GDAL_DISABLE_READDIR_ON_OPEN=EMPTY_DIR
+      - GDAL_HTTP_MERGE_CONSECUTIVE_RANGES=YES
+      - GDAL_HTTP_MULTIPLEX=YES
+      - GDAL_HTTP_VERSION=2
+      - PYTHONWARNINGS=ignore
+      - VSI_CACHE=TRUE
+      - VSI_CACHE_SIZE=536870912
+      - CPL_VSIL_CURL_ALLOWED_EXTENSIONS=.tif,.TIF,.tiff
+      - CPL_VSIL_CURL_CACHE_SIZE=200000000
+      # telemetry config
+      - TITILER_API_TELEMETRY_ENABLED=False
+      # - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-s",
+          "-o",
+          "/dev/null",
+          "http://localhost:8888/healthz",
+        ]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4G
+        reservations:
+          cpus: "1"
+          memory: 2G
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+    security_opt:
+      - no-new-privileges=true
+
+  tusd:
+    image: tusproject/tusd:latest
+    command: -behind-proxy -hooks-http http://proxy/api/v1/tusd -hooks-http-forward-headers Cookie X-Project-ID X-Flight-ID X-Data-Type
+    volumes:
+      - tusd-data:/srv/tusd-data/data
+      - user-data:/static
+    depends_on:
+      - frontend
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+    security_opt:
+      - no-new-privileges=true
+
+  # otel-collector:
+  #   image: otel/opentelemetry-collector-contrib:latest
+  #   command: ["--config=/etc/otel-collector-config.yaml"]
+  #   volumes:
+  #     - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+  #   ports:
+  #     - "4318:4318" # OTLP HTTP receiver
+  #     - "13133:13133" # Health check extension
+  #   restart_policy:
+  #     condition: on-failure
+  #     delay: 5s
+  #     max_attempts: 5
+  #     window: 120s
+  #   healthcheck:
+  #     test:
+  #       [
+  #         "CMD",
+  #         "wget",
+  #         "--no-verbose",
+  #         "--tries=1",
+  #         "--spider",
+  #         "http://localhost:13133",
+  #       ]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 40s
+  #   depends_on:
+  #     - jaeger
+
+  # jaeger:
+  #   image: jaegertracing/all-in-one:latest
+  #   ports:
+  #     - "16686:16686" # UI
+  #     - "14250:14250" # OTLP gRPC (Jaeger receiver)
+  #   restart_policy:
+  #     condition: on-failure
+  #     delay: 5s
+  #     max_attempts: 5
+  #     window: 120s
+  #   healthcheck:
+  #     test:
+  #       [
+  #         "CMD",
+  #         "wget",
+  #         "--no-verbose",
+  #         "--tries=1",
+  #         "--spider",
+  #         "http://localhost:16686",
+  #       ]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 30s
+  #   environment:
+  #     - COLLECTOR_OTLP_ENABLED=true
+
+volumes:
+  db-data:
+  log-data:
+  user-data:
+  celery-data:
+  tusd-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: "./tusd-data"
+      o: bind
+  # external-data:
+  #   driver: local
+  #   driver_opts:
+  #     type: none
+  #     device: ${EXTERNAL_STORAGE}
+  #     o: bind

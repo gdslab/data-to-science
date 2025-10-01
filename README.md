@@ -20,7 +20,55 @@ The Data to Science (D2S) platform stands out from other data-sharing platforms 
 
 These aspects make D2S a powerful tool for researchers looking to manage, share, and collaborate on UAV data, particularly in the fields of agriculture and forestry.
 
-## ⚙️ Getting started
+## ⚡ Quick Start
+
+### 📋 Prerequisites
+
+[Docker Engine](https://docs.docker.com/engine/install/) and [Docker Compose](https://docs.docker.com/compose/install/) are required to run the container with the following instructions. If you can successfully run `docker --version` and `docker compose --version` from a terminal then you are ready to proceed to the next section.
+
+### Copy env example files
+
+1. Navigate to the root directory of the repository.
+2. Copy `backend.example.env` to a new file named `backend.env`.
+   ```
+   cp backend.example.env backend.env
+   ```
+3. Copy `db.example.env` to a new file named `db.env`.
+   ```
+   cp db.example.env db.env
+   ```
+4. Copy `frontend.example.env` to a new file named `frontend.env`.
+   ```
+   cp frontend.example.env frontend.env
+   ```
+
+### Create tusd-data directory for uploads
+
+1. Create a folder for data to be stored during the upload process.
+
+```
+mkdir tusd-data
+```
+
+### ▶️ Start the containers
+
+1. Use the following command to run the service containers in the background:
+   ```
+   docker compose -f docker-compose.quickstart.yml up -d
+   ```
+
+### ⏹️ Stop the containers
+
+1. Use the following command to stop the containers:
+   ```
+   docker compose -f docker-compose.quickstart.yml stop
+   ```
+
+### 🌍 Accessing the web application
+
+The Data To Science web application can be accessed from `http://localhost:8000`. It may take up to a minute for the backend to finish initializing.
+
+## ⚙️ Getting started with local code
 
 ### 📋 Prerequisites
 
