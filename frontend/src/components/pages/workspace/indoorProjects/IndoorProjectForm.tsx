@@ -15,8 +15,8 @@ import { IndoorProjectAPIResponse } from './IndoorProject';
 export type IndoorProjectFormInput = {
   title: string;
   description: string;
-  startDate?: Date;
-  endDate?: Date;
+  startDate?: Date | string;
+  endDate?: Date | string;
 };
 
 const defaultValues = {
@@ -33,16 +33,31 @@ export const validationSchema = Yup.object({
   description: Yup.string()
     .max(300, 'Must be less than 300 characters')
     .required('Description is required'),
-  startDate: Yup.date()
+  startDate: Yup.mixed<Date | string>()
     .transform((value, originalValue) =>
       originalValue === '' ? undefined : value
     )
+    .test('date-max', 'Start date must be before end date', function (value) {
+      const { endDate } = this.parent;
+      if (!value || !endDate) return true;
+      const startDateObj = typeof value === 'string' ? new Date(value) : value;
+      const endDateObj =
+        typeof endDate === 'string' ? new Date(endDate) : endDate;
+      return startDateObj <= endDateObj;
+    })
     .optional(),
-  endDate: Yup.date()
-    .min(Yup.ref('startDate'), 'End date must be after start date')
+  endDate: Yup.mixed<Date | string>()
     .transform((value, originalValue) =>
       originalValue === '' ? undefined : value
     )
+    .test('date-min', 'End date must be after start date', function (value) {
+      const { startDate } = this.parent;
+      if (!value || !startDate) return true;
+      const endDateObj = typeof value === 'string' ? new Date(value) : value;
+      const startDateObj =
+        typeof startDate === 'string' ? new Date(startDate) : startDate;
+      return endDateObj >= startDateObj;
+    })
     .optional(),
 });
 
@@ -58,12 +73,15 @@ export default function IndoorProjectForm({
   const methods = useForm<IndoorProjectFormInput>({
     defaultValues,
     resolver: yupResolver(validationSchema),
+    mode: 'onChange',
+    reValidateMode: 'onChange',
   });
 
   const {
     formState: { isSubmitting },
     reset,
     handleSubmit,
+    trigger,
   } = methods;
 
   const onSubmit: SubmitHandler<IndoorProjectFormInput> = async (values) => {
@@ -114,8 +132,18 @@ export default function IndoorProjectForm({
           >
             <InputField label="Title" name="title" />
             <InputField label="Description" name="description" />
-            <InputField type="date" label="Start date" name="startDate" />
-            <InputField type="date" label="End date" name="endDate" />
+            <InputField
+              type="date"
+              label="Start date"
+              name="startDate"
+              onChange={() => setTimeout(() => trigger('endDate'), 0)}
+            />
+            <InputField
+              type="date"
+              label="End date"
+              name="endDate"
+              onChange={() => setTimeout(() => trigger('startDate'), 0)}
+            />
             <div className="mt-4 flex flex-col gap-2">
               <Button type="submit" disabled={isSubmitting}>
                 {!isSubmitting ? 'Create' : 'Creating...'}

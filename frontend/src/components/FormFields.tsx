@@ -14,6 +14,7 @@ type InputField = {
   placeholder?: string;
   required?: boolean;
   type?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 };
 
 interface InputSelectField extends InputField {
@@ -29,29 +30,37 @@ export function InputField({
   placeholder = '',
   required = true,
   type = 'text',
+  onChange,
 }: InputField) {
   return (
     <ConnectForm>
-      {({ formState: { errors }, register }) => (
-        <div>
-          <label className={styles.label}>
-            {label}
-            {required && '*'}
-          </label>
-          <input
-            className={styles.inputText}
-            type={type}
-            placeholder={placeholder}
-            {...register(name)}
-            aria-invalid={errors[name] ? 'true' : 'false'}
-          />
-          {errors[name] && (
-            <p role="alert" className={styles.error}>
-              {errors[name].message}
-            </p>
-          )}
-        </div>
-      )}
+      {({ formState: { errors }, register }) => {
+        const { onChange: registerOnChange, ...registerRest } = register(name);
+        return (
+          <div>
+            <label className={styles.label}>
+              {label}
+              {required && '*'}
+            </label>
+            <input
+              className={styles.inputText}
+              type={type}
+              placeholder={placeholder}
+              {...registerRest}
+              onChange={(e) => {
+                registerOnChange(e);
+                onChange?.(e);
+              }}
+              aria-invalid={errors[name] ? 'true' : 'false'}
+            />
+            {errors[name] && (
+              <p role="alert" className={styles.error}>
+                {errors[name].message}
+              </p>
+            )}
+          </div>
+        );
+      }}
     </ConnectForm>
   );
 }

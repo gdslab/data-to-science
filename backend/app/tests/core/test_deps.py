@@ -72,7 +72,7 @@ def test_can_read_indoor_project_unauthorized(db: Session) -> None:
         assert False, "Should have raised HTTPException"
     except HTTPException as e:
         assert e.status_code == 403
-        assert "permission" in e.detail.lower()
+        assert "you are not a member of this indoor project" in e.detail.lower()
 
 
 def test_can_read_indoor_project_not_found(db: Session) -> None:
@@ -90,4 +90,4 @@ def test_can_read_indoor_project_not_found(db: Session) -> None:
         assert False, "Should have raised HTTPException"
     except HTTPException as e:
         assert e.status_code == 404
-        assert "not be found" in e.detail.lower()
+        assert "indoor project not found" in e.detail.lower()

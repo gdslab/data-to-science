@@ -1,11 +1,17 @@
 from datetime import datetime
 from typing import List
+from uuid import uuid4
 
+import pytest
 from sqlalchemy.orm import Session
 
 from app import crud
+from app.core.exceptions import PermissionDenied, ResourceNotFound
+from app.models.project_type import ProjectType
 from app.schemas.indoor_project import IndoorProjectCreate, IndoorProjectUpdate
+from app.schemas.role import Role
 from app.tests.utils.indoor_project import create_indoor_project
+from app.tests.utils.project_member import create_project_member
 from app.tests.utils.user import create_user
 
 
@@ -181,3 +187,320 @@ def test_deactivate_indoor_project(db: Session) -> None:
     assert deactivated_indoor_project.is_active is False
     assert deactivated_indoor_project.deactivated_at
     assert deactivated_indoor_project.deactivated_at < datetime.utcnow()
+
+
+def test_get_with_permission_owner_can_access_with_viewer_permission(
+    db: Session,
+) -> None:
+    """
+    Test that project owner can access project with VIEWER permission level.
+    """
+    # Create indoor project
+    indoor_project = create_indoor_project(db)
+
+    # Owner should be able to access with VIEWER permission
+    result = crud.indoor_project.get_with_permission(
+        db,
+        indoor_project_id=indoor_project.id,
+        user_id=indoor_project.owner_id,
+        required_permission=Role.VIEWER,
+    )
+
+    assert result is not None
+    assert result.id == indoor_project.id
+    assert getattr(result, "role", None) == Role.OWNER.value
+
+
+def test_get_with_permission_owner_can_access_with_manager_permission(
+    db: Session,
+) -> None:
+    """
+    Test that project owner can access project with MANAGER permission level.
+    """
+    # Create indoor project
+    indoor_project = create_indoor_project(db)
+
+    # Owner should be able to access with MANAGER permission
+    result = crud.indoor_project.get_with_permission(
+        db,
+        indoor_project_id=indoor_project.id,
+        user_id=indoor_project.owner_id,
+        required_permission=Role.MANAGER,
+    )
+
+    assert result is not None
+    assert result.id == indoor_project.id
+    assert getattr(result, "role", None) == Role.OWNER.value
+
+
+def test_get_with_permission_owner_can_access_with_owner_permission(
+    db: Session,
+) -> None:
+    """
+    Test that project owner can access project with OWNER permission level.
+    """
+    # Create indoor project
+    indoor_project = create_indoor_project(db)
+
+    # Owner should be able to access with OWNER permission
+    result = crud.indoor_project.get_with_permission(
+        db,
+        indoor_project_id=indoor_project.id,
+        user_id=indoor_project.owner_id,
+        required_permission=Role.OWNER,
+    )
+
+    assert result is not None
+    assert result.id == indoor_project.id
+    assert getattr(result, "role", None) == Role.OWNER.value
+
+
+def test_get_with_permission_manager_can_access_with_viewer_permission(
+    db: Session,
+) -> None:
+    """
+    Test that project manager can access project with VIEWER permission level.
+    """
+    # Create indoor project and manager user
+    indoor_project = create_indoor_project(db)
+    manager = create_user(db)
+
+    # Add manager as project member
+    create_project_member(
+        db,
+        role=Role.MANAGER,
+        member_id=manager.id,
+        project_uuid=indoor_project.id,
+        project_type=ProjectType.INDOOR_PROJECT,
+    )
+
+    # Manager should be able to access with VIEWER permission
+    result = crud.indoor_project.get_with_permission(
+        db,
+        indoor_project_id=indoor_project.id,
+        user_id=manager.id,
+        required_permission=Role.VIEWER,
+    )
+
+    assert result is not None
+    assert result.id == indoor_project.id
+    assert getattr(result, "role", None) == Role.MANAGER.value
+
+
+def test_get_with_permission_manager_can_access_with_manager_permission(
+    db: Session,
+) -> None:
+    """
+    Test that project manager can access project with MANAGER permission level.
+    """
+    # Create indoor project and manager user
+    indoor_project = create_indoor_project(db)
+    manager = create_user(db)
+
+    # Add manager as project member
+    create_project_member(
+        db,
+        role=Role.MANAGER,
+        member_id=manager.id,
+        project_uuid=indoor_project.id,
+        project_type=ProjectType.INDOOR_PROJECT,
+    )
+
+    # Manager should be able to access with MANAGER permission
+    result = crud.indoor_project.get_with_permission(
+        db,
+        indoor_project_id=indoor_project.id,
+        user_id=manager.id,
+        required_permission=Role.MANAGER,
+    )
+
+    assert result is not None
+    assert result.id == indoor_project.id
+    assert getattr(result, "role", None) == Role.MANAGER.value
+
+
+def test_get_with_permission_manager_cannot_access_with_owner_permission(
+    db: Session,
+) -> None:
+    """
+    Test that project manager cannot access project with OWNER permission level.
+    """
+    # Create indoor project and manager user
+    indoor_project = create_indoor_project(db)
+    manager = create_user(db)
+
+    # Add manager as project member
+    create_project_member(
+        db,
+        role=Role.MANAGER,
+        member_id=manager.id,
+        project_uuid=indoor_project.id,
+        project_type=ProjectType.INDOOR_PROJECT,
+    )
+
+    # Manager should not be able to access with OWNER permission
+    with pytest.raises(PermissionDenied) as exc_info:
+        crud.indoor_project.get_with_permission(
+            db,
+            indoor_project_id=indoor_project.id,
+            user_id=manager.id,
+            required_permission=Role.OWNER,
+        )
+
+    assert "owner role or higher" in str(exc_info.value.detail).lower()
+
+
+def test_get_with_permission_viewer_can_access_with_viewer_permission(
+    db: Session,
+) -> None:
+    """
+    Test that project viewer can access project with VIEWER permission level.
+    """
+    # Create indoor project and viewer user
+    indoor_project = create_indoor_project(db)
+    viewer = create_user(db)
+
+    # Add viewer as project member
+    create_project_member(
+        db,
+        role=Role.VIEWER,
+        member_id=viewer.id,
+        project_uuid=indoor_project.id,
+        project_type=ProjectType.INDOOR_PROJECT,
+    )
+
+    # Viewer should be able to access with VIEWER permission
+    result = crud.indoor_project.get_with_permission(
+        db,
+        indoor_project_id=indoor_project.id,
+        user_id=viewer.id,
+        required_permission=Role.VIEWER,
+    )
+
+    assert result is not None
+    assert result.id == indoor_project.id
+    assert getattr(result, "role", None) == Role.VIEWER.value
+
+
+def test_get_with_permission_viewer_cannot_access_with_manager_permission(
+    db: Session,
+) -> None:
+    """
+    Test that project viewer cannot access project with MANAGER permission level.
+    """
+    # Create indoor project and viewer user
+    indoor_project = create_indoor_project(db)
+    viewer = create_user(db)
+
+    # Add viewer as project member
+    create_project_member(
+        db,
+        role=Role.VIEWER,
+        member_id=viewer.id,
+        project_uuid=indoor_project.id,
+        project_type=ProjectType.INDOOR_PROJECT,
+    )
+
+    # Viewer should not be able to access with MANAGER permission
+    with pytest.raises(PermissionDenied) as exc_info:
+        crud.indoor_project.get_with_permission(
+            db,
+            indoor_project_id=indoor_project.id,
+            user_id=viewer.id,
+            required_permission=Role.MANAGER,
+        )
+
+    assert "manager role or higher" in str(exc_info.value.detail).lower()
+
+
+def test_get_with_permission_viewer_cannot_access_with_owner_permission(
+    db: Session,
+) -> None:
+    """
+    Test that project viewer cannot access project with OWNER permission level.
+    """
+    # Create indoor project and viewer user
+    indoor_project = create_indoor_project(db)
+    viewer = create_user(db)
+
+    # Add viewer as project member
+    create_project_member(
+        db,
+        role=Role.VIEWER,
+        member_id=viewer.id,
+        project_uuid=indoor_project.id,
+        project_type=ProjectType.INDOOR_PROJECT,
+    )
+
+    # Viewer should not be able to access with OWNER permission
+    with pytest.raises(PermissionDenied) as exc_info:
+        crud.indoor_project.get_with_permission(
+            db,
+            indoor_project_id=indoor_project.id,
+            user_id=viewer.id,
+            required_permission=Role.OWNER,
+        )
+
+    assert "owner role or higher" in str(exc_info.value.detail).lower()
+
+
+def test_get_with_permission_non_member_cannot_access(db: Session) -> None:
+    """
+    Test that non-member user cannot access project.
+    """
+    # Create indoor project and non-member user
+    indoor_project = create_indoor_project(db)
+    non_member = create_user(db)
+
+    # Non-member should not be able to access
+    with pytest.raises(PermissionDenied) as exc_info:
+        crud.indoor_project.get_with_permission(
+            db,
+            indoor_project_id=indoor_project.id,
+            user_id=non_member.id,
+            required_permission=Role.VIEWER,
+        )
+
+    assert "not a member" in str(exc_info.value.detail).lower()
+
+
+def test_get_with_permission_project_not_found(db: Session) -> None:
+    """
+    Test that ResourceNotFound is raised when project doesn't exist.
+    """
+    # Create user
+    user = create_user(db)
+
+    # Random UUID that doesn't exist
+    non_existent_id = uuid4()
+
+    # Should raise ResourceNotFound
+    with pytest.raises(ResourceNotFound) as exc_info:
+        crud.indoor_project.get_with_permission(
+            db,
+            indoor_project_id=non_existent_id,
+            user_id=user.id,
+            required_permission=Role.VIEWER,
+        )
+
+    assert "indoor project not found" in str(exc_info.value.detail).lower()
+
+
+def test_get_with_permission_inactive_project_raises_not_found(db: Session) -> None:
+    """
+    Test that ResourceNotFound is raised when project is inactive.
+    """
+    # Create and deactivate indoor project
+    indoor_project = create_indoor_project(db)
+    crud.indoor_project.deactivate(db, indoor_project_id=indoor_project.id)
+
+    # Owner should not be able to access inactive project
+    with pytest.raises(ResourceNotFound) as exc_info:
+        crud.indoor_project.get_with_permission(
+            db,
+            indoor_project_id=indoor_project.id,
+            user_id=indoor_project.owner_id,
+            required_permission=Role.VIEWER,
+        )
+
+    assert "indoor project not found" in str(exc_info.value.detail).lower()

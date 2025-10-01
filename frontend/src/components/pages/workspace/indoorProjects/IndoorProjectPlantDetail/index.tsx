@@ -1,6 +1,5 @@
 import { Await, useLoaderData } from 'react-router-dom';
 import { Suspense } from 'react';
-import IndoorProjectPageLayout from '../IndoorProjectPageLayout';
 import { PlantDetailAndChart } from './types';
 import PlantDetailsTable from './components/PlantDetailsTable';
 import TopChart from './components/TopChart';
@@ -18,7 +17,7 @@ export default function IndoorProjectPlantDetail() {
   };
 
   return (
-    <IndoorProjectPageLayout>
+    <div className="h-full mx-4 py-2 flex flex-col gap-2">
       <h1>Plant Details</h1>
       <div className="flex flex-col gap-4">
         {/* Plant detail table */}
@@ -59,7 +58,7 @@ export default function IndoorProjectPlantDetail() {
         </Suspense>
         <ReturnButton />
       </div>
-    </IndoorProjectPageLayout>
+    </div>
   );
 }
 

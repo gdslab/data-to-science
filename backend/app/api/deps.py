@@ -17,8 +17,8 @@ from app.crud.crud_flight import ReadFlight
 from app.crud.crud_project import ReadProject
 from app.db.session import SessionLocal
 from app.api.utils import is_valid_api_key
-from app.models.project_type import ProjectType
 from app.schemas.raw_data import MetashapeQueryParams, ODMQueryParams
+from app.schemas.role import Role
 
 logger = logging.getLogger("__name__")
 
@@ -240,22 +240,27 @@ def can_read_write_delete_indoor_project(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_approved_user),
 ) -> models.IndoorProject:
-    """
-    Return indoor project if current user has permission to read it.
-    """
-    indoor_project = crud.indoor_project.get(db, id=indoor_project_id)
-    if not indoor_project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="The requested indoor project could not be found",
-        )
-    if current_user.id != indoor_project.owner_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to access this indoor project",
-        )
+    """Return indoor project if current user is owner."""
+    return crud.indoor_project.get_with_permission(
+        db,
+        indoor_project_id=indoor_project_id,
+        user_id=current_user.id,
+        required_permission=Role.OWNER,
+    )
 
-    return indoor_project
+
+def can_read_write_indoor_project(
+    indoor_project_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_approved_user),
+) -> models.IndoorProject:
+    """Return indoor project if current user is owner or manager."""
+    return crud.indoor_project.get_with_permission(
+        db,
+        indoor_project_id=indoor_project_id,
+        user_id=current_user.id,
+        required_permission=Role.MANAGER,
+    )
 
 
 def can_read_indoor_project(
@@ -263,34 +268,13 @@ def can_read_indoor_project(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_approved_user),
 ) -> models.IndoorProject:
-    """
-    Return indoor project if current user is project owner, manager, or viewer.
-    """
-    indoor_project = crud.indoor_project.get(db, id=indoor_project_id)
-    if not indoor_project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="The requested indoor project could not be found",
-        )
-
-    # Check if user is the owner
-    if current_user.id == indoor_project.owner_id:
-        return indoor_project
-
-    # Check if user is a member of the project
-    project_member = crud.project_member.get_by_project_and_member_id(
+    """Return indoor project if current user is owner, manager, or viewer."""
+    return crud.indoor_project.get_with_permission(
         db,
-        project_uuid=indoor_project_id,
-        member_id=current_user.id,
-        project_type=ProjectType.INDOOR_PROJECT,
+        indoor_project_id=indoor_project_id,
+        user_id=current_user.id,
+        required_permission=Role.VIEWER,
     )
-    if not project_member:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to access this indoor project",
-        )
-
-    return indoor_project
 
 
 def can_read_write_delete_team(

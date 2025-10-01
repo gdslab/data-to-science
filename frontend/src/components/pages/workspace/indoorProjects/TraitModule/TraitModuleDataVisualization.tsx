@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { ResponsiveBar } from '@nivo/bar';
-import { ColorSchemeId } from '@nivo/colors/dist/types/schemes/all';
 
 import ColorMapSelect from './ColorMapSelect';
 
@@ -52,7 +51,7 @@ export default function TraitModuleDataVisualization({
             keys={uniqueGroups}
             indexBy="interval_days"
             enableLabel={false}
-            colors={{ scheme: colorOption as ColorSchemeId }}
+            colors={{ scheme: colorOption as any }}
             margin={{ top: 100, right: 110, bottom: 60, left: 100 }}
             groupMode="grouped"
             borderColor={{ from: 'color', modifiers: [['darker', 1.6]] }}

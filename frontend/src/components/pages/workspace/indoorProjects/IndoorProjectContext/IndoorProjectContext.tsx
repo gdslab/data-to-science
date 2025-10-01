@@ -10,6 +10,8 @@ import {
 import { Outlet, useParams } from 'react-router-dom';
 
 import api from '../../../../../api';
+import { User } from '../../../../../AuthContext';
+import { IndoorProjectAPIResponse } from '../IndoorProject.d';
 
 import { IndoorProjectAction } from './actions';
 import {
@@ -24,6 +26,29 @@ import {
 interface IndoorProjectContextType {
   state: IndoorProjectState;
   dispatch: Dispatch<IndoorProjectAction>;
+}
+
+export async function getIndoorProject(
+  indoorProjectId: string,
+  dispatch: React.Dispatch<IndoorProjectAction>
+) {
+  try {
+    const response: AxiosResponse<IndoorProjectAPIResponse> = await api.get(
+      `/indoor_projects/${indoorProjectId}`
+    );
+    if (response) {
+      dispatch({ type: 'SET_INDOOR_PROJECT', payload: response.data });
+    } else {
+      dispatch({ type: 'CLEAR_INDOOR_PROJECT', payload: null });
+    }
+  } catch (err) {
+    if (isAxiosError(err)) {
+      console.log(err.response?.data);
+    } else {
+      console.error(err);
+    }
+    dispatch({ type: 'CLEAR_INDOOR_PROJECT', payload: null });
+  }
 }
 
 export async function getProjectMembers(
@@ -49,6 +74,33 @@ export async function getProjectMembers(
   }
 }
 
+export async function getProjectRole(
+  indoorProjectId: string,
+  dispatch: React.Dispatch<IndoorProjectAction>
+) {
+  try {
+    const profile = localStorage.getItem('userProfile');
+    const user: User | null = profile ? JSON.parse(profile) : null;
+    if (!user) throw new Error();
+
+    const response: AxiosResponse<any> = await api.get(
+      `/indoor_projects/${indoorProjectId}/members/${user.id}`
+    );
+    if (response) {
+      dispatch({ type: 'SET_PROJECT_ROLE', payload: response.data.role });
+    } else {
+      dispatch({ type: 'CLEAR_PROJECT_ROLE', payload: undefined });
+    }
+  } catch (err) {
+    if (isAxiosError(err)) {
+      console.log(err.response?.data);
+    } else {
+      console.error(err);
+    }
+    dispatch({ type: 'CLEAR_PROJECT_ROLE', payload: undefined });
+  }
+}
+
 const IndoorProjectContext = createContext<
   IndoorProjectContextType | undefined
 >(undefined);
@@ -69,9 +121,13 @@ export const IndoorProjectProvider = ({
 
   useEffect(() => {
     if (params.indoorProjectId) {
+      getIndoorProject(params.indoorProjectId, dispatch);
       getProjectMembers(params.indoorProjectId, dispatch);
+      getProjectRole(params.indoorProjectId, dispatch);
     } else {
+      dispatch({ type: 'CLEAR_INDOOR_PROJECT', payload: null });
       dispatch({ type: 'CLEAR_PROJECT_MEMBERS', payload: null });
+      dispatch({ type: 'CLEAR_PROJECT_ROLE', payload: undefined });
     }
   }, [params.indoorProjectId]);
 

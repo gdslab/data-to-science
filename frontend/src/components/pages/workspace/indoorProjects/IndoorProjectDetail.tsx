@@ -2,11 +2,11 @@ import { AxiosResponse } from 'axios';
 import { Params, useLoaderData } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 import api from '../../../../api';
 import Alert from '../../../Alert';
 import { IndoorProjectAPIResponse } from './IndoorProject.d';
-import IndoorProjectPageLayout from './IndoorProjectPageLayout';
 import LoadingBars from '../../../LoadingBars';
 
 import PotModuleDataVisualization from './PotModule/PotModuleDataVisualization';
@@ -18,6 +18,7 @@ import TraitScatterModuleForm from './TraitModule/TraitScatterModuleForm';
 import TraitScatterModuleDataVisualization from './TraitModule/TraitScatterModule';
 import { useIndoorProjectData } from './hooks/useIndoorProjectData';
 import IndoorProjectUploadForm from './IndoorProjectUploadForm';
+import IndoorProjectDetailEditForm from './IndoorProjectDetailEditForm';
 import { useIndoorProjectContext } from './IndoorProjectContext';
 
 export async function loader({ params }: { params: Params<string> }) {
@@ -61,7 +62,7 @@ export default function IndoorProjectDetail() {
     useState(false);
 
   const {
-    state: { projectMembers },
+    state: { projectRole },
   } = useIndoorProjectContext();
 
   const indoorProjectDataId = indoorProjectData.find(
@@ -82,49 +83,41 @@ export default function IndoorProjectDetail() {
 
   const potBarcodes = indoorProjectDataSpreadsheet?.summary?.pot_barcode || [];
 
-  console.log('projectMembers', projectMembers);
-
   return (
-    <IndoorProjectPageLayout>
+    <div className="h-full mx-4 py-2 flex flex-col gap-2">
       <div className="flex flex-col gap-4 h-full">
         {/* Project title and description */}
         <div className="flex flex-col gap-2 flex-shrink-0">
-          <div className="flex items-start justify-between gap-2">
-            <h2 className="truncate" title={indoorProject.title}>
-              {indoorProject.title}
-            </h2>
-            <button
-              type="button"
-              onClick={() => {
-                setHasUserToggledUploadPane(true);
-                setIsUploadPaneCollapsed((v) => !v);
-              }}
-              className="inline-flex items-center rounded-lg bg-gray-800 hover:bg-gray-700 text-white py-2 px-3 text-sm flex-shrink-0"
-              aria-pressed={isUploadPaneCollapsed}
-              aria-label={
-                isUploadPaneCollapsed ? 'Show upload form' : 'Hide upload form'
-              }
-              title={
-                isUploadPaneCollapsed ? 'Show upload form' : 'Hide upload form'
-              }
-            >
-              {isUploadPaneCollapsed ? 'Show upload form' : 'Hide upload form'}
-            </button>
+          <div className="flex items-start gap-2">
+            {projectRole === 'owner' || projectRole === 'manager' ? (
+              <div className="flex-1">
+                <IndoorProjectDetailEditForm indoorProject={indoorProject} />
+              </div>
+            ) : (
+              <div className="flex-1">
+                <h2
+                  className="text-lg font-bold truncate"
+                  title={indoorProject.title}
+                >
+                  {indoorProject.title}
+                </h2>
+                <p className="text-gray-600 line-clamp-3 mt-1">
+                  {indoorProject.description}
+                </p>
+              </div>
+            )}
           </div>
-          <p className="text-gray-600 line-clamp-3">
-            {indoorProject.description}
-          </p>
           <hr className="my-4 border-gray-700" />
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
+        <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0 relative">
           {/* Upload form */}
           <div
             className={`${
               isUploadPaneCollapsed
-                ? 'hidden'
+                ? 'w-0'
                 : 'flex flex-col w-full lg:w-1/3 gap-8 p-4 border-b lg:border-b-0 lg:border-r border-gray-700 h-auto lg:h-full'
-            }`}
+            } transition-all duration-300 overflow-hidden relative`}
           >
             <IndoorProjectUploadForm
               indoorProjectId={indoorProject.id}
@@ -135,6 +128,33 @@ export default function IndoorProjectDetail() {
               onUploadSuccess={refetch}
             />
           </div>
+
+          {/* Toggle button */}
+          <button
+            type="button"
+            onClick={() => {
+              setHasUserToggledUploadPane(true);
+              setIsUploadPaneCollapsed((v) => !v);
+            }}
+            className={`${
+              isUploadPaneCollapsed
+                ? '-left-4 rounded-r-lg'
+                : 'left-[calc(33.333%-1rem)] lg:left-[calc(33.333%-1rem)] rounded-full'
+            } absolute top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-8 h-12 bg-gray-800 hover:bg-gray-700 text-white shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50`}
+            aria-pressed={isUploadPaneCollapsed}
+            aria-label={
+              isUploadPaneCollapsed ? 'Show upload form' : 'Hide upload form'
+            }
+            title={
+              isUploadPaneCollapsed ? 'Show upload form' : 'Hide upload form'
+            }
+          >
+            {isUploadPaneCollapsed ? (
+              <ChevronRightIcon className="w-5 h-5" />
+            ) : (
+              <ChevronLeftIcon className="w-5 h-5" />
+            )}
+          </button>
           {/* Data visualization */}
           <div
             className={`flex flex-col w-full ${
@@ -303,6 +323,6 @@ export default function IndoorProjectDetail() {
           </div>
         </div>
       </div>
-    </IndoorProjectPageLayout>
+    </div>
   );
 }

@@ -8,6 +8,7 @@ from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
 from app import crud
+from app.core.exceptions import PermissionDenied, ResourceNotFound
 from app.crud.base import CRUDBase
 from app.models.indoor_project import IndoorProject
 from app.models.project_member import ProjectMember
@@ -102,8 +103,70 @@ class CRUDIndoorProject(
 
         return indoor_project_db_obj
 
+    def get_with_permission(
+        self,
+        db: Session,
+        indoor_project_id: UUID,
+        user_id: UUID,
+        required_permission: Role = Role.VIEWER,
+    ) -> IndoorProject:
+        """Get indoor project with permission check.
+
+        Args:
+            db (Session): Database session.
+            indoor_project_id (UUID): ID of indoor project.
+            user_id (UUID): ID of user.
+            required_permission (Role): Minimum role required (VIEWER, MANAGER, or OWNER).
+
+        Returns:
+            IndoorProject: Indoor project if user has permission.
+
+        Raises:
+            ResourceNotFound: If project doesn't exist or is inactive.
+            PermissionDenied: If user lacks required permission.
+        """
+        # Get project
+        indoor_project = self.get(db, id=indoor_project_id)
+        if not indoor_project or not indoor_project.is_active:
+            raise ResourceNotFound("Indoor project")
+
+        # Check if user is owner
+        if indoor_project.owner_id == user_id:
+            setattr(indoor_project, "role", Role.OWNER.value)
+            return indoor_project
+
+        # Check project membership for non-owners
+        member = crud.project_member.get_by_project_and_member_id(
+            db,
+            project_uuid=indoor_project_id,
+            member_id=user_id,
+            project_type=ProjectType.INDOOR_PROJECT,
+        )
+
+        if not member:
+            raise PermissionDenied("You are not a member of this indoor project")
+
+        # Check role hierarchy: OWNER > MANAGER > VIEWER
+        role_hierarchy = {Role.VIEWER: 1, Role.MANAGER: 2, Role.OWNER: 3}
+
+        if role_hierarchy.get(member.role, 0) < role_hierarchy.get(
+            required_permission, 999
+        ):
+            raise PermissionDenied(
+                f"This action requires {required_permission.value} role or higher"
+            )
+
+        # Set the user's role on the indoor project for API response
+        setattr(indoor_project, "role", member.role.value)
+
+        return indoor_project
+
     def read_by_user_id(
-        self, db: Session, indoor_project_id: UUID, user_id: UUID
+        self,
+        db: Session,
+        indoor_project_id: UUID,
+        user_id: UUID,
+        permission: str = "read",
     ) -> Optional[IndoorProject]:
         """Read existing indoor project owned by user.
 

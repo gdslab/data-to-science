@@ -35,7 +35,8 @@ import IndoorProjectDetail, {
 import IndoorProjectPlantDetail, {
   loader as indoorProjectPlantDetailLoader,
 } from './components/pages/workspace/indoorProjects/IndoorProjectPlantDetail';
-import { IndoorProjectProvider } from './components/pages/workspace/indoorProjects/IndoorProjectContext';
+import IndoorProjectAccess from './components/pages/workspace/indoorProjects/IndoorProjectAccess';
+import IndoorProjectLayout from './components/pages/workspace/indoorProjects/IndoorProjectLayout';
 import IForesterLayout from './components/pages/workspace/projects/iForester/IForesterLayout';
 import Landing from './components/Landing';
 import LoginForm from './components/pages/auth/LoginForm';
@@ -236,12 +237,21 @@ export const router = createBrowserRouter(
         },
         {
           path: '/indoor_projects',
-          element: <IndoorProjectProvider />,
+          element: <IndoorProjectLayout />,
           children: [
+            {
+              path: '/indoor_projects',
+              element: <Workspace />,
+              loader: workspaceLoader,
+            },
             {
               path: '/indoor_projects/:indoorProjectId',
               element: <IndoorProjectDetail />,
               loader: indoorProjectDetailLoader,
+            },
+            {
+              path: '/indoor_projects/:indoorProjectId/access',
+              element: <IndoorProjectAccess />,
             },
             {
               path: '/indoor_projects/:indoorProjectId/uploaded/:indoorProjectDataId/plants/:indoorProjectPlantId',

@@ -21,13 +21,26 @@ export default function IndoorProjectDetailForm({
   const [status, setStatus] = useState<Status | null>(null);
 
   const methods = useForm<IndoorProjectFormInput>({
-    defaultValues,
-    resolver: yupResolver(validationSchema),
+    defaultValues: {
+      ...defaultValues,
+      startDate: defaultValues.start_date
+        ? (new Date(defaultValues.start_date)
+            .toISOString()
+            .split('T')[0] as any)
+        : undefined,
+      endDate: defaultValues.end_date
+        ? (new Date(defaultValues.end_date).toISOString().split('T')[0] as any)
+        : undefined,
+    } as IndoorProjectFormInput,
+    resolver: yupResolver(validationSchema) as any,
+    mode: 'onChange',
+    reValidateMode: 'onChange',
   });
 
   const {
     formState: { isSubmitting },
     handleSubmit,
+    trigger,
   } = methods;
 
   const onSubmit: SubmitHandler<IndoorProjectFormInput> = async (values) => {
@@ -67,8 +80,18 @@ export default function IndoorProjectDetailForm({
       >
         <InputField label="Title" name="title" />
         <InputField label="Description" name="description" />
-        <InputField type="date" label="Start date" name="startDate" />
-        <InputField type="date" label="End date" name="endDate" />
+        <InputField
+          type="date"
+          label="Start date"
+          name="startDate"
+          onChange={() => setTimeout(() => trigger('endDate'), 0)}
+        />
+        <InputField
+          type="date"
+          label="End date"
+          name="endDate"
+          onChange={() => setTimeout(() => trigger('startDate'), 0)}
+        />
         <button
           className="max-h-10 px-4 py-2 bg-amber-500 text-white font-medium rounded hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-300"
           type="submit"

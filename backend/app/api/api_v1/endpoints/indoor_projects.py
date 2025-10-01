@@ -40,16 +40,13 @@ def create_indoor_project(
 @router.get("/{indoor_project_id}", response_model=schemas.IndoorProject)
 def read_indoor_project(
     indoor_project_id: UUID4,
-    indoor_project: models.IndoorProject = Depends(
-        deps.can_read_write_delete_indoor_project
-    ),
+    indoor_project: models.IndoorProject = Depends(deps.can_read_indoor_project),
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """
-    Fetch indoor project owned by current user.
+    Fetch indoor project if current user is owner, manager, or viewer.
     """
-
     return indoor_project
 
 
@@ -66,3 +63,63 @@ def read_indoor_projects(
     )
 
     return indoor_projects
+
+
+@router.put("/{indoor_project_id}", response_model=schemas.IndoorProject)
+def update_indoor_project(
+    indoor_project_id: UUID4,
+    indoor_project_in: schemas.IndoorProjectUpdate,
+    indoor_project: models.IndoorProject = Depends(deps.can_read_write_indoor_project),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """
+    Update indoor project if current user is project owner or manager.
+    """
+    # Validate date consistency by comparing effective values
+    # (new value if provided in update, otherwise existing value)
+    effective_start_date = (
+        indoor_project_in.start_date
+        if indoor_project_in.start_date is not None
+        else indoor_project.start_date
+    )
+    effective_end_date = (
+        indoor_project_in.end_date
+        if indoor_project_in.end_date is not None
+        else indoor_project.end_date
+    )
+
+    if effective_start_date and effective_end_date:
+        if effective_start_date > effective_end_date:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Start date must be before end date",
+            )
+
+    updated_indoor_project = crud.indoor_project.update(
+        db, db_obj=indoor_project, obj_in=indoor_project_in
+    )
+    return updated_indoor_project
+
+
+@router.delete("/{indoor_project_id}", response_model=schemas.IndoorProject)
+def deactivate_indoor_project(
+    indoor_project_id: UUID4,
+    indoor_project: models.IndoorProject = Depends(
+        deps.can_read_write_delete_indoor_project
+    ),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """
+    Deactivate indoor project if current user is project owner.
+    """
+    deactivated_indoor_project = crud.indoor_project.deactivate(
+        db, indoor_project_id=indoor_project.id
+    )
+    if not deactivated_indoor_project:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unable to deactivate indoor project",
+        )
+    return deactivated_indoor_project

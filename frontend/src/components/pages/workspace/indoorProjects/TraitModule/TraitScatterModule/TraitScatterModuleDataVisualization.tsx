@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ResponsiveScatterPlot } from '@nivo/scatterplot';
+import { ResponsiveScatterPlot, ScatterPlotNodeProps } from '@nivo/scatterplot';
 
 import ColorMapSelect from '../ColorMapSelect';
 import { IndoorProjectDataVizScatterAPIResponse } from '../../IndoorProject';
@@ -11,47 +11,31 @@ import { drawSymbol } from './SymbolRenderer';
 import ScatterLegend from './ScatterLegend';
 import ScatterTooltip from './ScatterTooltip';
 
-// Define NodeProps type locally to fix import issue
-interface NodeProps {
-  node: {
-    x: number;
-    y: number;
-    size?: number;
-    borderColor: string;
-    color: string;
-    serieId: string;
-  };
-  blendMode: string;
-  onMouseEnter: (event: any) => void;
-  onMouseMove: (event: any) => void;
-  onMouseLeave: (event: any) => void;
-  onClick: (event: any) => void;
-}
-
 function makeNodeComponent(getSymbolForSerie: (serieId: string) => string) {
-  return function SymbolNode(props: NodeProps) {
+  return function SymbolNode(props: ScatterPlotNodeProps<any>) {
     const {
       node,
+      style,
       blendMode,
       onMouseEnter,
       onMouseMove,
       onMouseLeave,
       onClick,
     } = props;
-    const cx = node.x;
-    const cy = node.y;
-    const r = (node.size ?? 8) / 2;
-    const stroke = node.borderColor;
-    const fill = node.color;
+    const cx = style.x.get();
+    const cy = style.y.get();
+    const r = (style.size.get() ?? 8) / 2;
+    const stroke = '#333'; // Use a default border color or derive from theme
+    const fill = style.color.get();
     const symbol = getSymbolForSerie(String(node.serieId)) as any;
 
     return (
       <g
         style={{ mixBlendMode: blendMode }}
-        onMouseEnter={onMouseEnter}
-        onMouseMove={onMouseMove}
-        onMouseLeave={onMouseLeave}
-        onClick={onClick}
+        onMouseEnter={onMouseEnter ? (e) => onMouseEnter(node, e) : undefined}
+        onMouseMove={onMouseMove ? (e) => onMouseMove(node, e) : undefined}
+        onMouseLeave={onMouseLeave ? (e) => onMouseLeave(node, e) : undefined}
+        onClick={onClick ? (e) => onClick(node, e) : undefined}
       >
         {drawSymbol(symbol, cx, cy, r, fill, stroke)}
       </g>

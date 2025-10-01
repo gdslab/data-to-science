@@ -7,9 +7,14 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
+from app.models.project_type import ProjectType
+from app.schemas.indoor_project import IndoorProjectUpdate
+from app.schemas.role import Role
 from app.tests.utils.indoor_project import create_indoor_project
+from app.tests.utils.project_member import create_project_member
 
 API_URL = f"{settings.API_V1_STR}/indoor_projects"
 
@@ -171,3 +176,333 @@ def test_read_indoor_projects(
             str(existing_indoor_project2.id),
             str(existing_indoor_project3.id),
         ]
+
+
+def test_read_indoor_project_as_manager(
+    client: TestClient, normal_user_access_token: str, db: Session
+) -> None:
+    """
+    Test that a manager can read an indoor project.
+    """
+    # Create indoor project owned by someone else
+    indoor_project = create_indoor_project(db)
+
+    # Add current user as manager
+    current_user = get_current_user(db, normal_user_access_token)
+    create_project_member(
+        db,
+        role=Role.MANAGER,
+        member_id=current_user.id,
+        project_uuid=indoor_project.id,
+        project_type=ProjectType.INDOOR_PROJECT,
+    )
+
+    # Get indoor project data
+    response = client.get(f"{API_URL}/{indoor_project.id}")
+
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["id"] == str(indoor_project.id)
+    assert response_data["role"] == Role.MANAGER.value
+
+
+def test_read_indoor_project_as_viewer(
+    client: TestClient, normal_user_access_token: str, db: Session
+) -> None:
+    """
+    Test that a viewer can read an indoor project.
+    """
+    # Create indoor project owned by someone else
+    indoor_project = create_indoor_project(db)
+
+    # Add current user as viewer
+    current_user = get_current_user(db, normal_user_access_token)
+    create_project_member(
+        db,
+        role=Role.VIEWER,
+        member_id=current_user.id,
+        project_uuid=indoor_project.id,
+        project_type=ProjectType.INDOOR_PROJECT,
+    )
+
+    # Get indoor project data
+    response = client.get(f"{API_URL}/{indoor_project.id}")
+
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["id"] == str(indoor_project.id)
+    assert response_data["role"] == Role.VIEWER.value
+
+
+def test_update_indoor_project_as_owner(
+    client: TestClient, normal_user_access_token: str, db: Session
+) -> None:
+    """
+    Test updating an indoor project as owner.
+    """
+    # Create indoor project owned by current user
+    current_user = get_current_user(db, normal_user_access_token)
+    indoor_project = create_indoor_project(db, owner_id=current_user.id)
+
+    # Update data
+    update_data = jsonable_encoder(
+        IndoorProjectUpdate(
+            title="Updated Title",
+            description="Updated Description",
+            start_date=datetime(2024, 5, 1),
+            end_date=datetime(2024, 10, 1),
+        ).model_dump()
+    )
+
+    # Update indoor project
+    response = client.put(f"{API_URL}/{indoor_project.id}", json=update_data)
+
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["id"] == str(indoor_project.id)
+    assert response_data["title"] == update_data["title"]
+    assert response_data["description"] == update_data["description"]
+    assert response_data["start_date"] == update_data["start_date"]
+    assert response_data["end_date"] == update_data["end_date"]
+
+
+def test_update_indoor_project_as_manager(
+    client: TestClient, normal_user_access_token: str, db: Session
+) -> None:
+    """
+    Test updating an indoor project as manager.
+    """
+    # Create indoor project owned by someone else
+    indoor_project = create_indoor_project(db)
+
+    # Add current user as manager
+    current_user = get_current_user(db, normal_user_access_token)
+    create_project_member(
+        db,
+        role=Role.MANAGER,
+        member_id=current_user.id,
+        project_uuid=indoor_project.id,
+        project_type=ProjectType.INDOOR_PROJECT,
+    )
+
+    # Update data
+    update_data = jsonable_encoder(
+        IndoorProjectUpdate(
+            title="Updated by Manager",
+            description="Updated Description",
+        ).model_dump()
+    )
+
+    # Update indoor project
+    response = client.put(f"{API_URL}/{indoor_project.id}", json=update_data)
+
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["title"] == update_data["title"]
+    assert response_data["description"] == update_data["description"]
+
+
+def test_update_indoor_project_as_viewer(
+    client: TestClient, normal_user_access_token: str, db: Session
+) -> None:
+    """
+    Test that a viewer cannot update an indoor project.
+    """
+    # Create indoor project owned by someone else
+    indoor_project = create_indoor_project(db)
+
+    # Add current user as viewer
+    current_user = get_current_user(db, normal_user_access_token)
+    create_project_member(
+        db,
+        role=Role.VIEWER,
+        member_id=current_user.id,
+        project_uuid=indoor_project.id,
+        project_type=ProjectType.INDOOR_PROJECT,
+    )
+
+    # Update data
+    update_data = jsonable_encoder(
+        IndoorProjectUpdate(title="Should Not Update").model_dump()
+    )
+
+    # Attempt to update indoor project
+    response = client.put(f"{API_URL}/{indoor_project.id}", json=update_data)
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_update_indoor_project_as_non_member(
+    client: TestClient, normal_user_access_token: str, db: Session
+) -> None:
+    """
+    Test that a non-member cannot update an indoor project.
+    """
+    # Create indoor project owned by someone else
+    indoor_project = create_indoor_project(db)
+
+    # Update data
+    update_data = jsonable_encoder(
+        IndoorProjectUpdate(title="Should Not Update").model_dump()
+    )
+
+    # Attempt to update indoor project
+    response = client.put(f"{API_URL}/{indoor_project.id}", json=update_data)
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_update_indoor_project_date_validation(
+    client: TestClient, normal_user_access_token: str, db: Session
+) -> None:
+    """
+    Test date validation when updating an indoor project.
+    """
+    current_user = get_current_user(db, normal_user_access_token)
+
+    # Valid - end_date after start_date
+    indoor_project = create_indoor_project(
+        db,
+        owner_id=current_user.id,
+        start_date=datetime(2024, 6, 1),
+        end_date=None,
+    )
+    update_data = jsonable_encoder({"end_date": datetime(2024, 6, 2).isoformat()})
+    response = client.put(f"{API_URL}/{indoor_project.id}", json=update_data)
+    assert response.status_code == status.HTTP_200_OK
+
+    # Valid - start_date when no end_date set
+    indoor_project = create_indoor_project(
+        db, owner_id=current_user.id, start_date=None, end_date=None
+    )
+    update_data = jsonable_encoder({"start_date": datetime(2024, 6, 1).isoformat()})
+    response = client.put(f"{API_URL}/{indoor_project.id}", json=update_data)
+    assert response.status_code == status.HTTP_200_OK
+
+    # Invalid - end_date before start_date
+    indoor_project = create_indoor_project(
+        db,
+        owner_id=current_user.id,
+        start_date=datetime(2024, 6, 1),
+        end_date=None,
+    )
+    update_data = jsonable_encoder({"end_date": datetime(2024, 5, 1).isoformat()})
+    response = client.put(f"{API_URL}/{indoor_project.id}", json=update_data)
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    # Invalid - start_date after end_date
+    indoor_project = create_indoor_project(
+        db,
+        owner_id=current_user.id,
+        start_date=None,
+        end_date=datetime(2024, 6, 1),
+    )
+    update_data = jsonable_encoder({"start_date": datetime(2024, 6, 2).isoformat()})
+    response = client.put(f"{API_URL}/{indoor_project.id}", json=update_data)
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+def test_deactivate_indoor_project_as_owner(
+    client: TestClient, normal_user_access_token: str, db: Session
+) -> None:
+    """
+    Test deactivating an indoor project as owner.
+    """
+    # Create indoor project owned by current user
+    current_user = get_current_user(db, normal_user_access_token)
+    indoor_project = create_indoor_project(db, owner_id=current_user.id)
+
+    # Deactivate indoor project
+    response = client.delete(f"{API_URL}/{indoor_project.id}")
+
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["id"] == str(indoor_project.id)
+
+    # Verify it was deactivated
+    deactivated_project = crud.indoor_project.get(db, id=indoor_project.id)
+    assert deactivated_project is not None
+    assert deactivated_project.is_active is False
+    assert deactivated_project.deactivated_at is not None
+
+
+def test_deactivate_indoor_project_as_manager(
+    client: TestClient, normal_user_access_token: str, db: Session
+) -> None:
+    """
+    Test that a manager cannot deactivate an indoor project.
+    """
+    # Create indoor project owned by someone else
+    indoor_project = create_indoor_project(db)
+
+    # Add current user as manager
+    current_user = get_current_user(db, normal_user_access_token)
+    create_project_member(
+        db,
+        role=Role.MANAGER,
+        member_id=current_user.id,
+        project_uuid=indoor_project.id,
+        project_type=ProjectType.INDOOR_PROJECT,
+    )
+
+    # Attempt to deactivate indoor project
+    response = client.delete(f"{API_URL}/{indoor_project.id}")
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_deactivate_indoor_project_as_viewer(
+    client: TestClient, normal_user_access_token: str, db: Session
+) -> None:
+    """
+    Test that a viewer cannot deactivate an indoor project.
+    """
+    # Create indoor project owned by someone else
+    indoor_project = create_indoor_project(db)
+
+    # Add current user as viewer
+    current_user = get_current_user(db, normal_user_access_token)
+    create_project_member(
+        db,
+        role=Role.VIEWER,
+        member_id=current_user.id,
+        project_uuid=indoor_project.id,
+        project_type=ProjectType.INDOOR_PROJECT,
+    )
+
+    # Attempt to deactivate indoor project
+    response = client.delete(f"{API_URL}/{indoor_project.id}")
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_deactivate_indoor_project_as_non_member(
+    client: TestClient, normal_user_access_token: str, db: Session
+) -> None:
+    """
+    Test that a non-member cannot deactivate an indoor project.
+    """
+    # Create indoor project owned by someone else
+    indoor_project = create_indoor_project(db)
+
+    # Attempt to deactivate indoor project
+    response = client.delete(f"{API_URL}/{indoor_project.id}")
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_get_deactivated_indoor_project(
+    client: TestClient, normal_user_access_token: str, db: Session
+) -> None:
+    """
+    Test that deactivated indoor projects cannot be accessed.
+    """
+    # Create and deactivate indoor project
+    current_user = get_current_user(db, normal_user_access_token)
+    indoor_project = create_indoor_project(db, owner_id=current_user.id)
+    crud.indoor_project.deactivate(db, indoor_project_id=indoor_project.id)
+
+    # Attempt to get deactivated indoor project
+    response = client.get(f"{API_URL}/{indoor_project.id}")
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
