@@ -115,9 +115,9 @@ export default function IndoorProjectDetail() {
           <div
             className={`${
               isUploadPaneCollapsed
-                ? 'w-0'
-                : 'flex flex-col w-full lg:w-1/3 gap-8 p-4 border-b lg:border-b-0 lg:border-r border-gray-700 h-auto lg:h-full'
-            } transition-all duration-300 overflow-hidden relative`}
+                ? 'w-0 overflow-hidden'
+                : 'flex flex-col w-full lg:w-1/3 gap-8 p-4 pb-2 border-b lg:border-b-0 lg:border-r border-gray-700 h-auto lg:h-full overflow-y-auto'
+            } transition-all duration-300 relative`}
           >
             <IndoorProjectUploadForm
               indoorProjectId={indoorProject.id}
@@ -159,7 +159,7 @@ export default function IndoorProjectDetail() {
           <div
             className={`flex flex-col w-full ${
               isUploadPaneCollapsed ? 'lg:w-full' : 'lg:w-2/3'
-            } gap-8 p-4 h-auto lg:h-full`}
+            } gap-8 p-4 pb-2 h-auto lg:h-full`}
           >
             {isLoading && <LoadingBars />}
 
