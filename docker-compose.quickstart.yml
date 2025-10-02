@@ -1,15 +1,9 @@
 services:
   frontend:
-    build:
-      args:
-        - VITE_STAC_ENABLED=false
-      context: ./frontend
-      dockerfile: frontend.prod.dockerfile
     image: d2s-app:latest
     platform: linux/x86_64
     depends_on:
       - backend
-    # read_only: true
     tmpfs:
       - /tmp
     healthcheck:
@@ -30,12 +24,6 @@ services:
       - frontend.env
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: backend.dockerfile
-      args:
-        NUM_OF_WORKERS: 1
-        LIMIT_MAX_REQUESTS: 10000
     image: d2s-api:latest
     platform: linux/x86_64
     volumes:
@@ -64,7 +52,7 @@ services:
     security_opt:
       - no-new-privileges=true
     environment:
-      - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
+      - TILE_SIGNING_SECRET_KEY=l7qBZUvC3nS7MB4oVs6hh8h3xyhkVb4039blrwsVYLsERqw4S8uguV30+d9ox0VaUgwegGiia1ejqqB9S6aDhA==
       # - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel-collector:4318
     env_file:
       - backend.env
@@ -154,7 +142,7 @@ services:
       - no-new-privileges=true
     environment:
       - CELERY_WORKERS=4
-      - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
+      - TILE_SIGNING_SECRET_KEY=l7qBZUvC3nS7MB4oVs6hh8h3xyhkVb4039blrwsVYLsERqw4S8uguV30+d9ox0VaUgwegGiia1ejqqB9S6aDhA==
     env_file:
       - backend.env
       - db.env
@@ -188,18 +176,13 @@ services:
     security_opt:
       - no-new-privileges=true
     environment:
-      - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
+      - TILE_SIGNING_SECRET_KEY=l7qBZUvC3nS7MB4oVs6hh8h3xyhkVb4039blrwsVYLsERqw4S8uguV30+d9ox0VaUgwegGiia1ejqqB9S6aDhA==
     env_file:
       - backend.env
       - db.env
 
   proxy:
-    build:
-      context: ./nginx
-      dockerfile: nginx.dockerfile
-      args:
-        - DEFAULT_CONF=prod
-    image: d2s-proxy:latest
+    image: d2s-proxy:dev
     platform: linux/x86_64
     tmpfs:
       - /tmp
@@ -223,9 +206,6 @@ services:
       - no-new-privileges=true
 
   varnish:
-    build:
-      context: ./varnish
-      dockerfile: varnish.dockerfile
     image: d2s-varnish:latest
     tmpfs:
       - /var/lib/varnish/varnishd:exec
@@ -243,7 +223,7 @@ services:
     security_opt:
       - no-new-privileges=true
     environment:
-      - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
+      - TILE_SIGNING_SECRET_KEY=l7qBZUvC3nS7MB4oVs6hh8h3xyhkVb4039blrwsVYLsERqw4S8uguV30+d9ox0VaUgwegGiia1ejqqB9S6aDhA==
       - VARNISH_SIZE=2G
 
   pg_tileserv:
@@ -418,7 +398,7 @@ volumes:
     driver: local
     driver_opts:
       type: none
-      device: ${TUSD_STORAGE}
+      device: "./tusd-data"
       o: bind
   # external-data:
   #   driver: local
