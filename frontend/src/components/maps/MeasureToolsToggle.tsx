@@ -38,9 +38,9 @@ export default function MeasureToolsToggle() {
 
   return (
     <>
-      <div className="absolute bottom-9 right-2 m-2.5 flex flex-col items-end gap-2 z-10">
+      <div className="absolute bottom-9 right-2 m-2.5 flex flex-col items-end gap-2 z-10 pointer-events-none">
         {isExpanded && (
-          <div className="bg-white rounded-md shadow-md px-3 py-2 flex items-center gap-2 relative z-10">
+          <div className="bg-white rounded-md shadow-md px-3 py-2 flex items-center gap-2 relative z-10 pointer-events-auto">
             <span className="text-xs text-slate-500">Units:</span>
             <button
               type="button"
@@ -58,7 +58,7 @@ export default function MeasureToolsToggle() {
           {shouldRender && <MeasureTerraDrawControl unitType={unitType} />}
           <button
             type="button"
-            className="h-12 w-12 bg-white rounded-md shadow-md flex items-center justify-center text-slate-600 hover:text-slate-800 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-accent2 transition-colors relative z-10"
+            className="h-12 w-12 bg-white rounded-md shadow-md flex items-center justify-center text-slate-600 hover:text-slate-800 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-accent2 transition-colors relative z-10 pointer-events-auto"
             aria-label={
               isExpanded ? 'Hide measurement tools' : 'Show measurement tools'
             }
