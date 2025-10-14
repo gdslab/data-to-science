@@ -39,7 +39,9 @@ export default function MeasureTerraDrawControl({
       measureUnitType: unitType,
       distancePrecision: 2,
       areaPrecision: 2,
-      computeElevation: true,
+      forceAreaUnit: unitType === 'metric' ? 'square meters' : 'acres',
+      forceDistanceUnit: unitType === 'metric' ? 'meter' : 'foot',
+      computeElevation: false,
     });
 
     // Set font glyphs to use fonts available in OpenMapTiles
