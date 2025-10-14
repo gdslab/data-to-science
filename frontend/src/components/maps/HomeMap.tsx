@@ -5,19 +5,18 @@ import maplibregl from 'maplibre-gl';
 import { useEffect, useMemo, useState } from 'react';
 import Map, { NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
 import { useLocation } from 'react-router-dom';
-// import { bbox } from '@turf/bbox';
 
 import ColorBarControl from './ColorBarControl';
 import GeocoderControl from './GeocoderControl';
 import ProjectCluster from './ProjectCluster';
 import FeaturePopup from './FeaturePopup';
 import LayerControl from './LayerControl';
+import MeasureToolsToggle from './MeasureToolsToggle';
 import ProjectBoundary from './ProjectBoundary';
 import ProjectPopup from './ProjectPopup';
 import ProjectRasterTiles from './ProjectRasterTiles';
 import ProjectVectorTiles from './ProjectVectorTiles';
 
-// import { BBox } from './Maps';
 import { useMapContext } from './MapContext';
 import { useMapApiKeys } from './MapApiKeysContext';
 import { MapLayerProps } from './MapLayersContext';
@@ -266,6 +265,9 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
       {activeProject && (
         <ProjectBoundary setActiveProjectBBox={setActiveProjectBBox} />
       )}
+
+      {/* Measurement tool control */}
+      {activeProject && <MeasureToolsToggle />}
 
       {/* Project map layer controls */}
       {activeProject && <LayerControl />}

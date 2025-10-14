@@ -1,0 +1,37 @@
+div.maplibregl-control-container > div.maplibregl-ctrl-bottom-right > div {
+    display: flex;
+    margin-right: 68px;
+    animation: slideInFromRight 0.3s ease-out;
+    z-index: 0;
+}
+
+/* Apply closing animation when body has closing class */
+body.measure-tools-closing div.maplibregl-control-container > div.maplibregl-ctrl-bottom-right > div {
+    animation: slideOutToRight 0.2s ease-in forwards !important;
+}
+
+@keyframes slideInFromRight {
+    from {
+        opacity: 0;
+        margin-right: 36px;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        margin-right: 68px;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideOutToRight {
+    from {
+        opacity: 1;
+        margin-right: 68px;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        margin-right: 36px;
+        transform: translateX(20px);
+    }
+}
