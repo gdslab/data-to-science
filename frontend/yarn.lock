@@ -2201,6 +2201,11 @@
     "@types/babel__core" "^7.20.5"
     react-refresh "^0.14.2"
 
+"@watergis/maplibre-gl-terradraw@^1.9.0":
+  version "1.9.0"
+  resolved "https://registry.yarnpkg.com/@watergis/maplibre-gl-terradraw/-/maplibre-gl-terradraw-1.9.0.tgz#e33c4fb5ddd49972571a36e1457bf2f85395f20e"
+  integrity sha512-kNZVlHWTkF7wLFpDAqWnqrsx+KOYdOCqBs3G5SBG/yaHLPeKLnur8pZ9ypHo2wNT+NnYlqHFmNKJBPGZYmK4Iw==
+
 "@webgpu/types@^0.1.60":
   version "0.1.64"
   resolved "https://registry.yarnpkg.com/@webgpu/types/-/types-0.1.64.tgz#62c5f9d345d4d270fcf3ecbb111c3b98dcc1aca3"
@@ -4325,6 +4330,11 @@ react-hook-form@^7.52.2:
   version "7.54.0"
   resolved "https://registry.yarnpkg.com/react-hook-form/-/react-hook-form-7.54.0.tgz#46bd9142d65fd16ac064a2bbf4dc0333e2d6840d"
   integrity sha512-PS05+UQy/IdSbJNojBypxAo9wllhHgGmyr8/dyGQcPoiMf3e7Dfb9PWYVRco55bLbxH9S+1yDDJeTdlYCSxO3A==
+
+react-icons@^5.5.0:
+  version "5.5.0"
+  resolved "https://registry.yarnpkg.com/react-icons/-/react-icons-5.5.0.tgz#8aa25d3543ff84231685d3331164c00299cdfaf2"
+  integrity sha512-MEFcXdkP3dLo8uumGI5xN3lDFNsRtrjbOEKDLD7yv76v4wpnEq2Lt2qeHaQOr34I/wPN3s3+N08WkQ+CW37Xiw==
 
 react-is@^16.13.1, react-is@^16.7.0:
   version "16.13.1"
