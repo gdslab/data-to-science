@@ -232,5 +232,51 @@ def get_geojson_feature_collection(
                 * 250001,
             ).model_dump(),
         }
+    elif geom_type.lower() == "invalid_longitude":
+        return {
+            "layer_name": "Invalid Longitude Example",
+            "geojson": FeatureCollection[Feature[Point, Dict[str, object]]](
+                type="FeatureCollection",
+                features=[
+                    Feature[Point, Dict[str, object]](
+                        type="Feature",
+                        geometry={
+                            "type": "Point",
+                            "coordinates": [200.0, 0.5],  # Invalid longitude
+                        },
+                        properties={
+                            "prop0": "value0",
+                        },
+                    )
+                ],
+            ).model_dump(),
+        }
+    elif geom_type.lower() == "invalid_latitude":
+        return {
+            "layer_name": "Invalid Latitude Example",
+            "geojson": FeatureCollection[Feature[Point, Dict[str, object]]](
+                type="FeatureCollection",
+                features=[
+                    Feature[Point, Dict[str, object]](
+                        type="Feature",
+                        geometry={
+                            "type": "Point",
+                            "coordinates": [102.0, 95.0],  # Invalid latitude
+                        },
+                        properties={
+                            "prop0": "value0",
+                        },
+                    )
+                ],
+            ).model_dump(),
+        }
+    elif geom_type.lower() == "empty_features":
+        return {
+            "layer_name": "Empty Features Example",
+            "geojson": FeatureCollection[Feature[Point, Dict[str, object]]](
+                type="FeatureCollection",
+                features=[],
+            ).model_dump(),
+        }
     else:
         raise ValueError(f"Unknown geometry type provided: {geom_type}")

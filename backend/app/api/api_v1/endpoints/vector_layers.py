@@ -327,6 +327,86 @@ def download_vector_layer(
         )
 
 
+@router.post(
+    "/geojson",
+    response_model=schemas.vector_layer.VectorLayerFeatureCollection,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_vector_layer_from_geojson(
+    vector_layer_in: schemas.vector_layer.VectorLayerCreate,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    project: models.Project = Depends(deps.can_read_write_project),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Create a vector layer from a GeoJSON FeatureCollection payload.
+
+    Args:
+        vector_layer_in: VectorLayerCreate schema with layer_name and geojson
+        current_user: Current authenticated user
+        project: Project the vector layer belongs to
+        db: Database session
+
+    Returns:
+        VectorLayerFeatureCollection: Created vector layer as a FeatureCollection with metadata
+
+    Raises:
+        HTTPException: If validation fails or layer creation fails
+    """
+    # Validate coordinates are within valid geographic ranges
+    validate_geojson_coordinates(vector_layer_in.geojson)
+
+    # Check that FeatureCollection has at least one feature
+    if not vector_layer_in.geojson.features or len(vector_layer_in.geojson.features) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="FeatureCollection must contain at least one feature",
+        )
+
+    # Convert FeatureCollection to GeoDataFrame
+    try:
+        gdf = feature_collection_to_geodataframe(vector_layer_in.geojson)
+    except Exception:
+        logger.exception("Failed to convert FeatureCollection to GeoDataFrame")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unable to process GeoJSON FeatureCollection",
+        )
+
+    # Create vector layer records in database
+    try:
+        features = crud.vector_layer.create_with_project(
+            db,
+            file_name=vector_layer_in.layer_name,
+            gdf=gdf,
+            project_id=project.id,
+        )
+    except Exception:
+        logger.exception("Failed to create vector layer in database")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to create vector layer",
+        )
+
+    # Build response with metadata
+    if len(features) > 0:
+        layer_id = features[0].properties.get("layer_id", "undefined")
+        feature_collection = {
+            "type": "FeatureCollection",
+            "features": features,
+            "metadata": {
+                "preview_url": f"{settings.API_DOMAIN}{settings.STATIC_DIR}"
+                f"/projects/{project.id}/vector/{layer_id}"
+                f"/preview.png",
+            },
+        }
+        return feature_collection
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="No features created",
+        )
+
+
 @router.delete("/{layer_id}", status_code=status.HTTP_200_OK)
 def delete_vector_layer(
     layer_id: str,
@@ -347,6 +427,69 @@ def delete_vector_layer(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Unable to remove vector layer",
         )
+
+
+def feature_collection_to_geodataframe(
+    geojson: schemas.vector_layer.FeatureCollection,
+) -> gpd.GeoDataFrame:
+    """
+    Converts a GeoJSON FeatureCollection to a GeoDataFrame.
+
+    Args:
+        geojson: The FeatureCollection to convert
+
+    Returns:
+        gpd.GeoDataFrame: GeoDataFrame with features from the FeatureCollection
+    """
+    return gpd.GeoDataFrame.from_features(geojson.features, crs="EPSG:4326")
+
+
+def validate_geojson_coordinates(geojson: schemas.vector_layer.FeatureCollection) -> None:
+    """
+    Validates that all coordinates in a GeoJSON FeatureCollection are within valid geographic ranges.
+    Raises HTTPException if invalid coordinates are found.
+
+    Args:
+        geojson: The FeatureCollection to validate
+
+    Raises:
+        HTTPException: If coordinates are outside valid geographic ranges
+    """
+    for i, feature in enumerate(geojson.features):
+        if hasattr(feature.geometry, "coordinates"):
+            # Handle different geometry types
+            if feature.geometry.type == "Point":
+                coords = [feature.geometry.coordinates]
+            elif feature.geometry.type in ["LineString", "MultiPoint"]:
+                coords = feature.geometry.coordinates
+            elif feature.geometry.type in ["Polygon", "MultiLineString"]:
+                # Flatten polygon/multilinestring coordinates
+                coords = []
+                for ring in feature.geometry.coordinates:
+                    coords.extend(ring)
+            elif feature.geometry.type == "MultiPolygon":
+                # Flatten multipolygon coordinates
+                coords = []
+                for polygon in feature.geometry.coordinates:
+                    for ring in polygon:
+                        coords.extend(ring)
+            else:
+                continue  # Skip unknown geometry types
+
+            # Validate each coordinate pair
+            for coord in coords:
+                if len(coord) >= 2:
+                    lng, lat = coord[0], coord[1]
+                    if not (-180 <= lng <= 180):
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Invalid longitude {lng} in feature {i}. Must be between -180 and 180.",
+                        )
+                    if not (-90 <= lat <= 90):
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Invalid latitude {lat} in feature {i}. Must be between -90 and 90.",
+                        )
 
 
 def get_preview_url(project_id: str, layer_id: str) -> str:

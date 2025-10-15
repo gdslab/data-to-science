@@ -11,6 +11,7 @@ from app.schemas.role import Role
 from app.schemas.vector_layer import VectorLayerFeatureCollection
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
+from app.tests.utils.utils import get_geojson_feature_collection
 from app.tests.utils.vector_layers import create_feature_collection
 
 
@@ -340,3 +341,177 @@ def test_remove_vector_layer_without_project_role(
         f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/{layer_id}"
     )
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_create_vector_layer_from_geojson_with_point(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id)
+    vector_layer_data = get_geojson_feature_collection("point")
+
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/geojson",
+        json=vector_layer_data,
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    response_data = response.json()
+    assert response_data["type"] == "FeatureCollection"
+    assert len(response_data["features"]) == 1
+    assert response_data["features"][0]["geometry"]["type"] == "Point"
+    assert response_data["features"][0]["properties"]["layer_name"] == "Point Example"
+    assert "layer_id" in response_data["features"][0]["properties"]
+    assert "preview_url" in response_data["metadata"]
+
+
+def test_create_vector_layer_from_geojson_with_linestring(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id)
+    vector_layer_data = get_geojson_feature_collection("linestring")
+
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/geojson",
+        json=vector_layer_data,
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    response_data = response.json()
+    assert response_data["type"] == "FeatureCollection"
+    assert len(response_data["features"]) == 1
+    assert response_data["features"][0]["geometry"]["type"] == "LineString"
+    assert (
+        response_data["features"][0]["properties"]["layer_name"] == "Linestring Example"
+    )
+
+
+def test_create_vector_layer_from_geojson_with_polygon(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id)
+    vector_layer_data = get_geojson_feature_collection("polygon")
+
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/geojson",
+        json=vector_layer_data,
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    response_data = response.json()
+    assert response_data["type"] == "FeatureCollection"
+    assert len(response_data["features"]) == 1
+    assert response_data["features"][0]["geometry"]["type"] == "Polygon"
+    assert response_data["features"][0]["properties"]["layer_name"] == "Polygon Example"
+
+
+def test_create_vector_layer_from_geojson_with_multiple_features(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id)
+    vector_layer_data = get_geojson_feature_collection("multipoint")
+
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/geojson",
+        json=vector_layer_data,
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    response_data = response.json()
+    assert response_data["type"] == "FeatureCollection"
+    assert len(response_data["features"]) == 3
+    # All features should have the same layer_id
+    layer_id = response_data["features"][0]["properties"]["layer_id"]
+    for feature in response_data["features"]:
+        assert feature["properties"]["layer_id"] == layer_id
+
+
+def test_create_vector_layer_from_geojson_with_manager_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db)
+    create_project_member(
+        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
+    )
+    vector_layer_data = get_geojson_feature_collection("point")
+
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/geojson",
+        json=vector_layer_data,
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+
+
+def test_create_vector_layer_from_geojson_with_viewer_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db)
+    create_project_member(
+        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
+    )
+    vector_layer_data = get_geojson_feature_collection("point")
+
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/geojson",
+        json=vector_layer_data,
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_create_vector_layer_from_geojson_without_project_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    project = create_project(db)
+    vector_layer_data = get_geojson_feature_collection("point")
+
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/geojson",
+        json=vector_layer_data,
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_create_vector_layer_from_geojson_with_invalid_longitude(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id)
+    vector_layer_data = get_geojson_feature_collection("invalid_longitude")
+
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/geojson",
+        json=vector_layer_data,
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "longitude" in response.json()["detail"].lower()
+
+
+def test_create_vector_layer_from_geojson_with_invalid_latitude(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id)
+    vector_layer_data = get_geojson_feature_collection("invalid_latitude")
+
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/geojson",
+        json=vector_layer_data,
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "latitude" in response.json()["detail"].lower()
+
+
+def test_create_vector_layer_from_geojson_with_empty_features(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id)
+    vector_layer_data = get_geojson_feature_collection("empty_features")
+
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/geojson",
+        json=vector_layer_data,
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "at least one feature" in response.json()["detail"].lower()
