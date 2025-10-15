@@ -1,17 +1,23 @@
-import { useMemo, useEffect, useRef } from 'react';
+import { useMemo, useEffect, useRef, useState } from 'react';
+import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
+import { FaLayerGroup } from 'react-icons/fa6';
 
 import FlightCard from './FlightCard';
+import MapLayersPanel from './MapLayersPanel';
 import { useMapContext } from '../MapContext';
 import MapToolbar from '../MapToolbar';
 import { Project } from '../../pages/projects/ProjectList';
 
 import { sortedFlightsByDateAndId } from './utils';
 
+import uasIcon from '../../../assets/uas-icon.svg';
+
 type ActiveProjectPaneProps = { project: Project };
 
 export default function ActiveProjectPane({ project }: ActiveProjectPaneProps) {
   const { flights, activeDataProduct } = useMapContext();
   const scrollContainerRef = useRef<HTMLUListElement | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   // Sort flights by date, followed by id if the dates are a match
   const sortedFlights = useMemo(() => {
@@ -70,8 +76,8 @@ export default function ActiveProjectPane({ project }: ActiveProjectPaneProps) {
   }, [flights, activeDataProduct]);
 
   return (
-    <article className="h-[calc(100%_-_44px)] p-4">
-      <header className="h-44">
+    <article className="h-[calc(100%_-_44px)] p-4 flex flex-col">
+      <header className="flex-none">
         <h1 className="truncate" title={project.title}>
           {project.title}
         </h1>
@@ -80,16 +86,48 @@ export default function ActiveProjectPane({ project }: ActiveProjectPaneProps) {
         </p>
         <MapToolbar />
       </header>
-      <ul
-        ref={scrollContainerRef}
-        className="h-[calc(100%_-_160px)] space-y-2 overflow-y-auto pb-16"
+      <TabGroup
+        selectedIndex={selectedIndex}
+        onChange={setSelectedIndex}
+        className="flex-1 flex flex-col min-h-0"
       >
-        {sortedFlights.map((flight) => (
-          <li key={flight.id}>
-            <FlightCard flight={flight} />
-          </li>
-        ))}
-      </ul>
+        <TabList className="flex gap-1 flex-none">
+          <Tab className="data-[selected]:bg-slate-200 data-[hover]:bg-slate-100 focus:outline-none focus:ring-1 focus:ring-accent2 rounded px-3 py-1.5 text-sm font-medium whitespace-nowrap">
+            <div className="flex items-center gap-1.5">
+              <img
+                src={uasIcon}
+                alt=""
+                className="h-3.5 w-3.5 data-[selected]:brightness-0"
+              />
+              <span>Flights</span>
+            </div>
+          </Tab>
+          <Tab className="data-[selected]:bg-slate-200 data-[hover]:bg-slate-100 focus:outline-none focus:ring-1 focus:ring-accent2 rounded px-3 py-1.5 text-sm font-medium whitespace-nowrap">
+            <div className="flex items-center gap-1.5">
+              <FaLayerGroup className="h-3.5 w-3.5" />
+              <span>Map Layers</span>
+            </div>
+          </Tab>
+        </TabList>
+        <hr className="my-2 border-slate-300 flex-none" />
+        <TabPanels className="flex-1 min-h-0">
+          <TabPanel className="h-full">
+            <ul
+              ref={scrollContainerRef}
+              className="h-full space-y-2 overflow-y-auto pb-16"
+            >
+              {sortedFlights.map((flight) => (
+                <li key={flight.id}>
+                  <FlightCard flight={flight} />
+                </li>
+              ))}
+            </ul>
+          </TabPanel>
+          <TabPanel className="h-full overflow-y-auto pb-16">
+            <MapLayersPanel />
+          </TabPanel>
+        </TabPanels>
+      </TabGroup>
     </article>
   );
 }

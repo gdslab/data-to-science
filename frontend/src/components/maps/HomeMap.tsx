@@ -10,7 +10,6 @@ import ColorBarControl from './ColorBarControl';
 import GeocoderControl from './GeocoderControl';
 import ProjectCluster from './ProjectCluster';
 import FeaturePopup from './FeaturePopup';
-import LayerControl from './LayerControl';
 import MeasureToolsToggle from './MeasureToolsToggle';
 import ProjectBoundary from './ProjectBoundary';
 import ProjectPopup from './ProjectPopup';
@@ -268,9 +267,6 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
 
       {/* Measurement tool control */}
       {activeProject && <MeasureToolsToggle />}
-
-      {/* Project map layer controls */}
-      {activeProject && <LayerControl />}
 
       {/* General controls */}
       {!activeProject && <GeocoderControl />}
