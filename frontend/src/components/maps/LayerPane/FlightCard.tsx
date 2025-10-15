@@ -37,11 +37,14 @@ export default function FlightCard({ flight }: { flight: Flight }) {
       </div>
       {flight.data_products.length > 0 && (
         <details
-          className="mt-3 group [&_summary::-webkit-details-marker]:hidden overflow-visible"
+          className="mt-0.5 group [&_summary::-webkit-details-marker]:hidden overflow-visible"
           open={activeDataProduct?.flight_id === flight.id}
         >
           <summary className="text-sm cursor-pointer text-slate-600 hover:text-slate-800 hover:bg-slate-50 transition-colors flex items-center gap-1.5 px-2 py-1 -mx-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent2 focus-visible:ring-offset-1">
-            <FaChevronRight className="h-3 w-3 transition-transform group-open:rotate-90" aria-hidden="true" />
+            <FaChevronRight
+              className="h-3 w-3 transition-transform group-open:rotate-90"
+              aria-hidden="true"
+            />
             {flight.data_products.length} Data Product
             {flight.data_products.length !== 1 ? 's' : ''}
           </summary>

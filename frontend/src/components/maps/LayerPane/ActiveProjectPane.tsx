@@ -18,6 +18,7 @@ export default function ActiveProjectPane({ project }: ActiveProjectPaneProps) {
   const { flights, activeDataProduct } = useMapContext();
   const scrollContainerRef = useRef<HTMLUListElement | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [shouldScrollOnMount, setShouldScrollOnMount] = useState(false);
 
   // Sort flights by date, followed by id if the dates are a match
   const sortedFlights = useMemo(() => {
@@ -75,6 +76,21 @@ export default function ActiveProjectPane({ project }: ActiveProjectPaneProps) {
     }
   }, [flights, activeDataProduct]);
 
+  // Set flag when switching back to Flights tab with active data product
+  useEffect(() => {
+    if (selectedIndex === 0 && activeDataProduct) {
+      setShouldScrollOnMount(true);
+    }
+  }, [selectedIndex, activeDataProduct]);
+
+  // Scroll when the ref becomes available and flag is set
+  useEffect(() => {
+    if (shouldScrollOnMount && scrollContainerRef.current && activeDataProduct) {
+      scrollToActiveDataProduct(100);
+      setShouldScrollOnMount(false);
+    }
+  }, [shouldScrollOnMount, scrollContainerRef.current, activeDataProduct]);
+
   return (
     <article className="h-[calc(100%_-_44px)] p-4 flex flex-col">
       <header className="flex-none">
@@ -116,11 +132,18 @@ export default function ActiveProjectPane({ project }: ActiveProjectPaneProps) {
               ref={scrollContainerRef}
               className="h-full space-y-2 overflow-y-auto pb-16"
             >
-              {sortedFlights.map((flight) => (
-                <li key={flight.id}>
-                  <FlightCard flight={flight} />
-                </li>
-              ))}
+              {sortedFlights.length > 0 ? (
+                sortedFlights.map((flight) => (
+                  <li key={flight.id}>
+                    <FlightCard flight={flight} />
+                  </li>
+                ))
+              ) : (
+                <div className="text-sm text-slate-500 italic p-2">
+                  No flights found for this project. Add flights from the
+                  project page.
+                </div>
+              )}
             </ul>
           </TabPanel>
           <TabPanel className="h-full overflow-y-auto pb-16">
