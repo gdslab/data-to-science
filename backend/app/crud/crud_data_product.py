@@ -14,6 +14,7 @@ from app import crud
 from app.api.utils import get_signature_for_data_product
 from app.core.config import settings
 from app.crud.base import CRUDBase
+from app.models.constants import NON_RASTER_TYPES, PROCESSING_JOB_NAMES
 from app.models.data_product import DataProduct
 from app.models.job import Job
 from app.models.utils.utcnow import utcnow
@@ -124,21 +125,25 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             data_products = (
                 session.execute(data_products_query).scalars().unique().all()
             )
+
+            # Batch load all user styles to avoid N+1 queries
+            data_product_ids = [dp.id for dp in data_products]
+            user_styles_by_data_product_id = {}
+            if data_product_ids:
+                user_styles_query = (
+                    select(UserStyle)
+                    .where(UserStyle.data_product_id.in_(data_product_ids))
+                    .where(UserStyle.user_id == user_id)
+                )
+                user_styles = session.execute(user_styles_query).scalars().all()
+                for user_style in user_styles:
+                    user_styles_by_data_product_id[user_style.data_product_id] = user_style
+
             updated_data_products = []
             for data_product in data_products:
-                # if not a point cloud, find user style settings for data product
-                if (
-                    data_product.data_type != "point_cloud"
-                    and data_product.data_type != "panoramic"
-                    and data_product.data_type != "3dgs"
-                ):
-                    user_style_query = select(UserStyle).where(
-                        and_(
-                            UserStyle.data_product_id == data_product.id,
-                            UserStyle.user_id == user_id,
-                        )
-                    )
-                    user_style = session.execute(user_style_query).scalar_one_or_none()
+                # if not a non-raster type, find user style settings for data product
+                if data_product.data_type not in NON_RASTER_TYPES:
+                    user_style = user_styles_by_data_product_id.get(data_product.id)
                     if user_style:
                         set_user_style_attr(data_product, user_style.settings)
 
@@ -178,9 +183,9 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             .where(
                 and_(
                     DataProduct.id == data_product_id,
-                    func.lower(DataProduct.data_type) != "point_cloud",
-                    func.lower(DataProduct.data_type) != "panoramic",
-                    func.lower(DataProduct.data_type) != "3dgs",
+                    ~func.lower(DataProduct.data_type).in_(
+                        [dtype.lower() for dtype in NON_RASTER_TYPES]
+                    ),
                     DataProduct.is_active == True,
                 )
             )
@@ -218,19 +223,8 @@ def set_status_attr(data_product_obj: DataProduct, jobs: List[Job]) -> bool:
     if data_product_obj.is_initial_processing_completed:
         status = Status.SUCCESS
     else:
-        accepted_job_names = [
-            "upload-data-product",
-            "exg-process",
-            "nvdi-process",
-            "exg",
-            "ndvi",
-            "vari",
-            "chm",
-            "hillshade",
-            "dtm",
-        ]
         for job in jobs:
-            if job.name in accepted_job_names:
+            if job.name in PROCESSING_JOB_NAMES:
                 status = job.status
 
     if status is None:
@@ -250,9 +244,7 @@ def set_bbox_attr(data_product: DataProduct) -> None:
     """
     # Skip if not a raster data product
     if (
-        data_product.data_type != "point_cloud"
-        and data_product.data_type != "panoramic"
-        and data_product.data_type != "3dgs"
+        data_product.data_type not in NON_RASTER_TYPES
         and Path(data_product.filepath).suffix == ".tif"
     ):
         try:
