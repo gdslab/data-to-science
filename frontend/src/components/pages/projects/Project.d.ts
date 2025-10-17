@@ -166,6 +166,15 @@ export interface DataProduct {
   url: string;
   flight_id: string;
   bbox?: [number, number, number, number];
+  crs?: {
+    epsg: number;
+    unit: string;
+  };
+  resolution?: {
+    x: number;
+    y: number;
+    unit: string;
+  };
   public: boolean;
   signature?: {
     secure: string;
