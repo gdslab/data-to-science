@@ -12,6 +12,7 @@ import { Status } from '../../../../Alert';
 import Card from '../../../../Card';
 import { isGeoTIFF } from './DataProductsTable';
 import DataProductDeleteModal from './DataProductDeleteModal';
+import DataProductMetadataModal from './DataProductMetadataModal';
 import EditableDataType from './EditableDataType';
 import ToolboxModal from './ToolboxModal';
 import { useProjectContext } from '../../ProjectContext';
@@ -162,9 +163,10 @@ export default function DataProductCard({
               />
               {!isEditing && (
                 <div className="flex flex-row gap-4">
+                  <DataProductMetadataModal dataProduct={dataProduct} />
                   <a href={dataProduct.url} target="_blank" download>
                     <ArrowDownTrayIcon
-                      className="w-5 h-5"
+                      className="w-5 h-5 hover:scale-110"
                       title="Download data product"
                     />
                   </a>

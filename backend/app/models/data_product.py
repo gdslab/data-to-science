@@ -28,6 +28,13 @@ class DataProduct(Base):
     filepath: Mapped[str] = mapped_column(String, nullable=False)
     original_filename: Mapped[str] = mapped_column(String, nullable=False)
     stac_properties: Mapped[dict] = mapped_column(JSONB, nullable=True)
+    # Spatial metadata (calculated once from raster, cached for performance)
+    # bbox: WGS84 bounding box [minx, miny, maxx, maxy]
+    # crs: {"epsg": int, "unit": str} - unit is the linear unit (e.g., "metre", "foot")
+    # resolution: {"x": float, "y": float, "unit": str} - pixel size in native CRS units
+    bbox: Mapped[dict] = mapped_column(JSONB, nullable=True)
+    crs: Mapped[dict] = mapped_column(JSONB, nullable=True)
+    resolution: Mapped[dict] = mapped_column(JSONB, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_initial_processing_completed: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False
