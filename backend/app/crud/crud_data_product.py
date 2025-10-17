@@ -14,6 +14,7 @@ from app import crud
 from app.api.utils import get_signature_for_data_product
 from app.core.config import settings
 from app.crud.base import CRUDBase
+from app.db.session import SessionLocal
 from app.models.constants import NON_RASTER_TYPES, PROCESSING_JOB_NAMES
 from app.models.data_product import DataProduct
 from app.models.job import Job
@@ -34,6 +35,15 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
     ) -> DataProduct:
         obj_in_data = jsonable_encoder(obj_in)
         data_product = DataProduct(**obj_in_data, flight_id=flight_id)
+
+        # Calculate and cache raster metadata if this is a raster product
+        if data_product.data_type not in NON_RASTER_TYPES:
+            metadata = calculate_raster_metadata(data_product.filepath)
+            if metadata:
+                data_product.bbox = metadata["bbox"]
+                data_product.crs = metadata["crs"]
+                data_product.resolution = metadata["resolution"]
+
         with db as session:
             session.add(data_product)
             session.commit()
@@ -57,7 +67,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             data_product = session.execute(data_product_query).scalar_one_or_none()
             user_style = session.execute(user_style_query).scalar_one_or_none()
             if data_product:
-                set_bbox_attr(data_product)
+                set_spatial_metadata_attrs(data_product)
                 set_url_attr(data_product, upload_dir)
                 is_status_set = set_status_attr(data_product, data_product.jobs)
                 if user_style:
@@ -93,7 +103,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
         with db as session:
             data_product = session.scalar(data_product_query)
             if data_product and data_product.file_permission.is_public:
-                set_bbox_attr(data_product)
+                set_spatial_metadata_attrs(data_product)
                 set_signature_attr(data_product)
                 set_url_attr(data_product, upload_dir)
                 return data_product
@@ -103,7 +113,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                     db, project_uuid=project_id, member_id=user_id
                 )
                 if project_member:
-                    set_bbox_attr(data_product)
+                    set_spatial_metadata_attrs(data_product)
                     set_signature_attr(data_product)
                     set_url_attr(data_product, upload_dir)
                     return data_product
@@ -137,7 +147,9 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                 )
                 user_styles = session.execute(user_styles_query).scalars().all()
                 for user_style in user_styles:
-                    user_styles_by_data_product_id[user_style.data_product_id] = user_style
+                    user_styles_by_data_product_id[user_style.data_product_id] = (
+                        user_style
+                    )
 
             updated_data_products = []
             for data_product in data_products:
@@ -148,7 +160,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                         set_user_style_attr(data_product, user_style.settings)
 
                 # Set additional attributes to be returned by API
-                set_bbox_attr(data_product)
+                set_spatial_metadata_attrs(data_product)
                 set_public_attr(data_product, data_product.file_permission.is_public)
                 set_signature_attr(data_product)
                 set_url_attr(data_product, upload_dir)
@@ -236,46 +248,66 @@ def set_status_attr(data_product_obj: DataProduct, jobs: List[Job]) -> bool:
         return True
 
 
-def set_bbox_attr(data_product: DataProduct) -> None:
-    """Sets WGS84 bounding box as an attribute on the data product object.
+def set_spatial_metadata_attrs(data_product: DataProduct) -> None:
+    """Sets spatial metadata (bbox, crs, resolution) as attributes on the data product object.
+
+    Uses cached database values when available. Falls back to calculating from
+    the raster file for legacy records created before caching was implemented.
+
+    Implements "lazy migration": When metadata is calculated via fallback, it is
+    automatically persisted to the database so subsequent requests use the fast path.
 
     Args:
         data_product (DataProduct): Data product object.
     """
     # Skip if not a raster data product
-    if (
-        data_product.data_type not in NON_RASTER_TYPES
-        and Path(data_product.filepath).suffix == ".tif"
-    ):
+    if data_product.data_type in NON_RASTER_TYPES:
+        return
+
+    # Use cached database values if available (fast path)
+    if data_product.bbox:
+        setattr(data_product, "bbox", tuple(data_product.bbox))
+
+        if data_product.crs:
+            setattr(data_product, "crs", data_product.crs)
+
+        if data_product.resolution:
+            setattr(data_product, "resolution", data_product.resolution)
+
+        return
+
+    # Fallback: calculate on-the-fly for legacy records without cached metadata
+    # This implements lazy migration - calculates once, then persists to database
+    # so subsequent requests use the fast cached path
+    metadata = calculate_raster_metadata(data_product.filepath)
+    if metadata:
+        # Set as temporary attributes for this request
+        setattr(data_product, "bbox", tuple(metadata["bbox"]))
+        setattr(data_product, "crs", metadata["crs"])
+        setattr(data_product, "resolution", metadata["resolution"])
+
+        # Persist to database for future requests (lazy migration)
+        # Use a separate session to avoid expiring objects in the main read session
         try:
-            with rasterio.open(data_product.filepath) as src:
-                # Get bounds in original crs
-                bounds = src.bounds
-                # Project bounds from original crs to WGS84 (EPSG:4326)
-                wgs84_bbox = transform_bounds(
-                    src.crs,
-                    "EPSG:4326",
-                    bounds.left,
-                    bounds.bottom,
-                    bounds.right,
-                    bounds.top,
+            with SessionLocal() as migration_session:
+                update_stmt = (
+                    update(DataProduct)
+                    .where(DataProduct.id == data_product.id)
+                    .values(
+                        bbox=metadata["bbox"],
+                        crs=metadata["crs"],
+                        resolution=metadata["resolution"]
+                    )
                 )
-                # Set bounding box as attribute on data product object
-                setattr(data_product, "bbox", wgs84_bbox)
-                # Set CRS and resolution as attributes on data product object
-                setattr(
-                    data_product,
-                    "crs",
-                    {"epsg": src.crs.to_epsg(), "unit": src.crs.linear_units},
+                migration_session.execute(update_stmt)
+                migration_session.commit()
+                logger.info(
+                    f"Lazy migration: persisted spatial metadata for data product {data_product.id}"
                 )
-                setattr(data_product, "resolution", {"x": src.res[0], "y": src.res[1]})
-        except CRSError:
-            logger.exception(
-                f"Unable to transform bounds for data product: {data_product.id}"
-            )
-        except Exception:
-            logger.exception(
-                f"Failed to set bbox and other attributes for data product: {data_product.id}"
+        except Exception as e:
+            # Log error but don't fail the request - metadata is still set as attribute
+            logger.warning(
+                f"Failed to persist spatial metadata for data product {data_product.id}: {e}"
             )
 
 
@@ -308,6 +340,53 @@ def set_url_attr(data_product_obj: DataProduct, upload_dir: str) -> None:
 
 def set_user_style_attr(data_product_obj: DataProduct, user_style: Dict) -> None:
     setattr(data_product_obj, "user_style", user_style)
+
+
+def calculate_raster_metadata(filepath: str) -> Optional[Dict]:
+    """Calculate bbox, CRS, and resolution from raster file.
+
+    Args:
+        filepath (str): Path to raster file.
+
+    Returns:
+        Optional[Dict]: Dictionary with bbox, crs, and resolution or None if not a raster.
+            - bbox: list[float] - WGS84 bounding box [minx, miny, maxx, maxy]
+            - crs: dict - {"epsg": int, "unit": str}
+            - resolution: dict - {"x": float, "y": float, "unit": str}
+    """
+    if Path(filepath).suffix != ".tif":
+        return None
+
+    try:
+        with rasterio.open(filepath) as src:
+            # Get bounds in original CRS
+            bounds = src.bounds
+
+            # Transform to WGS84
+            wgs84_bbox = transform_bounds(
+                src.crs,
+                "EPSG:4326",
+                bounds.left,
+                bounds.bottom,
+                bounds.right,
+                bounds.top,
+            )
+
+            # Get the linear unit from the CRS
+            crs_unit = src.crs.linear_units if src.crs.linear_units else "unknown"
+
+            return {
+                "bbox": list(wgs84_bbox),  # [minx, miny, maxx, maxy]
+                "crs": {"epsg": src.crs.to_epsg(), "unit": crs_unit},
+                "resolution": {
+                    "x": src.res[0],
+                    "y": src.res[1],
+                    "unit": crs_unit,  # Resolution uses the same unit as the CRS
+                },
+            }
+    except (CRSError, Exception) as e:
+        logger.exception(f"Failed to calculate raster metadata for {filepath}: {e}")
+        return None
 
 
 data_product = CRUDDataProduct(DataProduct)
