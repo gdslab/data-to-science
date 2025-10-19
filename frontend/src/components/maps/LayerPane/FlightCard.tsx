@@ -1,5 +1,5 @@
 import { useMapContext } from '../MapContext';
-import { FaChevronRight } from 'react-icons/fa6';
+import { FaCircleChevronRight } from 'react-icons/fa6';
 
 import DataProductCard from './DataProductCard';
 import { Flight } from '../../pages/projects/Project';
@@ -41,8 +41,8 @@ export default function FlightCard({ flight }: { flight: Flight }) {
           open={activeDataProduct?.flight_id === flight.id}
         >
           <summary className="text-sm cursor-pointer text-slate-600 hover:text-slate-800 hover:bg-slate-50 transition-colors flex items-center gap-1.5 px-2 py-1 -mx-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent2 focus-visible:ring-offset-1">
-            <FaChevronRight
-              className="h-3 w-3 transition-transform group-open:rotate-90"
+            <FaCircleChevronRight
+              className="h-4 w-4 transition-transform group-open:rotate-90"
               aria-hidden="true"
             />
             {flight.data_products.length} Data Product
