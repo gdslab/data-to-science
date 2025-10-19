@@ -197,15 +197,19 @@ function calculateBoundsFromGeoJSON(
  * @returns Mapped vector layers.
  */
 const mapApiResponseToLayers = (layers: MapLayer[]) =>
-  layers.map((layer) => ({
-    id: layer.layer_id,
-    name: layer.layer_name,
-    checked: false,
-    type: layer.geom_type,
-    color: '#ffde21',
-    opacity: 100,
-    signedUrl: layer.signed_url,
-  }));
+  layers.map((layer) => {
+    const isPolygon = layer.geom_type.toLowerCase().includes('polygon');
+    return {
+      id: layer.layer_id,
+      name: layer.layer_name,
+      checked: false,
+      type: layer.geom_type,
+      color: isPolygon ? '#FFFFFF' : '#ffde21',
+      fill: isPolygon ? '#ffde21' : undefined,
+      opacity: 100,
+      signedUrl: layer.signed_url,
+    };
+  });
 
 function getDefaultStyle(
   dataProduct: DataProduct

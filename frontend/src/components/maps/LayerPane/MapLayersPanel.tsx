@@ -1,5 +1,6 @@
 import { useMapLayerContext } from '../MapLayersContext';
 import OpacitySlider from '../OpacitySlider';
+import { getGeomTypeIcon } from './utils';
 
 export default function MapLayersPanel() {
   const {
@@ -9,7 +10,7 @@ export default function MapLayersPanel() {
 
   const updateLayerProperty = (
     layerId: string,
-    property: 'checked' | 'color' | 'opacity',
+    property: 'checked' | 'color' | 'fill' | 'opacity',
     value: boolean | number | string
   ) => {
     const updatedLayers = layers.map((layer) =>
@@ -49,15 +50,56 @@ export default function MapLayersPanel() {
                 {layer.name}
               </label>
             </div>
-            <input
-              type="color"
-              value={layer.color}
-              disabled={!layer.checked}
-              onChange={(event) =>
-                updateLayerProperty(layer.id, 'color', event.target.value)
-              }
-              className="h-7 w-10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+            {layer.type.toLowerCase().includes('polygon') ? (
+              <div className="flex items-center gap-2">
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-slate-500 mb-0.5">Fill</span>
+                  <input
+                    type="color"
+                    value={layer.fill || '#ffde21'}
+                    disabled={!layer.checked}
+                    onChange={(event) =>
+                      updateLayerProperty(layer.id, 'fill', event.target.value)
+                    }
+                    className="h-7 w-10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                  />
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-slate-500 mb-0.5">Border</span>
+                  <input
+                    type="color"
+                    value={layer.color}
+                    disabled={!layer.checked}
+                    onChange={(event) =>
+                      updateLayerProperty(layer.id, 'color', event.target.value)
+                    }
+                    className="h-7 w-10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                  />
+                </div>
+              </div>
+            ) : (
+              <input
+                type="color"
+                value={layer.color}
+                disabled={!layer.checked}
+                onChange={(event) =>
+                  updateLayerProperty(layer.id, 'color', event.target.value)
+                }
+                className="h-7 w-10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+              />
+            )}
+          </div>
+
+          {/* Layer type row */}
+          <div className="flex items-center gap-1.5 pl-6 pt-1">
+            <img
+              src={getGeomTypeIcon(layer.type)}
+              alt=""
+              className="h-3 w-3"
             />
+            <span className="text-xs font-light text-slate-500">
+              {layer.type}
+            </span>
           </div>
 
           {/* Opacity slider */}

@@ -123,7 +123,7 @@ export const getProjectVectorLayer = (
           source: layer.id,
           'source-layer': 'public.vector_layers',
           paint: {
-            'fill-color': layer.color,
+            'fill-color': layer.fill || layer.color,
             'fill-opacity': layer.opacity / 100,
           },
         },
@@ -133,7 +133,7 @@ export const getProjectVectorLayer = (
           source: layer.id,
           'source-layer': 'public.vector_layers',
           paint: {
-            'line-color': '#FFFFFF',
+            'line-color': layer.color,
             'line-width': 2,
           },
         },
