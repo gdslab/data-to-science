@@ -5,6 +5,7 @@ export type MapLayerProps = {
   name: string;
   checked: boolean;
   color: string;
+  fill?: string;
   opacity: number;
   type: string;
   signedUrl: string;

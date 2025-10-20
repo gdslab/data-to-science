@@ -17,7 +17,7 @@ export default function LayerControl() {
 
   const updateLayerProperty = (
     layerId: string,
-    property: 'checked' | 'color' | 'opacity',
+    property: 'checked' | 'color' | 'fill' | 'opacity',
     value: boolean | number | string
   ) => {
     const updatedLayers = layers.map((layer) =>
@@ -55,15 +55,44 @@ export default function LayerControl() {
                       updateLayerProperty(layer.id, 'checked', event.target.checked)
                     }
                   />
-                  <input
-                    className="ml-5 h-6 w-12 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    type="color"
-                    value={layer.color}
-                    disabled={!layer.checked}
-                    onChange={(event) =>
-                      updateLayerProperty(layer.id, 'color', event.target.value)
-                    }
-                  />
+                  {layer.type.toLowerCase().includes('polygon') ? (
+                    <>
+                      <div className="ml-5 flex flex-col items-center">
+                        <span className="text-xs text-slate-500 mb-0.5">Fill</span>
+                        <input
+                          className="h-6 w-12 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                          type="color"
+                          value={layer.fill || '#ffde21'}
+                          disabled={!layer.checked}
+                          onChange={(event) =>
+                            updateLayerProperty(layer.id, 'fill', event.target.value)
+                          }
+                        />
+                      </div>
+                      <div className="ml-2 flex flex-col items-center">
+                        <span className="text-xs text-slate-500 mb-0.5">Border</span>
+                        <input
+                          className="h-6 w-12 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                          type="color"
+                          value={layer.color}
+                          disabled={!layer.checked}
+                          onChange={(event) =>
+                            updateLayerProperty(layer.id, 'color', event.target.value)
+                          }
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <input
+                      className="ml-5 h-6 w-12 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      type="color"
+                      value={layer.color}
+                      disabled={!layer.checked}
+                      onChange={(event) =>
+                        updateLayerProperty(layer.id, 'color', event.target.value)
+                      }
+                    />
+                  )}
                 </div>
               </div>
               <div className="pr-2">

@@ -10,7 +10,6 @@ import ColorBarControl from './ColorBarControl';
 import GeocoderControl from './GeocoderControl';
 import ProjectCluster from './ProjectCluster';
 import FeaturePopup from './FeaturePopup';
-import LayerControl from './LayerControl';
 import MeasureToolsToggle from './MeasureToolsToggle';
 import ProjectBoundary from './ProjectBoundary';
 import ProjectPopup from './ProjectPopup';
@@ -60,6 +59,12 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
   const symbologyContext = useRasterSymbologyContext();
 
   const { state } = useLocation();
+
+  // Calculate the first checked vector layer ID to ensure rasters render below vectors
+  const firstVectorLayerId = useMemo(() => {
+    const checkedLayers = layers.filter((layer) => layer.checked);
+    return checkedLayers.length > 0 ? checkedLayers[0].id : null;
+  }, [layers]);
 
   // Load config for osmLabelFilter
   useEffect(() => {
@@ -184,6 +189,7 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
           <ProjectRasterTiles
             boundingBox={boundingBox}
             dataProduct={activeDataProductSymbology.background}
+            beforeLayerId={firstVectorLayerId}
           />
         );
       } else {
@@ -243,6 +249,7 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
           key={activeDataProduct.id}
           boundingBox={activeDataProduct.bbox || activeProjectBBox || undefined}
           dataProduct={activeDataProduct}
+          beforeLayerId={firstVectorLayerId}
         />
       )}
       {/* Show background raster if one is set */}
@@ -268,9 +275,6 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
 
       {/* Measurement tool control */}
       {activeProject && <MeasureToolsToggle />}
-
-      {/* Project map layer controls */}
-      {activeProject && <LayerControl />}
 
       {/* General controls */}
       {!activeProject && <GeocoderControl />}

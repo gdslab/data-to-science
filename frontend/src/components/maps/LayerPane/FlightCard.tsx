@@ -1,4 +1,5 @@
 import { useMapContext } from '../MapContext';
+import { FaCircleChevronRight } from 'react-icons/fa6';
 
 import DataProductCard from './DataProductCard';
 import { Flight } from '../../pages/projects/Project';
@@ -7,57 +8,50 @@ import { LinkOutlineButton } from '../../Buttons';
 
 import { formatDate } from './utils';
 
-import UASIcon from '../../../assets/uas-icon.svg';
-
 export default function FlightCard({ flight }: { flight: Flight }) {
   const { activeDataProduct } = useMapContext();
 
   return (
     <LayerCard>
-      <div className="grid grid-cols-6">
-        <div className="col-span-1 flex items-center justify-center">
-          <img src={UASIcon} width={'50%'} />
-        </div>
-        <div className="col-span-5 flex flex-col items-start gap-2">
-          <strong className="w-full font-bold text-slate-700 truncate">
-            {formatDate(flight.acquisition_date)} {flight.name && `(${flight.name})`}
+      <div className="space-y-1">
+        <div className="flex items-center gap-2">
+          <strong
+            className="font-bold text-slate-700 truncate flex-1 min-w-0"
+            title={formatDate(flight.acquisition_date)}
+          >
+            {formatDate(flight.acquisition_date)}
           </strong>
-          <div className="grid grid-rows-2 text-slate-700 text-sm gap-1.5">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <span className="text-sm text-gray-400 font-semibold">Platform: </span>
-                {flight.platform.replace('_', ' ')}
-              </div>
-              <div>
-                <span className="text-sm text-gray-400 font-semibold">Sensor:</span>{' '}
-                {flight.sensor}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <span className="text-sm text-gray-400 font-semibold">
-                  Altitude (m):
-                </span>{' '}
-                {flight.altitude}
-              </div>
-            </div>
+          <div className="text-slate-600 text-xs font-medium whitespace-nowrap">
+            {flight.sensor} · {flight.platform.replace('_', ' ')} ·{' '}
+            {flight.altitude} m
           </div>
         </div>
+        {flight.name && (
+          <div
+            className="text-sm text-slate-500 font-medium truncate"
+            title={flight.name}
+          >
+            {flight.name}
+          </div>
+        )}
       </div>
       {flight.data_products.length > 0 && (
         <details
-          className="group space-y-2 [&_summary::-webkit-details-marker]:hidden text-slate-600 overflow-visible"
-          open={
-            activeDataProduct && activeDataProduct.flight_id === flight.id
-              ? true
-              : false
-          }
+          className="mt-0.5 group [&_summary::-webkit-details-marker]:hidden overflow-visible"
+          open={activeDataProduct?.flight_id === flight.id}
         >
-          <summary className="text-sm cursor-pointer">{`${flight.data_products.length} Data Products`}</summary>
-          {flight.data_products.map((dataProduct) => (
-            <DataProductCard key={dataProduct.id} dataProduct={dataProduct} />
-          ))}
-          <div className="my-2">
+          <summary className="text-sm cursor-pointer text-slate-600 hover:text-slate-800 hover:bg-slate-50 transition-colors flex items-center gap-1.5 px-2 py-1 -mx-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent2 focus-visible:ring-offset-1">
+            <FaCircleChevronRight
+              className="h-4 w-4 transition-transform group-open:rotate-90"
+              aria-hidden="true"
+            />
+            {flight.data_products.length} Data Product
+            {flight.data_products.length !== 1 ? 's' : ''}
+          </summary>
+          <div className="mt-2 space-y-2">
+            {flight.data_products.map((dataProduct) => (
+              <DataProductCard key={dataProduct.id} dataProduct={dataProduct} />
+            ))}
             <LinkOutlineButton
               size="sm"
               target="_blank"
