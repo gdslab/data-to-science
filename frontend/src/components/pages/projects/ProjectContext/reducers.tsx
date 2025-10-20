@@ -109,6 +109,11 @@ function mapLayersReducer(state: MapLayer[], action: MapLayersAction) {
         return state;
       }
     }
+    case 'updateOne': {
+      return state.map((layer) =>
+        layer.layer_id === action.payload.layer_id ? action.payload : layer
+      );
+    }
     case 'remove': {
       if (action.payload) {
         if (state.length > 0 && action.payload.length === 1) {

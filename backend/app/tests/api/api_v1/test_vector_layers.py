@@ -343,6 +343,119 @@ def test_remove_vector_layer_without_project_role(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+def test_update_vector_layer_with_project_owner_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id)
+    feature_collection = create_feature_collection(db, "point", project_id=project.id)
+    layer_id = feature_collection.features[0].properties["layer_id"]
+    new_layer_name = "Updated Point Layer"
+
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/{layer_id}",
+        json={"layer_name": new_layer_name},
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    response_fc = VectorLayerFeatureCollection(**response_data)
+    assert len(response_fc.features) == 1
+    assert response_fc.features[0].properties["layer_name"] == new_layer_name
+
+
+def test_update_vector_layer_with_project_manager_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db)
+    create_project_member(
+        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
+    )
+    feature_collection = create_feature_collection(db, "point", project_id=project.id)
+    layer_id = feature_collection.features[0].properties["layer_id"]
+    new_layer_name = "Updated Point Layer"
+
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/{layer_id}",
+        json={"layer_name": new_layer_name},
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    response_fc = VectorLayerFeatureCollection(**response_data)
+    assert response_fc.features[0].properties["layer_name"] == new_layer_name
+
+
+def test_update_vector_layer_with_project_viewer_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db)
+    create_project_member(
+        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
+    )
+    feature_collection = create_feature_collection(db, "point", project_id=project.id)
+    layer_id = feature_collection.features[0].properties["layer_id"]
+
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/{layer_id}",
+        json={"layer_name": "Should Not Update"},
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_update_vector_layer_without_project_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    project = create_project(db)
+    feature_collection = create_feature_collection(db, "point", project_id=project.id)
+    layer_id = feature_collection.features[0].properties["layer_id"]
+
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/{layer_id}",
+        json={"layer_name": "Should Not Update"},
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_update_vector_layer_with_multiple_features(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id)
+    # Create multipoint feature collection with 3 features
+    feature_collection = create_feature_collection(
+        db, "multipoint", project_id=project.id
+    )
+    layer_id = feature_collection.features[0].properties["layer_id"]
+    new_layer_name = "Updated Multipoint Layer"
+
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/{layer_id}",
+        json={"layer_name": new_layer_name},
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    response_fc = VectorLayerFeatureCollection(**response_data)
+    # All 3 features should have the updated name
+    assert len(response_fc.features) == 3
+    for feature in response_fc.features:
+        assert feature.properties["layer_name"] == new_layer_name
+
+
+def test_update_vector_layer_not_found(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id)
+    non_existent_layer_id = "nonexistent"
+
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/{non_existent_layer_id}",
+        json={"layer_name": "Should Not Work"},
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
 def test_create_vector_layer_from_geojson_with_point(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
