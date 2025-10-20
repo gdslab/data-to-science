@@ -39,9 +39,11 @@ function constructRasterTileUrl(
 }
 
 export default function ProjectRasterTiles({
+  beforeLayerId = null,
   boundingBox = undefined,
   dataProduct,
 }: {
+  beforeLayerId?: string | null;
   boundingBox?: [number, number, number, number];
   dataProduct: DataProduct;
 }) {
@@ -81,9 +83,10 @@ export default function ProjectRasterTiles({
             symbology.opacity != null ? symbology.opacity / 100 : 1,
         }}
         beforeId={
-          dataProduct.id !== activeDataProduct?.id
+          beforeLayerId ||
+          (dataProduct.id !== activeDataProduct?.id
             ? activeDataProduct?.id
-            : undefined
+            : undefined)
         }
       />
     </Source>
