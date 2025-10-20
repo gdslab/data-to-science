@@ -407,6 +407,65 @@ def create_vector_layer_from_geojson(
         )
 
 
+@router.put(
+    "/{layer_id}",
+    response_model=schemas.vector_layer.VectorLayerFeatureCollection,
+)
+def update_vector_layer(
+    layer_id: str,
+    vector_layer_in: schemas.vector_layer.VectorLayerUpdate,
+    project: models.Project = Depends(deps.can_read_write_project),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Update a vector layer's layer_name.
+
+    Args:
+        layer_id: Layer ID for the vector layer to update
+        vector_layer_in: Update schema with new layer_name
+        project: Project the vector layer belongs to
+        db: Database session
+
+    Returns:
+        VectorLayerFeatureCollection: Updated vector layer as a FeatureCollection with metadata
+
+    Raises:
+        HTTPException: If layer not found or update fails
+    """
+    # Update layer_name for all features in the vector layer
+    try:
+        features = crud.vector_layer.update_layer_name_by_id(
+            db,
+            project_id=project.id,
+            layer_id=layer_id,
+            layer_name=vector_layer_in.layer_name,
+        )
+    except Exception:
+        logger.exception("Failed to update vector layer")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to update vector layer",
+        )
+
+    # Check if any features were found
+    if len(features) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Vector layer not found",
+        )
+
+    # Build response with metadata
+    feature_collection = {
+        "type": "FeatureCollection",
+        "features": features,
+        "metadata": {
+            "preview_url": f"{settings.API_DOMAIN}{settings.STATIC_DIR}"
+            f"/projects/{project.id}/vector/{layer_id}"
+            f"/preview.png",
+        },
+    }
+    return feature_collection
+
+
 @router.delete("/{layer_id}", status_code=status.HTTP_200_OK)
 def delete_vector_layer(
     layer_id: str,

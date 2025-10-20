@@ -208,6 +208,48 @@ def test_read_vector_layer_by_id_with_metadata(db: Session) -> None:
         assert expected_zonal_stat in vector_layers_with_zonal_metadata[0].properties
 
 
+def test_update_vector_layer_name(db: Session) -> None:
+    project = create_project(db)
+    # Create a point feature collection with one feature
+    point_fc = create_feature_collection(db, "point", project_id=project.id)
+    original_layer_name = point_fc.features[0].properties["layer_name"]
+    layer_id = point_fc.features[0].properties["layer_id"]
+    new_layer_name = "Updated Layer Name"
+
+    # Update the layer name
+    updated_features = crud.vector_layer.update_layer_name_by_id(
+        db, project_id=project.id, layer_id=layer_id, layer_name=new_layer_name
+    )
+
+    # Verify the update
+    assert updated_features and isinstance(updated_features, list)
+    assert len(updated_features) == 1
+    assert updated_features[0].properties
+    assert updated_features[0].properties.get("layer_name") == new_layer_name
+    assert updated_features[0].properties.get("layer_name") != original_layer_name
+
+
+def test_update_vector_layer_name_with_multiple_features(db: Session) -> None:
+    project = create_project(db)
+    # Create a multipoint feature collection with three features
+    multi_fc = create_feature_collection(db, "multipoint", project_id=project.id)
+    layer_id = multi_fc.features[0].properties["layer_id"]
+    new_layer_name = "Updated Multipoint Layer"
+
+    # Update the layer name
+    updated_features = crud.vector_layer.update_layer_name_by_id(
+        db, project_id=project.id, layer_id=layer_id, layer_name=new_layer_name
+    )
+
+    # Verify all three features were updated
+    assert updated_features and isinstance(updated_features, list)
+    assert len(updated_features) == 3
+    for feature in updated_features:
+        assert feature.properties
+        assert feature.properties.get("layer_name") == new_layer_name
+        assert feature.properties.get("layer_id") == layer_id
+
+
 def test_remove_vector_layer(db: Session) -> None:
     project = create_project(db)
     # point feature collection with three points (features)

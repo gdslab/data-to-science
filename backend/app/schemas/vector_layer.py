@@ -19,7 +19,7 @@ class VectorLayerCreate(VectorLayerBase):
 
 
 class VectorLayerUpdate(VectorLayerBase):
-    pass
+    layer_name: str
 
 
 class VectorLayerInDBBase(VectorLayerBase, from_attributes=True):
