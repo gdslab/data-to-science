@@ -201,7 +201,7 @@ export default function ToolboxModal({
                     getNumOfBands(dataProduct) === 1 && (
                       <>
                         <HillshadeTools />
-                        <ZonalStatisticTools dataProductId={dataProduct.id} />
+                        <ZonalStatisticTools dataProduct={dataProduct} />
                       </>
                     )}
                   {/* point cloud tools */}
