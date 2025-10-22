@@ -84,7 +84,6 @@ def read_project(
 
 @router.get("", response_model=Union[List[schemas.project.Projects], FeatureCollection])
 def read_projects(
-    edit_only: bool = False,
     has_raster: bool = False,
     include_all: bool = False,
     format: str = Query("json", pattern="^(json|geojson)$"),
