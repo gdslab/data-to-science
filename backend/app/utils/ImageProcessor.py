@@ -139,7 +139,7 @@ def get_info(in_raster: Path) -> dict | NoReturn:
         dict: _description_
     """
     result: subprocess.CompletedProcess = subprocess.run(
-        ["gdalinfo", "-approx_stats", "-json", in_raster],
+        ["gdalinfo", "-json", in_raster],
         stdout=subprocess.PIPE,
         check=True,
     )
@@ -202,7 +202,7 @@ def convert_to_cog(
     project_to_utm: bool,
     num_threads: int | None = None,
 ) -> None:
-    """Runs gdalwarp to generate new raster in COG layout.
+    """Runs gdal_translate to generate new raster in COG layout.
 
     Args:
         in_raster (Path): Path to input raster dataset.
@@ -215,7 +215,7 @@ def convert_to_cog(
 
     # Build the base command
     command: List[str] = [
-        "gdalwarp",
+        "gdal_translate",
         str(in_raster),
         str(out_raster),
         "-of",
@@ -226,8 +226,8 @@ def convert_to_cog(
         f"NUM_THREADS={num_threads}",
         "-co",
         "BIGTIFF=YES",
-        "-wm",
-        "500",
+        "-co",
+        "STATISTICS=YES",
     ]
 
     # Add projection parameters if needed
