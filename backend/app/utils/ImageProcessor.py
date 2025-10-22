@@ -138,14 +138,29 @@ def get_info(in_raster: Path) -> dict | NoReturn:
     Returns:
         dict: _description_
     """
-    result: subprocess.CompletedProcess = subprocess.run(
-        ["gdalinfo", "-json", in_raster],
-        stdout=subprocess.PIPE,
-        check=True,
-    )
-    result.check_returncode()
+    # Check if band statistics are already computed
+    try:
+        result: subprocess.CompletedProcess = subprocess.run(
+            ["gdalinfo", "-json", in_raster], stdout=subprocess.PIPE, check=True
+        )
+        result.check_returncode()
+    except Exception as e:
+        logging.error(str(e))
+        raise e
     try:
         gdalinfo: dict = json.loads(result.stdout)
+        if not all(
+            "STATISTICS_MINIMUM" in band.get("metadata", {}).get("", {})
+            for band in gdalinfo["bands"]
+        ):
+            # Re-run gdalinfo with stats
+            result = subprocess.run(
+                ["gdalinfo", "-stats", "-json", in_raster],
+                stdout=subprocess.PIPE,
+                check=True,
+            )
+            result.check_returncode()
+            gdalinfo = json.loads(result.stdout)
     except Exception as e:
         logging.error(str(e))
         raise e
