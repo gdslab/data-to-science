@@ -941,7 +941,7 @@ def test_publish_project_to_stac_using_task(
     assert data_product1_file_permission.is_public is True
 
     # Clean up - remove from STAC catalog
-    from app.utils.STACCollectionManager import STACCollectionManager
+    from app.utils.stac.STACCollectionManager import STACCollectionManager
 
     scm = STACCollectionManager(collection_id=str(project.id))
     scm.remove_from_catalog()
@@ -992,7 +992,7 @@ def test_publish_project_to_stac_excludes_deactivated_data_products_using_task(
     assert str(data_product1.obj.id) not in published_item_ids
 
     # Clean up
-    from app.utils.STACCollectionManager import STACCollectionManager
+    from app.utils.stac.STACCollectionManager import STACCollectionManager
 
     scm = STACCollectionManager(collection_id=str(project.id))
     scm.remove_from_catalog()
@@ -1073,7 +1073,7 @@ def test_publish_stac_with_scientific_metadata_using_task(
     from app.tests.utils.data_product import SampleDataProduct
     from app.tests.utils.flight import create_flight
     from app.tests.utils.project import create_project
-    from app.utils.STACCollectionManager import STACCollectionManager
+    from app.utils.stac.STACCollectionManager import STACCollectionManager
 
     # Create project owned by current user
     current_user = get_current_approved_user(
@@ -1127,7 +1127,7 @@ def test_publish_stac_with_custom_titles_using_task(
     from app.tests.utils.data_product import SampleDataProduct
     from app.tests.utils.flight import create_flight
     from app.tests.utils.project import create_project
-    from app.utils.STACCollectionManager import STACCollectionManager
+    from app.utils.stac.STACCollectionManager import STACCollectionManager
 
     # Create project owned by current user
     current_user = get_current_approved_user(
@@ -1182,7 +1182,7 @@ def test_publish_stac_with_failed_items_using_task(
     from app.tests.utils.data_product import SampleDataProduct
     from app.tests.utils.flight import create_flight
     from app.tests.utils.project import create_project
-    from app.utils.STACCollectionManager import STACCollectionManager
+    from app.utils.stac.STACCollectionManager import STACCollectionManager
 
     # Create project owned by current user
     current_user = get_current_approved_user(
@@ -1202,7 +1202,7 @@ def test_publish_stac_with_failed_items_using_task(
     def mock_create_item(*args, **kwargs):
         raise ValueError("Unable to find bounding box")
 
-    monkeypatch.setattr("app.utils.pdal_to_stac.create_item", mock_create_item)
+    monkeypatch.setattr("app.utils.stac.pdal_to_stac.create_item", mock_create_item)
 
     # Publish project to STAC using task
     result = publish_stac_catalog_task(str(project.id), db=db)
@@ -1572,7 +1572,7 @@ def test_stac_cache_with_failed_items_preview(
     def mock_create_item(*args, **kwargs):
         raise ValueError("Unable to process point cloud")
 
-    monkeypatch.setattr("app.utils.pdal_to_stac.create_item", mock_create_item)
+    monkeypatch.setattr("app.utils.stac.pdal_to_stac.create_item", mock_create_item)
 
     # Generate preview to create cache using task function
     generate_stac_preview_task(str(project.id), db=db)
@@ -1678,7 +1678,7 @@ def test_stac_cache_after_successful_publication(
     assert cache_data["items"][0]["id"] == str(data_product.obj.id)
 
     # Clean up - remove from STAC catalog
-    from app.utils.STACCollectionManager import STACCollectionManager
+    from app.utils.stac.STACCollectionManager import STACCollectionManager
 
     scm = STACCollectionManager(collection_id=str(project.id))
     scm.remove_from_catalog()
@@ -1786,7 +1786,7 @@ def test_stac_with_license_using_task(
     assert publish_result["collection"]["license"] == test_license
 
     # Clean up - remove from STAC catalog
-    from app.utils.STACCollectionManager import STACCollectionManager
+    from app.utils.stac.STACCollectionManager import STACCollectionManager
 
     scm = STACCollectionManager(collection_id=str(project.id))
     scm.remove_from_catalog()

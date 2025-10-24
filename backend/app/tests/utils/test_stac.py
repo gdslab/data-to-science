@@ -13,8 +13,11 @@ from app.tests.utils.flight import create_flight
 from app.tests.utils.STACCollectionHelper import STACCollectionHelper
 from app.tests.conftest import pytest_requires_stac
 
-from app.utils.STACCollectionManager import STACCollectionManager
-from app.utils.STACGenerator import STACGenerator, date_to_datetime
+from app.utils.stac.STACCollectionManager import (
+    STACCollectionManager,
+    STACConfigurationError,
+)
+from app.utils.stac.STACGenerator import STACGenerator, date_to_datetime
 
 
 @pytest.fixture
@@ -336,8 +339,8 @@ def test_compare_and_update_no_collection() -> None:
     collection_id = "00000000-0000-0000-0000-000000000000"
     scm = STACCollectionManager(collection_id=collection_id)
 
-    # Compare and update should raise ValueError
-    with pytest.raises(ValueError, match="No local collection provided for comparison"):
+    # Compare and update should raise STACConfigurationError
+    with pytest.raises(STACConfigurationError, match="No local collection provided for comparison"):
         scm.compare_and_update()
 
 
@@ -348,8 +351,8 @@ def test_publish_to_catalog_no_collection() -> None:
     collection_id = "00000000-0000-0000-0000-000000000000"
     scm = STACCollectionManager(collection_id=collection_id)
 
-    # Publish should raise ValueError
-    with pytest.raises(ValueError, match="No collection provided for publishing"):
+    # Publish should raise STACConfigurationError
+    with pytest.raises(STACConfigurationError, match="No collection provided for publishing"):
         scm.publish_to_catalog()
 
 

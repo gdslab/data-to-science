@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
-from app.utils.STACCollectionManager import STACCollectionManager
+from app.utils.stac.STACCollectionManager import STACCollectionManager
 from app.core.config import settings
 from app.tasks.stac_tasks import (
     generate_stac_preview,

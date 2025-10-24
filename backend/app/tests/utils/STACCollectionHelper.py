@@ -8,8 +8,8 @@ from app import crud
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.flight import create_flight
 from app.tests.utils.project import create_project
-from app.utils.STACCollectionManager import STACCollectionManager
-from app.utils.STACGenerator import STACGenerator
+from app.utils.stac.STACCollectionManager import STACCollectionManager
+from app.utils.stac.STACGenerator import STACGenerator
 
 
 logger = logging.getLogger(__name__)

@@ -11,7 +11,7 @@ import rasterio
 from pydantic import ValidationError
 
 from app.schemas.user_style import UserStyleCreate
-from app.utils.STACProperties import (
+from app.utils.stac.STACProperties import (
     ImageStructure,
     Metadata,
     STACProperties,

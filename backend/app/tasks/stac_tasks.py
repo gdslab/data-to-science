@@ -31,8 +31,8 @@ from app.utils.job_manager import JobManager
 # Import these at module level for testing/mocking purposes
 # They will be imported again inside functions to avoid circular imports during normal operation
 try:
-    from app.utils.STACGenerator import STACGenerator
-    from app.utils.STACCollectionManager import STACCollectionManager
+    from app.utils.stac.STACGenerator import STACGenerator
+    from app.utils.stac.STACCollectionManager import STACCollectionManager
 except ImportError:
     # Handle circular import gracefully
     STACGenerator = None
@@ -293,7 +293,7 @@ def generate_stac_preview_task(
     from app.api.deps import get_db
     from app.schemas.job import Status
     from app.utils.job_manager import JobManager
-    from app.utils.STACGenerator import STACGenerator
+    from app.utils.stac.STACGenerator import STACGenerator
 
     if db is None:
         db = next(get_db())
@@ -390,8 +390,8 @@ def publish_stac_catalog_task(
     from app.api.deps import get_db
     from app.schemas.job import Status
     from app.utils.job_manager import JobManager
-    from app.utils.STACGenerator import STACGenerator
-    from app.utils.STACCollectionManager import STACCollectionManager
+    from app.utils.stac.STACGenerator import STACGenerator
+    from app.utils.stac.STACCollectionManager import STACCollectionManager
     from app import crud, schemas
 
     if db is None:
