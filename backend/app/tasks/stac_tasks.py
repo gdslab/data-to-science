@@ -2,7 +2,7 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 from urllib.parse import urljoin
 from uuid import UUID
 
@@ -72,6 +72,7 @@ def generate_stac_preview(
     license: Optional[str] = None,
     custom_titles: Optional[Dict[str, str]] = None,
     cached_stac_metadata: Optional[Dict] = None,
+    include_raw_data_links: Optional[List[str]] = None,
 ) -> Dict:
     """Generate STAC preview metadata for a project without publishing."""
     db: Session = next(get_db())
@@ -91,6 +92,7 @@ def generate_stac_preview(
             license=license,
             custom_titles=custom_titles,
             cached_stac_metadata=cached_stac_metadata,
+            include_raw_data_links=include_raw_data_links,
         )
         collection = sg.collection
         items = sg.items
@@ -164,6 +166,7 @@ def publish_stac_catalog(
     license: Optional[str] = None,
     custom_titles: Optional[Dict[str, str]] = None,
     cached_stac_metadata: Optional[Dict] = None,
+    include_raw_data_links: Optional[List[str]] = None,
 ) -> Dict:
     """Publish project to STAC catalog."""
     db: Session = next(get_db())
@@ -183,6 +186,7 @@ def publish_stac_catalog(
             license=license,
             custom_titles=custom_titles,
             cached_stac_metadata=cached_stac_metadata,
+            include_raw_data_links=include_raw_data_links,
         )
         collection = sg.collection
         items = sg.items
@@ -287,6 +291,7 @@ def generate_stac_preview_task(
     license: Optional[str] = None,
     custom_titles: Optional[Dict[str, str]] = None,
     cached_stac_metadata: Optional[Dict] = None,
+    include_raw_data_links: Optional[List[str]] = None,
     db: Optional[Session] = None,
 ) -> Dict:
     """Non-Celery function for testing STAC preview generation."""
@@ -313,6 +318,7 @@ def generate_stac_preview_task(
             license=license,
             custom_titles=custom_titles,
             cached_stac_metadata=cached_stac_metadata,
+            include_raw_data_links=include_raw_data_links,
         )
         collection = sg.collection
         items = sg.items
@@ -384,6 +390,7 @@ def publish_stac_catalog_task(
     license: Optional[str] = None,
     custom_titles: Optional[Dict[str, str]] = None,
     cached_stac_metadata: Optional[Dict] = None,
+    include_raw_data_links: Optional[List[str]] = None,
     db: Optional[Session] = None,
 ) -> Dict:
     """Non-Celery function for testing STAC catalog publication."""
@@ -412,6 +419,7 @@ def publish_stac_catalog_task(
             license=license,
             custom_titles=custom_titles,
             cached_stac_metadata=cached_stac_metadata,
+            include_raw_data_links=include_raw_data_links,
         )
         collection = sg.collection
         items = sg.items

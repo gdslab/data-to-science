@@ -51,7 +51,6 @@ SCIENTIFIC_EXTENSION_URI = (
 # Constants
 DEFAULT_LICENSE = "CC-BY-NC-4.0"
 COG_ASSET_ROLE = "data"
-DEFAULT_TITLE_PLACEHOLDER = "No title set"
 
 
 class STACGenerator:
@@ -64,6 +63,7 @@ class STACGenerator:
         license: Optional[str] = None,
         custom_titles: Optional[dict] = None,
         cached_stac_metadata: Optional[dict] = None,
+        include_raw_data_links: Optional[List[str]] = None,
     ):
         """Initialize STACGenerator with configuration parameters.
 
@@ -75,6 +75,7 @@ class STACGenerator:
             license: Optional license identifier (defaults to CC-BY-NC-4.0)
             custom_titles: Optional dict of custom titles keyed by data_product_id
             cached_stac_metadata: Optional cached STAC metadata to avoid recomputation
+            include_raw_data_links: Optional list of data_product_ids to include raw data links for
         """
         # Store configuration
         self.db = db
@@ -86,8 +87,9 @@ class STACGenerator:
         # Initialize cache helper
         self._cache = CachedSTACMetadata(cached_stac_metadata)
 
-        # Resolve license with priority: new value, cached value, then default
+        # Resolve with priority: new value, cached value, then default
         self.license = self._resolve_license(license)
+        self.include_raw_data_links = self._resolve_raw_data_links(include_raw_data_links)
 
         # Initialize result containers
         self.project: Optional[models.Project] = None
@@ -109,6 +111,22 @@ class STACGenerator:
             return cached_license
 
         return DEFAULT_LICENSE
+
+    def _resolve_raw_data_links(self, include_raw_data_links: Optional[List[str]]) -> set:
+        """Resolve raw data links with priority: new value, then cached value.
+
+        Args:
+            include_raw_data_links: Optional list of data_product_ids from request
+
+        Returns:
+            Set of data_product_ids to include raw data links for
+        """
+        if include_raw_data_links:
+            return set(include_raw_data_links)
+
+        # Fall back to cached values if no new values provided
+        cached_link_ids = self._cache.get_raw_data_link_ids()
+        return set(cached_link_ids)
 
     def _generate(self) -> None:
         """Execute the STAC generation process.
@@ -381,10 +399,6 @@ class STACGenerator:
         else:
             item = self._generate_cog_item(collection_id, data_product, flight)
 
-        # Log the generated item title
-        logger.info(
-            f"Item title: {item.properties.get('title', DEFAULT_TITLE_PLACEHOLDER)}"
-        )
         return item
 
     def _build_flight_properties(
@@ -433,6 +447,64 @@ class STACGenerator:
 
         return flight_properties
 
+    def _add_raw_data_links(self, item: Item, data_product: models.DataProduct) -> None:
+        """Add derived_from links for raw data to STAC item.
+
+        Only adds links if the data_product_id is in include_raw_data_links set.
+
+        Args:
+            item: PySTAC Item to add links to
+            data_product: DataProduct model instance
+        """
+        data_product_id_str = str(data_product.id)
+
+        # Check if this data product should include raw data links
+        if data_product_id_str not in self.include_raw_data_links:
+            return
+
+        # Get upload directory for CRUD method
+        upload_dir = get_static_dir()
+
+        # Query raw data for this flight using existing CRUD method
+        raw_data_list = crud.raw_data.get_multi_by_flight(
+            db=self.db,
+            flight_id=data_product.flight_id,
+            upload_dir=upload_dir,
+        )
+
+        if not raw_data_list:
+            return
+
+        # Add derived_from link for each raw data file
+        for raw_data in raw_data_list:
+            try:
+                # The CRUD method already sets the url attribute
+                if not hasattr(raw_data, "url") or not raw_data.url:
+                    logger.warning(f"Raw data {raw_data.id} has no URL, skipping")
+                    continue
+
+                # Use add_derived_from() method - it accepts href strings
+                item.add_derived_from(raw_data.url)
+
+                # Update the last added link with proper metadata
+                # The add_derived_from creates a basic link, we enhance it
+                derived_links = [
+                    link for link in item.links if link.rel == "derived_from"
+                ]
+                if derived_links:
+                    last_link = derived_links[-1]
+                    # Use application/octet-stream as STAC API doesn't accept application/zip
+                    last_link.media_type = "application/octet-stream"
+                    last_link.title = f"Download raw UAS data (.zip)"
+
+            except Exception as e:
+                logger.warning(
+                    f"Failed to add raw data link for {raw_data.id} "
+                    f"to item {data_product_id_str}: {str(e)}"
+                )
+                # Continue processing other raw data files
+                continue
+
     def _generate_point_cloud_item(
         self,
         collection_id: str,
@@ -469,6 +541,9 @@ class STACGenerator:
             item_id=data_product_id_str,
             cached_item=cached_item,
         )
+
+        # Add raw data links if requested
+        self._add_raw_data_links(item, data_product)
 
         return item
 
@@ -516,6 +591,9 @@ class STACGenerator:
             properties={**flight_properties},
         )
         item.add_asset(key=data_product_id_str, asset=asset)
+
+        # Add raw data links if requested
+        self._add_raw_data_links(item, data_product)
 
         return item
 

@@ -125,6 +125,7 @@ def generate_stac_preview_async(
             "license": metadata_request.license,
             "custom_titles": metadata_request.custom_titles,
             "cached_stac_metadata": cached_stac_metadata,
+            "include_raw_data_links": metadata_request.include_raw_data_links,
         },
     )
 
@@ -192,6 +193,7 @@ def publish_project_to_stac_catalog_async(
             "license": metadata_request.license,
             "custom_titles": metadata_request.custom_titles,
             "cached_stac_metadata": cached_stac_metadata,
+            "include_raw_data_links": metadata_request.include_raw_data_links,
         },
     )
 

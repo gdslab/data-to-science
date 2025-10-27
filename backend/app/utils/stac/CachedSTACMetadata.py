@@ -4,7 +4,7 @@ This module provides helper classes for managing cached STAC metadata to avoid
 expensive recomputation of geometry, assets, and properties.
 """
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 
 
 class CachedSTACMetadata:
@@ -179,3 +179,27 @@ class CachedSTACMetadata:
         """
         properties = self.get_item_properties(data_product_id)
         return properties.get("title") if properties else None
+
+    def get_raw_data_link_ids(self) -> List[str]:
+        """Extract list of item IDs that have derived_from links in cache.
+
+        This identifies which items previously had raw data links enabled
+        by checking for the presence of derived_from links.
+
+        Returns:
+            List of data product IDs (as strings) that have derived_from links
+        """
+        item_ids_with_links = []
+
+        if "items" in self._cache:
+            for item in self._cache["items"]:
+                # Check if item has links array
+                if "links" in item and isinstance(item["links"], list):
+                    # Check if any link has rel="derived_from"
+                    has_derived_from = any(
+                        link.get("rel") == "derived_from" for link in item["links"]
+                    )
+                    if has_derived_from:
+                        item_ids_with_links.append(item["id"])
+
+        return item_ids_with_links

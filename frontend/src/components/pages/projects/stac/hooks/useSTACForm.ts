@@ -6,6 +6,7 @@ interface FormState {
   sciCitation: string;
   license: string;
   customTitles: Record<string, string>;
+  includeRawDataLinks: Set<string>;
 }
 
 interface STACRequestPayload {
@@ -13,6 +14,7 @@ interface STACRequestPayload {
   sci_citation?: string;
   license?: string;
   custom_titles?: Record<string, string>;
+  include_raw_data_links?: string[];
 }
 
 interface UseSTACFormReturn {
@@ -23,6 +25,8 @@ interface UseSTACFormReturn {
   ) => void;
   buildRequestPayload: () => STACRequestPayload;
   resetForm: () => void;
+  toggleRawDataLink: (itemId: string) => void;
+  toggleAllRawDataLinks: (allSuccessfulItemIds: string[]) => void;
 }
 
 const DEFAULT_LICENSE = 'CC-BY-NC-4.0';
@@ -35,6 +39,7 @@ export function useSTACForm(
     sciCitation: '',
     license: DEFAULT_LICENSE,
     customTitles: {},
+    includeRawDataLinks: new Set(),
   });
 
   // Initialize form fields from existing metadata
@@ -111,6 +116,38 @@ export function useSTACForm(
         };
       });
     }
+
+    // Initialize raw data link selections from STAC items
+    if (stacMetadata?.items) {
+      const itemsWithRawDataLinks = new Set<string>();
+
+      stacMetadata.items.forEach((item) => {
+        // Check if this is a successful item (has links property)
+        if ('links' in item && item.links) {
+          // Check if this item has a derived_from link (indicates raw data link was previously selected)
+          const hasDerivedFromLink = item.links.some(
+            (link) => link.rel === 'derived_from'
+          );
+          if (hasDerivedFromLink) {
+            itemsWithRawDataLinks.add(item.id);
+          }
+        }
+      });
+
+      setFormState((prev) => {
+        // Merge server data with any user selections not yet saved
+        // This preserves user input while respecting server state
+        const mergedSet = new Set([
+          ...itemsWithRawDataLinks,
+          ...prev.includeRawDataLinks,
+        ]);
+
+        return {
+          ...prev,
+          includeRawDataLinks: mergedSet,
+        };
+      });
+    }
   }, [stacMetadata]);
 
   const updateFormField = <K extends keyof FormState>(
@@ -129,6 +166,9 @@ export function useSTACForm(
     if (Object.keys(formState.customTitles).length > 0) {
       payload.custom_titles = formState.customTitles;
     }
+    if (formState.includeRawDataLinks.size > 0) {
+      payload.include_raw_data_links = Array.from(formState.includeRawDataLinks);
+    }
 
     return payload;
   };
@@ -139,6 +179,35 @@ export function useSTACForm(
       sciCitation: '',
       license: DEFAULT_LICENSE,
       customTitles: {},
+      includeRawDataLinks: new Set(),
+    });
+  };
+
+  const toggleRawDataLink = (itemId: string) => {
+    setFormState((prev) => {
+      const newSet = new Set(prev.includeRawDataLinks);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return { ...prev, includeRawDataLinks: newSet };
+    });
+  };
+
+  const toggleAllRawDataLinks = (allSuccessfulItemIds: string[]) => {
+    setFormState((prev) => {
+      // Check if all successful items are currently checked
+      const allChecked = allSuccessfulItemIds.every((id) =>
+        prev.includeRawDataLinks.has(id)
+      );
+
+      // If all checked, uncheck all. Otherwise, check all.
+      const newSet = allChecked
+        ? new Set<string>()
+        : new Set(allSuccessfulItemIds);
+
+      return { ...prev, includeRawDataLinks: newSet };
     });
   };
 
@@ -147,5 +216,7 @@ export function useSTACForm(
     updateFormField,
     buildRequestPayload,
     resetForm,
+    toggleRawDataLink,
+    toggleAllRawDataLinks,
   };
 }

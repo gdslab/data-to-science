@@ -14,6 +14,12 @@ export interface STACItem {
       flight_name?: string;
     };
   };
+  links?: Array<{
+    rel: string;
+    href: string;
+    type?: string;
+    title?: string;
+  }>;
   browser_url?: string;
 }
 

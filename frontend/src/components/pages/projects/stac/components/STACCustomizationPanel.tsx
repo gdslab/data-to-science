@@ -10,6 +10,7 @@ interface FormState {
   sciCitation: string;
   license: string;
   customTitles: Record<string, string>;
+  includeRawDataLinks: Set<string>;
 }
 
 interface STACCustomizationPanelProps {

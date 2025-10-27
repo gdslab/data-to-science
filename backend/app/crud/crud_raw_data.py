@@ -124,9 +124,12 @@ def set_report_attr(raw_data_obj: RawData) -> None:
 
 
 def set_url_attr(raw_data_obj: RawData, upload_dir: str):
-    static_url = settings.API_DOMAIN + settings.STATIC_DIR
-    relative_path = Path(raw_data_obj.filepath).relative_to(upload_dir)
-    setattr(raw_data_obj, "url", f"{static_url}/{str(relative_path)}")
+    try:
+        static_url = settings.API_DOMAIN + settings.STATIC_DIR
+        relative_path = Path(raw_data_obj.filepath).relative_to(upload_dir)
+        setattr(raw_data_obj, "url", f"{static_url}/{str(relative_path)}")
+    except ValueError:
+        setattr(raw_data_obj, "url", None)
 
 
 raw_data = CRUDRawData(RawData)
