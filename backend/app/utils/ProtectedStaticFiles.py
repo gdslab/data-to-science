@@ -14,6 +14,7 @@ from app.api.deps import can_read_project
 from app.core import security
 from app.db.session import SessionLocal
 from app.models.data_product import DataProduct
+from app.models.raw_data import RawData
 from app.schemas.api_key import APIKeyUpdate
 
 
@@ -46,6 +47,51 @@ def verify_api_key_static_file_access(
         user = api_key_obj.owner
         # flight associated with data product
         flight = crud.flight.get(db, id=data_product.flight_id)
+        # check if can read flight
+        if flight and can_read_project(
+            db=db, project_id=flight.project_id, current_user=user
+        ):
+            # update last accessed date and total requests
+            api_key_in = APIKeyUpdate(
+                last_used_at=datetime.now(timezone.utc),
+                total_requests=api_key_obj.total_requests + 1,
+            )
+            crud.api_key.update(db, db_obj=api_key_obj, obj_in=api_key_in)
+            return True
+
+    return False
+
+
+def verify_api_key_raw_data_access(
+    raw_data: RawData, api_key: str, db: Session | None = None
+) -> bool:
+    """Verify if user associated with API key is authorized to access the
+    requested raw data.
+
+    Args:
+        raw_data (RawData): Raw data that was requested.
+        api_key (str): API key included in request.
+        db (Session | None): Database session. If None, a new session is created.
+
+    Returns:
+        bool: True if authorized to access, False otherwise.
+    """
+    # check if raw data is active
+    if not raw_data.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Raw data not found"
+        )
+    # create database session
+    if not db:
+        db = SessionLocal()
+    # get api key db obj
+    api_key_obj = crud.api_key.get_by_api_key(db, api_key)
+
+    if api_key_obj:
+        # user associated with api key
+        user = api_key_obj.owner
+        # flight associated with raw data
+        flight = crud.flight.get(db, id=raw_data.flight_id)
         # check if can read flight
         if flight and can_read_project(
             db=db, project_id=flight.project_id, current_user=user
@@ -121,6 +167,41 @@ async def verify_static_file_access(request: Request) -> None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="data product not found",
+            )
+        # public, return file
+        if file_permission and file_permission.is_public:
+            return
+
+    # check if access to requested raw data is restricted or public
+    if "raw_data" in request.url.path:
+        try:
+            request_path = Path(request.url.path.split("raw_data")[1])
+            raw_data_id = UUID(request_path.parents[-2].name)
+            raw_data = crud.raw_data.get(SessionLocal(), id=raw_data_id)
+        except (IndexError, ValueError):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="raw data not found"
+            )
+
+        if not raw_data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="raw data not found"
+            )
+
+        if "API_KEY" in request.query_params:
+            api_key = request.query_params["API_KEY"]
+            # check if owner of api key has access to requested static file
+            if verify_api_key_raw_data_access(raw_data, api_key):
+                return
+
+        file_permission = crud.file_permission.get_by_raw_data(
+            SessionLocal(), raw_data_id=raw_data_id
+        )
+        # if file is deactivated return 404
+        if file_permission and file_permission.raw_data.is_active is False:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="raw data not found",
             )
         # public, return file
         if file_permission and file_permission.is_public:

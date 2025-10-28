@@ -119,3 +119,15 @@ def test_read_raw_data_url_attribute_with_invalid_upload_dir(db: Session) -> Non
     # Verify url attribute exists but is None due to ValueError
     assert hasattr(stored_raw_data, "url")
     assert stored_raw_data.url is None
+
+
+def test_create_raw_data_creates_file_permission(db: Session) -> None:
+    """Test that creating RawData automatically creates FilePermission."""
+    raw_data = SampleRawData(db).obj
+
+    # Verify FilePermission was created
+    file_permission = crud.file_permission.get_by_raw_data(db, raw_data_id=raw_data.id)
+    assert file_permission
+    assert file_permission.raw_data_id == raw_data.id
+    assert file_permission.file_id is None
+    assert file_permission.is_public is False  # Should default to private

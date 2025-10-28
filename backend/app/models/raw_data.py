@@ -12,6 +12,7 @@ from app.models.utils.utcnow import utcnow
 if TYPE_CHECKING:
     from .flight import Flight
     from .job import Job
+    from .file_permission import FilePermission
 
 
 class RawData(Base):
@@ -44,6 +45,9 @@ class RawData(Base):
 
     flight: Mapped["Flight"] = relationship(back_populates="raw_data")
     jobs: Mapped[List["Job"]] = relationship(
+        back_populates="raw_data", cascade="all, delete"
+    )
+    file_permission: Mapped["FilePermission"] = relationship(
         back_populates="raw_data", cascade="all, delete"
     )
 
