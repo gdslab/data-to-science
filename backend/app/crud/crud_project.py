@@ -21,6 +21,7 @@ from app.models.project_like import ProjectLike
 from app.models.project_member import ProjectMember
 from app.models.project_module import ProjectModule
 from app.models.project_type import ProjectType
+from app.models.raw_data import RawData
 from app.models.team_member import TeamMember
 from app.models.user import User
 from app.models.utils.utcnow import utcnow
@@ -476,24 +477,24 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         self, db: Session, project_id: UUID, is_public: bool = True
     ) -> Optional[Project]:
         """
-        Updates the project's publication status and the visibility of all its data products.
+        Updates the project's publication status and the visibility of all its data products and raw data.
 
         Args:
             db (Session): Database session.
             project_id (UUID): ID of project to update.
-            is_public (bool): Whether to make the project and its data products public (True)
+            is_public (bool): Whether to make the project, its data products, and raw data public (True)
                              or private (False).
 
         Returns:
             Project: Updated project object.
         """
         with db as session:
-            # Update the file permissions for each data product in the project
-            file_permission_ids_subquery = (
+            # Get FilePermission IDs for DataProducts in the project
+            data_product_file_permission_ids = (
                 select(FilePermission.id)
-                .join(DataProduct)
-                .join(Flight)
-                .join(Project)
+                .join(DataProduct, FilePermission.file_id == DataProduct.id)
+                .join(Flight, DataProduct.flight_id == Flight.id)
+                .join(Project, Flight.project_id == Project.id)
                 .where(Project.id == project_id)
                 .where(Project.is_active)
                 .where(Flight.is_active)
@@ -501,9 +502,26 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 .scalar_subquery()
             )
 
+            # Get FilePermission IDs for RawData in the project
+            raw_data_file_permission_ids = (
+                select(FilePermission.id)
+                .join(RawData, FilePermission.raw_data_id == RawData.id)
+                .join(Flight, RawData.flight_id == Flight.id)
+                .join(Project, Flight.project_id == Project.id)
+                .where(Project.id == project_id)
+                .where(Project.is_active)
+                .where(Flight.is_active)
+                .where(RawData.is_active)
+                .scalar_subquery()
+            )
+
+            # Update FilePermissions for both DataProducts and RawData
             update_file_permissions_sql = (
                 update(FilePermission)
-                .where(FilePermission.id.in_(file_permission_ids_subquery))
+                .where(
+                    FilePermission.id.in_(data_product_file_permission_ids)
+                    | FilePermission.id.in_(raw_data_file_permission_ids)
+                )
                 .values(is_public=is_public)
             )
 

@@ -29,7 +29,9 @@ class CRUDRawData(CRUDBase[RawData, RawDataCreate, RawDataUpdate]):
             session.add(raw_data)
             session.commit()
             session.refresh(raw_data)
-            return raw_data
+        # Create FilePermission for this RawData (defaults to is_public=False)
+        crud.file_permission.create_with_raw_data(db, raw_data_id=raw_data.id)
+        return raw_data
 
     def get_single_by_id(
         self, db: Session, raw_data_id: UUID, upload_dir: str

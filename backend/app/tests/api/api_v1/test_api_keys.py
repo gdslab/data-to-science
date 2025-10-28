@@ -12,8 +12,12 @@ from app.schemas.role import Role
 from app.schemas.user import UserUpdate
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.project_member import create_project_member
+from app.tests.utils.raw_data import SampleRawData
 from app.tests.utils.user import create_user
-from app.utils.ProtectedStaticFiles import verify_api_key_static_file_access
+from app.utils.ProtectedStaticFiles import (
+    verify_api_key_raw_data_access,
+    verify_api_key_static_file_access,
+)
 
 
 def test_request_api_key(
@@ -169,4 +173,83 @@ def test_access_unauthorized_data_product_with_api_key(
             data_product=data_product.obj,
             api_key=current_user_api_key.api_key,
             db=db,
+        )
+
+
+# Tests for RawData API key access
+
+
+def test_access_authorized_raw_data_with_api_key(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test accessing authorized raw data with API key."""
+    # create user that will own project/raw data
+    project_owner = create_user(db)
+    # user making request
+    current_user = get_current_user(db, normal_user_access_token)
+    # create api key for current_user
+    current_user_api_key = crud.api_key.create_with_user(db, user_id=current_user.id)
+    # create raw data owned by project owner user
+    raw_data = SampleRawData(db, user=project_owner)
+    # project associated with raw data
+    project = raw_data.project
+    # add current user as member of project with default "viewer" role
+    create_project_member(
+        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
+    )
+
+    # current user has access to the raw data project
+    assert verify_api_key_raw_data_access(
+        raw_data=raw_data.obj, api_key=current_user_api_key.api_key, db=db
+    )
+
+
+def test_access_authorized_deactivated_raw_data_with_api_key(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test accessing authorized but deactivated raw data with API key."""
+    # create user that will own project/raw data
+    project_owner = create_user(db)
+    # user making request
+    current_user = get_current_user(db, normal_user_access_token)
+    # create api key for current_user
+    current_user_api_key = crud.api_key.create_with_user(db, user_id=current_user.id)
+    # create raw data owned by project owner user
+    raw_data = SampleRawData(db, user=project_owner)
+    # project associated with raw data
+    project = raw_data.project
+    # add current user as member of project with default "viewer" role
+    create_project_member(
+        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
+    )
+    # deactivate raw data
+    deactivated_raw_data = crud.raw_data.deactivate(db, raw_data_id=raw_data.obj.id)
+    assert deactivated_raw_data
+
+    # current user has access to the raw data project, but raw data deactivated
+    with pytest.raises(HTTPException) as exc_info:
+        verify_api_key_raw_data_access(
+            raw_data=deactivated_raw_data,
+            api_key=current_user_api_key.api_key,
+            db=db,
+        )
+
+
+def test_access_unauthorized_raw_data_with_api_key(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test accessing unauthorized raw data with API key."""
+    # create user that will own project/raw data
+    project_owner = create_user(db)
+    # user making request
+    current_user = get_current_user(db, normal_user_access_token)
+    # create api key for current_user
+    current_user_api_key = crud.api_key.create_with_user(db, user_id=current_user.id)
+    # create raw data owned by project owner user
+    raw_data = SampleRawData(db, user=project_owner)
+
+    # current user does not have access to the raw data project
+    with pytest.raises(HTTPException) as exc_info:
+        verify_api_key_raw_data_access(
+            raw_data=raw_data.obj, api_key=current_user_api_key.api_key, db=db
         )
