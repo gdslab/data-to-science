@@ -2,15 +2,9 @@ import { useCallback } from 'react';
 import { useRevalidator } from 'react-router-dom';
 import api from '../../../../../api';
 import { Status } from '../../../../Alert';
+import { STACRequestPayload } from '../STACTypes';
 
 type ActionType = 'publish' | 'update' | 'unpublish';
-
-interface STACRequestPayload {
-  sci_doi?: string;
-  sci_citation?: string;
-  license?: string;
-  custom_titles?: Record<string, string>;
-}
 
 interface ActionConfig {
   method: 'PUT' | 'DELETE';

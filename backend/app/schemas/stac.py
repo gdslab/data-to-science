@@ -41,6 +41,7 @@ class STACMetadataRequest(BaseModel):
     sci_citation: Optional[str] = None
     license: Optional[str] = None
     custom_titles: Optional[Dict[str, str]] = None
+    include_raw_data_links: Optional[List[str]] = None
 
 
 STACResponse = Union[STACReport, STACPreview]

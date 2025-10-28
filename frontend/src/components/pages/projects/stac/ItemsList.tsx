@@ -4,12 +4,48 @@ import { Project } from '../Project';
 interface ItemsListProps {
   allItems: CombinedSTACItem[];
   project: Project;
+  includeRawDataLinks: Set<string>;
+  onToggleRawDataLink: (itemId: string) => void;
+  onToggleAllRawDataLinks: () => void;
 }
 
-export default function ItemsList({ allItems, project }: ItemsListProps) {
+export default function ItemsList({
+  allItems,
+  project,
+  includeRawDataLinks,
+  onToggleRawDataLink,
+  onToggleAllRawDataLinks,
+}: ItemsListProps) {
+  // Calculate if all successful items are checked
+  const successfulItems = allItems.filter((item) => item.isSuccessful);
+  const allSuccessfulItemsChecked =
+    successfulItems.length > 0 &&
+    successfulItems.every((item) => includeRawDataLinks.has(item.id));
   return (
     <div>
       <h4 className="font-semibold mb-2">Items ({allItems.length})</h4>
+      {successfulItems.length > 0 && (
+        <div className="ml-4 mb-3 pb-3 border-b border-gray-300">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={allSuccessfulItemsChecked}
+              onChange={() =>
+                onToggleAllRawDataLinks()
+              }
+              className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+            />
+            <span className="font-medium text-sm">
+              {allSuccessfulItemsChecked
+                ? 'Uncheck all raw data links'
+                : 'Include raw data links for all items'}
+            </span>
+          </label>
+          <p className="text-xs text-gray-500 ml-6 mt-1">
+            Raw data links will be added to STAC metadata where available
+          </p>
+        </div>
+      )}
       <div className="ml-4 max-h-96 overflow-y-auto">
         {allItems.map((item) => (
           <div
@@ -51,6 +87,19 @@ export default function ItemsList({ allItems, project }: ItemsListProps) {
                   <span className="font-medium text-sm">
                     {item.isSuccessful ? 'Success' : 'Failed'}
                   </span>
+                  {item.isSuccessful && (
+                    <label className="flex items-center gap-1 ml-auto cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={includeRawDataLinks.has(item.id)}
+                        onChange={() => onToggleRawDataLink(item.id)}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                      />
+                      <span className="text-xs text-gray-600">
+                        Include raw data
+                      </span>
+                    </label>
+                  )}
                 </div>
                 <p>
                   <span className="font-medium">ID:</span> {item.id}

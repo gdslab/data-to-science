@@ -69,3 +69,53 @@ def test_deactivate_raw_data(db: Session) -> None:
     assert raw_data3.deactivated_at.replace(tzinfo=timezone.utc) < datetime.now(
         timezone.utc
     )
+
+
+def test_read_raw_data_url_attribute(db: Session) -> None:
+    """Test that url attribute is set on raw_data objects."""
+    raw_data = SampleRawData(db)
+    stored_raw_data = crud.raw_data.get_single_by_id(
+        db,
+        raw_data_id=raw_data.obj.id,
+        upload_dir=settings.TEST_STATIC_DIR,
+    )
+    assert stored_raw_data
+    # Verify url attribute exists and is set correctly
+    assert hasattr(stored_raw_data, "url")
+    assert stored_raw_data.url is not None
+    assert isinstance(stored_raw_data.url, str)
+    assert settings.STATIC_DIR in stored_raw_data.url
+
+
+def test_read_multi_raw_data_url_attribute(db: Session) -> None:
+    """Test that url attribute is set on all raw_data objects from get_multi_by_flight."""
+    user = create_user(db)
+    flight = create_flight(db)
+    SampleRawData(db, flight=flight, user=user)
+    SampleRawData(db, flight=flight, user=user)
+    raw_data_list = crud.raw_data.get_multi_by_flight(
+        db, flight_id=flight.id, upload_dir=settings.TEST_STATIC_DIR
+    )
+    assert len(raw_data_list) == 2
+    # Verify all objects have url attribute
+    for raw_data in raw_data_list:
+        assert hasattr(raw_data, "url")
+        assert raw_data.url is not None
+        assert isinstance(raw_data.url, str)
+        assert settings.STATIC_DIR in raw_data.url
+
+
+def test_read_raw_data_url_attribute_with_invalid_upload_dir(db: Session) -> None:
+    """Test that url attribute is set to None when upload_dir doesn't match filepath."""
+    raw_data = SampleRawData(db)
+    # Use an invalid upload_dir that doesn't match the filepath
+    invalid_upload_dir = "/invalid/path"
+    stored_raw_data = crud.raw_data.get_single_by_id(
+        db,
+        raw_data_id=raw_data.obj.id,
+        upload_dir=invalid_upload_dir,
+    )
+    assert stored_raw_data
+    # Verify url attribute exists but is None due to ValueError
+    assert hasattr(stored_raw_data, "url")
+    assert stored_raw_data.url is None

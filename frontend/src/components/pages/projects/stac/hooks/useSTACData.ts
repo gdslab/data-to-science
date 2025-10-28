@@ -1,15 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { STACMetadata, CombinedSTACItem } from '../STACTypes';
+import { STACMetadata, CombinedSTACItem, STACRequestPayload } from '../STACTypes';
 import { usePolling } from '../../../../hooks/usePolling';
 import { Status } from '../../../../Alert';
 import api from '../../../../../api';
-
-interface STACRequestPayload {
-  sci_doi?: string;
-  sci_citation?: string;
-  license?: string;
-  custom_titles?: Record<string, string>;
-}
 
 interface UseSTACDataProps {
   projectId: string;
