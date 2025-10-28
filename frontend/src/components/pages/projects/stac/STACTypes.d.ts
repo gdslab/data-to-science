@@ -82,3 +82,11 @@ export interface CombinedSTACItem {
   browserUrl?: string;
   error?: STACError;
 }
+
+export interface STACRequestPayload {
+  sci_doi?: string;
+  sci_citation?: string;
+  license?: string;
+  custom_titles?: Record<string, string>;
+  include_raw_data_links?: string[];
+}

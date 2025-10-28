@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { STACMetadata } from '../STACTypes';
+import { STACMetadata, STACRequestPayload } from '../STACTypes';
 
 interface FormState {
   sciDoi: string;
@@ -7,14 +7,6 @@ interface FormState {
   license: string;
   customTitles: Record<string, string>;
   includeRawDataLinks: Set<string>;
-}
-
-interface STACRequestPayload {
-  sci_doi?: string;
-  sci_citation?: string;
-  license?: string;
-  custom_titles?: Record<string, string>;
-  include_raw_data_links?: string[];
 }
 
 interface UseSTACFormReturn {

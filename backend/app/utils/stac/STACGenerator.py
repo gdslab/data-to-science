@@ -1,6 +1,6 @@
 import logging
 from datetime import date, datetime, timezone
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Set
 
 import geopandas as gpd
 import rasterio
@@ -89,7 +89,9 @@ class STACGenerator:
 
         # Resolve with priority: new value, cached value, then default
         self.license = self._resolve_license(license)
-        self.include_raw_data_links = self._resolve_raw_data_links(include_raw_data_links)
+        self.include_raw_data_links = self._resolve_raw_data_links(
+            include_raw_data_links
+        )
 
         # Initialize result containers
         self.project: Optional[models.Project] = None
@@ -112,30 +114,72 @@ class STACGenerator:
 
         return DEFAULT_LICENSE
 
-    def _resolve_raw_data_links(self, include_raw_data_links: Optional[List[str]]) -> set:
+    def _resolve_raw_data_links(
+        self, include_raw_data_links: Optional[List[str]]
+    ) -> Set[str]:
         """Resolve raw data links with priority: new value, then cached value.
 
         Args:
             include_raw_data_links: Optional list of data_product_ids from request
+                - None: use cached values (default behavior)
+                - []: explicitly clear all selections (empty set)
+                - ['id1', 'id2']: use provided selections
 
         Returns:
             Set of data_product_ids to include raw data links for
         """
-        if include_raw_data_links:
+        if include_raw_data_links is not None:
             return set(include_raw_data_links)
 
         # Fall back to cached values if no new values provided
         cached_link_ids = self._cache.get_raw_data_link_ids()
         return set(cached_link_ids)
 
+    def _validate_raw_data_links(self) -> None:
+        """Validate raw data link selections against project data products.
+
+        This method filters include_raw_data_links to only include valid data product IDs
+        that belong to the project. Invalid IDs are logged as warnings.
+
+        Must be called after _fetch_flights_with_products().
+        """
+        if not self.include_raw_data_links:
+            return
+
+        # Build set of valid data product IDs from the project
+        valid_data_product_ids = set()
+        for flight in self.flights:
+            for data_product in flight.data_products:
+                valid_data_product_ids.add(str(data_product.id))
+
+        # Find invalid selections
+        invalid_ids = self.include_raw_data_links - valid_data_product_ids
+
+        # Log warnings for invalid IDs
+        if invalid_ids:
+            logger.warning(
+                f"Ignoring invalid raw data link selections for project {self.project_id}: "
+                f"{invalid_ids}. These IDs do not belong to this project's data products."
+            )
+
+        # Filter to only valid IDs
+        self.include_raw_data_links = self.include_raw_data_links & valid_data_product_ids
+
+        logger.info(
+            f"Validated raw data links for project {self.project_id}: "
+            f"{len(self.include_raw_data_links)} valid selections out of "
+            f"{len(self.include_raw_data_links) + len(invalid_ids)} requested"
+        )
+
     def _generate(self) -> None:
         """Execute the STAC generation process.
 
         This method orchestrates the entire generation workflow:
         1. Fetch project and flights with data products (single query)
-        2. Generate STAC collection
-        3. Generate STAC items for each data product
-        4. Validate the collection
+        2. Validate raw data link selections
+        3. Generate STAC collection
+        4. Generate STAC items for each data product
+        5. Validate the collection
 
         Raises:
             ValueError: If project not found or no data products exist
@@ -143,6 +187,9 @@ class STACGenerator:
         # Fetch data from database
         self.project = self._fetch_project()
         self.flights = self._fetch_flights_with_products()
+
+        # Validate and filter raw data links
+        self._validate_raw_data_links()
 
         # Generate STAC collection
         self.collection = self.generate_stac_collection()
@@ -495,7 +542,9 @@ class STACGenerator:
                     last_link = derived_links[-1]
                     # Use application/octet-stream as STAC API doesn't accept application/zip
                     last_link.media_type = "application/octet-stream"
-                    last_link.title = f"Download raw UAS data (.zip)"
+                    last_link.title = (
+                        f"Download raw UAS data ({raw_data.original_filename})"
+                    )
 
             except Exception as e:
                 logger.warning(
