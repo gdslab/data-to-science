@@ -448,6 +448,58 @@ def generate_potree_viewer_html(
       viewer.loadGUI(() => {{
         viewer.setLanguage('en');
         $("#menu_tools").next().show();
+
+        // Inject Point Size slider into Appearance section
+        setTimeout(() => {{
+          // Check if already injected to avoid duplicates
+          if ($('#sldPointSize').length > 0) return;
+
+          // Find the Appearance section's list
+          const $appearanceList = $('#menu_appearance').next().find('ul.pv-menu-list');
+
+          if ($appearanceList.length === 0) {{
+            console.warn('Appearance list not found');
+            return;
+          }}
+
+          // Create and insert the point size control HTML
+          const $pointSizeControl = $(`
+            <li>
+              <span>Point Size</span>:
+              <span id="lblPointSize"></span>
+              <div id="sldPointSize"></div>
+            </li>
+          `);
+
+          // Insert after the second li (after Point Budget and FOV)
+          const $targetLi = $appearanceList.find('li').eq(1);
+          if ($targetLi.length > 0) {{
+            $targetLi.after($pointSizeControl);
+          }} else {{
+            $appearanceList.prepend($pointSizeControl);
+          }}
+
+          // Initialize slider with current material size
+          const initialSize = PC_IS_MOBILE ? 2.0 : 1.0;
+
+          $('#sldPointSize').slider({{
+            value: initialSize,
+            min: 0.1,
+            max: 10.0,
+            step: 0.1,
+            slide: (event, ui) => {{
+              // Update all point clouds in the scene
+              viewer.scene.pointclouds.forEach(pc => {{
+                pc.material.size = ui.value;
+              }});
+              // Update label display
+              $('#lblPointSize').text(ui.value.toFixed(1));
+            }}
+          }});
+
+          // Set initial label value
+          $('#lblPointSize').text(initialSize.toFixed(1));
+        }}, 100);
       }});
 
       // If we have a CRS, show Cesium and wire up transforms
