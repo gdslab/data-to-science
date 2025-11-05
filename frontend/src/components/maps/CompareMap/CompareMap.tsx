@@ -203,6 +203,7 @@ export default function CompareMap() {
         style={LeftMapStyle}
         mapboxAccessToken={mapboxAccessToken || undefined}
         mapStyle={mapStyle}
+        maxZoom={26}
         reuseMaps={true}
       >
         {/* Display project boundary when project activated */}
@@ -256,6 +257,7 @@ export default function CompareMap() {
         style={RightMapStyle}
         mapboxAccessToken={mapboxAccessToken}
         mapStyle={mapStyle}
+        maxZoom={26}
         reuseMaps={true}
       >
         {/* Display project boundary when project activated */}
