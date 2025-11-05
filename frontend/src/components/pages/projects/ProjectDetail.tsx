@@ -151,7 +151,7 @@ export default function ProjectDetail() {
             </span>
             {project.created_by && (
               <span className="block text-sm text-gray-500">
-                Created by: {project.created_by}
+                Created by: {project.created_by.first_name} {project.created_by.last_name}
               </span>
             )}
             <span className="block my-1 mx-0 text-gray-600 text-wrap break-all">

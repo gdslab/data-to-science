@@ -223,11 +223,15 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 setattr(project[0], "flight_count", flight_count)
                 setattr(project[0], "most_recent_flight", most_recent_flight)
                 setattr(project[0], "data_product_count", data_product_count)
-                # Add project owner name (from eager-loaded relationship)
+                # Add project owner details (from eager-loaded relationship)
                 setattr(
                     project[0],
                     "created_by",
-                    project[0].owner.full_name if project[0].owner else None,
+                    {
+                        "first_name": project[0].owner.first_name,
+                        "last_name": project[0].owner.last_name,
+                        "email": project[0].owner.email,
+                    } if project[0].owner else None,
                 )
                 return {
                     "response_code": status.HTTP_200_OK,

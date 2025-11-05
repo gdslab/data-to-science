@@ -48,6 +48,9 @@ SCIENTIFIC_EXTENSION_URI = (
     "https://stac-extensions.github.io/scientific/v1.0.0/schema.json"
 )
 
+# Contacts extension URI
+CONTACTS_EXTENSION_URI = "https://stac-extensions.github.io/contacts/v1.0.0/schema.json"
+
 # Constants
 DEFAULT_LICENSE = "CC-BY-NC-4.0"
 COG_ASSET_ROLE = "data"
@@ -58,6 +61,8 @@ class STACGenerator:
         self,
         db: Session,
         project_id: UUID4,
+        contact_name: Optional[str] = None,
+        contact_email: Optional[str] = None,
         sci_doi: Optional[str] = None,
         sci_citation: Optional[str] = None,
         license: Optional[str] = None,
@@ -70,6 +75,8 @@ class STACGenerator:
         Args:
             db: Database session
             project_id: Project UUID to generate STAC metadata for
+            contact_name: Optional contact name for the collection
+            contact_email: Optional contact email for the collection
             sci_doi: Optional scientific DOI for the collection
             sci_citation: Optional scientific citation for the collection
             license: Optional license identifier (defaults to CC-BY-NC-4.0)
@@ -80,6 +87,8 @@ class STACGenerator:
         # Store configuration
         self.db = db
         self.project_id = project_id
+        self.contact_name = contact_name
+        self.contact_email = contact_email
         self.sci_doi = sci_doi
         self.sci_citation = sci_citation
         self.custom_titles = custom_titles or {}
@@ -163,7 +172,9 @@ class STACGenerator:
             )
 
         # Filter to only valid IDs
-        self.include_raw_data_links = self.include_raw_data_links & valid_data_product_ids
+        self.include_raw_data_links = (
+            self.include_raw_data_links & valid_data_product_ids
+        )
 
         logger.info(
             f"Validated raw data links for project {self.project_id}: "
@@ -405,6 +416,23 @@ class STACGenerator:
                 extra_fields["sci:doi"] = final_sci_doi
             if final_sci_citation:
                 extra_fields["sci:citation"] = final_sci_citation
+
+        # Get cached contact metadata if available
+        cached_contact_name, cached_contact_email = self._cache.get_contact_metadata()
+
+        # Determine final contact values: prioritize new values, then cached values
+        final_contact_name = self.contact_name or cached_contact_name
+        final_contact_email = self.contact_email or cached_contact_email
+
+        # Add contacts extension if all contact fields are provided
+        if final_contact_name and final_contact_email:
+            stac_extensions.append(CONTACTS_EXTENSION_URI)
+            contact_object = {
+                "name": final_contact_name,
+                "emails": [{"value": final_contact_email}],
+                "roles": ["publisher", "point_of_contact"],
+            }
+            extra_fields["contacts"] = [contact_object]
 
         collection = Collection(
             id=str(self.project.id),

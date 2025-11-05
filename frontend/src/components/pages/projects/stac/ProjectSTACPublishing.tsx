@@ -65,7 +65,7 @@ export default function ProjectSTACPublishing() {
     buildRequestPayload,
     toggleRawDataLink,
     toggleAllRawDataLinks,
-  } = useSTACForm(initialStacMetadata);
+  } = useSTACForm(initialStacMetadata, loaderProject);
 
   // STAC metadata management
   const { stacMetadata, allItems, generatePreview } = useSTACData({
