@@ -98,6 +98,41 @@ class CachedSTACMetadata:
 
         return doi, citation
 
+    def get_contact_metadata(self) -> Tuple[Optional[str], Optional[str]]:
+        """Extract contact name and email from cached collection.
+
+        Returns:
+            Tuple of (name, email), both can be None if not cached
+        """
+        if not self._cache:
+            return None, None
+
+        collection = self._cache.get("collection")
+        if not collection or not isinstance(collection, dict):
+            return None, None
+
+        # Extract from contacts array if present
+        contacts = collection.get("contacts")
+        if not contacts or not isinstance(contacts, list) or len(contacts) == 0:
+            return None, None
+
+        # Get first contact
+        contact = contacts[0]
+        if not isinstance(contact, dict):
+            return None, None
+
+        name = contact.get("name")
+
+        # Extract email from emails array
+        email = None
+        emails = contact.get("emails")
+        if emails and isinstance(emails, list) and len(emails) > 0:
+            email_obj = emails[0]
+            if isinstance(email_obj, dict):
+                email = email_obj.get("value")
+
+        return name, email
+
     def get_item(self, data_product_id: str) -> Optional[dict]:
         """Get cached item data for a specific data product.
 

@@ -89,7 +89,7 @@ export default function ProjectDetailEditForm({
               </EditField>
               {project.created_by && (
                 <span className="block text-sm text-gray-500">
-                  Created by: {project.created_by}
+                  Created by: {project.created_by.first_name} {project.created_by.last_name}
                 </span>
               )}
               <EditField

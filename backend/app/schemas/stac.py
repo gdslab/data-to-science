@@ -37,6 +37,8 @@ class STACPreview(BaseModel):
 class STACMetadataRequest(BaseModel):
     """Request body for STAC operations (preview generation and catalog publishing)."""
 
+    contact_name: Optional[str] = None
+    contact_email: Optional[str] = None
     sci_doi: Optional[str] = None
     sci_citation: Optional[str] = None
     license: Optional[str] = None

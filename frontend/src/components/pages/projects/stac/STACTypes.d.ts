@@ -84,6 +84,8 @@ export interface CombinedSTACItem {
 }
 
 export interface STACRequestPayload {
+  contact_name?: string;
+  contact_email?: string;
   sci_doi?: string;
   sci_citation?: string;
   license?: string;
