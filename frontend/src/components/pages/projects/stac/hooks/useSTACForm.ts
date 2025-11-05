@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { STACMetadata, STACRequestPayload } from '../STACTypes';
-import { Project } from '../../Project';
 
 interface FormState {
   contactName: string;
@@ -27,8 +26,7 @@ interface UseSTACFormReturn {
 const DEFAULT_LICENSE = 'CC-BY-NC-4.0';
 
 export function useSTACForm(
-  stacMetadata: STACMetadata | null,
-  project: Project
+  stacMetadata: STACMetadata | null
 ): UseSTACFormReturn {
   const [formState, setFormState] = useState<FormState>({
     contactName: '',
@@ -57,7 +55,11 @@ export function useSTACForm(
         if (contacts && Array.isArray(contacts) && contacts.length > 0) {
           const contact = contacts[0];
           serverContactName = contact.name || '';
-          if (contact.emails && Array.isArray(contact.emails) && contact.emails.length > 0) {
+          if (
+            contact.emails &&
+            Array.isArray(contact.emails) &&
+            contact.emails.length > 0
+          ) {
             serverContactEmail = contact.emails[0].value || '';
           }
         }
@@ -196,7 +198,9 @@ export function useSTACForm(
       payload.custom_titles = formState.customTitles;
     }
     if (formState.includeRawDataLinks.size > 0) {
-      payload.include_raw_data_links = Array.from(formState.includeRawDataLinks);
+      payload.include_raw_data_links = Array.from(
+        formState.includeRawDataLinks
+      );
     }
 
     return payload;
