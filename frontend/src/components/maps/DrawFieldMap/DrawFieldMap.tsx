@@ -261,7 +261,7 @@ export default function DrawFieldMap({
       style={{ width: '100%', height: '100%' }}
       mapboxAccessToken={mapboxAccessToken || undefined}
       mapStyle={mapStyle}
-      maxZoom={26}
+      maxZoom={25}
     >
       {/* Render GeoJSON feature collection if it exists */}
       {featureCollection && !editFeature && (
