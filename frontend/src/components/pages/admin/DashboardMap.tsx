@@ -106,6 +106,7 @@ export default function DashboardMap() {
       }}
       mapboxAccessToken={mapboxAccessToken || undefined}
       mapStyle={mapStyle}
+      maxZoom={26}
       reuseMaps={true}
       onClick={handleMapClick}
     >
