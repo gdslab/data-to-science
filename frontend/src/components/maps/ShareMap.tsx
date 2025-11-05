@@ -178,6 +178,7 @@ export default function ShareMap() {
       }}
       mapboxAccessToken={mapboxAccessToken || undefined}
       mapStyle={mapStyle}
+      maxZoom={26}
       reuseMaps={true}
     >
       {/* Display raster tiles */}

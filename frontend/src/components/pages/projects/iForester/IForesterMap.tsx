@@ -139,6 +139,7 @@ export default function IForesterMap() {
       }}
       mapboxAccessToken={mapboxAccessToken || undefined}
       mapStyle={mapStyle}
+      maxZoom={26}
       reuseMaps={true}
     >
       {/* Cluster markers */}
