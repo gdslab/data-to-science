@@ -11,6 +11,7 @@ from pystac import (
     Collection,
     Extent,
     Item,
+    Link,
     SpatialExtent,
     TemporalExtent,
 )
@@ -32,6 +33,7 @@ from app.schemas import STACError, ItemStatus
 
 from app.utils.stac import pdal_to_stac
 from app.utils.stac import CachedSTACMetadata
+from app.core.config import settings
 
 
 logger = logging.getLogger("__name__")
@@ -522,6 +524,36 @@ class STACGenerator:
 
         return flight_properties
 
+    def _add_external_viewer_link(
+        self, item: Item, data_product: models.DataProduct
+    ) -> None:
+        """Add external viewer link to STAC item.
+
+        Only adds link if EXTERNAL_VIEWER_URL is configured in settings.
+
+        Args:
+            item: PySTAC Item to add link to
+            data_product: DataProduct model instance
+        """
+        if not settings.EXTERNAL_VIEWER_URL:
+            return
+
+        # Get the data product URL
+        upload_dir = get_static_dir()
+        data_url = get_url(data_product.filepath, upload_dir)
+
+        # Construct the external viewer URL with the data URL as a query parameter
+        viewer_url = f"{settings.EXTERNAL_VIEWER_URL}?url={data_url}"
+
+        # Add the external link
+        external_link = Link(
+            rel="external",
+            target=viewer_url,
+            media_type="text/html",
+            title=f"Open in Cloud Optimized Viewer ({settings.EXTERNAL_VIEWER_URL})",
+        )
+        item.add_link(external_link)
+
     def _add_raw_data_links(self, item: Item, data_product: models.DataProduct) -> None:
         """Add derived_from links for raw data to STAC item.
 
@@ -619,6 +651,9 @@ class STACGenerator:
             cached_item=cached_item,
         )
 
+        # Add external viewer link if configured
+        self._add_external_viewer_link(item, data_product)
+
         # Add raw data links if requested
         self._add_raw_data_links(item, data_product)
 
@@ -668,6 +703,9 @@ class STACGenerator:
             properties={**flight_properties},
         )
         item.add_asset(key=data_product_id_str, asset=asset)
+
+        # Add external viewer link if configured
+        self._add_external_viewer_link(item, data_product)
 
         # Add raw data links if requested
         self._add_raw_data_links(item, data_product)

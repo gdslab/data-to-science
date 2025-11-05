@@ -135,6 +135,7 @@ class Settings(BaseSettings):
     STAC_API_URL: Optional[AnyHttpUrl] = None
     STAC_API_TEST_URL: Optional[AnyHttpUrl] = None
     STAC_BROWSER_URL: Optional[AnyHttpUrl] = None
+    EXTERNAL_VIEWER_URL: Optional[AnyHttpUrl] = None
 
     @property
     def get_stac_api_url(self) -> Optional[AnyHttpUrl]:
