@@ -11,6 +11,7 @@ from pystac import (
     Collection,
     Extent,
     Item,
+    Link,
     SpatialExtent,
     TemporalExtent,
 )
@@ -32,6 +33,7 @@ from app.schemas import STACError, ItemStatus
 
 from app.utils.stac import pdal_to_stac
 from app.utils.stac import CachedSTACMetadata
+from app.core.config import settings
 
 
 logger = logging.getLogger("__name__")
@@ -48,6 +50,9 @@ SCIENTIFIC_EXTENSION_URI = (
     "https://stac-extensions.github.io/scientific/v1.0.0/schema.json"
 )
 
+# Contacts extension URI
+CONTACTS_EXTENSION_URI = "https://stac-extensions.github.io/contacts/v1.0.0/schema.json"
+
 # Constants
 DEFAULT_LICENSE = "CC-BY-NC-4.0"
 COG_ASSET_ROLE = "data"
@@ -58,6 +63,8 @@ class STACGenerator:
         self,
         db: Session,
         project_id: UUID4,
+        contact_name: Optional[str] = None,
+        contact_email: Optional[str] = None,
         sci_doi: Optional[str] = None,
         sci_citation: Optional[str] = None,
         license: Optional[str] = None,
@@ -70,6 +77,8 @@ class STACGenerator:
         Args:
             db: Database session
             project_id: Project UUID to generate STAC metadata for
+            contact_name: Optional contact name for the collection
+            contact_email: Optional contact email for the collection
             sci_doi: Optional scientific DOI for the collection
             sci_citation: Optional scientific citation for the collection
             license: Optional license identifier (defaults to CC-BY-NC-4.0)
@@ -80,6 +89,8 @@ class STACGenerator:
         # Store configuration
         self.db = db
         self.project_id = project_id
+        self.contact_name = contact_name
+        self.contact_email = contact_email
         self.sci_doi = sci_doi
         self.sci_citation = sci_citation
         self.custom_titles = custom_titles or {}
@@ -163,7 +174,9 @@ class STACGenerator:
             )
 
         # Filter to only valid IDs
-        self.include_raw_data_links = self.include_raw_data_links & valid_data_product_ids
+        self.include_raw_data_links = (
+            self.include_raw_data_links & valid_data_product_ids
+        )
 
         logger.info(
             f"Validated raw data links for project {self.project_id}: "
@@ -406,6 +419,23 @@ class STACGenerator:
             if final_sci_citation:
                 extra_fields["sci:citation"] = final_sci_citation
 
+        # Get cached contact metadata if available
+        cached_contact_name, cached_contact_email = self._cache.get_contact_metadata()
+
+        # Determine final contact values: prioritize new values, then cached values
+        final_contact_name = self.contact_name or cached_contact_name
+        final_contact_email = self.contact_email or cached_contact_email
+
+        # Add contacts extension if all contact fields are provided
+        if final_contact_name and final_contact_email:
+            stac_extensions.append(CONTACTS_EXTENSION_URI)
+            contact_object = {
+                "name": final_contact_name,
+                "emails": [{"value": final_contact_email}],
+                "roles": ["publisher", "point_of_contact"],
+            }
+            extra_fields["contacts"] = [contact_object]
+
         collection = Collection(
             id=str(self.project.id),
             title=self.project.title,
@@ -493,6 +523,36 @@ class STACGenerator:
         flight_properties["title"] = title
 
         return flight_properties
+
+    def _add_external_viewer_link(
+        self, item: Item, data_product: models.DataProduct
+    ) -> None:
+        """Add external viewer link to STAC item.
+
+        Only adds link if EXTERNAL_VIEWER_URL is configured in settings.
+
+        Args:
+            item: PySTAC Item to add link to
+            data_product: DataProduct model instance
+        """
+        if not settings.EXTERNAL_VIEWER_URL:
+            return
+
+        # Get the data product URL
+        upload_dir = get_static_dir()
+        data_url = get_url(data_product.filepath, upload_dir)
+
+        # Construct the external viewer URL with the data URL as a query parameter
+        viewer_url = f"{settings.EXTERNAL_VIEWER_URL}?url={data_url}"
+
+        # Add the external link
+        external_link = Link(
+            rel="external",
+            target=viewer_url,
+            media_type="text/html",
+            title=f"Open in Cloud Optimized Viewer ({settings.EXTERNAL_VIEWER_URL})",
+        )
+        item.add_link(external_link)
 
     def _add_raw_data_links(self, item: Item, data_product: models.DataProduct) -> None:
         """Add derived_from links for raw data to STAC item.
@@ -591,6 +651,9 @@ class STACGenerator:
             cached_item=cached_item,
         )
 
+        # Add external viewer link if configured
+        self._add_external_viewer_link(item, data_product)
+
         # Add raw data links if requested
         self._add_raw_data_links(item, data_product)
 
@@ -640,6 +703,9 @@ class STACGenerator:
             properties={**flight_properties},
         )
         item.add_asset(key=data_product_id_str, asset=asset)
+
+        # Add external viewer link if configured
+        self._add_external_viewer_link(item, data_product)
 
         # Add raw data links if requested
         self._add_raw_data_links(item, data_product)

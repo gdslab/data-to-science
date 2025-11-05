@@ -67,6 +67,8 @@ def get_stac_timestamp(job: Optional[JobModel] = None) -> Optional[str]:
 def generate_stac_preview(
     self,
     project_id: str,
+    contact_name: Optional[str] = None,
+    contact_email: Optional[str] = None,
     sci_doi: Optional[str] = None,
     sci_citation: Optional[str] = None,
     license: Optional[str] = None,
@@ -87,6 +89,8 @@ def generate_stac_preview(
         sg = STACGenerator(
             db,
             project_id=project_uuid,
+            contact_name=contact_name,
+            contact_email=contact_email,
             sci_doi=sci_doi,
             sci_citation=sci_citation,
             license=license,
@@ -99,10 +103,11 @@ def generate_stac_preview(
         failed_items = sg.failed_items
 
         # Prepare response data
+        collection_dict = collection.to_dict()
         items_dicts = [item.to_dict() for item in items]
         response_data = {
             "collection_id": project_id,
-            "collection": collection.to_dict(),
+            "collection": collection_dict,
             "items": items_dicts,
             "is_published": False,
             "timestamp": get_stac_timestamp(job.job),
@@ -161,6 +166,8 @@ def generate_stac_preview(
 def publish_stac_catalog(
     self,
     project_id: str,
+    contact_name: Optional[str] = None,
+    contact_email: Optional[str] = None,
     sci_doi: Optional[str] = None,
     sci_citation: Optional[str] = None,
     license: Optional[str] = None,
@@ -181,6 +188,8 @@ def publish_stac_catalog(
         sg = STACGenerator(
             db,
             project_id=project_uuid,
+            contact_name=contact_name,
+            contact_email=contact_email,
             sci_doi=sci_doi,
             sci_citation=sci_citation,
             license=license,
@@ -286,6 +295,8 @@ def publish_stac_catalog(
 # Non-Celery functions for testing (duplicate the logic without Celery decorators)
 def generate_stac_preview_task(
     project_id: str,
+    contact_name: Optional[str] = None,
+    contact_email: Optional[str] = None,
     sci_doi: Optional[str] = None,
     sci_citation: Optional[str] = None,
     license: Optional[str] = None,
@@ -313,6 +324,8 @@ def generate_stac_preview_task(
         sg = STACGenerator(
             db,
             project_id=project_uuid,
+            contact_name=contact_name,
+            contact_email=contact_email,
             sci_doi=sci_doi,
             sci_citation=sci_citation,
             license=license,
@@ -385,6 +398,8 @@ def generate_stac_preview_task(
 
 def publish_stac_catalog_task(
     project_id: str,
+    contact_name: Optional[str] = None,
+    contact_email: Optional[str] = None,
     sci_doi: Optional[str] = None,
     sci_citation: Optional[str] = None,
     license: Optional[str] = None,
@@ -414,6 +429,8 @@ def publish_stac_catalog_task(
         sg = STACGenerator(
             db,
             project_id=project_uuid,
+            contact_name=contact_name,
+            contact_email=contact_email,
             sci_doi=sci_doi,
             sci_citation=sci_citation,
             license=license,

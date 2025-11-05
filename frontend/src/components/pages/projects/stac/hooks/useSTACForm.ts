@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { STACMetadata, STACRequestPayload } from '../STACTypes';
+import { Project } from '../../Project';
 
 interface FormState {
+  contactName: string;
+  contactEmail: string;
   sciDoi: string;
   sciCitation: string;
   license: string;
@@ -24,9 +27,12 @@ interface UseSTACFormReturn {
 const DEFAULT_LICENSE = 'CC-BY-NC-4.0';
 
 export function useSTACForm(
-  stacMetadata: STACMetadata | null
+  stacMetadata: STACMetadata | null,
+  project: Project
 ): UseSTACFormReturn {
   const [formState, setFormState] = useState<FormState>({
+    contactName: '',
+    contactEmail: '',
     sciDoi: '',
     sciCitation: '',
     license: DEFAULT_LICENSE,
@@ -38,11 +44,23 @@ export function useSTACForm(
   useEffect(() => {
     if (stacMetadata?.collection) {
       setFormState((prev) => {
-        // Get server values
+        // Get server values for scientific metadata
         const serverSciDoi = stacMetadata.collection['sci:doi'] || '';
         const serverSciCitation = stacMetadata.collection['sci:citation'] || '';
         const serverLicense =
           (stacMetadata.collection as any).license || DEFAULT_LICENSE;
+
+        // Get server values for contact metadata
+        let serverContactName = '';
+        let serverContactEmail = '';
+        const contacts = (stacMetadata.collection as any).contacts;
+        if (contacts && Array.isArray(contacts) && contacts.length > 0) {
+          const contact = contacts[0];
+          serverContactName = contact.name || '';
+          if (contact.emails && Array.isArray(contact.emails) && contact.emails.length > 0) {
+            serverContactEmail = contact.emails[0].value || '';
+          }
+        }
 
         // Preserve user input if it differs from server data
         // This prevents form values from reverting after submission
@@ -59,11 +77,24 @@ export function useSTACForm(
             ? prev.license
             : serverLicense;
 
+        // For contact fields, only use cached values if they exist
+        // Preserve user input if it differs from server data
+        const finalContactName =
+          prev.contactName && prev.contactName !== serverContactName
+            ? prev.contactName
+            : serverContactName;
+        const finalContactEmail =
+          prev.contactEmail && prev.contactEmail !== serverContactEmail
+            ? prev.contactEmail
+            : serverContactEmail;
+
         return {
           ...prev,
           sciDoi: finalSciDoi,
           sciCitation: finalSciCitation,
           license: finalLicense,
+          contactName: finalContactName,
+          contactEmail: finalContactEmail,
         };
       });
     }
@@ -152,6 +183,12 @@ export function useSTACForm(
   const buildRequestPayload = (): STACRequestPayload => {
     const payload: STACRequestPayload = {};
 
+    // Add contact fields if both are present
+    if (formState.contactName && formState.contactEmail) {
+      payload.contact_name = formState.contactName;
+      payload.contact_email = formState.contactEmail;
+    }
+
     if (formState.sciDoi) payload.sci_doi = formState.sciDoi;
     if (formState.sciCitation) payload.sci_citation = formState.sciCitation;
     if (formState.license) payload.license = formState.license;
@@ -167,6 +204,8 @@ export function useSTACForm(
 
   const resetForm = () => {
     setFormState({
+      contactName: '',
+      contactEmail: '',
       sciDoi: '',
       sciCitation: '',
       license: DEFAULT_LICENSE,

@@ -120,6 +120,8 @@ def generate_stac_preview_async(
     task = generate_stac_preview.apply_async(
         args=[str(project_id)],
         kwargs={
+            "contact_name": metadata_request.contact_name,
+            "contact_email": metadata_request.contact_email,
             "sci_doi": metadata_request.sci_doi,
             "sci_citation": metadata_request.sci_citation,
             "license": metadata_request.license,
@@ -188,6 +190,8 @@ def publish_project_to_stac_catalog_async(
     task = publish_stac_catalog.apply_async(
         args=[str(project_id)],
         kwargs={
+            "contact_name": metadata_request.contact_name,
+            "contact_email": metadata_request.contact_email,
             "sci_doi": metadata_request.sci_doi,
             "sci_citation": metadata_request.sci_citation,
             "license": metadata_request.license,

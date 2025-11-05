@@ -108,7 +108,11 @@ export interface Project {
   title: string;
   role: string;
   is_published: boolean;
-  created_by: string | null;
+  created_by: {
+    first_name: string;
+    last_name: string;
+    email: string;
+  } | null;
 }
 
 export interface ProjectModule {

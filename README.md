@@ -144,6 +144,7 @@ The Data To Science web application can be accessed from `http://localhost:8000`
    - `ENABLE_OPENTELEMETRY`: Enable/disable OpenTelemetry. Must also uncomment the `otel-collector` container and toggle the `backend` and `titiler` OpenTelemetry related environment settings in the docker compose config. Disabled by default.
    - `EXTENSIONS`: Can be used to enable extensions. Should be left blank typically.
    - `EXTERNAL_STORAGE`: Internal mount point for external storage. Should be blank unless you have a binding mount for external storage.
+   - `EXTERNAL_VIEWER_URL`: Web application for displaying published STAC Items (optional).
    - `MAIL_ENABLED`: Enable SMTP email by changing value from 0 to 1.
    - `MAIL_SERVER`: SMTP server address.
    - `MAIL_USERNAME`: Username for SMTP server.

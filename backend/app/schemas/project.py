@@ -9,6 +9,13 @@ from app.schemas.role import Role
 from app.schemas.team import Team
 
 
+# project owner details
+class OwnerDetails(BaseModel):
+    first_name: str
+    last_name: str
+    email: str
+
+
 # shared properties
 class ProjectBase(BaseModel):
     title: Optional[str] = None
@@ -68,7 +75,7 @@ class Project(ProjectInDBBase):
     flight_count: int = 0
     most_recent_flight: Optional[date] = None
     role: Role = Role.VIEWER
-    created_by: Optional[str] = None
+    created_by: Optional[OwnerDetails] = None
     created_at: datetime
     updated_at: datetime
 
