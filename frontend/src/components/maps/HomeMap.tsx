@@ -219,7 +219,7 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
       }}
       mapboxAccessToken={mapboxAccessToken || undefined}
       mapStyle={mapStyle}
-      maxZoom={26}
+      maxZoom={25}
       onClick={handleMapClick}
       onMoveEnd={handleMoveEnd}
     >
