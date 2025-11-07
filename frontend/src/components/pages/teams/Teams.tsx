@@ -4,6 +4,7 @@ import {
   Outlet,
   useLoaderData,
   useLocation,
+  useNavigate,
   useParams,
   useRevalidator,
 } from 'react-router-dom';
@@ -36,8 +37,15 @@ export default function SidebarPage() {
   const { teamId } = useParams();
   const location = useLocation();
   const revalidator = useRevalidator();
+  const navigate = useNavigate();
 
   const [searchValue, setSearchValue] = useState('');
+
+  const sortedTeams = useMemo(() => {
+    return teams.sort((a, b) =>
+      a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
+    );
+  }, [teams]);
 
   useEffect(() => {
     if (location.state && location.state.reload) {
@@ -45,19 +53,32 @@ export default function SidebarPage() {
     }
   }, [location.state]);
 
+  // Auto-navigate to last viewed team or first team when landing on /teams
+  useEffect(() => {
+    if (location.pathname === '/teams' && teams.length > 0 && !teamId) {
+      const lastViewedTeamId = localStorage.getItem('lastViewedTeamId');
+
+      // Check if last viewed team still exists in user's team list
+      const lastViewedTeam = teams.find((team) => team.id === lastViewedTeamId);
+
+      if (lastViewedTeam) {
+        navigate(`/teams/${lastViewedTeamId}`, { replace: true });
+      } else {
+        // Fall back to first team if last viewed doesn't exist
+        navigate(`/teams/${sortedTeams[0].id}`, { replace: true });
+      }
+    }
+  }, [location.pathname, teams, teamId, navigate]);
+
   const filteredTeams = useMemo(() => {
-    return teams
-      .filter((team) => {
-        const searchLower = searchValue.toLowerCase();
-        return (
-          team.title.toLowerCase().includes(searchLower) ||
-          team.description.toLowerCase().includes(searchLower)
-        );
-      })
-      .sort((a, b) =>
-        a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
+    return sortedTeams.filter((team) => {
+      const searchLower = searchValue.toLowerCase();
+      return (
+        team.title.toLowerCase().includes(searchLower) ||
+        team.description.toLowerCase().includes(searchLower)
       );
-  }, [teams, searchValue]);
+    });
+  }, [sortedTeams, searchValue]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchValue(e.target.value);
