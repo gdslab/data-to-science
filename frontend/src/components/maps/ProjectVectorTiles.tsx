@@ -1,4 +1,5 @@
-import { Layer, Source } from 'react-map-gl/maplibre';
+import { useEffect, useRef } from 'react';
+import { Layer, Source, useMap } from 'react-map-gl/maplibre';
 
 import { getProjectVectorLayer } from './layerProps';
 import { useMapLayerContext } from './MapLayersContext';
@@ -7,6 +8,43 @@ export default function ProjectVectorTile() {
   const {
     state: { layers },
   } = useMapLayerContext();
+  const { current: map } = useMap();
+  const previousLayersRef = useRef<Set<string>>(new Set());
+
+  // Clean up layers that were unchecked (polygon layers create border layers)
+  useEffect(() => {
+    if (!map) return;
+
+    const currentLayerIds = new Set(
+      layers.filter((layer) => layer.checked).map((layer) => layer.id)
+    );
+
+    // Find layers that were removed (previously checked, now unchecked)
+    const removedLayerIds = Array.from(previousLayersRef.current).filter(
+      (id) => !currentLayerIds.has(id)
+    );
+
+    // Clean up removed layers
+    removedLayerIds.forEach((layerId) => {
+      // Remove border layer first (for polygon layers)
+      const borderLayerId = `${layerId}-border`;
+      if (map.getLayer(borderLayerId)) {
+        map.removeLayer(borderLayerId);
+      }
+
+      // Remove main layer
+      if (map.getLayer(layerId)) {
+        map.removeLayer(layerId);
+      }
+
+      // Remove source last
+      if (map.getSource(layerId)) {
+        map.removeSource(layerId);
+      }
+    });
+
+    previousLayersRef.current = currentLayerIds;
+  }, [layers, map]);
 
   return layers
     .filter((layer) => layer.checked)
