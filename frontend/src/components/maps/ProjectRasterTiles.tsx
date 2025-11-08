@@ -60,6 +60,28 @@ export default function ProjectRasterTiles({
     [dataProduct, symbology, tileScale]
   );
 
+  // Determine the beforeId, but only use it if the layer actually exists in the map
+  const safeBeforeId = useMemo(() => {
+    if (!map) return undefined;
+
+    // Try the provided beforeLayerId first
+    if (beforeLayerId && map.getLayer(beforeLayerId)) {
+      return beforeLayerId;
+    }
+
+    // Fallback to activeDataProduct if this is not the active one
+    if (
+      dataProduct.id !== activeDataProduct?.id &&
+      activeDataProduct?.id &&
+      map.getLayer(activeDataProduct.id)
+    ) {
+      return activeDataProduct.id;
+    }
+
+    // No valid beforeId found, render on top
+    return undefined;
+  }, [map, beforeLayerId, dataProduct.id, activeDataProduct?.id]);
+
   if (!symbology || !isLoaded || !map || !tiles) return null;
 
   return (
@@ -82,12 +104,7 @@ export default function ProjectRasterTiles({
           'raster-opacity':
             symbology.opacity != null ? symbology.opacity / 100 : 1,
         }}
-        beforeId={
-          beforeLayerId ||
-          (dataProduct.id !== activeDataProduct?.id
-            ? activeDataProduct?.id
-            : undefined)
-        }
+        beforeId={safeBeforeId}
       />
     </Source>
   );
