@@ -15,6 +15,8 @@ export default function ProjectVectorTile() {
   useEffect(() => {
     if (!map) return;
 
+    const mapInstance = map.getMap();
+
     const currentLayerIds = new Set(
       layers.filter((layer) => layer.checked).map((layer) => layer.id)
     );
@@ -28,18 +30,18 @@ export default function ProjectVectorTile() {
     removedLayerIds.forEach((layerId) => {
       // Remove border layer first (for polygon layers)
       const borderLayerId = `${layerId}-border`;
-      if (map.getLayer(borderLayerId)) {
-        map.removeLayer(borderLayerId);
+      if (mapInstance.getLayer(borderLayerId)) {
+        mapInstance.removeLayer(borderLayerId);
       }
 
       // Remove main layer
-      if (map.getLayer(layerId)) {
-        map.removeLayer(layerId);
+      if (mapInstance.getLayer(layerId)) {
+        mapInstance.removeLayer(layerId);
       }
 
       // Remove source last
-      if (map.getSource(layerId)) {
-        map.removeSource(layerId);
+      if (mapInstance.getSource(layerId)) {
+        mapInstance.removeSource(layerId);
       }
     });
 
