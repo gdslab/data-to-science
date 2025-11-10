@@ -1,9 +1,13 @@
 from datetime import datetime, timezone
+import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional, Tuple
 from uuid import UUID
+import re
 
+import geopandas as gpd
 from fastapi import HTTPException, Request, status
+from fastapi.responses import JSONResponse
 from starlette.types import Scope, Receive, Send
 from sqlalchemy.orm import Session
 
@@ -11,11 +15,38 @@ from app.utils.staticfiles import RangedStaticFiles
 
 from app import crud
 from app.api.deps import can_read_project
+from app.api.utils import save_vector_layer_parquet, get_static_dir
 from app.core import security
 from app.db.session import SessionLocal
 from app.models.data_product import DataProduct
 from app.models.raw_data import RawData
 from app.schemas.api_key import APIKeyUpdate
+
+
+def parse_vector_parquet_path(path: str) -> Optional[Tuple[UUID, str]]:
+    """Parse vector parquet path to extract project_id and layer_id.
+
+    Expected path format: /static/projects/{uuid}/vector/{layer_id}/{layer_id}.parquet
+
+    Args:
+        path: URL path to parse
+
+    Returns:
+        Tuple of (project_id, layer_id) if valid parquet path, None otherwise
+    """
+    # Pattern to match: /static/projects/{uuid}/vector/{layer_id}/{layer_id}.parquet
+    pattern = r"/static/projects/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/vector/([^/]+)/\2\.parquet"
+    match = re.match(pattern, path, re.IGNORECASE)
+
+    if match:
+        try:
+            project_id = UUID(match.group(1))
+            layer_id = match.group(2)
+            return (project_id, layer_id)
+        except ValueError:
+            return None
+
+    return None
 
 
 def verify_api_key_static_file_access(
@@ -272,4 +303,47 @@ class ProtectedStaticFiles(RangedStaticFiles):
 
         request = Request(scope, receive)
         await verify_static_file_access(request)
+
+        # Check if this is a request for a vector parquet file
+        parsed_path = parse_vector_parquet_path(request.url.path)
+        if parsed_path and request.url.path.endswith(".parquet"):
+            project_id, layer_id = parsed_path
+            static_dir = get_static_dir()
+            parquet_path = os.path.join(
+                static_dir, "projects", str(project_id), "vector", layer_id, f"{layer_id}.parquet"
+            )
+
+            # If parquet file doesn't exist, generate it on-demand
+            if not os.path.exists(parquet_path):
+                db = SessionLocal()
+                try:
+                    # Verify layer exists in database
+                    features = crud.vector_layer.get_vector_layer_by_id(
+                        db, project_id=project_id, layer_id=layer_id
+                    )
+
+                    if features:
+                        # Convert features to GeoDataFrame and generate parquet
+                        gdf = gpd.GeoDataFrame.from_features(features, crs="EPSG:4326")
+                        save_vector_layer_parquet(project_id, layer_id, gdf, static_dir)
+                    else:
+                        # Layer not found in database
+                        response = JSONResponse(
+                            status_code=status.HTTP_404_NOT_FOUND,
+                            content={"detail": "Vector layer not found"}
+                        )
+                        await response(scope, receive, send)
+                        return
+
+                except Exception as e:
+                    # Error generating parquet
+                    response = JSONResponse(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        content={"detail": f"Error generating parquet file: {str(e)}"}
+                    )
+                    await response(scope, receive, send)
+                    return
+                finally:
+                    db.close()
+
         await super().__call__(scope, receive, send)

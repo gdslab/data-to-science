@@ -23,7 +23,11 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
-from app.api.utils import sanitize_file_name, get_tile_url_with_signed_payload
+from app.api.utils import (
+    sanitize_file_name,
+    get_tile_url_with_signed_payload,
+    save_vector_layer_parquet,
+)
 from app.core.config import settings
 from app.tasks.upload_tasks import upload_vector_layer
 from app.utils.job_manager import JobManager
@@ -386,6 +390,19 @@ def create_vector_layer_from_geojson(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to create vector layer",
         )
+
+    # Generate GeoParquet file for the vector layer
+    if features:
+        layer_id = features[0].properties.get("layer_id")
+        if layer_id:
+            try:
+                static_dir = get_static_dir()
+                # Convert features back to GeoDataFrame
+                gdf_for_parquet = gpd.GeoDataFrame.from_features(features, crs="EPSG:4326")
+                save_vector_layer_parquet(project.id, layer_id, gdf_for_parquet, static_dir)
+                logger.info(f"Successfully generated parquet file for layer {layer_id}")
+            except Exception:
+                logger.exception(f"Failed to generate parquet for layer {layer_id}")
 
     # Build response with metadata
     if len(features) > 0:

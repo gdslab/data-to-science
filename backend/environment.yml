@@ -1,7 +1,6 @@
 name: d2s
 channels:
   - conda-forge
-  - defaults
 dependencies:
   - _libgcc_mutex
   - _openmp_mutex
@@ -16,6 +15,7 @@ dependencies:
   - argon2-cffi
   - argon2-cffi-bindings
   - attrs
+  - authlib
   - aws-c-auth
   - aws-c-cal
   - aws-c-common
@@ -35,7 +35,7 @@ dependencies:
   - azure-storage-common-cpp
   - azure-storage-files-datalake-cpp
   - backports.zoneinfo
-  - bcrypt
+  - bcrypt~=4.3.0
   - billiard
   - black
   - blinker
@@ -133,6 +133,7 @@ dependencies:
   - jmespath
   - joblib
   - json-c
+  - jsonschema
   - kealib
   - keyutils
   - kiwisolver
@@ -260,11 +261,17 @@ dependencies:
   - nspr
   - nss
   - numpy
+  - open3d
   - openjpeg
   - openldap
   - openmpi
   - openpyxl
   - openssl
+  - opentelemetry-api
+  - opentelemetry-exporter-otlp
+  - opentelemetry-instrumentation-asgi
+  - opentelemetry-instrumentation-fastapi
+  - opentelemetry-sdk
   - orc
   - packaging
   - pandas
@@ -278,6 +285,7 @@ dependencies:
   - pixman
   - platformdirs
   - pluggy
+  - plyfile
   - poppler
   - poppler-data
   - postgresql
@@ -301,6 +309,7 @@ dependencies:
   - pyproj
   - pysocks
   - pystac
+  - pystac-client
   - pytest
   - pytest-cov
   - python-dateutil
@@ -321,6 +330,7 @@ dependencies:
   - readline
   - requests
   - rich
+  - rio-stac
   - rsa
   - s2n
   - s3transfer
@@ -387,15 +397,5 @@ dependencies:
   - zlib
   - zstandard
   - zstd
-  - pystac-client
-  - rio-stac
-  - jsonschema
-  - authlib
-  - open3d
-  - plyfile
-  - opentelemetry-sdk
-  - opentelemetry-api
-  - opentelemetry-exporter-otlp
-  - opentelemetry-instrumentation-fastapi
-  - opentelemetry-instrumentation-asgi
-prefix: /home/benh/miniforge3/envs/d2s
+  - pyarrow
+prefix: /home/ben/miniforge3/envs/d2s

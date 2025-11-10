@@ -254,6 +254,23 @@ After creating the new migration, use the following command to update to the tab
 docker compose exec backend alembic upgrade head
 ```
 
+## 🗺️ Generating GeoParquet files for vector layers
+
+Vector layers are automatically exported to GeoParquet format for efficient access from QGIS and other desktop GIS tools. For existing vector layers created before this feature was added, use the backfill command to generate parquet files:
+
+```bash
+# Generate parquet files for all vector layers
+docker compose exec backend python app/utils/generate_parquet_files.py
+
+# Generate parquet files for a specific project
+docker compose exec backend python app/utils/generate_parquet_files.py --project-id <project-uuid>
+
+# Force regeneration of existing parquet files
+docker compose exec backend python app/utils/generate_parquet_files.py --force
+```
+
+The command will display progress and provide a summary of generated, skipped, and failed files.
+
 # Example Deployment
 
 An example instance of the Data to Science platform can be found at [https://ps2.d2s.org](https://ps2.d2s.org). This instance is managed by the Geospatial Data Science Lab at Purdue University and is open to the public. While this instance is available for use, the D2S platform is designed to be self-deployable, allowing researchers to host their own instances tailored to their specific needs.
