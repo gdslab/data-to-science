@@ -2,12 +2,10 @@ import { useParams } from 'react-router-dom';
 
 interface MapLayerDownloadLinksProps {
   layerId: string;
-  layerName: string;
 }
 
 export default function MapLayerDownloadLinks({
   layerId,
-  layerName,
 }: MapLayerDownloadLinksProps) {
   const { projectId } = useParams();
 

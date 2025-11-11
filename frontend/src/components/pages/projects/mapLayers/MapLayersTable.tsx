@@ -79,14 +79,11 @@ export default function ProjectLayersTable() {
     name: string;
   } | null>(null);
 
-  useInterval(
-    () => {
-      if (projectId) {
-        getMapLayers(projectId, mapLayersDispatch);
-      }
-    },
-    MAP_LAYERS_POLLING_INTERVAL
-  );
+  useInterval(() => {
+    if (projectId) {
+      getMapLayers(projectId, mapLayersDispatch);
+    }
+  }, MAP_LAYERS_POLLING_INTERVAL);
 
   const sortedMapLayers = useMemo(() => {
     return [...mapLayers].sort((a, b) =>
@@ -180,7 +177,9 @@ export default function ProjectLayersTable() {
         <thead>
           <tr className="h-12 sticky top-0 text-white bg-slate-300">
             <th scope="col">Preview</th>
-            <th scope="col" className="w-64">Name</th>
+            <th scope="col" className="w-64">
+              Name
+            </th>
             <th scope="col">Type</th>
             <th scope="col">Download</th>
             {projectRole !== 'viewer' && <th scope="col">Remove</th>}
@@ -252,7 +251,9 @@ export default function ProjectLayersTable() {
                   ) : (
                     // Display mode
                     <div className="flex items-center gap-8">
-                      <span className="block my-1 mx-0 truncate">{layer.layer_name}</span>
+                      <span className="block my-1 mx-0 truncate">
+                        {layer.layer_name}
+                      </span>
                       {projectRole !== 'viewer' && (
                         <button
                           type="button"
@@ -278,10 +279,7 @@ export default function ProjectLayersTable() {
                 </td>
                 <td className="bg-white">
                   <div className="flex flex-col gap-4">
-                    <MapLayerDownloadLinks
-                      layerId={layer.layer_id}
-                      layerName={layer.layer_name}
-                    />
+                    <MapLayerDownloadLinks layerId={layer.layer_id} />
                   </div>
                 </td>
                 {projectRole !== 'viewer' && (
@@ -316,7 +314,9 @@ export default function ProjectLayersTable() {
                             if (isAxiosError(err)) {
                               setStatus({
                                 type: 'error',
-                                msg: err.response?.data.detail || 'Unable to remove layer',
+                                msg:
+                                  err.response?.data.detail ||
+                                  'Unable to remove layer',
                               });
                             } else {
                               setStatus({
