@@ -12,6 +12,7 @@ export default function MapLayerDownloadLinks({
   const { projectId } = useParams();
 
   const parquetUrl = `/static/projects/${projectId}/vector/${layerId}/${layerId}.parquet`;
+  const flatgeobufUrl = `/static/projects/${projectId}/vector/${layerId}/${layerId}.fgb`;
 
   return (
     <div className="flex flex-row items-center justify-center gap-2">
@@ -41,6 +42,14 @@ export default function MapLayerDownloadLinks({
         className="text-sky-600 hover:text-sky-800 hover:underline"
       >
         GeoParquet
+      </a>
+      <span className="text-gray-400">|</span>
+      <a
+        href={flatgeobufUrl}
+        download={`${layerId}.fgb`}
+        className="text-sky-600 hover:text-sky-800 hover:underline"
+      >
+        FlatGeobuf
       </a>
     </div>
   );

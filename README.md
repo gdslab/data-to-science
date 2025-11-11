@@ -254,22 +254,28 @@ After creating the new migration, use the following command to update to the tab
 docker compose exec backend alembic upgrade head
 ```
 
-## 🗺️ Generating GeoParquet files for vector layers
+## 🗺️ Generating Vector Format Files (GeoParquet & FlatGeobuf)
 
-Vector layers are automatically exported to GeoParquet format for efficient access from QGIS and other desktop GIS tools. For existing vector layers created before this feature was added, use the backfill command to generate parquet files:
+Vector layers are automatically exported to GeoParquet and FlatGeobuf formats for efficient access from QGIS and other desktop GIS tools. For existing vector layers created before these features were added, use the backfill command to generate format files:
 
 ```bash
-# Generate parquet files for all vector layers
-docker compose exec backend python app/utils/generate_parquet_files.py
+# Generate all formats (GeoParquet and FlatGeobuf) for all vector layers
+docker compose exec backend python app/utils/generate_vector_formats.py
 
-# Generate parquet files for a specific project
-docker compose exec backend python app/utils/generate_parquet_files.py --project-id <project-uuid>
+# Generate only GeoParquet for all layers
+docker compose exec backend python app/utils/generate_vector_formats.py --format parquet
 
-# Force regeneration of existing parquet files
-docker compose exec backend python app/utils/generate_parquet_files.py --force
+# Generate only FlatGeobuf for all layers
+docker compose exec backend python app/utils/generate_vector_formats.py --format flatgeobuf
+
+# Generate for a specific project
+docker compose exec backend python app/utils/generate_vector_formats.py --project-id <project-uuid>
+
+# Force regeneration of existing files
+docker compose exec backend python app/utils/generate_vector_formats.py --force
 ```
 
-The command will display progress and provide a summary of generated, skipped, and failed files.
+The command will display progress per format and provide a summary of generated, skipped, and failed files for each format.
 
 # Example Deployment
 

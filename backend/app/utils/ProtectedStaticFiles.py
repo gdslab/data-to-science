@@ -15,7 +15,11 @@ from app.utils.staticfiles import RangedStaticFiles
 
 from app import crud
 from app.api.deps import can_read_project
-from app.api.utils import save_vector_layer_parquet, get_static_dir
+from app.api.utils import (
+    save_vector_layer_parquet,
+    save_vector_layer_flatgeobuf,
+    get_static_dir,
+)
 from app.core import security
 from app.db.session import SessionLocal
 from app.models.data_product import DataProduct
@@ -36,6 +40,32 @@ def parse_vector_parquet_path(path: str) -> Optional[Tuple[UUID, str]]:
     """
     # Pattern to match: /static/projects/{uuid}/vector/{layer_id}/{layer_id}.parquet
     pattern = r"/static/projects/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/vector/([^/]+)/\2\.parquet"
+    match = re.match(pattern, path, re.IGNORECASE)
+
+    if match:
+        try:
+            project_id = UUID(match.group(1))
+            layer_id = match.group(2)
+            return (project_id, layer_id)
+        except ValueError:
+            return None
+
+    return None
+
+
+def parse_vector_flatgeobuf_path(path: str) -> Optional[Tuple[UUID, str]]:
+    """Parse vector FlatGeobuf path to extract project_id and layer_id.
+
+    Expected path format: /static/projects/{uuid}/vector/{layer_id}/{layer_id}.fgb
+
+    Args:
+        path: URL path to parse
+
+    Returns:
+        Tuple of (project_id, layer_id) if valid FlatGeobuf path, None otherwise
+    """
+    # Pattern to match: /static/projects/{uuid}/vector/{layer_id}/{layer_id}.fgb
+    pattern = r"/static/projects/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/vector/([^/]+)/\2\.fgb"
     match = re.match(pattern, path, re.IGNORECASE)
 
     if match:
@@ -238,28 +268,7 @@ async def verify_static_file_access(request: Request) -> None:
         if file_permission and file_permission.is_public:
             return
 
-    # restricted access authorization
-    access_token = request.cookies.get("access_token")
-    if not access_token:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-
-    # Extract token from "Bearer <token>" format
-    token = access_token.split(" ")[1]
-
-    # Validate token and get payload
-    payload = security.validate_token_and_get_payload(token, "access")
-
-    # Get user from payload
-    db = SessionLocal()
-    try:
-        user = security.get_user_from_token_payload(db, payload)
-    finally:
-        db.close()
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="user not found"
-        )
+    # Handle project-scoped files (vector data, previews, etc.)
     if "projects" in request.url.path:
         try:
             project_id = request.url.path.split("/projects/")[1].split("/")[0]
@@ -268,6 +277,49 @@ async def verify_static_file_access(request: Request) -> None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="project not found"
             )
+
+        # Check for API_KEY authentication (for programmatic access, QGIS, etc.)
+        if "API_KEY" in request.query_params:
+            api_key = request.query_params["API_KEY"]
+            db = SessionLocal()
+            try:
+                api_key_obj = crud.api_key.get_by_api_key(db, api_key)
+                if api_key_obj:
+                    user_from_api_key = api_key_obj.owner
+                    if can_read_project(db=db, project_id=project_id_uuid, current_user=user_from_api_key):
+                        # Update API key usage stats
+                        api_key_in = APIKeyUpdate(
+                            last_used_at=datetime.now(timezone.utc),
+                            total_requests=api_key_obj.total_requests + 1,
+                        )
+                        crud.api_key.update(db, db_obj=api_key_obj, obj_in=api_key_in)
+                        return  # Authorized via API key
+            finally:
+                db.close()
+
+        # Fall back to JWT token authentication (for browser-based access)
+        access_token = request.cookies.get("access_token")
+        if not access_token:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
+        # Extract token from "Bearer <token>" format
+        token = access_token.split(" ")[1]
+
+        # Validate token and get payload
+        payload = security.validate_token_and_get_payload(token, "access")
+
+        # Get user from payload
+        db = SessionLocal()
+        try:
+            user = security.get_user_from_token_payload(db, payload)
+        finally:
+            db.close()
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="user not found"
+            )
+
         try:
             project = crud.project.get_user_project(
                 SessionLocal(), user_id=user.id, project_id=project_id_uuid
@@ -282,6 +334,29 @@ async def verify_static_file_access(request: Request) -> None:
                 status_code=project["response_code"], detail=project["message"]
             )
     elif "users" in request.url.path:
+        # Users path requires JWT authentication
+        access_token = request.cookies.get("access_token")
+        if not access_token:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
+        # Extract token from "Bearer <token>" format
+        token = access_token.split(" ")[1]
+
+        # Validate token and get payload
+        payload = security.validate_token_and_get_payload(token, "access")
+
+        # Get user from payload
+        db = SessionLocal()
+        try:
+            user = security.get_user_from_token_payload(db, payload)
+        finally:
+            db.close()
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="user not found"
+            )
+
         try:
             user_id_in_url = request.url.path.split("/users/")[1].split("/")[0]
         except (IndexError, ValueError):
@@ -340,6 +415,48 @@ class ProtectedStaticFiles(RangedStaticFiles):
                     response = JSONResponse(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                         content={"detail": f"Error generating parquet file: {str(e)}"}
+                    )
+                    await response(scope, receive, send)
+                    return
+                finally:
+                    db.close()
+
+        # Check if this is a request for a vector FlatGeobuf file
+        parsed_fgb_path = parse_vector_flatgeobuf_path(request.url.path)
+        if parsed_fgb_path and request.url.path.endswith(".fgb"):
+            project_id, layer_id = parsed_fgb_path
+            static_dir = get_static_dir()
+            fgb_path = os.path.join(
+                static_dir, "projects", str(project_id), "vector", layer_id, f"{layer_id}.fgb"
+            )
+
+            # If FlatGeobuf file doesn't exist, generate it on-demand
+            if not os.path.exists(fgb_path):
+                db = SessionLocal()
+                try:
+                    # Verify layer exists in database
+                    features = crud.vector_layer.get_vector_layer_by_id(
+                        db, project_id=project_id, layer_id=layer_id
+                    )
+
+                    if features:
+                        # Convert features to GeoDataFrame and generate FlatGeobuf
+                        gdf = gpd.GeoDataFrame.from_features(features, crs="EPSG:4326")
+                        save_vector_layer_flatgeobuf(project_id, layer_id, gdf, static_dir)
+                    else:
+                        # Layer not found in database
+                        response = JSONResponse(
+                            status_code=status.HTTP_404_NOT_FOUND,
+                            content={"detail": "Vector layer not found"}
+                        )
+                        await response(scope, receive, send)
+                        return
+
+                except Exception as e:
+                    # Error generating FlatGeobuf
+                    response = JSONResponse(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        content={"detail": f"Error generating FlatGeobuf file: {str(e)}"}
                     )
                     await response(scope, receive, send)
                     return

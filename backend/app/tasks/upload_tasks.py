@@ -16,6 +16,7 @@ from app.api.deps import get_db
 from app.api.utils import (
     is_geometry_match,
     save_vector_layer_parquet,
+    save_vector_layer_flatgeobuf,
     get_static_dir,
 )
 from app.core.celery_app import celery_app
@@ -638,13 +639,24 @@ def upload_vector_layer(
     if features:
         layer_id = features[0].properties.get("layer_id")
         if layer_id:
+            static_dir = get_static_dir()
+
+            # Generate GeoParquet file
             try:
-                static_dir = get_static_dir()
                 save_vector_layer_parquet(project_id, layer_id, gdf, static_dir)
                 logger.info(f"Successfully generated parquet file for layer {layer_id}")
             except Exception:
                 logger.exception(
                     f"Failed to generate parquet for layer {layer_id}, continuing without parquet"
+                )
+
+            # Generate FlatGeobuf file
+            try:
+                save_vector_layer_flatgeobuf(project_id, layer_id, gdf, static_dir)
+                logger.info(f"Successfully generated FlatGeobuf file for layer {layer_id}")
+            except Exception:
+                logger.exception(
+                    f"Failed to generate FlatGeobuf for layer {layer_id}, continuing without FlatGeobuf"
                 )
 
     # remove uploaded file

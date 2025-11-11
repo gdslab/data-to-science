@@ -27,6 +27,7 @@ from app.api.utils import (
     sanitize_file_name,
     get_tile_url_with_signed_payload,
     save_vector_layer_parquet,
+    save_vector_layer_flatgeobuf,
 )
 from app.core.config import settings
 from app.tasks.upload_tasks import upload_vector_layer
@@ -388,14 +389,23 @@ def create_vector_layer_from_geojson(
     if features:
         layer_id = features[0].properties.get("layer_id")
         if layer_id:
+            static_dir = get_static_dir()
+            # Convert features back to GeoDataFrame
+            gdf_for_formats = gpd.GeoDataFrame.from_features(features, crs="EPSG:4326")
+
+            # Generate GeoParquet file
             try:
-                static_dir = get_static_dir()
-                # Convert features back to GeoDataFrame
-                gdf_for_parquet = gpd.GeoDataFrame.from_features(features, crs="EPSG:4326")
-                save_vector_layer_parquet(project.id, layer_id, gdf_for_parquet, static_dir)
+                save_vector_layer_parquet(project.id, layer_id, gdf_for_formats, static_dir)
                 logger.info(f"Successfully generated parquet file for layer {layer_id}")
             except Exception:
                 logger.exception(f"Failed to generate parquet for layer {layer_id}")
+
+            # Generate FlatGeobuf file
+            try:
+                save_vector_layer_flatgeobuf(project.id, layer_id, gdf_for_formats, static_dir)
+                logger.info(f"Successfully generated FlatGeobuf file for layer {layer_id}")
+            except Exception:
+                logger.exception(f"Failed to generate FlatGeobuf for layer {layer_id}")
 
     # Build response with metadata
     if len(features) > 0:
