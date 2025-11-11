@@ -1,25 +1,46 @@
 import { useParams } from 'react-router-dom';
 
-export default function MapLayerDownloadLinks({ layerId }: { layerId: string }) {
+interface MapLayerDownloadLinksProps {
+  layerId: string;
+  layerName: string;
+}
+
+export default function MapLayerDownloadLinks({
+  layerId,
+  layerName,
+}: MapLayerDownloadLinksProps) {
   const { projectId } = useParams();
 
+  const parquetUrl = `/static/projects/${projectId}/vector/${layerId}/${layerId}.parquet`;
+
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-row items-center justify-center gap-2">
       <a
         href={`${
           import.meta.env.VITE_API_V1_STR
         }/projects/${projectId}/vector_layers/${layerId}/download?format=json`}
-        download
+        download={`${layerId}.geojson`}
+        className="text-sky-600 hover:text-sky-800 hover:underline"
       >
-        <span className="text-sky-600">GeoJSON</span>
+        GeoJSON
       </a>
+      <span className="text-gray-400">|</span>
       <a
         href={`${
           import.meta.env.VITE_API_V1_STR
         }/projects/${projectId}/vector_layers/${layerId}/download?format=shp`}
-        download
+        download={`${layerId}.zip`}
+        className="text-sky-600 hover:text-sky-800 hover:underline"
       >
-        <span className="text-sky-600">Shapefile</span>
+        Shapefile
+      </a>
+      <span className="text-gray-400">|</span>
+      <a
+        href={parquetUrl}
+        download={`${layerId}.parquet`}
+        className="text-sky-600 hover:text-sky-800 hover:underline"
+      >
+        GeoParquet
       </a>
     </div>
   );

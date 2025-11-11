@@ -11,6 +11,7 @@ import {
 import { MapLayer, MapLayerFeatureCollection } from '../Project';
 import MapLayerDownloadLinks from './MapLayerDownloadLink';
 import ConfirmationModal from '../../../ConfirmationModal';
+import ImagePreviewModal from './ImagePreviewModal';
 import { getMapLayers, useProjectContext } from '../ProjectContext';
 import { AlertBar, Status } from '../../../Alert';
 import { useInterval } from '../../../hooks';
@@ -20,6 +21,9 @@ import api from '../../../../api';
 import pointIcon from '../../../../assets/point-icon.svg';
 import lineIcon from '../../../../assets/line-icon.svg';
 import polygonIcon from '../../../../assets/polygon-icon.svg';
+
+// Polling interval for checking for new map layers (in milliseconds)
+const MAP_LAYERS_POLLING_INTERVAL = 30000; // 30 seconds
 
 /**
  * If a "Multi" geometry type is provided return
@@ -69,6 +73,11 @@ export default function ProjectLayersTable() {
   const [status, setStatus] = useState<Status | null>(null);
   const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState<string>('');
+  const [previewModalOpen, setPreviewModalOpen] = useState<boolean>(false);
+  const [selectedPreview, setSelectedPreview] = useState<{
+    url: string;
+    name: string;
+  } | null>(null);
 
   useInterval(
     () => {
@@ -76,14 +85,14 @@ export default function ProjectLayersTable() {
         getMapLayers(projectId, mapLayersDispatch);
       }
     },
-    30000 // check every 30 seconds for new map layers
+    MAP_LAYERS_POLLING_INTERVAL
   );
 
   const sortedMapLayers = useMemo(() => {
     return [...mapLayers].sort((a, b) =>
       a.layer_name.localeCompare(b.layer_name)
     );
-  }, [mapLayers, projectId]);
+  }, [mapLayers]);
 
   const handleEdit = (layer: MapLayer) => {
     setEditingLayerId(layer.layer_id);
@@ -160,36 +169,51 @@ export default function ProjectLayersTable() {
     }
   };
 
+  const handlePreviewClick = (url: string, name: string) => {
+    setSelectedPreview({ url, name });
+    setPreviewModalOpen(true);
+  };
+
   return (
     <div className="max-h-96 overflow-auto">
       <table className="relative w-full border-separate border-spacing-y-1 border-spacing-x-1 table-fixed">
         <thead>
           <tr className="h-12 sticky top-0 text-white bg-slate-300">
-            <th>Preview</th>
-            <th className="w-64">Name</th>
-            <th>Type</th>
-            <th>Download</th>
-            {projectRole !== 'viewer' && <th>Remove</th>}
+            <th scope="col">Preview</th>
+            <th scope="col" className="w-64">Name</th>
+            <th scope="col">Type</th>
+            <th scope="col">Download</th>
+            {projectRole !== 'viewer' && <th scope="col">Remove</th>}
           </tr>
         </thead>
-        <tbody className="max-h-96 overflow-y-auto">
+        <tbody>
           {sortedMapLayers.length > 0 &&
             sortedMapLayers.map((layer) => (
               <tr
                 key={layer.layer_id}
-                className="h-48 text-center border-2 border-slate-400"
+                className="text-center border-2 border-slate-400"
               >
-                <td className="h-48 w-48 bg-white">
+                <td className="py-2 bg-white">
                   {layer.preview_url ? (
-                    <div className="flex items-center justify-center">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handlePreviewClick(layer.preview_url, layer.layer_name)
+                      }
+                      className="flex items-center justify-center mx-auto cursor-pointer hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-accent2 rounded"
+                      aria-label={`View full preview of ${layer.layer_name}`}
+                      title="Click to view full size"
+                    >
                       <img
                         src={layer.preview_url}
-                        className="w-full h-full object-cover"
-                        alt="Preview image"
+                        className="w-20 h-20 object-cover rounded"
+                        alt="Preview thumbnail"
                       />
-                    </div>
+                    </button>
                   ) : (
-                    <PhotoIcon />
+                    <div className="flex items-center justify-center w-20 h-20 mx-auto">
+                      <PhotoIcon className="w-12 h-12 text-gray-400" />
+                    </div>
                   )}
                 </td>
                 <td className="p-4 bg-white">
@@ -209,17 +233,19 @@ export default function ProjectLayersTable() {
                           type="button"
                           onClick={() => handleSave(layer)}
                           className="inline rounded-full focus:outline-none focus:ring focus:ring-accent2"
+                          aria-label="Save layer name"
                           title="Save"
                         >
-                          <CheckIcon className="h-4 w-4 text-slate-400 cursor-pointer" />
+                          <CheckIcon className="h-4 w-4 text-slate-400" />
                         </button>
                         <button
                           type="button"
                           onClick={handleCancel}
                           className="inline rounded-full focus:outline-none focus:ring focus:ring-accent2"
+                          aria-label="Cancel editing"
                           title="Cancel"
                         >
-                          <XMarkIcon className="h-4 w-4 text-slate-400 cursor-pointer" />
+                          <XMarkIcon className="h-4 w-4 text-slate-400" />
                         </button>
                       </div>
                     </div>
@@ -228,26 +254,34 @@ export default function ProjectLayersTable() {
                     <div className="flex items-center gap-8">
                       <span className="block my-1 mx-0 truncate">{layer.layer_name}</span>
                       {projectRole !== 'viewer' && (
-                        <span className="flex-shrink-0">
-                          <PencilIcon
-                            className="inline h-4 w-4 text-slate-400 cursor-pointer"
-                            onClick={() => handleEdit(layer)}
-                            title="Edit layer name"
-                          />
-                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(layer)}
+                          className="flex-shrink-0 inline rounded-full focus:outline-none focus:ring focus:ring-accent2"
+                          aria-label="Edit layer name"
+                          title="Edit layer name"
+                        >
+                          <PencilIcon className="h-4 w-4 text-slate-400" />
+                        </button>
                       )}
                     </div>
                   )}
                 </td>
                 <td className="p-4 bg-white">
                   <div className="flex items-center justify-center gap-2">
-                    <img src={getGeomTypeIcon(layer.geom_type)} />
+                    <img
+                      src={getGeomTypeIcon(layer.geom_type)}
+                      alt={`${getGenericGeomType(layer.geom_type)} icon`}
+                    />
                     {layer.geom_type}
                   </div>
                 </td>
                 <td className="bg-white">
                   <div className="flex flex-col gap-4">
-                    <MapLayerDownloadLinks layerId={layer.layer_id} />
+                    <MapLayerDownloadLinks
+                      layerId={layer.layer_id}
+                      layerName={layer.layer_name}
+                    />
                   </div>
                 </td>
                 {projectRole !== 'viewer' && (
@@ -280,17 +314,15 @@ export default function ProjectLayersTable() {
                             }
                           } catch (err) {
                             if (isAxiosError(err)) {
-                              if (isAxiosError(err)) {
-                                setStatus({
-                                  type: 'error',
-                                  msg: err.response?.data.detail,
-                                });
-                              } else {
-                                setStatus({
-                                  type: 'error',
-                                  msg: 'Unable to remove layer',
-                                });
-                              }
+                              setStatus({
+                                type: 'error',
+                                msg: err.response?.data.detail || 'Unable to remove layer',
+                              });
+                            } else {
+                              setStatus({
+                                type: 'error',
+                                msg: 'Unable to remove layer',
+                              });
                             }
                           }
                         }
@@ -303,6 +335,14 @@ export default function ProjectLayersTable() {
         </tbody>
       </table>
       {status && <AlertBar alertType={status.type}>{status.msg}</AlertBar>}
+      {selectedPreview && (
+        <ImagePreviewModal
+          open={previewModalOpen}
+          setOpen={setPreviewModalOpen}
+          imageUrl={selectedPreview.url}
+          layerName={selectedPreview.name}
+        />
+      )}
     </div>
   );
 }

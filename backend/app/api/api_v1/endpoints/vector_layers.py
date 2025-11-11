@@ -252,20 +252,13 @@ def download_vector_layer(
         "features": [feature.model_dump() for feature in features],
     }
 
-    # Get original filename from first feature's properties
-    layer_name = (
-        features[0].properties.get("layer_name", "feature_collection")
-        if features and features[0].properties
-        else "feature_collection"
-    )
-
     if format == "shp":
         # Convert GeoJSON dict to GeoDataFrame
         gdf = gpd.GeoDataFrame.from_features(features)
 
         # Create temporary directory for shapefile zip
         temp_dir = tempfile.mkdtemp()
-        shp_file_path = os.path.join(temp_dir, Path(layer_name).stem + ".shp")
+        shp_file_path = os.path.join(temp_dir, f"{layer_id}.shp")
 
         try:
             # Export GeoDataFrame to shapefile
@@ -302,7 +295,7 @@ def download_vector_layer(
         return FileResponse(
             zip_file_path,
             media_type="application/zip",
-            filename=Path(layer_name).stem + ".zip",
+            filename=f"{layer_id}.zip",
         )
     else:
         # Create FeatureCollection with GeoJSON features
@@ -327,7 +320,7 @@ def download_vector_layer(
         return FileResponse(
             temp_file_path,
             media_type="application/geo+json",
-            filename=Path(layer_name).stem + ".geojson",
+            filename=f"{layer_id}.geojson",
         )
 
 

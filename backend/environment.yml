@@ -310,7 +310,7 @@ dependencies:
   - pysocks
   - pystac
   - pystac-client
-  - pytest
+  - pytest~=8.4.2
   - pytest-cov
   - python-dateutil
   - python-dotenv
