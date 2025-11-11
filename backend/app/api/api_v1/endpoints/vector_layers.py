@@ -23,7 +23,12 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
-from app.api.utils import sanitize_file_name, get_tile_url_with_signed_payload
+from app.api.utils import (
+    sanitize_file_name,
+    get_tile_url_with_signed_payload,
+    save_vector_layer_parquet,
+    save_vector_layer_flatgeobuf,
+)
 from app.core.config import settings
 from app.tasks.upload_tasks import upload_vector_layer
 from app.utils.job_manager import JobManager
@@ -248,20 +253,13 @@ def download_vector_layer(
         "features": [feature.model_dump() for feature in features],
     }
 
-    # Get original filename from first feature's properties
-    layer_name = (
-        features[0].properties.get("layer_name", "feature_collection")
-        if features and features[0].properties
-        else "feature_collection"
-    )
-
     if format == "shp":
         # Convert GeoJSON dict to GeoDataFrame
         gdf = gpd.GeoDataFrame.from_features(features)
 
         # Create temporary directory for shapefile zip
         temp_dir = tempfile.mkdtemp()
-        shp_file_path = os.path.join(temp_dir, Path(layer_name).stem + ".shp")
+        shp_file_path = os.path.join(temp_dir, f"{layer_id}.shp")
 
         try:
             # Export GeoDataFrame to shapefile
@@ -298,7 +296,7 @@ def download_vector_layer(
         return FileResponse(
             zip_file_path,
             media_type="application/zip",
-            filename=Path(layer_name).stem + ".zip",
+            filename=f"{layer_id}.zip",
         )
     else:
         # Create FeatureCollection with GeoJSON features
@@ -323,7 +321,7 @@ def download_vector_layer(
         return FileResponse(
             temp_file_path,
             media_type="application/geo+json",
-            filename=Path(layer_name).stem + ".geojson",
+            filename=f"{layer_id}.geojson",
         )
 
 
@@ -386,6 +384,28 @@ def create_vector_layer_from_geojson(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to create vector layer",
         )
+
+    # Generate GeoParquet file for the vector layer
+    if features:
+        layer_id = features[0].properties.get("layer_id")
+        if layer_id:
+            static_dir = get_static_dir()
+            # Convert features back to GeoDataFrame
+            gdf_for_formats = gpd.GeoDataFrame.from_features(features, crs="EPSG:4326")
+
+            # Generate GeoParquet file
+            try:
+                save_vector_layer_parquet(project.id, layer_id, gdf_for_formats, static_dir)
+                logger.info(f"Successfully generated parquet file for layer {layer_id}")
+            except Exception:
+                logger.exception(f"Failed to generate parquet for layer {layer_id}")
+
+            # Generate FlatGeobuf file
+            try:
+                save_vector_layer_flatgeobuf(project.id, layer_id, gdf_for_formats, static_dir)
+                logger.info(f"Successfully generated FlatGeobuf file for layer {layer_id}")
+            except Exception:
+                logger.exception(f"Failed to generate FlatGeobuf for layer {layer_id}")
 
     # Build response with metadata
     if len(features) > 0:

@@ -1,5 +1,6 @@
 import os
 
+import geopandas as gpd
 from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -628,3 +629,119 @@ def test_create_vector_layer_from_geojson_with_empty_features(
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert "at least one feature" in response.json()["detail"].lower()
+
+
+def test_create_vector_layer_from_geojson_generates_parquet(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test that creating a vector layer from GeoJSON also generates a parquet file."""
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id)
+
+    # Test with Point geometry
+    point_data = get_geojson_feature_collection("point")
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/geojson",
+        json=point_data,
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    response_data = response.json()
+    point_layer_id = response_data["features"][0]["properties"]["layer_id"]
+
+    # Verify parquet file was created
+    parquet_path = os.path.join(
+        settings.TEST_STATIC_DIR,
+        "projects",
+        str(project.id),
+        "vector",
+        point_layer_id,
+        f"{point_layer_id}.parquet",
+    )
+    assert os.path.exists(parquet_path)
+
+    # Verify parquet file can be read and contains correct data
+    gdf = gpd.read_parquet(parquet_path)
+    assert len(gdf) == 1
+    assert gdf.iloc[0].geometry.geom_type == "Point"
+
+    # Test with Polygon geometry
+    polygon_data = get_geojson_feature_collection("polygon")
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/geojson",
+        json=polygon_data,
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    response_data = response.json()
+    polygon_layer_id = response_data["features"][0]["properties"]["layer_id"]
+
+    # Verify parquet file for polygon
+    parquet_path_polygon = os.path.join(
+        settings.TEST_STATIC_DIR,
+        "projects",
+        str(project.id),
+        "vector",
+        polygon_layer_id,
+        f"{polygon_layer_id}.parquet",
+    )
+    assert os.path.exists(parquet_path_polygon)
+    gdf_polygon = gpd.read_parquet(parquet_path_polygon)
+    assert len(gdf_polygon) == 1
+    assert gdf_polygon.iloc[0].geometry.geom_type == "Polygon"
+
+
+def test_create_vector_layer_from_geojson_generates_flatgeobuf(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Test that creating a vector layer from GeoJSON also generates a FlatGeobuf file."""
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id)
+
+    # Test with Point geometry
+    point_data = get_geojson_feature_collection("point")
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/geojson",
+        json=point_data,
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    response_data = response.json()
+    point_layer_id = response_data["features"][0]["properties"]["layer_id"]
+
+    # Verify FlatGeobuf file was created
+    fgb_path = os.path.join(
+        settings.TEST_STATIC_DIR,
+        "projects",
+        str(project.id),
+        "vector",
+        point_layer_id,
+        f"{point_layer_id}.fgb",
+    )
+    assert os.path.exists(fgb_path)
+
+    # Verify FlatGeobuf file can be read and contains correct data
+    gdf = gpd.read_file(fgb_path)
+    assert len(gdf) == 1
+    assert gdf.iloc[0].geometry.geom_type == "Point"
+
+    # Test with Polygon geometry
+    polygon_data = get_geojson_feature_collection("polygon")
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/vector_layers/geojson",
+        json=polygon_data,
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    response_data = response.json()
+    polygon_layer_id = response_data["features"][0]["properties"]["layer_id"]
+
+    # Verify FlatGeobuf file for polygon
+    fgb_path_polygon = os.path.join(
+        settings.TEST_STATIC_DIR,
+        "projects",
+        str(project.id),
+        "vector",
+        polygon_layer_id,
+        f"{polygon_layer_id}.fgb",
+    )
+    assert os.path.exists(fgb_path_polygon)
+    gdf_polygon = gpd.read_file(fgb_path_polygon)
+    assert len(gdf_polygon) == 1
+    assert gdf_polygon.iloc[0].geometry.geom_type == "Polygon"

@@ -13,7 +13,12 @@ from fastapi.encoders import jsonable_encoder
 
 from app import crud, schemas
 from app.api.deps import get_db
-from app.api.utils import is_geometry_match
+from app.api.utils import (
+    is_geometry_match,
+    save_vector_layer_parquet,
+    save_vector_layer_flatgeobuf,
+    get_static_dir,
+)
 from app.core.celery_app import celery_app
 from app.utils.ImageProcessor import ImageProcessor, get_utm_epsg_from_latlon
 from app.utils.job_manager import JobManager
@@ -621,7 +626,7 @@ def upload_vector_layer(
 
     # add vector layer to database
     try:
-        crud.vector_layer.create_with_project(
+        features = crud.vector_layer.create_with_project(
             db, file_name=original_file_name, gdf=gdf, project_id=project_id
         )
     except Exception:
@@ -629,6 +634,30 @@ def upload_vector_layer(
         job.update(status=Status.FAILED)
         cleanup(job)
         return None
+
+    # generate GeoParquet file for the vector layer
+    if features:
+        layer_id = features[0].properties.get("layer_id")
+        if layer_id:
+            static_dir = get_static_dir()
+
+            # Generate GeoParquet file
+            try:
+                save_vector_layer_parquet(project_id, layer_id, gdf, static_dir)
+                logger.info(f"Successfully generated parquet file for layer {layer_id}")
+            except Exception:
+                logger.exception(
+                    f"Failed to generate parquet for layer {layer_id}, continuing without parquet"
+                )
+
+            # Generate FlatGeobuf file
+            try:
+                save_vector_layer_flatgeobuf(project_id, layer_id, gdf, static_dir)
+                logger.info(f"Successfully generated FlatGeobuf file for layer {layer_id}")
+            except Exception:
+                logger.exception(
+                    f"Failed to generate FlatGeobuf for layer {layer_id}, continuing without FlatGeobuf"
+                )
 
     # remove uploaded file
     cleanup(job)
