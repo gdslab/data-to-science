@@ -253,3 +253,61 @@ def test_access_unauthorized_raw_data_with_api_key(
         verify_api_key_raw_data_access(
             raw_data=raw_data.obj, api_key=current_user_api_key.api_key, db=db
         )
+
+
+# Tests for header-based API key authentication
+
+
+def test_api_key_in_header(
+    client: TestClient, db: Session, normal_user_api_key: str
+) -> None:
+    """Test that API key authentication works via X-API-KEY header."""
+    # Get current user from API key
+    current_user = crud.user.get_by_api_key(db, api_key=normal_user_api_key)
+    assert current_user is not None
+
+    # Create a project owned by this user
+    sample = SampleDataProduct(db, user=current_user)
+
+    # Try accessing a project endpoint with X-API-KEY header
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{sample.project.id}",
+        headers={"X-API-KEY": normal_user_api_key},
+    )
+    assert response.status_code == status.HTTP_200_OK
+    project_data = response.json()
+    assert project_data["id"] == str(sample.project.id)
+
+
+def test_api_key_in_header_invalid_key(client: TestClient, db: Session) -> None:
+    """Test that invalid API key in header is rejected."""
+    # Create a project
+    owner = create_user(db)
+    sample = SampleDataProduct(db, user=owner)
+
+    # Try accessing with invalid API key
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{sample.project.id}",
+        headers={"X-API-KEY": "invalid-api-key-12345"},
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_api_key_in_header_deactivated_key(
+    client: TestClient, db: Session, normal_user_api_key: str
+) -> None:
+    """Test that deactivated API key in header is rejected."""
+    # Get current user and deactivate their API key
+    current_user = crud.user.get_by_api_key(db, api_key=normal_user_api_key)
+    assert current_user is not None
+    crud.api_key.deactivate(db, user_id=current_user.id)
+
+    # Create a project owned by this user
+    sample = SampleDataProduct(db, user=current_user)
+
+    # Try accessing with deactivated API key
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{sample.project.id}",
+        headers={"X-API-KEY": normal_user_api_key},
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND

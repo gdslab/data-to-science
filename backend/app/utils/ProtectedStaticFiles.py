@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Optional, Tuple
 from uuid import UUID
 import re
+import logging
 
 import geopandas as gpd
 from fastapi import HTTPException, Request, status
@@ -26,6 +27,100 @@ from app.models.data_product import DataProduct
 from app.models.raw_data import RawData
 from app.schemas.api_key import APIKeyUpdate
 
+logger = logging.getLogger(__name__)
+
+
+def validate_and_extract_uuid(path_segment: str) -> UUID:
+    """Safely extract and validate UUID from path segment.
+
+    Args:
+        path_segment: Path segment that should contain a UUID
+
+    Returns:
+        Validated UUID object
+
+    Raises:
+        HTTPException: If path segment is invalid or contains traversal sequences
+    """
+    # Check for path traversal attempts
+    if ".." in path_segment or "/" in path_segment or "\\" in path_segment:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid path"
+        )
+
+    # Validate UUID format
+    try:
+        return UUID(path_segment)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invalid resource identifier"
+        )
+
+
+def safe_path_split(url_path: str, delimiter: str, index: int) -> str:
+    """Safely split URL path and extract component at index.
+
+    Args:
+        url_path: URL path to split
+        delimiter: String to split on
+        index: Index of component to extract
+
+    Returns:
+        Path component at specified index
+
+    Raises:
+        HTTPException: If split operation fails or index is out of range
+    """
+    try:
+        parts = url_path.split(delimiter)
+        if index >= len(parts) or index < 0:
+            raise IndexError("Invalid path structure")
+        component = parts[index]
+
+        # Check for path traversal in component
+        if ".." in component:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid path"
+            )
+
+        return component
+    except (IndexError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resource not found"
+        )
+
+
+def extract_bearer_token(auth_header: Optional[str]) -> str:
+    """Safely extract token from Bearer authentication header.
+
+    Args:
+        auth_header: Authorization header value (e.g., "Bearer <token>")
+
+    Returns:
+        Extracted token string
+
+    Raises:
+        HTTPException: If header is missing or malformed
+    """
+    if not auth_header:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorization header format"
+        )
+
+    token = auth_header[7:]  # len("Bearer ") = 7
+    if not token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
+    return token
+
 
 def parse_vector_parquet_path(path: str) -> Optional[Tuple[UUID, str]]:
     """Parse vector parquet path to extract project_id and layer_id.
@@ -38,8 +133,10 @@ def parse_vector_parquet_path(path: str) -> Optional[Tuple[UUID, str]]:
     Returns:
         Tuple of (project_id, layer_id) if valid parquet path, None otherwise
     """
-    # Pattern to match: /static/projects/{uuid}/vector/{layer_id}/{layer_id}.parquet
-    pattern = r"/static/projects/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/vector/([^/]+)/\2\.parquet"
+    # Strict validation: layer_id must be exactly 11 base64url characters
+    # matching the format from generate_unique_id() ([A-Za-z0-9_-]{11})
+    # Both directory name and filename (without extension) must match
+    pattern = r"/static/projects/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/vector/([A-Za-z0-9_-]{11})/\2\.parquet"
     match = re.match(pattern, path, re.IGNORECASE)
 
     if match:
@@ -64,8 +161,10 @@ def parse_vector_flatgeobuf_path(path: str) -> Optional[Tuple[UUID, str]]:
     Returns:
         Tuple of (project_id, layer_id) if valid FlatGeobuf path, None otherwise
     """
-    # Pattern to match: /static/projects/{uuid}/vector/{layer_id}/{layer_id}.fgb
-    pattern = r"/static/projects/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/vector/([^/]+)/\2\.fgb"
+    # Strict validation: layer_id must be exactly 11 base64url characters
+    # matching the format from generate_unique_id() ([A-Za-z0-9_-]{11})
+    # Both directory name and filename (without extension) must match
+    pattern = r"/static/projects/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/vector/([A-Za-z0-9_-]{11})/\2\.fgb"
     match = re.match(pattern, path, re.IGNORECASE)
 
     if match:
@@ -184,103 +283,141 @@ async def verify_static_file_access(request: Request) -> None:
     """
     # check if access to color bar's data product is restricted or public
     if "colorbars" in request.url.path:
+        request_path = Path(request.url.path)
         try:
-            request_path = Path(request.url.path)
-            data_product_id = UUID(request_path.parents[1].name)
-        except (IndexError, ValueError):
+            # Get the parent directory name (should be data product ID)
+            parent_name = request_path.parents[1].name
+        except IndexError:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="data product not found"
             )
-        file_permission = crud.file_permission.get_by_data_product(
-            SessionLocal(), file_id=data_product_id
-        )
-        # public, return file
-        if file_permission and file_permission.is_public:
-            return
+
+        # Validate and extract UUID
+        data_product_id = validate_and_extract_uuid(parent_name)
+        db = SessionLocal()
+        try:
+            file_permission = crud.file_permission.get_by_data_product(
+                db, file_id=data_product_id
+            )
+            # public, return file
+            if file_permission and file_permission.is_public:
+                return
+        finally:
+            db.close()
 
     # check if access to requested data product is restricted or public
     if "data_products" in request.url.path and "colorbars" not in request.url.path:
+        # Split path and get the portion after "data_products"
+        path_after_dp = safe_path_split(request.url.path, "data_products", 1)
+        request_path = Path(path_after_dp)
         try:
-            request_path = Path(request.url.path.split("data_products")[1])
-            data_product_id = UUID(request_path.parents[-2].name)
-            data_product = crud.data_product.get(SessionLocal(), id=data_product_id)
-        except (IndexError, ValueError):
+            # Get the parent directory name (should be data product ID)
+            parent_name = request_path.parents[-2].name
+        except IndexError:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="data product not found"
             )
 
-        if not data_product:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="data product not found"
-            )
+        # Validate and extract UUID
+        data_product_id = validate_and_extract_uuid(parent_name)
 
-        if "API_KEY" in request.query_params:
-            api_key = request.query_params["API_KEY"]
-            # check if owner of api key has access to requested static file
-            if verify_api_key_static_file_access(data_product, api_key):
+        db = SessionLocal()
+        try:
+            data_product = crud.data_product.get(db, id=data_product_id)
+
+            if not data_product:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="data product not found"
+                )
+
+            # Check for API key in header (preferred) or query param (legacy/QGIS)
+            api_key = request.headers.get("X-API-KEY") or request.query_params.get("API_KEY")
+            if api_key:
+                # check if owner of api key has access to requested static file
+                if verify_api_key_static_file_access(data_product, api_key, db):
+                    return
+
+            file_permission = crud.file_permission.get_by_data_product(
+                db, file_id=data_product_id
+            )
+            # if file is deactivated return 404
+            if file_permission and file_permission.file.is_active is False:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="data product not found",
+                )
+            # public, return file
+            if file_permission and file_permission.is_public:
                 return
 
-        file_permission = crud.file_permission.get_by_data_product(
-            SessionLocal(), file_id=data_product_id
-        )
-        # if file is deactivated return 404
-        if file_permission and file_permission.file.is_active is False:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="data product not found",
-            )
-        # public, return file
-        if file_permission and file_permission.is_public:
-            return
+            # NOTE: If file_permission is None or not public, we intentionally
+            # fall through to project-level authentication below. This ensures
+            # files without explicit public permissions require full authentication.
+        finally:
+            db.close()
 
     # check if access to requested raw data is restricted or public
     if "raw_data" in request.url.path:
+        # Split path and get the portion after "raw_data"
+        path_after_rd = safe_path_split(request.url.path, "raw_data", 1)
+        request_path = Path(path_after_rd)
         try:
-            request_path = Path(request.url.path.split("raw_data")[1])
-            raw_data_id = UUID(request_path.parents[-2].name)
-            raw_data = crud.raw_data.get(SessionLocal(), id=raw_data_id)
-        except (IndexError, ValueError):
+            # Get the parent directory name (should be raw data ID)
+            parent_name = request_path.parents[-2].name
+        except IndexError:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="raw data not found"
             )
 
-        if not raw_data:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="raw data not found"
-            )
+        # Validate and extract UUID
+        raw_data_id = validate_and_extract_uuid(parent_name)
 
-        if "API_KEY" in request.query_params:
-            api_key = request.query_params["API_KEY"]
-            # check if owner of api key has access to requested static file
-            if verify_api_key_raw_data_access(raw_data, api_key):
+        db = SessionLocal()
+        try:
+            raw_data = crud.raw_data.get(db, id=raw_data_id)
+
+            if not raw_data:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="raw data not found"
+                )
+
+            # Check for API key in header (preferred) or query param (legacy/QGIS)
+            api_key = request.headers.get("X-API-KEY") or request.query_params.get("API_KEY")
+            if api_key:
+                # check if owner of api key has access to requested static file
+                if verify_api_key_raw_data_access(raw_data, api_key, db):
+                    return
+
+            file_permission = crud.file_permission.get_by_raw_data(
+                db, raw_data_id=raw_data_id
+            )
+            # if file is deactivated return 404
+            if file_permission and file_permission.raw_data.is_active is False:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="raw data not found",
+                )
+            # public, return file
+            if file_permission and file_permission.is_public:
                 return
 
-        file_permission = crud.file_permission.get_by_raw_data(
-            SessionLocal(), raw_data_id=raw_data_id
-        )
-        # if file is deactivated return 404
-        if file_permission and file_permission.raw_data.is_active is False:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="raw data not found",
-            )
-        # public, return file
-        if file_permission and file_permission.is_public:
-            return
+            # NOTE: If file_permission is None or not public, we intentionally
+            # fall through to project-level authentication below. This ensures
+            # files without explicit public permissions require full authentication.
+        finally:
+            db.close()
 
     # Handle project-scoped files (vector data, previews, etc.)
     if "projects" in request.url.path:
-        try:
-            project_id = request.url.path.split("/projects/")[1].split("/")[0]
-            project_id_uuid = UUID(project_id)
-        except (IndexError, ValueError):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="project not found"
-            )
+        # Safely extract project ID from URL
+        project_id_str = safe_path_split(request.url.path, "/projects/", 1)
+        project_id_str = safe_path_split(project_id_str, "/", 0)
+        project_id_uuid = validate_and_extract_uuid(project_id_str)
 
         # Check for API_KEY authentication (for programmatic access, QGIS, etc.)
-        if "API_KEY" in request.query_params:
-            api_key = request.query_params["API_KEY"]
+        # Support both header (preferred) and query param (legacy/QGIS)
+        api_key = request.headers.get("X-API-KEY") or request.query_params.get("API_KEY")
+        if api_key:
             db = SessionLocal()
             try:
                 api_key_obj = crud.api_key.get_by_api_key(db, api_key)
@@ -299,11 +436,7 @@ async def verify_static_file_access(request: Request) -> None:
 
         # Fall back to JWT token authentication (for browser-based access)
         access_token = request.cookies.get("access_token")
-        if not access_token:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-
-        # Extract token from "Bearer <token>" format
-        token = access_token.split(" ")[1]
+        token = extract_bearer_token(access_token)
 
         # Validate token and get payload
         payload = security.validate_token_and_get_payload(token, "access")
@@ -320,27 +453,31 @@ async def verify_static_file_access(request: Request) -> None:
                 status_code=status.HTTP_404_NOT_FOUND, detail="user not found"
             )
 
+        db_project = SessionLocal()
         try:
             project = crud.project.get_user_project(
-                SessionLocal(), user_id=user.id, project_id=project_id_uuid
+                db_project, user_id=user.id, project_id=project_id_uuid
             )
-            assert project
+            if not project:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="project not found"
+                )
+            if project["response_code"] != status.HTTP_200_OK:
+                raise HTTPException(
+                    status_code=project["response_code"], detail=project["message"]
+                )
+        except HTTPException:
+            raise
         except Exception:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="unable to load project"
             )
-        if project["response_code"] != status.HTTP_200_OK:
-            raise HTTPException(
-                status_code=project["response_code"], detail=project["message"]
-            )
+        finally:
+            db_project.close()
     elif "users" in request.url.path:
         # Users path requires JWT authentication
         access_token = request.cookies.get("access_token")
-        if not access_token:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-
-        # Extract token from "Bearer <token>" format
-        token = access_token.split(" ")[1]
+        token = extract_bearer_token(access_token)
 
         # Validate token and get payload
         payload = security.validate_token_and_get_payload(token, "access")
@@ -357,12 +494,9 @@ async def verify_static_file_access(request: Request) -> None:
                 status_code=status.HTTP_404_NOT_FOUND, detail="user not found"
             )
 
-        try:
-            user_id_in_url = request.url.path.split("/users/")[1].split("/")[0]
-        except (IndexError, ValueError):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="user not found"
-            )
+        # Validate user ID in URL (safe_path_split handles traversal checks)
+        user_id_str = safe_path_split(request.url.path, "/users/", 1)
+        user_id_str = safe_path_split(user_id_str, "/", 0)
     else:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
 
@@ -411,10 +545,14 @@ class ProtectedStaticFiles(RangedStaticFiles):
                         return
 
                 except Exception as e:
-                    # Error generating parquet
+                    # Error generating parquet - log details but don't expose to client
+                    logger.error(
+                        f"Error generating parquet file for project {project_id}, layer {layer_id}: {str(e)}",
+                        exc_info=True
+                    )
                     response = JSONResponse(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        content={"detail": f"Error generating parquet file: {str(e)}"}
+                        content={"detail": "Error processing request"}
                     )
                     await response(scope, receive, send)
                     return
@@ -453,10 +591,14 @@ class ProtectedStaticFiles(RangedStaticFiles):
                         return
 
                 except Exception as e:
-                    # Error generating FlatGeobuf
+                    # Error generating FlatGeobuf - log details but don't expose to client
+                    logger.error(
+                        f"Error generating FlatGeobuf file for project {project_id}, layer {layer_id}: {str(e)}",
+                        exc_info=True
+                    )
                     response = JSONResponse(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        content={"detail": f"Error generating FlatGeobuf file: {str(e)}"}
+                        content={"detail": "Error processing request"}
                     )
                     await response(scope, receive, send)
                     return
