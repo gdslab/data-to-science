@@ -14,15 +14,15 @@ export default function SidePanel() {
   const currentPage = pathname.split('/').slice(-1)[0];
 
   return (
-    <div className="flex h-full w-16 flex-col justify-between border-e bg-white z-1000">
+    <div className="flex h-full w-12 md:w-16 flex-col justify-between border-e z-1000">
       <div>
         <div className="border-t border-gray-100">
-          <div className="px-2">
-            <div className="py-4">
+          <div className="px-1 md:px-2">
+            <div className="py-3 md:py-4">
               <Link
                 to="/admin/dashboard"
                 className={clsx(
-                  't group relative flex justify-center rounded px-2 py-1.5',
+                  't group relative flex justify-center rounded px-1 py-1.5 md:px-2',
                   {
                     'bg-blue-50 text-blue-700': currentPage === 'dashboard',
                     'text-gray-500 hover:bg-gray-50 hover:text-gray-700':
@@ -38,12 +38,12 @@ export default function SidePanel() {
               </Link>
             </div>
 
-            <ul className="space-y-1 border-t border-gray-100 pt-4">
+            <ul className="space-y-1 border-t border-gray-100 pt-3 md:pt-4">
               <li>
                 <Link
                   to="/admin/dashboard/users"
                   className={clsx(
-                    'group relative flex justify-center rounded px-2 py-1.5',
+                    'group relative flex justify-center rounded px-1 py-1.5 md:px-2',
                     {
                       'bg-blue-50 text-blue-700': currentPage === 'users',
                       'text-gray-500 hover:bg-gray-50 hover:text-gray-700':
@@ -63,7 +63,7 @@ export default function SidePanel() {
                 <Link
                   to="/admin/dashboard/map"
                   className={clsx(
-                    'group relative flex justify-center rounded px-2 py-1.5',
+                    'group relative flex justify-center rounded px-1 py-1.5 md:px-2',
                     {
                       'bg-blue-50 text-blue-700': currentPage === 'map',
                       'text-gray-500 hover:bg-gray-50 hover:text-gray-700':
@@ -83,7 +83,7 @@ export default function SidePanel() {
                 <Link
                   to="/admin/dashboard/extensions"
                   className={clsx(
-                    'group relative flex justify-center rounded px-2 py-1.5',
+                    'group relative flex justify-center rounded px-1 py-1.5 md:px-2',
                     {
                       'bg-blue-50 text-blue-700': currentPage === 'extensions',
                       'text-gray-500 hover:bg-gray-50 hover:text-gray-700':
@@ -91,7 +91,10 @@ export default function SidePanel() {
                     }
                   )}
                 >
-                  <PuzzlePieceIcon className="h-5 w-5 opacity-75" strokeWidth={2} />
+                  <PuzzlePieceIcon
+                    className="h-5 w-5 opacity-75"
+                    strokeWidth={2}
+                  />
 
                   <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
                     Manage Extensions
@@ -103,7 +106,7 @@ export default function SidePanel() {
                 <Link
                   to="/admin/dashboard/storage"
                   className={clsx(
-                    'group relative flex justify-center rounded px-2 py-1.5',
+                    'group relative flex justify-center rounded px-1 py-1.5 md:px-2',
                     {
                       'bg-blue-50 text-blue-700': currentPage === 'storage',
                       'text-gray-500 hover:bg-gray-50 hover:text-gray-700':
@@ -111,7 +114,10 @@ export default function SidePanel() {
                     }
                   )}
                 >
-                  <CircleStackIcon className="h-5 w-5 opacity-75" strokeWidth={2} />
+                  <CircleStackIcon
+                    className="h-5 w-5 opacity-75"
+                    strokeWidth={2}
+                  />
 
                   <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
                     Project Storage
@@ -123,7 +129,7 @@ export default function SidePanel() {
                 <Link
                   to="/admin/dashboard/charts"
                   className={clsx(
-                    'group relative flex justify-center rounded px-2 py-1.5',
+                    'group relative flex justify-center rounded px-1 py-1.5 md:px-2',
                     {
                       'bg-blue-50 text-blue-700': currentPage === 'charts',
                       'text-gray-500 hover:bg-gray-50 hover:text-gray-700':
@@ -198,10 +204,10 @@ export default function SidePanel() {
         </div>
       </div>
 
-      <div className="sticky inset-x-0 bottom-0 border-t border-gray-100 bg-white p-2">
+      <div className="sticky inset-x-0 bottom-0 border-t border-gray-100 bg-white p-1 md:p-2">
         <Link
           to="/auth/logout"
-          className="group relative flex w-full justify-center rounded-lg px-2 py-1.5 text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+          className="group relative flex w-full justify-center rounded-lg px-1 py-1.5 md:px-2 text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-700"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

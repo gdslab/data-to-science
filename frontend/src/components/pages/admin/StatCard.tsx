@@ -13,7 +13,7 @@ export default function StatCard({
   value: number;
 }) {
   return (
-    <div className="flex flex-col rounded-lg bg-blue-50 px-4 py-8 text-center">
+    <div className="flex flex-col rounded-lg bg-blue-50 px-4 py-8 text-center min-w-64">
       <dt className="order-last text-lg font-medium text-gray-500">{title}</dt>
 
       <dd className="text-4xl font-extrabold text-blue-600 md:text-5xl">
@@ -53,7 +53,7 @@ export function StatStorageCard({
   };
 
   return (
-    <div className="flex flex-col rounded-lg bg-blue-50 px-4 py-8 text-center">
+    <div className="flex flex-col rounded-lg bg-blue-50 px-4 py-8 text-center min-w-64">
       <dt className="order-last text-lg font-medium text-gray-500">
         {title} ({storageUnitLabel})
       </dt>
