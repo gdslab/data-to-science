@@ -50,13 +50,13 @@ def test_create_user_new_email(client: TestClient, db: Session) -> None:
             == settings.MAIL_FROM_NAME + " <" + settings.MAIL_FROM + ">"
         )
         assert outbox[0]["To"] == user.email
-        assert outbox[0]["Subject"] == "Confirm your email address"
+        assert outbox[0]["Subject"] == "Welcome to Data to Science - please confirm your email"
         assert (
             outbox[1]["from"]
             == settings.MAIL_FROM_NAME + " <" + settings.MAIL_FROM + ">"
         )
         assert outbox[1]["To"] == settings.MAIL_ADMINS.replace(",", ", ")
-        assert outbox[1]["Subject"] == f"D2S New Account ({api_domain})"
+        assert outbox[1]["Subject"] == f"New Data to Science account awaiting approval ({api_domain})"
 
 
 def test_create_user_existing_email(client: TestClient, db: Session) -> None:
