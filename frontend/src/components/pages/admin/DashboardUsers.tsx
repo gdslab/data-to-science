@@ -69,7 +69,7 @@ export default function DashboardUsers() {
 
   return (
     <section className="w-full bg-white">
-      <div className="flex flex-col gap-8 mx-auto max-w-screen-xl px-4 py-12 sm:px-6 lg:px-8">
+      <div className="flex flex-col gap-8 px-4 py-12 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
             Users

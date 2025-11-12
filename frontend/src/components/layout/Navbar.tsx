@@ -43,7 +43,7 @@ export default function Navbar() {
   const showContact = import.meta.env.VITE_SHOW_CONTACT_FORM !== '0';
 
   return (
-    <Disclosure as="nav" className="bg-primary">
+    <Disclosure as="nav" className="bg-primary overflow-x-clip">
       {({ open }) => (
         <>
           <div className="mx-auto px-2 sm:px-6 lg:px-8">

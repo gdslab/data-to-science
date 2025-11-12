@@ -4,8 +4,8 @@ import { SiteStatistics } from './DashboardTypes';
 
 export default function StatCards({ stats }: { stats: SiteStatistics }) {
   return (
-    <section className="w-full bg-white">
-      <div className="mx-auto max-w-screen-xl px-4 py-12 sm:px-6 md:py-16 lg:px-8">
+    <section className="w-full">
+      <div className="px-4 py-12 sm:px-6 md:py-16 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
             Site Statistics
@@ -19,7 +19,7 @@ export default function StatCards({ stats }: { stats: SiteStatistics }) {
 
         {/* general summary of users, projects, flights, and data products */}
         <div className="mt-8 sm:mt-12">
-          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard title="Total Users" value={stats.user_count} />
             <StatCard title="Total Projects" value={stats.project_count} />
             <StatCard title="Total Flights" value={stats.flight_count} />
@@ -36,7 +36,7 @@ export default function StatCards({ stats }: { stats: SiteStatistics }) {
             <span className="text-xl text-gray-500 text-center font-semibold">
               Top Three Data Product Data Types
             </span>
-            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {stats.data_product_dtype_count.first && (
                 <StatCard
                   title={`Total ${stats.data_product_dtype_count.first.name.toUpperCase()}`}
@@ -67,7 +67,7 @@ export default function StatCards({ stats }: { stats: SiteStatistics }) {
         )}
 
         <div className="mt-8 sm:mt-12">
-          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatStorageCard
               title="Storage"
               storage={stats.storage_availability}
