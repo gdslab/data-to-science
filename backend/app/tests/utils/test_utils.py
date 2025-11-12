@@ -349,6 +349,88 @@ def test_parse_vector_flatgeobuf_path() -> None:
     assert result[1] == valid_layer_id
 
 
+def test_parse_vector_parquet_path_security() -> None:
+    """Test that parse_vector_parquet_path rejects malicious layer_ids."""
+    valid_uuid = "fbeb7163-61d0-4588-ade3-0f1ae17159a4"
+
+    # Test path traversal attempts - should all be rejected
+    path_traversal_attempts = [
+        f"/static/projects/{valid_uuid}/vector/../../../etc/passwd/file.parquet",
+        f"/static/projects/{valid_uuid}/vector/..%2F..%2Fetc/file.parquet",
+        f"/static/projects/{valid_uuid}/vector/....//etc/file.parquet",
+        f"/static/projects/{valid_uuid}/vector/..\\/etc/file.parquet",
+    ]
+
+    for malicious_path in path_traversal_attempts:
+        result = parse_vector_parquet_path(malicious_path)
+        assert result is None, f"Should reject path traversal: {malicious_path}"
+
+    # Test invalid layer_id formats (not matching base64url pattern)
+    invalid_layer_ids = [
+        "../../etc/passwd",  # Path traversal
+        "layer$$$id",  # Special characters
+        "layer<script>",  # HTML injection
+        "layer;rm -rf",  # Command injection
+        "a" * 100,  # Too long
+        "short",  # Too short
+        "InvalidLayerID",  # Wrong length (15 chars instead of 11)
+        "",  # Empty
+    ]
+
+    for invalid_id in invalid_layer_ids:
+        malicious_path = f"/static/projects/{valid_uuid}/vector/{invalid_id}/{invalid_id}.parquet"
+        result = parse_vector_parquet_path(malicious_path)
+        assert result is None, f"Should reject invalid layer_id: {invalid_id}"
+
+    # Test that only valid base64url characters are accepted (11 chars exactly)
+    valid_layer_id = "57WI4EOFlP4"  # Valid: 11 chars, base64url alphabet
+    valid_path = f"/static/projects/{valid_uuid}/vector/{valid_layer_id}/{valid_layer_id}.parquet"
+    result = parse_vector_parquet_path(valid_path)
+    assert result is not None, "Should accept valid layer_id"
+    assert result[1] == valid_layer_id
+
+
+def test_parse_vector_flatgeobuf_path_security() -> None:
+    """Test that parse_vector_flatgeobuf_path rejects malicious layer_ids."""
+    valid_uuid = "fbeb7163-61d0-4588-ade3-0f1ae17159a4"
+
+    # Test path traversal attempts - should all be rejected
+    path_traversal_attempts = [
+        f"/static/projects/{valid_uuid}/vector/../../../etc/passwd/file.fgb",
+        f"/static/projects/{valid_uuid}/vector/..%2F..%2Fetc/file.fgb",
+        f"/static/projects/{valid_uuid}/vector/....//etc/file.fgb",
+        f"/static/projects/{valid_uuid}/vector/..\\/etc/file.fgb",
+    ]
+
+    for malicious_path in path_traversal_attempts:
+        result = parse_vector_flatgeobuf_path(malicious_path)
+        assert result is None, f"Should reject path traversal: {malicious_path}"
+
+    # Test invalid layer_id formats (not matching base64url pattern)
+    invalid_layer_ids = [
+        "../../etc/passwd",  # Path traversal
+        "layer$$$id",  # Special characters
+        "layer<script>",  # HTML injection
+        "layer;rm -rf",  # Command injection
+        "a" * 100,  # Too long
+        "short",  # Too short
+        "InvalidLayerID",  # Wrong length (15 chars instead of 11)
+        "",  # Empty
+    ]
+
+    for invalid_id in invalid_layer_ids:
+        malicious_path = f"/static/projects/{valid_uuid}/vector/{invalid_id}/{invalid_id}.fgb"
+        result = parse_vector_flatgeobuf_path(malicious_path)
+        assert result is None, f"Should reject invalid layer_id: {invalid_id}"
+
+    # Test that only valid base64url characters are accepted (11 chars exactly)
+    valid_layer_id = "57WI4EOFlP4"  # Valid: 11 chars, base64url alphabet
+    valid_path = f"/static/projects/{valid_uuid}/vector/{valid_layer_id}/{valid_layer_id}.fgb"
+    result = parse_vector_flatgeobuf_path(valid_path)
+    assert result is not None, "Should accept valid layer_id"
+    assert result[1] == valid_layer_id
+
+
 def test_deactivated_project_cleanup(db: Session) -> None:
     user = create_user(db)
     data_product1 = SampleDataProduct(db, user=user)
