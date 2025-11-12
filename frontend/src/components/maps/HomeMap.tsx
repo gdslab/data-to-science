@@ -60,12 +60,6 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
 
   const { state } = useLocation();
 
-  // Calculate the first checked vector layer ID to ensure rasters render below vectors
-  const firstVectorLayerId = useMemo(() => {
-    const checkedLayers = layers.filter((layer) => layer.checked);
-    return checkedLayers.length > 0 ? checkedLayers[0].id : null;
-  }, [layers]);
-
   // Load config for osmLabelFilter
   useEffect(() => {
     fetch('/config.json')
@@ -189,7 +183,7 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
           <ProjectRasterTiles
             boundingBox={boundingBox}
             dataProduct={activeDataProductSymbology.background}
-            beforeLayerId={firstVectorLayerId}
+            beforeLayerId={activeDataProduct.id}
           />
         );
       } else {
@@ -250,7 +244,6 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
           key={activeDataProduct.id}
           boundingBox={activeDataProduct.bbox || activeProjectBBox || undefined}
           dataProduct={activeDataProduct}
-          beforeLayerId={firstVectorLayerId}
         />
       )}
       {/* Show background raster if one is set */}
