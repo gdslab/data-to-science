@@ -93,13 +93,13 @@ def create_user(
     return user
 
 
-@router.get("", response_model=list[schemas.User])
+@router.get("", response_model=list[schemas.UserPublic])
 def read_users(
     q: Annotated[str | None, Query(max_length=50)] = None,
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    """Retrieve list of all users or a list of users filtered by a search query."""
+    """Retrieve public list of users filtered by optional search query."""
     users = crud.user.get_multi_by_query(db, q=q)
     return users
 

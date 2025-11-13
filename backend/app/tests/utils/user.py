@@ -92,6 +92,7 @@ def create_user(
     first_name: str | None = None,
     last_name: str | None = None,
     is_approved: bool = True,
+    is_email_confirmed: bool = True,
     is_superuser: bool = False,
     token: str | None = None,
     token_expired: bool = False,
@@ -108,6 +109,13 @@ def create_user(
         with db as session:
             session.execute(statement)
             session.commit()
+    if is_email_confirmed and not token:
+        statement = (
+            update(User).where(User.email == user.email).values(is_email_confirmed=True)
+        )
+        with db as session:
+            session.execute(statement)
+            session.commit()
     if is_superuser:
         statement = (
             update(User).where(User.email == user.email).values(is_superuser=True)
@@ -115,14 +123,7 @@ def create_user(
         with db as session:
             session.execute(statement)
             session.commit()
-    if not token:
-        statement = (
-            update(User).where(User.email == user.email).values(is_email_confirmed=True)
-        )
-        with db as session:
-            session.execute(statement)
-            session.commit()
-    else:
+    if token:
         crud.user.create_single_use_token(
             db,
             obj_in=SingleUseTokenCreate(

@@ -143,9 +143,16 @@ def test_read_users_without_query(
     users = response.json()
     assert isinstance(users, List)
     assert len(users) == 4  # three users created here plus user making request
+
+    # Define expected public fields only
+    expected_fields = {"id", "email", "first_name", "last_name", "profile_url"}
+
     for user in users:
-        assert user["is_approved"]
-        assert user["is_email_confirmed"]
+        # Verify ONLY expected public fields are present (no extra fields)
+        assert set(user.keys()) == expected_fields, (
+            f"Unexpected fields in response. "
+            f"Expected: {expected_fields}, Got: {set(user.keys())}"
+        )
         assert user["id"] in [
             str(user1.id),
             str(user2.id),

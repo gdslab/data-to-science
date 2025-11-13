@@ -49,6 +49,28 @@ class User(UserInDBBase):
     is_demo: bool = Field(exclude=True)
 
 
+# public properties for non-admin user list endpoint
+class UserPublic(BaseModel, from_attributes=True):
+    id: UUID4
+    email: Optional[EmailStr] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    profile_url: Optional[AnyHttpUrl] = None
+
+
+# admin properties for admin user list endpoint
+class UserAdmin(BaseModel, from_attributes=True):
+    id: UUID4
+    email: Optional[EmailStr] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    created_at: datetime
+    profile_url: Optional[AnyHttpUrl] = None
+    exts: List[str] = []
+    is_approved: bool = False
+    is_email_confirmed: bool = False
+
+
 # additional properties stored in DB
 class UserInDB(UserInDBBase):
     hashed_password: str

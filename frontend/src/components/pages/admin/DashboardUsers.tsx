@@ -11,7 +11,7 @@ import api from '../../../api';
 import { sorter } from '../../utils';
 
 export async function loader() {
-  const response: AxiosResponse<User[]> = await api.get('/users');
+  const response: AxiosResponse<User[]> = await api.get('/admin/users');
   if (response) {
     return response.data;
   } else {

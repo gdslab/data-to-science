@@ -1,9 +1,9 @@
 import logging
 import os
-from typing import Any, cast, Dict, List, Union
+from typing import Annotated, Any, cast, Dict, List, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 
@@ -15,6 +15,17 @@ from app.crud.crud_admin import get_site_statistics, get_static_directory_size
 router = APIRouter()
 
 logger = logging.getLogger("__name__")
+
+
+@router.get("/users", response_model=list[schemas.UserAdmin])
+def read_admin_users(
+    q: Annotated[str | None, Query(max_length=50)] = None,
+    current_user: models.User = Depends(deps.get_current_admin_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Retrieve admin list of all users (including unapproved) with sensitive fields."""
+    users = crud.user.get_multi_by_query(db, q=q, include_all=True)
+    return users
 
 
 @router.get("/site_statistics", response_model=schemas.SiteStatistics)
