@@ -5,6 +5,7 @@ import { useLoaderData } from 'react-router-dom';
 import DashboardUserList from './DashboardUserList';
 import SearchBar from './SearchBar';
 import StatCard from './StatCard';
+import StatCardWithPeriodToggle from './StatCardWithPeriodToggle';
 import { User } from '../../../AuthContext';
 
 import api from '../../../api';
@@ -20,25 +21,62 @@ export async function loader() {
 }
 
 /**
- * Return number of users that joined in last N days.
+ * Return number of active users that joined in last N days.
  * @param users List of users on platform.
  * @param nDays Number of days.
- * @returns Users registered within number of days.
+ * @returns Active users registered within number of days.
  */
 function joinedInLastNDays(users: User[], nDays: number): number {
   const pastDate = new Date();
   // update today to today's date - number of days
   pastDate.setDate(pastDate.getDate() - nDays);
   const filteredUsers = users.filter(
-    ({ created_at }) => new Date(created_at).getTime() > pastDate.getTime()
+    (user) =>
+      new Date(user.created_at).getTime() > pastDate.getTime() &&
+      user.is_approved &&
+      user.is_email_confirmed
   );
   return filteredUsers.length;
 }
 
+/**
+ * Return number of active users (approved and email confirmed).
+ * @param users List of users on platform.
+ * @returns Count of active users.
+ */
+function countActiveUsers(users: User[]): number {
+  return users.filter(
+    (user) => user.is_approved && user.is_email_confirmed
+  ).length;
+}
+
+/**
+ * Return number of users awaiting email confirmation.
+ * @param users List of users on platform.
+ * @returns Count of users with unconfirmed email.
+ */
+function countAwaitingEmailConfirmation(users: User[]): number {
+  return users.filter((user) => !user.is_email_confirmed).length;
+}
+
+/**
+ * Return number of users awaiting admin approval.
+ * @param users List of users on platform.
+ * @returns Count of users awaiting approval.
+ */
+function countAwaitingApproval(users: User[]): number {
+  return users.filter((user) => !user.is_approved).length;
+}
+
 export default function DashboardUsers() {
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const loadedUsers = useLoaderData() as User[];
+  const [users, setUsers] = useState<User[]>(loadedUsers);
 
-  const users = useLoaderData() as User[];
+  // Sync users when loadedUsers changes
+  useMemo(() => {
+    setUsers(loadedUsers);
+  }, [loadedUsers]);
 
   const updateSearchTerm = (newSearchTerm: string): void =>
     setSearchTerm(newSearchTerm);
@@ -81,12 +119,18 @@ export default function DashboardUsers() {
         </div>
 
         <div>
-          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <StatCard title="Total users" value={users.length} />
-            <StatCard title="Last 7 days" value={joinedInLastNDays(users, 7)} />
+          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard title="Total Active Users" value={countActiveUsers(users)} />
             <StatCard
-              title="Last 30 days"
-              value={joinedInLastNDays(users, 30)}
+              title="Awaiting Email Confirmation"
+              value={countAwaitingEmailConfirmation(users)}
+            />
+            <StatCard
+              title="Awaiting Admin Approval"
+              value={countAwaitingApproval(users)}
+            />
+            <StatCardWithPeriodToggle
+              getValue={(period) => joinedInLastNDays(users, period)}
             />
           </dl>
         </div>
@@ -96,7 +140,7 @@ export default function DashboardUsers() {
           updateSearchTerm={updateSearchTerm}
         />
 
-        <DashboardUserList users={filteredUsers} />
+        <DashboardUserList users={filteredUsers} setUsers={setUsers} />
       </div>
     </section>
   );

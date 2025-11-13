@@ -285,3 +285,98 @@ def test_deactivate_user_extension(
     ).replace(tzinfo=timezone.utc)
     assert isinstance(deactivated_at, datetime)
     assert deactivated_at < datetime.now(tz=timezone.utc)
+
+
+def test_update_user_approval_as_superuser(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Verify superuser can update user approval status."""
+    # Create unapproved user
+    user = create_user(db, is_approved=False)
+    assert user.is_approved is False
+
+    # Update to superuser
+    current_user = get_current_user(db, normal_user_access_token)
+    superuser = update_regular_user_to_superuser(db, user_id=current_user.id)
+
+    # Approve the user
+    payload = {"is_approved": True}
+    response = client.patch(
+        f"{settings.API_V1_STR}/admin/users/{user.id}/approval",
+        json=jsonable_encoder(payload),
+    )
+    assert response.status_code == status.HTTP_200_OK
+    updated_user = response.json()
+    assert updated_user["id"] == str(user.id)
+    assert updated_user["is_approved"] is True
+
+    # Verify user is approved in database
+    db_user = crud.user.get(db, id=user.id)
+    assert db_user.is_approved is True
+
+
+def test_revoke_user_approval_as_superuser(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Verify superuser can revoke user approval status."""
+    # Create approved user
+    user = create_user(db, is_approved=True)
+    assert user.is_approved is True
+
+    # Update to superuser
+    current_user = get_current_user(db, normal_user_access_token)
+    superuser = update_regular_user_to_superuser(db, user_id=current_user.id)
+
+    # Revoke approval
+    payload = {"is_approved": False}
+    response = client.patch(
+        f"{settings.API_V1_STR}/admin/users/{user.id}/approval",
+        json=jsonable_encoder(payload),
+    )
+    assert response.status_code == status.HTTP_200_OK
+    updated_user = response.json()
+    assert updated_user["id"] == str(user.id)
+    assert updated_user["is_approved"] is False
+
+    # Verify user approval is revoked in database
+    db_user = crud.user.get(db, id=user.id)
+    assert db_user.is_approved is False
+
+
+def test_update_user_approval_as_non_superuser(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Verify non-superuser cannot update user approval status."""
+    # Create unapproved user
+    user = create_user(db, is_approved=False)
+
+    # Try to approve as non-superuser
+    payload = {"is_approved": True}
+    response = client.patch(
+        f"{settings.API_V1_STR}/admin/users/{user.id}/approval",
+        json=jsonable_encoder(payload),
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    # Verify user is still unapproved
+    db_user = crud.user.get(db, id=user.id)
+    assert db_user.is_approved is False
+
+
+def test_update_user_approval_nonexistent_user(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Verify 404 error when updating approval for nonexistent user."""
+    # Update to superuser
+    current_user = get_current_user(db, normal_user_access_token)
+    superuser = update_regular_user_to_superuser(db, user_id=current_user.id)
+
+    # Try to update nonexistent user
+    fake_uuid = "00000000-0000-0000-0000-000000000000"
+    payload = {"is_approved": True}
+    response = client.patch(
+        f"{settings.API_V1_STR}/admin/users/{fake_uuid}/approval",
+        json=jsonable_encoder(payload),
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == "User not found"
