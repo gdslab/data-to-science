@@ -3,7 +3,7 @@ import os
 from typing import Annotated, Any, cast, Dict, List, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 
@@ -26,6 +26,22 @@ def read_admin_users(
     """Retrieve admin list of all users (including unapproved) with sensitive fields."""
     users = crud.user.get_multi_by_query(db, q=q, include_all=True)
     return users
+
+
+@router.patch("/users/{user_id}/approval", response_model=schemas.UserAdmin)
+def update_user_approval(
+    user_id: UUID,
+    approval_update: schemas.UserUpdate,
+    current_user: models.User = Depends(deps.get_current_admin_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Update user approval status. Requires superuser privileges."""
+    user = crud.user.get(db, id=user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    updated_user = crud.user.update(db, db_obj=user, obj_in=approval_update)
+    return updated_user
 
 
 @router.get("/site_statistics", response_model=schemas.SiteStatistics)
