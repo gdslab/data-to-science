@@ -24,7 +24,7 @@ export async function loader() {
       '/admin/extensions'
     );
     const teams: AxiosResponse<Team[]> = await api.get('teams');
-    const users: AxiosResponse<User[]> = await api.get('/users');
+    const users: AxiosResponse<User[]> = await api.get('/admin/users');
     if (extensions && teams && users) {
       return {
         extensions: extensions.data,

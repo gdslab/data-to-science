@@ -94,16 +94,18 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             session.commit()
             return db_obj
 
-    def get_multi_by_query(self, db: Session, q: str | None = "") -> Sequence[User]:
+    def get_multi_by_query(
+        self, db: Session, q: str | None = "", include_all: bool = False
+    ) -> Sequence[User]:
         if not q:
             q = ""
-        statement = select(User).where(
-            and_(
-                User.is_approved,
-                User.is_email_confirmed,
-                func.lower(User.full_name).contains(func.lower(q)),
-            )
-        )
+        # Build filters conditionally based on include_all parameter
+        filters = [func.lower(User.full_name).contains(func.lower(q))]
+        if not include_all:
+            # Only include approved and confirmed users for non-admin queries
+            filters.extend([User.is_approved, User.is_email_confirmed])
+
+        statement = select(User).where(and_(*filters))
         with db as session:
             users = session.scalars(statement).all()
             for user in users:
