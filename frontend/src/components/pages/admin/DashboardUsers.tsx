@@ -1,5 +1,5 @@
 import { AxiosResponse } from 'axios';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLoaderData } from 'react-router-dom';
 
 import DashboardUserList from './DashboardUserList';
@@ -74,7 +74,7 @@ export default function DashboardUsers() {
   const [users, setUsers] = useState<User[]>(loadedUsers);
 
   // Sync users when loadedUsers changes
-  useMemo(() => {
+  useEffect(() => {
     setUsers(loadedUsers);
   }, [loadedUsers]);
 
@@ -87,7 +87,7 @@ export default function DashboardUsers() {
       return users
         .slice()
         .sort((a, b) =>
-          sorter(a.last_name.toLowerCase(), b.last_name.toLowerCase())
+          sorter(a.last_name.trim().toLowerCase(), b.last_name.trim().toLowerCase())
         );
     }
 
@@ -101,7 +101,7 @@ export default function DashboardUsers() {
           user.email.toLowerCase().includes(searchTerm)
       )
       .sort((a, b) =>
-        sorter(a.last_name.toLowerCase(), b.last_name.toLowerCase())
+        sorter(a.last_name.trim().toLowerCase(), b.last_name.trim().toLowerCase())
       );
   }, [searchTerm, users]);
 

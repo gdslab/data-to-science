@@ -46,8 +46,8 @@ export default function DashboardUserList({
 }) {
   const { user: currentUser } = useContext(AuthContext);
   const [currentPage, setCurrentPage] = useState(0);
-  const [sortColumn, setSortColumn] = useState<SortColumn>('name');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [sortColumn, setSortColumn] = useState<SortColumn>('created_at');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [loadingUserId, setLoadingUserId] = useState<string | null>(null);
 
   const keysToSkip = [
@@ -108,9 +108,9 @@ export default function DashboardUserList({
         await api.patch(`/admin/users/${user.id}/approval`, {
           is_approved: !user.is_approved,
         });
-        // Update parent state
-        setUsers(
-          users.map((u) =>
+        // Update parent state - use callback to update the full user list
+        setUsers((prevUsers) =>
+          prevUsers.map((u) =>
             u.id === user.id ? { ...u, is_approved: !u.is_approved } : u
           )
         );
@@ -132,9 +132,9 @@ export default function DashboardUserList({
 
       switch (sortColumn) {
         case 'name':
-          comparison = `${a.last_name} ${a.first_name}`
+          comparison = `${a.last_name.trim()} ${a.first_name.trim()}`
             .toLowerCase()
-            .localeCompare(`${b.last_name} ${b.first_name}`.toLowerCase());
+            .localeCompare(`${b.last_name.trim()} ${b.first_name.trim()}`.toLowerCase());
           break;
         case 'email':
           comparison = a.email.toLowerCase().localeCompare(b.email.toLowerCase());
