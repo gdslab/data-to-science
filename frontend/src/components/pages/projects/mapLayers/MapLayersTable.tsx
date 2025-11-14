@@ -173,16 +173,26 @@ export default function ProjectLayersTable() {
 
   return (
     <div className="max-h-96 overflow-auto">
-      <table className="relative w-full border-separate border-spacing-y-1 border-spacing-x-1 table-fixed">
+      <table className="relative w-full border-separate border-spacing-y-1 border-spacing-x-1">
         <thead>
           <tr className="h-12 sticky top-0 text-white bg-slate-300">
-            <th scope="col">Preview</th>
-            <th scope="col" className="w-64">
+            <th scope="col" className="min-w-[100px] w-[100px]">
+              Preview
+            </th>
+            <th scope="col" className="min-w-[180px]">
               Name
             </th>
-            <th scope="col">Type</th>
-            <th scope="col">Download</th>
-            {projectRole !== 'viewer' && <th scope="col">Remove</th>}
+            <th scope="col" className="min-w-[120px] w-[120px]">
+              Type
+            </th>
+            <th scope="col" className="min-w-[280px]">
+              Download
+            </th>
+            {projectRole !== 'viewer' && (
+              <th scope="col" className="min-w-[80px] w-[80px]">
+                Remove
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -192,7 +202,7 @@ export default function ProjectLayersTable() {
                 key={layer.layer_id}
                 className="text-center border-2 border-slate-400"
               >
-                <td className="py-2 bg-white">
+                <td className="py-2 bg-white min-w-[100px] w-[100px]">
                   {layer.preview_url ? (
                     <button
                       type="button"
@@ -215,7 +225,7 @@ export default function ProjectLayersTable() {
                     </div>
                   )}
                 </td>
-                <td className="p-4 bg-white">
+                <td className="p-4 bg-white min-w-[180px]">
                   {editingLayerId === layer.layer_id ? (
                     // Edit mode
                     <div className="flex items-center gap-4">
@@ -268,7 +278,7 @@ export default function ProjectLayersTable() {
                     </div>
                   )}
                 </td>
-                <td className="p-4 bg-white">
+                <td className="p-4 bg-white min-w-[120px] w-[120px]">
                   <div className="flex items-center justify-center gap-2">
                     <img
                       src={getGeomTypeIcon(layer.geom_type)}
@@ -277,13 +287,17 @@ export default function ProjectLayersTable() {
                     {layer.geom_type}
                   </div>
                 </td>
-                <td className="bg-white">
+                <td className="bg-white min-w-[280px] p-2">
                   <div className="flex flex-col gap-4">
-                    <MapLayerDownloadLinks layerId={layer.layer_id} />
+                    <MapLayerDownloadLinks
+                      layerId={layer.layer_id}
+                      parquetUrl={layer.parquet_url}
+                      fgbUrl={layer.fgb_url}
+                    />
                   </div>
                 </td>
                 {projectRole !== 'viewer' && (
-                  <td className="p-4 bg-white">
+                  <td className="p-4 bg-white min-w-[80px] w-[80px]">
                     <ConfirmationModal
                       btnName="Remove map layer"
                       btnType="trashIcon"

@@ -59,6 +59,8 @@ export type MapLayer = {
   geom_type: string;
   signed_url: string;
   preview_url: string;
+  parquet_url: string;
+  fgb_url: string;
 };
 
 type ZonalFeatureProperties = {
