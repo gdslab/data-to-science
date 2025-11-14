@@ -53,3 +53,5 @@ class VectorLayerPayload(BaseModel):
     geom_type: str
     signed_url: AnyHttpUrl
     preview_url: AnyHttpUrl
+    parquet_url: AnyHttpUrl
+    fgb_url: AnyHttpUrl

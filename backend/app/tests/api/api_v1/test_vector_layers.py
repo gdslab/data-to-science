@@ -167,6 +167,8 @@ def test_read_vector_layers_with_project_owner_role(
         assert "geom_type" in layer
         assert "signed_url" in layer
         assert "preview_url" in layer
+        assert "parquet_url" in layer
+        assert "fgb_url" in layer
         assert os.path.exists(layer["preview_url"].split(settings.API_DOMAIN)[1])
 
 
@@ -193,6 +195,8 @@ def test_read_vector_layers_with_project_manager_role(
         assert "geom_type" in layer
         assert "signed_url" in layer
         assert "preview_url" in layer
+        assert "parquet_url" in layer
+        assert "fgb_url" in layer
         assert os.path.exists(layer["preview_url"].split(settings.API_DOMAIN)[1])
 
 
@@ -219,6 +223,8 @@ def test_read_vector_layers_with_project_viewer_role(
         assert "geom_type" in layer
         assert "signed_url" in layer
         assert "preview_url" in layer
+        assert "parquet_url" in layer
+        assert "fgb_url" in layer
         assert os.path.exists(layer["preview_url"].split(settings.API_DOMAIN)[1])
 
 

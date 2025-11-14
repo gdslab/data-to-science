@@ -229,6 +229,8 @@ def read_vector_layers(
                 "geom_type": layer[2],
                 "signed_url": get_tile_url_with_signed_payload(layer[0]),
                 "preview_url": get_preview_url(str(project.id), layer[0]),
+                "parquet_url": get_parquet_url(str(project.id), layer[0]),
+                "fgb_url": get_fgb_url(str(project.id), layer[0]),
             }
             for layer in vector_layers
         ]
@@ -585,3 +587,35 @@ def get_preview_url(project_id: str, layer_id: str) -> str:
     base_static_url = f"{settings.API_DOMAIN}{static_dir}"
 
     return f"{base_static_url}/projects/{project_id}/vector/{layer_id}/preview.png"
+
+
+def get_parquet_url(project_id: str, layer_id: str) -> str:
+    """Returns URL for vector layer GeoParquet file.
+
+    Args:
+        project_id (str): Unique project ID.
+        layer_id (str): Unique layer ID.
+
+    Returns:
+        str: URL to vector layer GeoParquet file.
+    """
+    static_dir = get_static_dir()
+    base_static_url = f"{settings.API_DOMAIN}{static_dir}"
+
+    return f"{base_static_url}/projects/{project_id}/vector/{layer_id}/{layer_id}.parquet"
+
+
+def get_fgb_url(project_id: str, layer_id: str) -> str:
+    """Returns URL for vector layer FlatGeobuf file.
+
+    Args:
+        project_id (str): Unique project ID.
+        layer_id (str): Unique layer ID.
+
+    Returns:
+        str: URL to vector layer FlatGeobuf file.
+    """
+    static_dir = get_static_dir()
+    base_static_url = f"{settings.API_DOMAIN}{static_dir}"
+
+    return f"{base_static_url}/projects/{project_id}/vector/{layer_id}/{layer_id}.fgb"
