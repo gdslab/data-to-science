@@ -42,7 +42,7 @@ export default function DashboardUserList({
   setUsers,
 }: {
   users: User[];
-  setUsers: (users: User[]) => void;
+  setUsers: (users: User[] | ((prevUsers: User[]) => User[])) => void;
 }) {
   const { user: currentUser } = useContext(AuthContext);
   const [currentPage, setCurrentPage] = useState(0);
