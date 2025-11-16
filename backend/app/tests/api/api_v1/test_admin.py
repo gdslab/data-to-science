@@ -49,6 +49,8 @@ def test_read_admin_users(
         "first_name",
         "last_name",
         "created_at",
+        "last_login_at",
+        "last_activity_at",
         "profile_url",
         "exts",
         "is_approved",

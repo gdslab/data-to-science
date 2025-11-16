@@ -34,7 +34,7 @@ const UserProfilePicture = ({ user }: { user: User }) =>
     </div>
   );
 
-type SortColumn = 'name' | 'email' | 'created_at' | 'is_approved';
+type SortColumn = 'name' | 'email' | 'created_at' | 'last_login_at' | 'last_activity_at' | 'is_approved';
 type SortDirection = 'asc' | 'desc';
 
 export default function DashboardUserList({
@@ -58,6 +58,8 @@ export default function DashboardUserList({
     'is_email_confirmed',
     'is_superuser',
     'profile_url',
+    'last_login_at',
+    'last_activity_at',
   ];
 
   const MAX_ITEMS = 10; // max number of users per page
@@ -143,6 +145,20 @@ export default function DashboardUserList({
           comparison =
             new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
           break;
+        case 'last_login_at':
+          // Handle null values - put them at the end
+          if (a.last_login_at === null && b.last_login_at === null) comparison = 0;
+          else if (a.last_login_at === null) comparison = 1;
+          else if (b.last_login_at === null) comparison = -1;
+          else comparison = new Date(a.last_login_at).getTime() - new Date(b.last_login_at).getTime();
+          break;
+        case 'last_activity_at':
+          // Handle null values - put them at the end
+          if (a.last_activity_at === null && b.last_activity_at === null) comparison = 0;
+          else if (a.last_activity_at === null) comparison = 1;
+          else if (b.last_activity_at === null) comparison = -1;
+          else comparison = new Date(a.last_activity_at).getTime() - new Date(b.last_activity_at).getTime();
+          break;
         case 'is_approved':
           comparison = Number(b.is_approved) - Number(a.is_approved);
           break;
@@ -173,60 +189,93 @@ export default function DashboardUserList({
 
   return (
     <div className="max-h-[40vh] w-full flex flex-col gap-4">
-      <table className="relative w-full border-separate border-spacing-y-1 border-spacing-x-1">
-        <thead>
-          <tr className="h-12 sticky top-0 text-slate-700 bg-slate-300">
-            <th className="w-1/12"></th>
-            <th
-              className="w-3/12 cursor-pointer hover:bg-slate-400 transition"
-              onClick={() => handleSort('name')}
-            >
-              Name
-              <SortIndicator column="name" />
-            </th>
-            <th
-              className="w-3/12 cursor-pointer hover:bg-slate-400 transition"
-              onClick={() => handleSort('email')}
-            >
-              Email
-              <SortIndicator column="email" />
-            </th>
-            <th
-              className="w-2/12 cursor-pointer hover:bg-slate-400 transition"
-              onClick={() => handleSort('created_at')}
-            >
-              Date Joined
-              <SortIndicator column="created_at" />
-            </th>
-            {currentUser?.is_superuser && (
+      <div className="md:max-h-96 max-h-60 overflow-y-auto overflow-x-auto">
+        <table className="relative w-full min-w-[1200px] border-collapse">
+          <thead>
+            <tr className="h-12 sticky top-0 text-slate-700 bg-slate-300 z-10">
               <th
-                className="w-3/12 cursor-pointer hover:bg-slate-400 transition"
-                onClick={() => handleSort('is_approved')}
+                className="cursor-pointer hover:bg-slate-400 transition whitespace-nowrap px-2 bg-slate-300 border-b-2 border-slate-400"
+                style={{ width: '180px' }}
+                onClick={() => handleSort('name')}
               >
-                Approval Status
-                <SortIndicator column="is_approved" />
+                Name
+                <SortIndicator column="name" />
               </th>
-            )}
-          </tr>
-        </thead>
-      </table>
-      <div className="md:max-h-96 max-h-60 overflow-y-auto">
-        <table className="relative w-full border-separate border-spacing-y-1 border-spacing-x-1">
+              <th
+                className="cursor-pointer hover:bg-slate-400 transition whitespace-nowrap px-2 bg-slate-300 border-b-2 border-slate-400"
+                style={{ width: '200px' }}
+                onClick={() => handleSort('email')}
+              >
+                Email
+                <SortIndicator column="email" />
+              </th>
+              <th
+                className="cursor-pointer hover:bg-slate-400 transition whitespace-nowrap px-2 bg-slate-300 border-b-2 border-slate-400"
+                style={{ width: '120px' }}
+                onClick={() => handleSort('created_at')}
+              >
+                Date Joined
+                <SortIndicator column="created_at" />
+              </th>
+              <th
+                className="cursor-pointer hover:bg-slate-400 transition whitespace-nowrap px-2 bg-slate-300 border-b-2 border-slate-400"
+                style={{ width: '180px' }}
+                onClick={() => handleSort('last_login_at')}
+              >
+                Last Login
+                <SortIndicator column="last_login_at" />
+              </th>
+              <th
+                className="cursor-pointer hover:bg-slate-400 transition whitespace-nowrap px-2 bg-slate-300 border-b-2 border-slate-400"
+                style={{ width: '180px' }}
+                onClick={() => handleSort('last_activity_at')}
+              >
+                Last Activity
+                <SortIndicator column="last_activity_at" />
+              </th>
+              {currentUser?.is_superuser && (
+                <th
+                  className="cursor-pointer hover:bg-slate-400 transition whitespace-nowrap px-2 bg-slate-300 border-b-2 border-slate-400"
+                  style={{ width: '140px' }}
+                  onClick={() => handleSort('is_approved')}
+                >
+                  Approval
+                  <SortIndicator column="is_approved" />
+                </th>
+              )}
+            </tr>
+          </thead>
           <tbody>
             {sortedAndPaginatedUsers.map((user) => (
-              <tr key={user.id} className="text-center">
-                <td className="w-1/12 p-1.5 bg-white">
-                  <UserProfilePicture user={user} />
+              <tr key={user.id} className="text-center border-b border-gray-200">
+                <td className="p-1.5 bg-white" style={{ width: '180px' }}>
+                  <div className="flex items-center gap-2 justify-center">
+                    <div className="flex-shrink-0">
+                      <UserProfilePicture user={user} />
+                    </div>
+                    <span className="truncate">
+                      {user.first_name} {user.last_name}
+                    </span>
+                  </div>
                 </td>
-                <td className="w-3/12 p-1.5 bg-white">
-                  {user.first_name} {user.last_name}
+                <td className="p-1.5 bg-white truncate" style={{ width: '200px' }}>
+                  {user.email}
                 </td>
-                <td className="w-3/12 p-1.5 bg-white">{user.email}</td>
-                <td className="w-2/12 p-1.5 bg-white">
+                <td className="p-1.5 bg-white whitespace-nowrap text-sm" style={{ width: '120px' }}>
                   {new Date(user.created_at).toLocaleDateString()}
                 </td>
+                <td className="p-1.5 bg-white whitespace-nowrap text-sm" style={{ width: '180px' }}>
+                  {user.last_login_at
+                    ? new Date(user.last_login_at).toLocaleString()
+                    : '-'}
+                </td>
+                <td className="p-1.5 bg-white whitespace-nowrap text-sm" style={{ width: '180px' }}>
+                  {user.last_activity_at
+                    ? new Date(user.last_activity_at).toLocaleString()
+                    : '-'}
+                </td>
                 {currentUser?.is_superuser && (
-                  <td className="w-3/12 p-1.5 bg-white">
+                  <td className="p-1.5 bg-white" style={{ width: '140px' }}>
                     <div className="flex items-center justify-center gap-2">
                       <span
                         className={`text-lg ${user.is_approved ? 'text-green-600' : 'text-red-600'}`}

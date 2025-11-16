@@ -1,5 +1,6 @@
 import glob
 import os
+from datetime import datetime, timezone
 from typing import Any, Optional, Sequence
 from uuid import UUID
 
@@ -146,6 +147,43 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
 
     def is_superuser(self, user: User) -> bool:
         return user.is_superuser
+
+    def update_last_login(self, db: Session, *, user: User) -> User:
+        """Update last_login_at and last_activity_at timestamps for password-based login."""
+        now = datetime.now(timezone.utc)
+        user.last_login_at = now
+        user.last_activity_at = now
+        with db as session:
+            session.add(user)
+            session.commit()
+            session.refresh(user)
+        return user
+
+    def update_last_activity(
+        self, db: Session, *, user: User, throttle_minutes: int = 15
+    ) -> Optional[User]:
+        """
+        Update last_activity_at timestamp if it's older than throttle_minutes.
+        Returns updated user if timestamp was updated, None otherwise.
+        """
+        now = datetime.now(timezone.utc)
+
+        # Only update if last_activity_at is None or older than throttle
+        if user.last_activity_at is None:
+            should_update = True
+        else:
+            time_since_last_activity = now - user.last_activity_at
+            should_update = time_since_last_activity.total_seconds() > (throttle_minutes * 60)
+
+        if should_update:
+            user.last_activity_at = now
+            with db as session:
+                session.add(user)
+                session.commit()
+                session.refresh(user)
+            return user
+
+        return None
 
 
 def find_profile_img(user_id: str) -> Optional[str]:

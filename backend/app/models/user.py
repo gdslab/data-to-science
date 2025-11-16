@@ -1,5 +1,5 @@
 import uuid
-from typing import List, TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING
 
 from datetime import datetime
 
@@ -49,6 +49,12 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=utcnow(), nullable=False
     )
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
+    last_activity_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
 
     api_key: Mapped["APIKey"] = relationship(
         back_populates="owner", cascade="all, delete"
@@ -88,5 +94,7 @@ class User(Base):
             f"first_name={self.first_name!r}, last_name={self.last_name!r}, "
             f"is_approved={self.is_approved!r}, is_demo={self.is_demo!r}, "
             f"is_email_confirmed={self.is_email_confirmed!r}, "
-            f"is_superuser={self.is_superuser!r}, created_at={self.created_at!r})"
+            f"is_superuser={self.is_superuser!r}, created_at={self.created_at!r}, "
+            f"last_login_at={self.last_login_at!r}, "
+            f"last_activity_at={self.last_activity_at!r})"
         )
