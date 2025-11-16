@@ -18,6 +18,8 @@ export interface User {
   profile_url: string | null;
   api_access_token: string | null;
   created_at: string;
+  last_login_at: string | null;
+  last_activity_at: string | null;
   exts: string[];
 }
 

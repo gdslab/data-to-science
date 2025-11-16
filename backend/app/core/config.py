@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     # 15 minutes
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
+    # Activity tracking throttle in minutes (only update last_activity_at if older than this)
+    ACTIVITY_TRACKING_THROTTLE_MINUTES: int = 15
 
     API_PROJECT_NAME: str = ""
     API_DOMAIN: str = ""

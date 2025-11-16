@@ -65,6 +65,8 @@ class UserAdmin(BaseModel, from_attributes=True):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     created_at: datetime
+    last_login_at: Optional[datetime] = None
+    last_activity_at: Optional[datetime] = None
     profile_url: Optional[AnyHttpUrl] = None
     exts: List[str] = []
     is_approved: bool = False
