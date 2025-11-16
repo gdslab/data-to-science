@@ -26,6 +26,7 @@ export default function StatCards({ stats }: { stats: SiteStatistics }) {
             <StatCard
               title="Total Data Products"
               value={stats.data_product_count}
+              subtitle={`${stats.public_data_product_count} public`}
             />
           </dl>
         </div>

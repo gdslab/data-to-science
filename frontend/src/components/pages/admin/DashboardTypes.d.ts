@@ -19,6 +19,7 @@ export type SiteStatistics = {
   };
   flight_count: number;
   project_count: number;
+  public_data_product_count: number;
   storage_availability: StorageAvailability;
   user_count: number;
 };
