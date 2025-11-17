@@ -139,6 +139,19 @@ class Settings(BaseSettings):
     STAC_BROWSER_URL: Optional[AnyHttpUrl] = None
     EXTERNAL_VIEWER_URL: Optional[AnyHttpUrl] = None
 
+    @field_validator(
+        "EXTERNAL_VIEWER_URL",
+        "STAC_API_URL",
+        "STAC_API_TEST_URL",
+        "STAC_BROWSER_URL",
+        mode="before",
+    )
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if v == "":
+            return None
+        return v
+
     @property
     def get_stac_api_url(self) -> Optional[AnyHttpUrl]:
         """Get the appropriate STAC API URL based on whether we're running tests."""
