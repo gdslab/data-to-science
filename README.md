@@ -74,7 +74,11 @@ These aspects make D2S a powerful tool for researchers looking to manage, share,
 
 ### 🌍 Accessing the web application
 
-The Data To Science web application can be accessed from `http://localhost:8000`. It may take up to a minute for the backend to finish initializing.
+The Data To Science web application can be accessed from `http://localhost:8000`. It may take up to a minute for the backend to finish initializing. If you are running D2S on a virtual machine or remote server and accessing it via a LAN IP over HTTP, update `HTTP_COOKIE_SECURE` in your `backend.env` file to:
+```env
+HTTP_COOKIE_SECURE=0
+```
+This allows cookies to work correctly in non-localhost HTTP environments.
 
 ## ⚙️ Getting started with local code
 
