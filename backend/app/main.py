@@ -11,7 +11,7 @@ from app.api.api_v1.api import api_router
 from app.api.extras import extra_router
 from app.core.config import settings
 from app.core.logging import setup_logger
-from app.middleware import log_http_request, track_user_activity
+from app.middleware import log_and_track_middleware
 from app.utils.ProtectedStaticFiles import ProtectedStaticFiles
 
 
@@ -71,5 +71,4 @@ def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse
 
 
 # Register middleware
-app.middleware("http")(log_http_request)
-app.middleware("http")(track_user_activity)
+app.middleware("http")(log_and_track_middleware)
