@@ -1,10 +1,9 @@
 import logging
 import time
-from typing import Awaitable, Callable
+from typing import Awaitable, Callable, Optional
 from uuid import UUID
 
-from fastapi import Request, Response
-from starlette.background import BackgroundTask
+from fastapi import BackgroundTasks, Request, Response
 
 from app import crud
 from app.api.deps import get_db
@@ -26,34 +25,39 @@ def write_access_log(request: Request, response: Response, process_time: float) 
     )
 
 
-async def log_http_request(
-    request: Request, call_next: Callable[[Request], Awaitable[Response]]
-) -> Response:
-    """Middleware to log HTTP requests with timing information."""
-    start_time = time.time()
-    response = await call_next(request)
-    process_time = time.time() - start_time
+def track_activity_background(user_id: UUID) -> None:
+    """Background task to update user's last activity timestamp."""
+    db_session = None
+    try:
+        db_session = next(get_db())
+        user = crud.user.get_by_id(db_session, user_id=user_id)
+        if user:
+            crud.user.update_last_activity(
+                db_session,
+                user=user,
+                throttle_minutes=settings.ACTIVITY_TRACKING_THROTTLE_MINUTES,
+            )
+    except Exception as e:
+        # Silently log errors during activity tracking
+        logger.debug(f"Error tracking user activity: {e}")
+    finally:
+        if db_session:
+            db_session.close()
 
-    response.background = BackgroundTask(
-        write_access_log, request, response, process_time
-    )
 
-    return response
-
-
-async def track_user_activity(
+async def log_and_track_middleware(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
     """
-    Middleware to track user activity for authenticated requests.
+    Combined middleware to log HTTP requests and track user activity.
 
-    Updates last_activity_at timestamp for users making authenticated requests,
-    with throttling to prevent excessive database writes.
+    Performs two functions:
+    1. Logs HTTP requests with timing information
+    2. Tracks user activity for authenticated requests (with throttling)
 
-    Note: Activity tracking happens in a background task after the response
-    is sent to avoid interfering with request handling and test sessions.
+    Both tasks run as background tasks after the response is sent to avoid
+    interfering with request handling.
     """
-
     # Extract user info before processing request
     user_id_to_track = None
 
@@ -73,30 +77,45 @@ async def track_user_activity(
     except Exception:
         pass
 
-    # Process the request
-    response = await call_next(request)
+    # Process the request and always emit a log entry
+    start_time = time.time()
+    caught_exception: Optional[Exception] = None
+    response: Optional[Response] = None
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        caught_exception = exc
+        status_code = getattr(exc, "status_code", 500)
+        response = Response(status_code=status_code)
+    finally:
+        process_time = time.time() - start_time
+        if response is None:
+            response = Response(status_code=500)
 
-    # Schedule activity tracking as background task only for successful requests
-    if response.status_code < 400 and user_id_to_track:
-        async def track_activity():
-            db_session = None
-            try:
-                db_session = next(get_db())
-                user = crud.user.get_by_id(db_session, user_id=user_id_to_track)
-                if user:
-                    crud.user.update_last_activity(
-                        db_session,
-                        user=user,
-                        throttle_minutes=settings.ACTIVITY_TRACKING_THROTTLE_MINUTES,
-                    )
-            except Exception as e:
-                # Silently log errors during activity tracking
-                logger.debug(f"Error tracking user activity: {e}")
-            finally:
-                if db_session:
-                    db_session.close()
+        # Merge any existing background tasks before appending ours
+        existing_background = response.background
+        if isinstance(existing_background, BackgroundTasks):
+            tasks = existing_background
+        else:
+            tasks = BackgroundTasks()
+            if existing_background:
+                # Support BackgroundTask or arbitrary callables
+                existing_tasks = getattr(existing_background, "tasks", None)
+                if existing_tasks is not None:
+                    tasks.tasks.extend(existing_tasks)
+                else:
+                    tasks.tasks.append(existing_background)
 
-        # Add as background task so it runs after response is sent
-        response.background = BackgroundTask(track_activity)
+        # Add both background tasks
+        tasks.add_task(write_access_log, request, response, process_time)
+
+        # Schedule activity tracking only for successful authenticated requests
+        if response.status_code < 400 and user_id_to_track:
+            tasks.add_task(track_activity_background, user_id_to_track)
+
+        response.background = tasks
+
+    if caught_exception:
+        raise caught_exception
 
     return response
