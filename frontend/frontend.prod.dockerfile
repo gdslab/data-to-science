@@ -1,4 +1,4 @@
-FROM node:18-bullseye-slim AS build-stage
+FROM node:22-trixie-slim AS build-stage
 
 # Accept build arguments
 ARG VITE_STAC_ENABLED
