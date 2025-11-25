@@ -99,7 +99,9 @@ export default function DataProductCard({
                   <div className="flex items-center gap-2 rounded-full bg-white/80 backdrop-blur px-3 py-1.5 shadow ring-1 ring-slate-300/60">
                     <CubeIcon className="w-6 h-6 text-slate-600" />
                     <span className="text-lg font-semibold tracking-wide text-slate-700">
-                      3DGS
+                      {dataProduct.url.toLowerCase().endsWith('.lcc')
+                        ? 'LCC'
+                        : '3DGS'}
                     </span>
                   </div>
                 </div>

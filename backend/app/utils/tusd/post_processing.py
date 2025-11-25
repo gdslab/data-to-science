@@ -14,6 +14,7 @@ from app.schemas.job import State, Status
 from app.tasks.post_upload_tasks import generate_point_cloud_preview
 from app.tasks.upload_tasks import (
     upload_3dgs,
+    upload_3dgs_lcc,
     upload_geotiff,
     upload_panoramic,
     upload_point_cloud,
@@ -33,6 +34,7 @@ SUPPORTED_EXTENSIONS = {
     ".webp",
     ".avif",
     ".ply",
+    ".zip",
 }
 
 
@@ -136,10 +138,16 @@ def process_data_product_uploaded_to_tusd(
             args=(str(storage_path), destination_filepath, job.id, data_product.id),
         )
     elif dtype == "3dgs":
-        # start 3D Gaussian Splatting process in background
-        upload_3dgs.apply_async(
-            args=(str(storage_path), destination_filepath, job.id, data_product.id),
-        )
+        if extension == ".zip":
+            # start 3DGS LCC process in background (zip contains LCC format files)
+            upload_3dgs_lcc.apply_async(
+                args=(str(storage_path), str(data_product_dir), job.id, data_product.id),
+            )
+        else:
+            # start 3D Gaussian Splatting process in background (.ply file)
+            upload_3dgs.apply_async(
+                args=(str(storage_path), destination_filepath, job.id, data_product.id),
+            )
     else:
         # start geotiff process in background
         upload_geotiff.apply_async(

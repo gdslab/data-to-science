@@ -254,8 +254,15 @@ export default function RasterSymbologyAccessControls({
                 <CopyURLButton
                   copyText="Copy Share URL"
                   copiedText="Copied"
-                  url={window.origin + `/share3dgs?file_id=${dataProduct.id}`}
-                  title="Copy link that can be used to share the 3D Gaussian Splatting image"
+                  url={
+                    window.origin +
+                    `${dataProduct.url.toLowerCase().endsWith('.lcc') ? '/sharelcc' : '/share3dgs'}?file_id=${dataProduct.id}`
+                  }
+                  title={
+                    dataProduct.url.toLowerCase().endsWith('.lcc')
+                      ? 'Copy link that can be used to share the LCC point cloud'
+                      : 'Copy link that can be used to share the 3D Gaussian Splatting image'
+                  }
                 />
               </div>
               <div className="col-span-2">
@@ -268,7 +275,10 @@ export default function RasterSymbologyAccessControls({
                   setQrCode={setQrCode}
                   title="Show QR Code"
                   titleOnSubmission="Generating QR Code..."
-                  url={window.origin + `/share3dgs?file_id=${dataProduct.id}`}
+                  url={
+                    window.origin +
+                    `${dataProduct.url.toLowerCase().endsWith('.lcc') ? '/sharelcc' : '/share3dgs'}?file_id=${dataProduct.id}`
+                  }
                 />
               </div>
             </>

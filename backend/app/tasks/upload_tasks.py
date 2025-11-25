@@ -25,6 +25,7 @@ from app.utils.job_manager import JobManager
 from app.schemas.data_product import DataProductUpdate
 from app.schemas.job import Status
 from app.tasks.utils import validate_3dgs_image, validate_panoramic_image
+from app.utils.lcc_validator import unpack_lcc_zip
 
 
 logger = get_task_logger(__name__)
@@ -117,6 +118,110 @@ def upload_3dgs(
     job.update(status=Status.SUCCESS)
 
     # remove the uploaded 3D Gaussian Splatting image from tusd
+    try:
+        if os.path.exists(storage_path):
+            os.remove(storage_path)
+        if os.path.exists(f"{storage_path}.info"):
+            os.remove(f"{storage_path}.info")
+    except Exception:
+        logger.exception("Unable to cleanup upload on tusd server")
+
+    return None
+
+
+@celery_app.task(name="upload_3dgs_lcc_task")
+def upload_3dgs_lcc(
+    storage_path: str,
+    data_product_dir: str,
+    job_id: UUID,
+    data_product_id: UUID,
+) -> None:
+    """Celery task for processing an uploaded 3D Gaussian Splatting LCC zip file.
+
+    The zip file is expected to contain XGrids LCC format files (*.lcc, index.bin, data.bin).
+    The zip is validated and extracted to the data product directory.
+
+    Args:
+        storage_path (str): Filepath for LCC zip file in tusd storage.
+        data_product_dir (str): Directory for extracted LCC files.
+        job_id (UUID): Job ID for job associated with upload process.
+        data_product_id (UUID): Data product ID for uploaded 3DGS LCC.
+    """
+    output_dir = Path(data_product_dir)
+
+    # get database session
+    db = next(get_db())
+
+    # retrieve job associated with this task
+    try:
+        job = JobManager(job_id=job_id)
+    except ValueError:
+        logger.error("Could not find job in DB for upload process")
+        return None
+
+    # retrieve data product associated with this task
+    data_product = crud.data_product.get(db, id=data_product_id)
+
+    if not data_product:
+        job.update(status=Status.FAILED)
+        logger.error("Could not find data product in DB for upload process")
+        return None
+
+    # update job status to indicate process has started
+    job.start()
+
+    # copy zip to data product directory for extraction
+    temp_zip_path = output_dir / "temp_lcc.zip"
+    try:
+        with open(storage_path, "rb") as src, open(temp_zip_path, "wb") as dst:
+            shutil.copyfileobj(src, dst, length=BUFFER_SIZE)
+    except Exception:
+        job.update(status=Status.FAILED)
+        logger.exception("Failed to copy LCC zip to data product directory")
+        return None
+
+    # validate and extract LCC zip
+    try:
+        lcc_filepath = unpack_lcc_zip(temp_zip_path, output_dir)
+    except FileNotFoundError as e:
+        job.update(status=Status.FAILED)
+        logger.error(f"LCC zip file not found: {e}")
+        if temp_zip_path.exists():
+            temp_zip_path.unlink()
+        return None
+    except ValueError as e:
+        job.update(status=Status.FAILED)
+        logger.error(f"Invalid LCC zip file: {e}")
+        if temp_zip_path.exists():
+            temp_zip_path.unlink()
+        return None
+    except Exception:
+        job.update(status=Status.FAILED)
+        logger.exception("Failed to extract LCC zip file")
+        if temp_zip_path.exists():
+            temp_zip_path.unlink()
+        return None
+
+    # remove temp zip file after successful extraction
+    try:
+        if temp_zip_path.exists():
+            temp_zip_path.unlink()
+    except Exception:
+        logger.exception("Failed to remove temp zip file")
+
+    # update data product filepath to the extracted .lcc file
+    crud.data_product.update(
+        db,
+        db_obj=data_product,
+        obj_in=DataProductUpdate(
+            filepath=lcc_filepath, is_initial_processing_completed=True
+        ),
+    )
+
+    # update job to indicate process finished
+    job.update(status=Status.SUCCESS)
+
+    # remove the uploaded LCC zip from tusd
     try:
         if os.path.exists(storage_path):
             os.remove(storage_path)
