@@ -9,6 +9,7 @@ import HomeMap from './HomeMap';
 import PanoViewer from './PanoViewer';
 import PotreeViewer from './PotreeViewer';
 import PlayCanvasglTFViewer from './PlayCanvasglTFViewer';
+import LCCViewer from './LCCViewer';
 import { useMapLayerContext } from './MapLayersContext';
 
 import api from '../../api';
@@ -106,6 +107,9 @@ export default function MapViewMode() {
   } else if (activeDataProduct.data_type === 'panoramic') {
     return <PanoViewer imageUrl={activeDataProduct.url} />;
   } else if (activeDataProduct.data_type === '3dgs') {
+    if (activeDataProduct.url.endsWith('.lcc')) {
+      return <LCCViewer lccUrl={activeDataProduct.url} />;
+    }
     return <PlayCanvasglTFViewer src={activeDataProduct.url} />;
   } else {
     const copcPath = activeDataProduct.url;

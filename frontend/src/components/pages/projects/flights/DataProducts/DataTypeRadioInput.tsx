@@ -4,7 +4,7 @@ export function getAllowedFileTypes(dtype: string): string[] {
   if (dtype === 'dem' || dtype === 'ortho' || dtype === 'other') {
     return ['.tif'];
   } else if (dtype === '3dgs') {
-    return ['.ply'];
+    return ['.ply', '.zip'];
   } else if (dtype === 'panoramic') {
     return ['.jpg', '.jpeg', '.png', '.webp', '.avif'];
   } else if (dtype === 'point_cloud') {
@@ -227,6 +227,12 @@ export default function DataTypeRadioInput({
           Accepted file extensions:{' '}
           <strong>{getAllowedFileTypes(dtype).join(' ')}</strong>
         </span>
+        {dtype === '3dgs' && (
+          <span className="text-sm text-gray-600 italic">
+            Note: <strong>.zip</strong> files are only supported for the LCC
+            format
+          </span>
+        )}
       </fieldset>
     </div>
   );
