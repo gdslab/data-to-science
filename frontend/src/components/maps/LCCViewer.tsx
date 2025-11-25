@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { FirstPersonControls } from './LCCFirstPersonControls';
-// @ts-ignore
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { LCCRender } from '../../vendor/lcc-web-sdk/lcc-0.5.4.js';
+
+import { AlertBar } from '../Alert';
+import { FirstPersonControls } from './LCCFirstPersonControls';
 import LoadingBars from '../LoadingBars';
 import LCCControlsOverlay from './LCCControlsOverlay';
+import LCCQualitySettings from './LCCQualitySettings';
 
 declare global {
   interface Window {
@@ -24,6 +27,7 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
   const lccObjRef = useRef<any>(null);
   const [progress, setProgress] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [droneVisible, setDroneVisible] = useState(true);
   const [showControls, setShowControls] = useState(false);
   const [quality, setQuality] = useState<
@@ -57,7 +61,7 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
     });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.setClearColor(0x000000);
     renderer.domElement.tabIndex = 0;
@@ -73,6 +77,12 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
 
     // Drone variables
     const gltfLoader = new GLTFLoader();
+
+    // Configure DRACOLoader for compressed models
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('/draco/');
+    gltfLoader.setDRACOLoader(dracoLoader);
+
     let droneModel: THREE.Group | null = null;
     let droneMixer: THREE.AnimationMixer | null = null;
     const droneForwardOffset = 1.0;
@@ -107,7 +117,7 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
 
     // Load drone model
     gltfLoader.load(
-      `${location.origin}/models/animated_drone.glb`,
+      `${location.origin}/models/animated_drone_optimized.glb`,
       (gltf) => {
         droneModel = gltf.scene;
         droneModel.visible = droneVisible;
@@ -125,8 +135,8 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
         }
       },
       undefined,
-      (error) => {
-        console.error('Failed to load drone model', error);
+      () => {
+        // Drone model failed to load - continue without it
       }
     );
 
@@ -176,19 +186,16 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
         window.lccObj = lccObj;
         const ret = lccObj.hasCollision?.();
         collisionEnabled = !!ret;
-        if (ret) {
-          console.log('Collision function available');
-        } else {
-          console.log('Collision function is not available');
-        }
         setIsLoading(false);
       },
       (percent: number) => {
         setProgress(percent);
       },
       () => {
-        console.error('LCC loading failure');
         setIsLoading(false);
+        setError(
+          'Failed to load LCC scene. Please check the file and try again.'
+        );
       }
     );
 
@@ -270,9 +277,23 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
     });
 
     return () => {
+      // Clean up event listeners (always safe)
       window.removeEventListener('resize', handleResize);
       resizeObserverRef.current?.disconnect();
       resizeObserverRef.current = null;
+
+      // Only dispose resources if component is actually unmounting
+      // Check if container is being removed from DOM
+      if (!container.isConnected) {
+        renderer.setAnimationLoop(null);
+        firstPersonControl.dispose();
+        renderer.dispose();
+        scene.clear();
+
+        if (lccObj && typeof lccObj.dispose === 'function') {
+          lccObj.dispose();
+        }
+      }
     };
   }, [lccUrl]);
 
@@ -358,61 +379,7 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
             {showControls ? 'Hide Controls' : 'Show Controls'}
           </button>
         </div>
-        <div className="flex items-center gap-2 rounded border border-white/30 bg-black/70 px-3 py-2">
-          <span className="text-sm font-medium text-white">Quality:</span>
-          <div className="flex overflow-hidden rounded border border-white/30">
-            <button
-              onClick={() => setQuality('very-low')}
-              className={`px-2 py-1 text-xs font-medium transition-colors ${
-                quality === 'very-low'
-                  ? 'bg-white/30 text-white'
-                  : 'bg-black/40 text-white/70 hover:bg-white/10'
-              }`}
-            >
-              Very Low
-            </button>
-            <button
-              onClick={() => setQuality('low')}
-              className={`border-l border-white/30 px-2 py-1 text-xs font-medium transition-colors ${
-                quality === 'low'
-                  ? 'bg-white/30 text-white'
-                  : 'bg-black/40 text-white/70 hover:bg-white/10'
-              }`}
-            >
-              Low
-            </button>
-            <button
-              onClick={() => setQuality('medium')}
-              className={`border-l border-white/30 px-2 py-1 text-xs font-medium transition-colors ${
-                quality === 'medium'
-                  ? 'bg-white/30 text-white'
-                  : 'bg-black/40 text-white/70 hover:bg-white/10'
-              }`}
-            >
-              Medium
-            </button>
-            <button
-              onClick={() => setQuality('high')}
-              className={`border-l border-white/30 px-2 py-1 text-xs font-medium transition-colors ${
-                quality === 'high'
-                  ? 'bg-white/30 text-white'
-                  : 'bg-black/40 text-white/70 hover:bg-white/10'
-              }`}
-            >
-              High
-            </button>
-            <button
-              onClick={() => setQuality('very-high')}
-              className={`border-l border-white/30 px-2 py-1 text-xs font-medium transition-colors ${
-                quality === 'very-high'
-                  ? 'bg-white/30 text-white'
-                  : 'bg-black/40 text-white/70 hover:bg-white/10'
-              }`}
-            >
-              Very High
-            </button>
-          </div>
-        </div>
+        <LCCQualitySettings quality={quality} setQuality={setQuality} />
       </div>
       {showControls && <LCCControlsOverlay />}
       {droneVisible && (
@@ -428,6 +395,7 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
           </div>
         </div>
       )}
+      {error && <AlertBar alertType="error">{error}</AlertBar>}
     </div>
   );
 }
