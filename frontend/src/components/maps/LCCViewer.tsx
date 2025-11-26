@@ -19,7 +19,6 @@ declare global {
 
 export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const initializedRef = useRef(false);
   const droneModelRef = useRef<THREE.Group | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<FirstPersonControls | null>(null);
@@ -37,9 +36,10 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
   useEffect(() => {
     setIsLoading(true);
     setProgress(0);
+    setError(null);
+
     const container = containerRef.current;
-    if (!container || initializedRef.current) return undefined;
-    initializedRef.current = true;
+    if (!container) return undefined;
 
     const scene = new THREE.Scene();
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
@@ -198,6 +198,8 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
         );
       }
     );
+    // Keep a handle for cleanup even if initialization fails
+    lccObjRef.current = lccObj;
 
     function resolveCameraCollision() {
       if (!collisionEnabled || !lccObj?.intersectsCapsule) {
@@ -282,18 +284,48 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
       resizeObserverRef.current?.disconnect();
       resizeObserverRef.current = null;
 
-      // Only dispose resources if component is actually unmounting
-      // Check if container is being removed from DOM
-      if (!container.isConnected) {
-        renderer.setAnimationLoop(null);
-        firstPersonControl.dispose();
-        renderer.dispose();
-        scene.clear();
+      // Stop the render loop and controls
+      renderer.setAnimationLoop(null);
+      firstPersonControl.dispose();
+      controlsRef.current = null;
+      droneModelRef.current = null;
+      cameraRef.current = null;
 
-        if (lccObj && typeof lccObj.dispose === 'function') {
-          lccObj.dispose();
+      // Dispose resources on unmount
+      if (renderer.domElement.parentElement === container) {
+        container.removeChild(renderer.domElement);
+      }
+      renderer.dispose();
+      dracoLoader.dispose();
+      scene.clear();
+
+      if (lccObjRef.current) {
+        const instance = lccObjRef.current;
+        lccObjRef.current = null;
+
+        // Prefer SDK unload (which disposes internally)
+        if (typeof LCCRender.unload === 'function') {
+          try {
+            LCCRender.unload(instance);
+          } catch {
+            // ignore cleanup errors
+          }
         }
       }
+
+      // Reset SDK manager between views to avoid stale internal state
+      if (typeof LCCRender.dispose === 'function') {
+        try {
+          LCCRender.dispose();
+        } catch {
+          // ignore cleanup errors
+        }
+      }
+
+      if (window.lccObj) {
+        delete window.lccObj;
+      }
+      // Keep window.LCCRender as-is to avoid breaking shared LCC global state
     };
   }, [lccUrl]);
 
