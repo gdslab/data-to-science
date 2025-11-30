@@ -146,18 +146,32 @@ export default function DashboardUserList({
             new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
           break;
         case 'last_login_at':
-          // Handle null values - put them at the end
-          if (a.last_login_at === null && b.last_login_at === null) comparison = 0;
-          else if (a.last_login_at === null) comparison = 1;
-          else if (b.last_login_at === null) comparison = -1;
-          else comparison = new Date(a.last_login_at).getTime() - new Date(b.last_login_at).getTime();
+          // Handle null values - always put them at the end regardless of sort direction
+          if (a.last_login_at === null && b.last_login_at === null) {
+            comparison = 0;
+          } else if (a.last_login_at === null) {
+            // a is null, so it should go after b (return positive to sort a after b)
+            comparison = sortDirection === 'asc' ? 1 : -1;
+          } else if (b.last_login_at === null) {
+            // b is null, so it should go after a (return negative to sort a before b)
+            comparison = sortDirection === 'asc' ? -1 : 1;
+          } else {
+            comparison = new Date(a.last_login_at).getTime() - new Date(b.last_login_at).getTime();
+          }
           break;
         case 'last_activity_at':
-          // Handle null values - put them at the end
-          if (a.last_activity_at === null && b.last_activity_at === null) comparison = 0;
-          else if (a.last_activity_at === null) comparison = 1;
-          else if (b.last_activity_at === null) comparison = -1;
-          else comparison = new Date(a.last_activity_at).getTime() - new Date(b.last_activity_at).getTime();
+          // Handle null values - always put them at the end regardless of sort direction
+          if (a.last_activity_at === null && b.last_activity_at === null) {
+            comparison = 0;
+          } else if (a.last_activity_at === null) {
+            // a is null, so it should go after b (return positive to sort a after b)
+            comparison = sortDirection === 'asc' ? 1 : -1;
+          } else if (b.last_activity_at === null) {
+            // b is null, so it should go after a (return negative to sort a before b)
+            comparison = sortDirection === 'asc' ? -1 : 1;
+          } else {
+            comparison = new Date(a.last_activity_at).getTime() - new Date(b.last_activity_at).getTime();
+          }
           break;
         case 'is_approved':
           comparison = Number(b.is_approved) - Number(a.is_approved);
