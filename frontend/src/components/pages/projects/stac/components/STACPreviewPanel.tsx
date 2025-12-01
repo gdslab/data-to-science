@@ -2,12 +2,12 @@ import CollectionPreview from '../CollectionPreview';
 import ProcessingSummary from '../ProcessingSummary';
 import ItemsList from '../ItemsList';
 import { STACMetadata, CombinedSTACItem } from '../STACTypes';
-import { Project } from '../../Project';
+import { ProjectDetail } from '../../Project';
 
 interface STACPreviewPanelProps {
   stacMetadata: STACMetadata;
   allItems: CombinedSTACItem[];
-  project: Project;
+  project: ProjectDetail;
   includeRawDataLinks: Set<string>;
   onToggleRawDataLink: (itemId: string) => void;
   onToggleAllRawDataLinks: () => void;

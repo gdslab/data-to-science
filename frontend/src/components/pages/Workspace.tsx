@@ -2,14 +2,15 @@ import { AxiosResponse, isAxiosError } from 'axios';
 import { useState, useEffect, useTransition } from 'react';
 import { useLoaderData, useRevalidator } from 'react-router-dom';
 
-import ProjectList, { Project } from './projects/ProjectList';
+import ProjectList from './projects/ProjectList';
+import { ProjectItem } from './projects/Project';
 
 import api from '../../api';
 import { getLocalStorageProjects } from '../maps/utils';
 
 export async function loader() {
   // Fetch projects from localStorage
-  let cachedProjects: Project[] | null = null;
+  let cachedProjects: ProjectItem[] | null = null;
   try {
     const projectsFromCache = getLocalStorageProjects();
     if (projectsFromCache) {
@@ -22,7 +23,7 @@ export async function loader() {
   // Fetch list of user's projects
   const freshProjects = api
     .get('/projects')
-    .then((response: AxiosResponse<Project[]>) => {
+    .then((response: AxiosResponse<ProjectItem[]>) => {
       // Update localStorage with latest projects
       localStorage.setItem('projects', JSON.stringify(response.data));
       return response;
@@ -45,13 +46,13 @@ export async function loader() {
 
 export default function Workspace() {
   const { cachedProjects, freshProjects } = useLoaderData() as {
-    cachedProjects: Project[] | null;
-    freshProjects: Promise<AxiosResponse<Project[]>>;
+    cachedProjects: ProjectItem[] | null;
+    freshProjects: Promise<AxiosResponse<ProjectItem[]>>;
   };
   const revalidator = useRevalidator();
 
   // Immediately display cached projects
-  const [projects, setProjects] = useState<Project[] | null>(cachedProjects);
+  const [projects, setProjects] = useState<ProjectItem[] | null>(cachedProjects);
   // Prevent interrupting user interactions with useTransition
   const [_isPending, startTransition] = useTransition();
 

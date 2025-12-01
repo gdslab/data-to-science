@@ -7,7 +7,7 @@ import Alert from '../../Alert';
 import { LinkButton } from '../../Buttons';
 import { EditField, Editing, SelectField, TextField } from '../../InputFields';
 import Modal from '../../Modal';
-import { Project } from './Project';
+import { ProjectDetail } from './Project';
 import { useProjectContext } from './ProjectContext';
 import ProjectDeleteModal from './ProjectDeleteModal';
 import ProjectFormMap from './ProjectFormMap';
@@ -20,7 +20,7 @@ import { projectUpdateValidationSchema } from './validationSchema';
 import api from '../../../api';
 
 interface ProjectDetailEditForm {
-  project: Project;
+  project: ProjectDetail;
   teams: Team[];
 }
 

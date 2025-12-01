@@ -16,11 +16,10 @@ import { CopyURLButton } from '../../../../Buttons';
 import DataProductDeleteModal from './DataProductDeleteModal';
 import EditableDataType from './EditableDataType';
 import { useProjectContext } from '../../ProjectContext';
-import { Project } from '../../ProjectList';
 import Table, { TableBody, TableHead } from '../../../../Table';
 import ToolboxModal from './ToolboxModal';
 import DataProductShareModal from './DataProductShareModal';
-import { DataProduct } from '../../Project';
+import { DataProduct, ProjectDetail } from '../../Project';
 
 export function isGeoTIFF(dataType: string): boolean {
   return (
@@ -51,7 +50,7 @@ function getDataProductActions(
   role: string | undefined,
   data: DataProduct[],
   navigate: NavigateFunction,
-  project: Project | null
+  project: ProjectDetail | null
 ) {
   const getDeleteAction = (dataProduct: DataProduct) => ({
     key: `action-delete-${dataProduct.id}`,

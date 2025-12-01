@@ -1,5 +1,5 @@
 import Alert, { Status } from '../../../../Alert';
-import { Project } from '../../Project';
+import { ProjectDetail } from '../../Project';
 import ContactForm from '../ContactForm';
 import ScientificCitationForm from '../ScientificCitationForm';
 import STACItemTitlesForm from '../STACItemTitlesForm';
@@ -17,7 +17,7 @@ interface FormState {
 }
 
 interface STACCustomizationPanelProps {
-  project: Project;
+  project: ProjectDetail;
   formState: FormState;
   updateFormField: <K extends keyof FormState>(
     field: K,

@@ -7,7 +7,7 @@ import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 
 import CountBadge from '../../CountBadge';
 import { GridIcon } from './GridIcon';
-import { Project } from './ProjectList';
+import { ProjectItem } from './Project';
 
 import api from '../../../api';
 import { getCategory } from '../../maps/utils';
@@ -16,7 +16,7 @@ export default function ProjectCard({
   project,
   revalidate,
 }: {
-  project: Project;
+  project: ProjectItem;
   revalidate: () => void;
 }) {
   const [liked, setLiked] = useState(project.liked);

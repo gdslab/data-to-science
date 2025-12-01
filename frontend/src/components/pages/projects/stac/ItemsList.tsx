@@ -1,9 +1,9 @@
 import { CombinedSTACItem } from './STACTypes';
-import { Project } from '../Project';
+import { ProjectDetail } from '../Project';
 
 interface ItemsListProps {
   allItems: CombinedSTACItem[];
-  project: Project;
+  project: ProjectDetail;
   includeRawDataLinks: Set<string>;
   onToggleRawDataLink: (itemId: string) => void;
   onToggleAllRawDataLinks: () => void;

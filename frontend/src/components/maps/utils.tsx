@@ -13,9 +13,9 @@ import {
   Flight,
   MapLayer,
   ProjectFeatureCollection,
+  ProjectItem,
   STACProperties,
 } from '../pages/projects/Project';
-import { Project } from '../pages/projects/ProjectList';
 import {
   SingleBandSymbology,
   MultibandSymbology,
@@ -64,7 +64,7 @@ function isValidCoordinate(lng: number, lat: number): boolean {
  * @param projects Array of projects to filter.
  * @returns Filtered array with only projects having valid geographic coordinates.
  */
-function filterValidProjects(projects: Project[]): Project[] {
+function filterValidProjects(projects: ProjectItem[]): ProjectItem[] {
   return projects.filter((project) => {
     if (!project.centroid) {
       console.warn(
@@ -481,11 +481,11 @@ const getMultibandMinMax = (
  * Checks local storage for previously stored projects.
  * @returns Array of projects retrieved from local storage.
  */
-function getLocalStorageProjects(): Project[] | null {
+function getLocalStorageProjects(): ProjectItem[] | null {
   if ('projects' in localStorage) {
     const lsProjectsString = localStorage.getItem('projects');
     if (lsProjectsString) {
-      const lsProjects: Project[] = JSON.parse(lsProjectsString);
+      const lsProjects: ProjectItem[] = JSON.parse(lsProjectsString);
       if (lsProjects && lsProjects.length > 0) {
         return lsProjects;
       }
@@ -545,7 +545,7 @@ function getTitilerQueryParams(
  * @param projects Array of projects with unique `id` strings.
  * @returns Array of sorted projects.
  */
-function sortProjects(projects: Project[]): Project[] {
+function sortProjects(projects: ProjectItem[]): ProjectItem[] {
   return projects.slice().sort((a, b) => a.id.localeCompare(b.id));
 }
 
@@ -557,8 +557,8 @@ function sortProjects(projects: Project[]): Project[] {
  * @returns True if both arrays match, otherwise false.
  */
 function areProjectsEqual(
-  oldProjects: Project[],
-  newProjects: Project[]
+  oldProjects: ProjectItem[],
+  newProjects: ProjectItem[]
 ): boolean {
   const sortedOld = sortProjects(oldProjects);
   const sortedNew = sortProjects(newProjects);
@@ -571,7 +571,7 @@ function areProjectsEqual(
  * the API differ.
  * @param projects Projects returned from API.
  */
-function setLocalStorageProjects(projects: Project[]): void {
+function setLocalStorageProjects(projects: ProjectItem[]): void {
   const projectsString = JSON.stringify(projects);
   const storedProjects = getLocalStorageProjects();
 

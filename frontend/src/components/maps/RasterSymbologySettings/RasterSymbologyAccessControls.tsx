@@ -9,9 +9,8 @@ import {
   CopyURLButton,
   DownloadQRButton,
 } from '../../Buttons';
-import { DataProduct } from '../../pages/projects/Project';
+import { DataProduct, ProjectDetail, ProjectItem } from '../../pages/projects/Project';
 import { useMapContext } from '../MapContext';
-import { Project } from '../../pages/projects/ProjectList';
 import {
   MultibandSymbology,
   SingleBandSymbology,
@@ -27,7 +26,7 @@ export default function RasterSymbologyAccessControls({
   refreshUrl,
 }: {
   dataProduct: DataProduct;
-  project: Project;
+  project: ProjectDetail | ProjectItem;
   symbology?: SingleBandSymbology | MultibandSymbology;
   refreshUrl?: string;
 }) {

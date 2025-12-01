@@ -7,13 +7,13 @@ import MapLayersPanel from './MapLayersPanel';
 import { useMapContext } from '../MapContext';
 import { useMapLayerContext } from '../MapLayersContext';
 import MapToolbar from '../MapToolbar';
-import { Project } from '../../pages/projects/ProjectList';
+import { ProjectItem } from '../../pages/projects/Project';
 
 import { sortedFlightsByDateAndId } from './utils';
 
 import uasIcon from '../../../assets/uas-icon.svg';
 
-type ActiveProjectPaneProps = { project: Project };
+type ActiveProjectPaneProps = { project: ProjectItem };
 
 export default function ActiveProjectPane({ project }: ActiveProjectPaneProps) {
   const { flights, activeDataProduct } = useMapContext();

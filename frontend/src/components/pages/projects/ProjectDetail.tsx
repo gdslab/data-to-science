@@ -4,7 +4,7 @@ import { Params, useLoaderData } from 'react-router-dom';
 
 import { User } from '../../../AuthContext';
 import { useProjectContext } from './ProjectContext';
-import { Flight, Project, ProjectLoaderData, ProjectModule } from './Project';
+import { Flight, type ProjectDetail, ProjectLoaderData, ProjectModule } from './Project';
 import { ProjectMember } from './ProjectAccess';
 import ProjectDetailEditForm from './ProjectDetailEditForm';
 import ProjectTabNav from './ProjectTabNav';
@@ -19,7 +19,7 @@ export async function loader({ params }: { params: Params<string> }) {
   if (!user) return null;
 
   try {
-    const project: AxiosResponse<Project> = await api.get(
+    const project: AxiosResponse<ProjectDetail> = await api.get(
       `/projects/${params.projectId}`
     );
     const project_member: AxiosResponse<ProjectMember> = await api.get(

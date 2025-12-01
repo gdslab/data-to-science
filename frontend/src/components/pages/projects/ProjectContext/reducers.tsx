@@ -1,7 +1,6 @@
 import { IForester } from '../Project';
 import { GeoJSONFeature, MapLayer } from '../Project';
-import { Flight, ProjectModule } from '../Project';
-import { Project } from '../ProjectList';
+import { Flight, ProjectDetail, ProjectModule } from '../Project';
 import { ProjectMember } from '../ProjectAccess';
 
 import {
@@ -139,7 +138,7 @@ function mapLayersReducer(state: MapLayer[], action: MapLayersAction) {
   }
 }
 
-function projectReducer(state: Project | null, action: ProjectAction) {
+function projectReducer(state: ProjectDetail | null, action: ProjectAction) {
   switch (action.type) {
     case 'set': {
       return action.payload;

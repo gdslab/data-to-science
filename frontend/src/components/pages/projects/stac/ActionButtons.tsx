@@ -1,9 +1,9 @@
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import { Button } from '../../../Buttons';
-import { Project } from '../Project';
+import { ProjectDetail } from '../Project';
 
 interface ActionButtonsProps {
-  project: Project;
+  project: ProjectDetail;
   isPublishing: boolean;
   isUnpublishing: boolean;
   isUpdating: boolean;

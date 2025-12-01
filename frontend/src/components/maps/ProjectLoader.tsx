@@ -2,7 +2,7 @@ import { AxiosResponse, isAxiosError } from 'axios';
 import { useEffect } from 'react';
 
 import { useMapContext } from './MapContext';
-import { Project } from '../pages/projects/ProjectList';
+import { ProjectItem } from '../pages/projects/Project';
 
 import api from '../../api';
 import {
@@ -19,7 +19,7 @@ export default function ProjectLoader() {
     const fetchProjects = async () => {
       try {
         const geojsonUrl = `/projects?include_all=${false}`;
-        const response: AxiosResponse<Project[]> = await api.get(geojsonUrl);
+        const response: AxiosResponse<ProjectItem[]> = await api.get(geojsonUrl);
 
         // Filter out projects with invalid geographic coordinates
         const validProjects = filterValidProjects(response.data);
