@@ -2,9 +2,8 @@ import { AxiosResponse } from 'axios';
 import { useState } from 'react';
 
 import { Button } from '../../Buttons';
-import { DataProduct } from '../../pages/projects/Project';
+import { DataProduct, ProjectDetail, ProjectItem } from '../../pages/projects/Project';
 import Modal from '../../Modal';
-import { Project } from '../../pages/projects/ProjectList';
 import RasterSymbologyAccessControls from './RasterSymbologyAccessControls';
 import { useMapContext } from '../MapContext';
 import {
@@ -21,7 +20,7 @@ function RasterSymbologyShare({
   symbology,
 }: {
   dataProduct: DataProduct;
-  project: Project;
+  project: ProjectDetail | ProjectItem;
   symbology: SingleBandSymbology | MultibandSymbology;
 }) {
   const [open, setOpen] = useState(false);

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Project } from './pages/projects/ProjectList';
+import { ProjectItem } from './pages/projects/Project';
 
 import { sorter } from './utils';
 
@@ -59,9 +59,9 @@ function setSortPreferenceInLocalStorage(
  * @returns Array of sorted projects.
  */
 export function sortProjects(
-  projects: Project[],
+  projects: ProjectItem[],
   sortSelection: SortSelection
-): Project[] {
+): ProjectItem[] {
   return projects.sort((a, b) => {
     // First sort by liked status (liked projects come first)
     if (a.liked !== b.liked) {

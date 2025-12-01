@@ -9,8 +9,7 @@ import {
   TrashIcon,
 } from '@heroicons/react/24/outline';
 
-import { DataProduct } from './pages/projects/Project';
-import { Project } from './pages/projects/ProjectList';
+import { DataProduct, ProjectDetail, ProjectItem } from './pages/projects/Project';
 import { Status } from './Alert';
 
 import api from '../api';
@@ -238,7 +237,7 @@ export function CopyURLButton({
 
 interface CopyShortenURLButton extends CopyURLButton {
   dataProduct: DataProduct;
-  project: Project;
+  project: ProjectDetail | ProjectItem;
   setStatus: React.Dispatch<React.SetStateAction<Status | null>>;
 }
 

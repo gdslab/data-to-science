@@ -5,11 +5,11 @@ import { AlertBar, Status } from '../../Alert';
 import { Button } from '../../Buttons';
 import { ConfirmationPopup } from '../../ConfirmationPopup';
 import Modal from '../../Modal';
-import { Project } from './Project';
+import { ProjectDetail } from './Project';
 
 import api from '../../../api';
 
-export default function ProjectDeleteModal({ project }: { project: Project }) {
+export default function ProjectDeleteModal({ project }: { project: ProjectDetail }) {
   const [openConfirmationPopup, setOpenConfirmationPopup] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
   const navigate = useNavigate();

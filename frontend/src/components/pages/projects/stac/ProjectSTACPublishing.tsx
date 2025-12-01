@@ -1,6 +1,6 @@
 import { LoaderFunctionArgs, useLoaderData, useParams } from 'react-router-dom';
 
-import { Project } from '../Project';
+import { ProjectDetail } from '../Project';
 import { STACItem, STACMetadata } from './STACTypes';
 
 // Custom hooks
@@ -53,7 +53,7 @@ export default function ProjectSTACPublishing() {
   const { stacMetadata: initialStacMetadata, project: loaderProject } =
     useLoaderData() as {
       stacMetadata: STACMetadata | null;
-      project: Project;
+      project: ProjectDetail;
     };
   const { projectId } = useParams();
 

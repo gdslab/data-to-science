@@ -12,7 +12,7 @@ import CountBadge from '../../CountBadge';
 import Filter from '../../Filter';
 import LayerCard from './LayerCard';
 import Pagination, { getPaginationResults } from '../../Pagination';
-import { Project } from '../../pages/projects/ProjectList';
+import { ProjectItem } from '../../pages/projects/Project';
 import ProjectSearch from '../../pages/projects/ProjectSearch';
 import Sort, { sortProjects, SortSelection } from '../../Sort';
 import { useMapContext } from '../MapContext';
@@ -22,7 +22,7 @@ import { getCategory } from '../utils';
 const MAX_ITEMS = 10; // max number of projects per page in left-side pane
 
 type ProjectsPaneProps = {
-  projects: Project[] | null;
+  projects: ProjectItem[] | null;
 };
 
 export default function ProjectsPane({ projects }: ProjectsPaneProps) {
@@ -118,7 +118,7 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
 
   // Activate clicked on project and clear any active data products
   const handleProjectClick = useCallback(
-    (project: Project) => () => {
+    (project: ProjectItem) => () => {
       activeDataProductDispatch({ type: 'clear', payload: null });
       activeProjectDispatch({ type: 'set', payload: project });
     },

@@ -13,7 +13,7 @@ import Alert from '../../Alert';
 import AuthContext from '../../../AuthContext';
 import { Button, OutlineButton } from '../../Buttons';
 import Card from '../../Card';
-import { Project } from '../projects/ProjectList';
+import { ProjectItem } from '../projects/Project';
 import { SelectField, TextField } from '../../InputFields';
 import SearchUsers, { UserSearch } from './SearchUsers';
 
@@ -23,7 +23,7 @@ import validationSchema from './validationSchema';
 import api from '../../../api';
 
 export async function loader() {
-  const response: AxiosResponse<Project[]> = await api.get('/projects');
+  const response: AxiosResponse<ProjectItem[]> = await api.get('/projects');
   if (response) {
     return response.data.filter(({ role }) => role === 'owner');
   } else {
@@ -33,7 +33,7 @@ export async function loader() {
 
 export default function TeamCreate() {
   const { user } = useContext(AuthContext);
-  const projects = useLoaderData() as Project[];
+  const projects = useLoaderData() as ProjectItem[];
   const navigate = useNavigate();
   const revalidator = useRevalidator();
 

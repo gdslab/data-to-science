@@ -5,7 +5,7 @@ import { useRevalidator } from 'react-router-dom';
 import { FolderIcon } from '@heroicons/react/24/outline';
 
 import { AlertBar, Status } from '../../../Alert';
-import { Flight, Project } from '../Project';
+import { Flight, ProjectItem } from '../Project';
 import Modal from '../../../Modal';
 import { Button } from '../../../Buttons';
 
@@ -40,7 +40,7 @@ export default function MoveFlightModal({
 
   useEffect(() => {
     async function getProjects() {
-      const response: AxiosResponse<Project[]> = await api.get(`/projects`);
+      const response: AxiosResponse<ProjectItem[]> = await api.get(`/projects`);
       if (response) {
         const ownedProjects = response.data
           .filter(({ id, role }) => role === 'owner' && id !== srcProjectId)

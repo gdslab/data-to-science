@@ -12,42 +12,13 @@ import Sort, {
   getSortPreferenceFromLocalStorage,
   sortProjects,
 } from '../../Sort';
-import { Team } from '../teams/Teams';
-
-interface FieldProperties {
-  id: string;
-  center_x: number;
-  center_y: number;
-}
-
-type FieldGeoJSONFeature = Omit<GeoJSON.Feature, 'properties'> & {
-  properties: FieldProperties;
-};
-
-export interface Project {
-  id: string;
-  centroid: {
-    x: number;
-    y: number;
-  };
-  data_product_count: number;
-  description: string;
-  field: FieldGeoJSONFeature;
-  flight_count: number;
-  liked: boolean;
-  location_id: string;
-  most_recent_flight: string;
-  role: string;
-  team_id: string;
-  title: string;
-  team: Team | null;
-}
+import { ProjectItem } from './Project';
 
 export default function ProjectList({
   projects,
   revalidate,
 }: {
-  projects: Project[] | null;
+  projects: ProjectItem[] | null;
   revalidate: () => void;
 }) {
   const [currentPage, setCurrentPage] = useState(0);
@@ -115,7 +86,7 @@ export default function ProjectList({
    * @param projs Projects to filter.
    * @returns
    */
-  function filterSearch(projs: Project[]) {
+  function filterSearch(projs: ProjectItem[]) {
     return projs.filter(
       (project) =>
         !project.title ||
@@ -129,7 +100,7 @@ export default function ProjectList({
    * @param projs Projects to filter.
    * @returns Array of filtered and sliced projects.
    */
-  function filterAndSlice(projs: Project[]): Project[] {
+  function filterAndSlice(projs: ProjectItem[]): ProjectItem[] {
     return filterSearch(projs).slice(
       currentPage * MAX_ITEMS,
       MAX_ITEMS + currentPage * MAX_ITEMS

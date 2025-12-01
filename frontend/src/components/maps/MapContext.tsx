@@ -6,8 +6,8 @@ import {
   DataProduct,
   Flight,
   MapLayerFeatureCollection,
+  ProjectItem,
 } from '../pages/projects/Project';
-import { Project } from '../pages/projects/ProjectList';
 import {
   ActiveDataProductAction,
   ActiveMapToolAction,
@@ -62,7 +62,7 @@ function activeMapToolReducer(state: MapTool, action: ActiveMapToolAction) {
 }
 
 function activeProjectReducer(
-  state: Project | null,
+  state: ProjectItem | null,
   action: ActiveProjectAction
 ) {
   switch (action.type) {
@@ -146,7 +146,7 @@ function projectLayersReducer(
   }
 }
 
-function projectsReducer(state: Project[] | null, action: ProjectsAction) {
+function projectsReducer(state: ProjectItem[] | null, action: ProjectsAction) {
   switch (action.type) {
     case 'set': {
       return action.payload;
@@ -246,7 +246,7 @@ const context: {
   activeDataProductDispatch: React.Dispatch<ActiveDataProductAction>;
   activeMapTool: MapTool;
   activeMapToolDispatch: React.Dispatch<ActiveMapToolAction>;
-  activeProject: Project | null;
+  activeProject: ProjectItem | null;
   activeProjectDispatch: React.Dispatch<ActiveProjectAction>;
   flights: Flight[];
   geoRasterId: string;
@@ -255,7 +255,7 @@ const context: {
   mapViewPropertiesDispatch: React.Dispatch<MapViewPropertiesAction>;
   projectLayers: MapLayerFeatureCollection[];
   projectLayersDispatch: React.Dispatch<ProjectLayersAction>;
-  projects: Project[] | null;
+  projects: ProjectItem[] | null;
   projectsDispatch: React.Dispatch<ProjectsAction>;
   projectsLoaded: ProjectsLoadedState;
   projectsLoadedDispatch: React.Dispatch<ProjectsLoadedAction>;
