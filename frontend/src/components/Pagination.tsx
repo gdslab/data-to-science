@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import { ReactElement } from 'react';
 
 import { DOTS, usePagination } from './hooks/usePagination';
 
@@ -58,7 +59,7 @@ export default function Pagination({
   function PageNumberItems() {
     if (!paginationRange) return [];
 
-    let pageNumberItems: JSX.Element[] = [];
+    let pageNumberItems: ReactElement[] = [];
 
     {
       paginationRange.map((pageNumber, idx) => {

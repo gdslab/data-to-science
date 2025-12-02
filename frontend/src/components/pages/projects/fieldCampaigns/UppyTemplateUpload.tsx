@@ -104,7 +104,7 @@ export default function UppyTemplateUpload({ id, updateCsvErrors }: TemplateUplo
             // store csv data
             allCSVData.push(...result.data);
             // add file to list
-            parsedFiles.push(files[index].name);
+            parsedFiles.push(files[index].name || 'unknown');
           } else {
             updateCsvErrors(
               [

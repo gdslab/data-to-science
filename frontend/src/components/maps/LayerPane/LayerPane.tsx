@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { ReactElement, useCallback, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   ArrowUturnLeftIcon,
@@ -70,7 +70,7 @@ export default function LayerPane({
     toggleHidePane((prev) => !prev);
   }, [toggleHidePane]);
 
-  let content: JSX.Element;
+  let content: ReactElement;
 
   if (projectsLoaded === 'loading') {
     content = (

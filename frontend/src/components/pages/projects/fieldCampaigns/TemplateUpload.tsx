@@ -59,10 +59,10 @@ export default function TemplateUpload({
     );
   });
 
-  uppy.on('upload', (data) => {
-    if (data && data.fileIDs && data.fileIDs.length > 0) {
-      const file = uppy.getFile(data.fileIDs[0]);
-      uppy.setFileState(data.fileIDs[0], {
+  uppy.on('upload', (_uploadID, files) => {
+    if (files && files.length > 0) {
+      const file = files[0];
+      uppy.setFileState(file.id, {
         xhrUpload: {
           // @ts-ignore
           ...file.xhrUpload,
@@ -73,18 +73,25 @@ export default function TemplateUpload({
   });
 
   uppy.on('upload-error', (_file, _error, response) => {
-    if (response && response.body && response.body.detail) {
+    if (response?.body) {
       let errorDetails = '';
-      if (typeof response.body.detail === 'string') {
-        errorDetails = response.body.detail;
-      } else if (response.status === 422 && Array.isArray(response.body.detail)) {
-        response.body.detail.forEach((err, idx) => {
-          errorDetails = `${err.loc[1]}: ${err.msg}`;
-          errorDetails += idx < response.body.detail.length - 1 ? '; ' : '';
-        });
+      const body = response.body as Record<string, any>;
+
+      if (body.detail) {
+        if (typeof body.detail === 'string') {
+          errorDetails = body.detail;
+        } else if (response.status === 422 && Array.isArray(body.detail)) {
+          body.detail.forEach((err: any, idx: number) => {
+            errorDetails = `${err.loc[1]}: ${err.msg}`;
+            errorDetails += idx < body.detail.length - 1 ? '; ' : '';
+          });
+        } else {
+          errorDetails = 'Unexpected error occurred';
+        }
       } else {
-        errorDetails = 'Unexpected error occurred';
+        errorDetails = 'Upload failed';
       }
+
       uppy.info(
         {
           message: `Error ${response.status}`,

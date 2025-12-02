@@ -37,7 +37,7 @@ function TableCell({ align, children }: { align: string; children: ReactNode }) 
 
 interface TableRow {
   key: string;
-  values: (string | JSX.Element)[];
+  values: (string | ReactNode)[];
 }
 
 export function TableBody({
