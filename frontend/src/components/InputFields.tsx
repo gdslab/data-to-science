@@ -12,12 +12,12 @@ import { getIcon } from './utils';
 
 const styles = {
   textField:
-    'focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none border border-gray-400 rounded py-1 px-4 block w-full appearance-none',
+    'focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-hidden border border-gray-400 rounded-sm py-1 px-4 block w-full appearance-none',
   rangeField: 'w-full m-0 accent-accent2',
   selectField:
-    'focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none border border-gray-400 rounded py-1 px-4 pr-10 block w-full',
+    'focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-hidden border border-gray-400 rounded-sm py-1 px-4 pr-10 block w-full',
   disabled:
-    'bg-gray-200 border border-gray-400 rounded py-1 px-4 block w-full appearance-none',
+    'bg-gray-200 border border-gray-400 rounded-sm py-1 px-4 block w-full appearance-none',
 };
 
 interface InputFieldLabels {
@@ -227,13 +227,13 @@ export function EditField({
         <div className="flex gap-4">
           <button
             type="submit"
-            className="inline rounded-full focus:outline-none focus:ring focus:ring-accent2"
+            className="inline rounded-full focus:outline-hidden focus:ring-3 focus:ring-accent2"
           >
             <CheckIcon className="h-4 w-4 text-slate-400 cursor-pointer" />
           </button>
           <button
             type="button"
-            className="inline rounded-full focus:outline-none focus:ring focus:ring-accent2"
+            className="inline rounded-full focus:outline-hidden focus:ring-3 focus:ring-accent2"
             onClick={() => {
               setIsEditing(null);
             }}

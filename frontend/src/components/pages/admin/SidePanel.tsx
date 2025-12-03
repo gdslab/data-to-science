@@ -22,7 +22,7 @@ export default function SidePanel() {
               <Link
                 to="/admin/dashboard"
                 className={clsx(
-                  't group relative flex justify-center rounded px-1 py-1.5 md:px-2',
+                  't group relative flex justify-center rounded-sm px-1 py-1.5 md:px-2',
                   {
                     'bg-blue-50 text-blue-700': currentPage === 'dashboard',
                     'text-gray-500 hover:bg-gray-50 hover:text-gray-700':
@@ -32,7 +32,7 @@ export default function SidePanel() {
               >
                 <HomeIcon className="h-5 w-5 opacity-75" strokeWidth={2} />
 
-                <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
+                <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded-sm bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
                   Site Stats
                 </span>
               </Link>
@@ -43,7 +43,7 @@ export default function SidePanel() {
                 <Link
                   to="/admin/dashboard/users"
                   className={clsx(
-                    'group relative flex justify-center rounded px-1 py-1.5 md:px-2',
+                    'group relative flex justify-center rounded-sm px-1 py-1.5 md:px-2',
                     {
                       'bg-blue-50 text-blue-700': currentPage === 'users',
                       'text-gray-500 hover:bg-gray-50 hover:text-gray-700':
@@ -53,7 +53,7 @@ export default function SidePanel() {
                 >
                   <UsersIcon className="h-5 w-5 opacity-75" strokeWidth={2} />
 
-                  <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
+                  <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded-sm bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
                     Users
                   </span>
                 </Link>
@@ -63,7 +63,7 @@ export default function SidePanel() {
                 <Link
                   to="/admin/dashboard/map"
                   className={clsx(
-                    'group relative flex justify-center rounded px-1 py-1.5 md:px-2',
+                    'group relative flex justify-center rounded-sm px-1 py-1.5 md:px-2',
                     {
                       'bg-blue-50 text-blue-700': currentPage === 'map',
                       'text-gray-500 hover:bg-gray-50 hover:text-gray-700':
@@ -73,7 +73,7 @@ export default function SidePanel() {
                 >
                   <MapIcon className="h-5 w-5 opacity-75" strokeWidth={2} />
 
-                  <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
+                  <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded-sm bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
                     Projects Map
                   </span>
                 </Link>
@@ -83,7 +83,7 @@ export default function SidePanel() {
                 <Link
                   to="/admin/dashboard/extensions"
                   className={clsx(
-                    'group relative flex justify-center rounded px-1 py-1.5 md:px-2',
+                    'group relative flex justify-center rounded-sm px-1 py-1.5 md:px-2',
                     {
                       'bg-blue-50 text-blue-700': currentPage === 'extensions',
                       'text-gray-500 hover:bg-gray-50 hover:text-gray-700':
@@ -96,7 +96,7 @@ export default function SidePanel() {
                     strokeWidth={2}
                   />
 
-                  <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
+                  <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded-sm bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
                     Manage Extensions
                   </span>
                 </Link>
@@ -106,7 +106,7 @@ export default function SidePanel() {
                 <Link
                   to="/admin/dashboard/storage"
                   className={clsx(
-                    'group relative flex justify-center rounded px-1 py-1.5 md:px-2',
+                    'group relative flex justify-center rounded-sm px-1 py-1.5 md:px-2',
                     {
                       'bg-blue-50 text-blue-700': currentPage === 'storage',
                       'text-gray-500 hover:bg-gray-50 hover:text-gray-700':
@@ -119,7 +119,7 @@ export default function SidePanel() {
                     strokeWidth={2}
                   />
 
-                  <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
+                  <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded-sm bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
                     Project Storage
                   </span>
                 </Link>
@@ -129,7 +129,7 @@ export default function SidePanel() {
                 <Link
                   to="/admin/dashboard/charts"
                   className={clsx(
-                    'group relative flex justify-center rounded px-1 py-1.5 md:px-2',
+                    'group relative flex justify-center rounded-sm px-1 py-1.5 md:px-2',
                     {
                       'bg-blue-50 text-blue-700': currentPage === 'charts',
                       'text-gray-500 hover:bg-gray-50 hover:text-gray-700':
@@ -142,7 +142,7 @@ export default function SidePanel() {
                     strokeWidth={2}
                   />
 
-                  <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
+                  <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded-sm bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
                     Charts
                   </span>
                 </Link>
@@ -151,7 +151,7 @@ export default function SidePanel() {
               {/* <li>
                 <a
                   href="#"
-                  className="group relative flex justify-center rounded px-2 py-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                  className="group relative flex justify-center rounded-sm px-2 py-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -168,7 +168,7 @@ export default function SidePanel() {
                     />
                   </svg>
 
-                  <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
+                  <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded-sm bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
                     Invoices
                   </span>
                 </a>
@@ -177,7 +177,7 @@ export default function SidePanel() {
               <li>
                 <a
                   href="#"
-                  className="group relative flex justify-center rounded px-2 py-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                  className="group relative flex justify-center rounded-sm px-2 py-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -194,7 +194,7 @@ export default function SidePanel() {
                     />
                   </svg>
 
-                  <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
+                  <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded-sm bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
                     Account
                   </span>
                 </a>
@@ -224,7 +224,7 @@ export default function SidePanel() {
             />
           </svg>
 
-          <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
+          <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded-sm bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
             Sign out
           </span>
         </Link>

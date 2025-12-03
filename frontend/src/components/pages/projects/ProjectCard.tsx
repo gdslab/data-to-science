@@ -58,13 +58,13 @@ export default function ProjectCard({
       className="block h-40"
     >
       <article
-        className="relative flex items-center w-96 h-40 shadow bg-white transition hover:shadow-xl"
+        className="relative flex items-center w-96 h-40 shadow-sm bg-white transition hover:shadow-xl"
         title={project.title}
       >
         <div className="absolute top-2 right-2">
           <button
             type="button"
-            className="focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-full"
+            className="focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-full"
             onClick={handleOnBookmarkClick}
             disabled={isLoading}
             aria-label={liked ? 'Remove bookmark' : 'Bookmark project'}

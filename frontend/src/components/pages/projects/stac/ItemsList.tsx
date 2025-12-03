@@ -33,7 +33,7 @@ export default function ItemsList({
               onChange={() =>
                 onToggleAllRawDataLinks()
               }
-              className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+              className="w-4 h-4 text-blue-600 rounded-sm focus:ring-2 focus:ring-blue-500"
             />
             <span className="font-medium text-sm">
               {allSuccessfulItemsChecked
@@ -50,7 +50,7 @@ export default function ItemsList({
         {allItems.map((item) => (
           <div
             key={item.id}
-            className={`mb-2 p-2 rounded border shadow-sm ${
+            className={`mb-2 p-2 rounded border shadow-xs ${
               item.isSuccessful
                 ? 'bg-white border-gray-200'
                 : 'bg-red-50 border-red-200'
@@ -93,7 +93,7 @@ export default function ItemsList({
                         type="checkbox"
                         checked={includeRawDataLinks.has(item.id)}
                         onChange={() => onToggleRawDataLink(item.id)}
-                        className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                        className="w-4 h-4 text-blue-600 rounded-sm focus:ring-2 focus:ring-blue-500"
                       />
                       <span className="text-xs text-gray-600">
                         Include raw data
@@ -193,7 +193,7 @@ export default function ItemsList({
                           <summary className="text-sm text-gray-600 cursor-pointer">
                             Technical Details
                           </summary>
-                          <div className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                          <div className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded-sm">
                             <p>
                               <strong>File Path:</strong>{' '}
                               {item.error.details.filepath}

@@ -209,13 +209,13 @@ export default function ProjectLayersTable() {
                       onClick={() =>
                         handlePreviewClick(layer.preview_url, layer.layer_name)
                       }
-                      className="flex items-center justify-center mx-auto cursor-pointer hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-accent2 rounded"
+                      className="flex items-center justify-center mx-auto cursor-pointer hover:opacity-80 transition-opacity focus:outline-hidden focus:ring-2 focus:ring-accent2 rounded-sm"
                       aria-label={`View full preview of ${layer.layer_name}`}
                       title="Click to view full size"
                     >
                       <img
                         src={layer.preview_url}
-                        className="w-20 h-20 object-cover rounded"
+                        className="w-20 h-20 object-cover rounded-sm"
                         alt="Preview thumbnail"
                       />
                     </button>
@@ -234,14 +234,14 @@ export default function ProjectLayersTable() {
                         value={editingValue}
                         onChange={(e) => setEditingValue(e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, layer)}
-                        className="w-32 px-2 py-1 border border-gray-400 rounded focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                        className="w-32 px-2 py-1 border border-gray-400 rounded-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-hidden"
                         autoFocus
                       />
-                      <div className="flex gap-4 flex-shrink-0">
+                      <div className="flex gap-4 shrink-0">
                         <button
                           type="button"
                           onClick={() => handleSave(layer)}
-                          className="inline rounded-full focus:outline-none focus:ring focus:ring-accent2"
+                          className="inline rounded-full focus:outline-hidden focus:ring-3 focus:ring-accent2"
                           aria-label="Save layer name"
                           title="Save"
                         >
@@ -250,7 +250,7 @@ export default function ProjectLayersTable() {
                         <button
                           type="button"
                           onClick={handleCancel}
-                          className="inline rounded-full focus:outline-none focus:ring focus:ring-accent2"
+                          className="inline rounded-full focus:outline-hidden focus:ring-3 focus:ring-accent2"
                           aria-label="Cancel editing"
                           title="Cancel"
                         >
@@ -268,7 +268,7 @@ export default function ProjectLayersTable() {
                         <button
                           type="button"
                           onClick={() => handleEdit(layer)}
-                          className="flex-shrink-0 inline rounded-full focus:outline-none focus:ring focus:ring-accent2"
+                          className="shrink-0 inline rounded-full focus:outline-hidden focus:ring-3 focus:ring-accent2"
                           aria-label="Edit layer name"
                           title="Edit layer name"
                         >

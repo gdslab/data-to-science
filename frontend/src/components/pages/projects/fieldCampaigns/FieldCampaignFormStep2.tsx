@@ -84,7 +84,7 @@ export default function FieldCampaignFormStep2({
                                     <div className="flex items-center">
                                       <Field
                                         type="checkbox"
-                                        className="size-4 rounded border-gray-300"
+                                        className="size-4 rounded-sm border-gray-300"
                                         name={`treatments.${index}.columns.${colIndex}.selected`}
                                       />
                                     </div>

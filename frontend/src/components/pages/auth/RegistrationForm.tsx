@@ -107,7 +107,7 @@ export default function RegistrationForm() {
             <input
               id="default-checkbox"
               type="checkbox"
-              className="w-4 h-4 text-slate-600 accent-slate-600 bg-gray-100 border-gray-300 rounded focus:ring-slate-500 focus:ring-2"
+              className="w-4 h-4 text-slate-600 accent-slate-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-slate-500 focus:ring-2"
               onChange={(e) => toggleShowPassword(e.target.checked)}
             />
             <label

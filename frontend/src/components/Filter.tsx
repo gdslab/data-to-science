@@ -111,7 +111,7 @@ export default function Filter({
           </summary>
 
           <div className="z-50 group-open:absolute group-open:start-0 group-open:top-auto group-open:mt-2">
-            <div className="min-w-[200px] max-w-[300px] rounded border border-gray-200 bg-white">
+            <div className="min-w-[200px] max-w-[300px] rounded-sm border border-gray-200 bg-white">
               <header className="flex items-center justify-between p-4">
                 <span className="text-sm text-gray-700">
                   {' '}
@@ -145,7 +145,7 @@ export default function Filter({
                         <input
                           type="checkbox"
                           id={category.value}
-                          className="size-5 rounded text-accent2 border-gray-300"
+                          className="size-5 rounded-sm text-accent2 border-gray-300"
                           value={category.value}
                           checked={parentChecked}
                           onChange={onChange}
@@ -166,7 +166,7 @@ export default function Filter({
                                 <input
                                   type="checkbox"
                                   id={`${category.value}-${sub.value}`}
-                                  className="size-4 rounded text-accent2 border-gray-300"
+                                  className="size-4 rounded-sm text-accent2 border-gray-300"
                                   value={sub.value}
                                   checked={
                                     !!sublistSelected &&

@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import Map, { NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Map, { MapRef, NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
 // import { bbox } from '@turf/bbox';
 
 import ColorBarControl from '../ColorBarControl';
@@ -72,6 +72,9 @@ export default function CompareMap() {
     useState<MapComparisonState>(defaultMapComparisonState);
   const [mode, setMode] = useState<Mode>('split-screen');
   const [activeProjectBBox, setActiveProjectBBox] = useState<BBox | null>(null);
+
+  const leftMapRef = useRef<MapRef>(null);
+  const rightMapRef = useRef<MapRef>(null);
 
   const { activeProject, flights } = useMapContext();
   const { mapboxAccessToken, maptilerApiKey } = useMapApiKeys();
@@ -193,9 +196,20 @@ export default function CompareMap() {
       : getWorldImageryTopoBasemapStyle(maptilerApiKey);
   }, [mapboxAccessToken, maptilerApiKey]);
 
+  // Force map resize after initial render to fix dimension calculation issues
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      leftMapRef.current?.resize();
+      rightMapRef.current?.resize();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div className="relative h-full">
       <Map
+        ref={leftMapRef}
         {...viewState}
         padding={leftMapPadding}
         onMoveStart={onLeftMoveStart}
@@ -250,6 +264,7 @@ export default function CompareMap() {
         <ScaleControl />
       </Map>
       <Map
+        ref={rightMapRef}
         {...viewState}
         padding={rightMapPadding}
         onMoveStart={onRightMoveStart}

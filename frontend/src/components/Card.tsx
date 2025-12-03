@@ -14,7 +14,7 @@ export default function Card({
   return (
     <div
       className={classNames(
-        rounded ? 'rounded-lg' : 'rounded-sm',
+        rounded ? 'rounded-lg' : 'rounded-xs',
         classNames(
           backgroundColor === 'accent2' ? 'bg-accent2/20' : 'bg-white',
           'p-4 drop-shadow-md'

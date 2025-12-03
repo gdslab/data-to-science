@@ -4,8 +4,8 @@ export const styles = {
   error: 'mt-1 text-red-500 text-sm',
   label: 'block text-sm text-gray-400 font-bold pt-2 pb-1',
   inputText:
-    'focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none border border-gray-400 rounded py-1 px-4 block w-full appearance-none',
-  inputTextArea: 'w-full h-48 resize-none rounded',
+    'focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-hidden border border-gray-400 rounded-sm py-1 px-4 block w-full appearance-none',
+  inputTextArea: 'w-full h-48 resize-none rounded-sm',
 };
 
 type InputField = {

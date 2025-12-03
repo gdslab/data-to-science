@@ -95,7 +95,7 @@ export default function ProjectTabNav({
         {enabledModules.map((module) => (
           <Tab
             key={module.module_name}
-            className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium"
+            className="data-selected:bg-accent3 data-selected:text-white data-hover:underline w-28 shrink-0 rounded-lg p-2 font-medium"
           >
             {module.module_name === 'iforester' ? (
               <div className="flex items-center justify-center gap-2">

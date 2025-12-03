@@ -68,10 +68,10 @@ export default function DashboardExtensions() {
         {extensions.length > 0 && (
           <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
             <TabList>
-              <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium">
+              <Tab className="data-selected:bg-accent3 data-selected:text-white data-hover:underline w-28 shrink-0 rounded-lg p-2 font-medium">
                 Teams
               </Tab>
-              <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium">
+              <Tab className="data-selected:bg-accent3 data-selected:text-white data-hover:underline w-28 shrink-0 rounded-lg p-2 font-medium">
                 Users
               </Tab>
             </TabList>

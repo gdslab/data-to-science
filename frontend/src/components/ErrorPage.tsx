@@ -48,14 +48,14 @@ export default function ErrorPage() {
         <div className="flex items-center justify-between gap-4">
           <Link
             to="/home"
-            className="inline-block w-36 px-5 py-3 mt-6 text-sm font-medium text-white bg-accent3 rounded hover:bg-accent2 focus:outline-none focus:ring"
+            className="inline-block w-36 px-5 py-3 mt-6 text-sm font-medium text-white bg-accent3 rounded-sm hover:bg-accent2 focus:outline-hidden focus:ring-3"
           >
             Go Back Home
           </Link>
 
           <Link
             to="/auth/logout"
-            className="inline-block w-36 px-5 py-3 mt-6 text-sm font-medium text-white bg-accent3 rounded hover:bg-accent2 focus:outline-none focus:ring"
+            className="inline-block w-36 px-5 py-3 mt-6 text-sm font-medium text-white bg-accent3 rounded-sm hover:bg-accent2 focus:outline-hidden focus:ring-3"
           >
             Logout
           </Link>

@@ -67,7 +67,7 @@ export default function Pagination({
           pageNumberItems.push(
             <li
               key={`page-${idx}-dots`}
-              className="block size-8 rounded text-center leading-8"
+              className="block size-8 rounded-sm text-center leading-8"
             >
               &#8230;
             </li>
@@ -79,7 +79,7 @@ export default function Pagination({
             <li className="cursor-pointer" key={`page-${pageNumber}`}>
               <a
                 onClick={() => updateCurrentPage(pageNumber)}
-                className={clsx('block size-8 rounded text-center leading-8', {
+                className={clsx('block size-8 rounded-sm text-center leading-8', {
                   'border border-gray-100 bg-white text-gray-900':
                     pageNumber !== currentPage,
                   'border-accent2 bg-accent2 text-white':
@@ -103,7 +103,7 @@ export default function Pagination({
           <a
             onClick={() => updateCurrentPage(currentPage - 1)}
             className={clsx(
-              'inline-flex size-8 items-center justify-center rounded border border-gray-100 bg-white text-gray-900',
+              'inline-flex size-8 items-center justify-center rounded-sm border border-gray-100 bg-white text-gray-900',
               {
                 'opacity-75 cursor-not-allowed': currentPage < 1,
                 'cursor-pointer': currentPage > 0,
@@ -132,7 +132,7 @@ export default function Pagination({
           <a
             onClick={() => updateCurrentPage(currentPage + 1)}
             className={clsx(
-              'inline-flex size-8 items-center justify-center rounded border border-gray-100 bg-white text-gray-900',
+              'inline-flex size-8 items-center justify-center rounded-sm border border-gray-100 bg-white text-gray-900',
               {
                 'opacity-75 cursor-not-allowed': currentPage + 1 >= totalPages,
                 'cursor-pointer': currentPage + 1 < totalPages,

@@ -167,7 +167,7 @@ export default function ProjectFlights() {
                       <td className="p-1">
                         <div className="bg-white p-4">
                           <Link
-                            className="!text-sky-600 visited:text-sky-600"
+                            className="text-sky-600! visited:text-sky-600"
                             to={`/projects/${project.id}/flights/${flight.id}/data`}
                           >
                             <div className="flex items-center justify-between gap-2">
@@ -185,7 +185,7 @@ export default function ProjectFlights() {
                         <td className="p-1">
                           <div className="flex items-center justify-between gap-4 p-4 bg-white">
                             <Link
-                              className="!text-sky-600 visited:text-sky-600"
+                              className="text-sky-600! visited:text-sky-600"
                               to={`/projects/${project.id}/flights/${flight.id}/edit`}
                             >
                               <div className="flex items-center gap-2">

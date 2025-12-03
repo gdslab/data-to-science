@@ -118,7 +118,7 @@ export default function DataProductBandForm({
         ))}
       </div>
       <button
-        className="p-4 bg-accent2/90 text-white font-semibold py-1 rounded enabled:hover:bg-accent2 disabled:opacity-75 disabled:cursor-not-allowed"
+        className="p-4 bg-accent2/90 text-white font-semibold py-1 rounded-sm enabled:hover:bg-accent2 disabled:opacity-75 disabled:cursor-not-allowed"
         type="submit"
         disabled={isSubmitting}
       >

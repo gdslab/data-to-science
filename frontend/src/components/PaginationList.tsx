@@ -79,9 +79,9 @@ export default function PaginationList({
 
   return (
     <div className="h-full w-full flex flex-col gap-4">
-      <div className="flex-grow overflow-y-auto">{children}</div>
+      <div className="grow overflow-y-auto">{children}</div>
       {/* Pagination */}
-      <div className="flex-shrink-0 h-8 w-full bg-slate-200 px-6">
+      <div className="shrink-0 h-8 w-full bg-slate-200 px-6">
         <div className="flex justify-center">
           <Pagination
             currentPage={currentPage}

@@ -96,14 +96,14 @@ export default function RasterSymbologyAccessControls({
               name="accessOption"
               value="false"
               id="accessRestricted"
-              className="peer hidden [&:checked_+_label_svg]:block"
+              className="peer hidden [&:checked+label_svg]:block"
               checked={!accessOption}
               onChange={onChange}
               disabled={project.role !== 'owner'}
             />
             <label
               htmlFor="accessRestricted"
-              className="flex items-center justify-between cursor-pointer peer-disabled:cursor-default rounded-lg border border-gray-50 bg-gray-100 p-4 text-sm font-medium shadow-sm hover:border-gray-200 peer-checked:border-accent3 peer-checked:ring-1 peer-checked:ring-accent3"
+              className="flex items-center justify-between cursor-pointer peer-disabled:cursor-default rounded-lg border border-gray-50 bg-gray-100 p-4 text-sm font-medium shadow-xs hover:border-gray-200 peer-checked:border-accent3 peer-checked:ring-1 peer-checked:ring-accent3"
             >
               <div className="flex-none flex items-center gap-2 w-48">
                 <svg
@@ -135,14 +135,14 @@ export default function RasterSymbologyAccessControls({
                 name="accessOption"
                 value="true"
                 id="accessUnrestricted"
-                className="peer hidden [&:checked_+_label_svg]:block"
+                className="peer hidden [&:checked+label_svg]:block"
                 checked={accessOption}
                 onChange={onChange}
                 disabled={project.role !== 'owner'}
               />
               <label
                 htmlFor="accessUnrestricted"
-                className="flex cursor-pointer items-center justify-between rounded-lg border border-gray-50 bg-gray-100 p-4 text-sm font-medium shadow-sm hover:border-gray-200 peer-checked:border-accent3 peer-checked:ring-1 peer-checked:ring-accent3"
+                className="flex cursor-pointer items-center justify-between rounded-lg border border-gray-50 bg-gray-100 p-4 text-sm font-medium shadow-xs hover:border-gray-200 peer-checked:border-accent3 peer-checked:ring-1 peer-checked:ring-accent3"
               >
                 <div className="flex-none flex items-center gap-2 w-48">
                   <svg
@@ -182,7 +182,7 @@ export default function RasterSymbologyAccessControls({
               <div className="relative">
                 <button
                   type="button"
-                  className="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 whitespace-nowrap min-w-[180px]"
+                  className="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 whitespace-nowrap min-w-[180px]"
                   onClick={() => setIsOpen(!isOpen)}
                 >
                   Share Current Map
@@ -193,7 +193,7 @@ export default function RasterSymbologyAccessControls({
                 </button>
                 {isOpen && (
                   <div
-                    className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                    className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-hidden"
                     style={{ bottom: '100%', marginBottom: '0.5rem' }}
                   >
                     <div className="py-1">

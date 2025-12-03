@@ -30,7 +30,7 @@ export default function FieldCampaignFormStep1() {
                       index: number
                     ) => (
                       <div key={index}>
-                        <div className="flex items-center gap-4 px-4 bg-white/60 rounded-md shadow-sm">
+                        <div className="flex items-center gap-4 px-4 bg-white/60 rounded-md shadow-xs">
                           <div className="flex items-center gap-4 w-11/12">
                             <div className="min-h-24 w-1/2">
                               <TextField

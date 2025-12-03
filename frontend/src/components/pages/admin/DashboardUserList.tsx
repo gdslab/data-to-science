@@ -264,7 +264,7 @@ export default function DashboardUserList({
               <tr key={user.id} className="text-center border-b border-gray-200">
                 <td className="p-1.5 bg-white" style={{ width: '180px' }}>
                   <div className="flex items-center gap-2 justify-center">
-                    <div className="flex-shrink-0">
+                    <div className="shrink-0">
                       <UserProfilePicture user={user} />
                     </div>
                     <span className="truncate">
@@ -304,7 +304,7 @@ export default function DashboardUserList({
                           disabled={loadingUserId === user.id}
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-hidden peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                       </label>
                       {loadingUserId === user.id && (
                         <span className="text-sm text-gray-500">...</span>

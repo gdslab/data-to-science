@@ -20,7 +20,7 @@ export default function MapToolbar() {
         <div
           className={classNames(
             activeMapTool === 'map' ? 'bg-accent2' : '',
-            'h-8 w-8 cursor-pointer shadow-sm hover:shadow-xl rounded border-2 border-solid border-slate-500 p-1.5'
+            'h-8 w-8 cursor-pointer shadow-xs hover:shadow-xl rounded-sm border-2 border-solid border-slate-500 p-1.5'
           )}
           onClick={() => {
             activeDataProductDispatch({ type: 'clear', payload: null });
@@ -33,7 +33,7 @@ export default function MapToolbar() {
         <div
           className={classNames(
             activeMapTool === 'compare' ? 'bg-accent2' : '',
-            'h-8 w-8 cursor-pointer shadow-sm hover:shadow-xl rounded border-2 border-solid border-slate-500 p-1.5'
+            'h-8 w-8 cursor-pointer shadow-xs hover:shadow-xl rounded-sm border-2 border-solid border-slate-500 p-1.5'
           )}
           onClick={() => {
             activeDataProductDispatch({ type: 'clear', payload: null });
@@ -48,7 +48,7 @@ export default function MapToolbar() {
             id="scale-checkbox"
             type="checkbox"
             name="scale"
-            className="size-4 rounded text-accent2 border-gray-300"
+            className="size-4 rounded-sm text-accent2 border-gray-300"
             onChange={(e) => {
               tileScaleDispatch({
                 type: 'set',

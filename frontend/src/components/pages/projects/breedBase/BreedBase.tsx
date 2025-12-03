@@ -137,7 +137,7 @@ export default function BreedBase() {
             {error && <div className="text-red-500 text-sm">{error}</div>}
             <div>
               <button
-                className="w-32 bg-accent2/90 text-white font-semibold py-1 rounded enabled:hover:bg-accent2 disabled:opacity-75 disabled:cursor-not-allowed"
+                className="w-32 bg-accent2/90 text-white font-semibold py-1 rounded-sm enabled:hover:bg-accent2 disabled:opacity-75 disabled:cursor-not-allowed"
                 type="submit"
                 disabled={isLoading}
               >

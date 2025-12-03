@@ -421,7 +421,7 @@ export default function Profile() {
   const [status, setStatus] = useState<Status | null>(null);
 
   return (
-    <div className="min-h-full flex flex-row justify-center bg-gradient-to-b from-primary from-20% to-slate-200 to-10% px-4 py-4">
+    <div className="min-h-full flex flex-row justify-center bg-linear-to-b from-primary from-20% to-slate-200 to-10% px-4 py-4">
       <div className="mt-16 mb-4 w-full md:w-1/2 max-w-xl">
         <h1 className="text-white">Edit Profile</h1>
         <Card>

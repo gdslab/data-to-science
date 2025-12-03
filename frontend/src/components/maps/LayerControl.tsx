@@ -34,7 +34,7 @@ export default function LayerControl() {
   }
 
   return (
-    <div className="absolute top-0 left-0 max-w-80 bg-white rounded-md shadow-md px-3 py-6 m-2.5 leading-3 text-slate-600 outline-none">
+    <div className="absolute top-0 left-0 max-w-80 bg-white rounded-md shadow-md px-3 py-6 m-2.5 leading-3 text-slate-600 outline-hidden">
       <h3>Map Layers</h3>
       <p className="text-sm text-slate-500 italic">
         Toggle map layer on/off, change layer color, and adjust layer opacity.
@@ -119,7 +119,7 @@ export default function LayerControl() {
       <div className="relative flex justify-center p-1.5">
         <button
           type="button"
-          className="absolute focus:outline-none hover:bg-gray-100 focus:ring focus:ring-accent2"
+          className="absolute focus:outline-hidden hover:bg-gray-100 focus:ring-3 focus:ring-accent2"
           aria-label={visible ? 'Hide map layers' : 'Show map layers'}
           aria-expanded={visible}
           onClick={toggleVisibility}

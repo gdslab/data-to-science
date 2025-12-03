@@ -31,7 +31,7 @@ export default function DataProductShareModal({
               className="flex items-center text-sky-600 text-sm cursor-pointer"
               onClick={() => setOpenShareModal(true)}
             >
-              <div className="relative rounded-full accent3 p-1 focus:outline-none">
+              <div className="relative rounded-full accent3 p-1 focus:outline-hidden">
                 {dataProduct.public ? (
                   <LockOpenIcon className="w-4 w-4" />
                 ) : (

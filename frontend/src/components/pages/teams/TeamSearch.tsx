@@ -13,7 +13,7 @@ export default function TeamSearch({
       <input
         type="text"
         placeholder="Search teams"
-        className="w-full rounded-md border-gray-200 pl-10 pr-4 py-2.5 text-black sm:text-sm shadow bg-white placeholder:text-gray-400"
+        className="w-full rounded-md border-gray-200 pl-10 pr-4 py-2.5 text-black sm:text-sm shadow-sm bg-white placeholder:text-gray-400"
         value={value}
         onChange={onChange}
       />
