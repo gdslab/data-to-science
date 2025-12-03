@@ -37,7 +37,7 @@ function TableCell({ align, children }: { align: string; children: ReactNode }) 
 
 interface TableRow {
   key: string;
-  values: (string | JSX.Element)[];
+  values: (string | ReactNode)[];
 }
 
 export function TableBody({
@@ -72,8 +72,8 @@ export function TableBody({
                       <button
                         className={classNames(
                           action.label === 'Delete'
-                            ? '!text-red-600 visited:text-red-600'
-                            : '!text-sky-600 visited:text-sky-600',
+                            ? 'text-red-600! visited:text-red-600'
+                            : 'text-sky-600! visited:text-sky-600',
                           'flex items-center cursor-pointer text-sm'
                         )}
                         onClick={(e) => {
@@ -83,7 +83,7 @@ export function TableBody({
                           }
                         }}
                       >
-                        <div className="relative rounded-full accent3 p-1 focus:outline-none">
+                        <div className="relative rounded-full accent3 p-1 focus:outline-hidden">
                           {action.icon ? action.icon : null}
                         </div>
                         <span>{action.label}</span>
@@ -96,14 +96,14 @@ export function TableBody({
                       key={action.key}
                       className={classNames(
                         action.label === 'Delete'
-                          ? '!text-red-600 visited:text-red-600'
-                          : '!text-sky-600 visited:!text-sky-600',
+                          ? 'text-red-600! visited:text-red-600'
+                          : 'text-sky-600! visited:text-sky-600!',
                         'text-sm'
                       )}
                       to={action.url ? action.url : ''}
                     >
                       <div className="flex items-center">
-                        <div className="relative rounded-full accent3 p-1 focus:outline-none">
+                        <div className="relative rounded-full accent3 p-1 focus:outline-hidden">
                           {action.icon ? action.icon : null}
                         </div>
                         <span>{action.label}</span>

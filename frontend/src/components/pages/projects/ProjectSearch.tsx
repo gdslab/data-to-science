@@ -18,7 +18,7 @@ export default function ProjectSearch({ searchText, updateSearchText }: ProjectS
         type="text"
         id="Search"
         placeholder="Search for project by title or description"
-        className="w-full rounded-md border-gray-200 px-4 py-2.5 pe-10 shadow sm:text-sm"
+        className="w-full rounded-md border-gray-200 px-4 py-2.5 pe-10 shadow-sm sm:text-sm"
         value={searchText}
         onChange={(e) => updateSearchText(e.target.value)}
         onKeyDown={(e) => {

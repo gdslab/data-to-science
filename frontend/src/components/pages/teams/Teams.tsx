@@ -93,7 +93,7 @@ export default function SidebarPage() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
                 <Link
-                  className="relative rounded-full p-1 text-accent1 visited:text-accent1 hover:text-slate-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
+                  className="relative rounded-full p-1 text-accent1 visited:text-accent1 hover:text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
                   to="/teams/create"
                 >
                   <span className="absolute -inset-1.5" />
@@ -107,7 +107,7 @@ export default function SidebarPage() {
             {filteredTeams.length > 0 && (
               <div className="flex flex-col gap-2">
                 <div className="flex items-center">
-                  <div className="relative rounded-full accent3 p-1 hover:text-slate-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
+                  <div className="relative rounded-full accent3 p-1 hover:text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
                     <span className="absolute -inset-1.5" />
                     <span className="sr-only">Team List</span>
                     <UserGroupIcon className="h-6 w-6" aria-hidden="true" />
@@ -140,7 +140,7 @@ export default function SidebarPage() {
         </div>
       </div>
       {/* page content */}
-      <div className="flex-grow w-full m-4">
+      <div className="grow w-full m-4">
         {location.pathname === '/teams' && teams.length < 1 ? (
           <span>
             You do not currently belong to any teams. Use the{' '}

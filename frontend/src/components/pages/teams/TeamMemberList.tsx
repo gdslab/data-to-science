@@ -67,7 +67,7 @@ export default function TeamMemberList({
   } else {
     return (
       <div>
-        <div className="max-h-96 overflow-y-auto overflow-x-auto border border-gray-200 rounded-lg shadow-sm">
+        <div className="max-h-96 overflow-y-auto overflow-x-auto border border-gray-200 rounded-lg shadow-xs">
           <table className="min-w-full divide-y-2 divide-gray-200 bg-white text-xs sm:text-sm">
             <thead className="sticky top-0 z-10 bg-white border-b-2 border-gray-200">
               <tr>
@@ -113,12 +113,12 @@ export default function TeamMemberList({
                             .split('/')
                             .slice(-1)[0]
                             .slice(0, -4)}
-                          className="h-6 w-6 sm:h-8 sm:w-8 rounded-full flex-shrink-0"
+                          className="h-6 w-6 sm:h-8 sm:w-8 rounded-full shrink-0"
                           src={teamMember.profile_url}
                         />
                       ) : (
                         <div
-                          className="flex items-center justify-center h-6 w-6 sm:h-8 sm:w-8 text-white text-xs sm:text-sm rounded-full flex-shrink-0"
+                          className="flex items-center justify-center h-6 w-6 sm:h-8 sm:w-8 text-white text-xs sm:text-sm rounded-full shrink-0"
                           style={generateRandomProfileColor(
                             teamMember.full_name
                           )}

@@ -87,7 +87,7 @@ export default function IForesterCardView() {
           dataList={sortedFilteredLocations}
           updatePageData={updatePageData}
         >
-          <div className="w-full pb-2 pr-2.5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5 max-h-[calc(100vh_-_64px_-_52px_-_52px)]">
+          <div className="w-full pb-2 pr-2.5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5 max-h-[calc(100vh-64px-52px-52px)]">
             {pageData.map((location) => (
               <IForesterCard key={location.id} submission={location} />
             ))}

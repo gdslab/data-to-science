@@ -10,7 +10,7 @@ function IForesterControl() {
   return (
     <div
       className={clsx(
-        'absolute top-28 right-2 bg-white bg-clip-padding border-2 border-solid border-black/20 rounded',
+        'absolute top-28 right-2 bg-white bg-clip-padding border-2 border-solid border-black/20 rounded-sm',
         !isExpanded && 'w-11 h-11',
         isExpanded && 'w-auto h-auto'
       )}

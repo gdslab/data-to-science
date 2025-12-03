@@ -31,7 +31,7 @@ export default function StatCardWithPeriodToggle({
         <select
           value={selectedPeriod}
           onChange={(e) => setSelectedPeriod(Number(e.target.value) as Period)}
-          className="text-xs bg-white border border-gray-300 rounded pl-2 pr-7 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="text-xs bg-white border border-gray-300 rounded-sm pl-2 pr-7 py-1 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
         >
           {PERIOD_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>

@@ -21,7 +21,7 @@ export default function Landing() {
       <div className="h-screen">
         <div className="z-10 absolute w-full px-4 text-center top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
           <div className="grid grid-rows-auto gap-6">
-            <div className="inline text-6xl text-white [text-shadow:_2px_2px_2px_rgb(0_0_0_/_70%)]">
+            <div className="inline text-6xl text-white [text-shadow:2px_2px_2px_rgb(0_0_0/70%)]">
               <span>Welcome to </span>
             </div>
             <div className="flex items-center justify-center">

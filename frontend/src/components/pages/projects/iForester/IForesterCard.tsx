@@ -61,7 +61,7 @@ export default function IForesterCard({
           className={clsx(
             'absolute w-full h-full transition-transform duration-500 ease-in-out',
             {
-              '[transform:rotateY(180deg)] [backface-visibility:hidden]':
+              'transform-[rotateY(180deg)] backface-hidden':
                 depthViewVisible,
               '': !depthViewVisible,
             }
@@ -74,7 +74,7 @@ export default function IForesterCard({
             'absolute w-full h-full transition-transform duration-500 ease-in-out',
             {
               '': depthViewVisible,
-              '[transform:rotateY(180deg)] [backface-visibility:hidden]':
+              'transform-[rotateY(180deg)] backface-hidden':
                 !depthViewVisible,
             }
           )}

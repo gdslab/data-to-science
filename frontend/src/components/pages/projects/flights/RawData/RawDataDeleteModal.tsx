@@ -33,7 +33,7 @@ export default function RawDataDeleteModal({
             className="flex items-center text-sky-600 text-sm cursor-pointer"
             onClick={() => setOpenConfirmationPopup(true)}
           >
-            <div className="relative rounded-full accent3 p-1 focus:outline-none">
+            <div className="relative rounded-full accent3 p-1 focus:outline-hidden">
               <TrashIcon className="w-4 h-4" />
             </div>
             <span>Delete</span>

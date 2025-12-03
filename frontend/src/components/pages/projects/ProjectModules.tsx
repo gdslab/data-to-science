@@ -102,7 +102,7 @@ export default function ProjectModules() {
                             )
                           }
                           disabled={module.required}
-                          className="h-4 w-4 rounded border-gray-300 text-accent3 focus:ring-accent3"
+                          className="h-4 w-4 rounded-sm border-gray-300 text-accent3 focus:ring-accent3"
                         />
                         <span
                           className={classNames(

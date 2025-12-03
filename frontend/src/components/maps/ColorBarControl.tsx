@@ -90,7 +90,7 @@ export default function ColorBarControl({
     return (
       <div
         className={clsx(
-          'absolute bottom-8 bg-white/75 rounded-md shadow-md px-3 py-6 m-2.5 leading-3 text-slate-600 outline-none',
+          'absolute bottom-8 bg-white/75 rounded-md shadow-md px-3 py-6 m-2.5 leading-3 text-slate-600 outline-hidden',
           { 'start-0': position === 'left', 'end-0': position === 'right' }
         )}
       >

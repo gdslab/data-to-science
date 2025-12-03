@@ -44,7 +44,7 @@ function FieldTimepoints({
               <input
                 name={`treatment.${treatmentIdx}.measurement.${measurementIdx}.timepoint.${timepointIdx}`}
                 type="checkbox"
-                className="w-4 h-4 size-4 rounded text-accent2 bg-gray-100 border-gray-300 rounded focus:ring-slate-500 focus:ring-2"
+                className="w-4 h-4 size-4 rounded-sm text-accent2 bg-gray-100 border-gray-300 rounded-sm focus:ring-slate-500 focus:ring-2"
                 onChange={(e) => {
                   if (e.target.checked) {
                     addSelectedTimepoint(
@@ -254,7 +254,7 @@ export default function FieldCampaignTable() {
         <div className="h-10 flex justify-between gap-4">
           <div className="flex gap-4">
             <button
-              className="bg-primary/90 hover:bg-primary text-white font-semibold py-1.5 px-4 rounded"
+              className="bg-primary/90 hover:bg-primary text-white font-semibold py-1.5 px-4 rounded-sm"
               onClick={() => {
                 let allTimepoints: string[] = [];
                 for (
@@ -291,7 +291,7 @@ export default function FieldCampaignTable() {
 
             {selectedTimepoints.length > 0 ? (
               <button
-                className="bg-white hover:bg-white/90 text-primary border-2 border-primary font-semibold py-1.5 px-4 rounded"
+                className="bg-white hover:bg-white/90 text-primary border-2 border-primary font-semibold py-1.5 px-4 rounded-sm"
                 onClick={() => resetSelectedTimepoints()}
               >
                 Clear selection
@@ -300,7 +300,7 @@ export default function FieldCampaignTable() {
           </div>
           {selectedTimepoints.length > 0 ? (
             <button
-              className="w-52 bg-accent2/90 hover:bg-accent2 text-white font-semibold py-1.5 px-4 rounded"
+              className="w-52 bg-accent2/90 hover:bg-accent2 text-white font-semibold py-1.5 px-4 rounded-sm"
               onClick={() => {
                 async function fetchCsvTemplate() {
                   setIsDownloading(true);

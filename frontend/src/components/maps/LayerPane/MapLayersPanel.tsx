@@ -31,7 +31,7 @@ export default function MapLayersPanel() {
   return (
     <div className="flex flex-col gap-3">
       {layers.map((layer) => (
-        <div key={layer.id} className="flex flex-col p-2 bg-slate-50 rounded">
+        <div key={layer.id} className="flex flex-col p-2 bg-slate-50 rounded-sm">
           {/* Layer name and controls row */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-1 min-w-0">

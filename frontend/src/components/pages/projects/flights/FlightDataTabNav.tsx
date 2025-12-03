@@ -32,10 +32,10 @@ export default function FlightDataTabNav({ dataProducts, rawData }: FlightData) 
   return (
     <TabGroup selectedIndex={selectedIndex} onChange={onChange}>
       <TabList>
-        <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline focus:outline-none focus:ring focus:ring-sky-300 w-32 shrink-0 rounded-lg p-2 font-medium">
+        <Tab className="data-selected:bg-accent3 data-selected:text-white data-hover:underline focus:outline-hidden focus:ring-3 focus:ring-sky-300 w-32 shrink-0 rounded-lg p-2 font-medium">
           Data Products
         </Tab>
-        <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline focus:outline-none focus:ring focus:ring-sky-300 w-32 shrink-0 rounded-lg p-2 font-medium">
+        <Tab className="data-selected:bg-accent3 data-selected:text-white data-hover:underline focus:outline-hidden focus:ring-3 focus:ring-sky-300 w-32 shrink-0 rounded-lg p-2 font-medium">
           Raw Data
         </Tab>
       </TabList>

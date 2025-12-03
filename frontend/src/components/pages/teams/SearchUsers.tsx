@@ -50,7 +50,7 @@ function SearchUsersBar({
         type="text"
         id="Search"
         placeholder="Search for users by name"
-        className="w-full rounded-md border-gray-200 px-4 py-2.5 pe-10 shadow sm:text-sm"
+        className="w-full rounded-md border-gray-200 px-4 py-2.5 pe-10 shadow-sm sm:text-sm"
         value={searchValue}
         onChange={updateSearchValue}
         onKeyDown={(e) => {
@@ -110,7 +110,7 @@ function SearchUsersResults({
         <span className="text-slate-600 font-bold text-sm sm:text-base">
           Search Results
         </span>
-        <div className="max-h-[40vh] overflow-y-auto overflow-x-auto border border-gray-200 rounded-lg shadow-sm">
+        <div className="max-h-[40vh] overflow-y-auto overflow-x-auto border border-gray-200 rounded-lg shadow-xs">
           <table className="min-w-full divide-y-2 divide-gray-200 bg-white text-xs sm:text-sm">
             <thead className="text-left sticky top-0 z-10 bg-white border-b-2 border-gray-200">
               <tr>
@@ -150,12 +150,12 @@ function SearchUsersResults({
                             .split('/')
                             .slice(-1)[0]
                             .slice(0, -4)}
-                          className="h-6 w-6 sm:h-8 sm:w-8 rounded-full flex-shrink-0"
+                          className="h-6 w-6 sm:h-8 sm:w-8 rounded-full shrink-0"
                           src={user.profile_url}
                         />
                       ) : (
                         <div
-                          className="flex items-center justify-center h-6 w-6 sm:h-8 sm:w-8 gap-1 text-white text-xs sm:text-sm rounded-full flex-shrink-0"
+                          className="flex items-center justify-center h-6 w-6 sm:h-8 sm:w-8 gap-1 text-white text-xs sm:text-sm rounded-full shrink-0"
                           style={generateRandomProfileColor(
                             user.first_name + ' ' + user.last_name
                           )}
@@ -184,7 +184,7 @@ function SearchUsersResults({
                             type="checkbox"
                             value={user.id}
                             checked={user.checked}
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 touch-manipulation"
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 focus:ring-2 touch-manipulation"
                             onChange={(e) => {
                               const updatedSearchResults = searchResults.map(
                                 (user) => {

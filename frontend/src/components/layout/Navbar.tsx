@@ -48,7 +48,7 @@ export default function Navbar() {
         <>
           <div className="mx-auto px-2 sm:px-6 lg:px-8">
             <div className="relative flex h-16 items-center justify-between">
-              <div className="w-full flex flex-shrink-0 items-center justify-center md:hidden">
+              <div className="w-full flex shrink-0 items-center justify-center md:hidden">
                 <Link to="/">
                   <img
                     className="max-h-8 max-w-full h-auto object-contain"
@@ -99,7 +99,7 @@ export default function Navbar() {
                                   'rounded-md px-3 py-2 text-md text-white visited:text-white',
                                   location.pathname === item.href
                                     ? 'font-semibold'
-                                    : 'hover:[text-shadow:_0px_8px_16px_rgb(0_0_0_/_70%)]'
+                                    : 'hover:[text-shadow:0px_8px_16px_rgb(0_0_0/70%)]'
                                 )}
                                 aria-current={
                                   location.pathname === item.href
@@ -167,7 +167,7 @@ export default function Navbar() {
                         leaveFrom="transform opacity-100 scale-100"
                         leaveTo="transform opacity-0 scale-95"
                       >
-                        <MenuItems className="absolute right-0 z-50 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                        <MenuItems className="absolute right-0 z-50 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-hidden">
                           <MenuItem>
                             {({ focus }) => (
                               <Link
@@ -241,7 +241,7 @@ export default function Navbar() {
                         as="a"
                         href={item.href}
                         className={clsx(
-                          'block rounded-md px-3 py-2 text-white visited:text-white hover:[text-shadow:_0px_8px_16px_rgb(0_0_0_/_70%)]',
+                          'block rounded-md px-3 py-2 text-white visited:text-white hover:[text-shadow:0px_8px_16px_rgb(0_0_0/70%)]',
                           location.pathname === item.href
                             ? 'font-semibold'
                             : 'font-normal'

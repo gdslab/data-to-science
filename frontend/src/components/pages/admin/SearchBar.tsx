@@ -18,7 +18,7 @@ export default function SearchBar({
         type="text"
         id="Search"
         placeholder="Search by table by keyword"
-        className="w-full rounded-md border-gray-200 px-4 py-2.5 pe-10 shadow sm:text-sm"
+        className="w-full rounded-md border-gray-200 px-4 py-2.5 pe-10 shadow-sm sm:text-sm"
         value={searchTerm}
         onChange={(e) => updateSearchTerm(e.target.value)}
         onKeyDown={(e) => {

@@ -1,5 +1,5 @@
 import { ErrorMessage, FieldArray, FormikErrors, useFormikContext } from 'formik';
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, ReactElement, useEffect, useState } from 'react';
 import { PencilIcon } from '@heroicons/react/24/outline';
 
 import { NumberField, TextField } from '../../../InputFields';
@@ -14,7 +14,7 @@ function SampleNameFields({
   name: string;
   numOfSamples: number;
 }) {
-  let arr: JSX.Element[] = [];
+  let arr: ReactElement[] = [];
   for (let i = 0; i < numOfSamples; i++) {
     arr.push(
       <div key={`${name}.${i}`} className="shrink-0 w-14 p-1">

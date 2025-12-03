@@ -25,7 +25,7 @@ function getAlertProps(alertType: AlertType) {
       return {
         title: 'Success',
         color: [
-          'rounded border-s-4 border-green-500 bg-green-50 p-4',
+          'rounded-sm border-s-4 border-green-500 bg-green-50 p-4',
           'flex items-center gap-2 text-green-800',
           'text-sm text-green-700',
         ],
@@ -40,7 +40,7 @@ function getAlertProps(alertType: AlertType) {
       return {
         title: 'Info',
         color: [
-          'rounded border-s-4 border-sky-500 bg-sky-50 p-4',
+          'rounded-sm border-s-4 border-sky-500 bg-sky-50 p-4',
           'flex items-center gap-2 text-sky-800',
           'text-sm text-sky-700',
         ],
@@ -55,7 +55,7 @@ function getAlertProps(alertType: AlertType) {
       return {
         title: 'Warning',
         color: [
-          'rounded border-s-4 border-amber-500 bg-amber-50 p-4',
+          'rounded-sm border-s-4 border-amber-500 bg-amber-50 p-4',
           'flex items-center gap-2 text-amber-800',
           'text-sm text-amber-700',
         ],
@@ -70,7 +70,7 @@ function getAlertProps(alertType: AlertType) {
       return {
         title: 'Error',
         color: [
-          'rounded border-s-4 border-red-500 bg-red-50 p-4',
+          'rounded-sm border-s-4 border-red-500 bg-red-50 p-4',
           'flex items-center gap-2 text-red-800',
           'text-sm text-red-700',
         ],
@@ -85,7 +85,7 @@ function getAlertProps(alertType: AlertType) {
       return {
         title: 'Please read',
         color: [
-          'rounded border-s-4 border-neutral-500 bg-neutral-50 p-4',
+          'rounded-sm border-s-4 border-neutral-500 bg-neutral-50 p-4',
           'flex items-center gap-2 text-neutral-800',
           'text-sm text-neutral-700',
         ],

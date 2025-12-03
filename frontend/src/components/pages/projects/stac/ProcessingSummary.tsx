@@ -11,7 +11,7 @@ export default function ProcessingSummary({
   const failedItems = allItems.filter((item) => !item.isSuccessful);
 
   return (
-    <div className="mb-4 p-3 bg-gray-100 rounded">
+    <div className="mb-4 p-3 bg-gray-100 rounded-sm">
       <h4 className="font-semibold mb-2">Processing Summary</h4>
       <div className="flex items-center gap-4 text-sm">
         <div className="flex items-center gap-1">
@@ -50,7 +50,7 @@ export default function ProcessingSummary({
         )}
       </div>
       {failedItems.length > 0 && (
-        <p className="text-yellow-700 text-sm mt-2 bg-yellow-50 p-2 rounded">
+        <p className="text-yellow-700 text-sm mt-2 bg-yellow-50 p-2 rounded-sm">
           ⚠️ Some items failed to process. They will not be included in the
           published STAC catalog. Please review the error details below.
         </p>

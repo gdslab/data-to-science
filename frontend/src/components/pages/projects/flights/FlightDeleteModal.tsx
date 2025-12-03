@@ -32,7 +32,7 @@ export default function FlightDeleteModal({
             className="flex items-center text-sky-600 cursor-pointer"
             onClick={() => setOpenConfirmationPopup(true)}
           >
-            <div className="rounded-full accent3 p-1 focus:outline-none">
+            <div className="rounded-full accent3 p-1 focus:outline-hidden">
               <TrashIcon className="w-4 h-4" />
             </div>
             <span>Delete</span>

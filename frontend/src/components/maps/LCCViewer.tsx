@@ -400,13 +400,13 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
         <div className="flex gap-2">
           <button
             onClick={() => setDroneVisible(!droneVisible)}
-            className="cursor-pointer rounded border border-white/30 bg-black/70 px-4 py-2 text-sm font-medium text-white"
+            className="cursor-pointer rounded-sm border border-white/30 bg-black/70 px-4 py-2 text-sm font-medium text-white"
           >
             {droneVisible ? 'Hide Drone' : 'Show Drone'}
           </button>
           <button
             onClick={() => setShowControls(!showControls)}
-            className="cursor-pointer rounded border border-white/30 bg-black/70 px-4 py-2 text-sm font-medium text-white"
+            className="cursor-pointer rounded-sm border border-white/30 bg-black/70 px-4 py-2 text-sm font-medium text-white"
           >
             {showControls ? 'Hide Controls' : 'Show Controls'}
           </button>
@@ -420,7 +420,7 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
         </div>
       )}
       {isLoading && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-black/55 to-black/35 text-white">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-linear-to-b from-black/55 to-black/35 text-white">
           <LoadingBars />
           <div className="text-sm opacity-90">
             Loading LCC scene... {Math.round(progress * 100)}%

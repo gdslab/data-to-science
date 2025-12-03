@@ -327,7 +327,7 @@ export default function MetashapeForm({
                 id="advancedSettings"
                 checked={showAdvancedSettings}
                 onChange={(e) => setShowAdvancedSettings(e.target.checked)}
-                className="h-4 w-4 text-accent2 focus:ring-accent2 border-gray-300 rounded"
+                className="h-4 w-4 text-accent2 focus:ring-accent2 border-gray-300 rounded-sm"
               />
               <label
                 htmlFor="advancedSettings"
@@ -344,7 +344,7 @@ export default function MetashapeForm({
                   type="checkbox"
                   id="disclaimer"
                   {...methods.register('disclaimer')}
-                  className="h-4 w-4 text-accent2 focus:ring-accent2 border-gray-300 rounded"
+                  className="h-4 w-4 text-accent2 focus:ring-accent2 border-gray-300 rounded-sm"
                 />
                 <label
                   htmlFor="disclaimer"
@@ -354,7 +354,7 @@ export default function MetashapeForm({
                 </label>
               </div>
               <button
-                className="w-32 bg-accent2/90 text-white font-semibold py-1 rounded enabled:hover:bg-accent2 disabled:opacity-75 disabled:cursor-not-allowed"
+                className="w-32 bg-accent2/90 text-white font-semibold py-1 rounded-sm enabled:hover:bg-accent2 disabled:opacity-75 disabled:cursor-not-allowed"
                 type="submit"
               >
                 Submit Job

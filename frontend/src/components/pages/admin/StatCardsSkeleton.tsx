@@ -1,9 +1,9 @@
 function StatCardSkeleton() {
   return (
     <div className="min-h-[140px] min-w-64 flex flex-col items-center rounded-lg bg-blue-50 px-4 py-8 text-center shadow-md animate-pulse">
-      <div className="h-12 w-1/4 text-center bg-gray-300 rounded mb-2"></div>
+      <div className="h-12 w-1/4 text-center bg-gray-300 rounded-sm mb-2"></div>
 
-      <div className="h-6 w-1/2 bg-gray-300 rounded mb-2"></div>
+      <div className="h-6 w-1/2 bg-gray-300 rounded-sm mb-2"></div>
     </div>
   );
 }
@@ -12,8 +12,8 @@ function StatStorageCardSkeleton() {
   return (
     <div className="min-h-[140px] min-w-64 flex flex-col items-center rounded-lg bg-blue-50 px-4 py-8 text-center shadow-md animate-pulse">
       <div className="h-4 w-full bg-gray-300 rounded-full mb-4"></div>
-      <div className="h-6 w-1/2 bg-gray-300 rounded mb-2"></div>
-      <div className="h-4 w-full bg-gray-300 rounded mb-2"></div>
+      <div className="h-6 w-1/2 bg-gray-300 rounded-sm mb-2"></div>
+      <div className="h-4 w-full bg-gray-300 rounded-sm mb-2"></div>
     </div>
   );
 }

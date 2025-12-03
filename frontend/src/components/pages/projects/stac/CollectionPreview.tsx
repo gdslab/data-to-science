@@ -11,7 +11,7 @@ export default function CollectionPreview({
   project,
 }: CollectionPreviewProps) {
   return (
-    <div className="mb-4 p-3 bg-white rounded border border-gray-200 shadow-sm">
+    <div className="mb-4 p-3 bg-white rounded-sm border border-gray-200 shadow-xs">
       <h4 className="font-semibold mb-2">Collection</h4>
       <div className="ml-4">
         <p>

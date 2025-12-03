@@ -94,7 +94,7 @@ export default function MoveFlightModal({
           className="flex items-center text-sky-600 cursor-pointer"
           onClick={() => setOpen(true)}
         >
-          <div className="rounded-full accent3 p-1 focus:outline-none">
+          <div className="rounded-full accent3 p-1 focus:outline-hidden">
             <FolderIcon className="w-4 h-4" />
           </div>
           <span>Move</span>

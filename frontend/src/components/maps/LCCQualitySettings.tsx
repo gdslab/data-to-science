@@ -8,9 +8,9 @@ export default function LCCQualitySettings({
   setQuality,
 }: LCCQualitySettingsProps) {
   return (
-    <div className="flex items-center gap-2 rounded border border-white/30 bg-black/70 px-3 py-2">
+    <div className="flex items-center gap-2 rounded-sm border border-white/30 bg-black/70 px-3 py-2">
       <span className="text-sm font-medium text-white">Quality:</span>
-      <div className="flex overflow-hidden rounded border border-white/30">
+      <div className="flex overflow-hidden rounded-sm border border-white/30">
         <button
           onClick={() => setQuality('very-low')}
           className={`px-2 py-1 text-xs font-medium transition-colors ${
