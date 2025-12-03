@@ -6,7 +6,7 @@ import Modal from '../../../../Modal';
 import { DataProduct } from '../../Project';
 import { useProjectContext } from '../../ProjectContext';
 import ShareControls from '../../../../maps/RasterSymbologySettings/RasterSymbologyAccessControls';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 
 export default function DataProductShareModal({
   dataProduct,

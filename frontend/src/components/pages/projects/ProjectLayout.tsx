@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router';
 
 import ProjectBreadcrumbs from './Breadcrumbs';
 import ProjectContextProvider from './ProjectContext';

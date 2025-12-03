@@ -5,7 +5,7 @@ import {
   useLoaderData,
   useNavigate,
   useParams,
-} from 'react-router-dom';
+} from 'react-router';
 
 import { Status } from '../../../Alert';
 import { FieldCampaign } from '../Project';

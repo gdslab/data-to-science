@@ -1,6 +1,6 @@
 import { AxiosResponse } from 'axios';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 
 import { DataProduct } from '../pages/projects/Project';
 import { AlertBar, Status } from '../Alert';

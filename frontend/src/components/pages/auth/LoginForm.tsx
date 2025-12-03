@@ -6,7 +6,7 @@ import {
   useLocation,
   useNavigate,
   useSearchParams,
-} from 'react-router-dom';
+} from 'react-router';
 import { yupResolver } from '@hookform/resolvers/yup';
 
 import Alert, { Status } from '../../Alert';

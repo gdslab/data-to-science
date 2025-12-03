@@ -5,7 +5,7 @@ import {
   useLoaderData,
   useNavigate,
   useRevalidator,
-} from 'react-router-dom';
+} from 'react-router';
 
 import AuthContext from '../../../AuthContext';
 import { Button } from '../../Buttons';

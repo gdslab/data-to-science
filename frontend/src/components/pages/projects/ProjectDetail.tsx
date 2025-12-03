@@ -1,6 +1,6 @@
 import { AxiosResponse } from 'axios';
 import { useEffect } from 'react';
-import { Params, useLoaderData } from 'react-router-dom';
+import { Params, useLoaderData } from 'react-router';
 
 import { User } from '../../../AuthContext';
 import { useProjectContext } from './ProjectContext';

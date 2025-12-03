@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react';
-import { NavigateFunction, useNavigate } from 'react-router-dom';
+import { NavigateFunction, useNavigate } from 'react-router';
 import {
   ArrowDownTrayIcon,
   CheckCircleIcon,

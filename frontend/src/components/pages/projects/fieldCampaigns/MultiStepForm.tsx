@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { Form, Formik } from 'formik';
 import React, { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router';
 import * as Yup from 'yup';
 
 import Alert from '../../../Alert';

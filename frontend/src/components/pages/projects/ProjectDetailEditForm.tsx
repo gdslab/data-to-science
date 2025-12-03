@@ -1,6 +1,6 @@
 import { Form, Formik } from 'formik';
 import { useState } from 'react';
-import { useRevalidator } from 'react-router-dom';
+import { useRevalidator } from 'react-router';
 import { MapIcon } from '@heroicons/react/24/outline';
 
 import Alert from '../../Alert';

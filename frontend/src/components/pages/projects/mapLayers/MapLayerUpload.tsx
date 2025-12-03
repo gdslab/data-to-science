@@ -1,6 +1,6 @@
 import { isAxiosError, AxiosResponse } from 'axios';
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 import Alert, { Status } from '../../../Alert';

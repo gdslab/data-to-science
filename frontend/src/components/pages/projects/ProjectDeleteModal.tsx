@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { AlertBar, Status } from '../../Alert';
 import { Button } from '../../Buttons';

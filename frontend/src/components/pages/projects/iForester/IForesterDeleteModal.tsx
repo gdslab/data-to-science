@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { TrashIcon } from '@heroicons/react/24/outline';
 
 import { AlertBar, Status } from '../../../Alert';

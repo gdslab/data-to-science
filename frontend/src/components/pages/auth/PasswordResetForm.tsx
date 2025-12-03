@@ -1,7 +1,7 @@
 import { isAxiosError } from 'axios';
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router';
 import { yupResolver } from '@hookform/resolvers/yup';
 
 import Alert, { Status } from '../../Alert';

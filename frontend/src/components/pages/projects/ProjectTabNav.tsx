@@ -1,6 +1,6 @@
 import { AxiosResponse, isAxiosError } from 'axios';
 import { useEffect, useState } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 
 import { LinkButton } from '../../Buttons';

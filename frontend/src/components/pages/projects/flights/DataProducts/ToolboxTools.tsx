@@ -2,7 +2,7 @@ import { AxiosResponse } from 'axios';
 import { Field, useFormikContext } from 'formik';
 import Papa from 'papaparse';
 import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 
 import HintText from '../../../../HintText';
 import { SelectField } from '../../../../InputFields';

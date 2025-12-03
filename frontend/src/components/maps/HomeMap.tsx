@@ -4,7 +4,7 @@ import { Feature } from 'geojson';
 import maplibregl from 'maplibre-gl';
 import { useEffect, useMemo, useState } from 'react';
 import Map, { NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 
 import ColorBarControl from './ColorBarControl';
 import GeocoderControl from './GeocoderControl';

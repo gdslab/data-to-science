@@ -1,6 +1,6 @@
 import { AxiosResponse, isAxiosError } from 'axios';
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 
 import { AlertBar } from '../../Alert';
 import Table, { TableBody, TableHead } from '../../Table';

@@ -5,7 +5,7 @@ import Map, {
   NavigationControl,
   ScaleControl,
 } from 'react-map-gl/maplibre';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 
 import { AlertBar, Status } from '../Alert';
 import ColorBarControl from './ColorBarControl';

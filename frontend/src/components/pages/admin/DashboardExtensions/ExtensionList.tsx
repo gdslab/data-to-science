@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useRevalidator } from 'react-router-dom';
+import { useRevalidator } from 'react-router';
 
 import { Status } from '../../../Alert';
 

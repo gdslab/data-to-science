@@ -1,7 +1,7 @@
 import { AxiosResponse, isAxiosError } from 'axios';
 import { useEffect, useState } from 'react';
 import Select from 'react-select';
-import { useRevalidator } from 'react-router-dom';
+import { useRevalidator } from 'react-router';
 import { FolderIcon } from '@heroicons/react/24/outline';
 
 import { AlertBar, Status } from '../../../Alert';

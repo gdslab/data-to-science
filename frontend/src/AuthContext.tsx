@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { ReactNode, createContext, useContext, useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router';
 
 interface Login {
   username: string;

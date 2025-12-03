@@ -1,6 +1,6 @@
 import { isAxiosError } from 'axios';
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { useState } from 'react';
 import { yupResolver } from '@hookform/resolvers/yup';
 

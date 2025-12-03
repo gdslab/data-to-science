@@ -1,7 +1,7 @@
 import { isAxiosError } from 'axios';
 import clsx from 'clsx';
 import { useContext, useMemo, useState } from 'react';
-import { useLoaderData, useParams, useRevalidator } from 'react-router-dom';
+import { useLoaderData, useParams, useRevalidator } from 'react-router';
 
 import Alert, { Status } from '../../Alert';
 import AuthContext from '../../../AuthContext';

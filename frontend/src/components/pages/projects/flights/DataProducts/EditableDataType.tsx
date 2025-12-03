@@ -1,6 +1,6 @@
 import { AxiosResponse, isAxiosError } from 'axios';
 import { useState } from 'react';
-import { useParams, useRevalidator } from 'react-router-dom';
+import { useParams, useRevalidator } from 'react-router';
 import Createable from 'react-select/creatable';
 import { CheckIcon, PencilIcon, XMarkIcon } from '@heroicons/react/24/outline';
 

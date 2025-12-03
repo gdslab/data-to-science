@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { PencilIcon } from '@heroicons/react/24/outline';
 
 import { Button } from '../../Buttons';

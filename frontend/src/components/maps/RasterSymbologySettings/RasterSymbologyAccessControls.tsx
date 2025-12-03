@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 
 import Alert, { Status } from '../../Alert';

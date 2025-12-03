@@ -1,5 +1,5 @@
 import { AxiosResponse } from 'axios';
-import { useLoaderData } from 'react-router-dom';
+import { useLoaderData } from 'react-router';
 import { ResponsiveCalendar } from '@nivo/calendar';
 import { ResponsiveLine } from '@nivo/line';
 

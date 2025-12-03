@@ -1,6 +1,6 @@
 import { AxiosResponse, isAxiosError } from 'axios';
 import { useContext, useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router';
 import { CheckIcon } from '@heroicons/react/24/outline';
 
 import { AlertBar } from '../../Alert';

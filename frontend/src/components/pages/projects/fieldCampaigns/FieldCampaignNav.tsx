@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router';
 
 import { Button } from '../../../Buttons';
 import { ActiveStep } from './FieldCampaign';

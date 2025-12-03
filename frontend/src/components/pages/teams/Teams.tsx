@@ -7,7 +7,7 @@ import {
   useNavigate,
   useParams,
   useRevalidator,
-} from 'react-router-dom';
+} from 'react-router';
 import { PlusCircleIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 
 import TeamSearch from './TeamSearch';

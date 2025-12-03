@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useForm, FormProvider, SubmitHandler } from 'react-hook-form';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { yupResolver } from '@hookform/resolvers/yup';
 
 import BreedBaseStudies from './BreedBaseStudies';

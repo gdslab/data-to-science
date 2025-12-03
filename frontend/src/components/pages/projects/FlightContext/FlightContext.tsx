@@ -1,6 +1,6 @@
 import { AxiosResponse, isAxiosError } from 'axios';
 import { createContext, useContext, useEffect, useReducer } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 
 import { FlightAction } from './actions';
 import { flightReducer } from './reducers';

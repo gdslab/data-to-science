@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, useRevalidator } from 'react-router-dom';
+import { useParams, useRevalidator } from 'react-router';
 
 import { DataProduct } from '../../Project';
 import { Button } from '../../../../Buttons';

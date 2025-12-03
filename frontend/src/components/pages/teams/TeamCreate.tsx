@@ -6,7 +6,7 @@ import {
   useLoaderData,
   useNavigate,
   useRevalidator,
-} from 'react-router-dom';
+} from 'react-router';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 import Alert from '../../Alert';

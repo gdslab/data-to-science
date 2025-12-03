@@ -1,6 +1,6 @@
 import { Form, Formik } from 'formik';
 import { useEffect, useState } from 'react';
-import { useParams, useRevalidator } from 'react-router-dom';
+import { useParams, useRevalidator } from 'react-router';
 import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 
 import Alert, { Status } from '../../../../Alert';

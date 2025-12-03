@@ -1,6 +1,6 @@
 import { AxiosResponse } from 'axios';
 import { Suspense } from 'react';
-import { Await, useLoaderData } from 'react-router-dom';
+import { Await, useLoaderData } from 'react-router';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 import DashboardProjectStorageTable from './DashboardProjectStorageTable';

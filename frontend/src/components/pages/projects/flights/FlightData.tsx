@@ -1,4 +1,4 @@
-import { Params, useLoaderData } from 'react-router-dom';
+import { Params, useLoaderData } from 'react-router';
 
 import FlightDataNav from './FlightDataNav';
 import { useProjectContext } from '../ProjectContext';

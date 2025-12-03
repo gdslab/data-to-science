@@ -1,6 +1,6 @@
 import { isAxiosError } from 'axios';
 import { useEffect, useState } from 'react';
-import { useParams, useRevalidator } from 'react-router-dom';
+import { useParams, useRevalidator } from 'react-router';
 
 import { AlertBar, Status } from '../../../../Alert';
 import { Button } from '../../../../Buttons';

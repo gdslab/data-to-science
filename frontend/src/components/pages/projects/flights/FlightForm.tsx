@@ -5,7 +5,7 @@ import {
   useLoaderData,
   useNavigate,
   useParams,
-} from 'react-router-dom';
+} from 'react-router';
 
 import Alert from '../../../Alert';
 import { Button, OutlineButton } from '../../../Buttons';

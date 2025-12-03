@@ -5,7 +5,7 @@ import {
   isRouteErrorResponse,
   useNavigate,
   useRouteError,
-} from 'react-router-dom';
+} from 'react-router';
 
 export default function ErrorPage() {
   const navigate = useNavigate();

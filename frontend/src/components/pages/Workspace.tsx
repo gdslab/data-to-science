@@ -1,6 +1,6 @@
 import { AxiosResponse, isAxiosError } from 'axios';
 import { useState, useEffect, useTransition } from 'react';
-import { useLoaderData, useRevalidator } from 'react-router-dom';
+import { useLoaderData, useRevalidator } from 'react-router';
 
 import ProjectList from './projects/ProjectList';
 import { ProjectItem } from './projects/Project';

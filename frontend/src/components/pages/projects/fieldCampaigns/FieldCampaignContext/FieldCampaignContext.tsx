@@ -1,6 +1,6 @@
 import { AxiosResponse } from 'axios';
 import { createContext, useContext, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 
 import { FieldCampaign } from '../../Project';
 import { useProjectContext } from '../../ProjectContext';

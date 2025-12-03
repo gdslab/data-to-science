@@ -1,4 +1,4 @@
-import { LoaderFunctionArgs, useLoaderData, useParams } from 'react-router-dom';
+import { LoaderFunctionArgs, useLoaderData, useParams } from 'react-router';
 
 import { ProjectDetail } from '../Project';
 import { STACItem, STACMetadata } from './STACTypes';

@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useRevalidator } from 'react-router-dom';
+import { useRevalidator } from 'react-router';
 import api from '../../../../../api';
 import { Status } from '../../../../Alert';
 import { STACRequestPayload } from '../STACTypes';

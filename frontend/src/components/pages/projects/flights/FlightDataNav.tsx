@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router";
 
 import { useProjectContext } from "../ProjectContext";
 import { classNames, sorter } from "../../../utils";
