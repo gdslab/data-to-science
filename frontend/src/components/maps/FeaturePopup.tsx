@@ -20,9 +20,57 @@ import { isSingleBand } from './utils';
 import { useRasterSymbologyContext } from './RasterSymbologyContext';
 
 type FeaturePopupProps = {
-  popupInfo: PopupInfoProps | { [key: string]: any };
+  popupInfo: PopupInfoProps;
   onClose: () => void;
 };
+
+function FeatureHeader({ feature }: { feature: Feature }) {
+  const attrs = feature.properties;
+
+  if (!attrs) {
+    return <div>No title</div>;
+  }
+
+  return (
+    <div className="flex flex-col">
+      <span className="text-lg font-bold">
+        {feature.properties?.layer_name}
+      </span>
+      {feature.geometry.type === 'Polygon' ? (
+        <span className="text-md text-slate-600">
+          Area: {area(feature).toFixed(2)} m&sup2;
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function FeatureAttributes({ feature }: { feature: Feature }) {
+  const attrs = feature.properties;
+
+  if (!attrs) {
+    return (
+      <div>
+        <span>No attributes</span>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <span className="text-base font-semibold">Attributes</span>
+      <div className="overflow-x-auto rounded-lg border border-gray-200">
+        <StripedTable
+          headers={['Name', 'Value']}
+          values={Object.keys(attrs).map((key) => ({
+            label: key,
+            value: attrs[key],
+          }))}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function FeaturePopup({
   popupInfo,
@@ -35,54 +83,6 @@ export default function FeaturePopup({
   const { state } = useRasterSymbologyContext();
 
   const { symbology } = activeDataProduct ? state[activeDataProduct.id] : {};
-
-  const FeatureHeader = ({ feature }: { feature: Feature }) => {
-    const attrs = feature.properties;
-
-    if (!attrs) {
-      return <div>No title</div>;
-    } else {
-      return (
-        <div className="flex flex-col">
-          <span className="text-lg font-bold">
-            {feature.properties?.layer_name}
-          </span>
-          {feature.geometry.type === 'Polygon' ? (
-            <span className="text-md text-slate-600">
-              Area: {area(feature).toFixed(2)} m&sup2;
-            </span>
-          ) : null}
-        </div>
-      );
-    }
-  };
-
-  const FeatureAttributes = ({ feature }: { feature: Feature }) => {
-    const attrs = feature.properties;
-
-    if (!attrs) {
-      return (
-        <div>
-          <span>No attributes</span>
-        </div>
-      );
-    } else {
-      return (
-        <div>
-          <span className="text-base font-semibold">Attributes</span>
-          <div className="overflow-x-auto rounded-lg border border-gray-200">
-            <StripedTable
-              headers={['Name', 'Value']}
-              values={Object.keys(attrs).map((key) => ({
-                label: key,
-                value: attrs[key],
-              }))}
-            />
-          </div>
-        </div>
-      );
-    }
-  };
 
   async function fetchZonalStatistics(
     dataProductId: string,
@@ -103,7 +103,7 @@ export default function FeaturePopup({
         setStatistics(null);
         setIsCalculatingZonalStats(false);
       }
-    } catch (_err) {
+    } catch {
       console.log('Unable to fetch zonal statistics');
       setStatistics(null);
       setIsCalculatingZonalStats(false);

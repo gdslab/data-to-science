@@ -69,7 +69,7 @@ function ChangePasswordForm({
 }: ChangePasswordForm) {
   useEffect(() => {
     setStatus(null);
-  }, []);
+  }, [setStatus]);
 
   const defaultValues = {
     passwordCurrent: '',
@@ -277,7 +277,7 @@ function EditProfilePicture({ setStatus, updateProfile }: EditProfilePicture) {
                     toggleMenuVisibility(false);
                     updateProfile();
                   }
-                } catch (err) {
+                } catch {
                   setStatus({
                     type: 'error',
                     msg: 'Unable to remove profile picture',
@@ -328,7 +328,7 @@ function APIAccessForm({ setStatus, updateProfile, user }: APIAccessForm) {
         setIsSending(false);
         setStatus({ type: 'error', msg: 'Unable to revoke API key' });
       }
-    } catch (_err) {
+    } catch {
       setIsSending(false);
       setStatus({ type: 'error', msg: 'Unable to revoke API key' });
     }
@@ -352,7 +352,7 @@ function APIAccessForm({ setStatus, updateProfile, user }: APIAccessForm) {
         setIsSending(false);
         setStatus({ type: 'error', msg: 'Unable to get API key' });
       }
-    } catch (_err) {
+    } catch {
       setIsSending(false);
       setStatus({ type: 'error', msg: 'Unable to get API key' });
     }

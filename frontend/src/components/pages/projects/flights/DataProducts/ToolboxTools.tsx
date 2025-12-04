@@ -12,7 +12,6 @@ import { removeKeysFromFeatureProperties } from '../../mapLayers/utils';
 import { useProjectContext } from '../../ProjectContext';
 import { downloadFile as downloadCSV } from '../../fieldCampaigns/utils';
 import { download as downloadGeoJSON } from '../../mapLayers/utils';
-
 import { isElevationDataProduct } from '../../../../maps/utils';
 
 import api from '../../../../../api';
@@ -366,7 +365,7 @@ const DownloadZonalStatistics = ({
             'Unable to check for previously calculated zonal statistics'
           );
         }
-      } catch (_err) {
+      } catch {
         console.log(
           'Unable to check for previously calculated zonal statistics'
         );
@@ -375,7 +374,7 @@ const DownloadZonalStatistics = ({
     if (projectId && flightId && dataProduct.id) {
       fetchZonalStats();
     }
-  }, []);
+  }, [dataProduct.id, layerId, flightId, projectId]);
 
   if (
     !zonalFeatureCollection ||

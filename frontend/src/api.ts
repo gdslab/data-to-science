@@ -11,11 +11,11 @@ const api: AxiosInstance = axios.create({
 
 let isRefreshing = false;
 let failedQueue: Array<{
-  resolve: (value?: any) => void;
-  reject: (error: any) => void;
+  resolve: (value?: unknown) => void;
+  reject: (error: Error) => void;
 }> = [];
 
-const processQueue = (error: any) => {
+const processQueue = (error: Error | null) => {
   failedQueue.forEach((prom) => {
     if (error) prom.reject(error);
     else prom.resolve();
@@ -27,7 +27,9 @@ const processQueue = (error: any) => {
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    const originalRequest = (error.config || {}) as any;
+    const originalRequest = error.config as typeof error.config & {
+      _retry?: boolean;
+    };
 
     // Only try refresh once, and never refresh the refresh endpoint itself
     if (
@@ -85,12 +87,12 @@ export async function refreshTokenIfNeeded(): Promise<boolean> {
       // Simple authenticated request; interceptor will refresh on 401
       await api.post('/auth/test-token');
       return true;
-    } catch (_err) {
+    } catch {
       // Retry once after interceptor attempted refresh
       try {
         await api.post('/auth/test-token');
         return true;
-      } catch (_err2) {
+      } catch {
         // Interceptor should redirect on failure; signal false for callers
         return false;
       }

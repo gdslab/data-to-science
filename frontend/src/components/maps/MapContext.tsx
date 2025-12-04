@@ -354,7 +354,7 @@ export function MapContextProvider({
       if (response) {
         flightsDispatch({ type: 'set', payload: response.data });
       }
-    } catch (err) {
+    } catch {
       console.log('Unable to fetch flights');
     }
   }
@@ -371,7 +371,7 @@ export function MapContextProvider({
     if (activeDataProduct && activeProject) {
       getFlights(activeProject.id);
     }
-  }, [activeDataProduct]);
+  }, [activeDataProduct, activeProject]);
 
   return (
     <MapContext.Provider

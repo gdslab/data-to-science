@@ -3,7 +3,12 @@ import './HomeMap.css';
 import { Feature } from 'geojson';
 import maplibregl from 'maplibre-gl';
 import { useEffect, useMemo, useState } from 'react';
-import Map, { NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
+import Map, {
+  MapLayerMouseEvent,
+  NavigationControl,
+  ScaleControl,
+  ViewStateChangeEvent,
+} from 'react-map-gl/maplibre';
 import { useLocation } from 'react-router';
 
 import ColorBarControl from './ColorBarControl';
@@ -42,9 +47,7 @@ export type PopupInfoProps = {
 export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
   const [activeProjectBBox, setActiveProjectBBox] = useState<BBox | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
-  const [popupInfo, setPopupInfo] = useState<
-    PopupInfoProps | { [key: string]: any } | null
-  >(null);
+  const [popupInfo, setPopupInfo] = useState<PopupInfoProps | null>(null);
   const [config, setConfig] = useState<{ osmLabelFilter?: string } | null>(
     null
   );
@@ -92,9 +95,9 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
     if (activeProject && !isMapReady) {
       setIsMapReady(true);
     }
-  }, [activeProject]);
+  }, [activeProject, isMapReady]);
 
-  const handleMapClick = (event) => {
+  const handleMapClick = (event: MapLayerMouseEvent) => {
     const map: maplibregl.Map = event.target;
 
     if (map.getLayer('unclustered-point')) {
@@ -143,7 +146,7 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
     }
   };
 
-  const handleMoveEnd = (event) => {
+  const handleMoveEnd = (event: ViewStateChangeEvent) => {
     if (!projects?.length) return;
 
     const mapInstance = event.target;

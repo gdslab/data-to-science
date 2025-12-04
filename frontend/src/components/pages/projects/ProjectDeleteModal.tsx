@@ -9,7 +9,11 @@ import { ProjectDetail } from './Project';
 
 import api from '../../../api';
 
-export default function ProjectDeleteModal({ project }: { project: ProjectDetail }) {
+export default function ProjectDeleteModal({
+  project,
+}: {
+  project: ProjectDetail;
+}) {
   const [openConfirmationPopup, setOpenConfirmationPopup] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
   const navigate = useNavigate();
@@ -48,7 +52,7 @@ export default function ProjectDeleteModal({ project }: { project: ProjectDetail
                   msg: 'Unable to deactivate project',
                 });
               }
-            } catch (err) {
+            } catch {
               setOpenConfirmationPopup(false);
               setStatus({
                 type: 'error',

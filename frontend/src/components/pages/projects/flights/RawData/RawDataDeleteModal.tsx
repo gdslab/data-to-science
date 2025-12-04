@@ -84,7 +84,7 @@ export default function RawDataDeleteModal({
                   msg: 'Unable to deactivate raw data',
                 });
               }
-            } catch (err) {
+            } catch {
               setOpenConfirmationPopup(false);
               setStatus({
                 type: 'error',

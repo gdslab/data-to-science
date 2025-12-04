@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Map, { MapRef, NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
-// import { bbox } from '@turf/bbox';
+import Map, {
+  MapRef,
+  NavigationControl,
+  ScaleControl,
+} from 'react-map-gl/maplibre';
 
 import ColorBarControl from '../ColorBarControl';
 import CompareMapControl from './CompareMapControl';
@@ -9,7 +12,6 @@ import ProjectBoundary from '../ProjectBoundary';
 import { useMapContext } from '../MapContext';
 import { useMapApiKeys } from '../MapApiKeysContext';
 import ProjectRasterTiles from '../ProjectRasterTiles';
-import { DataProduct } from '../../pages/projects/Project';
 import { useRasterSymbologyContext } from '../RasterSymbologyContext';
 
 import { BBox } from '../Maps';
@@ -103,23 +105,23 @@ export default function CompareMap() {
     };
   }, [width, mode]);
 
-  const getDataProduct = (side: 'left' | 'right'): DataProduct | null => {
-    return (
-      flights
-        .find(({ id }) => id === mapComparisonState[side]?.flightId)
-        ?.data_products.find(
-          ({ id }) => id === mapComparisonState[side]?.dataProductId
-        ) || null
-    );
-  };
-
   const selectedLeftDataProduct = useMemo(
-    () => getDataProduct('left'),
+    () =>
+      flights
+        .find(({ id }) => id === mapComparisonState.left?.flightId)
+        ?.data_products.find(
+          ({ id }) => id === mapComparisonState.left?.dataProductId
+        ) || null,
     [flights, mapComparisonState.left]
   );
 
   const selectedRightDataProduct = useMemo(
-    () => getDataProduct('right'),
+    () =>
+      flights
+        .find(({ id }) => id === mapComparisonState.right?.flightId)
+        ?.data_products.find(
+          ({ id }) => id === mapComparisonState.right?.dataProductId
+        ) || null,
     [flights, mapComparisonState.right]
   );
 
@@ -155,7 +157,7 @@ export default function CompareMap() {
         payload: true,
       });
     }
-  }, [selectedLeftDataProduct]);
+  }, [dispatch, selectedLeftDataProduct]);
 
   useEffect(() => {
     if (selectedRightDataProduct) {
@@ -188,7 +190,7 @@ export default function CompareMap() {
         payload: true,
       });
     }
-  }, [selectedRightDataProduct]);
+  }, [dispatch, selectedRightDataProduct]);
 
   const mapStyle = useMemo(() => {
     return mapboxAccessToken

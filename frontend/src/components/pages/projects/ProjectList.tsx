@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import LoadingBars from '../../LoadingBars';
 import Filter from '../../Filter';
@@ -42,16 +42,48 @@ export default function ProjectList({
 
   const MAX_ITEMS = 12;
 
+  /**
+   * Filters projects by search text.
+   * @param projs Projects to filter.
+   * @returns
+   */
+  const filterSearch = useCallback(
+    (projs: ProjectItem[]) => {
+      return projs.filter(
+        (project) =>
+          !project.title ||
+          project.title.toLowerCase().includes(searchText.toLowerCase()) ||
+          project.description.toLowerCase().includes(searchText.toLowerCase())
+      );
+    },
+    [searchText]
+  );
+
+  /**
+   * Filters projects by search text and limits to current page.
+   * @param projs Projects to filter.
+   * @returns Array of filtered and sliced projects.
+   */
+  const filterAndSlice = useCallback(
+    (projs: ProjectItem[]): ProjectItem[] => {
+      return filterSearch(projs).slice(
+        currentPage * MAX_ITEMS,
+        MAX_ITEMS + currentPage * MAX_ITEMS
+      );
+    },
+    [currentPage, filterSearch]
+  );
+
   useEffect(() => {
     locationDispatch({ type: 'clear', payload: null });
     projectDispatch({ type: 'clear', payload: null });
-  }, [project]);
+  }, [locationDispatch, project, projectDispatch]);
 
   useEffect(() => {
     if (projects && filterAndSlice(projects).length < MAX_ITEMS) {
       setCurrentPage(0);
     }
-  }, [searchText]);
+  }, [filterAndSlice, projects]);
 
   /**
    * Updates the current search text.
@@ -79,32 +111,6 @@ export default function ProjectList({
     } else {
       setCurrentPage(newPage);
     }
-  }
-
-  /**
-   * Filters projects by search text.
-   * @param projs Projects to filter.
-   * @returns
-   */
-  function filterSearch(projs: ProjectItem[]) {
-    return projs.filter(
-      (project) =>
-        !project.title ||
-        project.title.toLowerCase().includes(searchText.toLowerCase()) ||
-        project.description.toLowerCase().includes(searchText.toLowerCase())
-    );
-  }
-
-  /**
-   * Filters projects by search text and limits to current page.
-   * @param projs Projects to filter.
-   * @returns Array of filtered and sliced projects.
-   */
-  function filterAndSlice(projs: ProjectItem[]): ProjectItem[] {
-    return filterSearch(projs).slice(
-      currentPage * MAX_ITEMS,
-      MAX_ITEMS + currentPage * MAX_ITEMS
-    );
   }
 
   const filteredProjects = useMemo(() => {
@@ -143,7 +149,7 @@ export default function ProjectList({
       filteredProjects
         ? filterAndSlice(sortProjects(filteredProjects, sortSelection))
         : [],
-    [currentPage, filteredProjects, searchText, sortSelection]
+    [filterAndSlice, filteredProjects, sortSelection]
   );
 
   const TOTAL_PAGES = Math.ceil(

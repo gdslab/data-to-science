@@ -68,12 +68,12 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
         })
         .catch((err) => setStatus({ type: 'error', msg: err.message }));
     }
-  }, [projectRole]);
+  }, [flightId, projectId, projectRole]);
 
   useEffect(() => {
     // check for new raw data when upload modal closes
     if (!open) revalidator.revalidate();
-  }, [open]);
+  }, [open, revalidator]);
 
   // check for new raw data and initial processing progress on regular intervals
   useInterval(
@@ -100,7 +100,7 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
             status.rawDataId
           )
             .then((progress) => {
-              let updatedJobProgress = [...imageProcessingJobStatus];
+              const updatedJobProgress = [...imageProcessingJobStatus];
               const jobIndex = updatedJobProgress.findIndex(
                 (job) => job.rawDataId === status.rawDataId
               );

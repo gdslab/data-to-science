@@ -25,7 +25,11 @@ export default function RasterSymbologySettings() {
     if (!activeDataProduct) return;
 
     // data product changing - remove current symbology
-    dispatch({ type: 'SET_SYMBOLOGY', rasterId: activeDataProduct.id, payload: null });
+    dispatch({
+      type: 'SET_SYMBOLOGY',
+      rasterId: activeDataProduct.id,
+      payload: null,
+    });
 
     const { stac_properties, user_style } = activeDataProduct;
 
@@ -65,7 +69,7 @@ export default function RasterSymbologySettings() {
       rasterId: activeDataProduct.id,
       payload: true,
     });
-  }, [activeDataProduct]);
+  }, [activeDataProduct, dispatch, state]);
 
   if (
     !activeDataProduct ||

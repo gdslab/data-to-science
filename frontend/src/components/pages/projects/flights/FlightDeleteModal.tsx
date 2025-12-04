@@ -80,7 +80,7 @@ export default function FlightDeleteModal({
                   msg: 'Unable to deactivate flight',
                 });
               }
-            } catch (err) {
+            } catch {
               setOpenConfirmationPopup(false);
               setStatus({
                 type: 'error',

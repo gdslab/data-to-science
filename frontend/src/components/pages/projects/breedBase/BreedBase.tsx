@@ -37,14 +37,14 @@ export default function BreedBase() {
 
   useEffect(() => {
     fetchBreedbaseStudies();
-  }, []);
+  }, [fetchBreedbaseStudies]);
 
   // Fetch study details when breedbaseStudies change
   useEffect(() => {
     breedbaseStudies.forEach((study) => {
       fetchStudyDetails(study.base_url, study.study_id);
     });
-  }, [breedbaseStudies]);
+  }, [breedbaseStudies, fetchStudyDetails]);
 
   // Set default breedbaseUrl based on existing studies
   useEffect(() => {

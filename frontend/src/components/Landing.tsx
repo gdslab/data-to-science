@@ -14,7 +14,8 @@ export default function Landing() {
     if (user) {
       navigate('/home');
     }
-  }, []);
+  }, [navigate, user]);
+
   return !user ? (
     <div className="grid grid-flow-row auto-rows-max">
       {/* video pane */}

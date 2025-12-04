@@ -13,6 +13,7 @@ import api from '../../../../api';
 
 export default function MapLayerUpload() {
   const [isUploading, setIsUploading] = useState(false);
+  // eslint-disable-next-line react-hooks/purity
   const [mlFileInputKey, setMLFileInputKey] = useState(Date.now());
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);

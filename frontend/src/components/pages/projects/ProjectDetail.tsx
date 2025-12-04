@@ -4,7 +4,12 @@ import { Params, useLoaderData } from 'react-router';
 
 import { User } from '../../../AuthContext';
 import { useProjectContext } from './ProjectContext';
-import { Flight, type ProjectDetail, ProjectLoaderData, ProjectModule } from './Project';
+import {
+  Flight,
+  type ProjectDetail,
+  ProjectLoaderData,
+  ProjectModule,
+} from './Project';
 import { ProjectMember } from './ProjectAccess';
 import ProjectDetailEditForm from './ProjectDetailEditForm';
 import ProjectTabNav from './ProjectTabNav';
@@ -60,7 +65,7 @@ export async function loader({ params }: { params: Params<string> }) {
         teams: [],
       };
     }
-  } catch (err) {
+  } catch {
     return {
       project: null,
       project_modules: [],
@@ -87,25 +92,29 @@ export default function ProjectDetail() {
     projectRoleDispatch,
   } = useProjectContext();
 
-  useEffect(() => {
-    if (role) projectRoleDispatch({ type: 'set', payload: role });
-  }, [role]);
+  const projectId = project.id;
+  const teamId = project.team_id;
 
   useEffect(() => {
-    // @ts-ignore
+    if (role) projectRoleDispatch({ type: 'set', payload: role });
+  }, [projectRoleDispatch, role]);
+
+  useEffect(() => {
     if (project) projectDispatch({ type: 'set', payload: project });
-  }, [project]);
+  }, [project, projectDispatch]);
 
   useEffect(() => {
     // update project members if team changes
-    if (project) getProjectMembers(project.id, projectMembersDispatch);
-  }, [project.team_id]);
+    if (!projectId || !teamId) return;
+
+    getProjectMembers(projectId, projectMembersDispatch);
+  }, [projectId, projectMembersDispatch, teamId]);
 
   useEffect(() => {
     // update project modules
     if (project)
       projectModulesDispatch({ type: 'set', payload: project_modules });
-  }, [project, project_modules]);
+  }, [project, project_modules, projectModulesDispatch]);
 
   useEffect(() => {
     if (flights) flightsDispatch({ type: 'set', payload: flights });
@@ -137,7 +146,13 @@ export default function ProjectDetail() {
         }
       }
     }
-  }, [flights]);
+  }, [
+    flights,
+    flightsDispatch,
+    flightsFilterSelection,
+    flightsFilterSelectionDispatch,
+    flightsPrev,
+  ]);
 
   if (project) {
     return (
@@ -151,7 +166,8 @@ export default function ProjectDetail() {
             </span>
             {project.created_by && (
               <span className="block text-sm text-gray-500">
-                Created by: {project.created_by.first_name} {project.created_by.last_name}
+                Created by: {project.created_by.first_name}{' '}
+                {project.created_by.last_name}
               </span>
             )}
             <span className="block my-1 mx-0 text-gray-600 text-wrap break-all">

@@ -80,34 +80,32 @@ function FieldTimepoints({
               title="Download template"
               onClick={() => {
                 async function fetchCsvTemplate() {
-                  try {
-                    const data = {
-                      timepoints: [
-                        {
-                          treatment: treatmentIdx,
-                          measurement: measurementIdx,
-                          timepoint: timepointIdx,
-                        },
-                      ],
-                    };
-                    const response: AxiosResponse<Blob> = await api.post(
-                      `/projects/${projectId}/campaigns/${campaignId}/download`,
-                      data,
-                      { responseType: 'blob' }
+                  const data = {
+                    timepoints: [
+                      {
+                        treatment: treatmentIdx,
+                        measurement: measurementIdx,
+                        timepoint: timepointIdx,
+                      },
+                    ],
+                  };
+                  const response: AxiosResponse<Blob> = await api.post(
+                    `/projects/${projectId}/campaigns/${campaignId}/download`,
+                    data,
+                    { responseType: 'blob' }
+                  );
+                  if (response.status === 200) {
+                    // get blob from response data
+                    const blob = new Blob([response.data], {
+                      type: response.headers['content-type'],
+                    });
+                    // get filename from content-disposition header
+                    const filename = getFilenameFromContentDisposition(
+                      response.headers['content-disposition']
                     );
-                    if (response.status === 200) {
-                      // get blob from response data
-                      const blob = new Blob([response.data], {
-                        type: response.headers['content-type'],
-                      });
-                      // get filename from content-disposition header
-                      const filename = getFilenameFromContentDisposition(
-                        response.headers['content-disposition']
-                      );
-                      // download file
-                      downloadFile(blob, filename ? filename : 'template.csv');
-                    }
-                  } catch {}
+                    // download file
+                    downloadFile(blob, filename ? filename : 'template.csv');
+                  }
                 }
                 fetchCsvTemplate();
               }}
@@ -227,7 +225,7 @@ export default function FieldCampaignTable() {
 
   useEffect(() => {
     resetSelectedTimepoints();
-  }, [fieldCampaign]);
+  }, [fieldCampaign, resetSelectedTimepoints]);
 
   if (fieldCampaign) {
     return (
@@ -256,7 +254,7 @@ export default function FieldCampaignTable() {
             <button
               className="bg-primary/90 hover:bg-primary text-white font-semibold py-1.5 px-4 rounded-sm"
               onClick={() => {
-                let allTimepoints: string[] = [];
+                const allTimepoints: string[] = [];
                 for (
                   let treatmentIdx = 0;
                   treatmentIdx < fieldCampaign.form_data.treatments.length;

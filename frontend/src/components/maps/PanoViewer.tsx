@@ -1,11 +1,5 @@
 import { useEffect, useRef } from 'react';
 
-declare global {
-  interface Window {
-    pannellum: any;
-  }
-}
-
 interface PanoViewerProps {
   imageUrl: string;
 }

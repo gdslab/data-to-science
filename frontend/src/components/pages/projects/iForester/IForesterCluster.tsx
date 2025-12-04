@@ -1,7 +1,6 @@
 import { FeatureCollection, Point } from 'geojson';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { GeoJSONSource, Layer, Source, useMap } from 'react-map-gl/maplibre';
-// @ts-ignore
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanContains from '@turf/boolean-contains';
 import { point } from '@turf/helpers';
@@ -24,7 +23,7 @@ export default function IForesterCluster({
   const { current: map } = useMap();
 
   // Update visible markers
-  const updateVisibleMarkers = () => {
+  const updateVisibleMarkers = useCallback(() => {
     if (!map) return;
 
     const bounds = map.getBounds();
@@ -35,7 +34,7 @@ export default function IForesterCluster({
       bounds.getNorth(),
     ]);
 
-    let visibleMarkers: string[] = [];
+    const visibleMarkers: string[] = [];
     geojsonData.features.forEach((feature) => {
       const coords = (feature.geometry as Point).coordinates;
       if (
@@ -46,7 +45,7 @@ export default function IForesterCluster({
       }
     });
     dispatch({ type: 'SET_VISIBLE_MARKERS', payload: visibleMarkers });
-  };
+  }, [dispatch, geojsonData.features, map]);
 
   // Update visible markers when map loads and moves
   useEffect(() => {
@@ -59,7 +58,7 @@ export default function IForesterCluster({
       map.off('load', updateVisibleMarkers);
       map.off('moveend', updateVisibleMarkers);
     };
-  }, [map]);
+  }, [map, updateVisibleMarkers]);
 
   // Zoom and click events for cluster layers
   useEffect(() => {
@@ -111,7 +110,7 @@ export default function IForesterCluster({
 
     // Unclustered point events
     map.on('click', 'unclustered-point', handleClick);
-  }, []);
+  }, [dispatch, map]);
 
   return (
     <Source

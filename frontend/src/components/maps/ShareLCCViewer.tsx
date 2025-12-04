@@ -32,7 +32,7 @@ export default function ShareLCCViewer() {
         } else {
           setStatus({ type: 'error', msg: 'Unable to load file' });
         }
-      } catch (_err) {
+      } catch {
         setStatus({ type: 'error', msg: 'Unable to load file' });
       }
     }

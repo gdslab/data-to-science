@@ -80,7 +80,7 @@ export default function IForesterDeleteModal({
                   msg: 'Unable to delete submission',
                 });
               }
-            } catch (err) {
+            } catch {
               setOpenConfirmationPopup(false);
               setStatus({
                 type: 'error',

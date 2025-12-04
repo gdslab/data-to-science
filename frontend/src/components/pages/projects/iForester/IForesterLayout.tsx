@@ -38,7 +38,7 @@ export default function IForesterLayout() {
     if (params.projectId) {
       fetchIForesterData(params.projectId);
     }
-  }, []);
+  }, [iforesterDispatch, params.projectId]);
 
   return (
     <IForesterControlProvider>

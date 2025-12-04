@@ -84,7 +84,15 @@ export default function ProjectBoundary({
     };
 
     fetchGeoJSONAndFitBounds();
-  }, [activeMapTool, map, geojsonUrl]);
+  }, [
+    activeMapTool,
+    geojsonUrl,
+    map,
+    mapViewProperties,
+    mapViewPropertiesDispatch,
+    setActiveProjectBBox,
+    setViewState,
+  ]);
 
   if (!projectBoundary) return null;
 

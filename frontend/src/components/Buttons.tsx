@@ -9,7 +9,11 @@ import {
   TrashIcon,
 } from '@heroicons/react/24/outline';
 
-import { DataProduct, ProjectDetail, ProjectItem } from './pages/projects/Project';
+import {
+  DataProduct,
+  ProjectDetail,
+  ProjectItem,
+} from './pages/projects/Project';
 import { Status } from './Alert';
 
 import api from '../api';
@@ -165,7 +169,7 @@ export function Button({
                     : cancel === true
                     ? 'text-gray-700 bg-gray-200 hover:bg-gray-300 border-gray-300 hover:border-gray-400'
                     : 'bg-accent3 hover:bg-accent3-dark border-accent3 hover:border-accent3-dark',
-                  'border-2 rounded-md w-full'
+                  'border-2 rounded-md w-full cursor-pointer'
                 )
               : 'border-2 rounded-md w-full'
           )
@@ -272,7 +276,7 @@ export function CopyShortURLButton({
           msg: 'Failed to copy short URL',
         });
       }
-    } catch (error) {
+    } catch {
       setIsFetchingShortUrl(false);
       setButtonText(copyText);
       setStatus({
@@ -343,7 +347,7 @@ export function DownloadQRButton({
           msg: 'Failed to generate QR Code',
         });
       }
-    } catch (error) {
+    } catch {
       setIsFetchingShortUrl(false);
       setButtonText(title);
       setStatus({

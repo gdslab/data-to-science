@@ -184,7 +184,7 @@ export function download(
   } else {
     const json = JSON.stringify(updatedFeatureCollection, null, 2);
     const blob = new Blob([json], { type: 'application/geo+json' });
-    let downloadName = `${
+    const downloadName = `${
       filename ? filename + '.geojson' : 'feature_collection.geojson'
     }`;
     createAndClickDownloadLink(blob, downloadName);

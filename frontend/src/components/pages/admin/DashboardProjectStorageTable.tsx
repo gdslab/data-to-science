@@ -37,7 +37,10 @@ export default function DashboardProjectStorageTable({
    * @returns
    */
   function filterAndSlice(stats: ProjectStatistics[]) {
-    return stats.slice(currentPage * MAX_ITEMS, MAX_ITEMS + currentPage * MAX_ITEMS);
+    return stats.slice(
+      currentPage * MAX_ITEMS,
+      MAX_ITEMS + currentPage * MAX_ITEMS
+    );
   }
 
   /**
@@ -50,8 +53,10 @@ export default function DashboardProjectStorageTable({
   }
 
   const userProjectStatsSorted = useMemo(() => {
-    return [...userProjectStats].sort((a, b) => b.total_storage - a.total_storage);
-  }, [currentPage, userProjectStats]);
+    return [...userProjectStats].sort(
+      (a, b) => b.total_storage - a.total_storage
+    );
+  }, [userProjectStats]);
 
   if (userProjectStats.length === 0) {
     return <section className="w-full bg-white">No data</section>;
@@ -70,7 +75,9 @@ export default function DashboardProjectStorageTable({
         <tbody className="max-h-96 overflow-y-auto">
           {getAvailableUsers(userProjectStatsSorted).map((stats) => (
             <tr key={stats.id} className="text-center">
-              <td className="p-2 bg-slate-100 w-96 max-w-96 truncate">{stats.user}</td>
+              <td className="p-2 bg-slate-100 w-96 max-w-96 truncate">
+                {stats.user}
+              </td>
               <td className="p-2 bg-slate-50 w-44">
                 {stats.total_projects} ({stats.total_active_projects})
               </td>

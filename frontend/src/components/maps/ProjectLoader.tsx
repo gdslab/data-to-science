@@ -19,7 +19,9 @@ export default function ProjectLoader() {
     const fetchProjects = async () => {
       try {
         const geojsonUrl = `/projects?include_all=${false}`;
-        const response: AxiosResponse<ProjectItem[]> = await api.get(geojsonUrl);
+        const response: AxiosResponse<ProjectItem[]> = await api.get(
+          geojsonUrl
+        );
 
         // Filter out projects with invalid geographic coordinates
         const validProjects = filterValidProjects(response.data);
@@ -58,7 +60,7 @@ export default function ProjectLoader() {
     }
     // Always fetch latest projects from the backend
     fetchProjects();
-  }, []); // Consider dependencies if projects can change elsewhere
+  }, [projects, projectsDispatch, projectsLoadedDispatch]); // Consider dependencies if projects can change elsewhere
 
   return null;
 }

@@ -3,7 +3,6 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router';
 
 import { FieldCampaign } from '../../Project';
-import { useProjectContext } from '../../ProjectContext';
 
 import api from '../../../../../api';
 
@@ -37,8 +36,6 @@ export function FieldCampaignContextProvider({ children }: ContextProvider) {
 
   const { projectId } = useParams();
 
-  const { project } = useProjectContext();
-
   useEffect(() => {
     async function fetchFieldCampaign() {
       try {
@@ -50,7 +47,7 @@ export function FieldCampaignContextProvider({ children }: ContextProvider) {
         } else {
           updateFieldCampaign(null);
         }
-      } catch (_err) {
+      } catch {
         console.log('unable to retrieve campaign');
         updateFieldCampaign(null);
       }
@@ -59,7 +56,7 @@ export function FieldCampaignContextProvider({ children }: ContextProvider) {
     if (projectId) {
       fetchFieldCampaign();
     }
-  }, [project]);
+  }, [projectId]);
 
   function updateFieldCampaign(fieldCampaign: FieldCampaign | null) {
     setCampaign(fieldCampaign);

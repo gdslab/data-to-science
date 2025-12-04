@@ -1,12 +1,7 @@
 import { AxiosResponse, isAxiosError } from 'axios';
 import { Form, Formik } from 'formik';
-import { useContext, useEffect, useState } from 'react';
-import {
-  Link,
-  useLoaderData,
-  useNavigate,
-  useRevalidator,
-} from 'react-router';
+import { useCallback, useContext, useEffect, useState } from 'react';
+import { Link, useLoaderData, useNavigate, useRevalidator } from 'react-router';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 import Alert from '../../Alert';
@@ -40,23 +35,31 @@ export default function TeamCreate() {
   const [teamMembers, setTeamMembers] = useState<UserSearch[]>([]);
   const [searchResults, setSearchResults] = useState<UserSearch[]>([]);
 
+  const addTeamMember = useCallback(
+    (teamMember: UserSearch[]) => {
+      const uniqueIds = teamMembers.map((tm) => tm.id);
+      const newTeamMembers = teamMember.filter(
+        (tm) => uniqueIds.indexOf(tm.id) === -1
+      );
+
+      setTeamMembers([...teamMembers, ...newTeamMembers]);
+      setSearchResults([]);
+    },
+    [teamMembers]
+  );
+
+  const removeTeamMember = useCallback(
+    (teamMemberId: string) => {
+      setTeamMembers(teamMembers.filter((tm) => tm.id !== teamMemberId));
+    },
+    [teamMembers]
+  );
+
   useEffect(() => {
-    if (user && teamMembers.length === 0) addTeamMember([user]);
-  }, []);
-
-  function addTeamMember(teamMember) {
-    const uniqueIds = teamMembers.map((tm) => tm.id);
-    const newTeamMembers = teamMember.filter(
-      (tm) => uniqueIds.indexOf(tm.id) === -1
-    );
-
-    setTeamMembers([...teamMembers, ...newTeamMembers]);
-    setSearchResults([]);
-  }
-
-  function removeTeamMember(teamMemberId) {
-    setTeamMembers(teamMembers.filter((tm) => tm.id !== teamMemberId));
-  }
+    if (user && teamMembers.length === 0) {
+      addTeamMember([{ ...user, checked: false }]);
+    }
+  }, [addTeamMember, teamMembers, user]);
 
   return (
     <Card title="Create a New Team">

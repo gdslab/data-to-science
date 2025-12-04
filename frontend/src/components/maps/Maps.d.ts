@@ -1,5 +1,3 @@
-import { FeatureCollection, Point } from 'geojson';
-
 import { DataProduct, Flight, ProjectItem } from '../pages/projects/Project';
 import { ProjectsLoadedState } from './MapContext';
 

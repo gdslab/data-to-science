@@ -25,7 +25,7 @@ export async function loader({ params }: { params: Params<string> }) {
     } else {
       return { dataProducts: [], rawData: [] };
     }
-  } catch (err) {
+  } catch {
     console.error('Unable to retrieve raw data and data products');
     return { dataProducts: [], rawData: [] };
   }

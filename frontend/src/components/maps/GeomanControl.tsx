@@ -13,6 +13,14 @@ import { geomanOptions } from './styles/geomanOptions';
 import { GeoJSONFeature } from '../pages/projects/Project';
 import { fitMapToGeoJSON } from './utils';
 
+interface GeomanFeature {
+  getGeoJson: () => GeoJsonShapeFeature;
+}
+
+interface GeomanDrawEvent {
+  feature: GeomanFeature;
+}
+
 interface GeomanControlProps {
   editFeature?: GeoJSONFeature | null;
   onDrawStart?: () => void;
@@ -49,23 +57,20 @@ export default function GeomanControl({
   };
 
   // Memoize event handlers to prevent unnecessary re-renders
-  const handleDrawStart = useCallback(
-    (_event: any) => {
-      // Reset feature count when drawing starts (clean slate)
-      drawnFeaturesCount.current = 0;
+  const handleDrawStart = useCallback(() => {
+    // Reset feature count when drawing starts (clean slate)
+    drawnFeaturesCount.current = 0;
 
-      // Remove any existing polygons when drawing starts
-      clearAllGeomanFeatures(geomanRef.current);
+    // Remove any existing polygons when drawing starts
+    clearAllGeomanFeatures(geomanRef.current);
 
-      if (onDrawStart) {
-        onDrawStart();
-      }
-    },
-    [onDrawStart]
-  );
+    if (onDrawStart) {
+      onDrawStart();
+    }
+  }, [onDrawStart]);
 
   const handleDrawEnd = useCallback(
-    (event: any) => {
+    (event: GeomanDrawEvent) => {
       const feature: GeoJsonShapeFeature = event.feature.getGeoJson();
       drawnFeaturesCount.current += 1;
 
@@ -82,7 +87,7 @@ export default function GeomanControl({
   );
 
   const handleEdit = useCallback(
-    (event: any) => {
+    (event: GeomanDrawEvent) => {
       const feature: GeoJsonShapeFeature = event.feature.getGeoJson();
 
       if (onEdit) {
@@ -92,18 +97,15 @@ export default function GeomanControl({
     [onEdit]
   );
 
-  const handleRemove = useCallback(
-    (_event: any) => {
-      // Reset feature count when polygon is removed
-      drawnFeaturesCount.current = 0;
+  const handleRemove = useCallback(() => {
+    // Reset feature count when polygon is removed
+    drawnFeaturesCount.current = 0;
 
-      // Call the same handler as draw start to reset formik field
-      if (onDrawStart) {
-        onDrawStart();
-      }
-    },
-    [onDrawStart]
-  );
+    // Call the same handler as draw start to reset formik field
+    if (onDrawStart) {
+      onDrawStart();
+    }
+  }, [onDrawStart]);
 
   // Initialize Geoman only once
   useEffect(() => {
@@ -162,7 +164,7 @@ export default function GeomanControl({
         }
       }
     };
-  }, [map]); // Only depend on map, not on callbacks
+  }, [editFeature, map]); // Only depend on map, not on callbacks
 
   // Update event handlers when callbacks change
   useEffect(() => {

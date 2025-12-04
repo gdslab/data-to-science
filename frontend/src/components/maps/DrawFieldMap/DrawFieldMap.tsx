@@ -10,7 +10,10 @@ import Map, {
   Source,
   Layer,
   MapRef,
+  MapLayerMouseEvent,
 } from 'react-map-gl/maplibre';
+import { MapGeoJSONFeature } from 'react-map-gl/dist/esm/types';
+import { GeoJsonShapeFeature } from '@geoman-io/maplibre-geoman-free';
 
 import GeomanControl from '../GeomanControl';
 import { GeoJSONFeature } from '../../pages/projects/Project';
@@ -32,8 +35,8 @@ interface Props {
   >;
   featureLimit?: number;
   onDrawStart?: () => void;
-  onDrawEnd?: (feature: any) => void;
-  onEdit?: (feature: any) => void;
+  onDrawEnd?: (feature: GeoJsonShapeFeature) => void;
+  onEdit?: (feature: GeoJsonShapeFeature) => void;
 }
 
 export default function DrawFieldMap({
@@ -50,19 +53,20 @@ export default function DrawFieldMap({
   const [config, setConfig] = useState<{ osmLabelFilter?: string } | null>(
     null
   );
-  const [selectedFeature, setSelectedFeature] = useState<any>(null);
+  const [selectedFeature, setSelectedFeature] =
+    useState<MapGeoJSONFeature | null>(null);
   const mapRef = useRef<MapRef>(null);
   const { setFieldValue, setFieldTouched } = useFormikContext();
   const { locationDispatch } = useProjectContext();
 
   // Utility: ensure a feature is a Polygon (convert first polygon of MultiPolygon)
-  const normalizeToPolygon = (feature: any) => {
+  const normalizeToPolygon = (feature: GeoJSONFeature): GeoJSONFeature => {
     if (feature?.geometry?.type !== 'MultiPolygon') return feature;
     return {
       ...feature,
       geometry: {
         type: 'Polygon',
-        coordinates: feature.geometry.coordinates[0],
+        coordinates: (feature.geometry.coordinates as number[][][][])[0],
       },
     };
   };
@@ -120,8 +124,9 @@ export default function DrawFieldMap({
   };
 
   // Handle draw end - update formik location field with drawn feature
-  const handleDrawEnd = (feature: any) => {
-    const convertedFeature = normalizeToPolygon(feature);
+  const handleDrawEnd = (feature: GeoJsonShapeFeature) => {
+    const geoJsonFeature = feature as unknown as GeoJSONFeature;
+    const convertedFeature = normalizeToPolygon(geoJsonFeature);
 
     // Update formik location field
     setFieldValue('location', convertedFeature);
@@ -132,13 +137,14 @@ export default function DrawFieldMap({
 
     // Call parent callback if provided
     if (onDrawEnd) {
-      onDrawEnd(convertedFeature);
+      onDrawEnd(feature);
     }
   };
 
   // Handle edit - update formik location field with edited feature
-  const handleEdit = (feature: any) => {
-    const convertedFeature = normalizeToPolygon(feature);
+  const handleEdit = (feature: GeoJsonShapeFeature) => {
+    const geoJsonFeature = feature as unknown as GeoJSONFeature;
+    const convertedFeature = normalizeToPolygon(geoJsonFeature);
 
     // Update formik location field only - don't update context until user clicks Update Field
     setFieldValue('location', convertedFeature);
@@ -146,7 +152,7 @@ export default function DrawFieldMap({
 
     // Call parent callback if provided
     if (onEdit) {
-      onEdit(convertedFeature);
+      onEdit(feature);
     }
   };
 
@@ -167,13 +173,13 @@ export default function DrawFieldMap({
     const map = mapRef.current;
     if (!map) return;
 
-    const handleMapClick = (event: any) => {
+    const handleMapClick = (event: MapLayerMouseEvent) => {
       const features = map.queryRenderedFeatures(event.point, {
         layers: ['feature-collection-layer', 'feature-collection-border-layer'],
       });
 
       if (features.length > 0) {
-        setSelectedFeature(features[0]);
+        setSelectedFeature(features[0] as MapGeoJSONFeature);
 
         // Set the selected feature as the form's location field
         setFieldValue('location', features[0]);
@@ -222,13 +228,13 @@ export default function DrawFieldMap({
           ['==', ['get', 'id'], selectedFeature?.properties?.id || ''],
           '#ff4444', // Red for selected feature
           '#3388ff', // Blue for unselected features
-        ] as any,
+        ] as unknown as string,
         'line-width': [
           'case',
           ['==', ['get', 'id'], selectedFeature?.properties?.id || ''],
           4, // Thicker line for selected feature
           2, // Normal width for unselected features
-        ] as any,
+        ] as unknown as number,
       },
     }),
     [selectedFeature]

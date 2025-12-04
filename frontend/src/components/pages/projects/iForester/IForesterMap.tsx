@@ -77,7 +77,7 @@ export default function IForesterMap() {
         ) as string[],
       });
     }
-  }, [iforester]);
+  }, [dispatch, iforester, speciesSelection]);
 
   // Set initial DBH min and DBH max
   useEffect(() => {
@@ -85,23 +85,17 @@ export default function IForesterMap() {
       if (dbhMin === -1) {
         dispatch({
           type: 'SET_DBH_MIN',
-          payload: Math.min.apply(
-            Math,
-            iforester.map(({ dbh }) => dbh)
-          ),
+          payload: Math.min(...iforester.map(({ dbh }) => dbh)),
         });
       }
       if (dbhMax === -1) {
         dispatch({
           type: 'SET_DBH_MAX',
-          payload: Math.max.apply(
-            Math,
-            iforester.map(({ dbh }) => dbh)
-          ),
+          payload: Math.max(...iforester.map(({ dbh }) => dbh)),
         });
       }
     }
-  }, []);
+  }, [dbhMax, dbhMin, dispatch, iforester]);
 
   // Zoom to active marker when activeMarkerZoom changes
   useEffect(() => {
@@ -117,7 +111,7 @@ export default function IForesterMap() {
         dispatch({ type: 'SET_ACTIVE_MARKER_ZOOM', payload: '' });
       }
     }
-  }, [activeMarkerZoom]);
+  }, [activeMarkerZoom, dispatch, filteredLocations]);
 
   const mapStyle = useMemo(() => {
     return mapboxAccessToken

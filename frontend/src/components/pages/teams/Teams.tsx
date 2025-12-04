@@ -51,7 +51,7 @@ export default function SidebarPage() {
     if (location.state && location.state.reload) {
       revalidator.revalidate();
     }
-  }, [location.state]);
+  }, [location.state, revalidator]);
 
   // Auto-navigate to last viewed team or first team when landing on /teams
   useEffect(() => {
@@ -68,7 +68,7 @@ export default function SidebarPage() {
         navigate(`/teams/${sortedTeams[0].id}`, { replace: true });
       }
     }
-  }, [location.pathname, teams, teamId, navigate]);
+  }, [location.pathname, sortedTeams, teams, teamId, navigate]);
 
   const filteredTeams = useMemo(() => {
     return sortedTeams.filter((team) => {

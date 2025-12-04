@@ -9,7 +9,11 @@ import {
   CopyURLButton,
   DownloadQRButton,
 } from '../../Buttons';
-import { DataProduct, ProjectDetail, ProjectItem } from '../../pages/projects/Project';
+import {
+  DataProduct,
+  ProjectDetail,
+  ProjectItem,
+} from '../../pages/projects/Project';
 import { useMapContext } from '../MapContext';
 import {
   MultibandSymbology,
@@ -62,7 +66,7 @@ export default function RasterSymbologyAccessControls({
         setTimeout(() => setStatus(null), 3000);
         setAccessOption(!newAccess);
       }
-    } catch (err) {
+    } catch {
       setStatus({ type: 'error', msg: 'Unable to change access' });
       setTimeout(() => setStatus(null), 3000);
       setAccessOption(!newAccess);
@@ -255,7 +259,11 @@ export default function RasterSymbologyAccessControls({
                   copiedText="Copied"
                   url={
                     window.origin +
-                    `${dataProduct.url.toLowerCase().endsWith('.lcc') ? '/sharelcc' : '/share3dgs'}?file_id=${dataProduct.id}`
+                    `${
+                      dataProduct.url.toLowerCase().endsWith('.lcc')
+                        ? '/sharelcc'
+                        : '/share3dgs'
+                    }?file_id=${dataProduct.id}`
                   }
                   title={
                     dataProduct.url.toLowerCase().endsWith('.lcc')
@@ -276,7 +284,11 @@ export default function RasterSymbologyAccessControls({
                   titleOnSubmission="Generating QR Code..."
                   url={
                     window.origin +
-                    `${dataProduct.url.toLowerCase().endsWith('.lcc') ? '/sharelcc' : '/share3dgs'}?file_id=${dataProduct.id}`
+                    `${
+                      dataProduct.url.toLowerCase().endsWith('.lcc')
+                        ? '/sharelcc'
+                        : '/share3dgs'
+                    }?file_id=${dataProduct.id}`
                   }
                 />
               </div>

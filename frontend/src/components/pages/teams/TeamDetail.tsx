@@ -44,20 +44,16 @@ export interface TeamData {
 
 // fetches team details and team members prior to render
 export async function loader({ params }: { params: Params<string> }) {
-  try {
-    const teamResponse: AxiosResponse<Team> = await api.get(
-      `/teams/${params.teamId}`
-    );
-    const teamMembers: AxiosResponse<TeamMember[]> = await api.get(
-      `/teams/${params.teamId}/members`
-    );
-    if (teamResponse && teamMembers) {
-      return { team: teamResponse.data, members: teamMembers.data };
-    } else {
-      return { team: null, members: [] };
-    }
-  } catch (err) {
-    throw err;
+  const teamResponse: AxiosResponse<Team> = await api.get(
+    `/teams/${params.teamId}`
+  );
+  const teamMembers: AxiosResponse<TeamMember[]> = await api.get(
+    `/teams/${params.teamId}/members`
+  );
+  if (teamResponse && teamMembers) {
+    return { team: teamResponse.data, members: teamMembers.data };
+  } else {
+    return { team: null, members: [] };
   }
 }
 
@@ -141,37 +137,37 @@ export default function TeamDetail() {
                   user={user}
                 />
                 {searchResults.length > 0 &&
-                searchResults.filter((u) => u.checked).length > 0 && (
-                  <Button
-                    size="sm"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      let selectedMembers = searchResults
-                        .filter((u) => u.checked)
-                        .filter(
-                          (newMember) =>
-                            teamData.members
-                              .map((currentMember) => currentMember.email)
-                              .indexOf(newMember.email) < 0
-                        );
+                  searchResults.filter((u) => u.checked).length > 0 && (
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        const selectedMembers = searchResults
+                          .filter((u) => u.checked)
+                          .filter(
+                            (newMember) =>
+                              teamData.members
+                                .map((currentMember) => currentMember.email)
+                                .indexOf(newMember.email) < 0
+                          );
 
-                      if (selectedMembers.length > 0) {
-                        api
-                          .post(
-                            `/teams/${teamData.team.id}/members/multi`,
-                            selectedMembers.map(({ id }) => id)
-                          )
-                          .then(() => {
-                            setSearchResults([]);
-                            revalidator.revalidate();
-                          })
-                          .catch((err) => console.error(err));
-                      }
-                    }}
-                  >
-                    Add Selected
-                  </Button>
-                )}
+                        if (selectedMembers.length > 0) {
+                          api
+                            .post(
+                              `/teams/${teamData.team.id}/members/multi`,
+                              selectedMembers.map(({ id }) => id)
+                            )
+                            .then(() => {
+                              setSearchResults([]);
+                              revalidator.revalidate();
+                            })
+                            .catch((err) => console.error(err));
+                        }
+                      }}
+                    >
+                      Add Selected
+                    </Button>
+                  )}
               </div>
 
               {/* Delete team section */}
@@ -204,7 +200,7 @@ export default function TeamDetail() {
                         } else {
                           setOpen(false);
                         }
-                      } catch (err) {
+                      } catch {
                         setOpen(false);
                       }
                     }}

@@ -17,12 +17,12 @@ type DataTypeOption = {
 };
 
 function getDataTypeOptions(dataProduct: DataProduct): DataTypeOption[] {
-  let defaultOptions = [
+  const defaultOptions = [
     { value: 'dsm', label: 'DSM' },
     { value: 'ortho', label: 'Ortho' },
   ];
   // check default options for data product's current data type
-  let currentDataType = defaultOptions.findIndex(
+  const currentDataType = defaultOptions.findIndex(
     (option) =>
       option.value.toLowerCase() === dataProduct.data_type.toLowerCase()
   );

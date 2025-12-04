@@ -26,7 +26,7 @@ export default function PasswordResetForm() {
     if (!searchParams.has('token')) {
       navigate('/auth/recoverpassword');
     }
-  }, []);
+  }, [navigate, searchParams]);
 
   const methods = useForm<ResetFormData>({
     defaultValues,

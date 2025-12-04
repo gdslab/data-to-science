@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { IForester } from '../Project';
 import { useIForesterControlContext } from './IForesterContext';
@@ -23,7 +23,7 @@ export default function IForesterCardView() {
         ) as string[],
       });
     }
-  }, [iforester]);
+  }, [dispatch, iforester, speciesSelection]);
 
   // Set initial DBH min and DBH max
   useEffect(() => {
@@ -31,27 +31,17 @@ export default function IForesterCardView() {
       if (dbhMin === -1) {
         dispatch({
           type: 'SET_DBH_MIN',
-          payload: Math.min.apply(
-            Math,
-            iforester.map(({ dbh }) => dbh)
-          ),
+          payload: Math.min(...iforester.map(({ dbh }) => dbh)),
         });
       }
       if (dbhMax === -1) {
         dispatch({
           type: 'SET_DBH_MAX',
-          payload: Math.max.apply(
-            Math,
-            iforester.map(({ dbh }) => dbh)
-          ),
+          payload: Math.max(...iforester.map(({ dbh }) => dbh)),
         });
       }
     }
-  });
-
-  if (iforester && iforester.length === 0) {
-    return <div className="mx-4 my-2">No data added yet</div>;
-  }
+  }, [dbhMax, dbhMin, dispatch, iforester]);
 
   // Filter and sort IForester data based on DBH and species selection
   const sortedFilteredLocations = useMemo(() => {
@@ -76,9 +66,13 @@ export default function IForesterCardView() {
       });
   }, [dbhMin, dbhMax, iforester, speciesSelection, visibleMarkers]);
 
-  const updatePageData = (pageData: IForester[]) => {
+  const updatePageData = useCallback((pageData: IForester[]) => {
     setPageData(pageData);
-  };
+  }, []);
+
+  if (iforester && iforester.length === 0) {
+    return <div className="mx-4 my-2">No data added yet</div>;
+  }
 
   return (
     <div className="h-full flex justify-center">

@@ -1,12 +1,7 @@
 import { isAxiosError } from 'axios';
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { Fragment, useContext, useState } from 'react';
-import {
-  Link,
-  useLocation,
-  useNavigate,
-  useSearchParams,
-} from 'react-router';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { yupResolver } from '@hookform/resolvers/yup';
 
 import Alert, { Status } from '../../Alert';
@@ -97,7 +92,7 @@ export default function LoginForm() {
                             type: 'info',
                             msg: 'Email confirmation link sent',
                           });
-                      } catch (err) {
+                      } catch {
                         setStatus({
                           type: 'error',
                           msg: 'Unexpected error has occurred',

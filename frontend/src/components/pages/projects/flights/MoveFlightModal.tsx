@@ -52,7 +52,7 @@ export default function MoveFlightModal({
       }
     }
     if (open) getProjects();
-  }, [open]);
+  }, [open, srcProjectId]);
 
   async function moveProject() {
     try {
@@ -73,7 +73,7 @@ export default function MoveFlightModal({
       if (isAxiosError(err) && err.response && err.response.data.detail) {
         if (typeof err.response.data.detail === 'string') {
           setStatus({ type: 'error', msg: err.response.data.detail });
-        } else if (typeof (err.response.status === 422)) {
+        } else if (err.response.status === 422) {
           setStatus({ type: 'error', msg: err.response.data.detail[0].msg });
         } else {
           setStatus({

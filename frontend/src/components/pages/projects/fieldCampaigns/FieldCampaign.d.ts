@@ -1,6 +1,11 @@
-export type ActiveStep = {
+import { FormikHelpers } from 'formik';
+
+export type ActiveStep<T = Record<string, unknown>> = {
   activeStep: number;
-  handleSubmit: (extra: any) => (values: any, actions: any) => Promise<void>;
+  handleSubmit: (extra: { submitAndQuit: boolean }) => (
+    values: T,
+    actions: FormikHelpers<T>
+  ) => Promise<void>;
   isSubmitting: boolean;
   setActiveStep: React.Dispatch<React.SetStateAction<number>>;
 };

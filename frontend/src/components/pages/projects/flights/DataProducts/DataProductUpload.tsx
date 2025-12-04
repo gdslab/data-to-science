@@ -1,11 +1,16 @@
+import '@uppy/core/dist/style.min.css';
+import '@uppy/dashboard/dist/style.min.css';
+
 import { useEffect, useState } from 'react';
 import Uppy from '@uppy/core';
 import Dashboard from '@uppy/react/lib/Dashboard';
 import Tus from '@uppy/tus';
 
-import '@uppy/core/dist/style.min.css';
-import '@uppy/dashboard/dist/style.min.css';
 import { refreshTokenIfNeeded } from '../../../../../api';
+import {
+  ErrorResponseBody,
+  ValidationError,
+} from '../../../../../types/uppy';
 
 type DataProductInfo = {
   dtype: string;
@@ -46,7 +51,7 @@ export default function DataProductUpload({
   useEffect(() => {
     // updates custom headers when data type, project id, or flight id change
     updateUppy(() => createUppy(info));
-  }, [info.dtype]);
+  }, [info]);
 
   const restrictions = {
     allowedFileTypes: fileType,
@@ -135,15 +140,16 @@ export default function DataProductUpload({
     }
     if (response?.body) {
       let errorDetails = '';
-      const body = response.body as Record<string, any>;
+      const body = response.body as ErrorResponseBody;
 
       if (body.detail) {
         if (typeof body.detail === 'string') {
           errorDetails = body.detail;
         } else if (response.status === 422 && Array.isArray(body.detail)) {
-          body.detail.forEach((err: any, idx: number) => {
+          const validationErrors = body.detail as ValidationError[];
+          validationErrors.forEach((err, idx) => {
             errorDetails = `${err.loc[1]}: ${err.msg}`;
-            errorDetails += idx < body.detail.length - 1 ? '; ' : '';
+            errorDetails += idx < validationErrors.length - 1 ? '; ' : '';
           });
         } else {
           errorDetails = 'Unexpected error occurred';

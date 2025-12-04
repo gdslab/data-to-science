@@ -83,7 +83,7 @@ export default function DataProductDeleteModal({
                   msg: 'Unable to deactivate data product',
                 });
               }
-            } catch (err) {
+            } catch {
               setOpenConfirmationPopup(false);
               setStatus({
                 type: 'error',

@@ -1,11 +1,6 @@
 import Papa from 'papaparse';
 import { useEffect, useState } from 'react';
-import {
-  Params,
-  useLoaderData,
-  useNavigate,
-  useParams,
-} from 'react-router';
+import { Params, useLoaderData, useNavigate, useParams } from 'react-router';
 
 import { Status } from '../../../Alert';
 import { FieldCampaign } from '../Project';
@@ -65,7 +60,7 @@ export default function FieldCampaignForm() {
         new Array(fieldCampaign.form_data.treatments.length).fill([])
       );
     }
-  }, []);
+  }, [fieldCampaign]);
 
   /**
    * Update array tracking csv parsing errors.
@@ -78,15 +73,15 @@ export default function FieldCampaignForm() {
     op: 'add' | 'remove' | 'clear'
   ) {
     if (op === 'remove') {
-      let currentCsvErrors = csvErrors.slice();
+      const currentCsvErrors = csvErrors.slice();
       currentCsvErrors.splice(parseInt(index), 1);
       setCsvErrors(currentCsvErrors);
     } else if (op === 'add') {
-      let currentCsvErrors = csvErrors.slice();
+      const currentCsvErrors = csvErrors.slice();
       currentCsvErrors[parseInt(index)] = errors;
       setCsvErrors(currentCsvErrors);
     } else if (op === 'clear') {
-      let currentCsvErrors = csvErrors.slice();
+      const currentCsvErrors = csvErrors.slice();
       currentCsvErrors[parseInt(index)] = [];
       setCsvErrors(currentCsvErrors);
     } else {
@@ -109,7 +104,7 @@ export default function FieldCampaignForm() {
       } else {
         setStatus({ type: 'error', msg: 'Unable to save campaign' });
       }
-    } catch (err) {
+    } catch {
       setStatus({ type: 'error', msg: 'Unable to save campaign' });
     }
   };

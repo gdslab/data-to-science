@@ -1,11 +1,18 @@
-import { Controls, MathUtils, Spherical, Vector3, Camera } from 'three';
+import {
+  Controls,
+  MathUtils,
+  Spherical,
+  Vector3,
+  Camera,
+  PerspectiveCamera,
+} from 'three';
 
 const _lookDirection = new Vector3();
 const _spherical = new Spherical();
 const _target = new Vector3();
 const _targetPosition = new Vector3();
 
-class FirstPersonControls extends Controls<{}> {
+class FirstPersonControls extends Controls<Record<string, never>> {
   // Inherited from Controls but need explicit declaration
   enabled: boolean = false;
   object: Camera;
@@ -320,9 +327,10 @@ class FirstPersonControls extends Controls<{}> {
     event.preventDefault();
 
     // Cast to PerspectiveCamera to access fov property
-    const camera = this.object as any;
-    if (!camera.isPerspectiveCamera) return;
+    if (!('isPerspectiveCamera' in this.object && this.object.isPerspectiveCamera))
+      return;
 
+    const camera = this.object as PerspectiveCamera;
     const zoomSpeed = 0.05;
     const delta = event.deltaY * zoomSpeed;
     const minFov = 30; // Zoomed in (narrow field of view)

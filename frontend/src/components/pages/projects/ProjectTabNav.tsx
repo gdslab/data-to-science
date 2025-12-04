@@ -54,7 +54,7 @@ export default function ProjectTabNav({
     if (params.projectId) {
       fetchIForesterData(params.projectId);
     }
-  }, []);
+  }, [params.projectId]);
 
   // Sort modules by sort_order and filter enabled ones
   const enabledModules = project_modules

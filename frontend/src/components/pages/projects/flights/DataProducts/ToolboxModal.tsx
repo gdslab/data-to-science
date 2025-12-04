@@ -163,7 +163,7 @@ export default function ToolboxModal({
                         revalidator.revalidate();
                       }, 3000);
                     }
-                  } catch (err) {
+                  } catch {
                     setStatus({
                       type: 'error',
                       msg: 'Unable to complete request',

@@ -63,7 +63,7 @@ export default function MapViewMode() {
         });
       }
     }
-  }, []);
+  }, [mapboxAccessTokenDispatch, maptilerApiKeyDispatch]);
 
   // Fetch map layers when a project is activated and
   // remove previous raster symbology settings from previous active project
@@ -92,7 +92,7 @@ export default function MapViewMode() {
       // Fetch map layers for selected project
       fetchMapLayers(activeProject.id);
     }
-  }, [activeProject]);
+  }, [activeProject, dispatch, symbologyContext]);
 
   if (activeMapTool === 'compare') {
     return <CompareMap />;

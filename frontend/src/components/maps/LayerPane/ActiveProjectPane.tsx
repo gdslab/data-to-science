@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useRef, useState } from 'react';
+import { useMemo, useEffect, useRef, useState, useCallback } from 'react';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 import { FaLayerGroup } from 'react-icons/fa6';
 
@@ -31,7 +31,7 @@ export default function ActiveProjectPane({ project }: ActiveProjectPaneProps) {
   }, [flights]);
 
   // Function to attempt scrolling to active data product
-  const scrollToActiveDataProduct = (delay = 100) => {
+  const scrollToActiveDataProduct = useCallback((delay = 100) => {
     if (activeDataProduct && scrollContainerRef.current) {
       const scrollToElement = () => {
         if (scrollContainerRef.current) {
@@ -60,12 +60,12 @@ export default function ActiveProjectPane({ project }: ActiveProjectPaneProps) {
         }
       });
     }
-  };
+  }, [activeDataProduct]);
 
   // Handle changes to activeDataProduct (when clicking within LayerPane)
   useEffect(() => {
     scrollToActiveDataProduct(100);
-  }, [activeDataProduct]);
+  }, [activeDataProduct, scrollToActiveDataProduct]);
 
   // Handle initial mount and when flights load (when navigating from View button)
   useEffect(() => {
@@ -78,7 +78,7 @@ export default function ActiveProjectPane({ project }: ActiveProjectPaneProps) {
       // Give more time for DOM to render when coming from navigation
       scrollToActiveDataProduct(300);
     }
-  }, [flights, activeDataProduct]);
+  }, [flights, activeDataProduct, scrollToActiveDataProduct]);
 
   // Set flag when switching back to Flights tab with active data product
   useEffect(() => {
@@ -89,11 +89,15 @@ export default function ActiveProjectPane({ project }: ActiveProjectPaneProps) {
 
   // Scroll when the ref becomes available and flag is set
   useEffect(() => {
-    if (shouldScrollOnMount && scrollContainerRef.current && activeDataProduct) {
+    if (
+      shouldScrollOnMount &&
+      scrollContainerRef.current &&
+      activeDataProduct
+    ) {
       scrollToActiveDataProduct(100);
       setShouldScrollOnMount(false);
     }
-  }, [shouldScrollOnMount, scrollContainerRef.current, activeDataProduct]);
+  }, [shouldScrollOnMount, activeDataProduct, scrollToActiveDataProduct]);
 
   return (
     <article className="h-[calc(100%-44px)] p-4 flex flex-col">
@@ -129,7 +133,9 @@ export default function ActiveProjectPane({ project }: ActiveProjectPaneProps) {
             <div className="flex items-center gap-1.5">
               <FaLayerGroup className="h-3.5 w-3.5" />
               <span>Map Layers</span>
-              <span className="text-slate-500 font-normal">({layers.length})</span>
+              <span className="text-slate-500 font-normal">
+                ({layers.length})
+              </span>
             </div>
           </Tab>
         </TabList>

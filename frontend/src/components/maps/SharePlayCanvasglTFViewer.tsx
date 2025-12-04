@@ -32,7 +32,7 @@ export default function SharePlayCanvasglTFViewer() {
         } else {
           setStatus({ type: 'error', msg: 'Unable to load file' });
         }
-      } catch (_err) {
+      } catch {
         setStatus({ type: 'error', msg: 'Unable to load file' });
       }
     }
@@ -40,7 +40,7 @@ export default function SharePlayCanvasglTFViewer() {
     if (fileID) {
       fetchUrl(fileID);
     }
-  }, []);
+  }, [fileID]);
 
   return (
     <>

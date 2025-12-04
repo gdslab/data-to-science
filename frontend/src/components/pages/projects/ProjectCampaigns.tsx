@@ -49,7 +49,7 @@ export default function ProjectCampaigns() {
                     `/projects/${projectId}/campaigns/${response.data.id}`
                   );
                 }
-              } catch (_err) {
+              } catch {
                 console.log('unable to retrieve campaign');
               }
             }}

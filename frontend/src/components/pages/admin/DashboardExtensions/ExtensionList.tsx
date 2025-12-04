@@ -30,7 +30,7 @@ export default function ExtensionList({
 
   useEffect(() => {
     setStatus(null);
-  }, []);
+  }, [setStatus]);
 
   if (!teamId && !userId) {
     console.error('Must provide team or user id');

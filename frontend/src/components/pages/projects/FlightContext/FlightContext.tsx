@@ -59,7 +59,7 @@ export function FlightContextProvider({ children }: FlightContextProvider) {
     } else {
       flightDispatch({ type: 'clear', payload: null });
     }
-  }, [params.flightId]);
+  }, [navigate, params.flightId, params.projectId]);
 
   return (
     <FlightContext.Provider

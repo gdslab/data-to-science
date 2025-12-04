@@ -46,7 +46,7 @@ export default function PasswordRecovery() {
           msg: 'Unable to send password recovery email',
         });
       }
-    } catch (err) {
+    } catch {
       setStatus({
         type: 'error',
         msg: 'Unable to send password recovery email',

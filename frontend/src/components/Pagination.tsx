@@ -1,5 +1,4 @@
 import clsx from 'clsx';
-import { ReactElement } from 'react';
 
 import { DOTS, usePagination } from './hooks/usePagination';
 
@@ -38,6 +37,58 @@ export function getPaginationResults(
   }
 }
 
+function PageNumberItems({
+  paginationRange,
+  currentPage,
+  updateCurrentPage,
+}: {
+  paginationRange: ReturnType<typeof usePagination>;
+  currentPage: number;
+  updateCurrentPage: (page: number) => void;
+}) {
+  if (!paginationRange) return null;
+
+  return (
+    <>
+      {paginationRange.map((pageNumber, idx) => {
+        if (pageNumber === DOTS) {
+          return (
+            <li
+              key={`dots-${idx}`}
+              className="block size-8 rounded-sm text-center leading-8"
+            >
+              &#8230;
+            </li>
+          );
+        }
+
+        if (typeof pageNumber === 'number') {
+          return (
+            <li className="cursor-pointer" key={pageNumber}>
+              <a
+                onClick={() => updateCurrentPage(pageNumber)}
+                className={clsx(
+                  'block size-8 rounded-sm text-center leading-8',
+                  {
+                    'border border-gray-100 bg-white text-gray-900':
+                      pageNumber !== currentPage,
+                    'border-accent2 bg-accent2 text-white':
+                      pageNumber === currentPage,
+                  }
+                )}
+              >
+                {pageNumber + 1}
+              </a>
+            </li>
+          );
+        }
+
+        return null;
+      })}
+    </>
+  );
+}
+
 export default function Pagination({
   currentPage,
   updateCurrentPage,
@@ -55,46 +106,6 @@ export default function Pagination({
     totalCount,
     siblingCount,
   });
-
-  function PageNumberItems() {
-    if (!paginationRange) return [];
-
-    let pageNumberItems: ReactElement[] = [];
-
-    {
-      paginationRange.map((pageNumber, idx) => {
-        if (pageNumber === DOTS) {
-          pageNumberItems.push(
-            <li
-              key={`page-${idx}-dots`}
-              className="block size-8 rounded-sm text-center leading-8"
-            >
-              &#8230;
-            </li>
-          );
-        }
-
-        if (typeof pageNumber === 'number')
-          pageNumberItems.push(
-            <li className="cursor-pointer" key={`page-${pageNumber}`}>
-              <a
-                onClick={() => updateCurrentPage(pageNumber)}
-                className={clsx('block size-8 rounded-sm text-center leading-8', {
-                  'border border-gray-100 bg-white text-gray-900':
-                    pageNumber !== currentPage,
-                  'border-accent2 bg-accent2 text-white':
-                    pageNumber === currentPage,
-                })}
-              >
-                {pageNumber + 1}
-              </a>
-            </li>
-          );
-      });
-    }
-
-    return pageNumberItems;
-  }
 
   if (totalPages > 1) {
     return (
@@ -126,7 +137,11 @@ export default function Pagination({
           </a>
         </li>
 
-        <PageNumberItems />
+        <PageNumberItems
+          paginationRange={paginationRange}
+          currentPage={currentPage}
+          updateCurrentPage={updateCurrentPage}
+        />
 
         <li>
           <a

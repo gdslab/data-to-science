@@ -31,7 +31,7 @@ export default function TeamEditForm({ teamData }: TeamEditFormProps) {
             revalidator.revalidate();
           }
           setIsEditing(null);
-        } catch (err) {
+        } catch {
           setIsEditing(null);
         }
       }}

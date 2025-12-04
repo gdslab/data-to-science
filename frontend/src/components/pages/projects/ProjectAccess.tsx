@@ -116,7 +116,7 @@ export default function ProjectAccess() {
     } else {
       navigate(-1);
     }
-  }, []);
+  }, [navigate, projectRole]);
 
   function updateProjectMemberRole(
     projectMemberId: string,

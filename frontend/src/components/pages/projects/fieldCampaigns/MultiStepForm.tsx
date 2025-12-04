@@ -1,24 +1,35 @@
 import clsx from 'clsx';
-import { Form, Formik } from 'formik';
+import { Form, Formik, FormikHelpers } from 'formik';
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import * as Yup from 'yup';
 
-import Alert from '../../../Alert';
+import Alert, { Status } from '../../../Alert';
 import { Button } from '../../../Buttons';
 
 type MultiStep = {
   children: React.ReactNode;
-  validationSchema: Yup.ObjectSchema<any>;
+  validationSchema: Yup.ObjectSchema<Record<string, unknown>>;
 };
 
-export default function MultiStepForm({
+type MultiStepFormProps<T> = {
+  children: React.ReactNode;
+  initialValues: T;
+  onSubmit: (options: { submitAndQuit: boolean }) => (
+    values: T,
+    bag: FormikHelpers<T>
+  ) => void | Promise<void>;
+  status: Status | null;
+  setStatus: (status: Status | null) => void;
+};
+
+export default function MultiStepForm<T extends Record<string, unknown>>({
   children,
   initialValues,
   onSubmit,
   status,
   setStatus,
-}) {
+}: MultiStepFormProps<T>) {
   const { projectId } = useParams();
 
   const [stepNumber, setStepNumber] = useState(0);
@@ -33,19 +44,23 @@ export default function MultiStepForm({
     if (status) {
       setStatus(null);
     }
-  }, [stepNumber]);
+  }, [setStatus, status, stepNumber]);
 
-  const next = (values) => {
+  const next = (values: T) => {
     setSnapshot(values);
     setStepNumber(Math.min(stepNumber + 1, totalSteps - 1));
   };
 
-  const previous = (values) => {
+  const previous = (values: T) => {
     setSnapshot(values);
     setStepNumber(Math.max(stepNumber - 1, 0));
   };
 
-  const handleSubmit = async (values, bag, quit = false) => {
+  const handleSubmit = async (
+    values: T,
+    bag: FormikHelpers<T>,
+    quit = false
+  ) => {
     if (isLastStep) {
       if (quit) {
         return onSubmit({ submitAndQuit: true })(values, bag);
@@ -79,7 +94,10 @@ export default function MultiStepForm({
           <div className="w-full bg-slate-200 fixed bottom-0 px-6">
             <div className="flex flex-col">
               <div className="flex flex-row self-center justify-end gap-4">
-                <Link to={`/projects/${projectId}`} state={{ selectedIndex: 1 }}>
+                <Link
+                  to={`/projects/${projectId}`}
+                  state={{ selectedIndex: 1 }}
+                >
                   <Button type="button" size="sm">
                     Cancel
                   </Button>
@@ -94,7 +112,11 @@ export default function MultiStepForm({
                   </Button>
                 )}
                 <div>
-                  <Button type="submit" size="sm" disabled={formik.isSubmitting}>
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={formik.isSubmitting}
+                  >
                     {isLastStep ? 'Save' : 'Next'}
                   </Button>
                 </div>

@@ -42,7 +42,7 @@ export default function DataProducts({ data }: { data: DataProduct[] }) {
 
   useEffect(() => {
     if (!open) revalidator.revalidate();
-  }, [open]);
+  }, [open, revalidator]);
 
   useInterval(
     () => {

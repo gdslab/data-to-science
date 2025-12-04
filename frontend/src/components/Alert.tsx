@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   CheckCircleIcon,
   ExclamationCircleIcon,
@@ -90,7 +90,10 @@ function getAlertProps(alertType: AlertType) {
           'text-sm text-neutral-700',
         ],
         Icon: (
-          <FlagIcon className={`block h-6 w-6 text-neutral-500`} aria-hidden="true" />
+          <FlagIcon
+            className={`block h-6 w-6 text-neutral-500`}
+            aria-hidden="true"
+          />
         ),
       };
   }
@@ -167,7 +170,10 @@ function getAlertBarProps(alertType: AlertType) {
           'mt-2 text-sm text-neutral-700',
         ],
         Icon: (
-          <FlagIcon className={`block h-6 w-6 text-neutral-500`} aria-hidden="true" />
+          <FlagIcon
+            className={`block h-6 w-6 text-neutral-500`}
+            aria-hidden="true"
+          />
         ),
       };
   }
@@ -190,46 +196,40 @@ export function AlertBar({ alertType, children }: AlertProps) {
   const [isVisible, setIsVisible] = useState(false);
   const { color, Icon } = getAlertBarProps(alertType);
 
-  useEffect(() => {
-    setIsVisible(true);
-  }, [children]);
-
   function handleClose() {
     setIsVisible(false);
   }
 
-  if (!isVisible) {
-    return null;
-  } else {
-    return (
-      <div role="alert" className={color[0]} style={{ zIndex: 1000 }}>
-        <div className={color[1]}>
-          <div className="flex flex-cols gap-4 items-center">
-            {Icon}
-            <span>{children}</span>
-          </div>
-          <div className="flex">
-            <button className="transition" onClick={handleClose}>
-              <span className="sr-only">Dismiss popup</span>
+  if (!isVisible) return null;
 
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="1.5"
-                stroke="currentColor"
-                className="h-6 w-6"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
+  return (
+    <div role="alert" className={color[0]} style={{ zIndex: 1000 }}>
+      <div className={color[1]}>
+        <div className="flex flex-cols gap-4 items-center">
+          {Icon}
+          <span>{children}</span>
+        </div>
+        <div className="flex">
+          <button className="transition" onClick={handleClose}>
+            <span className="sr-only">Dismiss popup</span>
+
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="1.5"
+              stroke="currentColor"
+              className="h-6 w-6"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 }
