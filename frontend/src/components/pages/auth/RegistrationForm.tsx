@@ -7,6 +7,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import Layout from './Layout';
 import Alert, { Status } from '../../Alert';
 import { Button, OutlineButton } from '../../Buttons';
+import Checkbox from '../../Checkbox';
 import HintText from '../../HintText';
 import { InputField } from '../../FormFields';
 import { User } from '../../../AuthContext';
@@ -104,14 +105,13 @@ export default function RegistrationForm() {
             type={showPassword ? 'text' : 'password'}
           />
           <div className="flex items-center">
-            <input
-              id="default-checkbox"
-              type="checkbox"
-              className="w-4 h-4 text-slate-600 accent-slate-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-slate-500 focus:ring-2"
+            <Checkbox
+              id="showpass-checkbox"
+              checked={showPassword}
               onChange={(e) => toggleShowPassword(e.target.checked)}
             />
             <label
-              htmlFor="default-checkbox"
+              htmlFor="showpass-checkbox"
               className="ms-2 text-sm font-medium text-gray-900"
             >
               Show password

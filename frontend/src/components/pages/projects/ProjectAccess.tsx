@@ -62,7 +62,7 @@ function AccessRoleRadioGroup({
       <button
         className={classNames(
           currentRole !== role ? '' : 'text-gray-300',
-          'flex items-center gap-1.5'
+          'flex items-center gap-1.5 cursor-pointer'
         )}
         onClick={async (e) => {
           e.preventDefault();
@@ -243,7 +243,7 @@ export default function ProjectAccess() {
                           updateProjectMemberRole={updateProjectMemberRole}
                         />,
                         <button
-                          className="text-sky-600"
+                          className="text-sky-600 cursor-pointer"
                           type="button"
                           onClick={() =>
                             removeProjectMember(id, projectMembers)

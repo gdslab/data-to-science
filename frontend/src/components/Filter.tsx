@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 
+import Checkbox from './Checkbox';
+
 export default function Filter({
   categories,
   selectedCategory,
@@ -142,10 +144,8 @@ export default function Filter({
                         htmlFor={category.value}
                         className="inline-flex items-center gap-2"
                       >
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           id={category.value}
-                          className="size-5 rounded-sm text-accent2 border-gray-300"
                           value={category.value}
                           checked={parentChecked}
                           onChange={onChange}
@@ -163,10 +163,8 @@ export default function Filter({
                                 htmlFor={`${category.value}-${sub.value}`}
                                 className="inline-flex items-center gap-2"
                               >
-                                <input
-                                  type="checkbox"
+                                <Checkbox
                                   id={`${category.value}-${sub.value}`}
-                                  className="size-4 rounded-sm text-accent2 border-gray-300"
                                   value={sub.value}
                                   checked={
                                     !!sublistSelected &&

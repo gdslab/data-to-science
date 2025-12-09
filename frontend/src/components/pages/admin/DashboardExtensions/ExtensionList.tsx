@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useRevalidator } from 'react-router';
 
 import { Status } from '../../../Alert';
+import Checkbox from '../../../Checkbox';
 
 import api from '../../../../api';
 
@@ -84,17 +85,15 @@ export default function ExtensionList({
     <div className="flex justify-center gap-4">
       {extensions.map((extension) => (
         <div key={extension.id} className="flex items-center">
-          <input
-            type="checkbox"
-            id={extension.id}
+          <Checkbox
+            id={`${extension.id}-checkbox`}
             name={extension.name}
             value={extension.id}
-            className="w-4 h-4 text-accent2 accent-slate-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-accent2/70 focus:ring-2"
-            onChange={handleOnChange}
             checked={selectedExtensions.includes(extension.name)}
+            onChange={handleOnChange}
           />
           <label
-            htmlFor={extension.id}
+            htmlFor={`${extension.id}-checkbox`}
             className="ms-2 text-sm font-medium text-gray-900"
             title={extension.description}
           >

@@ -1,5 +1,5 @@
 import { AxiosResponse } from 'axios';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Params, useLoaderData } from 'react-router';
 
 import { User } from '../../../AuthContext';
@@ -95,6 +95,9 @@ export default function ProjectDetail() {
   const projectId = project.id;
   const teamId = project.team_id;
 
+  // Track the previous flights from loader to detect actual changes
+  const flightsLoaderRef = useRef(flights);
+
   useEffect(() => {
     if (role) projectRoleDispatch({ type: 'set', payload: role });
   }, [projectRoleDispatch, role]);
@@ -117,32 +120,36 @@ export default function ProjectDetail() {
   }, [project, project_modules, projectModulesDispatch]);
 
   useEffect(() => {
-    if (flights) flightsDispatch({ type: 'set', payload: flights });
+    // Only update if flights data actually changed (not just reference)
+    if (flights && flightsLoaderRef.current !== flights) {
+      flightsLoaderRef.current = flights;
+      flightsDispatch({ type: 'set', payload: flights });
 
-    // check filter option for new flight if it is the first flight with its sensor
-    if (flights && flightsPrev) {
-      // no previous flights, so select any sensor in flights
-      if (flightsPrev.length === 0) {
-        flightsFilterSelectionDispatch({
-          type: 'set',
-          payload: [...new Set(flights.map(({ sensor }) => sensor))],
-        });
-      } else {
-        // compare previous sensors with sensor in new flights
-        const prevSensors = flightsPrev.map(({ sensor }) => sensor);
-        const newSensors = flights
-          .filter(
-            ({ sensor }) =>
-              prevSensors.indexOf(sensor) < 0 &&
-              flightsFilterSelection.indexOf(sensor) < 0
-          )
-          .map(({ sensor }) => sensor);
-        // if any new sensors were found, add to filter selection options and check
-        if (newSensors.length > 0) {
+      // check filter option for new flight if it is the first flight with its sensor
+      if (flightsPrev) {
+        // no previous flights, so select any sensor in flights
+        if (flightsPrev.length === 0) {
           flightsFilterSelectionDispatch({
             type: 'set',
-            payload: [...flightsFilterSelection, ...newSensors],
+            payload: [...new Set(flights.map(({ sensor }) => sensor))],
           });
+        } else {
+          // compare previous sensors with sensor in new flights
+          const prevSensors = flightsPrev.map(({ sensor }) => sensor);
+          const newSensors = flights
+            .filter(
+              ({ sensor }) =>
+                prevSensors.indexOf(sensor) < 0 &&
+                flightsFilterSelection.indexOf(sensor) < 0
+            )
+            .map(({ sensor }) => sensor);
+          // if any new sensors were found, add to filter selection options and check
+          if (newSensors.length > 0) {
+            flightsFilterSelectionDispatch({
+              type: 'set',
+              payload: [...flightsFilterSelection, ...newSensors],
+            });
+          }
         }
       }
     }

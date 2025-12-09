@@ -9,6 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 import Alert, { Status } from '../../../Alert';
+import Checkbox from '../../../Checkbox';
 import { Measurement } from './FieldCampaign';
 import { useFieldCampaignContext } from './FieldCampaignContext';
 
@@ -41,10 +42,14 @@ function FieldTimepoints({
         >
           <div className="flex flex-row gap-1">
             <div className="flex items-center">
-              <input
+              <Checkbox
+                id={`treatment.${treatmentIdx}.measurement.${measurementIdx}.timepoint.${timepointIdx}-checkbox`}
                 name={`treatment.${treatmentIdx}.measurement.${measurementIdx}.timepoint.${timepointIdx}`}
-                type="checkbox"
-                className="w-4 h-4 size-4 rounded-sm text-accent2 bg-gray-100 border-gray-300 rounded-sm focus:ring-slate-500 focus:ring-2"
+                checked={selectedTimepoints.includes(
+                  treatmentIdx.toString() +
+                    measurementIdx.toString() +
+                    timepointIdx.toString()
+                )}
                 onChange={(e) => {
                   if (e.target.checked) {
                     addSelectedTimepoint(
@@ -60,13 +65,11 @@ function FieldTimepoints({
                     );
                   }
                 }}
-                checked={selectedTimepoints.includes(
-                  treatmentIdx.toString() +
-                    measurementIdx.toString() +
-                    timepointIdx.toString()
-                )}
               />
-              <label htmlFor="selectTimepoint" className="sr-only">
+              <label
+                htmlFor={`treatment.${treatmentIdx}.measurement.${measurementIdx}.timepoint.${timepointIdx}-checkbox`}
+                className="sr-only"
+              >
                 Select Timepoint
               </label>
             </div>
