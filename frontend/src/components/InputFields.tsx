@@ -227,13 +227,13 @@ export function EditField({
         <div className="flex gap-4">
           <button
             type="submit"
-            className="inline rounded-full focus:outline-hidden focus:ring-3 focus:ring-accent2"
+            className="inline rounded-full focus:outline-hidden focus:ring-3 focus:ring-accent2 cursor-pointer"
           >
             <CheckIcon className="h-4 w-4 text-slate-400 cursor-pointer" />
           </button>
           <button
             type="button"
-            className="inline rounded-full focus:outline-hidden focus:ring-3 focus:ring-accent2"
+            className="inline rounded-full focus:outline-hidden focus:ring-3 focus:ring-accent2 cursor-pointer"
             onClick={() => {
               setIsEditing(null);
             }}
@@ -322,6 +322,7 @@ export function TextArrayField({ btnLabel, name, values }: TextFieldArray) {
                   <TextField name={`${name}.${index}`} />
                   <div className="flex flex gap-4">
                     <button
+                      className="cursor-pointer"
                       type="button"
                       onClick={() => arrayHelpers.remove(index)}
                     >
@@ -341,6 +342,7 @@ export function TextArrayField({ btnLabel, name, values }: TextFieldArray) {
                       </svg>
                     </button>
                     <button
+                      className="cursor-pointer"
                       type="button"
                       onClick={() => arrayHelpers.insert(index, '')}
                     >
@@ -403,6 +405,7 @@ export function SelectFieldArray({
                   <SelectField name={`${name}.${index}`} options={options} />
                   <div className="flex flex gap-4">
                     <button
+                      className="cursor-pointer"
                       type="button"
                       onClick={() => arrayHelpers.remove(index)}
                     >
@@ -422,6 +425,7 @@ export function SelectFieldArray({
                       </svg>
                     </button>
                     <button
+                      className="cursor-pointer"
                       type="button"
                       onClick={() => arrayHelpers.insert(index, '')}
                     >

@@ -55,7 +55,7 @@ export default function ImagePreviewModal({
                     <button
                       type="button"
                       onClick={() => setOpen(false)}
-                      className="rounded-full p-1 text-gray-400 hover:text-gray-500 focus:outline-hidden focus:ring-2 focus:ring-accent2"
+                      className="rounded-full p-1 text-gray-400 hover:text-gray-500 focus:outline-hidden focus:ring-2 focus:ring-accent2 cursor-pointer"
                       aria-label="Close preview"
                     >
                       <XMarkIcon className="h-6 w-6" />

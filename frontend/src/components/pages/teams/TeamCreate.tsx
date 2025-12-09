@@ -152,6 +152,7 @@ export default function TeamCreate() {
                             {user && teamMember.email !== user.email ? (
                               <button
                                 type="button"
+                                className="cursor-pointer"
                                 onClick={() => removeTeamMember(teamMember.id)}
                               >
                                 <XMarkIcon

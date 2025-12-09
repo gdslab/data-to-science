@@ -385,7 +385,7 @@ const DownloadZonalStatistics = ({
   return (
     <div className="inline">
       <button
-        className="ml-2 text-sky-600"
+        className="ml-2 text-sky-600 cursor-pointer"
         type="button"
         onClick={() => {
           const csvData = Papa.unparse(
@@ -404,7 +404,7 @@ const DownloadZonalStatistics = ({
         Download CSV
       </button>
       <button
-        className="ml-2 text-sky-600"
+        className="ml-2 text-sky-600 cursor-pointer"
         type="button"
         onClick={() => {
           downloadGeoJSON(

@@ -10,8 +10,8 @@ export default function FieldCampaignFormStep1() {
     <div className="flex flex-col gap-2">
       <h1>Experiment information</h1>
       <p>
-        Here is where you can enter information to identify your experiment. You can add
-        more information if necessary.
+        Here is where you can enter information to identify your experiment. You
+        can add more information if necessary.
       </p>
 
       <FieldArray
@@ -50,6 +50,7 @@ export default function FieldCampaignFormStep1() {
                           <div className="flex items-center justify-center min-h-24 w-1/12">
                             {newColumn.name !== 'Experiment' ? (
                               <button
+                                className="cursor-pointer"
                                 type="button"
                                 onClick={() => arrayHelpers.remove(index)}
                               >

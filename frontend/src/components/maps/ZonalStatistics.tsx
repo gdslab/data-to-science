@@ -77,6 +77,7 @@ export const DownloadZonalStatistic = ({
     <div>
       <button
         type="button"
+        className="cursor-pointer"
         onClick={() => {
           const csvData = Papa.unparse([
             Object.fromEntries(
@@ -103,6 +104,7 @@ export const DownloadZonalStatistic = ({
     <div>
       <button
         type="button"
+        className="cursor-pointer"
         onClick={() => {
           downloadGeoJSON(
             'json',

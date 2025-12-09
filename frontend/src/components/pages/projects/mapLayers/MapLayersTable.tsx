@@ -241,7 +241,7 @@ export default function ProjectLayersTable() {
                         <button
                           type="button"
                           onClick={() => handleSave(layer)}
-                          className="inline rounded-full focus:outline-hidden focus:ring-3 focus:ring-accent2"
+                          className="inline rounded-full focus:outline-hidden focus:ring-3 focus:ring-accent2 cursor-pointer"
                           aria-label="Save layer name"
                           title="Save"
                         >
@@ -250,7 +250,7 @@ export default function ProjectLayersTable() {
                         <button
                           type="button"
                           onClick={handleCancel}
-                          className="inline rounded-full focus:outline-hidden focus:ring-3 focus:ring-accent2"
+                          className="inline rounded-full focus:outline-hidden focus:ring-3 focus:ring-accent2 cursor-pointer"
                           aria-label="Cancel editing"
                           title="Cancel"
                         >
@@ -268,7 +268,7 @@ export default function ProjectLayersTable() {
                         <button
                           type="button"
                           onClick={() => handleEdit(layer)}
-                          className="shrink-0 inline rounded-full focus:outline-hidden focus:ring-3 focus:ring-accent2"
+                          className="shrink-0 inline rounded-full focus:outline-hidden focus:ring-3 focus:ring-accent2 cursor-pointer"
                           aria-label="Edit layer name"
                           title="Edit layer name"
                         >

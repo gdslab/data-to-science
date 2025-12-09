@@ -93,6 +93,7 @@ export default function MapLayerUpload() {
             <span className="text-primary font-bold">Upload Vector Layer</span>
             <button
               type="button"
+              className="cursor-pointer"
               onClick={handleClick}
               title="Close upload popup"
             >

@@ -36,7 +36,11 @@ export default function ConfirmationModal({
         </Button>
       )}
       {btnType === 'trashIcon' && (
-        <button type="button" onClick={() => setOpen(true)}>
+        <button
+          className="cursor-pointer"
+          type="button"
+          onClick={() => setOpen(true)}
+        >
           <span className="sr-only">Remove</span>
           <TrashIcon height={iconSize} width={iconSize} />
         </button>

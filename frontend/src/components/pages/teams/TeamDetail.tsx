@@ -175,6 +175,7 @@ export default function TeamDetail() {
                 <div className="w-full sm:w-48">
                   <Button
                     type="button"
+                    className="cursor-pointer"
                     size="sm"
                     icon="trash"
                     onClick={() => setOpen(true)}

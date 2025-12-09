@@ -33,7 +33,7 @@ export default function SearchBar({
       <span className="absolute inset-y-0 end-0 grid w-10 place-content-center">
         <button
           type="button"
-          className="text-gray-600 hover:text-gray-700"
+          className="text-gray-600 hover:text-gray-700 cursor-pointer"
           onClick={() => {
             // searchUsers();
             // updateSearchTerm('');

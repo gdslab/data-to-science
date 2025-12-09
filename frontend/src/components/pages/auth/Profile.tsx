@@ -242,7 +242,7 @@ function EditProfilePicture({ setStatus, updateProfile }: EditProfilePicture) {
           </a>
 
           <button
-            className="h-full p-2 text-gray-600 hover:bg-gray-50 hover:text-gray-700"
+            className="h-full p-2 text-gray-600 hover:bg-gray-50 hover:text-gray-700 cursor-pointer"
             onClick={() => toggleMenuVisibility(!menuVisibility)}
           >
             <span className="sr-only">Menu</span>
@@ -268,7 +268,7 @@ function EditProfilePicture({ setStatus, updateProfile }: EditProfilePicture) {
             </a>
             <button
               type="submit"
-              className="flex w-full items-center gap-2 rounded-lg px-4 py-2 text-sm text-red-700 hover:bg-red-50"
+              className="flex w-full items-center gap-2 rounded-lg px-4 py-2 text-sm text-red-700 hover:bg-red-50 cursor-pointer"
               role="menuitem"
               onClick={async () => {
                 try {

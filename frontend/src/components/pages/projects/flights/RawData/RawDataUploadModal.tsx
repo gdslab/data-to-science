@@ -1,5 +1,10 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
-import { Dialog, DialogPanel, Transition, TransitionChild } from '@headlessui/react';
+import {
+  Dialog,
+  DialogPanel,
+  Transition,
+  TransitionChild,
+} from '@headlessui/react';
 
 import DataProductUpload from '../DataProducts/DataProductUpload';
 
@@ -69,7 +74,10 @@ export default function RawDataUploadModal({
                       flightID: flightID,
                       projectID: projectID,
                     }}
-                    fileType={['application/zip', 'application/x-zip-compressed']}
+                    fileType={[
+                      'application/zip',
+                      'application/x-zip-compressed',
+                    ]}
                     uploadType="rawData"
                     updateSetDisabled={() => {}}
                     updateUploadHistory={updateUploadHistory}
@@ -90,12 +98,13 @@ export default function RawDataUploadModal({
 
                 <div className="flex items-center justify-between bg-gray-50 px-4 py-3 sm:px-6">
                   <span>
-                    Click <strong>Done</strong> when you have finished uploading files.
+                    Click <strong>Done</strong> when you have finished uploading
+                    files.
                   </span>
                   <button
                     ref={cancelButtonRef}
                     type="button"
-                    className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                    className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto cursor-pointer"
                     aria-label="Done button"
                     onClick={() => setOpen(false)}
                   >

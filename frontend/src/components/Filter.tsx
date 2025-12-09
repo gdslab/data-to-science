@@ -122,7 +122,7 @@ export default function Filter({
 
                 <button
                   type="button"
-                  className="text-sm text-gray-900 underline underline-offset-4"
+                  className="text-sm text-gray-900 underline underline-offset-4 cursor-pointer"
                   onClick={() => {
                     setSelectedCategory([]);
                     if (setSublistSelected) setSublistSelected([]);
