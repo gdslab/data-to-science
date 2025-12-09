@@ -52,6 +52,7 @@ export default function BandSelect({
     >
       {`${bandColor.charAt(0).toUpperCase() + bandColor.slice(1)} Band`}
       <Select<BandOption>
+        inputId={`${bandColor}IndexSelect`}
         name={`${bandColor}IndexSelect`}
         styles={{
           input: (base) => ({

@@ -317,7 +317,6 @@ export function MapContextProvider({
 }: {
   children: React.ReactNode;
 }) {
-  console.log('-----MapContext.tsx rendered-----');
   const [activeDataProduct, activeDataProductDispatch] = useReducer(
     activeDataProductReducer,
     null

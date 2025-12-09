@@ -48,7 +48,9 @@ export default function ColorBarControl({
                   : symbology.mode === 'userDefined'
                   ? symbology.userMin.toFixed(2)
                   : symbology.mode === 'meanStdDev'
-                  ? (stats.mean - stats.stddev * symbology.meanStdDev).toFixed(2)
+                  ? (stats.mean - stats.stddev * symbology.meanStdDev).toFixed(
+                      2
+                    )
                   : symbology.min.toFixed(2),
               cmax:
                 symbology.mode === 'minMax'
@@ -56,7 +58,9 @@ export default function ColorBarControl({
                   : symbology.mode === 'userDefined'
                   ? symbology.userMax.toFixed(2)
                   : symbology.mode === 'meanStdDev'
-                  ? (stats.mean + stats.stddev * symbology.meanStdDev).toFixed(2)
+                  ? (stats.mean + stats.stddev * symbology.meanStdDev).toFixed(
+                      2
+                    )
                   : symbology.max.toFixed(2),
               cmap: symbology.colorRamp,
               refresh: refresh,

@@ -52,7 +52,6 @@ export function MapApiKeysContextProvider({
 }: {
   children: React.ReactNode;
 }) {
-  console.log('-----MapApiKeysContext.tsx rendered-----');
   const [mapboxAccessToken, mapboxAccessTokenDispatch] = useReducer(
     mapboxAccessTokenReducer,
     ''

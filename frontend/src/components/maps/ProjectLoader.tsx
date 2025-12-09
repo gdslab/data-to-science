@@ -8,12 +8,10 @@ import api from '../../api';
 import { getLocalStorageProjects, filterValidProjects } from './utils';
 
 export default function ProjectLoader() {
-  console.log('-----ProjectLoader.tsx rendered-----');
   const { projectsDispatch, projectsLoadedDispatch } = useMapContext();
 
   useEffect(() => {
     const fetchProjects = async () => {
-      console.log('-----ProjectLoader.tsx::fetchProjects-----');
       try {
         const geojsonUrl = `/projects?include_all=${false}`;
         const response: AxiosResponse<ProjectItem[]> = await api.get(

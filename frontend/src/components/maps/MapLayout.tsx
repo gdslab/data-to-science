@@ -14,7 +14,6 @@ function classNames(...classes: [string, string]) {
 }
 
 export default function MapLayout() {
-  console.log('-----MapLayout.tsx rendered-----');
   const [hidePane, toggleHidePane] = useState(false);
 
   return (

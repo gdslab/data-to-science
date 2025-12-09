@@ -207,7 +207,7 @@ export default function DataTypeRadioInput({
         {dtype === 'other' ? (
           <fieldset className="w-full flex flex-wrap justify-evenly gap-1.5">
             <legend className="sr-only">Data type other</legend>
-            <label htmlFor="Search" className="sr-only">
+            <label htmlFor="dTypeOther" className="sr-only">
               Other
             </label>
             <input
