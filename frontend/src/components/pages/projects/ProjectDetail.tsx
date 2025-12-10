@@ -95,8 +95,7 @@ export default function ProjectDetail() {
   const projectId = project.id;
   const teamId = project.team_id;
 
-  // Track the previous flights from loader to detect actual changes
-  const flightsLoaderRef = useRef(flights);
+  const flightsLoaderRef = useRef<Flight[] | null>(null);
 
   useEffect(() => {
     if (role) projectRoleDispatch({ type: 'set', payload: role });
@@ -115,8 +114,7 @@ export default function ProjectDetail() {
 
   useEffect(() => {
     // update project modules
-    if (project)
-      projectModulesDispatch({ type: 'set', payload: project_modules });
+    projectModulesDispatch({ type: 'set', payload: project_modules });
   }, [project, project_modules, projectModulesDispatch]);
 
   useEffect(() => {
@@ -151,6 +149,11 @@ export default function ProjectDetail() {
             });
           }
         }
+      } else {
+        flightsFilterSelectionDispatch({
+          type: 'set',
+          payload: [...new Set(flights.map(({ sensor }) => sensor))],
+        });
       }
     }
   }, [
