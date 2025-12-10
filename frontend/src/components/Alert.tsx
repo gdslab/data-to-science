@@ -193,7 +193,7 @@ export default function Alert({ alertType, children }: AlertProps) {
 }
 
 export function AlertBar({ alertType, children }: AlertProps) {
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const { color, Icon } = getAlertBarProps(alertType);
 
   function handleClose() {
@@ -210,7 +210,7 @@ export function AlertBar({ alertType, children }: AlertProps) {
           <span>{children}</span>
         </div>
         <div className="flex">
-          <button className="transition" onClick={handleClose}>
+          <button className="transition cursor-pointer" onClick={handleClose}>
             <span className="sr-only">Dismiss popup</span>
 
             <svg
