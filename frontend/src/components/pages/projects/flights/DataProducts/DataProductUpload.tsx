@@ -7,10 +7,7 @@ import Dashboard from '@uppy/react/lib/Dashboard';
 import Tus from '@uppy/tus';
 
 import { refreshTokenIfNeeded } from '../../../../../api';
-import {
-  ErrorResponseBody,
-  ValidationError,
-} from '../../../../../types/uppy';
+import { ErrorResponseBody, ValidationError } from '../../../../../types/uppy';
 
 type DataProductInfo = {
   dtype: string;

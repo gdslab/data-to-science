@@ -21,8 +21,13 @@ function getFlightDataTabSelectionFromLS(): number {
   }
 }
 
-export default function FlightDataTabNav({ dataProducts, rawData }: FlightData) {
-  const [selectedIndex, setSelectedIndex] = useState(getFlightDataTabSelectionFromLS());
+export default function FlightDataTabNav({
+  dataProducts,
+  rawData,
+}: FlightData) {
+  const [selectedIndex, setSelectedIndex] = useState(
+    getFlightDataTabSelectionFromLS()
+  );
 
   function onChange(index: number) {
     localStorage.setItem('flightDataTabSelection', index.toString());
@@ -45,7 +50,6 @@ export default function FlightDataTabNav({ dataProducts, rawData }: FlightData) 
           <DataProducts data={dataProducts} />
         </TabPanel>
         <TabPanel>
-          {/* <RawData data={rawData} open={open} setOpen={setOpen} /> */}
           <RawData rawData={rawData} />
         </TabPanel>
       </TabPanels>

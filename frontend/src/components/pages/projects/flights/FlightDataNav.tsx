@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef } from "react";
-import { Link, useParams } from "react-router";
+import { useEffect, useMemo, useRef } from 'react';
+import { Link, useParams } from 'react-router';
 
-import { useProjectContext } from "../ProjectContext";
-import { classNames, sorter } from "../../../utils";
+import { useProjectContext } from '../ProjectContext';
+import { classNames, sorter } from '../../../utils';
 
-import UASIcon from "../../../../assets/uas-icon.svg";
+import UASIcon from '../../../../assets/uas-icon.svg';
 
 export default function FlightDataNav() {
   const { flightId, projectId } = useParams();
@@ -20,7 +20,7 @@ export default function FlightDataNav() {
               sorter(
                 new Date(a.acquisition_date),
                 new Date(b.acquisition_date),
-                "desc"
+                'desc'
               )
             )
         : [],
@@ -30,8 +30,8 @@ export default function FlightDataNav() {
   useEffect(() => {
     if (selectedFlightRef.current) {
       selectedFlightRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
+        behavior: 'smooth',
+        block: 'center',
       });
     }
   }, [flightId]);
@@ -48,9 +48,9 @@ export default function FlightDataNav() {
           ref={flight.id === flightId ? selectedFlightRef : null}
           className={classNames(
             flight.id === flightId
-              ? "border-accent2 border-4"
-              : "border-slate-400 border-2",
-            "flex flex-col items-center justify-center h-36 min-h-36 w-36 bg-white hover:border-accent2 rounded-md p-1"
+              ? 'border-accent2 border-4'
+              : 'border-slate-400 border-2',
+            'flex flex-col items-center justify-center h-36 min-h-36 w-36 bg-white hover:border-accent2 rounded-md p-1'
           )}
           to={`/projects/${projectId}/flights/${flight.id}/data`}
         >
@@ -58,7 +58,7 @@ export default function FlightDataNav() {
           <span className="block text-lg">{flight.sensor}</span>
           {flight.acquisition_date}
           <span className="w-full text-center text-slate-700 text-sm font-light truncate">
-            {flight.name ? flight.name : ""}
+            {flight.name ? flight.name : ''}
           </span>
           <span className="w-full text-center text-slate-700 text-sm font-light truncate">
             {flight.platform}

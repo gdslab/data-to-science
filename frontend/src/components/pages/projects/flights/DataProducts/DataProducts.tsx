@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, useRevalidator } from 'react-router';
 
 import { DataProduct } from '../../Project';
@@ -40,10 +40,6 @@ export default function DataProducts({ data }: { data: DataProduct[] }) {
 
   const { projectRole } = useProjectContext();
 
-  useEffect(() => {
-    if (!open) revalidator.revalidate();
-  }, [open, revalidator]);
-
   useInterval(
     () => {
       revalidator.revalidate();
@@ -56,6 +52,11 @@ export default function DataProducts({ data }: { data: DataProduct[] }) {
       ? 5000 // check every 5 seconds while processing job is active
       : 30000 // check every 30 seconds when no known jobs are active
   );
+
+  function handleModalClose() {
+    setOpen(false);
+    revalidator.revalidate(); // Revalidate when modal closes
+  }
 
   function onTableViewChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.value === 'carousel' || e.target.value === 'table') {
@@ -104,7 +105,7 @@ export default function DataProducts({ data }: { data: DataProduct[] }) {
             flightID={flightId}
             open={open}
             projectID={projectId}
-            setOpen={setOpen}
+            handleModalClose={handleModalClose}
           />
           <Button size="sm" onClick={() => setOpen(true)}>
             Upload Data Product
