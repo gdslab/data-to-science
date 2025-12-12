@@ -438,7 +438,7 @@ export default function Profile() {
                 {user.profile_url ? (
                   <img
                     key={user.profile_url.split('/').slice(-1)[0].slice(0, -4)}
-                    className="h-24 w-24 rounded-full"
+                    className="h-24 w-24 rounded-full object-cover"
                     src={user.profile_url}
                   />
                 ) : (

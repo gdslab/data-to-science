@@ -133,7 +133,7 @@ export default function Navbar() {
                                 .split('/')
                                 .slice(-1)[0]
                                 .slice(0, -4)}
-                              className="h-8 w-8 rounded-full"
+                              className="h-8 w-8 rounded-full object-cover"
                               src={user.profile_url}
                             />
                           ) : (

@@ -121,19 +121,6 @@ export default function GeomanControl({
         geomanRef.current = new Geoman(mapInstance, geomanOptions);
         initializedRef.current = true;
         setGeomanReady(true);
-
-        // Import existing feature if it exists
-        if (editFeature) {
-          mapInstance.on('gm:loaded', () => {
-            geomanRef.current?.features.importGeoJsonFeature(
-              editFeature as GeoJsonImportFeature
-            );
-            fitMapToGeoJSON(
-              mapInstance as unknown as maplibregl.Map,
-              editFeature as GeoJsonImportFeature
-            );
-          });
-        }
       } catch (error) {
         console.error('Error initializing Geoman:', error);
       }
@@ -164,7 +151,7 @@ export default function GeomanControl({
         }
       }
     };
-  }, [editFeature, map]); // Only depend on map, not on callbacks
+  }, [map]); // Only depend on map - editFeature changes are handled by the import effect
 
   // Update event handlers when callbacks change
   useEffect(() => {
@@ -202,7 +189,7 @@ export default function GeomanControl({
 
   // Import editFeature when it changes
   useEffect(() => {
-    if (editFeature && geomanRef.current) {
+    if (editFeature && geomanReady && geomanRef.current) {
       try {
         // Clear any existing features
         clearAllGeomanFeatures(geomanRef.current);
@@ -224,7 +211,7 @@ export default function GeomanControl({
         console.warn('Error importing editFeature to Geoman:', error);
       }
     }
-  }, [editFeature, map]);
+  }, [editFeature, map, geomanReady]);
 
   // Reset feature count when disabled
   useEffect(() => {

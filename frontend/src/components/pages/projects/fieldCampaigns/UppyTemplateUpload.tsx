@@ -1,11 +1,11 @@
 import Papa from 'papaparse';
 import { useState } from 'react';
 import Uppy from '@uppy/core';
-import { DragDrop } from '@uppy/react';
+import DragDrop from '@uppy/drag-drop';
 import FileInput from '@uppy/file-input';
 
-import '@uppy/core/dist/style.min.css';
-import '@uppy/drag-drop/dist/style.min.css';
+import '@uppy/core/css/style.min.css';
+import '@uppy/drag-drop/css/style.min.css';
 import { useFormikContext } from 'formik';
 
 import { TemplateInput, TemplateUpload } from './FieldCampaign';
@@ -25,7 +25,10 @@ const headersMatch = (headers1: string[], headers2: string[]): boolean => {
   return true;
 };
 
-export default function UppyTemplateUpload({ id, updateCsvErrors }: TemplateUpload) {
+export default function UppyTemplateUpload({
+  id,
+  updateCsvErrors,
+}: TemplateUpload) {
   const [uppy] = useState(() => new Uppy().use(FileInput, { id: id }));
 
   const { setFieldValue, setFieldTouched } = useFormikContext();
@@ -46,7 +49,8 @@ export default function UppyTemplateUpload({ id, updateCsvErrors }: TemplateUplo
               header: true,
               dynamicTyping: true,
               skipEmptyLines: true,
-              complete: (results: Papa.ParseResult<TemplateInput>) => resolve(results),
+              complete: (results: Papa.ParseResult<TemplateInput>) =>
+                resolve(results),
             })
           )
       )
@@ -59,7 +63,10 @@ export default function UppyTemplateUpload({ id, updateCsvErrors }: TemplateUplo
             selected: true,
           });
           setFieldTouched(`treatments.${id}.columns.${headerIndex}.name`, true);
-          setFieldTouched(`treatments.${id}.columns.${headerIndex}.selected`, true);
+          setFieldTouched(
+            `treatments.${id}.columns.${headerIndex}.selected`,
+            true
+          );
         });
       }
       // track previous headers to make comparisons between files

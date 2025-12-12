@@ -1,9 +1,9 @@
-import '@uppy/core/dist/style.min.css';
-import '@uppy/dashboard/dist/style.min.css';
+import '@uppy/core/css/style.min.css';
+import '@uppy/dashboard/css/style.min.css';
 
 import { useEffect, useState } from 'react';
 import Uppy from '@uppy/core';
-import Dashboard from '@uppy/react/lib/Dashboard';
+import Dashboard from '@uppy/react/dashboard';
 import Tus from '@uppy/tus';
 
 import { refreshTokenIfNeeded } from '../../../../../api';
@@ -43,7 +43,7 @@ export default function DataProductUpload({
   updateSetDisabled,
   updateUploadHistory,
 }: DataProductUpload) {
-  const [uppy, updateUppy] = useState(() => createUppy(info));
+  const [uppy, updateUppy] = useState(createUppy(info));
 
   useEffect(() => {
     // updates custom headers when data type, project id, or flight id change

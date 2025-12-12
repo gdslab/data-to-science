@@ -7,7 +7,7 @@ import ConfirmationModal from '../../../ConfirmationModal';
 import { TextField } from '../../../InputFields';
 import { FieldCampaignInitialValues } from './FieldCampaign';
 import { UpdateCSVErrors } from './FieldCampaign';
-import UppyTemplateUpload from './UppyTemplateUpload';
+// import UppyTemplateUpload from './UppyTemplateUpload';
 
 export default function FieldCampaignFormStep2({
   csvErrors,
@@ -28,10 +28,10 @@ export default function FieldCampaignFormStep2({
     <div className="flex flex-col gap-2">
       <h1>Treatment</h1>
       <p>
-        The template can be created to suit your individual needs. For example, for ease
-        of data collection in the field, it may make sense to create separate templates
-        according to the first level (factor) of your field's spatial layout (e.g.,
-        Well-watered, Water-deficit).
+        The template can be created to suit your individual needs. For example,
+        for ease of data collection in the field, it may make sense to create
+        separate templates according to the first level (factor) of your field's
+        spatial layout (e.g., Well-watered, Water-deficit).
       </p>
 
       <div>
@@ -50,15 +50,16 @@ export default function FieldCampaignFormStep2({
                           name={`treatments.${index}.name`}
                           label="Treatment name"
                         />
-                        {!treatment.columns || treatment.columns.length === 0 ? (
+                        {/* {!treatment.columns || treatment.columns.length === 0 ? (
                           <UppyTemplateUpload
                             id={index.toString()}
                             updateCsvErrors={updateCsvErrors}
                           />
-                        ) : null}
+                        ) : null} */}
                         {csvErrors[index].length === 0 ? (
                           <Fragment>
-                            {treatment.filenames && treatment.filenames.length > 0 ? (
+                            {treatment.filenames &&
+                            treatment.filenames.length > 0 ? (
                               <div>
                                 <span className="font-semibold text-sm text-slate-700">
                                   Upload file(s):
@@ -70,7 +71,8 @@ export default function FieldCampaignFormStep2({
                                 </ul>
                               </div>
                             ) : null}
-                            {treatment.columns && treatment.columns.length > 0 ? (
+                            {treatment.columns &&
+                            treatment.columns.length > 0 ? (
                               <fieldset>
                                 <legend>Select columns to keep:</legend>
 
