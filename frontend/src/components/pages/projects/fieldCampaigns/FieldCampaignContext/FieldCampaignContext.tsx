@@ -1,5 +1,5 @@
 import { AxiosResponse } from 'axios';
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router';
 
 import { FieldCampaign } from '../../Project';
@@ -36,6 +36,10 @@ export function FieldCampaignContextProvider({ children }: ContextProvider) {
 
   const { projectId } = useParams();
 
+  const updateFieldCampaign = useCallback((fieldCampaign: FieldCampaign | null) => {
+    setCampaign(fieldCampaign);
+  }, []);
+
   useEffect(() => {
     async function fetchFieldCampaign() {
       try {
@@ -56,36 +60,33 @@ export function FieldCampaignContextProvider({ children }: ContextProvider) {
     if (projectId) {
       fetchFieldCampaign();
     }
-  }, [projectId]);
+  }, [projectId, updateFieldCampaign]);
 
-  function updateFieldCampaign(fieldCampaign: FieldCampaign | null) {
-    setCampaign(fieldCampaign);
-  }
+  const addSelectedTimepoint = useCallback((newSelectedTimepoint: string) => {
+    setSelectedTimepoints((prev) => [...prev, newSelectedTimepoint]);
+  }, []);
 
-  function addSelectedTimepoint(newSelectedTimepoint: string) {
-    setSelectedTimepoints([...selectedTimepoints, newSelectedTimepoint]);
-  }
-
-  function addSelectedTimepoints(newSelectedTimepoints: string[]) {
+  const addSelectedTimepoints = useCallback((newSelectedTimepoints: string[]) => {
     setSelectedTimepoints(newSelectedTimepoints);
-  }
+  }, []);
 
-  function removeSelectedTimepoint(removeSelectedTimepoint: string) {
-    const currentSelectedTimepoints = selectedTimepoints.slice();
-    const removeIdx = currentSelectedTimepoints.indexOf(
-      removeSelectedTimepoint
-    );
-    // if index found, use filter to remove it from selected timepoints array
-    if (removeIdx > -1) {
-      setSelectedTimepoints([
-        ...currentSelectedTimepoints.filter((_, index) => index !== removeIdx),
-      ]);
-    }
-  }
+  const removeSelectedTimepoint = useCallback((removeSelectedTimepoint: string) => {
+    setSelectedTimepoints((prev) => {
+      const currentSelectedTimepoints = prev.slice();
+      const removeIdx = currentSelectedTimepoints.indexOf(
+        removeSelectedTimepoint
+      );
+      // if index found, use filter to remove it from selected timepoints array
+      if (removeIdx > -1) {
+        return currentSelectedTimepoints.filter((_, index) => index !== removeIdx);
+      }
+      return prev;
+    });
+  }, []);
 
-  function resetSelectedTimepoints() {
+  const resetSelectedTimepoints = useCallback(() => {
     setSelectedTimepoints([]);
-  }
+  }, []);
 
   return (
     <FieldCampaignContext.Provider
