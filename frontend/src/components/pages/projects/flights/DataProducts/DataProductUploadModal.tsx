@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Dialog,
   DialogPanel,
@@ -65,6 +65,20 @@ export default function DataProductUploadModal({
     throw new Error('unknown data type');
   }
 
+  // Memoize info object to prevent unnecessary re-creation on parent re-renders
+  const info = useMemo(
+    () => ({
+      dtype: dtype === 'other' ? dtypeOther : dtype,
+      endpoint: '/files',
+      flightID: flightID,
+      projectID: projectID,
+    }),
+    [dtype, dtypeOther, flightID, projectID]
+  );
+
+  // Memoize fileType to prevent unnecessary re-creation
+  const fileType = useMemo(() => getAllowedFileTypes(dtype), [dtype]);
+
   return (
     <Transition appear show={open} as={Fragment}>
       <Dialog
@@ -114,13 +128,8 @@ export default function DataProductUploadModal({
                   dtypeOther.length <= 16) ? (
                   <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                     <DataProductUpload
-                      info={{
-                        dtype: dtype === 'other' ? dtypeOther : dtype,
-                        endpoint: '/files',
-                        flightID: flightID,
-                        projectID: projectID,
-                      }}
-                      fileType={getAllowedFileTypes(dtype)}
+                      info={info}
+                      fileType={fileType}
                       uploadType={uploadType}
                       updateSetDisabled={updateSetDisabled}
                       updateUploadHistory={updateUploadHistory}

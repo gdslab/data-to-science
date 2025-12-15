@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Dialog,
   DialogPanel,
@@ -34,6 +34,23 @@ export default function RawDataUploadModal({
     setUploadHistory(currentUploadHistory);
   }
 
+  // Memoize info object to prevent unnecessary re-creation on parent re-renders
+  const info = useMemo(
+    () => ({
+      dtype: 'raw',
+      endpoint: '/files',
+      flightID: flightID,
+      projectID: projectID,
+    }),
+    [flightID, projectID]
+  );
+
+  // Memoize fileType to prevent unnecessary re-creation
+  const fileType = useMemo(
+    () => ['application/zip', 'application/x-zip-compressed'],
+    []
+  );
+
   return (
     <Transition appear show={open} as={Fragment}>
       <Dialog
@@ -68,16 +85,8 @@ export default function RawDataUploadModal({
               <DialogPanel className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
                 <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                   <DataProductUpload
-                    info={{
-                      dtype: 'raw',
-                      endpoint: '/files',
-                      flightID: flightID,
-                      projectID: projectID,
-                    }}
-                    fileType={[
-                      'application/zip',
-                      'application/x-zip-compressed',
-                    ]}
+                    info={info}
+                    fileType={fileType}
                     uploadType="rawData"
                     updateSetDisabled={() => {}}
                     updateUploadHistory={updateUploadHistory}
