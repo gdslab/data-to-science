@@ -14,6 +14,7 @@ import {
   step2ValidationSchema,
   step3ValidationSchema,
 } from './validationSchemas';
+import { useFieldCampaignContext } from './FieldCampaignContext';
 
 import api from '../../../../api';
 
@@ -46,6 +47,7 @@ export default function FieldCampaignForm() {
   const [status, setStatus] = useState<Status | null>(null);
 
   const { fieldCampaign } = useLoaderData() as { fieldCampaign: FieldCampaign };
+  const { updateFieldCampaign } = useFieldCampaignContext();
   const navigate = useNavigate();
   const { campaignId, projectId } = useParams();
 
@@ -97,6 +99,13 @@ export default function FieldCampaignForm() {
       );
       if (response) {
         if (extra.submitAndQuit) {
+          // Refetch the field campaign data to update the context
+          const updatedCampaign = await api.get(
+            `/projects/${projectId}/campaigns`
+          );
+          if (updatedCampaign) {
+            updateFieldCampaign(updatedCampaign.data);
+          }
           navigate(`/projects/${projectId}`, { state: { selectedIndex: 1 } });
         } else {
           setStatus({ type: 'success', msg: 'Campaign successfully saved' });

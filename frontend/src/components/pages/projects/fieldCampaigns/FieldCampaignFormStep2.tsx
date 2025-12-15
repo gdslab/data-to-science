@@ -1,13 +1,14 @@
 import { Field, FieldArray, FormikErrors, useFormikContext } from 'formik';
 import Papa from 'papaparse';
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
 
 import Alert from '../../../Alert';
+import { Button } from '../../../Buttons';
 import ConfirmationModal from '../../../ConfirmationModal';
 import { TextField } from '../../../InputFields';
 import { FieldCampaignInitialValues } from './FieldCampaign';
 import { UpdateCSVErrors } from './FieldCampaign';
-// import UppyTemplateUpload from './UppyTemplateUpload';
+import TemplateUploadModal from './TemplateUploadModal';
 
 export default function FieldCampaignFormStep2({
   csvErrors,
@@ -16,6 +17,8 @@ export default function FieldCampaignFormStep2({
   csvErrors: Papa.ParseError[][] | Omit<Papa.ParseError, 'code'>[][];
   updateCsvErrors: UpdateCSVErrors;
 }) {
+  const [openModals, setOpenModals] = useState<Record<number, boolean>>({});
+
   const {
     errors,
     values,
@@ -50,12 +53,34 @@ export default function FieldCampaignFormStep2({
                           name={`treatments.${index}.name`}
                           label="Treatment name"
                         />
-                        {/* {!treatment.columns || treatment.columns.length === 0 ? (
-                          <UppyTemplateUpload
-                            id={index.toString()}
-                            updateCsvErrors={updateCsvErrors}
-                          />
-                        ) : null} */}
+                        {!treatment.columns ||
+                        treatment.columns.length === 0 ? (
+                          <>
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() =>
+                                setOpenModals((prev) => ({
+                                  ...prev,
+                                  [index]: true,
+                                }))
+                              }
+                            >
+                              Upload Treatment CSV
+                            </Button>
+                            <TemplateUploadModal
+                              id={index.toString()}
+                              open={openModals[index] || false}
+                              setOpen={(open) =>
+                                setOpenModals((prev) => ({
+                                  ...prev,
+                                  [index]: open,
+                                }))
+                              }
+                              updateCsvErrors={updateCsvErrors}
+                            />
+                          </>
+                        ) : null}
                         {csvErrors[index].length === 0 ? (
                           <Fragment>
                             {treatment.filenames &&

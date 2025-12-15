@@ -126,7 +126,7 @@ export default function FieldCampaignFormStep3() {
   const { setFieldValue } = useFormikContext();
 
   useEffect(() => {
-    if (values.measurements.length > 0) {
+    if (values.measurements.length > 0 && measurementSteps.length === 0) {
       setMeasurementSteps(new Array(values.measurements.length).fill(2));
       const initialTimepoints: number[] = [];
       values.measurements.forEach(() => {
@@ -134,7 +134,7 @@ export default function FieldCampaignFormStep3() {
       });
       setTimepoints(initialTimepoints);
     }
-  }, [values.measurements]);
+  }, [values.measurements, measurementSteps.length]);
 
   function forwardMeasurementStep(index: number) {
     const currentSteps = [...measurementSteps];
