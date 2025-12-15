@@ -6,7 +6,6 @@ import {
   useLocation,
   useNavigate,
   useParams,
-  useRevalidator,
 } from 'react-router';
 import { PlusCircleIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 
@@ -36,7 +35,6 @@ export default function SidebarPage() {
   const teams = useLoaderData() as Team[];
   const { teamId } = useParams();
   const location = useLocation();
-  const revalidator = useRevalidator();
   const navigate = useNavigate();
 
   const [searchValue, setSearchValue] = useState('');
@@ -46,12 +44,6 @@ export default function SidebarPage() {
       a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
     );
   }, [teams]);
-
-  useEffect(() => {
-    if (location.state && location.state.reload) {
-      revalidator.revalidate();
-    }
-  }, [location.state, revalidator]);
 
   // Auto-navigate to last viewed team or first team when landing on /teams
   useEffect(() => {

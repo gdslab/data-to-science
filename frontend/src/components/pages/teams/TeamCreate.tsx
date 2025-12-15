@@ -63,7 +63,7 @@ export default function TeamCreate() {
 
   return (
     <Card title="Create a New Team">
-      <div className="">
+      <div className="h-[calc(100vh-12rem)]">
         <Formik
           initialValues={initialValues}
           validationSchema={validationSchema}
@@ -98,120 +98,136 @@ export default function TeamCreate() {
           }}
         >
           {({ isSubmitting, status }) => (
-            <div>
-              <Form>
-                <div className="mb-4">
-                  <TextField
-                    altLabel={true}
-                    label="What's the name of your new team?"
-                    name="title"
-                  />
-                </div>
-                <div className="mb-4">
-                  <TextField
-                    altLabel={true}
-                    label="What is your team about? (Optional)"
-                    name="description"
-                  />
-                </div>
-                <div className="mb-4 max-h-[25vh] overflow-y-auto">
-                  <span className="block font-bold pt-2 pb-1">
-                    Who will be your team member?
-                  </span>
-                  <table className="min-w-full divide-y-2 divide-gray-200 bg-white text-sm">
-                    <thead className="text-left">
-                      <tr>
-                        <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
-                          Name
-                        </th>
-                        <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
-                          Email
-                        </th>
-                        <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
-                          Role
-                        </th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-
-                    <tbody className="divide-y divide-gray-200">
-                      {teamMembers.map((teamMember) => (
-                        <tr key={teamMember.id} className="odd:bg-gray-50">
-                          <td className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
-                            {teamMember.first_name} {teamMember.last_name}
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-2 text-gray-700">
-                            {teamMember.email}
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-2 text-gray-700">
-                            {user && user.email === teamMember.email
-                              ? 'Owner'
-                              : 'Member'}
-                          </td>
-                          <td className="text-center">
-                            {user && teamMember.email !== user.email ? (
-                              <button
-                                type="button"
-                                className="cursor-pointer"
-                                onClick={() => removeTeamMember(teamMember.id)}
-                              >
-                                <XMarkIcon
-                                  className="h-6 w-6"
-                                  aria-hidden="true"
-                                />
-                              </button>
-                            ) : null}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="mb-4 grid grid-flow-row gap-4">
-                  <SearchUsers
-                    currentMembers={teamMembers}
-                    searchResults={searchResults}
-                    setSearchResults={setSearchResults}
-                    user={user}
-                  />
-                  <Button
-                    size="sm"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      addTeamMember(searchResults.filter((u) => u.checked));
-                    }}
-                  >
-                    Add Selected
-                  </Button>
-                </div>
-                {projects && projects.length > 0 ? (
-                  <div>
-                    <SelectField
+            <div className="flex flex-col h-full">
+              <Form className="flex flex-col h-full">
+                {/* Fixed header section */}
+                <div className="flex-none px-2 sm:px-0">
+                  <div className="mb-4">
+                    <TextField
                       altLabel={true}
-                      name="project"
-                      label="Assign a Project (Optional)"
-                      options={projects
-                        .map((project) => ({
-                          value: project.id,
-                          label: project.title,
-                        }))
-                        .concat([{ value: '', label: 'No project' }])}
-                    ></SelectField>
+                      label="What's the name of your new team?"
+                      name="title"
+                    />
                   </div>
-                ) : null}
-                <div className="flex items-center justify-around mt-4">
-                  <Button type="submit" disabled={isSubmitting}>
-                    Done
-                  </Button>
-                  <Link to="/teams">
-                    <OutlineButton>Cancel</OutlineButton>
-                  </Link>
+                  <div className="mb-4">
+                    <TextField
+                      altLabel={true}
+                      label="What is your team about? (Optional)"
+                      name="description"
+                    />
+                  </div>
+                  <hr className="border-gray-700 my-4" />
                 </div>
-                {status && status.type && status.msg ? (
-                  <div className="mt-4">
-                    <Alert alertType={status.type}>{status.msg}</Alert>
+
+                {/* Scrollable content section */}
+                <div className="flex-1 min-h-0 overflow-y-auto px-2 sm:px-0 sm:pr-2">
+                  <div className="space-y-4 pb-6">
+                    <div>
+                      <span className="block font-bold pt-2 pb-1">
+                        Who will be your team member?
+                      </span>
+                      <table className="min-w-full divide-y-2 divide-gray-200 bg-white text-sm">
+                        <thead className="text-left">
+                          <tr>
+                            <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
+                              Name
+                            </th>
+                            <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
+                              Email
+                            </th>
+                            <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
+                              Role
+                            </th>
+                            <th>Action</th>
+                          </tr>
+                        </thead>
+
+                        <tbody className="divide-y divide-gray-200">
+                          {teamMembers.map((teamMember) => (
+                            <tr key={teamMember.id} className="odd:bg-gray-50">
+                              <td className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
+                                {teamMember.first_name} {teamMember.last_name}
+                              </td>
+                              <td className="whitespace-nowrap px-4 py-2 text-gray-700">
+                                {teamMember.email}
+                              </td>
+                              <td className="whitespace-nowrap px-4 py-2 text-gray-700">
+                                {user && user.email === teamMember.email
+                                  ? 'Owner'
+                                  : 'Member'}
+                              </td>
+                              <td className="text-center">
+                                {user && teamMember.email !== user.email ? (
+                                  <button
+                                    type="button"
+                                    className="cursor-pointer"
+                                    onClick={() => removeTeamMember(teamMember.id)}
+                                  >
+                                    <XMarkIcon
+                                      className="h-6 w-6"
+                                      aria-hidden="true"
+                                    />
+                                  </button>
+                                ) : null}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="grid grid-flow-row gap-4">
+                      <SearchUsers
+                        currentMembers={teamMembers}
+                        searchResults={searchResults}
+                        setSearchResults={setSearchResults}
+                        user={user}
+                      />
+                      <Button
+                        size="sm"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          addTeamMember(searchResults.filter((u) => u.checked));
+                        }}
+                      >
+                        Add Selected
+                      </Button>
+                    </div>
+
+                    {projects && projects.length > 0 ? (
+                      <div>
+                        <SelectField
+                          altLabel={true}
+                          name="project"
+                          label="Assign a Project (Optional)"
+                          options={projects
+                            .map((project) => ({
+                              value: project.id,
+                              label: project.title,
+                            }))
+                            .concat([{ value: '', label: 'No project' }])}
+                        ></SelectField>
+                      </div>
+                    ) : null}
                   </div>
-                ) : null}
+                </div>
+
+                {/* Fixed footer section */}
+                <div className="flex-none px-2 sm:px-0 border-t border-gray-300 pt-4">
+                  <div className="flex items-center justify-around">
+                    <Button type="submit" disabled={isSubmitting}>
+                      Done
+                    </Button>
+                    <Link to="/teams">
+                      <OutlineButton>Cancel</OutlineButton>
+                    </Link>
+                  </div>
+                  {status && status.type && status.msg ? (
+                    <div className="mt-4">
+                      <Alert alertType={status.type}>{status.msg}</Alert>
+                    </div>
+                  ) : null}
+                </div>
               </Form>
             </div>
           )}

@@ -175,7 +175,6 @@ export default function TeamDetail() {
                 <div className="w-full sm:w-48">
                   <Button
                     type="button"
-                    className="cursor-pointer"
                     size="sm"
                     icon="trash"
                     onClick={() => setOpen(true)}
@@ -192,12 +191,33 @@ export default function TeamDetail() {
                     setOpen={setOpen}
                     onConfirm={async () => {
                       try {
-                        const response = await api.delete(
+                        // Delete the team
+                        const deleteResponse = await api.delete(
                           `/teams/${teamData.team.id}`
                         );
-                        if (response) {
+                        if (deleteResponse) {
+                          // Clear the last viewed team from localStorage
+                          localStorage.removeItem('lastViewedTeamId');
+
+                          // Fetch the updated teams list
+                          const teamsResponse = await api.get('/teams');
+                          const remainingTeams = teamsResponse?.data || [];
+
                           setOpen(false);
-                          navigate('/teams', { state: { reload: true } });
+
+                          // Navigate to first available team or create page
+                          if (remainingTeams.length > 0) {
+                            const sortedTeams = remainingTeams.sort((a: Team, b: Team) =>
+                              a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
+                            );
+                            navigate(`/teams/${sortedTeams[0].id}`, { replace: true });
+                            // Trigger revalidation to update the sidebar teams list
+                            revalidator.revalidate();
+                          } else {
+                            navigate('/teams/create', { replace: true });
+                            // Trigger revalidation to update the sidebar teams list
+                            revalidator.revalidate();
+                          }
                         } else {
                           setOpen(false);
                         }
