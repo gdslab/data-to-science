@@ -11,7 +11,11 @@ import { MapLayerFeatureCollection } from '../Project';
 
 import api from '../../../../api';
 
-export default function MapLayerUpload() {
+interface MapLayerUploadProps {
+  onUploadSuccess?: () => void;
+}
+
+export default function MapLayerUpload({ onUploadSuccess }: MapLayerUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   // eslint-disable-next-line react-hooks/purity
   const [mlFileInputKey, setMLFileInputKey] = useState(Date.now());
@@ -42,6 +46,8 @@ export default function MapLayerUpload() {
             type: 'success',
             msg: 'Your uploaded map layer will be added once it has been processed.',
           });
+          // Trigger fast polling in parent component
+          onUploadSuccess?.();
           // update key for file input elem (clears out previous file)
           setMLFileInputKey(Date.now());
           setUploadFile(null);
