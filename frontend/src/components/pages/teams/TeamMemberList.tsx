@@ -171,7 +171,7 @@ export default function TeamMemberList({
                     <td className="px-2 sm:px-4 py-2 text-center min-w-[80px] sm:w-[20%]">
                       {user && teamMember.email !== user.email && (
                         <button
-                          className="text-sky-600 hover:text-sky-800 text-xs sm:text-sm py-1 px-2 touch-manipulation cursor-pointer"
+                          className="text-sky-600 hover:text-sky-800 text-xs sm:text-sm py-1 px-2 touch-manipulation"
                           type="button"
                           onClick={() => removeTeamMember(teamMember.id)}
                         >

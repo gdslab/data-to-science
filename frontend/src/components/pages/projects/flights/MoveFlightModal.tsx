@@ -100,7 +100,7 @@ export default function MoveFlightModal({
           <span>Move</span>
         </div>
       ) : (
-        <button className="cursor-pointer" onClick={() => setOpen(true)}>
+        <button onClick={() => setOpen(true)}>
           <FolderIcon className="h-5 w-5" />
         </button>
       )}

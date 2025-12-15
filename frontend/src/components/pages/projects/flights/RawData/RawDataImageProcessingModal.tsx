@@ -22,7 +22,7 @@ export default function RawDataImageProcessingModal({
   return (
     <div>
       <button
-        className="w-32 bg-accent2/90 text-white font-semibold py-1 rounded-sm cursor-pointer enabled:hover:bg-accent2 disabled:opacity-75 disabled:cursor-not-allowed"
+        className="w-32 bg-accent2/90 text-white font-semibold py-1 rounded-sm enabled:hover:bg-accent2 disabled:opacity-75 disabled:cursor-not-allowed"
         type="button"
         name="processRawDataBtn"
         disabled={isProcessing}

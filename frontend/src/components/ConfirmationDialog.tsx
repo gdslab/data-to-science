@@ -29,7 +29,7 @@ const ConfirmationDialog: ConfirmDialog<Props, boolean> = ({
         <p dangerouslySetInnerHTML={{ __html: confirmation || '' }} />
         <div className="w-full flex justify-between gap-4">
           <button
-            className="px-4 py-2 w-1/3 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition cursor-pointer"
+            className="px-4 py-2 w-1/3 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition"
             onClick={() => proceed(false)}
           >
             Cancel

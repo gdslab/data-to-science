@@ -199,7 +199,7 @@ export default function ProjectLayersTable() {
                       onClick={() =>
                         handlePreviewClick(layer.preview_url, layer.layer_name)
                       }
-                      className="flex items-center justify-center mx-auto cursor-pointer hover:opacity-80 transition-opacity focus:outline-hidden focus:ring-2 focus:ring-accent2 rounded-sm"
+                      className="flex items-center justify-center mx-auto hover:opacity-80 transition-opacity focus:outline-hidden focus:ring-2 focus:ring-accent2 rounded-sm"
                       aria-label={`View full preview of ${layer.layer_name}`}
                       title="Click to view full size"
                     >
@@ -231,7 +231,7 @@ export default function ProjectLayersTable() {
                         <button
                           type="button"
                           onClick={() => handleSave(layer)}
-                          className="inline rounded-full focus:outline-hidden focus:ring-3 focus:ring-accent2 cursor-pointer"
+                          className="inline rounded-full focus:outline-hidden focus:ring-3 focus:ring-accent2"
                           aria-label="Save layer name"
                           title="Save"
                         >
@@ -240,7 +240,7 @@ export default function ProjectLayersTable() {
                         <button
                           type="button"
                           onClick={handleCancel}
-                          className="inline rounded-full focus:outline-hidden focus:ring-3 focus:ring-accent2 cursor-pointer"
+                          className="inline rounded-full focus:outline-hidden focus:ring-3 focus:ring-accent2"
                           aria-label="Cancel editing"
                           title="Cancel"
                         >
@@ -258,7 +258,7 @@ export default function ProjectLayersTable() {
                         <button
                           type="button"
                           onClick={() => handleEdit(layer)}
-                          className="shrink-0 inline rounded-full focus:outline-hidden focus:ring-3 focus:ring-accent2 cursor-pointer"
+                          className="shrink-0 inline rounded-full focus:outline-hidden focus:ring-3 focus:ring-accent2"
                           aria-label="Edit layer name"
                           title="Edit layer name"
                         >

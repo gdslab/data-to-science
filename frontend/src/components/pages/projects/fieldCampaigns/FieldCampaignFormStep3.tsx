@@ -214,7 +214,6 @@ export default function FieldCampaignFormStep3() {
                               : ''}
                           </span>
                           <button
-                            className="cursor-pointer"
                             type="button"
                             onClick={() => {
                               // change active measurement step to timepoint form step
@@ -244,7 +243,6 @@ export default function FieldCampaignFormStep3() {
                                       {timepoint.timepointIdentifier}
                                     </span>
                                     <button
-                                      className="cursor-button"
                                       type="button"
                                       onClick={() => {
                                         // set active timepoint for measurement to this timepoint
@@ -381,7 +379,7 @@ export default function FieldCampaignFormStep3() {
               : null}
             <button
               type="button"
-              className="h-72 w-96 shrink-0 flex flex-row items-center justify-center gap-2 cursor-pointer rounded-lg border-2 border-dashed border-slate-400 p-4 overflow-y-auto hover:border-slate-600 text-lg text-slate-700 font-semibold disabled:text-slate-300"
+              className="h-72 w-96 shrink-0 flex flex-row items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-400 p-4 overflow-y-auto hover:border-slate-600 text-lg text-slate-700 font-semibold disabled:text-slate-300"
               onClick={() => {
                 // add new measurement with default values
                 arrayHelpers.push({

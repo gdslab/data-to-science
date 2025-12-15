@@ -89,7 +89,7 @@ export default function ProjectTabNav({
       .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
   }, [project_modules, iforesterData.length]);
 
-  // Initialize from localStorage when component mounts or project changes
+  // Initialize from localStorage when component mounts
   useEffect(() => {
     if (!location.state?.selectedIndex && enabledModules.length > 0) {
       const storedIndex = getProjectTabSelectionFromLS(
@@ -99,7 +99,7 @@ export default function ProjectTabNav({
       setSelectedIndex(storedIndex);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.projectId]);
+  }, [params.projectId, enabledModules.length]);
 
   // Handler for tab changes with localStorage persistence
   const handleTabChange = (index: number) => {

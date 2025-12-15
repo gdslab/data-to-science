@@ -102,7 +102,7 @@ export default function ColorBarControl({
         <img src={url} className="h-80" />
         <button
           type="button"
-          className="flex items-center text-sky-600 cursor-pointer"
+          className="flex items-center text-sky-600"
           onClick={async () => {
             toggleIsRefreshing(true);
             fetchColorBar(symbology as SingleBandSymbology, true);

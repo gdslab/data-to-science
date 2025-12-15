@@ -210,7 +210,7 @@ export function AlertBar({ alertType, children }: AlertProps) {
           <span>{children}</span>
         </div>
         <div className="flex">
-          <button className="transition cursor-pointer" onClick={handleClose}>
+          <button className="transition" onClick={handleClose}>
             <span className="sr-only">Dismiss popup</span>
 
             <svg

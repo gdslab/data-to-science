@@ -44,7 +44,7 @@ export default function MeasureToolsToggle() {
             <span className="text-xs text-slate-500">Units:</span>
             <button
               type="button"
-              className="h-6 px-2 bg-slate-100 rounded-sm border border-slate-300 text-xs font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-200 focus:outline-hidden focus:ring-2 focus:ring-accent2 transition-colors cursor-pointer"
+              className="h-6 px-2 bg-slate-100 rounded-sm border border-slate-300 text-xs font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-200 focus:outline-hidden focus:ring-2 focus:ring-accent2 transition-colors"
               onClick={toggleUnitType}
               title={`Switch to ${
                 unitType === 'metric' ? 'Imperial' : 'Metric'
@@ -58,7 +58,7 @@ export default function MeasureToolsToggle() {
           {shouldRender && <MeasureTerraDrawControl unitType={unitType} />}
           <button
             type="button"
-            className="h-12 w-12 bg-white rounded-md shadow-md flex items-center justify-center text-slate-600 hover:text-slate-800 hover:bg-slate-50 focus:outline-hidden focus:ring-2 focus:ring-accent2 transition-colors relative z-10 pointer-events-auto cursor-pointer"
+            className="h-12 w-12 bg-white rounded-md shadow-md flex items-center justify-center text-slate-600 hover:text-slate-800 hover:bg-slate-50 focus:outline-hidden focus:ring-2 focus:ring-accent2 transition-colors relative z-10 pointer-events-auto"
             aria-label={
               isExpanded ? 'Hide measurement tools' : 'Show measurement tools'
             }

@@ -15,7 +15,9 @@ interface MapLayerUploadProps {
   onUploadSuccess?: () => void;
 }
 
-export default function MapLayerUpload({ onUploadSuccess }: MapLayerUploadProps) {
+export default function MapLayerUpload({
+  onUploadSuccess,
+}: MapLayerUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   // eslint-disable-next-line react-hooks/purity
   const [mlFileInputKey, setMLFileInputKey] = useState(Date.now());
@@ -99,7 +101,6 @@ export default function MapLayerUpload({ onUploadSuccess }: MapLayerUploadProps)
             <span className="text-primary font-bold">Upload Vector Layer</span>
             <button
               type="button"
-              className="cursor-pointer"
               onClick={handleClick}
               title="Close upload popup"
             >

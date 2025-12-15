@@ -133,7 +133,7 @@ export function LinkButton({
               icon === 'trash'
                 ? 'bg-red-600 hover:bg-red-700 border-red-700 hover:border-red-800'
                 : 'bg-accent3 hover:bg-accent3-dark border-accent3 hover:border-accent3-dark',
-              'cursor-pointer border-2 rounded-md w-full text-center text-white ease-in-out duration-300'
+              'border-2 rounded-md w-full text-center text-white ease-in-out duration-300'
             )
           )}
           type="button"
@@ -169,7 +169,7 @@ export function Button({
                     : cancel === true
                     ? 'text-gray-700 bg-gray-200 hover:bg-gray-300 border-gray-300 hover:border-gray-400'
                     : 'bg-accent3 hover:bg-accent3-dark border-accent3 hover:border-accent3-dark',
-                  'border-2 rounded-md w-full cursor-pointer'
+                  'border-2 rounded-md w-full'
                 )
               : 'border-2 rounded-md w-full'
           )
@@ -187,7 +187,7 @@ export function OutlineButton({ children, size = 'normal', ...props }: Button) {
     <button
       className={classNames(
         getButtonSizeClassNames(size),
-        'border-2 border-accent3 text-accent3 rounded-md py-2 px-4 w-full cursor-pointer hover:bg-accent3 hover:text-white ease-in-out duration-300'
+        'border-2 border-accent3 text-accent3 rounded-md py-2 px-4 w-full hover:bg-accent3 hover:text-white ease-in-out duration-300'
       )}
       {...props}
     >
@@ -201,7 +201,7 @@ export function LandingButton({ children, size = 'normal', ...props }: Button) {
     <button
       className={classNames(
         size === 'sm' ? 'text-sm font-bold' : 'text-xl font-extrabold',
-        'border-2 border-white text-white rounded-md py-2 px-4 w-full cursor-pointer hover:bg-accent3 hover:text-white ease-in-out duration-300'
+        'border-2 border-white text-white rounded-md py-2 px-4 w-full hover:bg-accent3 hover:text-white ease-in-out duration-300'
       )}
       {...props}
     >

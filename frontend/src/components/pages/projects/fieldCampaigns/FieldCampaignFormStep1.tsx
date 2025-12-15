@@ -50,7 +50,6 @@ export default function FieldCampaignFormStep1() {
                           <div className="flex items-center justify-center min-h-24 w-1/12">
                             {newColumn.name !== 'Experiment' ? (
                               <button
-                                className="cursor-pointer"
                                 type="button"
                                 onClick={() => arrayHelpers.remove(index)}
                               >

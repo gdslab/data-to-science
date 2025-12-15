@@ -64,7 +64,7 @@ export default function ProjectCard({
         <div className="absolute top-2 right-2">
           <button
             type="button"
-            className="focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-full cursor-pointer"
+            className="focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-full"
             onClick={handleOnBookmarkClick}
             disabled={isLoading}
             aria-label={liked ? 'Remove bookmark' : 'Bookmark project'}

@@ -98,12 +98,8 @@ export default function LayerPane({
         <div className="h-full text-slate-700">
           <div className="h-11 flex items-center justify-between p-2.5">
             {activeProject ? (
-              <button
-                className="cursor-pointer"
-                type="button"
-                onClick={handleReturnClick}
-              >
-                <ArrowUturnLeftIcon className="h-6 w-6 cursor-pointer" />
+              <button type="button" onClick={handleReturnClick}>
+                <ArrowUturnLeftIcon className="h-6 w-6" />
               </button>
             ) : (
               <span />
@@ -135,11 +131,7 @@ export default function LayerPane({
 
   return hidePane ? (
     <div className="flex items-center justify-between p-2.5 text-slate-700">
-      <button
-        className="cursor-pointer"
-        type="button"
-        onClick={handleToggleClick}
-      >
+      <button type="button" onClick={handleToggleClick}>
         <Bars3Icon className="h-6 w-6 cursor-pointers" />
       </button>
     </div>

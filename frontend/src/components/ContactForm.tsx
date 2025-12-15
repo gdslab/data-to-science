@@ -155,7 +155,7 @@ export default function ContactFormModal() {
   return (
     <div>
       <button
-        className="rounded-md px-3 py-2 text-md text-white visited:text-white hover:[text-shadow:0px_8px_16px_rgb(0_0_0/70%)] cursor-pointer"
+        className="rounded-md px-3 py-2 text-md text-white visited:text-white hover:[text-shadow:0px_8px_16px_rgb(0_0_0/70%)]"
         onClick={() => setOpen(true)}
       >
         CONTACT US
