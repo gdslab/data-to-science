@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+import { isAxiosError } from 'axios';
 
 import { AlertBar, Status } from '../../Alert';
 import { Button } from '../../Buttons';
@@ -52,12 +53,19 @@ export default function ProjectDeleteModal({
                   msg: 'Unable to deactivate project',
                 });
               }
-            } catch {
+            } catch (err) {
               setOpenConfirmationPopup(false);
-              setStatus({
-                type: 'error',
-                msg: 'Unable to deactivate project',
-              });
+              if (isAxiosError(err)) {
+                setStatus({
+                  type: 'error',
+                  msg: err.response?.data?.detail || 'Unable to deactivate project',
+                });
+              } else {
+                setStatus({
+                  type: 'error',
+                  msg: 'Unable to deactivate project',
+                });
+              }
             }
           }}
         />
