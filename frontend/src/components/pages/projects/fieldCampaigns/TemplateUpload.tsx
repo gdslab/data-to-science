@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import Uppy from '@uppy/core';
-import DashboardModal from '@uppy/react/lib/DashboardModal';
+import DashboardModal from '@uppy/react/dashboard-modal';
 import XHRUpload from '@uppy/xhr-upload';
 
 // Don't forget the CSS: core and the UI components + plugins you are using.

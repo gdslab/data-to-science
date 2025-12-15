@@ -49,7 +49,7 @@ export default function TemplateUploadModal({
       );
     };
 
-    const handleFilesAdded = (files: Uppy.UppyFile[]) => {
+    const handleFilesAdded = (files: { id: string; meta: { name: string }; data: unknown; name?: string }[]) => {
       // remove any previously tracked errors
       updateCsvErrors([], id, 'clear');
       // add filename(s) to formik context

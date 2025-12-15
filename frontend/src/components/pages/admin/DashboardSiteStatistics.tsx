@@ -62,7 +62,9 @@ function ErrorElement() {
 }
 
 export default function DashboardSiteStatistics() {
-  const { stats } = useLoaderData() as { stats: Promise<SiteStatistics> };
+  const { stats } = useLoaderData() as {
+    stats: Promise<AxiosResponse<SiteStatistics>>;
+  };
 
   return (
     <Suspense fallback={<StatCardsSkeleton />}>

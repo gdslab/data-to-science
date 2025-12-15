@@ -15,7 +15,7 @@ export default function FieldCampaignNav({
   const { projectId } = useParams();
   const LAST_STEP_IDX = 2;
 
-  const formik = useFormikContext();
+  const formik = useFormikContext<Record<string, unknown>>();
 
   function forwardStep() {
     if (activeStep + 1 < LAST_STEP_IDX + 1) {

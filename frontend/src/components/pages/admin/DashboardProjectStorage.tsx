@@ -29,7 +29,7 @@ function ErrorElement() {
 
 export default function DashboardProjectStorage() {
   const projectStatisticsApiResponse = useLoaderData() as {
-    response: Promise<ProjectStatistics[]>;
+    response: Promise<AxiosResponse<ProjectStatistics[]>>;
   };
 
   return (

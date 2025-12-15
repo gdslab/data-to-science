@@ -3,7 +3,9 @@ import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 
 import DataProducts from './DataProducts';
 import RawData from './RawData';
-import { FlightData } from './FlightData';
+
+import { DataProduct } from '../Project';
+import { RawDataProps } from './RawData/RawData.types';
 
 function getFlightDataTabSelectionFromLS(): number {
   const flightDataTabSelection = localStorage.getItem('flightDataTabSelection');
@@ -21,10 +23,15 @@ function getFlightDataTabSelectionFromLS(): number {
   }
 }
 
+type FlightDataTabNavProps = {
+  dataProducts: DataProduct[];
+  rawData: RawDataProps[];
+};
+
 export default function FlightDataTabNav({
   dataProducts,
   rawData,
-}: FlightData) {
+}: FlightDataTabNavProps) {
   const [selectedIndex, setSelectedIndex] = useState(
     getFlightDataTabSelectionFromLS()
   );

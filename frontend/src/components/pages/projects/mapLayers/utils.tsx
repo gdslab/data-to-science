@@ -149,7 +149,7 @@ export function download(
   if (newFilename) {
     filename = newFilename;
   } else {
-    filename = featureCollection.features[0].properties?.layer_name;
+    filename = String(featureCollection.features[0].properties?.layer_name);
   }
   filename = dropFileExtension(filename);
   const updatedFeatureCollection = prepFeatureCollectionForDownload(
