@@ -120,7 +120,6 @@ export default function ShapefileUpload({
       _file: { id: string } | undefined,
       response: { status?: number; body?: unknown }
     ) => {
-      console.log(response);
       if (response && response.status === 200 && setUploadResponse) {
         setUploadResponse(response.body as unknown as FeatureCollection | null);
       }

@@ -1,5 +1,6 @@
 import os
 from typing import List
+from unittest.mock import AsyncMock, patch
 
 from fastapi import Request, status
 from fastapi.testclient import TestClient
@@ -22,6 +23,11 @@ from app.tests.utils.user import create_user
 from app.tests.conftest import pytest_requires_mail
 from app.tests.utils.utils import random_email, random_full_name, random_password
 
+# Turnstile test tokens
+TURNSTILE_SUCCESS_TOKEN = "1x0000000000000000000000000000000AA"
+TURNSTILE_FAILURE_TOKEN_1 = "2x0000000000000000000000000000000AA"
+TURNSTILE_FAILURE_TOKEN_2 = "3x0000000000000000000000000000000AA"
+
 
 @pytest_requires_mail
 def test_create_user_new_email(client: TestClient, db: Session) -> None:
@@ -38,7 +44,8 @@ def test_create_user_new_email(client: TestClient, db: Session) -> None:
     if fm:
         fm.config.SUPPRESS_SEND = 1
         with fm.record_messages() as outbox:
-            r = client.post(f"{settings.API_V1_STR}/users/", json=data)
+            with patch.object(settings, "TURNSTILE_SECRET_KEY", None):
+                r = client.post(f"{settings.API_V1_STR}/users/", json=data)
         assert 201 == r.status_code
         created_user = r.json()
         user = crud.user.get_by_email(db, email=data["email"])
@@ -50,13 +57,19 @@ def test_create_user_new_email(client: TestClient, db: Session) -> None:
             == settings.MAIL_FROM_NAME + " <" + settings.MAIL_FROM + ">"
         )
         assert outbox[0]["To"] == user.email
-        assert outbox[0]["Subject"] == "Welcome to Data to Science - please confirm your email"
+        assert (
+            outbox[0]["Subject"]
+            == "Welcome to Data to Science - please confirm your email"
+        )
         assert (
             outbox[1]["from"]
             == settings.MAIL_FROM_NAME + " <" + settings.MAIL_FROM + ">"
         )
         assert outbox[1]["To"] == settings.MAIL_ADMINS.replace(",", ", ")
-        assert outbox[1]["Subject"] == f"New Data to Science account awaiting approval ({api_domain})"
+        assert (
+            outbox[1]["Subject"]
+            == f"New Data to Science account awaiting approval ({api_domain})"
+        )
 
 
 def test_create_user_existing_email(client: TestClient, db: Session) -> None:
@@ -68,7 +81,8 @@ def test_create_user_existing_email(client: TestClient, db: Session) -> None:
         "first_name": existing_user.first_name,
         "last_name": existing_user.last_name,
     }
-    r = client.post(f"{settings.API_V1_STR}/users/", json=data)
+    with patch.object(settings, "TURNSTILE_SECRET_KEY", None):
+        r = client.post(f"{settings.API_V1_STR}/users/", json=data)
     assert 409 == r.status_code
 
 
@@ -81,7 +95,8 @@ def test_create_user_is_not_approved(client: TestClient, db: Session) -> None:
         "first_name": full_name["first"],
         "last_name": full_name["last"],
     }
-    r = client.post(f"{settings.API_V1_STR}/users/", json=data)
+    with patch.object(settings, "TURNSTILE_SECRET_KEY", None):
+        r = client.post(f"{settings.API_V1_STR}/users/", json=data)
     assert 201 == r.status_code
     created_user = r.json()
     if settings.MAIL_ENABLED:
@@ -100,8 +115,9 @@ def test_create_user_with_password_less_than_minimum_length(
         "first_name": full_name["first"],
         "last_name": full_name["last"],
     }
-    response = client.post(f"{settings.API_V1_STR}/users/", json=data)
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    with patch.object(settings, "TURNSTILE_SECRET_KEY", None):
+        response = client.post(f"{settings.API_V1_STR}/users/", json=data)
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_create_user_with_password_with_more_than_two_repeating_chars_in_a_row(
@@ -114,8 +130,9 @@ def test_create_user_with_password_with_more_than_two_repeating_chars_in_a_row(
         "first_name": full_name["first"],
         "last_name": full_name["last"],
     }
-    response = client.post(f"{settings.API_V1_STR}/users/", json=data)
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    with patch.object(settings, "TURNSTILE_SECRET_KEY", None):
+        response = client.post(f"{settings.API_V1_STR}/users/", json=data)
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_get_users_normal_current_user(
@@ -331,3 +348,173 @@ def test_read_user_extensions_for_user_with_odm_and_metashape_team_extensions_re
     assert isinstance(extensions, List)
     assert len(extensions) == 1
     assert "metashape" in extensions
+
+
+# Turnstile Tests
+
+
+def test_create_user_with_valid_turnstile_token(
+    client: TestClient, db: Session
+) -> None:
+    """Verify user creation succeeds with valid Turnstile token."""
+    full_name = random_full_name()
+    data = {
+        "email": random_email(),
+        "password": random_password(),
+        "first_name": full_name["first"],
+        "last_name": full_name["last"],
+        "turnstile_token": TURNSTILE_SUCCESS_TOKEN,
+    }
+
+    # Mock Turnstile validation to return success
+    mock_validate = AsyncMock(
+        return_value={
+            "success": True,
+            "challenge_ts": "2024-01-01T12:00:00Z",
+            "hostname": "localhost",
+        }
+    )
+
+    with patch("app.core.security.validate_turnstile", mock_validate), patch.object(
+        settings, "TURNSTILE_SECRET_KEY", "test-secret-key"
+    ):
+        response = client.post(f"{settings.API_V1_STR}/users/", json=data)
+
+    assert response.status_code == status.HTTP_201_CREATED
+    created_user = response.json()
+    user = crud.user.get_by_email(db, email=data["email"])
+    assert user
+    assert user.email == created_user["email"]
+    # Verify validation was called with correct parameters
+    mock_validate.assert_called_once()
+
+
+def test_create_user_with_invalid_turnstile_token_1(
+    client: TestClient, db: Session
+) -> None:
+    """Verify user creation fails with invalid Turnstile token (failure case 1)."""
+    full_name = random_full_name()
+    data = {
+        "email": random_email(),
+        "password": random_password(),
+        "first_name": full_name["first"],
+        "last_name": full_name["last"],
+        "turnstile_token": TURNSTILE_FAILURE_TOKEN_1,
+    }
+
+    # Mock Turnstile validation to return failure
+    mock_validate = AsyncMock(
+        return_value={"success": False, "error-codes": ["invalid-input-response"]}
+    )
+
+    with patch("app.core.security.validate_turnstile", mock_validate), patch.object(
+        settings, "TURNSTILE_SECRET_KEY", "test-secret-key"
+    ):
+        response = client.post(f"{settings.API_V1_STR}/users/", json=data)
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "Bot verification failed" in response.json()["detail"]
+    # Verify user was NOT created
+    user = crud.user.get_by_email(db, email=data["email"])
+    assert user is None
+
+
+def test_create_user_with_invalid_turnstile_token_2(
+    client: TestClient, db: Session
+) -> None:
+    """Verify user creation fails with invalid Turnstile token (failure case 2)."""
+    full_name = random_full_name()
+    data = {
+        "email": random_email(),
+        "password": random_password(),
+        "first_name": full_name["first"],
+        "last_name": full_name["last"],
+        "turnstile_token": TURNSTILE_FAILURE_TOKEN_2,
+    }
+
+    # Mock Turnstile validation to return failure with timeout-or-duplicate
+    mock_validate = AsyncMock(
+        return_value={"success": False, "error-codes": ["timeout-or-duplicate"]}
+    )
+
+    with patch("app.core.security.validate_turnstile", mock_validate), patch.object(
+        settings, "TURNSTILE_SECRET_KEY", "test-secret-key"
+    ):
+        response = client.post(f"{settings.API_V1_STR}/users/", json=data)
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "Bot verification failed" in response.json()["detail"]
+    # Verify user was NOT created
+    user = crud.user.get_by_email(db, email=data["email"])
+    assert user is None
+
+
+def test_create_user_with_turnstile_enabled_but_no_token_provided(
+    client: TestClient, db: Session
+) -> None:
+    """Verify user creation fails when Turnstile is enabled but no token provided."""
+    full_name = random_full_name()
+    data = {
+        "email": random_email(),
+        "password": random_password(),
+        "first_name": full_name["first"],
+        "last_name": full_name["last"],
+        # No turnstile_token provided
+    }
+
+    with patch.object(settings, "TURNSTILE_SECRET_KEY", "test-secret-key"):
+        response = client.post(f"{settings.API_V1_STR}/users/", json=data)
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "Turnstile verification required" in response.json()["detail"]
+    # Verify user was NOT created
+    user = crud.user.get_by_email(db, email=data["email"])
+    assert user is None
+
+
+def test_create_user_without_turnstile_configured(
+    client: TestClient, db: Session
+) -> None:
+    """Verify user creation works normally when Turnstile is not configured."""
+    full_name = random_full_name()
+    data = {
+        "email": random_email(),
+        "password": random_password(),
+        "first_name": full_name["first"],
+        "last_name": full_name["last"],
+        # No turnstile_token needed when not configured
+    }
+
+    # Ensure Turnstile is not configured
+    with patch.object(settings, "TURNSTILE_SECRET_KEY", None):
+        response = client.post(f"{settings.API_V1_STR}/users/", json=data)
+
+    assert response.status_code == status.HTTP_201_CREATED
+    created_user = response.json()
+    user = crud.user.get_by_email(db, email=data["email"])
+    assert user
+    assert user.email == created_user["email"]
+
+
+def test_create_user_with_turnstile_token_when_turnstile_not_configured(
+    client: TestClient, db: Session
+) -> None:
+    """Verify turnstile_token is ignored when Turnstile is not configured."""
+    full_name = random_full_name()
+    data = {
+        "email": random_email(),
+        "password": random_password(),
+        "first_name": full_name["first"],
+        "last_name": full_name["last"],
+        "turnstile_token": TURNSTILE_SUCCESS_TOKEN,  # Token provided but ignored
+    }
+
+    # Ensure Turnstile is not configured
+    with patch.object(settings, "TURNSTILE_SECRET_KEY", None):
+        response = client.post(f"{settings.API_V1_STR}/users/", json=data)
+
+    assert response.status_code == status.HTTP_201_CREATED
+    created_user = response.json()
+    user = crud.user.get_by_email(db, email=data["email"])
+    assert user
+    assert user.email == created_user["email"]

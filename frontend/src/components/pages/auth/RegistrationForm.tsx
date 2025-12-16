@@ -19,6 +19,7 @@ import {
 import { registrationValidationSchema as validationSchema } from './validationSchema';
 
 import api from '../../../api';
+import TurnstileWidget from './TurnstileWidget';
 
 export const passwordHintText =
   'Your password must use at least 12 characters.';
@@ -26,6 +27,10 @@ export const passwordHintText =
 export default function RegistrationForm() {
   const [status, setStatus] = useState<Status | null>(null);
   const [showPassword, toggleShowPassword] = useState(false);
+  const [turnstileError, setTurnstileError] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
   const methods = useForm<RegistrationFormData>({
     defaultValues,
@@ -36,14 +41,39 @@ export default function RegistrationForm() {
     handleSubmit,
   } = methods;
 
+  const handleTurnstileSuccess = (token: string) => {
+    setTurnstileToken(token);
+    setTurnstileError(false);
+  };
+
+  const resetTurnstile = (showError = false) => {
+    setTurnstileToken(null);
+    if (showError) {
+      setTurnstileError(true);
+    }
+    setTurnstileResetSignal((signal) => signal + 1);
+  };
+
+  const handleTurnstileError = () => resetTurnstile(true);
+  const handleTurnstileExpired = () => resetTurnstile(true);
+
   const onSubmit: SubmitHandler<RegistrationFormData> = async (values) => {
     setStatus(null);
+    setTurnstileError(false);
+
+    // If Turnstile is configured but no token available, show error
+    if (turnstileSiteKey && !turnstileToken) {
+      setTurnstileError(true);
+      return;
+    }
+
     try {
       const data = {
         first_name: values.firstName,
         last_name: values.lastName,
         email: values.email,
         password: values.password,
+        ...(turnstileToken && { turnstile_token: turnstileToken }),
       };
       const response = await api.post<User>('/users', data);
       if (response) {
@@ -67,6 +97,11 @@ export default function RegistrationForm() {
         });
       }
     } catch (err) {
+      // Clear token on error so user can try again
+      if (turnstileSiteKey) {
+        resetTurnstile();
+      }
+
       if (isAxiosError(err)) {
         setStatus({
           type: err.response?.status === 409 ? 'warning' : 'error',
@@ -117,6 +152,20 @@ export default function RegistrationForm() {
               Show password
             </label>
           </div>
+          {turnstileSiteKey && (
+            <TurnstileWidget
+              siteKey={turnstileSiteKey}
+              onSuccess={handleTurnstileSuccess}
+              onError={handleTurnstileError}
+              onExpire={handleTurnstileExpired}
+              resetSignal={turnstileResetSignal}
+            />
+          )}
+          {turnstileError && (
+            <Alert alertType="error">
+              Verification failed. Please refresh the page and try again.
+            </Alert>
+          )}
           <Button type="submit" disabled={isSubmitting}>
             Create Account
           </Button>
