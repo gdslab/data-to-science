@@ -518,3 +518,157 @@ def test_create_user_with_turnstile_token_when_turnstile_not_configured(
     user = crud.user.get_by_email(db, email=data["email"])
     assert user
     assert user.email == created_user["email"]
+
+
+@pytest_requires_mail
+def test_create_user_with_registration_intent(client: TestClient, db: Session) -> None:
+    """Verify new user is created with registration_intent."""
+    full_name = random_full_name()
+    registration_intent = "I want to use this platform for analyzing drone imagery from my research."
+    data = {
+        "email": random_email(),
+        "password": random_password(),
+        "first_name": full_name["first"],
+        "last_name": full_name["last"],
+        "registration_intent": registration_intent,
+    }
+    if fm:
+        fm.config.SUPPRESS_SEND = 1
+        with fm.record_messages():
+            with patch.object(settings, "TURNSTILE_SECRET_KEY", None):
+                response = client.post(f"{settings.API_V1_STR}/users/", json=data)
+    assert response.status_code == status.HTTP_201_CREATED
+    user = crud.user.get_by_email(db, email=data["email"])
+    assert user
+    assert user.registration_intent == registration_intent
+
+
+def test_create_user_without_registration_intent(
+    client: TestClient, db: Session
+) -> None:
+    """Verify new user is created without registration_intent (backward compatibility)."""
+    full_name = random_full_name()
+    data = {
+        "email": random_email(),
+        "password": random_password(),
+        "first_name": full_name["first"],
+        "last_name": full_name["last"],
+        # No registration_intent provided
+    }
+    with patch.object(settings, "TURNSTILE_SECRET_KEY", None):
+        response = client.post(f"{settings.API_V1_STR}/users/", json=data)
+    assert response.status_code == status.HTTP_201_CREATED
+    user = crud.user.get_by_email(db, email=data["email"])
+    assert user
+    assert user.registration_intent is None
+
+
+def test_create_user_with_registration_intent_too_short(
+    client: TestClient, db: Session
+) -> None:
+    """Verify registration fails when intent is less than 20 characters."""
+    full_name = random_full_name()
+    data = {
+        "email": random_email(),
+        "password": random_password(),
+        "first_name": full_name["first"],
+        "last_name": full_name["last"],
+        "registration_intent": "Too short",  # Only 9 characters
+    }
+    with patch.object(settings, "TURNSTILE_SECRET_KEY", None):
+        response = client.post(f"{settings.API_V1_STR}/users/", json=data)
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+def test_create_user_with_registration_intent_too_long(
+    client: TestClient, db: Session
+) -> None:
+    """Verify registration fails when intent exceeds 500 characters."""
+    full_name = random_full_name()
+    data = {
+        "email": random_email(),
+        "password": random_password(),
+        "first_name": full_name["first"],
+        "last_name": full_name["last"],
+        "registration_intent": "x" * 501,  # 501 characters
+    }
+    with patch.object(settings, "TURNSTILE_SECRET_KEY", None):
+        response = client.post(f"{settings.API_V1_STR}/users/", json=data)
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+def test_create_user_with_registration_intent_empty_string(
+    client: TestClient, db: Session
+) -> None:
+    """Verify empty string is rejected (frontend sends empty as undefined)."""
+    full_name = random_full_name()
+    data = {
+        "email": random_email(),
+        "password": random_password(),
+        "first_name": full_name["first"],
+        "last_name": full_name["last"],
+        "registration_intent": "",  # Empty string
+    }
+    with patch.object(settings, "TURNSTILE_SECRET_KEY", None):
+        response = client.post(f"{settings.API_V1_STR}/users/", json=data)
+    # This should fail validation since empty strings don't meet min_length
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+def test_create_user_with_registration_intent_whitespace_normalized(
+    client: TestClient, db: Session
+) -> None:
+    """Verify leading/trailing whitespace is stripped from registration_intent."""
+    full_name = random_full_name()
+    intent_with_whitespace = "  I want to analyze drone imagery for agricultural research projects.  "
+    expected_intent = "I want to analyze drone imagery for agricultural research projects."
+    data = {
+        "email": random_email(),
+        "password": random_password(),
+        "first_name": full_name["first"],
+        "last_name": full_name["last"],
+        "registration_intent": intent_with_whitespace,
+    }
+    with patch.object(settings, "TURNSTILE_SECRET_KEY", None):
+        response = client.post(f"{settings.API_V1_STR}/users/", json=data)
+    assert response.status_code == status.HTTP_201_CREATED
+    user = crud.user.get_by_email(db, email=data["email"])
+    assert user
+    assert user.registration_intent == expected_intent
+
+
+def test_create_user_with_registration_intent_only_whitespace(
+    client: TestClient,
+) -> None:
+    """Verify string with only whitespace is rejected (API layer validation)."""
+    full_name = random_full_name()
+    data = {
+        "email": random_email(),
+        "password": random_password(),
+        "first_name": full_name["first"],
+        "last_name": full_name["last"],
+        "registration_intent": "     ",  # Only whitespace
+    }
+    with patch.object(settings, "TURNSTILE_SECRET_KEY", None):
+        response = client.post(f"{settings.API_V1_STR}/users/", json=data)
+    # Should fail since whitespace doesn't meet min_length at API layer
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+def test_create_user_with_name_whitespace_normalized(
+    client: TestClient, db: Session
+) -> None:
+    """Verify leading/trailing whitespace is stripped from first_name and last_name."""
+    data = {
+        "email": random_email(),
+        "password": random_password(),
+        "first_name": "  John  ",
+        "last_name": "  Doe  ",
+    }
+    with patch.object(settings, "TURNSTILE_SECRET_KEY", None):
+        response = client.post(f"{settings.API_V1_STR}/users/", json=data)
+    assert response.status_code == status.HTTP_201_CREATED
+    user = crud.user.get_by_email(db, email=data["email"])
+    assert user
+    assert user.first_name == "John"
+    assert user.last_name == "Doe"

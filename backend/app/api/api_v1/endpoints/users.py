@@ -40,6 +40,9 @@ async def create_user(
     first_name: str = Body(title="First name", min_length=2, max_length=64),
     last_name: str = Body(title="Last name", min_length=2, max_length=64),
     turnstile_token: str | None = Body(None, title="Turnstile token"),
+    registration_intent: str | None = Body(
+        None, title="Registration intent", min_length=20, max_length=500
+    ),
 ) -> Any:
     """Create new user with unique email."""
     # Validate Turnstile token if configured
@@ -85,6 +88,7 @@ async def create_user(
         email=email,
         first_name=first_name,
         last_name=last_name,
+        registration_intent=registration_intent,
     )
     user = crud.user.create(db, obj_in=user_in)
     if settings.MAIL_ENABLED:

@@ -14,6 +14,7 @@ export type RegistrationFormData = {
   email: string;
   password: string;
   passwordRetype: string;
+  registrationIntent?: string;
 };
 
 export const registrationInitialValues = {
@@ -22,6 +23,7 @@ export const registrationInitialValues = {
   email: '',
   password: '',
   passwordRetype: '',
+  registrationIntent: '',
 };
 
 export type RecoveryFormData = {

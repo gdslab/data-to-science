@@ -63,6 +63,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             hashed_password=get_password_hash(obj_in.password),
             first_name=obj_in.first_name,
             last_name=obj_in.last_name,
+            registration_intent=obj_in.registration_intent,
         )
         with db as session:
             session.add(user)

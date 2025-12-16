@@ -5,7 +5,7 @@ export const styles = {
   label: 'block text-sm text-gray-400 font-bold pt-2 pb-1',
   inputText:
     'focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-hidden border border-gray-400 rounded-sm py-1 px-4 block w-full appearance-none',
-  inputTextArea: 'w-full h-48 resize-none rounded-sm',
+  inputTextArea: 'w-full resize-none rounded-sm border border-gray-400 py-1 px-4',
 };
 
 type InputField = {
@@ -97,7 +97,8 @@ export function TextAreaField({
   name,
   placeholder = '',
   required = true,
-}: InputField) {
+  rows = 6,
+}: InputField & { rows?: number }) {
   return (
     <ConnectForm>
       {({ formState: { errors }, register }) => (
@@ -109,6 +110,7 @@ export function TextAreaField({
           <textarea
             className={styles.inputTextArea}
             placeholder={placeholder}
+            rows={rows}
             {...register(name)}
             aria-invalid={errors[name] ? 'true' : 'false'}
           />

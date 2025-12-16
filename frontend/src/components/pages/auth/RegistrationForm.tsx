@@ -1,4 +1,5 @@
 import { isAxiosError } from 'axios';
+import clsx from 'clsx';
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { Link } from 'react-router';
 import { useState } from 'react';
@@ -9,7 +10,8 @@ import Alert, { Status } from '../../Alert';
 import { Button, OutlineButton } from '../../Buttons';
 import Checkbox from '../../Checkbox';
 import HintText from '../../HintText';
-import { InputField } from '../../FormFields';
+import { InputField, TextAreaField } from '../../FormFields';
+import TurnstileWidget from './TurnstileWidget';
 import { User } from '../../../AuthContext';
 
 import {
@@ -19,7 +21,6 @@ import {
 import { registrationValidationSchema as validationSchema } from './validationSchema';
 
 import api from '../../../api';
-import TurnstileWidget from './TurnstileWidget';
 
 export const passwordHintText =
   'Your password must use at least 12 characters.';
@@ -39,6 +40,7 @@ export default function RegistrationForm() {
   const {
     formState: { isSubmitting },
     handleSubmit,
+    watch,
   } = methods;
 
   const handleTurnstileSuccess = (token: string) => {
@@ -57,6 +59,8 @@ export default function RegistrationForm() {
   const handleTurnstileError = () => resetTurnstile(true);
   const handleTurnstileExpired = () => resetTurnstile(true);
 
+  const currentIntent = watch('registrationIntent') || '';
+
   const onSubmit: SubmitHandler<RegistrationFormData> = async (values) => {
     setStatus(null);
     setTurnstileError(false);
@@ -73,6 +77,7 @@ export default function RegistrationForm() {
         last_name: values.lastName,
         email: values.email,
         password: values.password,
+        registration_intent: values.registrationIntent,
         ...(turnstileToken && { turnstile_token: turnstileToken }),
       };
       const response = await api.post<User>('/users', data);
@@ -123,22 +128,39 @@ export default function RegistrationForm() {
           className="grid grid-flow-row gap-4"
           onSubmit={handleSubmit(onSubmit)}
         >
-          <div className="grid md:grid-cols-2 grid-cols-1 gap-4">
+          <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-4">
             <InputField label="First Name" name="firstName" />
             <InputField label="Last Name" name="lastName" />
+            <InputField label="Email" name="email" type="email" />
           </div>
-          <InputField label="Email" name="email" type="email" />
-          <InputField
-            label="Password"
-            name="password"
-            type={showPassword ? 'text' : 'password'}
-          />
+          <div>
+            <TextAreaField
+              label="How do you plan to use Data to Science? (optional)"
+              name="registrationIntent"
+              required={false}
+              rows={2}
+            />
+            <span
+              className={clsx('text-sm text-gray-400', {
+                'text-red-500': currentIntent.length > 500,
+              })}
+            >
+              {currentIntent.length.toLocaleString()} of 500 characters
+            </span>
+          </div>
           <HintText>{passwordHintText}</HintText>
-          <InputField
-            label="Retype Password"
-            name="passwordRetype"
-            type={showPassword ? 'text' : 'password'}
-          />
+          <div className="grid md:grid-cols-2 grid-cols-1 gap-4">
+            <InputField
+              label="Password"
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+            />
+            <InputField
+              label="Retype Password"
+              name="passwordRetype"
+              type={showPassword ? 'text' : 'password'}
+            />
+          </div>
           <div className="flex items-center">
             <Checkbox
               id="showpass-checkbox"
