@@ -75,9 +75,11 @@ These aspects make D2S a powerful tool for researchers looking to manage, share,
 ### 🌍 Accessing the web application
 
 The Data To Science web application can be accessed from `http://localhost:8000`. It may take up to a minute for the backend to finish initializing. If you are running D2S on a virtual machine or remote server and accessing it via a LAN IP over HTTP, update `HTTP_COOKIE_SECURE` in your `backend.env` file to:
+
 ```env
 HTTP_COOKIE_SECURE=0
 ```
+
 This allows cookies to work correctly in non-localhost HTTP environments.
 
 ## ⚙️ Getting started with local code
@@ -167,6 +169,7 @@ This allows cookies to work correctly in non-localhost HTTP environments.
    - `STAC_API_URL`: URL for a STAC API.
    - `STAC_API_TEST_URL`: URL for a STAC API that can be used for testing.
    - `STAC_BROWSER_URL`: URL for STAC Browser site connected to the STAC API.
+   - `TURNSTILE_SECRET_KEY`: Cloudflare Turnstile secret key for bot protection on registration (optional). Leave empty to disable.
    - `HTTP_COOKIE_SECURE`: Set to 1 to only send cookies over HTTPS, 0 to allow HTTP.
    - `LIMIT_MAX_REQUESTS`: Maximum number of requests a worker will handle before being restarted.
    - `UVICORN_WORKERS`: Number of uvicorn workers.
@@ -196,6 +199,7 @@ This allows cookies to work correctly in non-localhost HTTP environments.
 
    - `VITE_META_OG_IMAGE`: Preview image URL for social media shares.
    - `VITE_META_OG_URL`: Hostname for site.
+   - `VITE_TURNSTILE_SITE_KEY`: Cloudflare Turnstile site key for bot protection on registration (optional). Leave empty to disable.
 
 ### 🛠️ Build Docker images for services
 

@@ -50,6 +50,9 @@ class Settings(BaseSettings):
     # OpenTelemetry
     ENABLE_OPENTELEMETRY: bool = False
 
+    # Cloudflare Turnstile
+    TURNSTILE_SECRET_KEY: str | None = None
+
     # Provide a base URL for shortened URLs (e.g., "http://localhost:8000/s")
     SHORTENED_URL_BASE: str = API_DOMAIN + "/sl"
 

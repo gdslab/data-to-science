@@ -25,6 +25,6 @@ def validate_password(pwd: str) -> None:
     # cannot repeat more than two characters in a row
     if more_than_two_repeating_chars_in_a_row(pwd):
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Password cannot have more than two repeating characters in a row",
         )

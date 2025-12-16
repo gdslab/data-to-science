@@ -1,4 +1,5 @@
 import { isAxiosError } from 'axios';
+import clsx from 'clsx';
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { Link } from 'react-router';
 import { useState } from 'react';
@@ -9,7 +10,8 @@ import Alert, { Status } from '../../Alert';
 import { Button, OutlineButton } from '../../Buttons';
 import Checkbox from '../../Checkbox';
 import HintText from '../../HintText';
-import { InputField } from '../../FormFields';
+import { InputField, TextAreaField } from '../../FormFields';
+import TurnstileWidget from './TurnstileWidget';
 import { User } from '../../../AuthContext';
 
 import {
@@ -26,6 +28,10 @@ export const passwordHintText =
 export default function RegistrationForm() {
   const [status, setStatus] = useState<Status | null>(null);
   const [showPassword, toggleShowPassword] = useState(false);
+  const [turnstileError, setTurnstileError] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
   const methods = useForm<RegistrationFormData>({
     defaultValues,
@@ -34,16 +40,45 @@ export default function RegistrationForm() {
   const {
     formState: { isSubmitting },
     handleSubmit,
+    watch,
   } = methods;
+
+  const handleTurnstileSuccess = (token: string) => {
+    setTurnstileToken(token);
+    setTurnstileError(false);
+  };
+
+  const resetTurnstile = (showError = false) => {
+    setTurnstileToken(null);
+    if (showError) {
+      setTurnstileError(true);
+    }
+    setTurnstileResetSignal((signal) => signal + 1);
+  };
+
+  const handleTurnstileError = () => resetTurnstile(true);
+  const handleTurnstileExpired = () => resetTurnstile(true);
+
+  const currentIntent = watch('registrationIntent') || '';
 
   const onSubmit: SubmitHandler<RegistrationFormData> = async (values) => {
     setStatus(null);
+    setTurnstileError(false);
+
+    // If Turnstile is configured but no token available, show error
+    if (turnstileSiteKey && !turnstileToken) {
+      setTurnstileError(true);
+      return;
+    }
+
     try {
       const data = {
         first_name: values.firstName,
         last_name: values.lastName,
         email: values.email,
         password: values.password,
+        registration_intent: values.registrationIntent,
+        ...(turnstileToken && { turnstile_token: turnstileToken }),
       };
       const response = await api.post<User>('/users', data);
       if (response) {
@@ -67,6 +102,11 @@ export default function RegistrationForm() {
         });
       }
     } catch (err) {
+      // Clear token on error so user can try again
+      if (turnstileSiteKey) {
+        resetTurnstile();
+      }
+
       if (isAxiosError(err)) {
         setStatus({
           type: err.response?.status === 409 ? 'warning' : 'error',
@@ -88,22 +128,39 @@ export default function RegistrationForm() {
           className="grid grid-flow-row gap-4"
           onSubmit={handleSubmit(onSubmit)}
         >
-          <div className="grid md:grid-cols-2 grid-cols-1 gap-4">
+          <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-4">
             <InputField label="First Name" name="firstName" />
             <InputField label="Last Name" name="lastName" />
+            <InputField label="Email" name="email" type="email" />
           </div>
-          <InputField label="Email" name="email" type="email" />
-          <InputField
-            label="Password"
-            name="password"
-            type={showPassword ? 'text' : 'password'}
-          />
+          <div>
+            <TextAreaField
+              label="How do you plan to use Data to Science? (optional)"
+              name="registrationIntent"
+              required={false}
+              rows={2}
+            />
+            <span
+              className={clsx('text-sm text-gray-400', {
+                'text-red-500': currentIntent.length > 500,
+              })}
+            >
+              {currentIntent.length.toLocaleString()} of 500 characters
+            </span>
+          </div>
           <HintText>{passwordHintText}</HintText>
-          <InputField
-            label="Retype Password"
-            name="passwordRetype"
-            type={showPassword ? 'text' : 'password'}
-          />
+          <div className="grid md:grid-cols-2 grid-cols-1 gap-4">
+            <InputField
+              label="Password"
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+            />
+            <InputField
+              label="Retype Password"
+              name="passwordRetype"
+              type={showPassword ? 'text' : 'password'}
+            />
+          </div>
           <div className="flex items-center">
             <Checkbox
               id="showpass-checkbox"
@@ -117,6 +174,20 @@ export default function RegistrationForm() {
               Show password
             </label>
           </div>
+          {turnstileSiteKey && (
+            <TurnstileWidget
+              siteKey={turnstileSiteKey}
+              onSuccess={handleTurnstileSuccess}
+              onError={handleTurnstileError}
+              onExpire={handleTurnstileExpired}
+              resetSignal={turnstileResetSignal}
+            />
+          )}
+          {turnstileError && (
+            <Alert alertType="error">
+              Verification failed. Please refresh the page and try again.
+            </Alert>
+          )}
           <Button type="submit" disabled={isSubmitting}>
             Create Account
           </Button>

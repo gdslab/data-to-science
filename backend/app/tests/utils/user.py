@@ -41,6 +41,7 @@ def create_user_in(
     password: str | None = None,
     first_name: str | None = None,
     last_name: str | None = None,
+    registration_intent: str | None = None,
 ) -> UserCreate:
     """Create random user model with specific email if provided."""
     if not email:
@@ -56,6 +57,7 @@ def create_user_in(
         password=password,
         first_name=full_name["first"],
         last_name=full_name["last"],
+        registration_intent=registration_intent,
     )
     return user_in
 

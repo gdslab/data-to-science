@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, cast, Dict, Optional, Tuple, Literal
 from uuid import UUID
 
+import httpx
 from fastapi import Request, Response, status, HTTPException
 from fastapi.exceptions import HTTPException
 from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
@@ -254,6 +255,47 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str) 
         secure=secure_cookie,
         samesite=samesite,
     )
+
+
+async def validate_turnstile(
+    token: str, secret: str, remoteip: str | None = None
+) -> dict[str, Any]:
+    """Validate Cloudflare Turnstile token.
+
+    Args:
+        token: Turnstile response token from the client
+        secret: Turnstile secret key
+        remoteip: Optional client IP address for additional validation
+
+    Returns:
+        dict: Validation response from Cloudflare containing 'success' boolean
+              and potentially 'error-codes' if validation fails
+
+    Example response:
+        {
+            "success": true,
+            "challenge_ts": "2023-01-01T12:00:00Z",
+            "hostname": "example.com"
+        }
+    """
+    url = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
+
+    data = {"secret": secret, "response": token}
+
+    if remoteip:
+        data["remoteip"] = remoteip
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, data=data, timeout=10.0)
+            response.raise_for_status()
+            return response.json()
+    except httpx.HTTPError as e:
+        logger.error(f"Turnstile validation error: {e}")
+        return {"success": False, "error-codes": ["internal-error"]}
+    except Exception as e:
+        logger.error(f"Unexpected error during Turnstile validation: {e}")
+        return {"success": False, "error-codes": ["internal-error"]}
 
 
 class OAuth2PasswordBearerWithCookie(OAuth2):
