@@ -26,7 +26,6 @@ type TurnstileWidgetProps = {
   onSuccess: (token: string) => void;
   onError?: () => void;
   onExpire?: () => void;
-  resetSignal?: number;
 };
 
 export default function TurnstileWidget({
@@ -34,7 +33,6 @@ export default function TurnstileWidget({
   onSuccess,
   onError,
   onExpire,
-  resetSignal = 0,
 }: TurnstileWidgetProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const widgetIdRef = useRef<string | null>(null);
@@ -103,12 +101,6 @@ export default function TurnstileWidget({
       }
     };
   }, [apiReady, siteKey]);
-
-  // Reset the widget when requested by the parent
-  useEffect(() => {
-    if (!apiReady || !widgetIdRef.current || !window.turnstile) return;
-    window.turnstile.reset(widgetIdRef.current);
-  }, [apiReady, resetSignal]);
 
   return <div className="cf-turnstile" ref={containerRef} />;
 }
