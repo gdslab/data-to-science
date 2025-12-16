@@ -4976,10 +4976,10 @@ terra-draw@^1.20.0:
   resolved "https://registry.yarnpkg.com/terra-draw/-/terra-draw-1.20.0.tgz#d6e23e1e2ae26998acab314b8cf5ce3286cb8cc8"
   integrity sha512-aWJswr+U4Sr47m371wH1nWx/ij4Ymud3YsycWoYPmGecQ/nlQnm26eDm8r5UX6vPm0gYLGwNmYJCZNrr8RL4tA==
 
-three@^0.179.1:
-  version "0.179.1"
-  resolved "https://registry.yarnpkg.com/three/-/three-0.179.1.tgz#6c0b43e046eaad0f42b163143517a44ae44ed446"
-  integrity sha512-5y/elSIQbrvKOISxpwXCR4sQqHtGiOI+MKLc3SsBdDXA2hz3Mdp3X59aUp8DyybMa34aeBwbFTpdoLJaUDEWSw==
+three@^0.182.0:
+  version "0.182.0"
+  resolved "https://registry.yarnpkg.com/three/-/three-0.182.0.tgz#535b71b4335529d0eacdb1d30eba72bada3d0b54"
+  integrity sha512-GbHabT+Irv+ihI1/f5kIIsZ+Ef9Sl5A1Y7imvS5RQjWgtTPfPnZ43JmlYI7NtCRDK9zir20lQpfg8/9Yd02OvQ==
 
 tiny-case@^1.0.3:
   version "1.0.3"

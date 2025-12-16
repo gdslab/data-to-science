@@ -59,7 +59,7 @@
     "seedrandom": "^3.0.5",
     "swiper": "10.3.1",
     "terra-draw": "^1.20.0",
-    "three": "^0.179.1",
+    "three": "^0.182.0",
     "uuid": "^9.0.1",
     "yup": "^1.2.0",
     "yup-password": "^0.2.2"
