@@ -30,7 +30,6 @@ export default function RegistrationForm() {
   const [showPassword, toggleShowPassword] = useState(false);
   const [turnstileError, setTurnstileError] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
   const methods = useForm<RegistrationFormData>({
@@ -48,16 +47,15 @@ export default function RegistrationForm() {
     setTurnstileError(false);
   };
 
-  const resetTurnstile = (showError = false) => {
+  const handleTurnstileError = () => {
     setTurnstileToken(null);
-    if (showError) {
-      setTurnstileError(true);
-    }
-    setTurnstileResetSignal((signal) => signal + 1);
+    setTurnstileError(true);
   };
 
-  const handleTurnstileError = () => resetTurnstile(true);
-  const handleTurnstileExpired = () => resetTurnstile(true);
+  const handleTurnstileExpired = () => {
+    setTurnstileToken(null);
+    setTurnstileError(true);
+  };
 
   const currentIntent = watch('registrationIntent') || '';
 
@@ -103,9 +101,7 @@ export default function RegistrationForm() {
       }
     } catch (err) {
       // Clear token on error so user can try again
-      if (turnstileSiteKey) {
-        resetTurnstile();
-      }
+      setTurnstileToken(null);
 
       if (isAxiosError(err)) {
         setStatus({
@@ -180,12 +176,12 @@ export default function RegistrationForm() {
               onSuccess={handleTurnstileSuccess}
               onError={handleTurnstileError}
               onExpire={handleTurnstileExpired}
-              resetSignal={turnstileResetSignal}
             />
           )}
           {turnstileError && (
             <Alert alertType="error">
-              Verification failed. Please refresh the page and try again.
+              erification failed. Turnstile will retry automatically; if it
+              still doesn't succeed, please reload the page and try again.
             </Alert>
           )}
           <Button type="submit" disabled={isSubmitting}>
