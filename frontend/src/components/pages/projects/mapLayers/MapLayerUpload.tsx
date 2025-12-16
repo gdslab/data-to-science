@@ -1,6 +1,6 @@
 import { isAxiosError, AxiosResponse } from 'axios';
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 import Alert, { Status } from '../../../Alert';
@@ -11,8 +11,15 @@ import { MapLayerFeatureCollection } from '../Project';
 
 import api from '../../../../api';
 
-export default function MapLayerUpload() {
+interface MapLayerUploadProps {
+  onUploadSuccess?: () => void;
+}
+
+export default function MapLayerUpload({
+  onUploadSuccess,
+}: MapLayerUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
+  // eslint-disable-next-line react-hooks/purity
   const [mlFileInputKey, setMLFileInputKey] = useState(Date.now());
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
@@ -41,6 +48,8 @@ export default function MapLayerUpload() {
             type: 'success',
             msg: 'Your uploaded map layer will be added once it has been processed.',
           });
+          // Trigger fast polling in parent component
+          onUploadSuccess?.();
           // update key for file input elem (clears out previous file)
           setMLFileInputKey(Date.now());
           setUploadFile(null);

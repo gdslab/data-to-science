@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Uppy from '@uppy/core';
-import DashboardModal from '@uppy/react/lib/DashboardModal';
+import DashboardModal from '@uppy/react/dashboard-modal';
 import XHRUpload from '@uppy/xhr-upload';
 
-import '@uppy/core/dist/style.min.css';
-import '@uppy/dashboard/dist/style.min.css';
+import '@uppy/core/css/style.min.css';
+import '@uppy/dashboard/css/style.min.css';
+
+import { ErrorResponseBody, ValidationError } from '../../../types/uppy';
 
 function createUppy(upload_endpoint: string) {
   return new Uppy().use(XHRUpload, {
@@ -30,79 +32,105 @@ export default function ProfilePictureUpload({
 }: ProfilePictureUpload) {
   const [uppy] = useState(() => createUppy(endpoint));
 
-  const restrictions = {
-    allowedFileTypes: ['.jpg', '.png'],
-    maxNumberOfFiles: 1,
-    minNumberOfFiles: 1,
-  };
+  const restrictions = useMemo(
+    () => ({
+      allowedFileTypes: ['.jpg', '.png'],
+      maxNumberOfFiles: 1,
+      minNumberOfFiles: 1,
+    }),
+    []
+  );
 
   useEffect(() => {
     if (endpoint) {
       uppy.setOptions({ restrictions });
     }
-  }, [uppy, endpoint]);
+  }, [uppy, endpoint, restrictions]);
 
-  uppy.on('restriction-failed', () => {
-    uppy.info(
-      {
-        message: 'Unsupported file extension',
-        details: `Upload must be one of the following file types: ${restrictions.allowedFileTypes.join(
-          ', '
-        )}`,
-      },
-      'error',
-      5000
-    );
-  });
-
-  uppy.on('upload', (_uploadID, files) => {
-    if (files && files.length > 0) {
-      const file = files[0];
-      uppy.setFileState(file.id, {
-        xhrUpload: {
-          // @ts-ignore
-          ...file.xhrUpload,
-          endpoint: endpoint,
-        },
-      });
-    }
-  });
-
-  uppy.on('upload-error', (_file, _error, response) => {
-    if (response?.body) {
-      let errorDetails = '';
-      const body = response.body as Record<string, any>;
-
-      if (body.detail) {
-        if (typeof body.detail === 'string') {
-          errorDetails = body.detail;
-        } else if (response.status === 422 && Array.isArray(body.detail)) {
-          body.detail.forEach((err: any, idx: number) => {
-            errorDetails = `${err.loc[1]}: ${err.msg}`;
-            errorDetails += idx < body.detail.length - 1 ? '; ' : '';
-          });
-        } else {
-          errorDetails = 'Unexpected error occurred';
-        }
-      } else {
-        errorDetails = 'Upload failed';
-      }
-
+  useEffect(() => {
+    const handleRestrictionFailed = () => {
       uppy.info(
         {
-          message: `Error ${response.status}`,
-          details: errorDetails,
+          message: 'Unsupported file extension',
+          details: `Upload must be one of the following file types: ${restrictions.allowedFileTypes.join(
+            ', '
+          )}`,
         },
         'error',
-        10000
+        5000
       );
-    }
-  });
+    };
 
-  uppy.on('upload-success', (_file, _response) => {
-    if (_file) uppy.removeFile(_file.id);
-    if (onSuccess) onSuccess();
-  });
+    const handleUpload = (_uploadID: string, files: unknown) => {
+      if (files && Array.isArray(files) && files.length > 0) {
+        const file = files[0];
+        uppy.setFileState(file.id, {
+          xhrUpload: {
+            ...file.xhrUpload,
+            endpoint: endpoint,
+          },
+        });
+      }
+    };
+
+    const handleUploadError = (
+      _file: unknown,
+      _error: unknown,
+      response?: { status?: number; body?: unknown }
+    ) => {
+      if (response?.body) {
+        let errorDetails = '';
+        const body = response.body as ErrorResponseBody;
+
+        if (body.detail) {
+          if (typeof body.detail === 'string') {
+            errorDetails = body.detail;
+          } else if (response.status === 422 && Array.isArray(body.detail)) {
+            const validationErrors = body.detail as ValidationError[];
+            validationErrors.forEach((err, idx) => {
+              errorDetails = `${err.loc[1]}: ${err.msg}`;
+              errorDetails += idx < validationErrors.length - 1 ? '; ' : '';
+            });
+          } else {
+            errorDetails = 'Unexpected error occurred';
+          }
+        } else {
+          errorDetails = 'Upload failed';
+        }
+
+        uppy.info(
+          {
+            message: `Error ${response.status}`,
+            details: errorDetails,
+          },
+          'error',
+          10000
+        );
+      }
+    };
+
+    const handleUploadSuccess = (
+      _file: { id: string } | undefined,
+      _response: unknown
+    ) => {
+      if (_file) uppy.removeFile(_file.id);
+      if (onSuccess) onSuccess();
+    };
+
+    // Register event listeners
+    uppy.on('restriction-failed', handleRestrictionFailed);
+    uppy.on('upload', handleUpload);
+    uppy.on('upload-error', handleUploadError);
+    uppy.on('upload-success', handleUploadSuccess);
+
+    // Cleanup function to remove listeners
+    return () => {
+      uppy.off('restriction-failed', handleRestrictionFailed);
+      uppy.off('upload', handleUpload);
+      uppy.off('upload-error', handleUploadError);
+      uppy.off('upload-success', handleUploadSuccess);
+    };
+  }, [uppy, endpoint, restrictions, onSuccess]);
 
   return (
     <DashboardModal

@@ -1,4 +1,9 @@
-import { ErrorMessage, FieldArray, FormikErrors, useFormikContext } from 'formik';
+import {
+  ErrorMessage,
+  FieldArray,
+  FormikErrors,
+  useFormikContext,
+} from 'formik';
 import { Fragment, ReactElement, useEffect, useState } from 'react';
 import { PencilIcon } from '@heroicons/react/24/outline';
 
@@ -14,7 +19,7 @@ function SampleNameFields({
   name: string;
   numOfSamples: number;
 }) {
-  let arr: ReactElement[] = [];
+  const arr: ReactElement[] = [];
   for (let i = 0; i < numOfSamples; i++) {
     arr.push(
       <div key={`${name}.${i}`} className="shrink-0 w-14 p-1">
@@ -43,46 +48,45 @@ function TimepointForm({ mIndex, tIndex, values }) {
             max={10}
             step={1}
             onChange={(e) => {
-              try {
-                const numOfSamples = parseInt(e.target.value);
-                if (numOfSamples > 0) {
-                  if (
-                    values.measurements[mIndex].timepoints[tIndex].sampleNames
-                      .length === 0
-                  ) {
-                    const presetSampleNames: string[] = [];
-                    const firstSampleName = 'A'.charCodeAt(0);
+              const numOfSamples = parseInt(e.target.value);
+              if (numOfSamples > 0) {
+                if (
+                  values.measurements[mIndex].timepoints[tIndex].sampleNames
+                    .length === 0
+                ) {
+                  const presetSampleNames: string[] = [];
+                  const firstSampleName = 'A'.charCodeAt(0);
 
-                    for (let i = 0; i < numOfSamples; i++) {
-                      presetSampleNames.push(String.fromCharCode(firstSampleName + i));
-                    }
+                  for (let i = 0; i < numOfSamples; i++) {
+                    presetSampleNames.push(
+                      String.fromCharCode(firstSampleName + i)
+                    );
+                  }
+                  setFieldValue(
+                    `measurements.${mIndex}.timepoints.${tIndex}.sampleNames`,
+                    presetSampleNames
+                  );
+                } else {
+                  const prev =
+                    values.measurements[mIndex].timepoints[tIndex].sampleNames;
+                  if (prev.length < numOfSamples) {
+                    const neededSampleNames = new Array(
+                      numOfSamples - prev.length
+                    ).fill('');
                     setFieldValue(
                       `measurements.${mIndex}.timepoints.${tIndex}.sampleNames`,
-                      presetSampleNames
+                      [...prev, ...neededSampleNames]
                     );
                   } else {
-                    const prev =
-                      values.measurements[mIndex].timepoints[tIndex].sampleNames;
-                    if (prev.length < numOfSamples) {
-                      const neededSampleNames = new Array(
-                        numOfSamples - prev.length
-                      ).fill('');
-                      setFieldValue(
-                        `measurements.${mIndex}.timepoints.${tIndex}.sampleNames`,
-                        [...prev, ...neededSampleNames]
-                      );
-                    } else {
-                      const neededSampleNames = prev.slice(0, numOfSamples);
-                      setFieldValue(
-                        `measurements.${mIndex}.timepoints.${tIndex}.sampleNames`,
-                        neededSampleNames
-                      );
-                    }
+                    const neededSampleNames = prev.slice(0, numOfSamples);
+                    setFieldValue(
+                      `measurements.${mIndex}.timepoints.${tIndex}.sampleNames`,
+                      neededSampleNames
+                    );
                   }
                 }
-              } catch (_err) {
-                // do nothing
               }
+
               handleChange(e);
             }}
           />
@@ -94,7 +98,9 @@ function TimepointForm({ mIndex, tIndex, values }) {
       <div className="flex flex-row gap-2 pb-4 overflow-x-auto">
         <SampleNameFields
           name={`measurements.${mIndex}.timepoints.${tIndex}.sampleNames`}
-          numOfSamples={values.measurements[mIndex].timepoints[tIndex].numberOfSamples}
+          numOfSamples={
+            values.measurements[mIndex].timepoints[tIndex].numberOfSamples
+          }
         />
       </div>
       <ErrorMessage
@@ -120,18 +126,18 @@ export default function FieldCampaignFormStep3() {
   const { setFieldValue } = useFormikContext();
 
   useEffect(() => {
-    if (values.measurements.length > 0) {
+    if (values.measurements.length > 0 && measurementSteps.length === 0) {
       setMeasurementSteps(new Array(values.measurements.length).fill(2));
-      let initialTimepoints: number[] = [];
+      const initialTimepoints: number[] = [];
       values.measurements.forEach(() => {
         initialTimepoints.push(0);
       });
       setTimepoints(initialTimepoints);
     }
-  }, []);
+  }, [values.measurements, measurementSteps.length]);
 
   function forwardMeasurementStep(index: number) {
-    let currentSteps = [...measurementSteps];
+    const currentSteps = [...measurementSteps];
     currentSteps[index] += 1;
 
     if (
@@ -148,7 +154,7 @@ export default function FieldCampaignFormStep3() {
   }
 
   function backwardMeasurementStep(index: number) {
-    let currentSteps = [...measurementSteps];
+    const currentSteps = [...measurementSteps];
     currentSteps[index] -= 1;
     setMeasurementSteps(currentSteps);
   }
@@ -157,13 +163,13 @@ export default function FieldCampaignFormStep3() {
     <div className="flex flex-col gap-2 overflow-x-auto">
       <h1>Measurements</h1>
       <p>
-        When sampling occurs, usually one person writes down one measurement (trial in
-        the case of point measurements) using a mobile personal device (cellphone,
-        table, or computer) or paper. For that reason, one template is created for one
-        measurement. However, it is sometimes easier to enter two traits simultaneously,
-        for instance, canopy height and width. We used the same template in the lab to
-        collect related traits, such as yield components such as biomass (g/m2),
-        thousand-grain weight (g), etc.
+        When sampling occurs, usually one person writes down one measurement
+        (trial in the case of point measurements) using a mobile personal device
+        (cellphone, table, or computer) or paper. For that reason, one template
+        is created for one measurement. However, it is sometimes easier to enter
+        two traits simultaneously, for instance, canopy height and width. We
+        used the same template in the lab to collect related traits, such as
+        yield components such as biomass (g/m2), thousand-grain weight (g), etc.
       </p>
       <FieldArray
         name="measurements"
@@ -211,7 +217,8 @@ export default function FieldCampaignFormStep3() {
                             type="button"
                             onClick={() => {
                               // change active measurement step to timepoint form step
-                              let currentMeasurementSteps = measurementSteps.slice();
+                              const currentMeasurementSteps =
+                                measurementSteps.slice();
                               currentMeasurementSteps[mIndex] = 0;
                               setMeasurementSteps(currentMeasurementSteps);
                             }}
@@ -239,15 +246,19 @@ export default function FieldCampaignFormStep3() {
                                       type="button"
                                       onClick={() => {
                                         // set active timepoint for measurement to this timepoint
-                                        let currentTimepoints = [...timepoints];
+                                        const currentTimepoints = [
+                                          ...timepoints,
+                                        ];
                                         currentTimepoints[mIndex] = tIndex;
                                         setTimepoints(currentTimepoints);
                                         // change active measurement step to timepoint form step
-                                        let currentMeasurementSteps = [
+                                        const currentMeasurementSteps = [
                                           ...measurementSteps,
                                         ];
                                         currentMeasurementSteps[mIndex] = 1;
-                                        setMeasurementSteps(currentMeasurementSteps);
+                                        setMeasurementSteps(
+                                          currentMeasurementSteps
+                                        );
                                       }}
                                     >
                                       <span className="sr-only">Edit</span>
@@ -261,8 +272,9 @@ export default function FieldCampaignFormStep3() {
                                       confirmText="Remove timepoint"
                                       rejectText="Keep timepoint"
                                       onConfirm={() => {
-                                        let currentTimepoints = [
-                                          ...values.measurements[mIndex].timepoints,
+                                        const currentTimepoints = [
+                                          ...values.measurements[mIndex]
+                                            .timepoints,
                                         ];
                                         currentTimepoints.splice(tIndex, 1);
                                         setFieldValue(
@@ -296,11 +308,13 @@ export default function FieldCampaignFormStep3() {
                                 }
                               );
                               // set active timepoint for measurement to new timepoint
-                              let currentTimepoints = [...timepoints];
+                              const currentTimepoints = [...timepoints];
                               currentTimepoints[mIndex] += 1;
                               setTimepoints(currentTimepoints);
                               // change active measurement step to timepoint form step
-                              let currentMeasurementSteps = [...measurementSteps];
+                              const currentMeasurementSteps = [
+                                ...measurementSteps,
+                              ];
                               currentMeasurementSteps[mIndex] = 1;
                               setMeasurementSteps(currentMeasurementSteps);
                             }}
@@ -350,7 +364,9 @@ export default function FieldCampaignFormStep3() {
                           confirmText="Remove measurement"
                           rejectText="Keep measurement"
                           onConfirm={() => {
-                            let currentMeasurementSteps = [...measurementSteps];
+                            const currentMeasurementSteps = [
+                              ...measurementSteps,
+                            ];
                             currentMeasurementSteps.splice(mIndex, 1);
                             setMeasurementSteps(currentMeasurementSteps);
                             arrayHelpers.remove(mIndex);
@@ -363,7 +379,7 @@ export default function FieldCampaignFormStep3() {
               : null}
             <button
               type="button"
-              className="h-72 w-96 shrink-0 flex flex-row items-center justify-center gap-2 cursor-pointer rounded-lg border-2 border-dashed border-slate-400 p-4 overflow-y-auto hover:border-slate-600 text-lg text-slate-700 font-semibold disabled:text-slate-300"
+              className="h-72 w-96 shrink-0 flex flex-row items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-400 p-4 overflow-y-auto hover:border-slate-600 text-lg text-slate-700 font-semibold disabled:text-slate-300"
               onClick={() => {
                 // add new measurement with default values
                 arrayHelpers.push({

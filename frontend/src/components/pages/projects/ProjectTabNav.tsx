@@ -1,6 +1,6 @@
 import { AxiosResponse, isAxiosError } from 'axios';
-import { useEffect, useState } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useParams } from 'react-router';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 
 import { LinkButton } from '../../Buttons';
@@ -26,10 +26,17 @@ export default function ProjectTabNav({
   const params = useParams();
 
   useEffect(() => {
-    if (location.state && location.state.selectedIndex) {
-      setSelectedIndex(location.state.selectedIndex);
+    if (location.state && location.state.selectedIndex !== undefined) {
+      const index = location.state.selectedIndex;
+      if (params.projectId) {
+        localStorage.setItem(
+          `projectTabSelection_${params.projectId}`,
+          index.toString()
+        );
+      }
+      setSelectedIndex(index);
     }
-  }, [location.state]);
+  }, [location.state, params.projectId]);
 
   useEffect(() => {
     async function fetchIForesterData(projectId: string) {
@@ -54,18 +61,70 @@ export default function ProjectTabNav({
     if (params.projectId) {
       fetchIForesterData(params.projectId);
     }
-  }, []);
+  }, [params.projectId]);
+
+  // Helper function to get project tab selection from localStorage
+  function getProjectTabSelectionFromLS(
+    projectId: string | undefined,
+    maxIndex: number
+  ): number {
+    if (!projectId) return 0;
+    const stored = localStorage.getItem(`projectTabSelection_${projectId}`);
+    if (!stored) return 0;
+    const parsed = parseInt(stored);
+    if (isNaN(parsed) || parsed < 0 || parsed > maxIndex) return 0;
+    return parsed;
+  }
 
   // Sort modules by sort_order and filter enabled ones
-  const enabledModules = project_modules
-    .filter((module) => {
-      // Only show iForester if there is data
-      if (module.module_name === 'iforester') {
-        return module.enabled && iforesterData.length > 0;
+  const enabledModules = useMemo(() => {
+    return project_modules
+      .filter((module) => {
+        // Only show iForester if there is data
+        if (module.module_name === 'iforester') {
+          return module.enabled && iforesterData.length > 0;
+        }
+        return module.enabled;
+      })
+      .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+  }, [project_modules, iforesterData.length]);
+
+  // Initialize from localStorage when component mounts
+  useEffect(() => {
+    if (!location.state?.selectedIndex && enabledModules.length > 0) {
+      const storedIndex = getProjectTabSelectionFromLS(
+        params.projectId,
+        enabledModules.length - 1
+      );
+      setSelectedIndex(storedIndex);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.projectId, enabledModules.length]);
+
+  // Handler for tab changes with localStorage persistence
+  const handleTabChange = (index: number) => {
+    if (params.projectId) {
+      localStorage.setItem(
+        `projectTabSelection_${params.projectId}`,
+        index.toString()
+      );
+    }
+    setSelectedIndex(index);
+  };
+
+  // Validate current index when modules change (e.g., iForester appears/disappears)
+  useEffect(() => {
+    if (selectedIndex >= enabledModules.length && enabledModules.length > 0) {
+      const newIndex = 0;
+      setSelectedIndex(newIndex);
+      if (params.projectId) {
+        localStorage.setItem(
+          `projectTabSelection_${params.projectId}`,
+          newIndex.toString()
+        );
       }
-      return module.enabled;
-    })
-    .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+    }
+  }, [enabledModules.length, selectedIndex, params.projectId]);
 
   // Map module names to their corresponding components
   const getModuleComponent = (moduleName: string) => {
@@ -90,7 +149,7 @@ export default function ProjectTabNav({
   };
 
   return (
-    <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
+    <TabGroup selectedIndex={selectedIndex} onChange={handleTabChange}>
       <TabList>
         {enabledModules.map((module) => (
           <Tab

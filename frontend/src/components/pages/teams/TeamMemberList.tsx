@@ -1,7 +1,7 @@
 import { isAxiosError } from 'axios';
 import clsx from 'clsx';
 import { useContext, useMemo, useState } from 'react';
-import { useLoaderData, useParams, useRevalidator } from 'react-router-dom';
+import { useLoaderData, useParams, useRevalidator } from 'react-router';
 
 import Alert, { Status } from '../../Alert';
 import AuthContext from '../../../AuthContext';
@@ -63,7 +63,9 @@ export default function TeamMemberList({
   }, [teamMembers, user]);
 
   if (teamMembers.length < 1) {
-    return <div className="text-sm sm:text-base text-gray-600">No team members</div>;
+    return (
+      <div className="text-sm sm:text-base text-gray-600">No team members</div>
+    );
   } else {
     return (
       <div>
@@ -74,7 +76,9 @@ export default function TeamMemberList({
                 <th
                   className={clsx(
                     'whitespace-nowrap px-2 sm:px-4 py-2 font-medium text-gray-900 text-left',
-                    hasWriteAccess ? 'min-w-[150px] sm:w-[30%]' : 'min-w-[180px] sm:w-[40%]'
+                    hasWriteAccess
+                      ? 'min-w-[150px] sm:w-[30%]'
+                      : 'min-w-[180px] sm:w-[40%]'
                   )}
                 >
                   Name
@@ -82,7 +86,9 @@ export default function TeamMemberList({
                 <th
                   className={clsx(
                     'whitespace-nowrap px-2 sm:px-4 py-2 font-medium text-gray-900 text-left',
-                    hasWriteAccess ? 'min-w-[150px] sm:w-[30%]' : 'min-w-[180px] sm:w-[40%]'
+                    hasWriteAccess
+                      ? 'min-w-[150px] sm:w-[30%]'
+                      : 'min-w-[180px] sm:w-[40%]'
                   )}
                 >
                   Email
@@ -103,7 +109,9 @@ export default function TeamMemberList({
                   <td
                     className={clsx(
                       'gap-2 sm:gap-4 whitespace-nowrap px-2 sm:px-4 py-2 font-medium text-gray-900 text-left',
-                      hasWriteAccess ? 'min-w-[150px] sm:w-[30%]' : 'min-w-[180px] sm:w-[40%]'
+                      hasWriteAccess
+                        ? 'min-w-[150px] sm:w-[30%]'
+                        : 'min-w-[180px] sm:w-[40%]'
                     )}
                   >
                     <div className="flex items-center justify-start gap-2 sm:gap-4">
@@ -135,7 +143,9 @@ export default function TeamMemberList({
                   <td
                     className={clsx(
                       'whitespace-nowrap px-2 sm:px-4 py-2 text-gray-700 text-left',
-                      hasWriteAccess ? 'min-w-[150px] sm:w-[30%]' : 'min-w-[180px] sm:w-[40%]'
+                      hasWriteAccess
+                        ? 'min-w-[150px] sm:w-[30%]'
+                        : 'min-w-[180px] sm:w-[40%]'
                     )}
                   >
                     <span className="truncate block">{teamMember.email}</span>

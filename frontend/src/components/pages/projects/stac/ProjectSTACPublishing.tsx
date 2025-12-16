@@ -1,4 +1,4 @@
-import { LoaderFunctionArgs, useLoaderData, useParams } from 'react-router-dom';
+import { LoaderFunctionArgs, useLoaderData, useParams } from 'react-router';
 
 import { ProjectDetail } from '../Project';
 import { STACItem, STACMetadata } from './STACTypes';
@@ -22,30 +22,21 @@ import {
 import api from '../../../../api';
 
 export async function loader({ params }: LoaderFunctionArgs) {
-  try {
-    // First get the project to check if it's published
-    const projectResponse = await api.get(`/projects/${params.projectId}`);
-    const project = projectResponse.data;
+  // First get the project to check if it's published
+  const projectResponse = await api.get(`/projects/${params.projectId}`);
+  const project = projectResponse.data;
 
-    // Try to get cached STAC metadata first
-    let stacMetadata = null;
-    try {
-      const cachedResponse = await api.get(
-        `/projects/${params.projectId}/stac-cache`
-      );
-      stacMetadata = cachedResponse.data;
-    } catch (cacheError) {
-      // If no cache exists, generate preview asynchronously
-      console.log('No cached STAC metadata found, will trigger generation');
-    }
+  // Try to get cached STAC metadata first
+  let stacMetadata = null;
+  const cachedResponse = await api.get(
+    `/projects/${params.projectId}/stac-cache`
+  );
+  stacMetadata = cachedResponse.data;
 
-    return {
-      stacMetadata,
-      project: project,
-    };
-  } catch (error) {
-    throw error;
-  }
+  return {
+    stacMetadata,
+    project: project,
+  };
 }
 
 export default function ProjectSTACPublishing() {

@@ -69,7 +69,7 @@ export function usePolling<T>({
         onProgress?.('');
         onSuccess(result);
         isPollingRef.current = false; // Stop polling
-      } catch (error) {
+      } catch {
         pollAttempts++;
 
         if (pollAttempts >= maxAttempts || !isPollingRef.current) {
@@ -109,12 +109,6 @@ export function usePolling<T>({
     initialDelay,
     stopPolling,
   ]);
-
-  // Cleanup on unmount
-  // @ts-ignore
-  const cleanup = useCallback(() => {
-    stopPolling();
-  }, [stopPolling]);
 
   return {
     startPolling,

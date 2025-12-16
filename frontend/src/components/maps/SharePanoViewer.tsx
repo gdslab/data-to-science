@@ -1,17 +1,11 @@
 import { AxiosResponse } from 'axios';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 
 import { DataProduct } from '../pages/projects/Project';
 import { AlertBar, Status } from '../Alert';
 
 import api from '../../api';
-
-declare global {
-  interface Window {
-    pannellum: any;
-  }
-}
 
 function useQuery() {
   const { search } = useLocation();
@@ -38,7 +32,7 @@ export default function SharePanoViewer() {
         } else {
           setStatus({ type: 'error', msg: 'Unable to load image' });
         }
-      } catch (_err) {
+      } catch {
         setStatus({ type: 'error', msg: 'Unable to load image' });
       }
     }
@@ -46,7 +40,7 @@ export default function SharePanoViewer() {
     if (fileID) {
       fetchImage(fileID);
     }
-  }, []);
+  }, [fileID]);
 
   useEffect(() => {
     if (!viewerRef.current || !imageUrl) return;

@@ -1,5 +1,5 @@
 import { isAxiosError } from 'axios';
-import { useRevalidator } from 'react-router-dom';
+import { useRevalidator } from 'react-router';
 
 import { Status } from '../../Alert';
 import { confirm } from '../../ConfirmationDialog';

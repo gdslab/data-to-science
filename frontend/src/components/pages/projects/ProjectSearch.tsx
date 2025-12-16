@@ -1,9 +1,12 @@
 type ProjectSearch = {
   searchText: string;
-  updateSearchText: (e: any) => void;
+  updateSearchText: (newSearchText: string) => void;
 };
 
-export default function ProjectSearch({ searchText, updateSearchText }: ProjectSearch) {
+export default function ProjectSearch({
+  searchText,
+  updateSearchText,
+}: ProjectSearch) {
   return (
     <div className="relative w-full">
       <label htmlFor="Search" className="sr-only">

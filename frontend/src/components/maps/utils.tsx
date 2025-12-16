@@ -369,7 +369,7 @@ const getSingleBandMinMax = (
       }
       return [symbology.userMin, symbology.userMax];
 
-    case 'meanStdDev':
+    case 'meanStdDev': {
       const stats = stacProps.raster?.[0]?.stats;
       if (!stats || stats.mean === undefined || stats.stddev === undefined) {
         console.warn('Stats missing, falling back to default min/max.');
@@ -377,7 +377,7 @@ const getSingleBandMinMax = (
       }
       const deviation = stats.stddev * symbology.meanStdDev;
       return [stats.mean - deviation, stats.mean + deviation];
-
+    }
     default:
       console.warn(`Unexpected symbology mode: ${symbology.mode}`);
       return defaultMinMax;

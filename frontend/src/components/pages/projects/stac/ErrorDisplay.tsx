@@ -1,7 +1,9 @@
 import { XCircleIcon } from '@heroicons/react/24/outline';
 
+import { STACMetadata } from './STACTypes';
+
 interface ErrorDisplayProps {
-  stacMetadata: any;
+  stacMetadata: STACMetadata | null;
   onRetry: () => void;
 }
 

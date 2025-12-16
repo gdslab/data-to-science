@@ -63,6 +63,13 @@ export interface STACMetadata {
     };
     'sci:doi'?: string;
     'sci:citation'?: string;
+    license?: string;
+    contacts?: Array<{
+      name?: string;
+      emails?: Array<{
+        value?: string;
+      }>;
+    }>;
   };
   items: Array<STACItem | ItemStatus>;
   is_published: boolean;

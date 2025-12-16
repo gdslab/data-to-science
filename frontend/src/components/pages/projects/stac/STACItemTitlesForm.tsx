@@ -109,7 +109,7 @@ export default function STACItemTitlesForm({
                   <button
                     type="button"
                     onClick={() => clearCustomTitle(item.id)}
-                    className="mt-1 text-xs text-blue-600 hover:text-blue-800 underline"
+                    className="mt-1 text-xs text-blue-600 hover:text-blue-800 underline cursor-pointer"
                   >
                     Reset to default
                   </button>

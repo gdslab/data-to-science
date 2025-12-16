@@ -5,7 +5,7 @@ import {
   isRouteErrorResponse,
   useLoaderData,
   useRouteError,
-} from 'react-router-dom';
+} from 'react-router';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 import { SiteStatistics } from './DashboardTypes';
@@ -62,7 +62,9 @@ function ErrorElement() {
 }
 
 export default function DashboardSiteStatistics() {
-  const { stats } = useLoaderData() as { stats: Promise<SiteStatistics> };
+  const { stats } = useLoaderData() as {
+    stats: Promise<AxiosResponse<SiteStatistics>>;
+  };
 
   return (
     <Suspense fallback={<StatCardsSkeleton />}>

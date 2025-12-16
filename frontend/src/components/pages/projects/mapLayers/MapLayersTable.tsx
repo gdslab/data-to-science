@@ -1,6 +1,6 @@
 import { AxiosResponse, isAxiosError } from 'axios';
 import { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import {
   PhotoIcon,
   PencilIcon,
@@ -12,18 +12,14 @@ import { MapLayer, MapLayerFeatureCollection } from '../Project';
 import MapLayerDownloadLinks from './MapLayerDownloadLink';
 import ConfirmationModal from '../../../ConfirmationModal';
 import ImagePreviewModal from './ImagePreviewModal';
-import { getMapLayers, useProjectContext } from '../ProjectContext';
+import { useProjectContext } from '../ProjectContext';
 import { AlertBar, Status } from '../../../Alert';
-import { useInterval } from '../../../hooks';
 
 import api from '../../../../api';
 
 import pointIcon from '../../../../assets/point-icon.svg';
 import lineIcon from '../../../../assets/line-icon.svg';
 import polygonIcon from '../../../../assets/polygon-icon.svg';
-
-// Polling interval for checking for new map layers (in milliseconds)
-const MAP_LAYERS_POLLING_INTERVAL = 30000; // 30 seconds
 
 /**
  * If a "Multi" geometry type is provided return
@@ -78,12 +74,6 @@ export default function ProjectLayersTable() {
     url: string;
     name: string;
   } | null>(null);
-
-  useInterval(() => {
-    if (projectId) {
-      getMapLayers(projectId, mapLayersDispatch);
-    }
-  }, MAP_LAYERS_POLLING_INTERVAL);
 
   const sortedMapLayers = useMemo(() => {
     return [...mapLayers].sort((a, b) =>
@@ -209,7 +199,7 @@ export default function ProjectLayersTable() {
                       onClick={() =>
                         handlePreviewClick(layer.preview_url, layer.layer_name)
                       }
-                      className="flex items-center justify-center mx-auto cursor-pointer hover:opacity-80 transition-opacity focus:outline-hidden focus:ring-2 focus:ring-accent2 rounded-sm"
+                      className="flex items-center justify-center mx-auto hover:opacity-80 transition-opacity focus:outline-hidden focus:ring-2 focus:ring-accent2 rounded-sm"
                       aria-label={`View full preview of ${layer.layer_name}`}
                       title="Click to view full size"
                     >

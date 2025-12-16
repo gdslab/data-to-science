@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Select from 'react-select';
 import {
   ArrowPathIcon,
@@ -52,15 +52,21 @@ export default function FilterOptions() {
 
   const { iforester } = useProjectContext();
 
-  const updateDBHMin = (newDBHMin) => {
-    dispatch({ type: 'SET_DBH_MIN', payload: newDBHMin });
-  };
+  const updateDBHMin = useCallback(
+    (newDBHMin: number) => {
+      dispatch({ type: 'SET_DBH_MIN', payload: newDBHMin });
+    },
+    [dispatch]
+  );
 
-  const updateDBHMax = (newDBHMax) => {
-    dispatch({ type: 'SET_DBH_MAX', payload: newDBHMax });
-  };
+  const updateDBHMax = useCallback(
+    (newDBHMax: number) => {
+      dispatch({ type: 'SET_DBH_MAX', payload: newDBHMax });
+    },
+    [dispatch]
+  );
 
-  const toggleDBHVisibility = () => {
+  const toggleDBHVisibility = useCallback(() => {
     if (heightVisibility) {
       dispatch({ type: 'SET_HEIGHT_VISIBILITY', payload: !heightVisibility });
     }
@@ -68,7 +74,7 @@ export default function FilterOptions() {
       dispatch({ type: 'SET_SPECIES_VISIBILITY', payload: !speciesVisibility });
     }
     dispatch({ type: 'SET_DBH_VISIBILITY', payload: !dbhVisibility });
-  };
+  }, [dbhVisibility, dispatch, heightVisibility, speciesVisibility]);
 
   // const updateHeightMin = (newHeightMin) => {
   //   dispatch({ type: 'SET_HEIGHT_MIN', payload: newHeightMin });
@@ -89,11 +95,14 @@ export default function FilterOptions() {
   //   dispatch({ type: 'SET_HEIGHT_VISIBILITY', payload: !heightVisibility });
   // };
 
-  const updateSpecies = (newSpecies: string[]) => {
-    dispatch({ type: 'SET_SPECIES_SELECTION', payload: newSpecies });
-  };
+  const updateSpecies = useCallback(
+    (newSpecies: string[]) => {
+      dispatch({ type: 'SET_SPECIES_SELECTION', payload: newSpecies });
+    },
+    [dispatch]
+  );
 
-  const toggleSpeciesVisibility = () => {
+  const toggleSpeciesVisibility = useCallback(() => {
     if (dbhVisibility) {
       dispatch({ type: 'SET_DBH_VISIBILITY', payload: !dbhVisibility });
     }
@@ -101,9 +110,9 @@ export default function FilterOptions() {
       dispatch({ type: 'SET_HEIGHT_VISIBILITY', payload: !heightVisibility });
     }
     dispatch({ type: 'SET_SPECIES_VISIBILITY', payload: !speciesVisibility });
-  };
+  }, [dbhVisibility, dispatch, heightVisibility, speciesVisibility]);
 
-  const getUniqueSpecies = (): string[] => {
+  const getUniqueSpecies = useCallback((): string[] => {
     if (iforester && iforester.length > 0) {
       const uniqueSpecies = getUniqueValues(
         iforester.map(({ species }) => species.toLowerCase())
@@ -112,17 +121,20 @@ export default function FilterOptions() {
     } else {
       return [''];
     }
-  };
+  }, [iforester]);
 
-  const updateSpeciesOptions = () =>
-    setSpeciesOptions(
-      getUniqueSpecies().map((v) => ({
-        label: v as string,
-        value: (v as string).toLowerCase(),
-      }))
-    );
+  const updateSpeciesOptions = useCallback(
+    () =>
+      setSpeciesOptions(
+        getUniqueSpecies().map((v) => ({
+          label: v as string,
+          value: (v as string).toLowerCase(),
+        }))
+      ),
+    [getUniqueSpecies]
+  );
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     dispatch({ type: 'SET_DBH_MIN', payload: -1 });
     dispatch({ type: 'SET_DBH_MAX', payload: -1 });
     dispatch({ type: 'SET_HEIGHT_MIN', payload: -1 });
@@ -132,13 +144,13 @@ export default function FilterOptions() {
       payload: getUniqueSpecies(),
     });
     updateSpeciesOptions();
-  };
+  }, [dispatch, getUniqueSpecies, updateSpeciesOptions]);
 
   useEffect(() => {
     if (iforester && iforester.length > 0) {
       updateSpeciesOptions();
     }
-  }, [iforester]);
+  }, [iforester, updateSpeciesOptions]);
 
   return (
     <div className="px-2 p-2 w-44">

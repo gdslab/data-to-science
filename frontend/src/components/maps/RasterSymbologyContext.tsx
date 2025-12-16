@@ -82,10 +82,10 @@ const reducer = (state: State, action: Action): State => {
           isLoaded: action.payload,
         },
       };
-    case 'REMOVE_RASTER':
-      const newState = { ...state };
-      delete newState[action.rasterId];
-      return newState;
+    case 'REMOVE_RASTER': {
+      const { [action.rasterId]: _, ...remainingState } = state;
+      return remainingState;
+    }
     default:
       return state;
   }

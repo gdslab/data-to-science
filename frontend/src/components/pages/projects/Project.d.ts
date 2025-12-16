@@ -1,7 +1,6 @@
 import { Feature, FeatureCollection, Geometry, Point } from 'geojson';
 
 import { FieldCampaignInitialValues } from './fieldCampaigns/FieldCampaign';
-import { SymbologySettings } from '../../maps/Maps';
 import {
   SingleBandSymbology,
   MultibandSymbology,
@@ -118,7 +117,7 @@ export type Job = {
   id: string;
   data_product_id: string;
   end_time: string;
-  extra: { [key: string]: any };
+  extra: { [key: string]: unknown };
   name: string;
   raw_data_id: string;
   start_time: string;
@@ -149,13 +148,13 @@ type MapLayerProperties = {
   id: string;
   layer_id: string;
   layer_name: string;
-  properties?: { [key: string]: any };
+  properties?: { [key: string]: unknown };
 };
 
-interface MapLayerFeature<
+type MapLayerFeature<
   G extends Geometry | null = Geometry,
   P = MapLayerProperties
-> extends Feature<G, P> {}
+> = Feature<G, P>;
 
 export interface MapLayerFeatureCollection<
   G extends Geometry | null = Geometry,
@@ -272,13 +271,13 @@ type ZonalFeatureProperties = {
   median: number;
   min: number;
   std: number;
-  [key: string]: any;
+  [key: string]: string | number;
 };
 
-export interface ZonalFeature<
+export type ZonalFeature<
   G extends Geometry | null = Geometry,
   P = ZonalFeatureProperties
-> extends Feature<G, P> {}
+> = Feature<G, P>;
 
 export interface ZonalFeatureCollection<
   G extends Geometry | null = Geometry,

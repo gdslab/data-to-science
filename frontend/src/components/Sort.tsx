@@ -33,8 +33,7 @@ function isValidSortOption(sortOption: string): boolean {
 export function getSortPreferenceFromLocalStorage(key: string): SortSelection {
   const sortOption = localStorage.getItem(key);
   if (sortOption && isValidSortOption(sortOption)) {
-    // @ts-ignore isValidSortOption checks type
-    return sortOption;
+    return sortOption as SortSelection;
   } else {
     return 'atoz'; // default sort option
   }

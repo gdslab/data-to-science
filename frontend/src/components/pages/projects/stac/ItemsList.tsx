@@ -1,3 +1,4 @@
+import Checkbox from '../../../Checkbox';
 import { CombinedSTACItem } from './STACTypes';
 import { ProjectDetail } from '../Project';
 
@@ -26,14 +27,14 @@ export default function ItemsList({
       <h4 className="font-semibold mb-2">Items ({allItems.length})</h4>
       {successfulItems.length > 0 && (
         <div className="ml-4 mb-3 pb-3 border-b border-gray-300">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
+          <label
+            htmlFor="all-successful-items-checkbox"
+            className="flex items-center gap-2 cursor-pointer"
+          >
+            <Checkbox
+              id="all-successful-items-checkbox"
               checked={allSuccessfulItemsChecked}
-              onChange={() =>
-                onToggleAllRawDataLinks()
-              }
-              className="w-4 h-4 text-blue-600 rounded-sm focus:ring-2 focus:ring-blue-500"
+              onChange={() => onToggleAllRawDataLinks()}
             />
             <span className="font-medium text-sm">
               {allSuccessfulItemsChecked
@@ -88,12 +89,14 @@ export default function ItemsList({
                     {item.isSuccessful ? 'Success' : 'Failed'}
                   </span>
                   {item.isSuccessful && (
-                    <label className="flex items-center gap-1 ml-auto cursor-pointer">
-                      <input
-                        type="checkbox"
+                    <label
+                      htmlFor={`${item.id}-checkbox`}
+                      className="flex items-center gap-1 ml-auto cursor-pointer"
+                    >
+                      <Checkbox
+                        id={`${item.id}-checkbox`}
                         checked={includeRawDataLinks.has(item.id)}
                         onChange={() => onToggleRawDataLink(item.id)}
-                        className="w-4 h-4 text-blue-600 rounded-sm focus:ring-2 focus:ring-blue-500"
                       />
                       <span className="text-xs text-gray-600">
                         Include raw data

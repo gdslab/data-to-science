@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { User } from '../../../AuthContext';
 import { generateRandomProfileColor } from '../auth/Profile';
+import Checkbox from '../../Checkbox';
 import { TeamMember } from './TeamDetail';
 import { ProjectMember } from '../projects/ProjectAccess';
 
@@ -21,7 +22,7 @@ function SearchUsersBar({
 }) {
   const [searchValue, setSearchValue] = useState('');
 
-  function updateSearchValue(e) {
+  function updateSearchValue(e: React.ChangeEvent<HTMLInputElement>) {
     setSearchValue(e.target.value);
   }
 
@@ -179,13 +180,13 @@ function SearchUsersResults({
                           htmlFor={`${user.id}-search-checkbox`}
                           className="relative h-8 w-14 cursor-pointer inline-flex items-center justify-center"
                         >
-                          <input
+                          <Checkbox
                             id={`${user.id}-search-checkbox`}
-                            type="checkbox"
-                            value={user.id}
                             checked={user.checked}
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 focus:ring-2 touch-manipulation"
-                            onChange={(e) => {
+                            value={user.id}
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>
+                            ) => {
                               const updatedSearchResults = searchResults.map(
                                 (user) => {
                                   if (user.id === e.target.value)

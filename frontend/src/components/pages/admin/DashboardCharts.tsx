@@ -1,5 +1,5 @@
 import { AxiosResponse } from 'axios';
-import { useLoaderData } from 'react-router-dom';
+import { useLoaderData } from 'react-router';
 import { ResponsiveCalendar } from '@nivo/calendar';
 import { ResponsiveLine } from '@nivo/line';
 
@@ -131,7 +131,7 @@ export default function DashboardCharts() {
   );
 
   // Calculate accumulative user growth per month over every year
-  let allYears: { id: string; data: { x: string; y: number }[] }[] = [];
+  const allYears: { id: string; data: { x: string; y: number }[] }[] = [];
   years.forEach((year) => {
     allYears.push({
       id: year.toString(),

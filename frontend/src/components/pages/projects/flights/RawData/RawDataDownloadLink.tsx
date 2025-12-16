@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { ArrowDownTrayIcon, DocumentIcon } from '@heroicons/react/24/outline';
 
 export default function RawDataDownloadLink({ rawDataId }: { rawDataId: string }) {

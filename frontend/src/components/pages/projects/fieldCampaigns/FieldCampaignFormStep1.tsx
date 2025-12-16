@@ -10,8 +10,8 @@ export default function FieldCampaignFormStep1() {
     <div className="flex flex-col gap-2">
       <h1>Experiment information</h1>
       <p>
-        Here is where you can enter information to identify your experiment. You can add
-        more information if necessary.
+        Here is where you can enter information to identify your experiment. You
+        can add more information if necessary.
       </p>
 
       <FieldArray

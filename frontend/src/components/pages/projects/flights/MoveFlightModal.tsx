@@ -1,7 +1,7 @@
 import { AxiosResponse, isAxiosError } from 'axios';
 import { useEffect, useState } from 'react';
 import Select from 'react-select';
-import { useRevalidator } from 'react-router-dom';
+import { useRevalidator } from 'react-router';
 import { FolderIcon } from '@heroicons/react/24/outline';
 
 import { AlertBar, Status } from '../../../Alert';
@@ -52,7 +52,7 @@ export default function MoveFlightModal({
       }
     }
     if (open) getProjects();
-  }, [open]);
+  }, [open, srcProjectId]);
 
   async function moveProject() {
     try {
@@ -73,7 +73,7 @@ export default function MoveFlightModal({
       if (isAxiosError(err) && err.response && err.response.data.detail) {
         if (typeof err.response.data.detail === 'string') {
           setStatus({ type: 'error', msg: err.response.data.detail });
-        } else if (typeof (err.response.status === 422)) {
+        } else if (err.response.status === 422) {
           setStatus({ type: 'error', msg: err.response.data.detail[0].msg });
         } else {
           setStatus({

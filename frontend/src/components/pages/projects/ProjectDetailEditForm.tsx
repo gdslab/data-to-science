@@ -1,6 +1,6 @@
 import { Form, Formik } from 'formik';
 import { useState } from 'react';
-import { useRevalidator } from 'react-router-dom';
+import { useRevalidator } from 'react-router';
 import { MapIcon } from '@heroicons/react/24/outline';
 
 import Alert from '../../Alert';
@@ -65,7 +65,7 @@ export default function ProjectDetailEditForm({
             revalidator.revalidate();
           }
           setIsEditing(null);
-        } catch (err) {
+        } catch {
           setIsEditing(null);
         }
       }}
@@ -89,7 +89,8 @@ export default function ProjectDetailEditForm({
               </EditField>
               {project.created_by && (
                 <span className="block text-sm text-gray-500">
-                  Created by: {project.created_by.first_name} {project.created_by.last_name}
+                  Created by: {project.created_by.first_name}{' '}
+                  {project.created_by.last_name}
                 </span>
               )}
               <EditField

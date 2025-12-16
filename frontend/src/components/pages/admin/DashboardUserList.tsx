@@ -3,6 +3,7 @@ import { useContext, useMemo, useState } from 'react';
 
 import { generateRandomProfileColor } from '../auth/Profile';
 import { Button } from '../../Buttons';
+import Checkbox from '../../Checkbox';
 import Pagination from '../../Pagination';
 import AuthContext, { User } from '../../../AuthContext';
 import { confirm } from '../../ConfirmationDialog';
@@ -34,7 +35,13 @@ const UserProfilePicture = ({ user }: { user: User }) =>
     </div>
   );
 
-type SortColumn = 'name' | 'email' | 'created_at' | 'last_login_at' | 'last_activity_at' | 'is_approved';
+type SortColumn =
+  | 'name'
+  | 'email'
+  | 'created_at'
+  | 'last_login_at'
+  | 'last_activity_at'
+  | 'is_approved';
 type SortDirection = 'asc' | 'desc';
 
 export default function DashboardUserList({
@@ -136,10 +143,14 @@ export default function DashboardUserList({
         case 'name':
           comparison = `${a.last_name.trim()} ${a.first_name.trim()}`
             .toLowerCase()
-            .localeCompare(`${b.last_name.trim()} ${b.first_name.trim()}`.toLowerCase());
+            .localeCompare(
+              `${b.last_name.trim()} ${b.first_name.trim()}`.toLowerCase()
+            );
           break;
         case 'email':
-          comparison = a.email.toLowerCase().localeCompare(b.email.toLowerCase());
+          comparison = a.email
+            .toLowerCase()
+            .localeCompare(b.email.toLowerCase());
           break;
         case 'created_at':
           comparison =
@@ -156,7 +167,9 @@ export default function DashboardUserList({
             // b is null, so it should go after a (return negative to sort a before b)
             comparison = sortDirection === 'asc' ? -1 : 1;
           } else {
-            comparison = new Date(a.last_login_at).getTime() - new Date(b.last_login_at).getTime();
+            comparison =
+              new Date(a.last_login_at).getTime() -
+              new Date(b.last_login_at).getTime();
           }
           break;
         case 'last_activity_at':
@@ -170,7 +183,9 @@ export default function DashboardUserList({
             // b is null, so it should go after a (return negative to sort a before b)
             comparison = sortDirection === 'asc' ? -1 : 1;
           } else {
-            comparison = new Date(a.last_activity_at).getTime() - new Date(b.last_activity_at).getTime();
+            comparison =
+              new Date(a.last_activity_at).getTime() -
+              new Date(b.last_activity_at).getTime();
           }
           break;
         case 'is_approved':
@@ -194,11 +209,7 @@ export default function DashboardUserList({
     if (sortColumn !== column) {
       return <span className="ml-1 text-gray-400">↕</span>;
     }
-    return (
-      <span className="ml-1">
-        {sortDirection === 'asc' ? '↑' : '↓'}
-      </span>
-    );
+    return <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>;
   }
 
   return (
@@ -261,7 +272,10 @@ export default function DashboardUserList({
           </thead>
           <tbody>
             {sortedAndPaginatedUsers.map((user) => (
-              <tr key={user.id} className="text-center border-b border-gray-200">
+              <tr
+                key={user.id}
+                className="text-center border-b border-gray-200"
+              >
                 <td className="p-1.5 bg-white" style={{ width: '180px' }}>
                   <div className="flex items-center gap-2 justify-center">
                     <div className="shrink-0">
@@ -272,18 +286,30 @@ export default function DashboardUserList({
                     </span>
                   </div>
                 </td>
-                <td className="p-1.5 bg-white truncate" style={{ width: '200px' }}>
+                <td
+                  className="p-1.5 bg-white truncate"
+                  style={{ width: '200px' }}
+                >
                   {user.email}
                 </td>
-                <td className="p-1.5 bg-white whitespace-nowrap text-sm" style={{ width: '120px' }}>
+                <td
+                  className="p-1.5 bg-white whitespace-nowrap text-sm"
+                  style={{ width: '120px' }}
+                >
                   {new Date(user.created_at).toLocaleDateString()}
                 </td>
-                <td className="p-1.5 bg-white whitespace-nowrap text-sm" style={{ width: '180px' }}>
+                <td
+                  className="p-1.5 bg-white whitespace-nowrap text-sm"
+                  style={{ width: '180px' }}
+                >
                   {user.last_login_at
                     ? new Date(user.last_login_at).toLocaleString()
                     : '-'}
                 </td>
-                <td className="p-1.5 bg-white whitespace-nowrap text-sm" style={{ width: '180px' }}>
+                <td
+                  className="p-1.5 bg-white whitespace-nowrap text-sm"
+                  style={{ width: '180px' }}
+                >
                   {user.last_activity_at
                     ? new Date(user.last_activity_at).toLocaleString()
                     : '-'}
@@ -292,16 +318,20 @@ export default function DashboardUserList({
                   <td className="p-1.5 bg-white" style={{ width: '140px' }}>
                     <div className="flex items-center justify-center gap-2">
                       <span
-                        className={`text-lg ${user.is_approved ? 'text-green-600' : 'text-red-600'}`}
+                        className={`text-lg ${
+                          user.is_approved ? 'text-green-600' : 'text-red-600'
+                        }`}
                       >
                         {user.is_approved ? '✓' : '✗'}
                       </span>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
+                      <label
+                        htmlFor={`${user.id}-approval-checkbox`}
+                        className="relative inline-flex items-center cursor-pointer"
+                      >
+                        <Checkbox
+                          id={`${user.id}-approval-checkbox`}
                           checked={user.is_approved}
                           onChange={() => handleApprovalToggle(user)}
-                          disabled={loadingUserId === user.id}
                           className="sr-only peer"
                         />
                         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-hidden peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>

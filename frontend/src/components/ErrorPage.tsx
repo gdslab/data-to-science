@@ -5,26 +5,32 @@ import {
   isRouteErrorResponse,
   useNavigate,
   useRouteError,
-} from 'react-router-dom';
+} from 'react-router';
 
 export default function ErrorPage() {
   const navigate = useNavigate();
   const error = useRouteError();
-  let statusCode: number | undefined = 404;
+
+  // Derive status code from error
+  const statusCode = axios.isAxiosError(error)
+    ? error.response?.status
+    : isRouteErrorResponse(error)
+    ? error.status
+    : 404;
 
   useEffect(() => {
     if (axios.isAxiosError(error)) {
-      statusCode = error.response?.status;
+      const status = error.response?.status;
       if (
-        (error.response?.status === 404 &&
+        (status === 404 &&
           error.response?.data.detail === 'Account not found') ||
-        error.response?.status === 403 ||
-        error.response?.status === 401
+        status === 403 ||
+        status === 401
       ) {
         navigate('/auth/login');
       }
     }
-  }, [error]);
+  }, [error, navigate]);
 
   return (
     <div className="grid h-screen px-4 bg-white place-content-center">

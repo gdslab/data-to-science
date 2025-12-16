@@ -10,10 +10,26 @@ import LoadingBars from '../LoadingBars';
 import LCCControlsOverlay from './LCCControlsOverlay';
 import LCCQualitySettings from './LCCQualitySettings';
 
+interface LCCInstance {
+  setMaxDistance: (distance: number) => void;
+  setMaxSplats: (splats: number) => void;
+  setMaxNodeSplats: (splats: number) => void;
+  hasCollision?: () => boolean;
+  intersectsCapsule?: (capsule: {
+    start: THREE.Vector3;
+    end: THREE.Vector3;
+    radius: number;
+    noDelta: boolean;
+  }) => {
+    hit: boolean;
+    delta?: THREE.Vector3 | { x?: number; y?: number; z?: number };
+  } | null;
+}
+
 declare global {
   interface Window {
     LCCRender?: typeof LCCRender;
-    lccObj?: any;
+    lccObj?: LCCInstance;
   }
 }
 
@@ -23,7 +39,7 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<FirstPersonControls | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
-  const lccObjRef = useRef<any>(null);
+  const lccObjRef = useRef<LCCInstance | null>(null);
   const [progress, setProgress] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -162,8 +178,7 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
 
     const dataPath = new URL(lccUrl, window.location.origin).href;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const lccObj: any = LCCRender.load(
+    const lccObj = LCCRender.load(
       {
         camera,
         scene,
@@ -327,7 +342,10 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
       }
       // Keep window.LCCRender as-is to avoid breaking shared LCC global state
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lccUrl]);
+  // Note: droneVisible is intentionally not in dependencies - it's set on initial load,
+  // and subsequent changes are handled by the separate useEffect below
 
   useEffect(() => {
     if (droneModelRef.current) {
@@ -400,13 +418,13 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
         <div className="flex gap-2">
           <button
             onClick={() => setDroneVisible(!droneVisible)}
-            className="cursor-pointer rounded-sm border border-white/30 bg-black/70 px-4 py-2 text-sm font-medium text-white"
+            className="rounded-sm border border-white/30 bg-black/70 px-4 py-2 text-sm font-medium text-white"
           >
             {droneVisible ? 'Hide Drone' : 'Show Drone'}
           </button>
           <button
             onClick={() => setShowControls(!showControls)}
-            className="cursor-pointer rounded-sm border border-white/30 bg-black/70 px-4 py-2 text-sm font-medium text-white"
+            className="rounded-sm border border-white/30 bg-black/70 px-4 py-2 text-sm font-medium text-white"
           >
             {showControls ? 'Hide Controls' : 'Show Controls'}
           </button>

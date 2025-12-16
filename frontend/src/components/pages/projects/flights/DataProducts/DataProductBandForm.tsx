@@ -1,7 +1,7 @@
 import { isAxiosError } from 'axios';
 import { useState } from 'react';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
-import { useParams, useRevalidator } from 'react-router-dom';
+import { useParams, useRevalidator } from 'react-router';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 

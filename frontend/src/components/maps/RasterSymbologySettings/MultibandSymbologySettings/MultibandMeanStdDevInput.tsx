@@ -38,6 +38,7 @@ export default function MultibandMeanStdDevInput({
       <input
         className="focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-hidden border border-gray-400 rounded-sm py-1 px-4 block w-full appearance-none disabled:bg-gray-200 disabled:cursor-not-allowed"
         type="number"
+        id="meanStdDev"
         name="meanStdDev"
         min={0}
         max={100}

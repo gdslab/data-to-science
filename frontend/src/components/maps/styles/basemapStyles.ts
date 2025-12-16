@@ -1,4 +1,4 @@
-import { StyleSpecification } from 'maplibre-gl';
+import { StyleSpecification, ExpressionSpecification } from 'maplibre-gl';
 
 // Define config interface
 interface MapConfig {
@@ -9,7 +9,7 @@ interface MapConfig {
 const createA2Filter = (
   osmLabelFilter: string | undefined,
   scale: string
-): any[] => {
+): ExpressionSpecification[] => {
   if (!osmLabelFilter) {
     return []; // No additional filters if osmLabelFilter is not provided
   }
@@ -198,7 +198,7 @@ const getWorldImageryTopoBasemapStyle = (
 
     // City/local scale labels (zoom 8-13)
     const cityFilters = createA2Filter(config?.osmLabelFilter, 'S3');
-    const cityLayer: any = {
+    const cityLayer: Record<string, unknown> = {
       id: 'city-local-labels',
       type: 'symbol',
       source: 'osm-labels',
@@ -239,11 +239,11 @@ const getWorldImageryTopoBasemapStyle = (
       cityLayer.filter = ['all', ...cityFilters];
     }
 
-    baseStyle.layers.push(cityLayer);
+    baseStyle.layers.push(cityLayer as StyleSpecification['layers'][number]);
 
     // Street level labels (zoom 13+)
     const streetFilters = createA2Filter(config?.osmLabelFilter, 'S4');
-    const streetLayer: any = {
+    const streetLayer: Record<string, unknown> = {
       id: 'street-level-labels',
       type: 'symbol',
       source: 'osm-labels',
@@ -283,10 +283,10 @@ const getWorldImageryTopoBasemapStyle = (
       streetLayer.filter = ['all', ...streetFilters];
     }
 
-    baseStyle.layers.push(streetLayer);
+    baseStyle.layers.push(streetLayer as StyleSpecification['layers'][number]);
 
     // Add road labels (street names) - zoom 12+
-    const roadLabelLayer: any = {
+    const roadLabelLayer: Record<string, unknown> = {
       id: 'road-labels',
       type: 'symbol',
       source: 'osm-labels',
@@ -311,7 +311,7 @@ const getWorldImageryTopoBasemapStyle = (
     };
 
     // Add road network lines for better visibility - zoom 12+
-    const roadNetworkLayer: any = {
+    const roadNetworkLayer: Record<string, unknown> = {
       id: 'road-network',
       type: 'line',
       source: 'osm-labels',
@@ -329,8 +329,12 @@ const getWorldImageryTopoBasemapStyle = (
       },
     };
 
-    baseStyle.layers.push(roadNetworkLayer);
-    baseStyle.layers.push(roadLabelLayer);
+    baseStyle.layers.push(
+      roadNetworkLayer as StyleSpecification['layers'][number]
+    );
+    baseStyle.layers.push(
+      roadLabelLayer as StyleSpecification['layers'][number]
+    );
   }
 
   return baseStyle;

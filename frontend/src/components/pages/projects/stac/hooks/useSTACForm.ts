@@ -46,12 +46,12 @@ export function useSTACForm(
         const serverSciDoi = stacMetadata.collection['sci:doi'] || '';
         const serverSciCitation = stacMetadata.collection['sci:citation'] || '';
         const serverLicense =
-          (stacMetadata.collection as any).license || DEFAULT_LICENSE;
+          stacMetadata.collection.license || DEFAULT_LICENSE;
 
         // Get server values for contact metadata
         let serverContactName = '';
         let serverContactEmail = '';
-        const contacts = (stacMetadata.collection as any).contacts;
+        const contacts = stacMetadata.collection.contacts;
         if (contacts && Array.isArray(contacts) && contacts.length > 0) {
           const contact = contacts[0];
           serverContactName = contact.name || '';

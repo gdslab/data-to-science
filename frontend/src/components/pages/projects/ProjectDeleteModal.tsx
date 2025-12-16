@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
+import { isAxiosError } from 'axios';
 
 import { AlertBar, Status } from '../../Alert';
 import { Button } from '../../Buttons';
@@ -9,7 +10,11 @@ import { ProjectDetail } from './Project';
 
 import api from '../../../api';
 
-export default function ProjectDeleteModal({ project }: { project: ProjectDetail }) {
+export default function ProjectDeleteModal({
+  project,
+}: {
+  project: ProjectDetail;
+}) {
   const [openConfirmationPopup, setOpenConfirmationPopup] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
   const navigate = useNavigate();
@@ -50,10 +55,17 @@ export default function ProjectDeleteModal({ project }: { project: ProjectDetail
               }
             } catch (err) {
               setOpenConfirmationPopup(false);
-              setStatus({
-                type: 'error',
-                msg: 'Unable to deactivate project',
-              });
+              if (isAxiosError(err)) {
+                setStatus({
+                  type: 'error',
+                  msg: err.response?.data?.detail || 'Unable to deactivate project',
+                });
+              } else {
+                setStatus({
+                  type: 'error',
+                  msg: 'Unable to deactivate project',
+                });
+              }
             }
           }}
         />

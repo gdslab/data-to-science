@@ -229,7 +229,7 @@ export function EditField({
             type="submit"
             className="inline rounded-full focus:outline-hidden focus:ring-3 focus:ring-accent2"
           >
-            <CheckIcon className="h-4 w-4 text-slate-400 cursor-pointer" />
+            <CheckIcon className="h-4 w-4 text-slate-400" />
           </button>
           <button
             type="button"
@@ -238,7 +238,7 @@ export function EditField({
               setIsEditing(null);
             }}
           >
-            <XMarkIcon className="h-4 w-4 text-slate-400 cursor-pointer" />
+            <XMarkIcon className="h-4 w-4 text-slate-400" />
           </button>
         </div>
       ) : null}

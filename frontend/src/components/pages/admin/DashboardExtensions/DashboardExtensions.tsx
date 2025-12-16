@@ -1,6 +1,6 @@
 import { AxiosResponse } from 'axios';
 import { useState } from 'react';
-import { useLoaderData } from 'react-router-dom';
+import { useLoaderData } from 'react-router';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 
 import Alert, { Status } from '../../../Alert';

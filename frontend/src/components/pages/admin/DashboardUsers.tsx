@@ -1,6 +1,6 @@
 import { AxiosResponse } from 'axios';
 import { useEffect, useMemo, useState } from 'react';
-import { useLoaderData } from 'react-router-dom';
+import { useLoaderData } from 'react-router';
 
 import DashboardUserList from './DashboardUserList';
 import SearchBar from './SearchBar';

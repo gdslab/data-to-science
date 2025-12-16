@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 
 import { classNames } from './utils';
 
@@ -74,7 +74,7 @@ export function TableBody({
                           action.label === 'Delete'
                             ? 'text-red-600! visited:text-red-600'
                             : 'text-sky-600! visited:text-sky-600',
-                          'flex items-center cursor-pointer text-sm'
+                          'flex items-center text-sm'
                         )}
                         onClick={(e) => {
                           e.preventDefault();

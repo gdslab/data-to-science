@@ -13,7 +13,7 @@ export default function ProjectListHeader() {
 
   useEffect(() => {
     locationDispatch({ type: 'clear', payload: null });
-  }, [open]);
+  }, [locationDispatch, open]);
 
   return (
     <div className="flex flex-col gap-4">

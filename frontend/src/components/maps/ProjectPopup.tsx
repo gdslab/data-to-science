@@ -4,7 +4,7 @@ import { PopupInfoProps } from './HomeMap';
 import { useMapContext } from './MapContext';
 
 type ProjectPopupProps = {
-  popupInfo: PopupInfoProps | { [key: string]: any };
+  popupInfo: PopupInfoProps;
   onClose: () => void;
   showActionButton?: boolean;
 };
@@ -15,6 +15,9 @@ export default function ProjectPopup({
   showActionButton = true,
 }: ProjectPopupProps) {
   const { projects, activeProjectDispatch } = useMapContext();
+
+  // Early return if properties are null
+  if (!popupInfo.feature.properties) return null;
 
   return (
     <Popup
@@ -34,7 +37,7 @@ export default function ProjectPopup({
             className="px-4 py-2 bg-blue-500 text-white rounded-sm hover:bg-blue-600 focus:outline-hidden focus:ring-2 focus:ring-blue-300"
             onClick={() => {
               const thisProject = projects?.filter(
-                ({ id }) => id === popupInfo.feature.properties.id
+                ({ id }) => id === popupInfo.feature.properties!.id
               );
               if (thisProject && thisProject.length === 1) {
                 activeProjectDispatch({ type: 'set', payload: thisProject[0] });

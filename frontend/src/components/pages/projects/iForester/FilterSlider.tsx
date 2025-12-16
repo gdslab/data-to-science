@@ -60,8 +60,8 @@ export default function FilterSlider({
     }));
   })();
 
-  const min = Math.min.apply(Math, values);
-  const max = Math.max.apply(Math, values);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
 
   return (
     <div className="flex justify-center h-52 p-2.5">

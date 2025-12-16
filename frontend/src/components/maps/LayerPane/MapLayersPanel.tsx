@@ -1,3 +1,4 @@
+import Checkbox from '../../Checkbox';
 import { useMapLayerContext } from '../MapLayersContext';
 import OpacitySlider from '../OpacitySlider';
 import { getGeomTypeIcon } from './utils';
@@ -31,19 +32,27 @@ export default function MapLayersPanel() {
   return (
     <div className="flex flex-col gap-3">
       {layers.map((layer) => (
-        <div key={layer.id} className="flex flex-col p-2 bg-slate-50 rounded-sm">
+        <div
+          key={layer.id}
+          className="flex flex-col p-2 bg-slate-50 rounded-sm"
+        >
           {/* Layer name and controls row */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <input
-                type="checkbox"
+              <Checkbox
+                id={`${layer.id}-checkbox`}
                 checked={layer.checked}
-                onChange={(event) =>
-                  updateLayerProperty(layer.id, 'checked', event.target.checked)
-                }
-                className="h-4 w-4 shrink-0 text-accent2 focus:ring-accent2"
+                onChange={(event) => {
+                  updateLayerProperty(
+                    layer.id,
+                    'checked',
+                    event.target.checked
+                  );
+                }}
               />
+
               <label
+                htmlFor={`${layer.id}-checkbox`}
                 className="text-sm font-medium truncate"
                 title={layer.name}
               >
@@ -92,11 +101,7 @@ export default function MapLayersPanel() {
 
           {/* Layer type row */}
           <div className="flex items-center gap-1.5 pl-6 pt-1">
-            <img
-              src={getGeomTypeIcon(layer.type)}
-              alt=""
-              className="h-3 w-3"
-            />
+            <img src={getGeomTypeIcon(layer.type)} alt="" className="h-3 w-3" />
             <span className="text-xs font-light text-slate-500">
               {layer.type}
             </span>

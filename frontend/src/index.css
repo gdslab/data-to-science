@@ -79,4 +79,9 @@
   h4 {
     @apply mb-4 text-base font-medium;
   }
+  /* Restore Tailwind v3 button cursor behavior */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
 }

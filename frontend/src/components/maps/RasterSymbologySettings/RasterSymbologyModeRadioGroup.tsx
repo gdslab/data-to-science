@@ -6,6 +6,33 @@ import {
   useRasterSymbologyContext,
 } from '../RasterSymbologyContext';
 
+type ModeRadioInputProps = {
+  currentMode: 'minMax' | 'userDefined' | 'meanStdDev';
+  label: string;
+  value: 'minMax' | 'userDefined' | 'meanStdDev';
+  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+};
+
+function ModeRadioInput({
+  currentMode,
+  label,
+  value,
+  onChange,
+}: ModeRadioInputProps) {
+  return (
+    <label className="block text-sm font-semibold pt-2 pb-1">
+      <input
+        type="radio"
+        name="mode"
+        value={value}
+        checked={currentMode === value}
+        onChange={onChange}
+      />
+      <span className="ml-2">{label}</span>
+    </label>
+  );
+}
+
 export default function RasterSymbologyModeRadioGroup({
   dataProduct,
 }: {
@@ -15,11 +42,18 @@ export default function RasterSymbologyModeRadioGroup({
 
   const symbology = state[dataProduct.id].symbology;
 
-  const isSingleBandSymbology = (symbology: any): symbology is SingleBandSymbology => {
+  // Early return if symbology is null
+  if (!symbology) return null;
+
+  const isSingleBandSymbology = (
+    symbology: SingleBandSymbology | MultibandSymbology
+  ): symbology is SingleBandSymbology => {
     return 'colorRamp' in symbology;
   };
 
-  const isMultibandSymbology = (symbology: any): symbology is MultibandSymbology => {
+  const isMultibandSymbology = (
+    symbology: SingleBandSymbology | MultibandSymbology
+  ): symbology is MultibandSymbology => {
     return 'red' in symbology;
   };
 
@@ -45,45 +79,29 @@ export default function RasterSymbologyModeRadioGroup({
     }
   };
 
-  const ModeRadioInput = ({
-    currentMode,
-    label,
-    value,
-  }: {
-    currentMode: 'minMax' | 'userDefined' | 'meanStdDev';
-    label: string;
-    value: 'minMax' | 'userDefined' | 'meanStdDev';
-  }) => (
-    <label className="block text-sm font-semibold pt-2 pb-1">
-      <input
-        type="radio"
-        name="mode"
-        value={value}
-        checked={currentMode === value}
-        onChange={handleInputChange}
-      />
-      <span className="ml-2">{label}</span>
-    </label>
-  );
-
-  if (!symbology) return;
-
   return (
     <div
       className="flex flex-wrap justify-between gap-1.5"
       role="group"
       aria-labelledby="modeGroup"
     >
-      <ModeRadioInput currentMode={symbology.mode} label="Min/Max" value="minMax" />
+      <ModeRadioInput
+        currentMode={symbology.mode}
+        label="Min/Max"
+        value="minMax"
+        onChange={handleInputChange}
+      />
       <ModeRadioInput
         currentMode={symbology.mode}
         label="User defined"
         value="userDefined"
+        onChange={handleInputChange}
       />
       <ModeRadioInput
         currentMode={symbology.mode}
         label="Mean +/- Std. Dev."
         value="meanStdDev"
+        onChange={handleInputChange}
       />
     </div>
   );

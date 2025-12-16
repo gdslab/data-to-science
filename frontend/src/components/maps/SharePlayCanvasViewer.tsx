@@ -1,6 +1,6 @@
 import { AxiosResponse } from 'axios';
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 
 import { DataProduct } from '../pages/projects/Project';
 import { AlertBar, Status } from '../Alert';
@@ -32,7 +32,7 @@ export default function SharePlayCanvasViewer() {
         } else {
           setStatus({ type: 'error', msg: 'Unable to load file' });
         }
-      } catch (_err) {
+      } catch {
         setStatus({ type: 'error', msg: 'Unable to load file' });
       }
     }
@@ -40,7 +40,7 @@ export default function SharePlayCanvasViewer() {
     if (fileID) {
       fetchUrl(fileID);
     }
-  }, []);
+  }, [fileID]);
 
   return (
     <>

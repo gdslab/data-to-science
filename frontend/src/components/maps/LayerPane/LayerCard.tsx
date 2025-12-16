@@ -9,7 +9,7 @@ export default function LayerCard({
   active?: boolean;
   children: React.ReactNode;
   hover?: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 }) {
   return (
     <div

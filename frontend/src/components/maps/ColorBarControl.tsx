@@ -1,6 +1,6 @@
 import axios from 'axios';
 import clsx from 'clsx';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 
 import { DataProduct } from '../pages/projects/Project';
@@ -27,62 +27,67 @@ export default function ColorBarControl({
 
   const symbology = state[dataProduct.id]?.symbology;
 
-  async function fetchColorBar(
-    symbology: SingleBandSymbology,
-    refresh = false
-  ) {
-    const stats = dataProduct.stac_properties.raster[0].stats;
+  const fetchColorBar = useCallback(
+    async (symbology: SingleBandSymbology, refresh = false) => {
+      const stats = dataProduct.stac_properties.raster[0].stats;
 
-    try {
-      if (!projectId) {
-        projectId = dataProduct.filepath
-          .split('/projects/')[1]
-          .split('/flights/')[0];
-      }
-      const response = await api.get(
-        `/projects/${projectId}/flights/${dataProduct.flight_id}/data_products/${dataProduct.id}/utils/colorbar`,
-        {
-          params: {
-            cmin:
-              symbology.mode === 'minMax'
-                ? symbology.min.toFixed(2)
-                : symbology.mode === 'userDefined'
-                ? symbology.userMin.toFixed(2)
-                : symbology.mode === 'meanStdDev'
-                ? (stats.mean - stats.stddev * symbology.meanStdDev).toFixed(2)
-                : symbology.min.toFixed(2),
-            cmax:
-              symbology.mode === 'minMax'
-                ? symbology.max.toFixed(2)
-                : symbology.mode === 'userDefined'
-                ? symbology.userMax.toFixed(2)
-                : symbology.mode === 'meanStdDev'
-                ? (stats.mean + stats.stddev * symbology.meanStdDev).toFixed(2)
-                : symbology.max.toFixed(2),
-            cmap: symbology.colorRamp,
-            refresh: refresh,
-          },
+      try {
+        let effectiveProjectId = projectId;
+        if (!effectiveProjectId) {
+          effectiveProjectId = dataProduct.filepath
+            .split('/projects/')[1]
+            .split('/flights/')[0];
         }
-      );
-      if (response) {
-        // only set url if it reseponds with OK status
-        axios
-          .get(response.data.colorbar_url)
-          .then(() => setURL(response.data.colorbar_url))
-          .catch(() => setURL(''))
-          .finally(() => setTimeout(() => toggleIsRefreshing(false), 2000));
+        const response = await api.get(
+          `/projects/${effectiveProjectId}/flights/${dataProduct.flight_id}/data_products/${dataProduct.id}/utils/colorbar`,
+          {
+            params: {
+              cmin:
+                symbology.mode === 'minMax'
+                  ? symbology.min.toFixed(2)
+                  : symbology.mode === 'userDefined'
+                  ? symbology.userMin.toFixed(2)
+                  : symbology.mode === 'meanStdDev'
+                  ? (stats.mean - stats.stddev * symbology.meanStdDev).toFixed(
+                      2
+                    )
+                  : symbology.min.toFixed(2),
+              cmax:
+                symbology.mode === 'minMax'
+                  ? symbology.max.toFixed(2)
+                  : symbology.mode === 'userDefined'
+                  ? symbology.userMax.toFixed(2)
+                  : symbology.mode === 'meanStdDev'
+                  ? (stats.mean + stats.stddev * symbology.meanStdDev).toFixed(
+                      2
+                    )
+                  : symbology.max.toFixed(2),
+              cmap: symbology.colorRamp,
+              refresh: refresh,
+            },
+          }
+        );
+        if (response) {
+          // only set url if it reseponds with OK status
+          axios
+            .get(response.data.colorbar_url)
+            .then(() => setURL(response.data.colorbar_url))
+            .catch(() => setURL(''))
+            .finally(() => setTimeout(() => toggleIsRefreshing(false), 2000));
+        }
+      } catch (err) {
+        setTimeout(() => toggleIsRefreshing(false), 2000);
+        throw err;
       }
-    } catch (err) {
-      setTimeout(() => toggleIsRefreshing(false), 2000);
-      throw err;
-    }
-  }
+    },
+    [dataProduct, projectId]
+  );
 
   useEffect(() => {
     if (symbology) {
       fetchColorBar(symbology as SingleBandSymbology);
     }
-  }, [symbology]);
+  }, [fetchColorBar, symbology]);
 
   if (!symbology) return null;
 

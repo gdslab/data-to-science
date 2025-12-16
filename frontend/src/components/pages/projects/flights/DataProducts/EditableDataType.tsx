@@ -1,6 +1,6 @@
 import { AxiosResponse, isAxiosError } from 'axios';
 import { useState } from 'react';
-import { useParams, useRevalidator } from 'react-router-dom';
+import { useParams, useRevalidator } from 'react-router';
 import Createable from 'react-select/creatable';
 import { CheckIcon, PencilIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
@@ -17,12 +17,12 @@ type DataTypeOption = {
 };
 
 function getDataTypeOptions(dataProduct: DataProduct): DataTypeOption[] {
-  let defaultOptions = [
+  const defaultOptions = [
     { value: 'dsm', label: 'DSM' },
     { value: 'ortho', label: 'Ortho' },
   ];
   // check default options for data product's current data type
-  let currentDataType = defaultOptions.findIndex(
+  const currentDataType = defaultOptions.findIndex(
     (option) =>
       option.value.toLowerCase() === dataProduct.data_type.toLowerCase()
   );

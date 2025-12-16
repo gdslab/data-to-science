@@ -1,7 +1,7 @@
 import { isAxiosError } from 'axios';
 import { Formik, Form } from 'formik';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import Alert from '../../Alert';
 import { Button } from '../../Buttons';
@@ -41,7 +41,7 @@ export default function ProjectForm({
       try {
         const teams = await loader();
         if (teams) setTeams(teams);
-      } catch (err) {
+      } catch {
         setTeams([]);
       }
     }
@@ -50,7 +50,7 @@ export default function ProjectForm({
 
   useEffect(() => {
     if (!project) locationDispatch({ type: 'clear', payload: null });
-  }, []);
+  }, [locationDispatch, project]);
 
   return (
     <div className="my-8 mx-4">

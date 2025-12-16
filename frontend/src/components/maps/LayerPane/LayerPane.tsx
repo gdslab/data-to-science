@@ -1,5 +1,5 @@
 import { ReactElement, useCallback, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import {
   ArrowUturnLeftIcon,
   Bars3Icon,
@@ -99,7 +99,7 @@ export default function LayerPane({
           <div className="h-11 flex items-center justify-between p-2.5">
             {activeProject ? (
               <button type="button" onClick={handleReturnClick}>
-                <ArrowUturnLeftIcon className="h-6 w-6 cursor-pointer" />
+                <ArrowUturnLeftIcon className="h-6 w-6" />
               </button>
             ) : (
               <span />
