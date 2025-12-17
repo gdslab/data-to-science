@@ -70,10 +70,10 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
     }
   }, [flightId, projectId, projectRole]);
 
-  useEffect(() => {
-    // check for new raw data when upload modal closes
-    if (!open) revalidator.revalidate();
-  }, [open, revalidator]);
+  function handleModalClose() {
+    setOpen(false);
+    revalidator.revalidate(); // Revalidate when modal closes
+  }
 
   // check for new raw data and initial processing progress on regular intervals
   useInterval(
@@ -247,7 +247,7 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
             flightID={flightId}
             open={open}
             projectID={projectId}
-            setOpen={setOpen}
+            handleModalClose={handleModalClose}
           />
           <Button size="sm" onClick={() => setOpen(true)}>
             Upload Raw Data
