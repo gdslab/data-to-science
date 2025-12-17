@@ -118,8 +118,10 @@ async def create_user(
             )
             mail.send_admins_new_registree_notification(
                 background_tasks=background_tasks,
-                first_name=user.first_name,
                 email=user.email,
+                first_name=user.first_name,
+                last_name=user.last_name,
+                registration_intent=user.registration_intent,
                 approve_token=approve_token,
             )
     else:

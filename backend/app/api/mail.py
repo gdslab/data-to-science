@@ -89,6 +89,8 @@ def send_admins_new_registree_notification(
     background_tasks: BackgroundTasks,
     email: EmailStr,
     first_name: str,
+    last_name: str,
+    registration_intent: Optional[str],
     approve_token: str,
 ) -> None:
     admin_emails = settings.MAIL_ADMINS.split(",")
@@ -105,9 +107,18 @@ def send_admins_new_registree_notification(
 
     content = (
         "<p>Data to Science Support Admins,</p>"
-        f"<p>A new account is awaiting approval. Please approve {first_name}'s "
+        f"<p>A new account is awaiting approval. Please approve {first_name} {last_name}'s "
         f"({email}) account within 24 hours of receiving this notification. "
         "No action is needed to deny the account.<br /><br />"
+    )
+
+    if registration_intent:
+        content += (
+            f"<p><strong>Registration Intent:</strong></p>"
+            f"<blockquote>{registration_intent}</blockquote><br />"
+        )
+
+    content += (
         f"<a href='{approve_url}' target='_blank'>{approve_btn}</a><br /><br />"
         "<p>-Data to Science Support</p>"
     )

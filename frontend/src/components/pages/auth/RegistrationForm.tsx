@@ -180,7 +180,7 @@ export default function RegistrationForm() {
           )}
           {turnstileError && (
             <Alert alertType="error">
-              erification failed. Turnstile will retry automatically; if it
+              Verification failed. Turnstile will retry automatically; if it
               still doesn't succeed, please reload the page and try again.
             </Alert>
           )}
