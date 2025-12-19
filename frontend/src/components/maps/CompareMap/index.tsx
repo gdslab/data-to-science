@@ -1,3 +1,1 @@
-import CompareMap from './CompareMap';
-
-export default CompareMap;
+export { default } from './CompareMap';

@@ -6,7 +6,7 @@ import { Flight } from '../../pages/projects/Project';
 
 import { sorter } from '../../utils';
 
-type ComparisonMapControlProps = {
+type CompareMapControlProps = {
   flights: Flight[];
   mapComparisonState: MapComparisonState;
   setMapComparisonState: React.Dispatch<
@@ -20,7 +20,7 @@ export default function CompareMapControl({
   mapComparisonState,
   setMapComparisonState,
   side = 'left',
-}: ComparisonMapControlProps) {
+}: CompareMapControlProps) {
   // filter out flights with no data products or only point cloud data products
   const flightsWithRasters = useMemo(() => {
     return flights
@@ -76,6 +76,7 @@ export default function CompareMapControl({
           'right-14': side === 'right',
         }
       )}
+      style={{ zIndex: 1001 }}
     >
       <div className="w-full flex flex-col gap-2">
         <select
