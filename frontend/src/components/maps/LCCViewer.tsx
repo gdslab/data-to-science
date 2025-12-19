@@ -40,6 +40,8 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
   const controlsRef = useRef<FirstPersonControls | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const lccObjRef = useRef<LCCInstance | null>(null);
+  const collisionEnabledRef = useRef(false);
+  const collisionAvailableRef = useRef(false);
   const [progress, setProgress] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +50,8 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
   const [quality, setQuality] = useState<
     'very-low' | 'low' | 'medium' | 'high' | 'very-high'
   >('medium');
+  const [collisionEnabled, setCollisionEnabled] = useState(false);
+  const [collisionAvailable, setCollisionAvailable] = useState(false);
 
   useEffect(() => {
     setIsLoading(true);
@@ -115,7 +119,6 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
       noDelta: false,
     };
     const collisionDelta = new THREE.Vector3();
-    let collisionEnabled = false;
 
     // First person controls
     const firstPersonControl = new FirstPersonControls(
@@ -199,8 +202,9 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
         lccObjRef.current = lccObj;
         window.LCCRender = LCCRender;
         window.lccObj = lccObj;
-        const ret = lccObj.hasCollision?.();
-        collisionEnabled = !!ret;
+        const hasCollision = !!lccObj.hasCollision?.();
+        setCollisionAvailable(hasCollision);
+        collisionAvailableRef.current = hasCollision;
         setIsLoading(false);
       },
       (percent: number) => {
@@ -217,7 +221,7 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
     lccObjRef.current = lccObj;
 
     function resolveCameraCollision() {
-      if (!collisionEnabled || !lccObj?.intersectsCapsule) {
+      if (!collisionEnabledRef.current || !collisionAvailableRef.current || !lccObj?.intersectsCapsule) {
         return;
       }
       camera.getWorldDirection(cameraDirection).normalize();
@@ -354,6 +358,10 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
   }, [droneVisible]);
 
   useEffect(() => {
+    collisionEnabledRef.current = collisionEnabled;
+  }, [collisionEnabled]);
+
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.code === 'KeyH') {
         setDroneVisible((prev) => !prev);
@@ -418,15 +426,23 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
         <div className="flex gap-2">
           <button
             onClick={() => setDroneVisible(!droneVisible)}
-            className="rounded-sm border border-white/30 bg-black/70 px-4 py-2 text-sm font-medium text-white"
+            className="w-32 rounded-sm border border-white/30 bg-black/70 px-4 py-2 text-sm font-medium text-white"
           >
             {droneVisible ? 'Hide Drone' : 'Show Drone'}
           </button>
           <button
             onClick={() => setShowControls(!showControls)}
-            className="rounded-sm border border-white/30 bg-black/70 px-4 py-2 text-sm font-medium text-white"
+            className="w-36 rounded-sm border border-white/30 bg-black/70 px-4 py-2 text-sm font-medium text-white"
           >
             {showControls ? 'Hide Controls' : 'Show Controls'}
+          </button>
+          <button
+            onClick={() => setCollisionEnabled(!collisionEnabled)}
+            disabled={!collisionAvailable}
+            title={!collisionAvailable ? 'Collision detection not available for this scene' : ''}
+            className="w-44 rounded-sm border border-white/30 bg-black/70 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {collisionEnabled ? 'Disable Collision' : 'Enable Collision'}
           </button>
         </div>
         <LCCQualitySettings quality={quality} setQuality={setQuality} />
