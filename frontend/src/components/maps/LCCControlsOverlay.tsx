@@ -1,6 +1,6 @@
 export default function LCCControlsOverlay() {
   return (
-    <div className="absolute top-[60px] left-3 z-10 max-w-[300px] rounded-sm border border-white/30 bg-black/85 p-4 text-[13px] leading-relaxed text-white">
+    <div className="absolute top-[110px] left-3 z-10 max-w-[300px] rounded-sm border border-white/30 bg-black/85 p-4 text-[13px] leading-relaxed text-white">
       <div className="mb-3 text-[15px] font-semibold">Controls</div>
       <div className="flex flex-col gap-2">
         <div>
