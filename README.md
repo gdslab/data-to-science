@@ -48,6 +48,13 @@ Data can be shared directly via a link to the underlying asset (e.g., `.tif`, `.
 - Tiputini Biodiversity Station – Point Cloud: https://ps2.d2s.org/sharepotree?file_id=2cfdd1f2-e73f-4b64-a266-d0171e119977
 - Demonstration – Orthomosaic (direct file access): https://ps2.d2s.org/static/projects/afc5005d-4977-4bdd-a53a-96a3f051d312/flights/32607eae-0cd9-4c06-b4d1-a4837d237ce1/data_products/0e4c3bc2-00da-41b3-bf79-d1d1f83e4194/bb62658b-a250-46e2-8e93-081828880634.tif
 
+### Learn more
+
+Additional documentation and tutorials are available for users who want to explore D2S in more detail.
+
+- **User manual:** https://docs.gdsl.org/data-to-science-user-manual
+- **Website and tutorial videos:** https://d2s.org
+
 ## ⚡ Quick Start
 
 ### 📋 Prerequisites
