@@ -15,7 +15,7 @@ The Data to Science (D2S) platform is an innovative, open-source initiative desi
 
 D2S aims to create a data-driven open science community that promotes sustained innovation. Researchers can upload, manage, and share their UAV data, making it accessible to a broader audience. This collaborative approach helps in advancing research by providing a centralized repository of valuable datasets from various projects worldwide. The platform is open-source, allowing anyone to deploy it in their own environment, ensuring flexibility and adaptability to different research needs.
 
-## 🌟 What Makes D2S Unique?
+## What Makes D2S Unique?
 
 The Data to Science (D2S) platform stands out from other data-sharing platforms due to several unique features and approaches:
 
@@ -28,6 +28,25 @@ The Data to Science (D2S) platform stands out from other data-sharing platforms 
 7. **Self-Deployment Capability:** D2S can be deployed in any environment that supports Docker, providing researchers with the flexibility to integrate the platform into their existing infrastructure. This capability ensures that the platform can be customized and scaled according to specific research requirements.
 
 These aspects make D2S a powerful tool for researchers looking to manage, share, and collaborate on UAV data, particularly in the fields of agriculture and forestry.
+
+## What Can You Do with D2S?
+
+The examples below illustrate common ways D2S can be used in practice, including sharing data, creating maps, and collaborating within projects.
+
+D2S is an open-source platform that can be deployed by any organization or individual. In addition, we operate a publicly accessible D2S instance at https://ps2.d2s.org with open registration. This public instance is the recommended way to explore the platform, try example workflows, and use D2S without deploying your own infrastructure. Users who wish to run D2S in their own environment can deploy a separate instance as needed.
+
+### Share data with project members or make it public
+
+D2S provides two options for sharing data: **restricted** and **public**. The default designation for all uploaded data is **restricted**. Under this designation, the data is only accessible to members of the associated project. All project members must have accounts on the D2S instance.
+
+Alternatively, data can be set to **public**, making it accessible to anyone with no account or API key required.
+
+Data can be shared directly via a link to the underlying asset (e.g., `.tif`, `.copc.laz`) or through user-created maps. Below are example share links to **public** data hosted on the https://ps2.d2s.org D2S deployment that can be accessed without an account.
+
+- Tiputini Biodiversity Station – Orthomosaic: https://ps2.d2s.org/sl/Lz45XWXJLcs
+- Tiputini Biodiversity Station – DSM: https://ps2.d2s.org/sl/Ud904k7lgrg
+- Tiputini Biodiversity Station – Point Cloud: https://ps2.d2s.org/sharepotree?file_id=2cfdd1f2-e73f-4b64-a266-d0171e119977
+- Demonstration – Orthomosaic (direct file access): https://ps2.d2s.org/static/projects/afc5005d-4977-4bdd-a53a-96a3f051d312/flights/32607eae-0cd9-4c06-b4d1-a4837d237ce1/data_products/0e4c3bc2-00da-41b3-bf79-d1d1f83e4194/bb62658b-a250-46e2-8e93-081828880634.tif
 
 ## ⚡ Quick Start
 
@@ -287,7 +306,9 @@ The command will display progress per format and provide a summary of generated,
 
 # Example Deployment
 
-An example instance of the Data to Science platform can be found at [https://ps2.d2s.org](https://ps2.d2s.org). This instance is managed by the Geospatial Data Science Lab at Purdue University and is open to the public. While this instance is available for use, the D2S platform is designed to be self-deployable, allowing researchers to host their own instances tailored to their specific needs.
+An example deployment of the Data to Science platform is available at https://ps2.d2s.org. This publicly accessible instance is managed by the Geospatial Data Science Lab at Purdue University and is open for use and exploration.
+
+While this instance provides a convenient way to try D2S, the platform is designed to be self-deployable, allowing researchers and organizations to host their own instances tailored to their specific needs.
 
 # 📘 Documentation
 
