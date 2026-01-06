@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 
+import Checkbox from './Checkbox';
+
 export default function Filter({
   categories,
   selectedCategory,
@@ -111,7 +113,7 @@ export default function Filter({
           </summary>
 
           <div className="z-50 group-open:absolute group-open:start-0 group-open:top-auto group-open:mt-2">
-            <div className="min-w-[200px] max-w-[300px] rounded border border-gray-200 bg-white">
+            <div className="min-w-[200px] max-w-[300px] rounded-sm border border-gray-200 bg-white">
               <header className="flex items-center justify-between p-4">
                 <span className="text-sm text-gray-700">
                   {' '}
@@ -142,10 +144,8 @@ export default function Filter({
                         htmlFor={category.value}
                         className="inline-flex items-center gap-2"
                       >
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           id={category.value}
-                          className="size-5 rounded text-accent2 border-gray-300"
                           value={category.value}
                           checked={parentChecked}
                           onChange={onChange}
@@ -156,17 +156,15 @@ export default function Filter({
                         </span>
                       </label>
                       {isParent && parentChecked && sublistCategories && (
-                        <ul className="mt-2 ml-6 pl-1 space-y-1 h-60 overflow-y-auto">
+                        <ul className="mt-2 ml-6 pt-2 pl-1 space-y-1 max-h-60 overflow-y-auto">
                           {sublistCategories.map((sub) => (
                             <li key={sub.value}>
                               <label
                                 htmlFor={`${category.value}-${sub.value}`}
                                 className="inline-flex items-center gap-2"
                               >
-                                <input
-                                  type="checkbox"
+                                <Checkbox
                                   id={`${category.value}-${sub.value}`}
-                                  className="size-4 rounded text-accent2 border-gray-300"
                                   value={sub.value}
                                   checked={
                                     !!sublistSelected &&

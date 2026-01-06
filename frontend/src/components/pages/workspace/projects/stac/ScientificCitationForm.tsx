@@ -59,7 +59,7 @@ export default function ScientificCitationForm({
               value={license}
               onChange={(e) => setLicense(e.target.value)}
               required
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">Select a license...</option>
               {availableLicenses.map((licenseOption) => (
@@ -101,7 +101,7 @@ export default function ScientificCitationForm({
             value={sciDoi}
             onChange={(e) => setSciDoi(e.target.value)}
             placeholder="e.g., 10.1000/xyz123"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
           <p className="text-xs text-gray-500 mt-1">
             Digital Object Identifier (without the doi: prefix or URL)
@@ -122,7 +122,7 @@ export default function ScientificCitationForm({
             onChange={(e) => setSciCitation(e.target.value)}
             placeholder="e.g., Smith, J., et al. (2023). Title of the dataset. Journal Name, 1(1), 1-10."
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
           <p className="text-xs text-gray-500 mt-1">
             Human-readable citation for the data

@@ -1,6 +1,6 @@
 import { AxiosResponse } from 'axios';
 import { useState } from 'react';
-import { useLoaderData } from 'react-router-dom';
+import { useLoaderData } from 'react-router';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 
 import Alert, { Status } from '../../../Alert';
@@ -24,7 +24,7 @@ export async function loader() {
       '/admin/extensions'
     );
     const teams: AxiosResponse<Team[]> = await api.get('teams');
-    const users: AxiosResponse<User[]> = await api.get('/users');
+    const users: AxiosResponse<User[]> = await api.get('/admin/users');
     if (extensions && teams && users) {
       return {
         extensions: extensions.data,
@@ -54,7 +54,7 @@ export default function DashboardExtensions() {
 
   return (
     <section className="w-full bg-white">
-      <div className="flex flex-col gap-8 h-full mx-auto max-w-screen-xl px-4 py-12 sm:px-6 md:py-16 lg:px-8">
+      <div className="flex flex-col gap-8 h-full px-4 py-12 sm:px-6 md:py-16 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
             Manage Extensions
@@ -68,10 +68,10 @@ export default function DashboardExtensions() {
         {extensions.length > 0 && (
           <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
             <TabList>
-              <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium">
+              <Tab className="data-selected:bg-accent3 data-selected:text-white data-hover:underline w-28 shrink-0 rounded-lg p-2 font-medium">
                 Teams
               </Tab>
-              <Tab className="data-[selected]:bg-accent3 data-[selected]:text-white data-[hover]:underline w-28 shrink-0 rounded-lg p-2 font-medium">
+              <Tab className="data-selected:bg-accent3 data-selected:text-white data-hover:underline w-28 shrink-0 rounded-lg p-2 font-medium">
                 Users
               </Tab>
             </TabList>

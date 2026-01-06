@@ -15,14 +15,17 @@ export default function RasterSymbologyOpacitySlider({
 
   const symbology = state[dataProduct.id].symbology;
 
+  // Early return if symbology is null
+  if (!symbology) return null;
+
   const isSingleBandSymbology = (
-    symbology: any
+    symbology: SingleBandSymbology | MultibandSymbology
   ): symbology is SingleBandSymbology => {
     return 'colorRamp' in symbology;
   };
 
   const isMultibandSymbology = (
-    symbology: any
+    symbology: SingleBandSymbology | MultibandSymbology
   ): symbology is MultibandSymbology => {
     return 'red' in symbology;
   };
@@ -56,8 +59,6 @@ export default function RasterSymbologyOpacitySlider({
       console.error('Unexpected array value for opacity slider');
     }
   };
-
-  if (!symbology) return;
 
   return (
     <div className="mt-4">

@@ -1,6 +1,6 @@
 import chroma from 'chroma-js';
 import clsx from 'clsx';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 
 import { CircleItemProps } from '../IndoorProject';
 import { useShapeContext } from './ShapeContext';

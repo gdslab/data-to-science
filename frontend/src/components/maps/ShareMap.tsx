@@ -5,7 +5,7 @@ import Map, {
   NavigationControl,
   ScaleControl,
 } from 'react-map-gl/maplibre';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 
 import { AlertBar, Status } from '../Alert';
 import ColorBarControl from './ColorBarControl';
@@ -45,49 +45,50 @@ function parseSymbology(
 }
 
 export default function ShareMap() {
-  const [bounds, setBounds] = useState<[number, number, number, number] | null>(
-    null
-  );
+  const [fetchedBounds, setFetchedBounds] = useState<
+    [number, number, number, number] | null
+  >(null);
   const [dataProduct, setDataProduct] = useState<DataProduct | null>(null);
   const [status, setStatus] = useState<Status | null>(null);
 
-  const [mapboxAccessToken, setMapboxAccessToken] = useState('');
-  const [maptilerApiKey, setMaptilerApiKey] = useState('');
+  const [mapboxAccessToken, setMapboxAccessToken] = useState(
+    import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || ''
+  );
+  const [maptilerApiKey, setMaptilerApiKey] = useState(
+    import.meta.env.VITE_MAPTILER_API_KEY || ''
+  );
   const { state, dispatch } = useRasterSymbologyContext();
 
   const mapRef = useRef<MapRef | null>(null);
 
   const query = useQuery();
   const fileId = query.get('file_id');
-  const symbologyFromQueryParams = parseSymbology(query.get('symbology'));
+  const symbologyQueryParam = query.get('symbology');
+  const symbologyFromQueryParams = useMemo(
+    () => parseSymbology(symbologyQueryParam),
+    [symbologyQueryParam]
+  );
+
+  // Derive the actual bounds to use (prefer dataProduct.bbox, fallback to fetched)
+  const bounds = dataProduct?.bbox || fetchedBounds;
 
   useEffect(() => {
-    if (
-      !import.meta.env.VITE_MAPBOX_ACCESS_TOKEN ||
-      !import.meta.env.VITE_MAPTILER_API_KEY
-    ) {
+    if (!mapboxAccessToken || !maptilerApiKey) {
       fetch('/config.json')
         .then((response) => response.json())
         .then((config) => {
-          if (config.mapboxAccessToken) {
+          if (!mapboxAccessToken && config.mapboxAccessToken) {
             setMapboxAccessToken(config.mapboxAccessToken);
           }
-          if (config.maptilerApiKey) {
+          if (!maptilerApiKey && config.maptilerApiKey) {
             setMaptilerApiKey(config.maptilerApiKey);
           }
         })
         .catch((error) => {
           console.error('Failed to load config.json:', error);
         });
-    } else {
-      if (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN) {
-        setMapboxAccessToken(import.meta.env.VITE_MAPBOX_ACCESS_TOKEN);
-      }
-      if (import.meta.env.VITE_MAPTILER_API_KEY) {
-        setMaptilerApiKey(import.meta.env.VITE_MAPTILER_API_KEY);
-      }
     }
-  }, []);
+  }, [mapboxAccessToken, maptilerApiKey]);
 
   useEffect(() => {
     async function fetchDataProduct(fileID) {
@@ -98,7 +99,7 @@ export default function ShareMap() {
         } else {
           setStatus({ type: 'error', msg: 'Unable to load data product' });
         }
-      } catch (err) {
+      } catch {
         setStatus({ type: 'error', msg: 'Unable to load data product' });
       }
     }
@@ -106,42 +107,37 @@ export default function ShareMap() {
     if (fileId) {
       fetchDataProduct(fileId);
     }
-  }, []);
+  }, [fileId]);
 
+  // Fetch bounds from API when dataProduct doesn't have bbox
   useEffect(() => {
-    if (mapRef.current && bounds) {
-      if (bounds.length === 4) {
-        mapRef.current.fitBounds(bounds, {
-          padding: 20,
-          duration: 1000,
-        });
-      }
+    if (!dataProduct || dataProduct.bbox) {
+      return; // No need to fetch if bbox already exists
     }
-  }, [bounds]);
 
-  useEffect(() => {
-    async function getBounds(dataProductId) {
+    async function getBounds(dataProductId: string) {
       try {
         const response: AxiosResponse<{
           bounds: [number, number, number, number];
         }> = await api.get(`/public/bounds?data_product_id=${dataProductId}`);
-        if (response) {
-          setBounds(response.data.bounds);
-        } else {
-          setBounds(null);
-        }
-      } catch (err) {
-        setBounds(null);
+        setFetchedBounds(response ? response.data.bounds : null);
+      } catch {
+        setFetchedBounds(null);
       }
     }
-    if (dataProduct) {
-      if (dataProduct.bbox) {
-        setBounds(dataProduct.bbox);
-      } else {
-        getBounds(dataProduct.id);
-      }
-    }
+
+    getBounds(dataProduct.id);
   }, [dataProduct]);
+
+  // Fit map to bounds when bounds change
+  useEffect(() => {
+    if (mapRef.current && bounds && bounds.length === 4) {
+      mapRef.current.fitBounds(bounds, {
+        padding: 20,
+        duration: 1000,
+      });
+    }
+  }, [bounds]);
 
   useEffect(() => {
     if (dataProduct && symbologyFromQueryParams) {
@@ -156,7 +152,7 @@ export default function ShareMap() {
         payload: true,
       });
     }
-  }, [dataProduct]);
+  }, [dataProduct, dispatch, symbologyFromQueryParams]);
 
   const mapStyle = useMemo(() => {
     return mapboxAccessToken
@@ -178,6 +174,7 @@ export default function ShareMap() {
       }}
       mapboxAccessToken={mapboxAccessToken || undefined}
       mapStyle={mapStyle}
+      maxZoom={25}
       reuseMaps={true}
     >
       {/* Display raster tiles */}

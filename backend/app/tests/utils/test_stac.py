@@ -13,8 +13,11 @@ from app.tests.utils.flight import create_flight
 from app.tests.utils.STACCollectionHelper import STACCollectionHelper
 from app.tests.conftest import pytest_requires_stac
 
-from app.utils.STACCollectionManager import STACCollectionManager
-from app.utils.STACGenerator import STACGenerator, date_to_datetime
+from app.utils.stac.STACCollectionManager import (
+    STACCollectionManager,
+    STACConfigurationError,
+)
+from app.utils.stac.STACGenerator import STACGenerator, date_to_datetime
 
 
 @pytest.fixture
@@ -336,8 +339,8 @@ def test_compare_and_update_no_collection() -> None:
     collection_id = "00000000-0000-0000-0000-000000000000"
     scm = STACCollectionManager(collection_id=collection_id)
 
-    # Compare and update should raise ValueError
-    with pytest.raises(ValueError, match="No local collection provided for comparison"):
+    # Compare and update should raise STACConfigurationError
+    with pytest.raises(STACConfigurationError, match="No local collection provided for comparison"):
         scm.compare_and_update()
 
 
@@ -348,8 +351,8 @@ def test_publish_to_catalog_no_collection() -> None:
     collection_id = "00000000-0000-0000-0000-000000000000"
     scm = STACCollectionManager(collection_id=collection_id)
 
-    # Publish should raise ValueError
-    with pytest.raises(ValueError, match="No collection provided for publishing"):
+    # Publish should raise STACConfigurationError
+    with pytest.raises(STACConfigurationError, match="No collection provided for publishing"):
         scm.publish_to_catalog()
 
 
@@ -919,3 +922,109 @@ def test_publish_to_catalog_with_custom_license(db: Session) -> None:
 
     # Clean up - remove the published collection
     scm.remove_from_catalog()
+
+
+def test_stac_generator_raw_data_links_cache_resolution(db: Session) -> None:
+    """Test that raw data links cache resolution handles empty lists correctly."""
+    # Create new project with two data products
+    project = create_project(db)
+    data_product1 = SampleDataProduct(db, project=project)
+    data_product2 = SampleDataProduct(db, project=project)
+
+    dp1_id = str(data_product1.obj.id)
+    dp2_id = str(data_product2.obj.id)
+
+    # Test 1: Explicit non-empty list should use provided values
+    sg1 = STACGenerator(
+        db,
+        project_id=project.id,
+        include_raw_data_links=[dp1_id]
+    )
+    assert sg1.include_raw_data_links == {dp1_id}
+
+    # Test 2: Explicit empty list should clear all selections (not fall back to cache)
+    # Create a cache with dp1_id selected
+    cached_stac_metadata = {
+        "collection": {},
+        "items": [
+            {
+                "id": dp1_id,
+                "links": [{"rel": "derived_from", "href": "http://example.com/raw"}]
+            }
+        ]
+    }
+
+    sg2 = STACGenerator(
+        db,
+        project_id=project.id,
+        cached_stac_metadata=cached_stac_metadata,
+        include_raw_data_links=[]  # Explicit empty list should override cache
+    )
+    assert sg2.include_raw_data_links == set()  # Should be empty, not use cache
+
+    # Test 3: None should fall back to cached values
+    sg3 = STACGenerator(
+        db,
+        project_id=project.id,
+        cached_stac_metadata=cached_stac_metadata,
+        include_raw_data_links=None  # None should use cache
+    )
+    assert sg3.include_raw_data_links == {dp1_id}  # Should use cached value
+
+    # Test 4: Multiple selections
+    sg4 = STACGenerator(
+        db,
+        project_id=project.id,
+        include_raw_data_links=[dp1_id, dp2_id]
+    )
+    assert sg4.include_raw_data_links == {dp1_id, dp2_id}
+
+
+def test_stac_generator_raw_data_links_validation(db: Session) -> None:
+    """Test that raw data links are validated against project data products."""
+    # Create project with two data products
+    project = create_project(db)
+    data_product1 = SampleDataProduct(db, project=project)
+    data_product2 = SampleDataProduct(db, project=project)
+
+    # Create a different project with its own data product
+    other_project = create_project(db)
+    other_data_product = SampleDataProduct(db, project=other_project)
+
+    dp1_id = str(data_product1.obj.id)
+    dp2_id = str(data_product2.obj.id)
+    other_dp_id = str(other_data_product.obj.id)
+
+    # Test 1: Valid IDs only - should keep all
+    sg1 = STACGenerator(
+        db,
+        project_id=project.id,
+        include_raw_data_links=[dp1_id, dp2_id]
+    )
+    assert sg1.include_raw_data_links == {dp1_id, dp2_id}
+
+    # Test 2: Mix of valid and invalid IDs - should filter out invalid
+    invalid_uuid = "00000000-0000-0000-0000-000000000000"
+    sg2 = STACGenerator(
+        db,
+        project_id=project.id,
+        include_raw_data_links=[dp1_id, invalid_uuid, other_dp_id]
+    )
+    # Should only keep dp1_id (valid), exclude invalid_uuid and other_dp_id (belongs to different project)
+    assert sg2.include_raw_data_links == {dp1_id}
+
+    # Test 3: All invalid IDs - should result in empty set
+    sg3 = STACGenerator(
+        db,
+        project_id=project.id,
+        include_raw_data_links=[invalid_uuid, other_dp_id]
+    )
+    assert sg3.include_raw_data_links == set()
+
+    # Test 4: Empty list - should remain empty
+    sg4 = STACGenerator(
+        db,
+        project_id=project.id,
+        include_raw_data_links=[]
+    )
+    assert sg4.include_raw_data_links == set()

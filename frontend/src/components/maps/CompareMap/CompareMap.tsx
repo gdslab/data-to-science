@@ -1,15 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import Map, { NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
-// import { bbox } from '@turf/bbox';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Map, { MapRef, ScaleControl } from 'react-map-gl/maplibre';
 
 import ColorBarControl from '../ColorBarControl';
 import CompareMapControl from './CompareMapControl';
-import CompareModeControl from './CompareModeControl';
+import SwipeSlider from './SwipeSlider';
+import CompareModeControl, { Mode } from './CompareModeControl';
 import ProjectBoundary from '../ProjectBoundary';
 import { useMapContext } from '../MapContext';
 import { useMapApiKeys } from '../MapApiKeysContext';
 import ProjectRasterTiles from '../ProjectRasterTiles';
-import { DataProduct } from '../../pages/workspace/projects/Project';
 import { useRasterSymbologyContext } from '../RasterSymbologyContext';
 
 import { BBox } from '../Maps';
@@ -22,22 +21,6 @@ import {
   createDefaultSingleBandSymbology,
 } from '../utils';
 import { isSingleBand } from '../utils';
-
-const LeftMapStyle: React.CSSProperties = {
-  position: 'absolute',
-  width: '50%',
-  height: '100%',
-  borderRightWidth: 2,
-  borderRightColor: 'white',
-};
-const RightMapStyle: React.CSSProperties = {
-  position: 'absolute',
-  left: '50%',
-  width: '50%',
-  height: '100%',
-};
-
-type Mode = 'split-screen' | 'side-by-side';
 
 export type MapComparisonState = {
   left: {
@@ -62,64 +45,56 @@ const defaultMapComparisonState = {
 };
 
 export default function CompareMap() {
+  // State
   const [viewState, setViewState] = useState({
     longitude: -86.9138040788386,
     latitude: 40.428655143949925,
     zoom: 8,
   });
+  const [sliderPosition, setSliderPosition] = useState(50); // Percentage
+  const [mode, setMode] = useState<Mode>('split-screen');
   const [activeMap, setActiveMap] = useState<'left' | 'right'>('left');
   const [mapComparisonState, setMapComparisonState] =
     useState<MapComparisonState>(defaultMapComparisonState);
-  const [mode, setMode] = useState<Mode>('split-screen');
   const [activeProjectBBox, setActiveProjectBBox] = useState<BBox | null>(null);
 
+  // Refs
+  const leftMapRef = useRef<MapRef>(null);
+  const rightMapRef = useRef<MapRef>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Context
   const { activeProject, flights } = useMapContext();
   const { mapboxAccessToken, maptilerApiKey } = useMapApiKeys();
-
   const { state: symbologyState, dispatch } = useRasterSymbologyContext();
 
+  // Event handlers
   const onLeftMoveStart = useCallback(() => setActiveMap('left'), []);
   const onRightMoveStart = useCallback(() => setActiveMap('right'), []);
   const onMove = useCallback((evt) => setViewState(evt.viewState), []);
 
-  const width = typeof window === 'undefined' ? 100 : window.innerWidth;
-  const leftMapPadding = useMemo(() => {
-    return {
-      left: mode === 'split-screen' ? width / 2 : 0,
-      top: 0,
-      right: 0,
-      bottom: 0,
-    };
-  }, [width, mode]);
-  const rightMapPadding = useMemo(() => {
-    return {
-      right: mode === 'split-screen' ? width / 2 : 0,
-      top: 0,
-      left: 0,
-      bottom: 0,
-    };
-  }, [width, mode]);
-
-  const getDataProduct = (side: 'left' | 'right'): DataProduct | null => {
-    return (
-      flights
-        .find(({ id }) => id === mapComparisonState[side]?.flightId)
-        ?.data_products.find(
-          ({ id }) => id === mapComparisonState[side]?.dataProductId
-        ) || null
-    );
-  };
-
+  // Selected data products
   const selectedLeftDataProduct = useMemo(
-    () => getDataProduct('left'),
+    () =>
+      flights
+        .find(({ id }) => id === mapComparisonState.left?.flightId)
+        ?.data_products.find(
+          ({ id }) => id === mapComparisonState.left?.dataProductId
+        ) || null,
     [flights, mapComparisonState.left]
   );
 
   const selectedRightDataProduct = useMemo(
-    () => getDataProduct('right'),
+    () =>
+      flights
+        .find(({ id }) => id === mapComparisonState.right?.flightId)
+        ?.data_products.find(
+          ({ id }) => id === mapComparisonState.right?.dataProductId
+        ) || null,
     [flights, mapComparisonState.right]
   );
 
+  // Symbology initialization for left data product
   useEffect(() => {
     if (selectedLeftDataProduct) {
       const { id, stac_properties, user_style } = selectedLeftDataProduct;
@@ -152,8 +127,9 @@ export default function CompareMap() {
         payload: true,
       });
     }
-  }, [selectedLeftDataProduct]);
+  }, [dispatch, selectedLeftDataProduct]);
 
+  // Symbology initialization for right data product
   useEffect(() => {
     if (selectedRightDataProduct) {
       const { id, stac_properties, user_style } = selectedRightDataProduct;
@@ -185,7 +161,7 @@ export default function CompareMap() {
         payload: true,
       });
     }
-  }, [selectedRightDataProduct]);
+  }, [dispatch, selectedRightDataProduct]);
 
   const mapStyle = useMemo(() => {
     return mapboxAccessToken
@@ -193,16 +169,65 @@ export default function CompareMap() {
       : getWorldImageryTopoBasemapStyle(maptilerApiKey);
   }, [mapboxAccessToken, maptilerApiKey]);
 
+  // Force map resize after initial render to fix dimension calculation issues
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      leftMapRef.current?.resize();
+      rightMapRef.current?.resize();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Resize maps when mode changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      leftMapRef.current?.resize();
+      rightMapRef.current?.resize();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [mode]);
+
+  // Styles with conditional rendering based on mode
+  const leftMapStyle: React.CSSProperties = useMemo(
+    () => ({
+      position: 'absolute',
+      width: mode === 'side-by-side' ? '50%' : '100%',
+      height: '100%',
+      clipPath:
+        mode === 'split-screen'
+          ? `inset(0 ${100 - sliderPosition}% 0 0)`
+          : 'none',
+      borderRight: mode === 'side-by-side' ? '2px solid white' : 'none',
+    }),
+    [sliderPosition, mode]
+  );
+
+  const rightMapStyle: React.CSSProperties = useMemo(
+    () => ({
+      position: 'absolute',
+      left: mode === 'side-by-side' ? '50%' : 0,
+      width: mode === 'side-by-side' ? '50%' : '100%',
+      height: '100%',
+      clipPath:
+        mode === 'split-screen' ? `inset(0 0 0 ${sliderPosition}%)` : 'none',
+    }),
+    [sliderPosition, mode]
+  );
+
   return (
-    <div className="relative h-full">
+    <div ref={containerRef} className="relative h-full overflow-x-hidden">
+      {/* Left Map - clipped from right */}
       <Map
+        ref={leftMapRef}
         {...viewState}
-        padding={leftMapPadding}
         onMoveStart={onLeftMoveStart}
         onMove={activeMap === 'left' ? onMove : undefined}
-        style={LeftMapStyle}
+        style={leftMapStyle}
         mapboxAccessToken={mapboxAccessToken || undefined}
         mapStyle={mapStyle}
+        maxZoom={25}
         reuseMaps={true}
       >
         {/* Display project boundary when project activated */}
@@ -212,13 +237,6 @@ export default function CompareMap() {
             setViewState={setViewState}
           />
         )}
-
-        <CompareMapControl
-          flights={flights}
-          mapComparisonState={mapComparisonState}
-          setMapComparisonState={setMapComparisonState}
-          side="left"
-        />
 
         {activeProject &&
           selectedLeftDataProduct &&
@@ -241,32 +259,23 @@ export default function CompareMap() {
             />
           )}
 
-        {/* Toggle compare mode */}
-        <CompareModeControl mode={mode} onModeChange={setMode} />
-
-        {/* General controls */}
-        <NavigationControl position="top-left" />
         <ScaleControl />
       </Map>
+
+      {/* Right Map - clipped from left */}
       <Map
+        ref={rightMapRef}
         {...viewState}
-        padding={rightMapPadding}
         onMoveStart={onRightMoveStart}
         onMove={activeMap === 'right' ? onMove : undefined}
-        style={RightMapStyle}
+        style={rightMapStyle}
         mapboxAccessToken={mapboxAccessToken}
         mapStyle={mapStyle}
+        maxZoom={25}
         reuseMaps={true}
       >
         {/* Display project boundary when project activated */}
         {activeProject && <ProjectBoundary />}
-
-        <CompareMapControl
-          flights={flights}
-          mapComparisonState={mapComparisonState}
-          setMapComparisonState={setMapComparisonState}
-          side="right"
-        />
 
         {activeProject &&
           selectedRightDataProduct &&
@@ -290,10 +299,35 @@ export default function CompareMap() {
             />
           )}
 
-        {/* General controls */}
-        <NavigationControl />
         <ScaleControl />
       </Map>
+
+      {/* Draggable Swipe Slider - only in split-screen mode */}
+      {mode === 'split-screen' && (
+        <SwipeSlider
+          position={sliderPosition}
+          onPositionChange={setSliderPosition}
+          containerRef={containerRef}
+        />
+      )}
+
+      {/* Mode toggle control */}
+      <CompareModeControl mode={mode} onModeChange={setMode} />
+
+      {/* Data product selection controls (outside maps so they're never clipped) */}
+      <CompareMapControl
+        flights={flights}
+        mapComparisonState={mapComparisonState}
+        setMapComparisonState={setMapComparisonState}
+        side="left"
+      />
+
+      <CompareMapControl
+        flights={flights}
+        mapComparisonState={mapComparisonState}
+        setMapComparisonState={setMapComparisonState}
+        side="right"
+      />
     </div>
   );
 }

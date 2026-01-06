@@ -63,7 +63,7 @@ from .team_member import TeamMember, TeamMemberCreate, TeamMemberUpdate
 from .token import Token, TokenPayload
 from .tusd import TUSDHook
 from .upload import Upload, UploadCreate, UploadUpdate
-from .user import User, UserCreate, UserInDB, UserUpdate
+from .user import User, UserAdmin, UserCreate, UserInDB, UserPublic, UserUpdate
 from .user_extension import UserExtension, UserExtensionCreate, UserExtensionUpdate
 from .user_style import UserStyle, UserStyleCreate, UserStyleUpdate
 from .vector_layer import (

@@ -33,13 +33,17 @@ class Header(BaseModel):
     Accept_Encoding: List[str] = Field(alias="Accept-Encoding")
     Accept_Language: List[str] = Field(alias="Accept-Language")
     Connection: List[str]
-    Content_Length: List[str] = Field(alias="Content-Length")
+    Content_Length: Optional[List[str]] = Field(alias="Content-Length", default=None)
     Content_Type: Optional[List[str]] = Field(alias="Content-Type", default=None)
     Cookie: List[str]
     Dnt: Optional[List[str]] = None
     Host: List[str]
     Origin: List[str]
     Referer: Optional[List[str]] = None
+    # Chrome Client Hints headers (added in newer browser versions)
+    Sec_Ch_Ua: Optional[List[str]] = Field(alias="Sec-Ch-Ua", default=None)
+    Sec_Ch_Ua_Mobile: Optional[List[str]] = Field(alias="Sec-Ch-Ua-Mobile", default=None)
+    Sec_Ch_Ua_Platform: Optional[List[str]] = Field(alias="Sec-Ch-Ua-Platform", default=None)
     Sec_Fetch_Dest: Optional[List[str]] = Field(alias="Sec-Fetch-Dest", default=None)
     Sec_Fetch_Mode: Optional[List[str]] = Field(alias="Sec-Fetch-Mode", default=None)
     Sec_Fetch_Site: Optional[List[str]] = Field(alias="Sec-Fetch-Site", default=None)

@@ -1,7 +1,9 @@
 import { XCircleIcon } from '@heroicons/react/24/outline';
 
+import { STACMetadata } from './STACTypes';
+
 interface ErrorDisplayProps {
-  stacMetadata: any;
+  stacMetadata: STACMetadata | null;
   onRetry: () => void;
 }
 
@@ -28,7 +30,7 @@ export default function ErrorDisplay({
       </div>
       <p className="text-sm text-red-600 mt-1">{errorMessage}</p>
       {isNoFlightsError && (
-        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
+        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-sm">
           <p className="text-blue-800 text-sm">
             <strong>To publish this project:</strong>
           </p>
@@ -42,7 +44,7 @@ export default function ErrorDisplay({
       {!isNoFlightsError && (
         <button
           onClick={onRetry}
-          className="mt-2 px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
+          className="mt-2 px-3 py-1 bg-red-100 text-red-700 rounded-sm hover:bg-red-200"
         >
           Retry
         </button>

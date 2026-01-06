@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ResponsiveScatterPlot, ScatterPlotNodeProps } from '@nivo/scatterplot';
+import { ColorSchemeId } from '@nivo/colors';
 
 import ColorMapSelect from '../ColorMapSelect';
 import { IndoorProjectDataVizScatterAPIResponse } from '../../IndoorProject';
@@ -10,9 +11,10 @@ import { useSymbolMapping } from './useSymbolMapping';
 import { drawSymbol } from './SymbolRenderer';
 import ScatterLegend from './ScatterLegend';
 import ScatterTooltip from './ScatterTooltip';
+import { ScatterDataPoint, SymbolKind } from './types';
 
-function makeNodeComponent(getSymbolForSerie: (serieId: string) => string) {
-  return function SymbolNode(props: ScatterPlotNodeProps<any>) {
+function makeNodeComponent(getSymbolForSerie: (serieId: string) => SymbolKind) {
+  return function SymbolNode(props: ScatterPlotNodeProps<ScatterDataPoint>) {
     const {
       node,
       style,
@@ -27,7 +29,7 @@ function makeNodeComponent(getSymbolForSerie: (serieId: string) => string) {
     const r = (style.size.get() ?? 8) / 2;
     const stroke = '#333'; // Use a default border color or derive from theme
     const fill = style.color.get();
-    const symbol = getSymbolForSerie(String(node.serieId)) as any;
+    const symbol = getSymbolForSerie(String(node.serieId));
 
     return (
       <g
@@ -71,7 +73,7 @@ export default function TraitScatterModuleDataVisualization({
             margin={{ top: 20, right: 20, bottom: 60, left: 90 }}
             xScale={{ type: 'linear', min: 'auto', max: 'auto' }}
             yScale={{ type: 'linear', min: 'auto', max: 'auto' }}
-            colors={{ scheme: colorOption as any }}
+            colors={{ scheme: colorOption as ColorSchemeId }}
             nodeSize={8}
             nodeComponent={NodeWithSymbols}
             blendMode="normal"

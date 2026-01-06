@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter } from 'react-router';
 
 // pages and data loaders
 import Dashboard from './components/pages/admin/Dashboard';
@@ -58,6 +58,7 @@ import ProjectSTACPublishing, {
 import STACDisabled from './components/pages/workspace/projects/stac/STACDisabled';
 import RegistrationForm from './components/pages/auth/RegistrationForm';
 import { RasterSymbologyProvider } from './components/maps/RasterSymbologyContext';
+import ShareLCCViewer from './components/maps/ShareLCCViewer';
 import SharePanoViewer from './components/maps/SharePanoViewer';
 import SharePlayCanvasglTFViewer from './components/maps/SharePlayCanvasglTFViewer';
 import SharePotreeViewer from './components/maps/SharePotreeViewer';
@@ -136,6 +137,11 @@ export const router = createBrowserRouter(
           path: '/sharepotree',
           element: <RootProtected />,
           children: [{ path: '/sharepotree', element: <SharePotreeViewer /> }],
+        },
+        {
+          path: '/sharelcc',
+          element: <RootProtected />,
+          children: [{ path: '/sharelcc', element: <ShareLCCViewer /> }],
         },
       ],
     },
@@ -308,14 +314,5 @@ export const router = createBrowserRouter(
         },
       ],
     },
-  ],
-  {
-    future: {
-      v7_fetcherPersist: true,
-      v7_normalizeFormMethod: true,
-      v7_relativeSplatPath: true,
-      v7_skipActionErrorRevalidation: true,
-      v7_partialHydration: true,
-    },
-  }
+  ]
 );

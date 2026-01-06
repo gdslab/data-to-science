@@ -7,7 +7,7 @@ from sqlalchemy import and_, ColumnElement, desc, func, select
 from sqlalchemy.orm import InstrumentedAttribute, Session
 
 from app import crud
-from app.models import DataProduct, Flight, Project, User
+from app.models import DataProduct, FilePermission, Flight, Project, User
 from app.schemas import SiteStatistics
 
 
@@ -79,46 +79,74 @@ def get_site_statistics(db: Session) -> SiteStatistics:
         SiteStatistics: Site statistics.
     """
 
-    def get_count(
-        session: Session,
-        model: Type[Union[User, Project, Flight, DataProduct]],
-        condition: Union[ColumnElement[bool], InstrumentedAttribute[bool]],
-    ) -> Optional[int]:
-        query = select(func.count("*")).select_from(model).where(condition)
-        return session.scalar(query)
-
     try:
-        # Use a single session context for all queries
-        with db as session:
-            # Get total count of active users
-            user_count = get_count(
-                session, User, and_(User.is_approved, User.is_email_confirmed)
+        # Execute all counts in a single query for better performance
+        counts_query = select(
+            # Count of active users (approved and email confirmed)
+            select(func.count("*"))
+            .select_from(User)
+            .where(and_(User.is_approved, User.is_email_confirmed))
+            .scalar_subquery()
+            .label("user_count"),
+            # Count of active projects
+            select(func.count("*"))
+            .select_from(Project)
+            .where(Project.is_active)
+            .scalar_subquery()
+            .label("project_count"),
+            # Count of active flights
+            select(func.count("*"))
+            .select_from(Flight)
+            .where(Flight.is_active)
+            .scalar_subquery()
+            .label("flight_count"),
+            # Count of active data products
+            select(func.count("*"))
+            .select_from(DataProduct)
+            .where(DataProduct.is_active)
+            .scalar_subquery()
+            .label("data_product_count"),
+            # Count of public active data products (excludes raw data)
+            select(func.count("*"))
+            .select_from(FilePermission)
+            .join(DataProduct, FilePermission.file_id == DataProduct.id)
+            .where(and_(FilePermission.is_public, DataProduct.is_active))
+            .scalar_subquery()
+            .label("public_data_product_count"),
+        )
+
+        result = db.execute(counts_query).one()
+        user_count = result.user_count
+        project_count = result.project_count
+        flight_count = result.flight_count
+        data_product_count = result.data_product_count
+        public_data_product_count = result.public_data_product_count
+
+        # Verify all counts were successfully retrieved
+        if any(
+            count is None
+            for count in [
+                project_count,
+                flight_count,
+                data_product_count,
+                user_count,
+                public_data_product_count,
+            ]
+        ):
+            raise ValueError("Failed to retrieve one or more site statistics counts")
+
+        # Count of top three data product data types
+        top_three_data_types_query = (
+            select(
+                DataProduct.data_type,
+                func.count(DataProduct.data_type).label("count"),
             )
-
-            # Get total count of active projects
-            project_count = get_count(session, Project, Project.is_active)
-
-            # Get total count of active flights
-            flight_count = get_count(session, Flight, Flight.is_active)
-
-            # Get total count of active data products
-            data_product_count = get_count(session, DataProduct, DataProduct.is_active)
-
-            # Assert counts were returned
-            assert project_count and flight_count and data_product_count
-
-            # Count of top three data product data types
-            top_three_data_types_query = (
-                select(
-                    DataProduct.data_type,
-                    func.count(DataProduct.data_type).label("count"),
-                )
-                .group_by(DataProduct.data_type)
-                .where(DataProduct.is_active)
-                .order_by(desc("count"))
-                .limit(3)
-            )
-            top_three_data_types = session.execute(top_three_data_types_query).all()
+            .group_by(DataProduct.data_type)
+            .where(DataProduct.is_active)
+            .order_by(desc("count"))
+            .limit(3)
+        )
+        top_three_data_types = db.execute(top_three_data_types_query).all()
     except Exception as e:
         # Log the error appropriately (ensure a logger is configured)
         logger.exception("Error retrieving site statistics")
@@ -157,6 +185,7 @@ def get_site_statistics(db: Session) -> SiteStatistics:
         data_product_dtype_count=data_product_dtype_count,
         flight_count=flight_count,
         project_count=project_count,
+        public_data_product_count=public_data_product_count,
         storage_availability=storage_availability,
         user_count=user_count,
     )

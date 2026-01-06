@@ -1,15 +1,12 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { STACMetadata, CombinedSTACItem } from '../STACTypes';
+import {
+  STACMetadata,
+  CombinedSTACItem,
+  STACRequestPayload,
+} from '../STACTypes';
 import { usePolling } from '../../../../../hooks/usePolling';
 import { Status } from '../../../../../Alert';
 import api from '../../../../../../api';
-
-interface STACRequestPayload {
-  sci_doi?: string;
-  sci_citation?: string;
-  license?: string;
-  custom_titles?: Record<string, string>;
-}
 
 interface UseSTACDataProps {
   projectId: string;
@@ -44,10 +41,10 @@ export function useSTACData({
 
   // Helper function to detect meaningful metadata changes
   const hasMetadataChanged = useCallback(
-    (oldData: any, newData: any): boolean => {
+    (oldData: STACMetadata | null, newData: STACMetadata | null): boolean => {
       if (!oldData && newData) return true;
       if (oldData && !newData) return true;
-      if (!oldData && !newData) return false;
+      if (!oldData || !newData) return false;
 
       const oldHasError = 'error' in oldData;
       const newHasError = 'error' in newData;
@@ -58,18 +55,18 @@ export function useSTACData({
       }
 
       if (!oldHasError && !newHasError) {
-        if (oldData.collection?.timestamp !== newData.collection?.timestamp)
-          return true;
+        // Note: timestamp doesn't exist in STACMetadata interface
+        // We're comparing items and failed_items arrays instead
         if (oldData.items?.length !== newData.items?.length) return true;
         if (oldData.failed_items?.length !== newData.failed_items?.length)
           return true;
 
         if (oldData.items && newData.items) {
           const oldIds = oldData.items
-            .map((item: any) => ('properties' in item ? item.id : item.item_id))
+            .map((item) => ('properties' in item ? item.id : item.item_id))
             .sort();
           const newIds = newData.items
-            .map((item: any) => ('properties' in item ? item.id : item.item_id))
+            .map((item) => ('properties' in item ? item.id : item.item_id))
             .sort();
           return JSON.stringify(oldIds) !== JSON.stringify(newIds);
         }
@@ -263,7 +260,7 @@ export function useSTACData({
       hasCheckedForUpdates.current = true;
       checkForUpdates();
     }
-  }, []);
+  }, [checkForUpdates, generatePreview, initialStacMetadata]);
 
   // Cleanup effect
   useEffect(() => {

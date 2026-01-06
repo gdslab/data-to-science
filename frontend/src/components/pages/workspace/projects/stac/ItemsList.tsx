@@ -1,20 +1,57 @@
+import Checkbox from '../../../../Checkbox';
 import { CombinedSTACItem } from './STACTypes';
-import { Project } from '../Project';
+import { ProjectDetail } from '../Project';
 
 interface ItemsListProps {
   allItems: CombinedSTACItem[];
-  project: Project;
+  project: ProjectDetail;
+  includeRawDataLinks: Set<string>;
+  onToggleRawDataLink: (itemId: string) => void;
+  onToggleAllRawDataLinks: () => void;
 }
 
-export default function ItemsList({ allItems, project }: ItemsListProps) {
+export default function ItemsList({
+  allItems,
+  project,
+  includeRawDataLinks,
+  onToggleRawDataLink,
+  onToggleAllRawDataLinks,
+}: ItemsListProps) {
+  // Calculate if all successful items are checked
+  const successfulItems = allItems.filter((item) => item.isSuccessful);
+  const allSuccessfulItemsChecked =
+    successfulItems.length > 0 &&
+    successfulItems.every((item) => includeRawDataLinks.has(item.id));
   return (
     <div>
       <h4 className="font-semibold mb-2">Items ({allItems.length})</h4>
+      {successfulItems.length > 0 && (
+        <div className="ml-4 mb-3 pb-3 border-b border-gray-300">
+          <label
+            htmlFor="all-successful-items-checkbox"
+            className="flex items-center gap-2 cursor-pointer"
+          >
+            <Checkbox
+              id="all-successful-items-checkbox"
+              checked={allSuccessfulItemsChecked}
+              onChange={() => onToggleAllRawDataLinks()}
+            />
+            <span className="font-medium text-sm">
+              {allSuccessfulItemsChecked
+                ? 'Uncheck all raw data links'
+                : 'Include raw data links for all items'}
+            </span>
+          </label>
+          <p className="text-xs text-gray-500 ml-6 mt-1">
+            Raw data links will be added to STAC metadata where available
+          </p>
+        </div>
+      )}
       <div className="ml-4 max-h-96 overflow-y-auto">
         {allItems.map((item) => (
           <div
             key={item.id}
-            className={`mb-2 p-2 rounded border shadow-sm ${
+            className={`mb-2 p-2 rounded border shadow-xs ${
               item.isSuccessful
                 ? 'bg-white border-gray-200'
                 : 'bg-red-50 border-red-200'
@@ -51,6 +88,21 @@ export default function ItemsList({ allItems, project }: ItemsListProps) {
                   <span className="font-medium text-sm">
                     {item.isSuccessful ? 'Success' : 'Failed'}
                   </span>
+                  {item.isSuccessful && (
+                    <label
+                      htmlFor={`${item.id}-checkbox`}
+                      className="flex items-center gap-1 ml-auto cursor-pointer"
+                    >
+                      <Checkbox
+                        id={`${item.id}-checkbox`}
+                        checked={includeRawDataLinks.has(item.id)}
+                        onChange={() => onToggleRawDataLink(item.id)}
+                      />
+                      <span className="text-xs text-gray-600">
+                        Include raw data
+                      </span>
+                    </label>
+                  )}
                 </div>
                 <p>
                   <span className="font-medium">ID:</span> {item.id}
@@ -144,7 +196,7 @@ export default function ItemsList({ allItems, project }: ItemsListProps) {
                           <summary className="text-sm text-gray-600 cursor-pointer">
                             Technical Details
                           </summary>
-                          <div className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                          <div className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded-sm">
                             <p>
                               <strong>File Path:</strong>{' '}
                               {item.error.details.filepath}

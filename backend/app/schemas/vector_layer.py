@@ -19,7 +19,7 @@ class VectorLayerCreate(VectorLayerBase):
 
 
 class VectorLayerUpdate(VectorLayerBase):
-    pass
+    layer_name: str
 
 
 class VectorLayerInDBBase(VectorLayerBase, from_attributes=True):
@@ -53,3 +53,5 @@ class VectorLayerPayload(BaseModel):
     geom_type: str
     signed_url: AnyHttpUrl
     preview_url: AnyHttpUrl
+    parquet_url: AnyHttpUrl
+    fgb_url: AnyHttpUrl

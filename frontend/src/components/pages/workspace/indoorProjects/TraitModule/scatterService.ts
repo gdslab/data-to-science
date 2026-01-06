@@ -16,10 +16,10 @@ export async function fetchTraitScatterModuleVisualizationData({
   targetTraitY,
   potBarcode,
 }: FetchTraitScatterModuleParams): Promise<IndoorProjectDataVizScatterAPIResponse> {
-  let endpoint = `/indoor_projects/${indoorProjectId}/uploaded/${indoorProjectDataId}/data_for_scatter`;
+  const endpoint = `/indoor_projects/${indoorProjectId}/uploaded/${indoorProjectDataId}/data_for_scatter`;
 
   try {
-    const queryParams: Record<string, any> = {
+    const queryParams: Record<string, string | number> = {
       camera_orientation: cameraOrientation,
       plotted_by: plottedBy,
       according_to: accordingTo,

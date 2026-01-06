@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     # 15 minutes
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
+    # Activity tracking throttle in minutes (only update last_activity_at if older than this)
+    ACTIVITY_TRACKING_THROTTLE_MINUTES: int = 15
 
     API_PROJECT_NAME: str = ""
     API_DOMAIN: str = ""
@@ -47,6 +49,9 @@ class Settings(BaseSettings):
 
     # OpenTelemetry
     ENABLE_OPENTELEMETRY: bool = False
+
+    # Cloudflare Turnstile
+    TURNSTILE_SECRET_KEY: str | None = None
 
     # Provide a base URL for shortened URLs (e.g., "http://localhost:8000/s")
     SHORTENED_URL_BASE: str = API_DOMAIN + "/sl"
@@ -135,6 +140,20 @@ class Settings(BaseSettings):
     STAC_API_URL: Optional[AnyHttpUrl] = None
     STAC_API_TEST_URL: Optional[AnyHttpUrl] = None
     STAC_BROWSER_URL: Optional[AnyHttpUrl] = None
+    EXTERNAL_VIEWER_URL: Optional[AnyHttpUrl] = None
+
+    @field_validator(
+        "EXTERNAL_VIEWER_URL",
+        "STAC_API_URL",
+        "STAC_API_TEST_URL",
+        "STAC_BROWSER_URL",
+        mode="before",
+    )
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if v == "":
+            return None
+        return v
 
     @property
     def get_stac_api_url(self) -> Optional[AnyHttpUrl]:

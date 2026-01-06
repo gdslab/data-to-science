@@ -1,8 +1,9 @@
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
+import { STACMetadata } from './STACTypes';
 
 interface LoadingStatusProps {
   isGeneratingPreview: boolean;
-  stacMetadata: any;
+  stacMetadata: STACMetadata | null;
   pollingStatus: string;
 }
 

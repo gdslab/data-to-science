@@ -4,9 +4,9 @@ import {
   Outlet,
   useLoaderData,
   useLocation,
+  useNavigate,
   useParams,
-  useRevalidator,
-} from 'react-router-dom';
+} from 'react-router';
 import { PlusCircleIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 
 import TeamSearch from './TeamSearch';
@@ -35,29 +35,42 @@ export default function SidebarPage() {
   const teams = useLoaderData() as Team[];
   const { teamId } = useParams();
   const location = useLocation();
-  const revalidator = useRevalidator();
+  const navigate = useNavigate();
 
   const [searchValue, setSearchValue] = useState('');
 
+  const sortedTeams = useMemo(() => {
+    return teams.sort((a, b) =>
+      a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
+    );
+  }, [teams]);
+
+  // Auto-navigate to last viewed team or first team when landing on /teams
   useEffect(() => {
-    if (location.state && location.state.reload) {
-      revalidator.revalidate();
+    if (location.pathname === '/teams' && teams.length > 0 && !teamId) {
+      const lastViewedTeamId = localStorage.getItem('lastViewedTeamId');
+
+      // Check if last viewed team still exists in user's team list
+      const lastViewedTeam = teams.find((team) => team.id === lastViewedTeamId);
+
+      if (lastViewedTeam) {
+        navigate(`/teams/${lastViewedTeamId}`, { replace: true });
+      } else {
+        // Fall back to first team if last viewed doesn't exist
+        navigate(`/teams/${sortedTeams[0].id}`, { replace: true });
+      }
     }
-  }, [location.state]);
+  }, [location.pathname, sortedTeams, teams, teamId, navigate]);
 
   const filteredTeams = useMemo(() => {
-    return teams
-      .filter((team) => {
-        const searchLower = searchValue.toLowerCase();
-        return (
-          team.title.toLowerCase().includes(searchLower) ||
-          team.description.toLowerCase().includes(searchLower)
-        );
-      })
-      .sort((a, b) =>
-        a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
+    return sortedTeams.filter((team) => {
+      const searchLower = searchValue.toLowerCase();
+      return (
+        team.title.toLowerCase().includes(searchLower) ||
+        team.description.toLowerCase().includes(searchLower)
       );
-  }, [teams, searchValue]);
+    });
+  }, [sortedTeams, searchValue]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchValue(e.target.value);
@@ -72,7 +85,7 @@ export default function SidebarPage() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
                 <Link
-                  className="relative rounded-full p-1 text-accent1 visited:text-accent1 hover:text-slate-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
+                  className="relative rounded-full p-1 text-accent1 visited:text-accent1 hover:text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
                   to="/teams/create"
                 >
                   <span className="absolute -inset-1.5" />
@@ -86,7 +99,7 @@ export default function SidebarPage() {
             {filteredTeams.length > 0 && (
               <div className="flex flex-col gap-2">
                 <div className="flex items-center">
-                  <div className="relative rounded-full accent3 p-1 hover:text-slate-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
+                  <div className="relative rounded-full accent3 p-1 hover:text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
                     <span className="absolute -inset-1.5" />
                     <span className="sr-only">Team List</span>
                     <UserGroupIcon className="h-6 w-6" aria-hidden="true" />
@@ -119,7 +132,7 @@ export default function SidebarPage() {
         </div>
       </div>
       {/* page content */}
-      <div className="flex-grow w-full m-4">
+      <div className="grow w-full m-4">
         {location.pathname === '/teams' && teams.length < 1 ? (
           <span>
             You do not currently belong to any teams. Use the{' '}

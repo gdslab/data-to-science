@@ -1,13 +1,13 @@
 import { isAxiosError } from 'axios';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { PaperAirplaneIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 
 import CountBadge from '../../../CountBadge';
 import { GridIcon } from './GridIcon';
-import { Project } from './ProjectList';
+import { ProjectItem } from './Project';
 
 import api from '../../../../api';
 import { getCategory } from '../../../maps/utils';
@@ -16,7 +16,7 @@ export default function ProjectCard({
   project,
   revalidate,
 }: {
-  project: Project;
+  project: ProjectItem;
   revalidate: () => void;
 }) {
   const [liked, setLiked] = useState(project.liked);
@@ -58,13 +58,13 @@ export default function ProjectCard({
       className="block h-40"
     >
       <article
-        className="relative flex items-center w-96 h-40 shadow bg-white transition hover:shadow-xl"
+        className="relative flex items-center w-96 h-40 shadow-sm bg-white transition hover:shadow-xl"
         title={project.title}
       >
         <div className="absolute top-2 right-2">
           <button
             type="button"
-            className="focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-full"
+            className="focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-full"
             onClick={handleOnBookmarkClick}
             disabled={isLoading}
             aria-label={liked ? 'Remove bookmark' : 'Bookmark project'}

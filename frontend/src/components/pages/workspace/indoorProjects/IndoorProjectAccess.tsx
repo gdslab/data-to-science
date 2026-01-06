@@ -1,6 +1,6 @@
 import { AxiosResponse, isAxiosError } from 'axios';
 import { useContext, useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router';
 import { CheckIcon } from '@heroicons/react/24/outline';
 
 import { AlertBar } from '../../../Alert';
@@ -11,19 +11,11 @@ import Table, { TableBody, TableHead } from '../../../Table';
 
 import AuthContext from '../../../../AuthContext';
 import { useIndoorProjectContext } from './IndoorProjectContext';
+import { IndoorProjectMember } from './IndoorProject.d';
 
 import api from '../../../../api';
 import { classNames } from '../../../utils';
 import { sorter } from '../../../utils';
-
-export interface IndoorProjectMember {
-  id: string;
-  full_name: string;
-  email: string;
-  role: string;
-  profile_url: string | null;
-  member_id: string;
-}
 
 function AccessRoleRadioGroup({
   currentRole,

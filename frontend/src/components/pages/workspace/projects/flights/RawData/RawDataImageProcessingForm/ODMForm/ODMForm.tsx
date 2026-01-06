@@ -106,7 +106,7 @@ export default function ODMForm({
             <CheckboxInput fieldName="disclaimer" label="Check to proceed" />
             <div className="mt-4">
               <button
-                className="w-32 bg-accent2/90 text-white font-semibold py-1 rounded enabled:hover:bg-accent2 disabled:opacity-75 disabled:cursor-not-allowed"
+                className="w-32 bg-accent2/90 text-white font-semibold py-1 rounded-sm enabled:hover:bg-accent2 disabled:opacity-75 disabled:cursor-not-allowed"
                 type="submit"
               >
                 Submit Job

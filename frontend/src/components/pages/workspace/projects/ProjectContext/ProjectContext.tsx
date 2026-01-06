@@ -1,17 +1,16 @@
 import { AxiosResponse, isAxiosError } from 'axios';
 import { createContext, useContext, useEffect, useReducer } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 
 import {
   Flight,
   GeoJSONFeature,
   IForester,
   MapLayer,
+  ProjectDetail,
   ProjectModule,
 } from '../Project';
-import { Project } from '../ProjectList';
 import { ProjectMember } from '../ProjectAccess';
-import { User } from '../../../../../AuthContext';
 
 import {
   IForesterAction,
@@ -47,7 +46,7 @@ interface Context {
   locationDispatch: React.Dispatch<LocationAction>;
   mapLayers: MapLayer[];
   mapLayersDispatch: React.Dispatch<MapLayersAction>;
-  project: Project | null;
+  project: ProjectDetail | null;
   projectDispatch: React.Dispatch<ProjectAction>;
   projectMembers: ProjectMember[] | null;
   projectMembersDispatch: React.Dispatch<ProjectMembersAction>;
@@ -191,7 +190,7 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
   const params = useParams();
 
   useEffect(() => {
-    async function getLocation(project: Project) {
+    async function getLocation(project: ProjectDetail) {
       try {
         const response: AxiosResponse<GeoJSONFeature> = await api.get(
           `/locations/${project.id}/${project.location_id}`
@@ -219,41 +218,6 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
   }, [project]);
 
   useEffect(() => {
-    async function getFlights() {
-      try {
-        const response: AxiosResponse<Flight[]> = await api.get(
-          `/projects/${params.projectId}/flights`
-        );
-        if (response) {
-          flightsDispatch({ type: 'set', payload: response.data });
-          flightsFilterSelectionDispatch({
-            type: 'set',
-            payload: [...new Set(response.data.map(({ sensor }) => sensor))],
-          });
-        } else {
-          flightsDispatch({ type: 'clear', payload: null });
-          flightsFilterSelectionDispatch({ type: 'reset' });
-        }
-      } catch (err) {
-        if (isAxiosError(err)) {
-          console.log(err.response?.data);
-        } else {
-          console.error(err);
-        }
-        flightsDispatch({ type: 'clear', payload: null });
-        flightsFilterSelectionDispatch({ type: 'reset' });
-      }
-    }
-
-    if (params.projectId) {
-      getFlights();
-    } else {
-      flightsDispatch({ type: 'clear', payload: null });
-      flightsFilterSelectionDispatch({ type: 'reset' });
-    }
-  }, [params.projectId]);
-
-  useEffect(() => {
     if (params.projectId) {
       getMapLayers(params.projectId, mapLayersDispatch);
     } else {
@@ -262,78 +226,10 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
   }, [params.projectId]);
 
   useEffect(() => {
-    async function getProject() {
-      try {
-        const response: AxiosResponse<Project> = await api.get(
-          `/projects/${params.projectId}`
-        );
-        if (response) {
-          projectDispatch({ type: 'set', payload: response.data });
-        } else {
-          projectDispatch({ type: 'clear', payload: null });
-        }
-      } catch (err) {
-        if (isAxiosError(err)) {
-          console.log(err.response?.data);
-        } else {
-          console.error(err);
-        }
-        projectDispatch({ type: 'clear', payload: null });
-      }
-    }
-
-    if (params.projectId) {
-      getProject();
-    } else {
-      projectDispatch({ type: 'clear', payload: null });
-    }
-  }, [params.projectId]);
-
-  useEffect(() => {
     if (params.projectId) {
       getProjectMembers(params.projectId, projectMembersDispatch);
     } else {
       projectMembersDispatch({ type: 'clear', payload: null });
-    }
-  }, [params.projectId]);
-
-  useEffect(() => {
-    if (params.projectId) {
-      getProjectModules(params.projectId, projectModulesDispatch);
-    } else {
-      projectModulesDispatch({ type: 'clear', payload: null });
-    }
-  }, [params.projectId]);
-
-  useEffect(() => {
-    async function getProjectRole() {
-      try {
-        const profile = localStorage.getItem('userProfile');
-        const user: User | null = profile ? JSON.parse(profile) : null;
-        if (!user) throw new Error();
-
-        const response: AxiosResponse<ProjectMember> = await api.get(
-          `/projects/${params.projectId}/members/${user.id}`
-        );
-        if (response) {
-          projectRoleDispatch({ type: 'set', payload: response.data.role });
-        } else {
-          projectRoleDispatch({ type: 'clear', payload: undefined });
-        }
-      } catch (err) {
-        if (isAxiosError(err)) {
-          console.log(err.response?.data);
-        } else {
-          console.error(err);
-        }
-        projectRoleDispatch({ type: 'clear', payload: undefined });
-      }
-    }
-
-    if (params.projectId) {
-      getProjectRole();
-    } else {
-      projectRoleDispatch({ type: 'clear', payload: undefined });
     }
   }, [params.projectId]);
 

@@ -1,7 +1,4 @@
-import { FeatureCollection, Point } from 'geojson';
-
-import { DataProduct, Flight } from '../pages/projects/Project';
-import { Project } from '../pages/projects/ProjectList';
+import { DataProduct, Flight, ProjectItem } from '../pages/projects/Project';
 import { ProjectsLoadedState } from './MapContext';
 
 export type MapTool = 'map' | 'compare' | 'timeline';
@@ -13,7 +10,7 @@ export type ActiveDataProductAction = {
 
 export type ActiveMapToolAction = { type: string; payload: MapTool };
 
-export type ActiveProjectAction = { type: string; payload: Project | null };
+export type ActiveProjectAction = { type: string; payload: ProjectItem | null };
 
 export type BBox = [number, number, number, number];
 
@@ -23,7 +20,7 @@ export type ProjectFilterSelectionAction = { type: string; payload?: string[] };
 
 export type SelectedTeamIdsAction = { type: string; payload: string[] };
 
-export type ProjectsAction = { type: string; payload: Project[] | null };
+export type ProjectsAction = { type: string; payload: ProjectItem[] | null };
 
 export type ProjectsLoadedAction = {
   type: string;

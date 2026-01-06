@@ -1,11 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Uppy from '@uppy/core';
-import DashboardModal from '@uppy/react/lib/DashboardModal';
+import DashboardModal from '@uppy/react/dashboard-modal';
 import XHRUpload from '@uppy/xhr-upload';
 
 // Don't forget the CSS: core and the UI components + plugins you are using.
 import '@uppy/core/dist/style.min.css';
 import '@uppy/dashboard/dist/style.min.css';
+
+import {
+  ErrorResponseBody,
+  ValidationError,
+} from '../../../../types/uppy';
 
 // Don’t forget to keep the Uppy instance outside of your component.
 function createUppy(endpoint: string) {
@@ -32,11 +37,14 @@ export default function TemplateUpload({
 }: TemplateUpload) {
   const [uppy] = useState(() => createUppy(endpoint));
 
-  const restrictions = {
-    allowedFileTypes: ['.csv'],
-    maxNumberOfFiles: 1,
-    minNumberOfFiles: 1,
-  };
+  const restrictions = useMemo(
+    () => ({
+      allowedFileTypes: ['.csv'],
+      maxNumberOfFiles: 1,
+      minNumberOfFiles: 1,
+    }),
+    []
+  );
 
   useEffect(() => {
     if (endpoint) {
@@ -44,7 +52,7 @@ export default function TemplateUpload({
         restrictions,
       });
     }
-  }, [uppy, endpoint]);
+  }, [uppy, endpoint, restrictions]);
 
   uppy.on('restriction-failed', () => {
     uppy.info(
@@ -59,12 +67,11 @@ export default function TemplateUpload({
     );
   });
 
-  uppy.on('upload', (data) => {
-    if (data && data.fileIDs && data.fileIDs.length > 0) {
-      const file = uppy.getFile(data.fileIDs[0]);
-      uppy.setFileState(data.fileIDs[0], {
+  uppy.on('upload', (_uploadID, files) => {
+    if (files && files.length > 0) {
+      const file = files[0];
+      uppy.setFileState(file.id, {
         xhrUpload: {
-          // @ts-ignore
           ...file.xhrUpload,
           endpoint: endpoint,
         },
@@ -73,18 +80,26 @@ export default function TemplateUpload({
   });
 
   uppy.on('upload-error', (_file, _error, response) => {
-    if (response && response.body && response.body.detail) {
+    if (response?.body) {
       let errorDetails = '';
-      if (typeof response.body.detail === 'string') {
-        errorDetails = response.body.detail;
-      } else if (response.status === 422 && Array.isArray(response.body.detail)) {
-        response.body.detail.forEach((err, idx) => {
-          errorDetails = `${err.loc[1]}: ${err.msg}`;
-          errorDetails += idx < response.body.detail.length - 1 ? '; ' : '';
-        });
+      const body = response.body as ErrorResponseBody;
+
+      if (body.detail) {
+        if (typeof body.detail === 'string') {
+          errorDetails = body.detail;
+        } else if (response.status === 422 && Array.isArray(body.detail)) {
+          const validationErrors = body.detail as ValidationError[];
+          validationErrors.forEach((err, idx) => {
+            errorDetails = `${err.loc[1]}: ${err.msg}`;
+            errorDetails += idx < validationErrors.length - 1 ? '; ' : '';
+          });
+        } else {
+          errorDetails = 'Unexpected error occurred';
+        }
       } else {
-        errorDetails = 'Unexpected error occurred';
+        errorDetails = 'Upload failed';
       }
+
       uppy.info(
         {
           message: `Error ${response.status}`,

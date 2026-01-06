@@ -15,10 +15,10 @@ export async function fetchTraitModuleVisualizationData({
   targetTrait,
   potBarcode,
 }: FetchTraitModuleParams): Promise<IndoorProjectDataViz2APIResponse> {
-  let endpoint = `/indoor_projects/${indoorProjectId}/uploaded/${indoorProjectDataId}/data_for_viz2`;
+  const endpoint = `/indoor_projects/${indoorProjectId}/uploaded/${indoorProjectDataId}/data_for_viz2`;
 
   try {
-    const queryParams: Record<string, any> = {
+    const queryParams: Record<string, string | number> = {
       camera_orientation: cameraOrientation,
       plotted_by: plottedBy,
       according_to: accordingTo,

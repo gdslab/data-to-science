@@ -1,13 +1,14 @@
-import { Await, useLoaderData } from 'react-router-dom';
 import { Suspense } from 'react';
-import { PlantDetailAndChart } from './types';
+import { Await, Link, useLoaderData, useParams } from 'react-router';
+
 import PlantDetailsTable from './components/PlantDetailsTable';
 import TopChart from './components/TopChart';
 import SideChart from './components/SideChart';
 import TraitScatterSection from './components/TraitScatterSection';
 import PlantDetailsSkeleton from './components/skeletons/PlantDetailsSkeleton';
 import ChartSkeleton from './components/skeletons/ChartSkeleton';
-import { Link, useParams } from 'react-router-dom';
+
+import { PlantDetailAndChart } from './types';
 
 export { loader } from './loader';
 

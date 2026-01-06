@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import LoadingBars from '../../../LoadingBars';
 import Filter from '../../../Filter';
@@ -12,42 +12,13 @@ import Sort, {
   getSortPreferenceFromLocalStorage,
   sortProjects,
 } from '../../../Sort';
-import { Team } from '../../teams/Teams';
-
-interface FieldProperties {
-  id: string;
-  center_x: number;
-  center_y: number;
-}
-
-type FieldGeoJSONFeature = Omit<GeoJSON.Feature, 'properties'> & {
-  properties: FieldProperties;
-};
-
-export interface Project {
-  id: string;
-  centroid: {
-    x: number;
-    y: number;
-  };
-  data_product_count: number;
-  description: string;
-  field: FieldGeoJSONFeature;
-  flight_count: number;
-  liked: boolean;
-  location_id: string;
-  most_recent_flight: string;
-  role: string;
-  team_id: string;
-  title: string;
-  team: Team | null;
-}
+import { ProjectItem } from './Project';
 
 export default function ProjectList({
   projects,
   revalidate,
 }: {
-  projects: Project[] | null;
+  projects: ProjectItem[] | null;
   revalidate: () => void;
 }) {
   const [currentPage, setCurrentPage] = useState(0);
@@ -71,16 +42,48 @@ export default function ProjectList({
 
   const MAX_ITEMS = 12;
 
+  /**
+   * Filters projects by search text.
+   * @param projs Projects to filter.
+   * @returns
+   */
+  const filterSearch = useCallback(
+    (projs: ProjectItem[]) => {
+      return projs.filter(
+        (project) =>
+          !project.title ||
+          project.title.toLowerCase().includes(searchText.toLowerCase()) ||
+          project.description.toLowerCase().includes(searchText.toLowerCase())
+      );
+    },
+    [searchText]
+  );
+
+  /**
+   * Filters projects by search text and limits to current page.
+   * @param projs Projects to filter.
+   * @returns Array of filtered and sliced projects.
+   */
+  const filterAndSlice = useCallback(
+    (projs: ProjectItem[]): ProjectItem[] => {
+      return filterSearch(projs).slice(
+        currentPage * MAX_ITEMS,
+        MAX_ITEMS + currentPage * MAX_ITEMS
+      );
+    },
+    [currentPage, filterSearch]
+  );
+
   useEffect(() => {
     locationDispatch({ type: 'clear', payload: null });
     projectDispatch({ type: 'clear', payload: null });
-  }, [project]);
+  }, [locationDispatch, project, projectDispatch]);
 
   useEffect(() => {
     if (projects && filterAndSlice(projects).length < MAX_ITEMS) {
       setCurrentPage(0);
     }
-  }, [searchText]);
+  }, [filterAndSlice, projects]);
 
   /**
    * Updates the current search text.
@@ -108,32 +111,6 @@ export default function ProjectList({
     } else {
       setCurrentPage(newPage);
     }
-  }
-
-  /**
-   * Filters projects by search text.
-   * @param projs Projects to filter.
-   * @returns
-   */
-  function filterSearch(projs: Project[]) {
-    return projs.filter(
-      (project) =>
-        !project.title ||
-        project.title.toLowerCase().includes(searchText.toLowerCase()) ||
-        project.description.toLowerCase().includes(searchText.toLowerCase())
-    );
-  }
-
-  /**
-   * Filters projects by search text and limits to current page.
-   * @param projs Projects to filter.
-   * @returns Array of filtered and sliced projects.
-   */
-  function filterAndSlice(projs: Project[]): Project[] {
-    return filterSearch(projs).slice(
-      currentPage * MAX_ITEMS,
-      MAX_ITEMS + currentPage * MAX_ITEMS
-    );
   }
 
   const filteredProjects = useMemo(() => {
@@ -172,7 +149,7 @@ export default function ProjectList({
       filteredProjects
         ? filterAndSlice(sortProjects(filteredProjects, sortSelection))
         : [],
-    [currentPage, filteredProjects, searchText, sortSelection]
+    [filterAndSlice, filteredProjects, sortSelection]
   );
 
   const TOTAL_PAGES = Math.ceil(

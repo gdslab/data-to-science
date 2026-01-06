@@ -22,7 +22,7 @@ from app.tests.utils.user import (
     authentication_token_from_email,
 )
 from app.seeds.seed_modules import seed_module_types
-from app.utils.STACCollectionManager import STACCollectionManager
+from app.utils.stac.STACCollectionManager import STACCollectionManager
 
 
 logger = logging.getLogger(__name__)

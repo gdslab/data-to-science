@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 from secrets import token_urlsafe
@@ -24,19 +25,57 @@ from app.core.config import settings
 from app.core import security
 from app.models.utils.user import validate_password
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 
 
 @router.post("", response_model=schemas.User, status_code=status.HTTP_201_CREATED)
-def create_user(
+async def create_user(
+    request: Request,
     background_tasks: BackgroundTasks,
     db: Session = Depends(deps.get_db),
     password: str = Body(title="Password", min_length=12, max_length=128),
     email: EmailStr = Body(title="Email", max_length=254),
     first_name: str = Body(title="First name", min_length=2, max_length=64),
     last_name: str = Body(title="Last name", min_length=2, max_length=64),
+    turnstile_token: str | None = Body(None, title="Turnstile token"),
+    registration_intent: str | None = Body(
+        None, title="Registration intent", min_length=20, max_length=500
+    ),
 ) -> Any:
     """Create new user with unique email."""
+    # Validate Turnstile token if configured
+    if settings.TURNSTILE_SECRET_KEY and turnstile_token:
+        # Extract client IP for additional validation
+        client_ip = (
+            request.headers.get("CF-Connecting-IP")
+            or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+            or request.headers.get("X-Real-IP")
+            or (request.client.host if request.client else None)
+        )
+
+        validation_result = await security.validate_turnstile(
+            token=turnstile_token,
+            secret=settings.TURNSTILE_SECRET_KEY,
+            remoteip=client_ip,
+        )
+
+        if not validation_result.get("success"):
+            error_codes = validation_result.get("error-codes", [])
+            # Log technical details for debugging
+            logger.warning(f"Turnstile validation failed with codes: {error_codes}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Bot verification failed. Please refresh the page and try again.",
+            )
+    elif settings.TURNSTILE_SECRET_KEY and not turnstile_token:
+        # Turnstile is configured but no token provided
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Turnstile verification required",
+        )
+
     existing_user = crud.user.get_by_email(db, email=email)
     if existing_user:
         raise HTTPException(
@@ -49,6 +88,7 @@ def create_user(
         email=email,
         first_name=first_name,
         last_name=last_name,
+        registration_intent=registration_intent,
     )
     user = crud.user.create(db, obj_in=user_in)
     if settings.MAIL_ENABLED:
@@ -78,8 +118,10 @@ def create_user(
             )
             mail.send_admins_new_registree_notification(
                 background_tasks=background_tasks,
-                first_name=user.first_name,
                 email=user.email,
+                first_name=user.first_name,
+                last_name=user.last_name,
+                registration_intent=user.registration_intent,
                 approve_token=approve_token,
             )
     else:
@@ -93,13 +135,13 @@ def create_user(
     return user
 
 
-@router.get("", response_model=list[schemas.User])
+@router.get("", response_model=list[schemas.UserPublic])
 def read_users(
     q: Annotated[str | None, Query(max_length=50)] = None,
     current_user: models.User = Depends(deps.get_current_approved_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    """Retrieve list of all users or a list of users filtered by a search query."""
+    """Retrieve public list of users filtered by optional search query."""
     users = crud.user.get_multi_by_query(db, q=q)
     return users
 

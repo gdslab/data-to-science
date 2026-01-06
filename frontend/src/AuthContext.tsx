@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { ReactNode, createContext, useContext, useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router';
 
 interface Login {
   username: string;
@@ -18,6 +18,8 @@ export interface User {
   profile_url: string | null;
   api_access_token: string | null;
   created_at: string;
+  last_login_at: string | null;
+  last_activity_at: string | null;
   exts: string[];
 }
 
@@ -37,7 +39,7 @@ const AuthContext = createContext(context);
 
 export function AuthContextProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
-    let userProfile = localStorage.getItem('userProfile');
+    const userProfile = localStorage.getItem('userProfile');
     if (userProfile) {
       return JSON.parse(userProfile);
     }
@@ -45,43 +47,33 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
   });
 
   async function login(data: { username: string; password: string }) {
-    try {
-      await axios.post('/api/v1/auth/access-token', data, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        withCredentials: true,
-      });
-      const currentUser = await axios.get('/api/v1/users/current', {
-        withCredentials: true,
-      });
-      if (currentUser) {
-        localStorage.setItem('userProfile', JSON.stringify(currentUser.data));
-        setUser(currentUser.data);
-      }
-    } catch (err) {
-      throw err;
+    await axios.post('/api/v1/auth/access-token', data, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      withCredentials: true,
+    });
+    const currentUser = await axios.get('/api/v1/users/current', {
+      withCredentials: true,
+    });
+    if (currentUser) {
+      localStorage.setItem('userProfile', JSON.stringify(currentUser.data));
+      setUser(currentUser.data);
     }
   }
 
   async function logout() {
     localStorage.removeItem('userProfile');
-    try {
-      await axios.get('/api/v1/auth/remove-access-token').then(() => setUser(null));
-    } catch (err) {
-      throw err;
-    }
+    await axios
+      .get('/api/v1/auth/remove-access-token')
+      .then(() => setUser(null));
   }
 
   async function updateProfile() {
-    try {
-      const currentUser = await axios.get('/api/v1/users/current', {
-        withCredentials: true,
-      });
-      if (currentUser) {
-        localStorage.setItem('userProfile', JSON.stringify(currentUser.data));
-        setUser(currentUser.data);
-      }
-    } catch (err) {
-      throw err;
+    const currentUser = await axios.get('/api/v1/users/current', {
+      withCredentials: true,
+    });
+    if (currentUser) {
+      localStorage.setItem('userProfile', JSON.stringify(currentUser.data));
+      setUser(currentUser.data);
     }
   }
 

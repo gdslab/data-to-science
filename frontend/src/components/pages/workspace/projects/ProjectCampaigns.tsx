@@ -1,5 +1,5 @@
 import { AxiosResponse } from 'axios';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 
 import { Button, LinkButton } from '../../../Buttons';
 import { useFieldCampaignContext } from './fieldCampaigns/FieldCampaignContext';
@@ -49,7 +49,7 @@ export default function ProjectCampaigns() {
                     `/projects/${projectId}/campaigns/${response.data.id}`
                   );
                 }
-              } catch (_err) {
+              } catch {
                 console.log('unable to retrieve campaign');
               }
             }}

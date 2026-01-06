@@ -1,8 +1,9 @@
 import { AxiosResponse, isAxiosError } from 'axios';
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 
 import { AlertBar } from '../../../Alert';
+import Checkbox from '../../../Checkbox';
 import Table, { TableBody, TableHead } from '../../../Table';
 import { ProjectModule } from './Project';
 import { useProjectContext } from './ProjectContext';
@@ -92,8 +93,8 @@ export default function ProjectModules() {
                     <span>{module.required ? 'Yes' : 'No'}</span>,
                     <div className="flex items-center justify-between gap-6">
                       <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
+                        <Checkbox
+                          id={`${module.module_name}-checkbox`}
                           checked={module.enabled}
                           onChange={(e) =>
                             updateModuleEnabled(
@@ -102,7 +103,6 @@ export default function ProjectModules() {
                             )
                           }
                           disabled={module.required}
-                          className="h-4 w-4 rounded border-gray-300 text-accent3 focus:ring-accent3"
                         />
                         <span
                           className={classNames(

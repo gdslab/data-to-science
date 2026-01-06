@@ -6,7 +6,7 @@ import { Flight } from '../../pages/workspace/projects/Project';
 
 import { sorter } from '../../utils';
 
-type ComparisonMapControlProps = {
+type CompareMapControlProps = {
   flights: Flight[];
   mapComparisonState: MapComparisonState;
   setMapComparisonState: React.Dispatch<
@@ -20,7 +20,7 @@ export default function CompareMapControl({
   mapComparisonState,
   setMapComparisonState,
   side = 'left',
-}: ComparisonMapControlProps) {
+}: CompareMapControlProps) {
   // filter out flights with no data products or only point cloud data products
   const flightsWithRasters = useMemo(() => {
     return flights
@@ -46,28 +46,16 @@ export default function CompareMapControl({
     }));
   }, [flightsWithRasters]);
 
-  /**
-   * returns selected flight for 'side' or null if no flight is selected.
-   * @param flightId Id of flight object to find.
-   * @returns Flight object or null.
-   */
-  const findSelectedFlight = (flightId: string | undefined): Flight | null => {
-    if (!flightId) return null;
-
-    const selectedFlight = flightsWithRasters.filter(
-      ({ id }) => id === flightId
-    );
-    if (selectedFlight.length > 0) {
-      return selectedFlight[0];
-    } else {
-      return null;
-    }
-  };
-
   // raster data product options for currently selected flight
   const dataProductOptions = useMemo(() => {
-    return findSelectedFlight(mapComparisonState[side].flightId)
-      ?.data_products.filter(
+    const flightId = mapComparisonState[side].flightId;
+    if (!flightId) return undefined;
+
+    const selectedFlight = flightsWithRasters.find(({ id }) => id === flightId);
+    if (!selectedFlight) return undefined;
+
+    return selectedFlight.data_products
+      .filter(
         ({ data_type }) =>
           data_type !== 'point_cloud' &&
           data_type !== 'panoramic' &&
@@ -77,7 +65,7 @@ export default function CompareMapControl({
         label: dataProduct.data_type,
         value: dataProduct.id,
       }));
-  }, [flightOptions, mapComparisonState[side]]);
+  }, [flightsWithRasters, mapComparisonState, side]);
 
   return (
     <div
@@ -88,6 +76,7 @@ export default function CompareMapControl({
           'right-14': side === 'right',
         }
       )}
+      style={{ zIndex: 1001 }}
     >
       <div className="w-full flex flex-col gap-2">
         <select

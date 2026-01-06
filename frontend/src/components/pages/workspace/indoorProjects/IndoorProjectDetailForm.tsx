@@ -24,15 +24,13 @@ export default function IndoorProjectDetailForm({
     defaultValues: {
       ...defaultValues,
       startDate: defaultValues.start_date
-        ? (new Date(defaultValues.start_date)
-            .toISOString()
-            .split('T')[0] as any)
+        ? new Date(defaultValues.start_date).toISOString().split('T')[0]
         : undefined,
       endDate: defaultValues.end_date
-        ? (new Date(defaultValues.end_date).toISOString().split('T')[0] as any)
+        ? new Date(defaultValues.end_date).toISOString().split('T')[0]
         : undefined,
-    } as IndoorProjectFormInput,
-    resolver: yupResolver(validationSchema) as any,
+    },
+    resolver: yupResolver(validationSchema),
     mode: 'onChange',
     reValidateMode: 'onChange',
   });
@@ -55,7 +53,7 @@ export default function IndoorProjectDetailForm({
         end_date: endDate,
       };
 
-      await api.put(`/indoor_projects`, payload);
+      await api.put(`/indoor_projects/${id}`, payload);
       setStatus({
         type: 'success',
         msg: 'Indoor project updated successfully',

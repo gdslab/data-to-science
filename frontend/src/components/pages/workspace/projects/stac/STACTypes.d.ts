@@ -14,6 +14,12 @@ export interface STACItem {
       flight_name?: string;
     };
   };
+  links?: Array<{
+    rel: string;
+    href: string;
+    type?: string;
+    title?: string;
+  }>;
   browser_url?: string;
 }
 
@@ -57,6 +63,13 @@ export interface STACMetadata {
     };
     'sci:doi'?: string;
     'sci:citation'?: string;
+    license?: string;
+    contacts?: Array<{
+      name?: string;
+      emails?: Array<{
+        value?: string;
+      }>;
+    }>;
   };
   items: Array<STACItem | ItemStatus>;
   is_published: boolean;
@@ -75,4 +88,14 @@ export interface CombinedSTACItem {
   sensor?: string;
   browserUrl?: string;
   error?: STACError;
+}
+
+export interface STACRequestPayload {
+  contact_name?: string;
+  contact_email?: string;
+  sci_doi?: string;
+  sci_citation?: string;
+  license?: string;
+  custom_titles?: Record<string, string>;
+  include_raw_data_links?: string[];
 }

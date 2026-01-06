@@ -2,11 +2,24 @@ import { useMemo } from 'react';
 
 import { IndoorProjectDataVizScatterAPIResponse } from '../../IndoorProject';
 
+interface ScatterDataPoint {
+  x: number;
+  y: number;
+  id: string;
+  interval_days: number;
+  group: string;
+}
+
+interface GroupedScatterData {
+  id: string;
+  data: ScatterDataPoint[];
+}
+
 export function useScatterData(data: IndoorProjectDataVizScatterAPIResponse) {
   const scatterData = useMemo(() => {
     const grouped = data.results.reduce((acc, item) => {
       if (!acc[item.group])
-        acc[item.group] = { id: item.group, data: [] as any[] };
+        acc[item.group] = { id: item.group, data: [] };
       acc[item.group].data.push({
         x: item.x,
         y: item.y,
@@ -15,7 +28,7 @@ export function useScatterData(data: IndoorProjectDataVizScatterAPIResponse) {
         group: item.group,
       });
       return acc;
-    }, {} as Record<string, { id: string; data: any[] }>);
+    }, {} as Record<string, GroupedScatterData>);
     return Object.values(grouped);
   }, [data.results]);
 

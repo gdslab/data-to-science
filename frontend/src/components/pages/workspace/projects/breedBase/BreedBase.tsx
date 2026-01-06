@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useForm, FormProvider, SubmitHandler } from 'react-hook-form';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { yupResolver } from '@hookform/resolvers/yup';
 
 import BreedBaseStudies from './BreedBaseStudies';
@@ -37,14 +37,14 @@ export default function BreedBase() {
 
   useEffect(() => {
     fetchBreedbaseStudies();
-  }, []);
+  }, [fetchBreedbaseStudies]);
 
   // Fetch study details when breedbaseStudies change
   useEffect(() => {
     breedbaseStudies.forEach((study) => {
       fetchStudyDetails(study.base_url, study.study_id);
     });
-  }, [breedbaseStudies]);
+  }, [breedbaseStudies, fetchStudyDetails]);
 
   // Set default breedbaseUrl based on existing studies
   useEffect(() => {
@@ -137,7 +137,7 @@ export default function BreedBase() {
             {error && <div className="text-red-500 text-sm">{error}</div>}
             <div>
               <button
-                className="w-32 bg-accent2/90 text-white font-semibold py-1 rounded enabled:hover:bg-accent2 disabled:opacity-75 disabled:cursor-not-allowed"
+                className="w-32 bg-accent2/90 text-white font-semibold py-1 rounded-sm enabled:hover:bg-accent2 disabled:opacity-75 disabled:cursor-not-allowed"
                 type="submit"
                 disabled={isLoading}
               >

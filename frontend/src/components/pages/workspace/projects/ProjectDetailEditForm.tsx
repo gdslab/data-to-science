@@ -1,6 +1,6 @@
 import { Form, Formik } from 'formik';
 import { useState } from 'react';
-import { useRevalidator } from 'react-router-dom';
+import { useRevalidator } from 'react-router';
 import { MapIcon } from '@heroicons/react/24/outline';
 
 import Alert from '../../../Alert';
@@ -12,7 +12,7 @@ import {
   TextField,
 } from '../../../InputFields';
 import Modal from '../../../Modal';
-import { Project } from './Project';
+import { ProjectDetail } from './Project';
 import { useProjectContext } from './ProjectContext';
 import ProjectDeleteModal from './ProjectDeleteModal';
 import ProjectFormMap from './ProjectFormMap';
@@ -25,7 +25,7 @@ import { projectUpdateValidationSchema } from './validationSchema';
 import api from '../../../../api';
 
 interface ProjectDetailEditForm {
-  project: Project;
+  project: ProjectDetail;
   teams: Team[];
 }
 
@@ -70,7 +70,7 @@ export default function ProjectDetailEditForm({
             revalidator.revalidate();
           }
           setIsEditing(null);
-        } catch (err) {
+        } catch {
           setIsEditing(null);
         }
       }}
@@ -94,7 +94,8 @@ export default function ProjectDetailEditForm({
               </EditField>
               {project.created_by && (
                 <span className="block text-sm text-gray-500">
-                  Created by: {project.created_by}
+                  Created by: {project.created_by.first_name}{' '}
+                  {project.created_by.last_name}
                 </span>
               )}
               <EditField

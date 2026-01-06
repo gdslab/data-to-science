@@ -1,8 +1,21 @@
 import { titleCaseConversion } from '../../utils';
 import { IndoorProjectDataVizScatterAPIResponse } from '../../IndoorProject';
 
+interface ScatterNodeData {
+  x: number | string;
+  y: number | string;
+  interval_days: number;
+  id: string;
+  group: string;
+}
+
+interface ScatterNode {
+  data: ScatterNodeData;
+  serieId: string | number;
+}
+
 interface ScatterTooltipProps {
-  node: any;
+  node: ScatterNode;
   data: IndoorProjectDataVizScatterAPIResponse;
 }
 
@@ -11,7 +24,7 @@ export default function ScatterTooltip({ node, data }: ScatterTooltipProps) {
     typeof node.data.x === 'number' ? node.data.x.toFixed(2) : node.data.x;
   const yValue =
     typeof node.data.y === 'number' ? node.data.y.toFixed(2) : node.data.y;
-  const intervalDays = (node.data as any).interval_days;
+  const intervalDays = node.data.interval_days;
 
   return (
     <div

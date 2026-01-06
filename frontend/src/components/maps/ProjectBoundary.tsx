@@ -1,6 +1,6 @@
 import { AxiosResponse } from 'axios';
 import { FeatureCollection, Polygon } from 'geojson';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Layer, Source, useMap } from 'react-map-gl/maplibre';
 import bbox from '@turf/bbox';
 import center from '@turf/center';
@@ -37,6 +37,16 @@ export default function ProjectBoundary({
   } = useMapContext();
   const geojsonUrl = `/projects/${activeProject?.id}?format=geojson`;
 
+  // Store zoom in ref to access latest value without triggering effect
+  const zoomRef = useRef(mapViewProperties?.zoom ?? 12);
+
+  // Update ref when mapViewProperties changes (doesn't trigger re-render)
+  useEffect(() => {
+    if (mapViewProperties?.zoom !== undefined) {
+      zoomRef.current = mapViewProperties.zoom;
+    }
+  }, [mapViewProperties?.zoom]);
+
   useEffect(() => {
     if (!map) return;
     // Fetch project boundary GeoJSON to calculate the bounds
@@ -72,7 +82,7 @@ export default function ProjectBoundary({
             ...prev,
             longitude: bboxCenter[0],
             latitude: bboxCenter[1],
-            zoom: mapViewProperties ? mapViewProperties.zoom : 12,
+            zoom: zoomRef.current,
           }));
         }
       } catch (error) {
@@ -84,7 +94,14 @@ export default function ProjectBoundary({
     };
 
     fetchGeoJSONAndFitBounds();
-  }, [activeMapTool, map, geojsonUrl]);
+  }, [
+    activeMapTool,
+    geojsonUrl,
+    map,
+    mapViewPropertiesDispatch,
+    setActiveProjectBBox,
+    setViewState,
+  ]);
 
   if (!projectBoundary) return null;
 

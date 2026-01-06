@@ -7,11 +7,14 @@ import {
   useEffect,
   useReducer,
 } from 'react';
-import { Outlet, useParams } from 'react-router-dom';
+import { Outlet, useParams } from 'react-router';
 
 import api from '../../../../../api';
 import { User } from '../../../../../AuthContext';
-import { IndoorProjectAPIResponse } from '../IndoorProject.d';
+import {
+  IndoorProjectAPIResponse,
+  IndoorProjectMember,
+} from '../IndoorProject.d';
 
 import { IndoorProjectAction } from './actions';
 import {
@@ -56,7 +59,7 @@ export async function getProjectMembers(
   dispatch: React.Dispatch<IndoorProjectAction>
 ) {
   try {
-    const response: AxiosResponse<any[]> = await api.get(
+    const response: AxiosResponse<IndoorProjectMember[]> = await api.get(
       `/indoor_projects/${indoorProjectId}/members`
     );
     if (response) {
@@ -83,7 +86,7 @@ export async function getProjectRole(
     const user: User | null = profile ? JSON.parse(profile) : null;
     if (!user) throw new Error();
 
-    const response: AxiosResponse<any> = await api.get(
+    const response: AxiosResponse<IndoorProjectMember> = await api.get(
       `/indoor_projects/${indoorProjectId}/members/${user.id}`
     );
     if (response) {

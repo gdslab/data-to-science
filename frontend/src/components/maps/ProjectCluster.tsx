@@ -99,7 +99,7 @@ export default function ProjectCluster({
       setGeojsonData(projectsFeatureCollection);
       setGeojsonLoaded(true);
     }
-  }, [projectsLoaded, projectsFeatureCollection]);
+  }, [fetchFromAPI, projects, projectsLoaded, projectsFeatureCollection]);
 
   // Fetch project markers in geojson format from api when fetchFromAPI is true
   useEffect(() => {
@@ -134,7 +134,7 @@ export default function ProjectCluster({
     if (fetchFromAPI) {
       fetchGeojson();
     }
-  }, []);
+  }, [fetchFromAPI, includeAll]);
 
   // Zoom to extent of project markers
   useEffect(() => {
@@ -169,7 +169,7 @@ export default function ProjectCluster({
       duration: duration,
       maxZoom: 16,
     });
-  }, [map, geojsonData, geojsonLoaded]);
+  }, [isMapReady, map, geojsonData, geojsonLoaded, setIsMapReady]);
 
   useEffect(() => {
     if (!map) return;

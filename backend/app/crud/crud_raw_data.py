@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 from typing import List, Sequence
@@ -15,6 +16,8 @@ from app.models.raw_data import RawData
 from app.models.utils.utcnow import utcnow
 from app.schemas.raw_data import RawDataCreate, RawDataUpdate
 
+logger = logging.getLogger(__name__)
+
 
 class CRUDRawData(CRUDBase[RawData, RawDataCreate, RawDataUpdate]):
     def create_with_flight(
@@ -26,7 +29,9 @@ class CRUDRawData(CRUDBase[RawData, RawDataCreate, RawDataUpdate]):
             session.add(raw_data)
             session.commit()
             session.refresh(raw_data)
-            return raw_data
+        # Create FilePermission for this RawData (defaults to is_public=False)
+        crud.file_permission.create_with_raw_data(db, raw_data_id=raw_data.id)
+        return raw_data
 
     def get_single_by_id(
         self, db: Session, raw_data_id: UUID, upload_dir: str
@@ -124,9 +129,16 @@ def set_report_attr(raw_data_obj: RawData) -> None:
 
 
 def set_url_attr(raw_data_obj: RawData, upload_dir: str):
-    static_url = settings.API_DOMAIN + settings.STATIC_DIR
-    relative_path = Path(raw_data_obj.filepath).relative_to(upload_dir)
-    setattr(raw_data_obj, "url", f"{static_url}/{str(relative_path)}")
+    try:
+        static_url = settings.API_DOMAIN + settings.STATIC_DIR
+        relative_path = Path(raw_data_obj.filepath).relative_to(upload_dir)
+        setattr(raw_data_obj, "url", f"{static_url}/{str(relative_path)}")
+    except ValueError as e:
+        logger.warning(
+            f"Unable to compute URL for raw data {raw_data_obj.id}: "
+            f"filepath '{raw_data_obj.filepath}' is not relative to upload_dir '{upload_dir}'. {e}"
+        )
+        setattr(raw_data_obj, "url", None)
 
 
 raw_data = CRUDRawData(RawData)

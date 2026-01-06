@@ -1,5 +1,30 @@
 import { Flight } from '../../pages/workspace/projects/Project';
 
+import pointIcon from '../../../assets/point-icon.svg';
+import lineIcon from '../../../assets/line-icon.svg';
+import polygonIcon from '../../../assets/polygon-icon.svg';
+
+/**
+ * Returns the appropriate icon for a given geometry type.
+ * @param geomType Geometry type (point, line, polygon)
+ * @returns Icon path for the geometry type
+ */
+function getGeomTypeIcon(geomType: string): string {
+  let icon = pointIcon;
+  switch (geomType.toLowerCase()) {
+    case 'point':
+      icon = pointIcon;
+      break;
+    case 'line':
+      icon = lineIcon;
+      break;
+    case 'polygon':
+      icon = polygonIcon;
+      break;
+  }
+  return icon;
+}
+
 /**
  * Takes a date in YYYY-mm-dd format and returns it in Day, Month Date, Year format.
  * For example: 2024-03-13 to Wednesday, Mar 13, 2024
@@ -32,4 +57,4 @@ function sortedFlightsByDateAndId(flights: Flight[]): Flight[] {
   });
 }
 
-export { formatDate, sortedFlightsByDateAndId };
+export { formatDate, getGeomTypeIcon, sortedFlightsByDateAndId };

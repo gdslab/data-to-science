@@ -43,7 +43,7 @@ export default function BackgroundRasterSelect({
         })) || [];
 
       return [{ label: 'None', value: '' }, ...options];
-    }, [dataProduct, flights]);
+    }, [backgroundRasters]);
 
   const handleChange = (
     backgroundRasterOption: SingleValue<BackgroundRasterOption>

@@ -1,6 +1,6 @@
 import { isAxiosError } from 'axios';
 import { useEffect, useState } from 'react';
-import { useParams, useRevalidator } from 'react-router-dom';
+import { useParams, useRevalidator } from 'react-router';
 
 import { AlertBar, Status } from '../../../../../Alert';
 import { Button } from '../../../../../Buttons';
@@ -68,12 +68,12 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
         })
         .catch((err) => setStatus({ type: 'error', msg: err.message }));
     }
-  }, [projectRole]);
+  }, [flightId, projectId, projectRole]);
 
-  useEffect(() => {
-    // check for new raw data when upload modal closes
-    if (!open) revalidator.revalidate();
-  }, [open]);
+  function handleModalClose() {
+    setOpen(false);
+    revalidator.revalidate(); // Revalidate when modal closes
+  }
 
   // check for new raw data and initial processing progress on regular intervals
   useInterval(
@@ -100,7 +100,7 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
             status.rawDataId
           )
             .then((progress) => {
-              let updatedJobProgress = [...imageProcessingJobStatus];
+              const updatedJobProgress = [...imageProcessingJobStatus];
               const jobIndex = updatedJobProgress.findIndex(
                 (job) => job.rawDataId === status.rawDataId
               );
@@ -247,7 +247,7 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
             flightID={flightId}
             open={open}
             projectID={projectId}
-            setOpen={setOpen}
+            handleModalClose={handleModalClose}
           />
           <Button size="sm" onClick={() => setOpen(true)}>
             Upload Raw Data

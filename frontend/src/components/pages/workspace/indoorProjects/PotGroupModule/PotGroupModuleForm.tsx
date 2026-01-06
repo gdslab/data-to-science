@@ -75,26 +75,22 @@ export default function PotGroupModuleForm({
 
     if (!indoorProjectDataId) return;
 
-    try {
-      const selectedAccordingTo = values.accordingTo;
-      const numericBarcode = Number(selectedAccordingTo);
-      const isSinglePot =
-        selectedPlottedBy === 'pots' &&
-        selectedAccordingTo !== 'all' &&
-        Number.isFinite(numericBarcode);
+    const selectedAccordingTo = values.accordingTo;
+    const numericBarcode = Number(selectedAccordingTo);
+    const isSinglePot =
+      selectedPlottedBy === 'pots' &&
+      selectedAccordingTo !== 'all' &&
+      Number.isFinite(numericBarcode);
 
-      const data = await fetchPotGroupModuleVisualizationData({
-        indoorProjectId,
-        indoorProjectDataId,
-        cameraOrientation: values.cameraOrientation,
-        plottedBy: values.plottedBy,
-        accordingTo: isSinglePot ? 'single_pot' : values.accordingTo,
-        potBarcode: isSinglePot ? numericBarcode : undefined,
-      });
-      setVisualizationData(data);
-    } catch (error) {
-      throw error;
-    }
+    const data = await fetchPotGroupModuleVisualizationData({
+      indoorProjectId,
+      indoorProjectDataId,
+      cameraOrientation: values.cameraOrientation,
+      plottedBy: values.plottedBy,
+      accordingTo: isSinglePot ? 'single_pot' : values.accordingTo,
+      potBarcode: isSinglePot ? numericBarcode : undefined,
+    });
+    setVisualizationData(data);
   };
 
   return (

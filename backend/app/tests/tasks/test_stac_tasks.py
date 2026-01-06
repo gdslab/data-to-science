@@ -199,7 +199,7 @@ def test_generate_stac_preview_task_exception_handling(mock_get_db, db: Session)
     data_product = SampleDataProduct(db, project=project, flight=flight)
 
     # Mock STACGenerator to raise an exception after validation
-    with patch("app.utils.STACGenerator.STACGenerator") as mock_stac_gen:
+    with patch("app.utils.stac.STACGenerator.STACGenerator") as mock_stac_gen:
         mock_stac_gen.side_effect = Exception("Test exception")
 
         # Call the task - should raise the exception
@@ -335,7 +335,7 @@ def test_publish_stac_catalog_task_exception_handling(mock_get_db, db: Session):
     data_product = SampleDataProduct(db, project=project, flight=flight)
 
     # Mock STACGenerator to raise an exception after validation
-    with patch("app.utils.STACGenerator.STACGenerator") as mock_stac_gen:
+    with patch("app.utils.stac.STACGenerator.STACGenerator") as mock_stac_gen:
         mock_stac_gen.side_effect = Exception("Publication failed")
 
         # Call the task - should raise the exception
@@ -387,7 +387,7 @@ def test_task_with_failed_items(mock_get_db, db: Session, monkeypatch):
     def mock_create_item(*args, **kwargs):
         raise ValueError("Unable to process point cloud in task")
 
-    monkeypatch.setattr("app.utils.pdal_to_stac.create_item", mock_create_item)
+    monkeypatch.setattr("app.utils.stac.pdal_to_stac.create_item", mock_create_item)
 
     with tempfile.TemporaryDirectory() as temp_dir:
         # Mock settings to use temp directory

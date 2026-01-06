@@ -7,6 +7,15 @@ export type IndoorProjectAPIResponse = {
   end_date?: Date;
 };
 
+export interface IndoorProjectMember {
+  id: string;
+  full_name: string;
+  email: string;
+  role: string;
+  profile_url: string | null;
+  member_id: string;
+}
+
 export type IndoorProjectDataAPIResponse = {
   id: string;
   original_filename: string;
@@ -264,7 +273,7 @@ export type IndoorProjectDataVizScatterAPIResponse = {
 };
 
 // Types for pot group visualization form
-export interface PotGroupModuleFormData extends FormData {}
+export type PotGroupModuleFormData = FormData;
 
 export interface PotGroupModuleFormProps {
   indoorProjectId: string;
@@ -275,7 +284,7 @@ export interface PotGroupModuleFormProps {
   >;
 }
 
-export interface FetchPotGroupModuleParams extends FetchVisualizationParams {}
+export type FetchPotGroupModuleParams = FetchVisualizationParams;
 
 // Types for pot visualization
 export interface CircleItemProps {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router';
 import { TrashIcon } from '@heroicons/react/24/outline';
 
 import { AlertBar, Status } from '../../../../Alert';
@@ -32,7 +32,7 @@ export default function FlightDeleteModal({
             className="flex items-center text-sky-600 cursor-pointer"
             onClick={() => setOpenConfirmationPopup(true)}
           >
-            <div className="rounded-full accent3 p-1 focus:outline-none">
+            <div className="rounded-full accent3 p-1 focus:outline-hidden">
               <TrashIcon className="w-4 h-4" />
             </div>
             <span>Delete</span>
@@ -80,7 +80,7 @@ export default function FlightDeleteModal({
                   msg: 'Unable to deactivate flight',
                 });
               }
-            } catch (err) {
+            } catch {
               setOpenConfirmationPopup(false);
               setStatus({
                 type: 'error',

@@ -37,6 +37,58 @@ export function getPaginationResults(
   }
 }
 
+function PageNumberItems({
+  paginationRange,
+  currentPage,
+  updateCurrentPage,
+}: {
+  paginationRange: ReturnType<typeof usePagination>;
+  currentPage: number;
+  updateCurrentPage: (page: number) => void;
+}) {
+  if (!paginationRange) return null;
+
+  return (
+    <>
+      {paginationRange.map((pageNumber, idx) => {
+        if (pageNumber === DOTS) {
+          return (
+            <li
+              key={`dots-${idx}`}
+              className="block size-8 rounded-sm text-center leading-8"
+            >
+              &#8230;
+            </li>
+          );
+        }
+
+        if (typeof pageNumber === 'number') {
+          return (
+            <li className="cursor-pointer" key={pageNumber}>
+              <a
+                onClick={() => updateCurrentPage(pageNumber)}
+                className={clsx(
+                  'block size-8 rounded-sm text-center leading-8',
+                  {
+                    'border border-gray-100 bg-white text-gray-900':
+                      pageNumber !== currentPage,
+                    'border-accent2 bg-accent2 text-white':
+                      pageNumber === currentPage,
+                  }
+                )}
+              >
+                {pageNumber + 1}
+              </a>
+            </li>
+          );
+        }
+
+        return null;
+      })}
+    </>
+  );
+}
+
 export default function Pagination({
   currentPage,
   updateCurrentPage,
@@ -55,46 +107,6 @@ export default function Pagination({
     siblingCount,
   });
 
-  function PageNumberItems() {
-    if (!paginationRange) return [];
-
-    let pageNumberItems: JSX.Element[] = [];
-
-    {
-      paginationRange.map((pageNumber, idx) => {
-        if (pageNumber === DOTS) {
-          pageNumberItems.push(
-            <li
-              key={`page-${idx}-dots`}
-              className="block size-8 rounded text-center leading-8"
-            >
-              &#8230;
-            </li>
-          );
-        }
-
-        if (typeof pageNumber === 'number')
-          pageNumberItems.push(
-            <li className="cursor-pointer" key={`page-${pageNumber}`}>
-              <a
-                onClick={() => updateCurrentPage(pageNumber)}
-                className={clsx('block size-8 rounded text-center leading-8', {
-                  'border border-gray-100 bg-white text-gray-900':
-                    pageNumber !== currentPage,
-                  'border-accent2 bg-accent2 text-white':
-                    pageNumber === currentPage,
-                })}
-              >
-                {pageNumber + 1}
-              </a>
-            </li>
-          );
-      });
-    }
-
-    return pageNumberItems;
-  }
-
   if (totalPages > 1) {
     return (
       <ol className="flex items-center justify-center gap-1 text-xs font-medium">
@@ -102,7 +114,7 @@ export default function Pagination({
           <a
             onClick={() => updateCurrentPage(currentPage - 1)}
             className={clsx(
-              'inline-flex size-8 items-center justify-center rounded border border-gray-100 bg-white text-gray-900',
+              'inline-flex size-8 items-center justify-center rounded-sm border border-gray-100 bg-white text-gray-900',
               {
                 'opacity-75 cursor-not-allowed': currentPage < 1,
                 'cursor-pointer': currentPage > 0,
@@ -125,13 +137,17 @@ export default function Pagination({
           </a>
         </li>
 
-        <PageNumberItems />
+        <PageNumberItems
+          paginationRange={paginationRange}
+          currentPage={currentPage}
+          updateCurrentPage={updateCurrentPage}
+        />
 
         <li>
           <a
             onClick={() => updateCurrentPage(currentPage + 1)}
             className={clsx(
-              'inline-flex size-8 items-center justify-center rounded border border-gray-100 bg-white text-gray-900',
+              'inline-flex size-8 items-center justify-center rounded-sm border border-gray-100 bg-white text-gray-900',
               {
                 'opacity-75 cursor-not-allowed': currentPage + 1 >= totalPages,
                 'cursor-pointer': currentPage + 1 < totalPages,

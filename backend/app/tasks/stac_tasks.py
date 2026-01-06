@@ -2,7 +2,7 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 from urllib.parse import urljoin
 from uuid import UUID
 
@@ -31,8 +31,8 @@ from app.utils.job_manager import JobManager
 # Import these at module level for testing/mocking purposes
 # They will be imported again inside functions to avoid circular imports during normal operation
 try:
-    from app.utils.STACGenerator import STACGenerator
-    from app.utils.STACCollectionManager import STACCollectionManager
+    from app.utils.stac.STACGenerator import STACGenerator
+    from app.utils.stac.STACCollectionManager import STACCollectionManager
 except ImportError:
     # Handle circular import gracefully
     STACGenerator = None
@@ -67,11 +67,14 @@ def get_stac_timestamp(job: Optional[JobModel] = None) -> Optional[str]:
 def generate_stac_preview(
     self,
     project_id: str,
+    contact_name: Optional[str] = None,
+    contact_email: Optional[str] = None,
     sci_doi: Optional[str] = None,
     sci_citation: Optional[str] = None,
     license: Optional[str] = None,
     custom_titles: Optional[Dict[str, str]] = None,
     cached_stac_metadata: Optional[Dict] = None,
+    include_raw_data_links: Optional[List[str]] = None,
 ) -> Dict:
     """Generate STAC preview metadata for a project without publishing."""
     db: Session = next(get_db())
@@ -86,21 +89,25 @@ def generate_stac_preview(
         sg = STACGenerator(
             db,
             project_id=project_uuid,
+            contact_name=contact_name,
+            contact_email=contact_email,
             sci_doi=sci_doi,
             sci_citation=sci_citation,
             license=license,
             custom_titles=custom_titles,
             cached_stac_metadata=cached_stac_metadata,
+            include_raw_data_links=include_raw_data_links,
         )
         collection = sg.collection
         items = sg.items
         failed_items = sg.failed_items
 
         # Prepare response data
+        collection_dict = collection.to_dict()
         items_dicts = [item.to_dict() for item in items]
         response_data = {
             "collection_id": project_id,
-            "collection": collection.to_dict(),
+            "collection": collection_dict,
             "items": items_dicts,
             "is_published": False,
             "timestamp": get_stac_timestamp(job.job),
@@ -159,11 +166,14 @@ def generate_stac_preview(
 def publish_stac_catalog(
     self,
     project_id: str,
+    contact_name: Optional[str] = None,
+    contact_email: Optional[str] = None,
     sci_doi: Optional[str] = None,
     sci_citation: Optional[str] = None,
     license: Optional[str] = None,
     custom_titles: Optional[Dict[str, str]] = None,
     cached_stac_metadata: Optional[Dict] = None,
+    include_raw_data_links: Optional[List[str]] = None,
 ) -> Dict:
     """Publish project to STAC catalog."""
     db: Session = next(get_db())
@@ -178,11 +188,14 @@ def publish_stac_catalog(
         sg = STACGenerator(
             db,
             project_id=project_uuid,
+            contact_name=contact_name,
+            contact_email=contact_email,
             sci_doi=sci_doi,
             sci_citation=sci_citation,
             license=license,
             custom_titles=custom_titles,
             cached_stac_metadata=cached_stac_metadata,
+            include_raw_data_links=include_raw_data_links,
         )
         collection = sg.collection
         items = sg.items
@@ -282,18 +295,21 @@ def publish_stac_catalog(
 # Non-Celery functions for testing (duplicate the logic without Celery decorators)
 def generate_stac_preview_task(
     project_id: str,
+    contact_name: Optional[str] = None,
+    contact_email: Optional[str] = None,
     sci_doi: Optional[str] = None,
     sci_citation: Optional[str] = None,
     license: Optional[str] = None,
     custom_titles: Optional[Dict[str, str]] = None,
     cached_stac_metadata: Optional[Dict] = None,
+    include_raw_data_links: Optional[List[str]] = None,
     db: Optional[Session] = None,
 ) -> Dict:
     """Non-Celery function for testing STAC preview generation."""
     from app.api.deps import get_db
     from app.schemas.job import Status
     from app.utils.job_manager import JobManager
-    from app.utils.STACGenerator import STACGenerator
+    from app.utils.stac.STACGenerator import STACGenerator
 
     if db is None:
         db = next(get_db())
@@ -308,11 +324,14 @@ def generate_stac_preview_task(
         sg = STACGenerator(
             db,
             project_id=project_uuid,
+            contact_name=contact_name,
+            contact_email=contact_email,
             sci_doi=sci_doi,
             sci_citation=sci_citation,
             license=license,
             custom_titles=custom_titles,
             cached_stac_metadata=cached_stac_metadata,
+            include_raw_data_links=include_raw_data_links,
         )
         collection = sg.collection
         items = sg.items
@@ -379,19 +398,22 @@ def generate_stac_preview_task(
 
 def publish_stac_catalog_task(
     project_id: str,
+    contact_name: Optional[str] = None,
+    contact_email: Optional[str] = None,
     sci_doi: Optional[str] = None,
     sci_citation: Optional[str] = None,
     license: Optional[str] = None,
     custom_titles: Optional[Dict[str, str]] = None,
     cached_stac_metadata: Optional[Dict] = None,
+    include_raw_data_links: Optional[List[str]] = None,
     db: Optional[Session] = None,
 ) -> Dict:
     """Non-Celery function for testing STAC catalog publication."""
     from app.api.deps import get_db
     from app.schemas.job import Status
     from app.utils.job_manager import JobManager
-    from app.utils.STACGenerator import STACGenerator
-    from app.utils.STACCollectionManager import STACCollectionManager
+    from app.utils.stac.STACGenerator import STACGenerator
+    from app.utils.stac.STACCollectionManager import STACCollectionManager
     from app import crud, schemas
 
     if db is None:
@@ -407,11 +429,14 @@ def publish_stac_catalog_task(
         sg = STACGenerator(
             db,
             project_id=project_uuid,
+            contact_name=contact_name,
+            contact_email=contact_email,
             sci_doi=sci_doi,
             sci_citation=sci_citation,
             license=license,
             custom_titles=custom_titles,
             cached_stac_metadata=cached_stac_metadata,
+            include_raw_data_links=include_raw_data_links,
         )
         collection = sg.collection
         items = sg.items

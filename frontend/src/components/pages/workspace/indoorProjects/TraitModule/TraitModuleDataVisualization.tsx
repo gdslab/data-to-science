@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ResponsiveBar } from '@nivo/bar';
+import { ColorSchemeId } from '@nivo/colors';
 
 import ColorMapSelect from './ColorMapSelect';
 
@@ -7,12 +8,18 @@ import { IndoorProjectDataViz2APIResponse } from '../IndoorProject';
 
 import { titleCaseConversion } from '../utils';
 
+interface MergedDataItem {
+  interval_days: number;
+  id: string;
+  [key: string]: number | string;
+}
+
 export default function TraitModuleDataVisualization({
   data,
 }: {
   data: IndoorProjectDataViz2APIResponse;
 }) {
-  const [colorOption, setColorOption] = useState('greens');
+  const [colorOption, setColorOption] = useState<string>('greens');
 
   const trait = useMemo(() => {
     if (!data.results.length) return undefined;
@@ -30,10 +37,10 @@ export default function TraitModuleDataVisualization({
       if (trait) {
         acc[interval_days][group] = item[trait].toFixed(2);
       } else {
-        acc[interval_days][group] = null;
+        acc[interval_days][group] = 0;
       }
       return acc;
-    }, {} as Record<string, any>);
+    }, {} as Record<number, MergedDataItem>);
   }, [data.results, trait]);
 
   const uniqueGroups = useMemo(() => {
@@ -51,7 +58,7 @@ export default function TraitModuleDataVisualization({
             keys={uniqueGroups}
             indexBy="interval_days"
             enableLabel={false}
-            colors={{ scheme: colorOption as any }}
+            colors={{ scheme: colorOption as ColorSchemeId }}
             margin={{ top: 100, right: 110, bottom: 60, left: 100 }}
             groupMode="grouped"
             borderColor={{ from: 'color', modifiers: [['darker', 1.6]] }}

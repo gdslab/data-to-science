@@ -55,20 +55,29 @@ function Scene({
   useEffect(() => {
     if (!asset) return;
 
+    type AABB = {
+      halfExtents: { x: number; y: number; z: number };
+    };
+
+    type AssetWithAABB = {
+      resource?: {
+        aabb?: AABB;
+      };
+    };
+
     const entity = gsplatEntityRef.current as unknown as {
       gsplat?: {
         instance?: {
           resource?: {
-            aabb?: { halfExtents: { x: number; y: number; z: number } };
+            aabb?: AABB;
           };
         };
       };
     } | null;
 
     // Prefer aabb from asset.resource if available, otherwise fall back to entity.gsplat.instance.resource
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const aabb: any =
-      (asset as any)?.resource?.aabb ??
+    const aabb: AABB | undefined =
+      (asset as unknown as AssetWithAABB)?.resource?.aabb ??
       entity?.gsplat?.instance?.resource?.aabb;
     if (!aabb?.halfExtents) return;
 

@@ -9,6 +9,7 @@ import {
 } from './RasterSymbologyContext';
 
 import { getTitilerQueryParams } from './utils';
+import { useMapLayerContext } from './MapLayersContext';
 import { useMapContext } from './MapContext';
 
 function constructRasterTileUrl(
@@ -39,15 +40,20 @@ function constructRasterTileUrl(
 }
 
 export default function ProjectRasterTiles({
+  beforeLayerId = null,
   boundingBox = undefined,
   dataProduct,
 }: {
+  beforeLayerId?: string | null;
   boundingBox?: [number, number, number, number];
   dataProduct: DataProduct;
 }) {
   const { current: map } = useMap();
 
-  const { activeDataProduct, tileScale } = useMapContext();
+  const { tileScale } = useMapContext();
+  const {
+    state: { layers },
+  } = useMapLayerContext();
 
   const { state } = useRasterSymbologyContext();
 
@@ -57,6 +63,39 @@ export default function ProjectRasterTiles({
     () => [constructRasterTileUrl(dataProduct, symbology, tileScale)],
     [dataProduct, symbology, tileScale]
   );
+
+  // Calculate the beforeId for positioning the raster
+  const calculatedBeforeId = useMemo(() => {
+    if (!map) return undefined;
+
+    // If beforeLayerId is explicitly provided, use it (e.g., for background rasters)
+    if (beforeLayerId && map.getLayer(beforeLayerId)) {
+      return beforeLayerId;
+    }
+
+    // Otherwise, find the first vector layer to position below all vectors
+    const checkedLayers = layers.filter((layer) => layer.checked);
+
+    if (checkedLayers.length === 0) return undefined;
+
+    const orderedLayerIds = map.getLayersOrder();
+
+    // Return the first checked layer that appears in the map's layer order
+    // Also check for polygon border layers (they have -border suffix)
+    for (const layerId of orderedLayerIds) {
+      const matchedLayer = checkedLayers.find(
+        (layer) =>
+          layer.id === layerId ||
+          (layer.type.toLowerCase() === 'polygon' &&
+            `${layer.id}-border` === layerId)
+      );
+      if (matchedLayer) {
+        return layerId; // Return the actual map layer ID, not the layer.id
+      }
+    }
+
+    return undefined;
+  }, [map, beforeLayerId, layers]);
 
   if (!symbology || !isLoaded || !map || !tiles) return null;
 
@@ -80,11 +119,7 @@ export default function ProjectRasterTiles({
           'raster-opacity':
             symbology.opacity != null ? symbology.opacity / 100 : 1,
         }}
-        beforeId={
-          dataProduct.id !== activeDataProduct?.id
-            ? activeDataProduct?.id
-            : undefined
-        }
+        beforeId={calculatedBeforeId}
       />
     </Source>
   );

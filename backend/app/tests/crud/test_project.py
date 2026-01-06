@@ -143,9 +143,12 @@ def test_get_project_by_user_and_project_id(db: Session) -> None:
     assert project.owner_id == stored_project["result"].owner_id
     assert project.is_active == stored_project["result"].is_active
     assert project.is_published == stored_project["result"].is_published
-    # created_by should be owner's full name
-    owner_full_name = f"{user.first_name} {user.last_name}"
-    assert stored_project["result"].created_by == owner_full_name
+    # created_by should be owner's details
+    assert stored_project["result"].created_by == {
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "email": user.email,
+    }
 
 
 def test_get_project_with_team_by_user_and_project_id(db: Session) -> None:
@@ -167,9 +170,12 @@ def test_get_project_with_team_by_user_and_project_id(db: Session) -> None:
     assert project.owner_id == stored_project["result"].owner_id
     assert project.is_active == stored_project["result"].is_active
     assert project.is_published == stored_project["result"].is_published
-    # created_by should be owner's full name
-    owner_full_name = f"{user.first_name} {user.last_name}"
-    assert stored_project["result"].created_by == owner_full_name
+    # created_by should be owner's details
+    assert stored_project["result"].created_by == {
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "email": user.email,
+    }
 
 
 def test_get_projects_by_owner(db: Session) -> None:

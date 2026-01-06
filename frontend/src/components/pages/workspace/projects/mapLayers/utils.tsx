@@ -149,7 +149,7 @@ export function download(
   if (newFilename) {
     filename = newFilename;
   } else {
-    filename = featureCollection.features[0].properties?.layer_name;
+    filename = String(featureCollection.features[0].properties?.layer_name);
   }
   filename = dropFileExtension(filename);
   const updatedFeatureCollection = prepFeatureCollectionForDownload(
@@ -184,7 +184,7 @@ export function download(
   } else {
     const json = JSON.stringify(updatedFeatureCollection, null, 2);
     const blob = new Blob([json], { type: 'application/geo+json' });
-    let downloadName = `${
+    const downloadName = `${
       filename ? filename + '.geojson' : 'feature_collection.geojson'
     }`;
     createAndClickDownloadLink(blob, downloadName);

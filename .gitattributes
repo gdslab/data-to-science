@@ -1,0 +1,5 @@
+# Ensure binary files are treated as binary by git
+*.glb binary
+*.gltf binary
+*.bin binary
+*.draco binary

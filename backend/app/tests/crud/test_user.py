@@ -31,6 +31,21 @@ def test_create_user_with_existing_email(db: Session) -> None:
         create_user(db, email=user.email)
 
 
+def test_create_user_with_registration_intent(db: Session) -> None:
+    """Verify user is created with registration_intent field."""
+    registration_intent = "I want to use this platform for analyzing drone imagery from agricultural research projects."
+    user_in = create_user_in(registration_intent=registration_intent)
+    user = crud.user.create(db, obj_in=user_in)
+    assert user.registration_intent == registration_intent
+
+
+def test_create_user_without_registration_intent(db: Session) -> None:
+    """Verify user is created without registration_intent (None)."""
+    user_in = create_user_in()
+    user = crud.user.create(db, obj_in=user_in)
+    assert user.registration_intent is None
+
+
 def test_get_user_by_id(db: Session) -> None:
     """Verify retrieving user by id returns correct user."""
     user = create_user(db)

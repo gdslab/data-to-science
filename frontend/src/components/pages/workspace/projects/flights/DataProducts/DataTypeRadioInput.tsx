@@ -4,7 +4,7 @@ export function getAllowedFileTypes(dtype: string): string[] {
   if (dtype === 'dem' || dtype === 'ortho' || dtype === 'other') {
     return ['.tif'];
   } else if (dtype === '3dgs') {
-    return ['.ply'];
+    return ['.ply', '.zip'];
   } else if (dtype === 'panoramic') {
     return ['.jpg', '.jpeg', '.png', '.webp', '.avif'];
   } else if (dtype === 'point_cloud') {
@@ -207,14 +207,14 @@ export default function DataTypeRadioInput({
         {dtype === 'other' ? (
           <fieldset className="w-full flex flex-wrap justify-evenly gap-1.5">
             <legend className="sr-only">Data type other</legend>
-            <label htmlFor="Search" className="sr-only">
+            <label htmlFor="dTypeOther" className="sr-only">
               Other
             </label>
             <input
               type="text"
               id="dTypeOther"
               placeholder="Enter other data type (e.g., NDVI)"
-              className="w-full rounded-md border-gray-200 px-4 py-2.5 pe-10 shadow sm:text-sm"
+              className="w-full rounded-md border-gray-200 px-4 py-2.5 pe-10 shadow-sm sm:text-sm"
               value={dtypeOther}
               maxLength={16}
               onChange={updateDtypeOther}
@@ -227,6 +227,12 @@ export default function DataTypeRadioInput({
           Accepted file extensions:{' '}
           <strong>{getAllowedFileTypes(dtype).join(' ')}</strong>
         </span>
+        {dtype === '3dgs' && (
+          <span className="text-sm text-gray-600 italic">
+            Note: <strong>.zip</strong> files are only supported for the LCC
+            format
+          </span>
+        )}
       </fieldset>
     </div>
   );

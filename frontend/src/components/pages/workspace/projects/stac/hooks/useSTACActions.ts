@@ -1,16 +1,10 @@
 import { useCallback } from 'react';
-import { useRevalidator } from 'react-router-dom';
+import { useRevalidator } from 'react-router';
 import api from '../../../../../../api';
 import { Status } from '../../../../../Alert';
+import { STACRequestPayload } from '../STACTypes';
 
 type ActionType = 'publish' | 'update' | 'unpublish';
-
-interface STACRequestPayload {
-  sci_doi?: string;
-  sci_citation?: string;
-  license?: string;
-  custom_titles?: Record<string, string>;
-}
 
 interface ActionConfig {
   method: 'PUT' | 'DELETE';
@@ -35,6 +29,30 @@ interface UseSTACActionsReturn {
   handleUnpublish: () => Promise<void>;
 }
 
+const actionConfigs: Record<ActionType, ActionConfig> = {
+  publish: {
+    method: 'PUT',
+    endpoint: (id) => `/projects/${id}/publish-stac-async`,
+    successMessage: 'Publish request sent. Please check back in a few minutes.',
+    errorMessage: 'Failed to publish project',
+    operationType: 'publishing',
+  },
+  update: {
+    method: 'PUT',
+    endpoint: (id) => `/projects/${id}/publish-stac-async`,
+    successMessage: 'Update request sent. Please check back in a few minutes.',
+    errorMessage: 'Failed to update STAC catalog',
+    operationType: 'updating',
+  },
+  unpublish: {
+    method: 'DELETE',
+    endpoint: (id) => `/projects/${id}/delete-stac`,
+    successMessage: 'Project unpublished successfully',
+    errorMessage: 'Failed to unpublish project',
+    operationType: 'unpublishing',
+  },
+};
+
 export function useSTACActions({
   projectId,
   buildRequestPayload,
@@ -42,32 +60,6 @@ export function useSTACActions({
   setStatus,
 }: UseSTACActionsProps): UseSTACActionsReturn {
   const revalidator = useRevalidator();
-
-  const actionConfigs: Record<ActionType, ActionConfig> = {
-    publish: {
-      method: 'PUT',
-      endpoint: (id) => `/projects/${id}/publish-stac-async`,
-      successMessage:
-        'Publish request sent. Please check back in a few minutes.',
-      errorMessage: 'Failed to publish project',
-      operationType: 'publishing',
-    },
-    update: {
-      method: 'PUT',
-      endpoint: (id) => `/projects/${id}/publish-stac-async`,
-      successMessage:
-        'Update request sent. Please check back in a few minutes.',
-      errorMessage: 'Failed to update STAC catalog',
-      operationType: 'updating',
-    },
-    unpublish: {
-      method: 'DELETE',
-      endpoint: (id) => `/projects/${id}/delete-stac`,
-      successMessage: 'Project unpublished successfully',
-      errorMessage: 'Failed to unpublish project',
-      operationType: 'unpublishing',
-    },
-  };
 
   const executeAction = useCallback(
     async (actionType: ActionType) => {
@@ -92,7 +84,7 @@ export function useSTACActions({
           msg: config.successMessage,
         });
         revalidator.revalidate();
-      } catch (err) {
+      } catch {
         setStatus({
           type: 'error',
           msg: config.errorMessage,
@@ -107,7 +99,6 @@ export function useSTACActions({
       setCurrentOperation,
       setStatus,
       revalidator,
-      actionConfigs,
     ]
   );
 

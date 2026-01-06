@@ -2,7 +2,7 @@ import { AxiosResponse } from 'axios';
 import { Field, useFormikContext } from 'formik';
 import Papa from 'papaparse';
 import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 
 import HintText from '../../../../../HintText';
 import { SelectField } from '../../../../../InputFields';
@@ -12,7 +12,6 @@ import { removeKeysFromFeatureProperties } from '../../mapLayers/utils';
 import { useProjectContext } from '../../ProjectContext';
 import { downloadFile as downloadCSV } from '../../fieldCampaigns/utils';
 import { download as downloadGeoJSON } from '../../mapLayers/utils';
-
 import { isElevationDataProduct } from '../../../../../maps/utils';
 
 import api from '../../../../../../api';
@@ -296,16 +295,17 @@ const MultiSpectralTools = ({ dataProduct }: { dataProduct: DataProduct }) => {
 };
 
 const DownloadZonalStatistics = ({
-  dataProductId,
+  dataProduct,
   layerId,
 }: {
-  dataProductId: string;
+  dataProduct: DataProduct;
   layerId: string;
 }) => {
   const [zonalFeatureCollection, setZonalFeatureCollection] =
     useState<ZonalFeatureCollection | null>(null);
 
   const { projectId, flightId } = useParams();
+  const { project, flights } = useProjectContext();
 
   const keysToSkip = [
     'id',
@@ -316,12 +316,47 @@ const DownloadZonalStatistics = ({
     'data_product_id',
   ];
 
+  const generateFilename = (extension: string): string => {
+    // Helper function to sanitize filename parts
+    const sanitize = (str: string | null | undefined): string => {
+      if (!str) return '';
+      return str.replace(/[^a-zA-Z0-9-]/g, '-');
+    };
+
+    // Get project title
+    const projectTitle = sanitize(project?.title);
+
+    // Get current flight data
+    const currentFlight = flights?.find((f) => f.id === flightId);
+    const acquisitionDate = currentFlight?.acquisition_date || '';
+    const sensor = sanitize(currentFlight?.sensor);
+
+    // Get data type
+    const dataType = sanitize(dataProduct.data_type);
+
+    // Build filename parts (exclude empty strings)
+    const parts = [
+      projectTitle,
+      acquisitionDate,
+      sensor,
+      dataType,
+      'zonal_statistics',
+    ].filter(Boolean);
+
+    // Fallback to original filename if we don't have enough data
+    if (parts.length < 2) {
+      return `zonal_statistics.${extension}`;
+    }
+
+    return `${parts.join('_')}.${extension}`;
+  };
+
   useEffect(() => {
     async function fetchZonalStats() {
       try {
         const response: AxiosResponse<ZonalFeatureCollection | null> =
           await api.get(
-            `/projects/${projectId}/flights/${flightId}/data_products/${dataProductId}/zonal_statistics?layer_id=${layerId}`
+            `/projects/${projectId}/flights/${flightId}/data_products/${dataProduct.id}/zonal_statistics?layer_id=${layerId}`
           );
         if (response.status === 200) {
           setZonalFeatureCollection(response.data);
@@ -330,16 +365,16 @@ const DownloadZonalStatistics = ({
             'Unable to check for previously calculated zonal statistics'
           );
         }
-      } catch (_err) {
+      } catch {
         console.log(
           'Unable to check for previously calculated zonal statistics'
         );
       }
     }
-    if (projectId && flightId && dataProductId) {
+    if (projectId && flightId && dataProduct.id) {
       fetchZonalStats();
     }
-  }, []);
+  }, [dataProduct.id, layerId, flightId, projectId]);
 
   if (
     !zonalFeatureCollection ||
@@ -363,7 +398,7 @@ const DownloadZonalStatistics = ({
             )
           );
           const csvFile = new Blob([csvData], { type: 'text/csv' });
-          downloadCSV(csvFile, 'zonal_statistics.csv');
+          downloadCSV(csvFile, generateFilename('csv'));
         }}
       >
         Download CSV
@@ -375,7 +410,7 @@ const DownloadZonalStatistics = ({
           downloadGeoJSON(
             'json',
             removeKeysFromFeatureProperties(zonalFeatureCollection, keysToSkip),
-            'zonal_statistics.geojson'
+            generateFilename('geojson')
           );
         }}
       >
@@ -385,7 +420,7 @@ const DownloadZonalStatistics = ({
   );
 };
 
-const ZonalStatisticTools = ({ dataProductId }: { dataProductId: string }) => {
+const ZonalStatisticTools = ({ dataProduct }: { dataProduct: DataProduct }) => {
   const { values } = useFormikContext<ToolboxFields>();
   const { mapLayers } = useProjectContext();
 
@@ -430,7 +465,7 @@ const ZonalStatisticTools = ({ dataProductId }: { dataProductId: string }) => {
                     {(geom_type.toLowerCase() === 'polygon' ||
                       geom_type.toLowerCase() === 'multipolygon') && (
                       <DownloadZonalStatistics
-                        dataProductId={dataProductId}
+                        dataProduct={dataProduct}
                         layerId={layer_id}
                       />
                     )}

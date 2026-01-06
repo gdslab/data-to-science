@@ -1,7 +1,7 @@
 import { AxiosResponse, isAxiosError } from 'axios';
 import React, { useEffect, useState } from 'react';
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import * as Yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 
@@ -119,7 +119,7 @@ export default function IndoorProjectForm({
 
   useEffect(() => {
     reset();
-  }, []);
+  }, [reset]);
 
   return (
     <div className="my-8 mx-4">

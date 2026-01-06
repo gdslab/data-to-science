@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { TrashIcon } from '@heroicons/react/24/outline';
 
 import { AlertBar, Status } from '../../../../Alert';
@@ -32,7 +32,7 @@ export default function IForesterDeleteModal({
             className="flex items-center text-sky-600 text-sm cursor-pointer"
             onClick={() => setOpenConfirmationPopup(true)}
           >
-            <div className="relative rounded-full accent3 p-1 focus:outline-none">
+            <div className="relative rounded-full accent3 p-1 focus:outline-hidden">
               <TrashIcon className="w-4 h-4" />
             </div>
             <span>Delete</span>
@@ -80,7 +80,7 @@ export default function IForesterDeleteModal({
                   msg: 'Unable to delete submission',
                 });
               }
-            } catch (err) {
+            } catch {
               setOpenConfirmationPopup(false);
               setStatus({
                 type: 'error',

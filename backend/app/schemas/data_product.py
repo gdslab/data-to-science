@@ -10,7 +10,7 @@ from pydantic import (
     UUID4,
 )
 
-from app.utils.ImageProcessor import STACProperties
+from app.utils.stac import STACProperties
 
 data_type_char_limit_rule = Field(
     None, title="Name of data product's new data type", min_length=1, max_length=16

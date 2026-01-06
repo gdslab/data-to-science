@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   CheckCircleIcon,
   ExclamationCircleIcon,
@@ -25,7 +25,7 @@ function getAlertProps(alertType: AlertType) {
       return {
         title: 'Success',
         color: [
-          'rounded border-s-4 border-green-500 bg-green-50 p-4',
+          'rounded-sm border-s-4 border-green-500 bg-green-50 p-4',
           'flex items-center gap-2 text-green-800',
           'text-sm text-green-700',
         ],
@@ -40,7 +40,7 @@ function getAlertProps(alertType: AlertType) {
       return {
         title: 'Info',
         color: [
-          'rounded border-s-4 border-sky-500 bg-sky-50 p-4',
+          'rounded-sm border-s-4 border-sky-500 bg-sky-50 p-4',
           'flex items-center gap-2 text-sky-800',
           'text-sm text-sky-700',
         ],
@@ -55,7 +55,7 @@ function getAlertProps(alertType: AlertType) {
       return {
         title: 'Warning',
         color: [
-          'rounded border-s-4 border-amber-500 bg-amber-50 p-4',
+          'rounded-sm border-s-4 border-amber-500 bg-amber-50 p-4',
           'flex items-center gap-2 text-amber-800',
           'text-sm text-amber-700',
         ],
@@ -70,7 +70,7 @@ function getAlertProps(alertType: AlertType) {
       return {
         title: 'Error',
         color: [
-          'rounded border-s-4 border-red-500 bg-red-50 p-4',
+          'rounded-sm border-s-4 border-red-500 bg-red-50 p-4',
           'flex items-center gap-2 text-red-800',
           'text-sm text-red-700',
         ],
@@ -85,12 +85,15 @@ function getAlertProps(alertType: AlertType) {
       return {
         title: 'Please read',
         color: [
-          'rounded border-s-4 border-neutral-500 bg-neutral-50 p-4',
+          'rounded-sm border-s-4 border-neutral-500 bg-neutral-50 p-4',
           'flex items-center gap-2 text-neutral-800',
           'text-sm text-neutral-700',
         ],
         Icon: (
-          <FlagIcon className={`block h-6 w-6 text-neutral-500`} aria-hidden="true" />
+          <FlagIcon
+            className={`block h-6 w-6 text-neutral-500`}
+            aria-hidden="true"
+          />
         ),
       };
   }
@@ -167,7 +170,10 @@ function getAlertBarProps(alertType: AlertType) {
           'mt-2 text-sm text-neutral-700',
         ],
         Icon: (
-          <FlagIcon className={`block h-6 w-6 text-neutral-500`} aria-hidden="true" />
+          <FlagIcon
+            className={`block h-6 w-6 text-neutral-500`}
+            aria-hidden="true"
+          />
         ),
       };
   }
@@ -187,49 +193,43 @@ export default function Alert({ alertType, children }: AlertProps) {
 }
 
 export function AlertBar({ alertType, children }: AlertProps) {
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const { color, Icon } = getAlertBarProps(alertType);
-
-  useEffect(() => {
-    setIsVisible(true);
-  }, [children]);
 
   function handleClose() {
     setIsVisible(false);
   }
 
-  if (!isVisible) {
-    return null;
-  } else {
-    return (
-      <div role="alert" className={color[0]} style={{ zIndex: 1000 }}>
-        <div className={color[1]}>
-          <div className="flex flex-cols gap-4 items-center">
-            {Icon}
-            <span>{children}</span>
-          </div>
-          <div className="flex">
-            <button className="transition" onClick={handleClose}>
-              <span className="sr-only">Dismiss popup</span>
+  if (!isVisible) return null;
 
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="1.5"
-                stroke="currentColor"
-                className="h-6 w-6"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
+  return (
+    <div role="alert" className={color[0]} style={{ zIndex: 1000 }}>
+      <div className={color[1]}>
+        <div className="flex flex-cols gap-4 items-center">
+          {Icon}
+          <span>{children}</span>
+        </div>
+        <div className="flex">
+          <button className="transition" onClick={handleClose}>
+            <span className="sr-only">Dismiss popup</span>
+
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="1.5"
+              stroke="currentColor"
+              className="h-6 w-6"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 }

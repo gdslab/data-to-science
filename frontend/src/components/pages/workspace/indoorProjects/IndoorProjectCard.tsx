@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
+
 import { IndoorProjectAPIResponse } from './IndoorProject';
 
 type IndoorProjectCardProps = {

@@ -11,7 +11,7 @@ import rasterio
 from pydantic import ValidationError
 
 from app.schemas.user_style import UserStyleCreate
-from app.utils.STACProperties import (
+from app.utils.stac.STACProperties import (
     ImageStructure,
     Metadata,
     STACProperties,
@@ -138,14 +138,29 @@ def get_info(in_raster: Path) -> dict | NoReturn:
     Returns:
         dict: _description_
     """
-    result: subprocess.CompletedProcess = subprocess.run(
-        ["gdalinfo", "-approx_stats", "-json", in_raster],
-        stdout=subprocess.PIPE,
-        check=True,
-    )
-    result.check_returncode()
+    # Check if band statistics are already computed
+    try:
+        result: subprocess.CompletedProcess = subprocess.run(
+            ["gdalinfo", "-json", in_raster], stdout=subprocess.PIPE, check=True
+        )
+        result.check_returncode()
+    except Exception as e:
+        logging.error(str(e))
+        raise e
     try:
         gdalinfo: dict = json.loads(result.stdout)
+        if not all(
+            "STATISTICS_MINIMUM" in band.get("metadata", {}).get("", {})
+            for band in gdalinfo["bands"]
+        ):
+            # Re-run gdalinfo with stats
+            result = subprocess.run(
+                ["gdalinfo", "-stats", "-json", in_raster],
+                stdout=subprocess.PIPE,
+                check=True,
+            )
+            result.check_returncode()
+            gdalinfo = json.loads(result.stdout)
     except Exception as e:
         logging.error(str(e))
         raise e
@@ -202,7 +217,7 @@ def convert_to_cog(
     project_to_utm: bool,
     num_threads: int | None = None,
 ) -> None:
-    """Runs gdalwarp to generate new raster in COG layout.
+    """Runs gdal_translate to generate new raster in COG layout.
 
     Args:
         in_raster (Path): Path to input raster dataset.
@@ -215,7 +230,7 @@ def convert_to_cog(
 
     # Build the base command
     command: List[str] = [
-        "gdalwarp",
+        "gdal_translate",
         str(in_raster),
         str(out_raster),
         "-of",
@@ -226,8 +241,8 @@ def convert_to_cog(
         f"NUM_THREADS={num_threads}",
         "-co",
         "BIGTIFF=YES",
-        "-wm",
-        "500",
+        "-co",
+        "STATISTICS=YES",
     ]
 
     # Add projection parameters if needed

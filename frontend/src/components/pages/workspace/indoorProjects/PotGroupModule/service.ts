@@ -14,7 +14,7 @@ export async function fetchPotGroupModuleVisualizationData({
   accordingTo,
   potBarcode,
 }: FetchPotGroupModuleParams): Promise<IndoorProjectDataVizAPIResponse> {
-  let endpoint = `/indoor_projects/${indoorProjectId}/uploaded/${indoorProjectDataId}/data_for_viz`;
+  const endpoint = `/indoor_projects/${indoorProjectId}/uploaded/${indoorProjectDataId}/data_for_viz`;
 
   try {
     const queryParams = {

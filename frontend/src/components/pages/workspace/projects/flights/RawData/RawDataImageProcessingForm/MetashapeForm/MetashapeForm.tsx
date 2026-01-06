@@ -2,6 +2,7 @@ import { useForm, FormProvider, SubmitHandler } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useState } from 'react';
 
+import Checkbox from '../../../../../../../Checkbox';
 import {
   CheckboxInput,
   NumberInput,
@@ -32,6 +33,7 @@ export default function MetashapeForm({
     watch,
   } = methods;
 
+  const watchDisclaimer = watch('disclaimer');
   const watchExportDEM = watch('exportDEM');
   const watchExportOrtho = watch('exportOrtho');
   const onSubmit: SubmitHandler<MetashapeSettings> = (data) => {
@@ -322,15 +324,13 @@ export default function MetashapeForm({
           <div className="mt-4 flex justify-between items-center">
             {/* Advanced Settings Toggle */}
             <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="advancedSettings"
+              <Checkbox
+                id="advancedSettings-checkbox"
                 checked={showAdvancedSettings}
                 onChange={(e) => setShowAdvancedSettings(e.target.checked)}
-                className="h-4 w-4 text-accent2 focus:ring-accent2 border-gray-300 rounded"
               />
               <label
-                htmlFor="advancedSettings"
+                htmlFor="advancedSettings-checkbox"
                 className="text-sm font-medium text-gray-700"
               >
                 Advanced Settings
@@ -340,21 +340,21 @@ export default function MetashapeForm({
             {/* Disclaimer and Submit Button */}
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="disclaimer"
+                <Checkbox
+                  id="disclaimer-checkbox"
                   {...methods.register('disclaimer')}
-                  className="h-4 w-4 text-accent2 focus:ring-accent2 border-gray-300 rounded"
+                  checked={watchDisclaimer}
+                  onChange={methods.register('disclaimer').onChange}
                 />
                 <label
-                  htmlFor="disclaimer"
+                  htmlFor="disclaimer-checkbox"
                   className="text-sm font-medium text-gray-700"
                 >
                   Check to proceed
                 </label>
               </div>
               <button
-                className="w-32 bg-accent2/90 text-white font-semibold py-1 rounded enabled:hover:bg-accent2 disabled:opacity-75 disabled:cursor-not-allowed"
+                className="w-32 bg-accent2/90 text-white font-semibold py-1 rounded-sm enabled:hover:bg-accent2 disabled:opacity-75 disabled:cursor-not-allowed"
                 type="submit"
               >
                 Submit Job

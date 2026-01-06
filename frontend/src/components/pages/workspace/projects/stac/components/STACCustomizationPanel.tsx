@@ -1,19 +1,23 @@
 import Alert, { Status } from '../../../../../Alert';
-import { Project } from '../../Project';
+import { ProjectDetail } from '../../Project';
+import ContactForm from '../ContactForm';
 import ScientificCitationForm from '../ScientificCitationForm';
 import STACItemTitlesForm from '../STACItemTitlesForm';
 import ActionButtons from '../ActionButtons';
 import { STACItem } from '../STACTypes';
 
 interface FormState {
+  contactName: string;
+  contactEmail: string;
   sciDoi: string;
   sciCitation: string;
   license: string;
   customTitles: Record<string, string>;
+  includeRawDataLinks: Set<string>;
 }
 
 interface STACCustomizationPanelProps {
-  project: Project;
+  project: ProjectDetail;
   formState: FormState;
   updateFormField: <K extends keyof FormState>(
     field: K,
@@ -45,6 +49,19 @@ export default function STACCustomizationPanel({
   return (
     <div className="lg:col-span-1">
       <h3 className="text-md font-bold mb-4">Customization</h3>
+
+      <ContactForm
+        name={formState.contactName}
+        setName={(value) => updateFormField('contactName', value)}
+        email={formState.contactEmail}
+        setEmail={(value) => updateFormField('contactEmail', value)}
+        projectOwnerName={
+          project.created_by
+            ? `${project.created_by.first_name} ${project.created_by.last_name}`
+            : undefined
+        }
+        projectOwnerEmail={project.created_by?.email}
+      />
 
       <ScientificCitationForm
         sciDoi={formState.sciDoi}

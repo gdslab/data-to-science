@@ -1,6 +1,6 @@
-import { LoaderFunctionArgs, useLoaderData, useParams } from 'react-router-dom';
+import { LoaderFunctionArgs, useLoaderData, useParams } from 'react-router';
 
-import { Project } from '../Project';
+import { ProjectDetail } from '../Project';
 import { STACItem, STACMetadata } from './STACTypes';
 
 // Custom hooks
@@ -22,30 +22,21 @@ import {
 import api from '../../../../../api';
 
 export async function loader({ params }: LoaderFunctionArgs) {
-  try {
-    // First get the project to check if it's published
-    const projectResponse = await api.get(`/projects/${params.projectId}`);
-    const project = projectResponse.data;
+  // First get the project to check if it's published
+  const projectResponse = await api.get(`/projects/${params.projectId}`);
+  const project = projectResponse.data;
 
-    // Try to get cached STAC metadata first
-    let stacMetadata = null;
-    try {
-      const cachedResponse = await api.get(
-        `/projects/${params.projectId}/stac-cache`
-      );
-      stacMetadata = cachedResponse.data;
-    } catch (cacheError) {
-      // If no cache exists, generate preview asynchronously
-      console.log('No cached STAC metadata found, will trigger generation');
-    }
+  // Try to get cached STAC metadata first
+  let stacMetadata = null;
+  const cachedResponse = await api.get(
+    `/projects/${params.projectId}/stac-cache`
+  );
+  stacMetadata = cachedResponse.data;
 
-    return {
-      stacMetadata,
-      project: project,
-    };
-  } catch (error) {
-    throw error;
-  }
+  return {
+    stacMetadata,
+    project: project,
+  };
 }
 
 export default function ProjectSTACPublishing() {
@@ -53,19 +44,25 @@ export default function ProjectSTACPublishing() {
   const { stacMetadata: initialStacMetadata, project: loaderProject } =
     useLoaderData() as {
       stacMetadata: STACMetadata | null;
-      project: Project;
+      project: ProjectDetail;
     };
   const { projectId } = useParams();
 
   // Custom hooks for state management
   const operations = useSTACOperations();
-  const formState = useSTACForm(initialStacMetadata);
+  const {
+    formState,
+    updateFormField,
+    buildRequestPayload,
+    toggleRawDataLink,
+    toggleAllRawDataLinks,
+  } = useSTACForm(initialStacMetadata);
 
   // STAC metadata management
   const { stacMetadata, allItems, generatePreview } = useSTACData({
     projectId: projectId!,
     initialStacMetadata,
-    buildRequestPayload: formState.buildRequestPayload,
+    buildRequestPayload,
     setCurrentOperation: operations.setCurrentOperation,
     setStatus: operations.setStatus,
     setPollingStatus: operations.setPollingStatus,
@@ -74,10 +71,18 @@ export default function ProjectSTACPublishing() {
   // Action handlers
   const actions = useSTACActions({
     projectId: projectId!,
-    buildRequestPayload: formState.buildRequestPayload,
+    buildRequestPayload,
     setCurrentOperation: operations.setCurrentOperation,
     setStatus: operations.setStatus,
   });
+
+  // Wrapper for toggle all that passes successful item IDs
+  const handleToggleAllRawDataLinks = () => {
+    const successfulItemIds = allItems
+      .filter((item) => item.isSuccessful)
+      .map((item) => item.id);
+    toggleAllRawDataLinks(successfulItemIds);
+  };
 
   return (
     <div className="p-4">
@@ -96,8 +101,8 @@ export default function ProjectSTACPublishing() {
         <div className="lg:grid lg:grid-cols-2 lg:gap-8">
           <STACCustomizationPanel
             project={loaderProject}
-            formState={formState.formState}
-            updateFormField={formState.updateFormField}
+            formState={formState}
+            updateFormField={updateFormField}
             stacItems={stacMetadata.items.filter(
               (item): item is STACItem => 'properties' in item
             )}
@@ -114,6 +119,9 @@ export default function ProjectSTACPublishing() {
             stacMetadata={stacMetadata}
             allItems={allItems}
             project={loaderProject}
+            includeRawDataLinks={formState.includeRawDataLinks}
+            onToggleRawDataLink={toggleRawDataLink}
+            onToggleAllRawDataLinks={handleToggleAllRawDataLinks}
           />
         </div>
       )}

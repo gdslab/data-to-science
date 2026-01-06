@@ -30,7 +30,7 @@ export default function ProjectBoundaryDownloadButton({
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
       }}
-      className="h-6 w-6 cursor-pointer"
+      className="h-6 w-6"
       title="Download Project Boundary"
     >
       <ArrowDownTrayIcon className="h-6 w-6" />

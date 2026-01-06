@@ -1,6 +1,6 @@
 services:
   frontend:
-    image: d2s-app:latest
+    image: gdslab/d2s-app:latest
     platform: linux/x86_64
     depends_on:
       - backend
@@ -24,7 +24,7 @@ services:
       - frontend.env
 
   backend:
-    image: d2s-api:latest
+    image: gdslab/d2s-api:latest
     platform: linux/x86_64
     volumes:
       # - external-data:/srv/external-data
@@ -113,7 +113,7 @@ services:
       - no-new-privileges=true
 
   celery_worker:
-    image: d2s-api:latest
+    image: gdslab/d2s-api:latest
     platform: linux/x86_64
     command: /app/celery/worker-start.sh
     volumes:
@@ -148,7 +148,7 @@ services:
       - db.env
 
   celery_beat:
-    image: d2s-api:latest
+    image: gdslab/d2s-api:latest
     platform: linux/x86_64
     command: /app/celery/beat-start.sh
     volumes:
@@ -182,7 +182,7 @@ services:
       - db.env
 
   proxy:
-    image: d2s-proxy:dev
+    image: gdslab/d2s-proxy:dev
     platform: linux/x86_64
     tmpfs:
       - /tmp
@@ -206,7 +206,7 @@ services:
       - no-new-privileges=true
 
   varnish:
-    image: d2s-varnish:latest
+    image: gdslab/d2s-varnish:latest
     tmpfs:
       - /var/lib/varnish/varnishd:exec
     command: "-p default_keep=300"

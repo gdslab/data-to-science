@@ -1,11 +1,11 @@
 import { AxiosResponse, isAxiosError } from 'axios';
 import { useEffect, useState } from 'react';
 import Select from 'react-select';
-import { useRevalidator } from 'react-router-dom';
+import { useRevalidator } from 'react-router';
 import { FolderIcon } from '@heroicons/react/24/outline';
 
 import { AlertBar, Status } from '../../../../Alert';
-import { Flight, Project } from '../Project';
+import { Flight, ProjectItem } from '../Project';
 import Modal from '../../../../Modal';
 import { Button } from '../../../../Buttons';
 
@@ -40,7 +40,7 @@ export default function MoveFlightModal({
 
   useEffect(() => {
     async function getProjects() {
-      const response: AxiosResponse<Project[]> = await api.get(`/projects`);
+      const response: AxiosResponse<ProjectItem[]> = await api.get(`/projects`);
       if (response) {
         const ownedProjects = response.data
           .filter(({ id, role }) => role === 'owner' && id !== srcProjectId)
@@ -52,7 +52,7 @@ export default function MoveFlightModal({
       }
     }
     if (open) getProjects();
-  }, [open]);
+  }, [open, srcProjectId]);
 
   async function moveProject() {
     try {
@@ -73,7 +73,7 @@ export default function MoveFlightModal({
       if (isAxiosError(err) && err.response && err.response.data.detail) {
         if (typeof err.response.data.detail === 'string') {
           setStatus({ type: 'error', msg: err.response.data.detail });
-        } else if (typeof (err.response.status === 422)) {
+        } else if (err.response.status === 422) {
           setStatus({ type: 'error', msg: err.response.data.detail[0].msg });
         } else {
           setStatus({
@@ -94,7 +94,7 @@ export default function MoveFlightModal({
           className="flex items-center text-sky-600 cursor-pointer"
           onClick={() => setOpen(true)}
         >
-          <div className="rounded-full accent3 p-1 focus:outline-none">
+          <div className="rounded-full accent3 p-1 focus:outline-hidden">
             <FolderIcon className="w-4 h-4" />
           </div>
           <span>Move</span>

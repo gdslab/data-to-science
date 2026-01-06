@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Project } from './pages/workspace/projects/ProjectList';
+import { ProjectItem } from './pages/workspace/projects/Project';
 
 import { sorter } from './utils';
 
@@ -33,8 +33,7 @@ function isValidSortOption(sortOption: string): boolean {
 export function getSortPreferenceFromLocalStorage(key: string): SortSelection {
   const sortOption = localStorage.getItem(key);
   if (sortOption && isValidSortOption(sortOption)) {
-    // @ts-ignore isValidSortOption checks type
-    return sortOption;
+    return sortOption as SortSelection;
   } else {
     return 'atoz'; // default sort option
   }
@@ -59,9 +58,9 @@ function setSortPreferenceInLocalStorage(
  * @returns Array of sorted projects.
  */
 export function sortProjects(
-  projects: Project[],
+  projects: ProjectItem[],
   sortSelection: SortSelection
-): Project[] {
+): ProjectItem[] {
   return projects.sort((a, b) => {
     // First sort by liked status (liked projects come first)
     if (a.liked !== b.liked) {
@@ -242,7 +241,7 @@ export default function Sort({
           </summary>
 
           <div className="z-50 group-open:absolute group-open:start-0 group-open:top-auto group-open:mt-2">
-            <div className="rounded border border-gray-200 bg-white">
+            <div className="rounded-sm border border-gray-200 bg-white">
               <ul className="space-y-1 border-t border-gray-200 p-4">
                 {categories.map(({ key, label, title }) => (
                   <li key={key}>

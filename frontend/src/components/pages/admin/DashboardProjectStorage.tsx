@@ -1,6 +1,6 @@
 import { AxiosResponse } from 'axios';
 import { Suspense } from 'react';
-import { Await, useLoaderData } from 'react-router-dom';
+import { Await, useLoaderData } from 'react-router';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 import DashboardProjectStorageTable from './DashboardProjectStorageTable';
@@ -29,12 +29,12 @@ function ErrorElement() {
 
 export default function DashboardProjectStorage() {
   const projectStatisticsApiResponse = useLoaderData() as {
-    response: Promise<ProjectStatistics[]>;
+    response: Promise<AxiosResponse<ProjectStatistics[]>>;
   };
 
   return (
     <section className="w-full bg-white">
-      <div className="h-full mx-auto max-w-screen-xl px-4 py-12 sm:px-6 md:py-16 lg:px-8">
+      <div className="h-full px-4 py-12 sm:px-6 md:py-16 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
             User Project Storage

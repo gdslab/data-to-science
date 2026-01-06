@@ -13,6 +13,14 @@ import { geomanOptions } from './styles/geomanOptions';
 import { GeoJSONFeature } from '../pages/workspace/projects/Project';
 import { fitMapToGeoJSON } from './utils';
 
+interface GeomanFeature {
+  getGeoJson: () => GeoJsonShapeFeature;
+}
+
+interface GeomanDrawEvent {
+  feature: GeomanFeature;
+}
+
 interface GeomanControlProps {
   editFeature?: GeoJSONFeature | null;
   onDrawStart?: () => void;
@@ -49,23 +57,20 @@ export default function GeomanControl({
   };
 
   // Memoize event handlers to prevent unnecessary re-renders
-  const handleDrawStart = useCallback(
-    (_event: any) => {
-      // Reset feature count when drawing starts (clean slate)
-      drawnFeaturesCount.current = 0;
+  const handleDrawStart = useCallback(() => {
+    // Reset feature count when drawing starts (clean slate)
+    drawnFeaturesCount.current = 0;
 
-      // Remove any existing polygons when drawing starts
-      clearAllGeomanFeatures(geomanRef.current);
+    // Remove any existing polygons when drawing starts
+    clearAllGeomanFeatures(geomanRef.current);
 
-      if (onDrawStart) {
-        onDrawStart();
-      }
-    },
-    [onDrawStart]
-  );
+    if (onDrawStart) {
+      onDrawStart();
+    }
+  }, [onDrawStart]);
 
   const handleDrawEnd = useCallback(
-    (event: any) => {
+    (event: GeomanDrawEvent) => {
       const feature: GeoJsonShapeFeature = event.feature.getGeoJson();
       drawnFeaturesCount.current += 1;
 
@@ -82,7 +87,7 @@ export default function GeomanControl({
   );
 
   const handleEdit = useCallback(
-    (event: any) => {
+    (event: GeomanDrawEvent) => {
       const feature: GeoJsonShapeFeature = event.feature.getGeoJson();
 
       if (onEdit) {
@@ -92,18 +97,15 @@ export default function GeomanControl({
     [onEdit]
   );
 
-  const handleRemove = useCallback(
-    (_event: any) => {
-      // Reset feature count when polygon is removed
-      drawnFeaturesCount.current = 0;
+  const handleRemove = useCallback(() => {
+    // Reset feature count when polygon is removed
+    drawnFeaturesCount.current = 0;
 
-      // Call the same handler as draw start to reset formik field
-      if (onDrawStart) {
-        onDrawStart();
-      }
-    },
-    [onDrawStart]
-  );
+    // Call the same handler as draw start to reset formik field
+    if (onDrawStart) {
+      onDrawStart();
+    }
+  }, [onDrawStart]);
 
   // Initialize Geoman only once
   useEffect(() => {
@@ -119,19 +121,6 @@ export default function GeomanControl({
         geomanRef.current = new Geoman(mapInstance, geomanOptions);
         initializedRef.current = true;
         setGeomanReady(true);
-
-        // Import existing feature if it exists
-        if (editFeature) {
-          mapInstance.on('gm:loaded', () => {
-            geomanRef.current?.features.importGeoJsonFeature(
-              editFeature as GeoJsonImportFeature
-            );
-            fitMapToGeoJSON(
-              mapInstance as unknown as maplibregl.Map,
-              editFeature as GeoJsonImportFeature
-            );
-          });
-        }
       } catch (error) {
         console.error('Error initializing Geoman:', error);
       }
@@ -162,7 +151,7 @@ export default function GeomanControl({
         }
       }
     };
-  }, [map]); // Only depend on map, not on callbacks
+  }, [map]); // Only depend on map - editFeature changes are handled by the import effect
 
   // Update event handlers when callbacks change
   useEffect(() => {
@@ -200,7 +189,7 @@ export default function GeomanControl({
 
   // Import editFeature when it changes
   useEffect(() => {
-    if (editFeature && geomanRef.current) {
+    if (editFeature && geomanReady && geomanRef.current) {
       try {
         // Clear any existing features
         clearAllGeomanFeatures(geomanRef.current);
@@ -222,7 +211,7 @@ export default function GeomanControl({
         console.warn('Error importing editFeature to Geoman:', error);
       }
     }
-  }, [editFeature, map]);
+  }, [editFeature, map, geomanReady]);
 
   // Reset feature count when disabled
   useEffect(() => {

@@ -27,7 +27,7 @@ def send_email_confirmation(
 
     content = f"<p>Hi {first_name},</p>"
     content += (
-        "<p>Thank you for creating an account at D2S. Please click the below button "
+        "<p>Thank you for creating an account with Data to Science. Please click the button below "
         "to confirm your email address.<br /><br />"
         f"<a href='{confirmation_url}' target='_blank'>{confirmation_btn}</a>"
         "<br /><br />"
@@ -35,11 +35,11 @@ def send_email_confirmation(
         "hour, you will need to request a new confirmation email.<br /><br />"
         "If you have any questions, please reach out to support at "
         f"{settings.MAIL_FROM}.</p>"
-        "<p>-D2S Support</p>"
+        "<p>-Data to Science Support</p>"
     )
 
     send_email(
-        subject="Confirm your email address",
+        subject="Welcome to Data to Science - please confirm your email",
         recipients=[email],
         body=content,
         background_tasks=background_tasks,
@@ -64,8 +64,8 @@ def send_password_recovery(
 
     content = f"<p>Hi {first_name},</p>"
     content += (
-        "<p>Someone requested a password reset for your D2S account. To reset your "
-        "password, please click the below button.<br /><br />"
+        "<p>Someone requested a password reset for your Data to Science account. To reset your "
+        "password, please click the button below.<br /><br />"
         f"<a href='{recover_url}' target='_blank'>{recover_btn}</a>"
         "<br /><br />"
         "After clicking the button, you will be taken to a page where you can reset "
@@ -74,11 +74,11 @@ def send_password_recovery(
         "ignore this email.<br /><br />"
         "If you have any questions, please reach out to support at "
         f"{settings.MAIL_FROM}.</p>"
-        "<p>-D2S Support</p>"
+        "<p>-Data to Science Support</p>"
     )
 
     send_email(
-        subject="D2S Password Reset",
+        subject="Reset your Data to Science password",
         recipients=[email],
         body=content,
         background_tasks=background_tasks,
@@ -89,6 +89,8 @@ def send_admins_new_registree_notification(
     background_tasks: BackgroundTasks,
     email: EmailStr,
     first_name: str,
+    last_name: str,
+    registration_intent: Optional[str],
     approve_token: str,
 ) -> None:
     admin_emails = settings.MAIL_ADMINS.split(",")
@@ -104,15 +106,24 @@ def send_admins_new_registree_notification(
     approve_btn += "Approve</button>"
 
     content = (
-        "<p>D2S Support Admins,</p>"
-        f"<p>A new account is awaiting approval. Please approve {first_name}'s "
+        "<p>Data to Science Support Admins,</p>"
+        f"<p>A new account is awaiting approval. Please approve {first_name} {last_name}'s "
         f"({email}) account within 24 hours of receiving this notification. "
-        "No action is necessary to deny the account.<br /><br />"
-        f"<a href='{approve_url}' target='_blank'>{approve_btn}</a><br /><br />"
-        "<p>-D2S Support</p>"
+        "No action is needed to deny the account.<br /><br />"
     )
 
-    subject = "D2S New Account"
+    if registration_intent:
+        content += (
+            f"<p><strong>Registration Intent:</strong></p>"
+            f"<blockquote>{registration_intent}</blockquote><br />"
+        )
+
+    content += (
+        f"<a href='{approve_url}' target='_blank'>{approve_btn}</a><br /><br />"
+        "<p>-Data to Science Support</p>"
+    )
+
+    subject = "New Data to Science account awaiting approval"
 
     api_domain = settings.API_DOMAIN
 
@@ -129,22 +140,21 @@ def send_admins_new_registree_notification(
 def send_account_approved(
     background_tasks: BackgroundTasks, first_name: str, email: EmailStr, confirmed: bool
 ) -> None:
-    content = f"<p>Hi {first_name},</p>" "<p>Your D2S account has been approved. "
+    content = (
+        f"<p>Hi {first_name},</p>" "<p>Your Data to Science account has been approved. "
+    )
     if confirmed:
-        content += "You may now log in and start using D2S. "
+        content += "You may now log in and start using Data to Science. "
     else:
-        content += (
-            "After confirming your email address, you will be able to log "
-            "in and start using D2S. "
-        )
+        content += 'To start using Data to Science, please click <strong>"Confirm Email"</strong> in the separate confirmation email sent to your inbox. '
     content += (
         "If you have any questions, please reach out to support at "
         f"{settings.MAIL_FROM}.</p><br /><br />"
-        "<p>-D2S Support</p>"
+        "<p>-Data to Science Support</p>"
     )
 
     send_email(
-        subject="D2S Account Approved",
+        subject="Your Data to Science account has been approved",
         recipients=[email],
         body=content,
         background_tasks=background_tasks,
@@ -159,11 +169,9 @@ def send_contact_email(
     sender: Optional[Dict[str, Any]] = None,
 ) -> None:
     if sender:
-        content = (
-            f"<p>Message sent from D2S user {sender['name']} ({sender['email']}):</p>"
-        )
+        content = f"<p>Message sent from Data to Science user {sender['name']} ({sender['email']}):</p>"
     else:
-        content = f"<p>Message from anonymous D2S user:</p>"
+        content = f"<p>Message from anonymous Data to Science user:</p>"
 
     api_domain = settings.API_DOMAIN
 
@@ -171,10 +179,10 @@ def send_contact_email(
     content += f"<p>Subject:</p><blockquote>{subject}</blockquote>"
     content += f"<p>Message:</p><blockquote>{message}</blockquote>"
 
-    content += "<br /><br /><p>-D2S Support</p>"
+    content += "<br /><br /><p>-Data to Science Support</p>"
 
     send_email(
-        subject=f"{topic}: D2S Contact Form Submission ({api_domain})",
+        subject=f"Data to Science Contact Form: {topic} ({api_domain})",
         recipients=[settings.MAIL_FROM],
         body=content,
         background_tasks=background_tasks,

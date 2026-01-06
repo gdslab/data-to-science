@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { User } from '../../../AuthContext';
 import { generateRandomProfileColor } from '../auth/Profile';
+import Checkbox from '../../Checkbox';
 import { TeamMember } from './TeamDetail';
 import { ProjectMember } from '../workspace/projects/ProjectAccess';
 
@@ -21,7 +22,7 @@ function SearchUsersBar({
 }) {
   const [searchValue, setSearchValue] = useState('');
 
-  function updateSearchValue(e) {
+  function updateSearchValue(e: React.ChangeEvent<HTMLInputElement>) {
     setSearchValue(e.target.value);
   }
 
@@ -50,7 +51,7 @@ function SearchUsersBar({
         type="text"
         id="Search"
         placeholder="Search for users by name"
-        className="w-full rounded-md border-gray-200 px-4 py-2.5 pe-10 shadow sm:text-sm"
+        className="w-full rounded-md border-gray-200 px-4 py-2.5 pe-10 shadow-sm sm:text-sm"
         value={searchValue}
         onChange={updateSearchValue}
         onKeyDown={(e) => {
@@ -107,107 +108,105 @@ function SearchUsersResults({
   if (searchResults && searchResults.length > 0) {
     return (
       <div className="grid grid-flow-row gap-4">
-        <span className="text-slate-600 font-bold">Search Results</span>
-        <div className="overflow-y-auto">
-          <div className="max-h-[25vh]">
-            <table className="min-w-full divide-y-2 divide-gray-200 bg-white text-sm">
-              <thead className="text-left sticky top-0 z-10 bg-white">
-                <tr>
-                  <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">
-                    Name
-                  </th>
-                  <th className="text-center">
-                    <span
-                      className="text-sky-600 cursor-pointer"
-                      onClick={() => {
-                        const updatedSearchResults = searchResults.map(
-                          (user) => {
-                            return {
-                              ...user,
-                              checked:
-                                currentMembers
-                                  .map((currentMember) => currentMember.email)
-                                  .indexOf(user.email) < 0,
-                            };
-                          }
-                        );
-                        setSearchResults(updatedSearchResults);
-                      }}
-                    >
-                      Select All
-                    </span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {searchResults
-                  .sort((a, b) => sorter(a.first_name, b.first_name))
-                  .map((user) => (
-                    <tr key={user.id} className="odd:bg-gray-50">
-                      <td className="flex items-center justify-start gap-4 whitespace-nowrap px-4 py-2 font-medium text-gray-900">
-                        {user.profile_url ? (
-                          <img
-                            key={user.profile_url
-                              .split('/')
-                              .slice(-1)[0]
-                              .slice(0, -4)}
-                            className="h-8 w-8 rounded-full"
-                            src={user.profile_url}
-                          />
-                        ) : (
-                          <div
-                            className="flex items-center justify-center h-8 w-8 gap-1 text-white text-sm rounded-full"
-                            style={generateRandomProfileColor(
-                              user.first_name + ' ' + user.last_name
-                            )}
-                          >
-                            <span className="indent-[0.1em] tracking-widest">
-                              {user.first_name[0] + user.last_name[0]}
-                            </span>
-                          </div>
-                        )}
-                        <span>{`${user.first_name} ${user.last_name}`}</span>
-                      </td>
-                      <td className="text-center">
-                        {currentMembers.filter(
-                          ({ email }) => email === user.email
-                        ).length > 0 ? (
-                          <span className="italic text-slate-700">
-                            Already member
+        <span className="text-slate-600 font-bold text-sm sm:text-base">
+          Search Results
+        </span>
+        <div className="max-h-[40vh] overflow-y-auto overflow-x-auto border border-gray-200 rounded-lg shadow-xs">
+          <table className="min-w-full divide-y-2 divide-gray-200 bg-white text-xs sm:text-sm">
+            <thead className="text-left sticky top-0 z-10 bg-white border-b-2 border-gray-200">
+              <tr>
+                <th className="whitespace-nowrap px-2 sm:px-4 py-2 font-medium text-gray-900">
+                  Name
+                </th>
+                <th className="text-center px-2 sm:px-4 py-2">
+                  <span
+                    className="text-sky-600 hover:text-sky-800 cursor-pointer text-xs sm:text-sm"
+                    onClick={() => {
+                      const updatedSearchResults = searchResults.map((user) => {
+                        return {
+                          ...user,
+                          checked:
+                            currentMembers
+                              .map((currentMember) => currentMember.email)
+                              .indexOf(user.email) < 0,
+                        };
+                      });
+                      setSearchResults(updatedSearchResults);
+                    }}
+                  >
+                    Select All
+                  </span>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {searchResults
+                .sort((a, b) => sorter(a.first_name, b.first_name))
+                .map((user) => (
+                  <tr key={user.id} className="odd:bg-gray-50">
+                    <td className="flex items-center justify-start gap-2 sm:gap-4 whitespace-nowrap px-2 sm:px-4 py-2 font-medium text-gray-900">
+                      {user.profile_url ? (
+                        <img
+                          key={user.profile_url
+                            .split('/')
+                            .slice(-1)[0]
+                            .slice(0, -4)}
+                          className="h-6 w-6 sm:h-8 sm:w-8 rounded-full shrink-0"
+                          src={user.profile_url}
+                        />
+                      ) : (
+                        <div
+                          className="flex items-center justify-center h-6 w-6 sm:h-8 sm:w-8 gap-1 text-white text-xs sm:text-sm rounded-full shrink-0"
+                          style={generateRandomProfileColor(
+                            user.first_name + ' ' + user.last_name
+                          )}
+                        >
+                          <span className="indent-[0.1em] tracking-widest">
+                            {user.first_name[0] + user.last_name[0]}
                           </span>
-                        ) : (
-                          <label
-                            htmlFor="AcceptConditions"
-                            className="relative h-8 w-14 cursor-pointer"
-                          >
-                            <input
-                              id={`${user.id}-search-checkbox`}
-                              type="checkbox"
-                              value={user.id}
-                              checked={user.checked}
-                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                              onChange={(e) => {
-                                const updatedSearchResults = searchResults.map(
-                                  (user) => {
-                                    if (user.id === e.target.value)
-                                      return {
-                                        ...user,
-                                        checked: !user.checked,
-                                      };
-                                    return user;
-                                  }
-                                );
-                                setSearchResults(updatedSearchResults);
-                              }}
-                            />
-                          </label>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
+                        </div>
+                      )}
+                      <span className="truncate">{`${user.first_name} ${user.last_name}`}</span>
+                    </td>
+                    <td className="text-center px-2 sm:px-4 py-2">
+                      {currentMembers.filter(
+                        ({ email }) => email === user.email
+                      ).length > 0 ? (
+                        <span className="italic text-slate-700 text-xs sm:text-sm">
+                          Already member
+                        </span>
+                      ) : (
+                        <label
+                          htmlFor={`${user.id}-search-checkbox`}
+                          className="relative h-8 w-14 cursor-pointer inline-flex items-center justify-center"
+                        >
+                          <Checkbox
+                            id={`${user.id}-search-checkbox`}
+                            checked={user.checked}
+                            value={user.id}
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>
+                            ) => {
+                              const updatedSearchResults = searchResults.map(
+                                (user) => {
+                                  if (user.id === e.target.value)
+                                    return {
+                                      ...user,
+                                      checked: !user.checked,
+                                    };
+                                  return user;
+                                }
+                              );
+                              setSearchResults(updatedSearchResults);
+                            }}
+                          />
+                        </label>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
         </div>
       </div>
     );

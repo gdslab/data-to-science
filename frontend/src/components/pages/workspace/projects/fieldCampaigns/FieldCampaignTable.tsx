@@ -1,7 +1,7 @@
 import { AxiosResponse } from 'axios';
 import clsx from 'clsx';
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import {
   ArrowDownTrayIcon,
   ChevronDownIcon,
@@ -9,6 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 import Alert, { Status } from '../../../../Alert';
+import Checkbox from '../../../../Checkbox';
 import { Measurement } from './FieldCampaign';
 import { useFieldCampaignContext } from './FieldCampaignContext';
 
@@ -41,10 +42,14 @@ function FieldTimepoints({
         >
           <div className="flex flex-row gap-1">
             <div className="flex items-center">
-              <input
+              <Checkbox
+                id={`treatment.${treatmentIdx}.measurement.${measurementIdx}.timepoint.${timepointIdx}-checkbox`}
                 name={`treatment.${treatmentIdx}.measurement.${measurementIdx}.timepoint.${timepointIdx}`}
-                type="checkbox"
-                className="w-4 h-4 size-4 rounded text-accent2 bg-gray-100 border-gray-300 rounded focus:ring-slate-500 focus:ring-2"
+                checked={selectedTimepoints.includes(
+                  treatmentIdx.toString() +
+                    measurementIdx.toString() +
+                    timepointIdx.toString()
+                )}
                 onChange={(e) => {
                   if (e.target.checked) {
                     addSelectedTimepoint(
@@ -60,13 +65,11 @@ function FieldTimepoints({
                     );
                   }
                 }}
-                checked={selectedTimepoints.includes(
-                  treatmentIdx.toString() +
-                    measurementIdx.toString() +
-                    timepointIdx.toString()
-                )}
               />
-              <label htmlFor="selectTimepoint" className="sr-only">
+              <label
+                htmlFor={`treatment.${treatmentIdx}.measurement.${measurementIdx}.timepoint.${timepointIdx}-checkbox`}
+                className="sr-only"
+              >
                 Select Timepoint
               </label>
             </div>
@@ -80,34 +83,32 @@ function FieldTimepoints({
               title="Download template"
               onClick={() => {
                 async function fetchCsvTemplate() {
-                  try {
-                    const data = {
-                      timepoints: [
-                        {
-                          treatment: treatmentIdx,
-                          measurement: measurementIdx,
-                          timepoint: timepointIdx,
-                        },
-                      ],
-                    };
-                    const response: AxiosResponse<Blob> = await api.post(
-                      `/projects/${projectId}/campaigns/${campaignId}/download`,
-                      data,
-                      { responseType: 'blob' }
+                  const data = {
+                    timepoints: [
+                      {
+                        treatment: treatmentIdx,
+                        measurement: measurementIdx,
+                        timepoint: timepointIdx,
+                      },
+                    ],
+                  };
+                  const response: AxiosResponse<Blob> = await api.post(
+                    `/projects/${projectId}/campaigns/${campaignId}/download`,
+                    data,
+                    { responseType: 'blob' }
+                  );
+                  if (response.status === 200) {
+                    // get blob from response data
+                    const blob = new Blob([response.data], {
+                      type: response.headers['content-type'],
+                    });
+                    // get filename from content-disposition header
+                    const filename = getFilenameFromContentDisposition(
+                      response.headers['content-disposition']
                     );
-                    if (response.status === 200) {
-                      // get blob from response data
-                      const blob = new Blob([response.data], {
-                        type: response.headers['content-type'],
-                      });
-                      // get filename from content-disposition header
-                      const filename = getFilenameFromContentDisposition(
-                        response.headers['content-disposition']
-                      );
-                      // download file
-                      downloadFile(blob, filename ? filename : 'template.csv');
-                    }
-                  } catch {}
+                    // download file
+                    downloadFile(blob, filename ? filename : 'template.csv');
+                  }
                 }
                 fetchCsvTemplate();
               }}
@@ -227,7 +228,7 @@ export default function FieldCampaignTable() {
 
   useEffect(() => {
     resetSelectedTimepoints();
-  }, [fieldCampaign]);
+  }, [fieldCampaign, resetSelectedTimepoints]);
 
   if (fieldCampaign) {
     return (
@@ -254,9 +255,9 @@ export default function FieldCampaignTable() {
         <div className="h-10 flex justify-between gap-4">
           <div className="flex gap-4">
             <button
-              className="bg-primary/90 hover:bg-primary text-white font-semibold py-1.5 px-4 rounded"
+              className="bg-primary/90 hover:bg-primary text-white font-semibold py-1.5 px-4 rounded-sm"
               onClick={() => {
-                let allTimepoints: string[] = [];
+                const allTimepoints: string[] = [];
                 for (
                   let treatmentIdx = 0;
                   treatmentIdx < fieldCampaign.form_data.treatments.length;
@@ -291,7 +292,7 @@ export default function FieldCampaignTable() {
 
             {selectedTimepoints.length > 0 ? (
               <button
-                className="bg-white hover:bg-white/90 text-primary border-2 border-primary font-semibold py-1.5 px-4 rounded"
+                className="bg-white hover:bg-white/90 text-primary border-2 border-primary font-semibold py-1.5 px-4 rounded-sm"
                 onClick={() => resetSelectedTimepoints()}
               >
                 Clear selection
@@ -300,7 +301,7 @@ export default function FieldCampaignTable() {
           </div>
           {selectedTimepoints.length > 0 ? (
             <button
-              className="w-52 bg-accent2/90 hover:bg-accent2 text-white font-semibold py-1.5 px-4 rounded"
+              className="w-52 bg-accent2/90 hover:bg-accent2 text-white font-semibold py-1.5 px-4 rounded-sm"
               onClick={() => {
                 async function fetchCsvTemplate() {
                   setIsDownloading(true);

@@ -1,5 +1,10 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
-import { Dialog, DialogPanel, Transition, TransitionChild } from '@headlessui/react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Dialog,
+  DialogPanel,
+  Transition,
+  TransitionChild,
+} from '@headlessui/react';
 
 import DataProductUpload from '../DataProducts/DataProductUpload';
 
@@ -7,14 +12,14 @@ interface Props {
   flightID: string;
   projectID: string;
   open: boolean;
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  handleModalClose: () => void;
 }
 
 export default function RawDataUploadModal({
   flightID,
   projectID,
   open,
-  setOpen,
+  handleModalClose,
 }: Props) {
   const cancelButtonRef = useRef(null);
   const [uploadHistory, setUploadHistory] = useState<string[]>([]);
@@ -28,6 +33,23 @@ export default function RawDataUploadModal({
     currentUploadHistory.push(newUpload);
     setUploadHistory(currentUploadHistory);
   }
+
+  // Memoize info object to prevent unnecessary re-creation on parent re-renders
+  const info = useMemo(
+    () => ({
+      dtype: 'raw',
+      endpoint: '/files',
+      flightID: flightID,
+      projectID: projectID,
+    }),
+    [flightID, projectID]
+  );
+
+  // Memoize fileType to prevent unnecessary re-creation
+  const fileType = useMemo(
+    () => ['application/zip', 'application/x-zip-compressed'],
+    []
+  );
 
   return (
     <Transition appear show={open} as={Fragment}>
@@ -63,13 +85,8 @@ export default function RawDataUploadModal({
               <DialogPanel className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
                 <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                   <DataProductUpload
-                    info={{
-                      dtype: 'raw',
-                      endpoint: '/files',
-                      flightID: flightID,
-                      projectID: projectID,
-                    }}
-                    fileType={['application/zip', 'application/x-zip-compressed']}
+                    info={info}
+                    fileType={fileType}
                     uploadType="rawData"
                     updateSetDisabled={() => {}}
                     updateUploadHistory={updateUploadHistory}
@@ -90,14 +107,15 @@ export default function RawDataUploadModal({
 
                 <div className="flex items-center justify-between bg-gray-50 px-4 py-3 sm:px-6">
                   <span>
-                    Click <strong>Done</strong> when you have finished uploading files.
+                    Click <strong>Done</strong> when you have finished uploading
+                    files.
                   </span>
                   <button
                     ref={cancelButtonRef}
                     type="button"
-                    className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                    className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
                     aria-label="Done button"
-                    onClick={() => setOpen(false)}
+                    onClick={() => handleModalClose()}
                   >
                     Done
                   </button>

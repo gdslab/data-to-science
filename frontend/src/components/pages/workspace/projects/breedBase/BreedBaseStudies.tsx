@@ -52,7 +52,7 @@ export default function BreedBaseStudies({
                   <td className="px-4 py-2">
                     <button
                       onClick={() => onAddStudyId(study.studyDbId)}
-                      className="bg-accent2/90 text-white font-semibold px-2 py-1 rounded enabled:hover:bg-accent2 disabled:opacity-75 disabled:cursor-not-allowed"
+                      className="bg-accent2/90 text-white font-semibold px-2 py-1 rounded-sm enabled:hover:bg-accent2 disabled:opacity-75 disabled:cursor-not-allowed"
                     >
                       Add
                     </button>

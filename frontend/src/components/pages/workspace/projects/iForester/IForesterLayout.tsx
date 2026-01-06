@@ -1,6 +1,6 @@
 import { AxiosResponse, isAxiosError } from 'axios';
 import { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 
 import IForesterMap from './IForesterMap';
 import { IForester } from '../Project';
@@ -38,7 +38,7 @@ export default function IForesterLayout() {
     if (params.projectId) {
       fetchIForesterData(params.projectId);
     }
-  }, []);
+  }, [iforesterDispatch, params.projectId]);
 
   return (
     <IForesterControlProvider>

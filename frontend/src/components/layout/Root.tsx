@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router';
 
 import Navbar from './Navbar';
 
@@ -19,7 +19,7 @@ export function RootProtected() {
         <Navbar />
       </div>
       {/* subtract navbar from div height */}
-      <div className="h-[calc(100%_-_64px)]">
+      <div className="h-[calc(100vh-64px)]">
         <Outlet />
       </div>
     </div>

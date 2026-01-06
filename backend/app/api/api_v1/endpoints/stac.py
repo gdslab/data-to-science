@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
-from app.utils.STACCollectionManager import STACCollectionManager
+from app.utils.stac.STACCollectionManager import STACCollectionManager
 from app.core.config import settings
 from app.tasks.stac_tasks import (
     generate_stac_preview,
@@ -120,11 +120,14 @@ def generate_stac_preview_async(
     task = generate_stac_preview.apply_async(
         args=[str(project_id)],
         kwargs={
+            "contact_name": metadata_request.contact_name,
+            "contact_email": metadata_request.contact_email,
             "sci_doi": metadata_request.sci_doi,
             "sci_citation": metadata_request.sci_citation,
             "license": metadata_request.license,
             "custom_titles": metadata_request.custom_titles,
             "cached_stac_metadata": cached_stac_metadata,
+            "include_raw_data_links": metadata_request.include_raw_data_links,
         },
     )
 
@@ -187,11 +190,14 @@ def publish_project_to_stac_catalog_async(
     task = publish_stac_catalog.apply_async(
         args=[str(project_id)],
         kwargs={
+            "contact_name": metadata_request.contact_name,
+            "contact_email": metadata_request.contact_email,
             "sci_doi": metadata_request.sci_doi,
             "sci_citation": metadata_request.sci_citation,
             "license": metadata_request.license,
             "custom_titles": metadata_request.custom_titles,
             "cached_stac_metadata": cached_stac_metadata,
+            "include_raw_data_links": metadata_request.include_raw_data_links,
         },
     )
 

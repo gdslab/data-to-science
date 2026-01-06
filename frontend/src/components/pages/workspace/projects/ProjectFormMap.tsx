@@ -1,5 +1,5 @@
 import { ErrorMessage, useFormikContext } from 'formik';
-import { FeatureCollection } from 'geojson';
+import { Feature, FeatureCollection } from 'geojson';
 import { useEffect, useState } from 'react';
 
 import { Button, OutlineButton } from '../../../Buttons';
@@ -17,6 +17,11 @@ interface Props {
   projectId?: string;
 }
 
+interface FormValues {
+  location: Feature | null;
+  [key: string]: unknown;
+}
+
 export default function ProjectFormMap({
   isUpdate = false,
   locationId = '',
@@ -29,7 +34,7 @@ export default function ProjectFormMap({
   const [maptilerApiKey, setMaptilerApiKey] = useState<string>('');
 
   const { setFieldTouched, setFieldValue, setStatus, values } =
-    useFormikContext();
+    useFormikContext<FormValues>();
 
   const { location, locationDispatch } = useProjectContext();
 
@@ -81,7 +86,7 @@ export default function ProjectFormMap({
   };
 
   // Handle draw end callback
-  const handleDrawEnd = (_feature: any) => {
+  const handleDrawEnd = () => {
     // Set success status when drawing is completed
     setStatus({
       type: 'success',
@@ -90,7 +95,7 @@ export default function ProjectFormMap({
   };
 
   // Handle edit callback
-  const handleEdit = (_feature: any) => {
+  const handleEdit = () => {
     // Set success status when editing is completed
     setStatus({
       type: 'success',
@@ -102,7 +107,7 @@ export default function ProjectFormMap({
     <div className="grid grid-rows-auto gap-4">
       <div className="h-96">
         <DrawFieldMap
-          editFeature={!!location ? location : null}
+          editFeature={location ?? null}
           featureCollection={featureCollection}
           setFeatureCollection={setFeatureCollection}
           mapboxAccessToken={mapboxAccessToken}
@@ -162,12 +167,15 @@ export default function ProjectFormMap({
               setStatus(null);
 
               // Get the current location from Formik form
-              const currentLocation = (values as any).location;
+              const currentLocation = values.location;
 
               if (currentLocation) {
                 try {
                   // Update the context with the current form location before submitting
-                  locationDispatch({ type: 'set', payload: currentLocation });
+                  locationDispatch({
+                    type: 'set',
+                    payload: currentLocation as unknown as GeoJSONFeature,
+                  });
 
                   const response = await api.put<GeoJSONFeature>(
                     `/locations/${projectId}/${locationId}`,
@@ -183,7 +191,7 @@ export default function ProjectFormMap({
                     setFeatureCollection(null);
                   }
                   setOpen(false);
-                } catch (err) {
+                } catch {
                   setStatus({
                     type: 'error',
                     msg: 'Unable to save location',

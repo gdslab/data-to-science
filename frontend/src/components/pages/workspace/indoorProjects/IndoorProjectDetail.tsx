@@ -1,5 +1,5 @@
 import { AxiosResponse } from 'axios';
-import { Params, useLoaderData } from 'react-router-dom';
+import { Params, useLoaderData } from 'react-router';
 import { useEffect, useState } from 'react';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
@@ -32,7 +32,7 @@ export async function loader({ params }: { params: Params<string> }) {
     } else {
       throw new Response('Indoor project not found', { status: 404 });
     }
-  } catch (err) {
+  } catch {
     throw new Response('Indoor project not found', { status: 404 });
   }
 }
@@ -68,18 +68,19 @@ export default function IndoorProjectDetail() {
   const indoorProjectDataId = indoorProjectData.find(
     ({ file_type }) => file_type === '.xlsx'
   )?.id;
-  if (!indoorProject)
-    return (
-      <div>
-        <span>No indoor project found</span>
-      </div>
-    );
 
   useEffect(() => {
     if (!hasUserToggledUploadPane) {
       setIsUploadPaneCollapsed(!!indoorProjectDataSpreadsheet);
     }
   }, [indoorProjectDataSpreadsheet, hasUserToggledUploadPane]);
+
+  if (!indoorProject)
+    return (
+      <div>
+        <span>No indoor project found</span>
+      </div>
+    );
 
   const potBarcodes = indoorProjectDataSpreadsheet?.summary?.pot_barcode || [];
 

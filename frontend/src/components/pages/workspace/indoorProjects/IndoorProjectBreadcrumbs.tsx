@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router';
 
 import { classNames } from '../../../utils';
 import { useIndoorProjectContext } from './IndoorProjectContext';

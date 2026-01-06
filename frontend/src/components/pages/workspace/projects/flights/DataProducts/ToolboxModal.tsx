@@ -1,6 +1,6 @@
 import { Form, Formik } from 'formik';
 import { useEffect, useState } from 'react';
-import { useParams, useRevalidator } from 'react-router-dom';
+import { useParams, useRevalidator } from 'react-router';
 import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 
 import Alert, { Status } from '../../../../../Alert';
@@ -163,7 +163,7 @@ export default function ToolboxModal({
                         revalidator.revalidate();
                       }, 3000);
                     }
-                  } catch (err) {
+                  } catch {
                     setStatus({
                       type: 'error',
                       msg: 'Unable to complete request',
@@ -201,7 +201,7 @@ export default function ToolboxModal({
                     getNumOfBands(dataProduct) === 1 && (
                       <>
                         <HillshadeTools />
-                        <ZonalStatisticTools dataProductId={dataProduct.id} />
+                        <ZonalStatisticTools dataProduct={dataProduct} />
                       </>
                     )}
                   {/* point cloud tools */}

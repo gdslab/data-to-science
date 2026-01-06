@@ -17,32 +17,29 @@ export default function MapLayout() {
   const [hidePane, toggleHidePane] = useState(false);
 
   return (
-    <MapApiKeysContextProvider>
-      <MapContextProvider>
-        <ProjectLoader />
-        <MapLayerProvider>
-          <RasterSymbologyProvider>
-            {/* sidebar */}
-            <div className="flex flex-row h-full">
-              <div
-                className={classNames(
-                  hidePane ? 'w-[48px]' : 'w-[450px]',
-                  'shrink-0 bg-slate-100'
-                )}
-              >
-                <LayerPane
-                  hidePane={hidePane}
-                  toggleHidePane={toggleHidePane}
-                />
-              </div>
-              {/* page content */}
-              <div className="w-full h-full">
-                <MapViewMode />
-              </div>
+    <MapContextProvider>
+      <ProjectLoader />
+      <MapLayerProvider>
+        <RasterSymbologyProvider>
+          {/* sidebar */}
+          <div className="flex flex-row h-full">
+            <div
+              className={classNames(
+                hidePane ? 'w-[48px]' : 'w-[450px]',
+                'shrink-0 bg-slate-100'
+              )}
+            >
+              <LayerPane hidePane={hidePane} toggleHidePane={toggleHidePane} />
             </div>
-          </RasterSymbologyProvider>
-        </MapLayerProvider>
-      </MapContextProvider>
-    </MapApiKeysContextProvider>
+            {/* page content */}
+            <div className="w-full h-full">
+              <MapApiKeysContextProvider>
+                <MapViewMode />
+              </MapApiKeysContextProvider>
+            </div>
+          </div>
+        </RasterSymbologyProvider>
+      </MapLayerProvider>
+    </MapContextProvider>
   );
 }

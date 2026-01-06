@@ -37,10 +37,13 @@ class STACPreview(BaseModel):
 class STACMetadataRequest(BaseModel):
     """Request body for STAC operations (preview generation and catalog publishing)."""
 
+    contact_name: Optional[str] = None
+    contact_email: Optional[str] = None
     sci_doi: Optional[str] = None
     sci_citation: Optional[str] = None
     license: Optional[str] = None
     custom_titles: Optional[Dict[str, str]] = None
+    include_raw_data_links: Optional[List[str]] = None
 
 
 STACResponse = Union[STACReport, STACPreview]

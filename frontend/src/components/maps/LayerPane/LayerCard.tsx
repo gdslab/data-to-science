@@ -9,12 +9,12 @@ export default function LayerCard({
   active?: boolean;
   children: React.ReactNode;
   hover?: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 }) {
   return (
     <div
       className={clsx(
-        'p-2 rounded-sm shadow-sm bg-white border-solid border-2',
+        'p-2 rounded-xs shadow-xs bg-white border-solid border-2',
         {
           'border-slate-400': active,
           'border-slate-200': !active,

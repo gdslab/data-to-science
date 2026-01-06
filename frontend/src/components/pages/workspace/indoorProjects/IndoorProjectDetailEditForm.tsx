@@ -1,8 +1,8 @@
 import { isAxiosError } from 'axios';
 import { useContext, useState } from 'react';
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
+import { useRevalidator } from 'react-router';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { useRevalidator } from 'react-router-dom';
 
 import AuthContext from '../../../../AuthContext';
 
@@ -36,15 +36,13 @@ export default function IndoorProjectDetailEditForm({
     defaultValues: {
       ...defaultValues,
       startDate: defaultValues.start_date
-        ? (new Date(defaultValues.start_date)
-            .toISOString()
-            .split('T')[0] as any)
+        ? new Date(defaultValues.start_date).toISOString().split('T')[0]
         : undefined,
       endDate: defaultValues.end_date
-        ? (new Date(defaultValues.end_date).toISOString().split('T')[0] as any)
+        ? new Date(defaultValues.end_date).toISOString().split('T')[0]
         : undefined,
-    } as IndoorProjectFormInput,
-    resolver: yupResolver(validationSchema) as any,
+    },
+    resolver: yupResolver(validationSchema),
     mode: 'onChange',
     reValidateMode: 'onChange',
   });

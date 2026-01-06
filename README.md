@@ -74,7 +74,13 @@ These aspects make D2S a powerful tool for researchers looking to manage, share,
 
 ### 🌍 Accessing the web application
 
-The Data To Science web application can be accessed from `http://localhost:8000`. It may take up to a minute for the backend to finish initializing.
+The Data To Science web application can be accessed from `http://localhost:8000`. It may take up to a minute for the backend to finish initializing. If you are running D2S on a virtual machine or remote server and accessing it via a LAN IP over HTTP, update `HTTP_COOKIE_SECURE` in your `backend.env` file to:
+
+```env
+HTTP_COOKIE_SECURE=0
+```
+
+This allows cookies to work correctly in non-localhost HTTP environments.
 
 ## ⚙️ Getting started with local code
 
@@ -144,6 +150,7 @@ The Data To Science web application can be accessed from `http://localhost:8000`
    - `ENABLE_OPENTELEMETRY`: Enable/disable OpenTelemetry. Must also uncomment the `otel-collector` container and toggle the `backend` and `titiler` OpenTelemetry related environment settings in the docker compose config. Disabled by default.
    - `EXTENSIONS`: Can be used to enable extensions. Should be left blank typically.
    - `EXTERNAL_STORAGE`: Internal mount point for external storage. Should be blank unless you have a binding mount for external storage.
+   - `EXTERNAL_VIEWER_URL`: Web application for displaying published STAC Items (optional).
    - `MAIL_ENABLED`: Enable SMTP email by changing value from 0 to 1.
    - `MAIL_SERVER`: SMTP server address.
    - `MAIL_USERNAME`: Username for SMTP server.
@@ -162,6 +169,7 @@ The Data To Science web application can be accessed from `http://localhost:8000`
    - `STAC_API_URL`: URL for a STAC API.
    - `STAC_API_TEST_URL`: URL for a STAC API that can be used for testing.
    - `STAC_BROWSER_URL`: URL for STAC Browser site connected to the STAC API.
+   - `TURNSTILE_SECRET_KEY`: Cloudflare Turnstile secret key for bot protection on registration (optional). Leave empty to disable.
    - `HTTP_COOKIE_SECURE`: Set to 1 to only send cookies over HTTPS, 0 to allow HTTP.
    - `LIMIT_MAX_REQUESTS`: Maximum number of requests a worker will handle before being restarted.
    - `UVICORN_WORKERS`: Number of uvicorn workers.
@@ -191,6 +199,7 @@ The Data To Science web application can be accessed from `http://localhost:8000`
 
    - `VITE_META_OG_IMAGE`: Preview image URL for social media shares.
    - `VITE_META_OG_URL`: Hostname for site.
+   - `VITE_TURNSTILE_SITE_KEY`: Cloudflare Turnstile site key for bot protection on registration (optional). Leave empty to disable.
 
 ### 🛠️ Build Docker images for services
 
@@ -252,6 +261,29 @@ After creating the new migration, use the following command to update to the tab
 ```
 docker compose exec backend alembic upgrade head
 ```
+
+## 🗺️ Generating Vector Format Files (GeoParquet & FlatGeobuf)
+
+Vector layers are automatically exported to GeoParquet and FlatGeobuf formats for efficient access from QGIS and other desktop GIS tools. For existing vector layers created before these features were added, use the backfill command to generate format files:
+
+```bash
+# Generate all formats (GeoParquet and FlatGeobuf) for all vector layers
+docker compose exec backend python app/utils/generate_vector_formats.py
+
+# Generate only GeoParquet for all layers
+docker compose exec backend python app/utils/generate_vector_formats.py --format parquet
+
+# Generate only FlatGeobuf for all layers
+docker compose exec backend python app/utils/generate_vector_formats.py --format flatgeobuf
+
+# Generate for a specific project
+docker compose exec backend python app/utils/generate_vector_formats.py --project-id <project-uuid>
+
+# Force regeneration of existing files
+docker compose exec backend python app/utils/generate_vector_formats.py --force
+```
+
+The command will display progress per format and provide a summary of generated, skipped, and failed files for each format.
 
 # Example Deployment
 

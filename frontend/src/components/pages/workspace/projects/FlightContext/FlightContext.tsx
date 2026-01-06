@@ -1,6 +1,6 @@
 import { AxiosResponse, isAxiosError } from 'axios';
 import { createContext, useContext, useEffect, useReducer } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 
 import { FlightAction } from './actions';
 import { flightReducer } from './reducers';
@@ -59,7 +59,7 @@ export function FlightContextProvider({ children }: FlightContextProvider) {
     } else {
       flightDispatch({ type: 'clear', payload: null });
     }
-  }, [params.flightId]);
+  }, [navigate, params.flightId, params.projectId]);
 
   return (
     <FlightContext.Provider

@@ -1,7 +1,7 @@
 """add indoor_projects table
 
 Revision ID: 3552eff5e070
-Revises: ed7ed7c6e456
+Revises: b59fcf1c51a7
 Create Date: 2024-10-04 15:01:52.107242
 
 """
@@ -12,7 +12,7 @@ from geoalchemy2 import Geometry
 
 # revision identifiers, used by Alembic.
 revision = "3552eff5e070"
-down_revision: str | None = "884e43c58053"
+down_revision: str | None = "b59fcf1c51a7"
 branch_labels: str | None = None
 depends_on: str | None = None
 

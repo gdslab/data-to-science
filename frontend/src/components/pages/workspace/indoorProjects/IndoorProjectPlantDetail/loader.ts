@@ -1,8 +1,10 @@
-import { Params, defer } from 'react-router-dom';
 import { AxiosResponse, isAxiosError } from 'axios';
+import { Params } from 'react-router';
+
 import api from '../../../../../api';
 import {
   IndoorProjectDataPlantAPIResponse,
+  IndoorProjectDataSpreadsheetAPIResponse,
   IndoorProjectDataVizAPIResponse,
   NumericColumns,
 } from '../IndoorProject';
@@ -44,7 +46,7 @@ export function loader({ params }: { params: Params<string> }) {
         AxiosResponse<IndoorProjectDataPlantAPIResponse>,
         AxiosResponse<IndoorProjectDataVizAPIResponse>,
         AxiosResponse<IndoorProjectDataVizAPIResponse>,
-        AxiosResponse<any>
+        AxiosResponse<IndoorProjectDataSpreadsheetAPIResponse>
       ] = await Promise.all([
         api.get(plantDetailEndpoint),
         api.get(plantChartEndpoint, { params: plantChartTopQueryParams }),
@@ -81,5 +83,5 @@ export function loader({ params }: { params: Params<string> }) {
     }
   }
 
-  return defer({ plantData: fetchPlantData() });
+  return { plantData: fetchPlantData() };
 }

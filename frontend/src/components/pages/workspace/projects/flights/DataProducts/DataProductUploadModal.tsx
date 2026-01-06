@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Dialog,
   DialogPanel,
@@ -13,14 +13,14 @@ interface Props {
   flightID: string;
   projectID: string;
   open: boolean;
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  handleModalClose: () => void;
 }
 
 export default function DataProductUploadModal({
   flightID,
   projectID,
   open,
-  setOpen,
+  handleModalClose,
 }: Props) {
   const cancelButtonRef = useRef(null);
   const [disabled, setDisabled] = useState(false);
@@ -64,6 +64,20 @@ export default function DataProductUploadModal({
   } else {
     throw new Error('unknown data type');
   }
+
+  // Memoize info object to prevent unnecessary re-creation on parent re-renders
+  const info = useMemo(
+    () => ({
+      dtype: dtype === 'other' ? dtypeOther : dtype,
+      endpoint: '/files',
+      flightID: flightID,
+      projectID: projectID,
+    }),
+    [dtype, dtypeOther, flightID, projectID]
+  );
+
+  // Memoize fileType to prevent unnecessary re-creation
+  const fileType = useMemo(() => getAllowedFileTypes(dtype), [dtype]);
 
   return (
     <Transition appear show={open} as={Fragment}>
@@ -114,13 +128,8 @@ export default function DataProductUploadModal({
                   dtypeOther.length <= 16) ? (
                   <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                     <DataProductUpload
-                      info={{
-                        dtype: dtype === 'other' ? dtypeOther : dtype,
-                        endpoint: '/files',
-                        flightID: flightID,
-                        projectID: projectID,
-                      }}
-                      fileType={getAllowedFileTypes(dtype)}
+                      info={info}
+                      fileType={fileType}
                       uploadType={uploadType}
                       updateSetDisabled={updateSetDisabled}
                       updateUploadHistory={updateUploadHistory}
@@ -155,9 +164,9 @@ export default function DataProductUploadModal({
                   <button
                     ref={cancelButtonRef}
                     type="button"
-                    className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                    className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
                     aria-label="Done button"
-                    onClick={() => setOpen(false)}
+                    onClick={() => handleModalClose()}
                   >
                     Done
                   </button>

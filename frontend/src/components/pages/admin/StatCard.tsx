@@ -8,17 +8,23 @@ const GB_FACTOR = 1_000_000_000;
 export default function StatCard({
   title,
   value,
+  subtitle,
 }: {
   title: string;
   value: number;
+  subtitle?: string;
 }) {
   return (
-    <div className="flex flex-col rounded-lg bg-blue-50 px-4 py-8 text-center">
+    <div className="flex flex-col rounded-lg bg-blue-50 px-4 py-8 text-center min-w-64">
       <dt className="order-last text-lg font-medium text-gray-500">{title}</dt>
 
       <dd className="text-4xl font-extrabold text-blue-600 md:text-5xl">
         {value}
       </dd>
+
+      {subtitle && (
+        <dd className="mt-1 text-sm text-gray-600">{subtitle}</dd>
+      )}
     </div>
   );
 }
@@ -53,7 +59,7 @@ export function StatStorageCard({
   };
 
   return (
-    <div className="flex flex-col rounded-lg bg-blue-50 px-4 py-8 text-center">
+    <div className="flex flex-col rounded-lg bg-blue-50 px-4 py-8 text-center min-w-64">
       <dt className="order-last text-lg font-medium text-gray-500">
         {title} ({storageUnitLabel})
       </dt>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import {
   ArrowRightIcon,
   ArrowUpOnSquareIcon,
@@ -9,8 +9,11 @@ import {
   TrashIcon,
 } from '@heroicons/react/24/outline';
 
-import { DataProduct } from './pages/workspace/projects/Project';
-import { Project } from './pages/workspace/projects/ProjectList';
+import {
+  DataProduct,
+  ProjectDetail,
+  ProjectItem,
+} from './pages/workspace/projects/Project';
 import { Status } from './Alert';
 
 import api from '../api';
@@ -130,7 +133,7 @@ export function LinkButton({
               icon === 'trash'
                 ? 'bg-red-600 hover:bg-red-700 border-red-700 hover:border-red-800'
                 : 'bg-accent3 hover:bg-accent3-dark border-accent3 hover:border-accent3-dark',
-              'cursor-pointer border-2 rounded-md w-full text-center text-white ease-in-out duration-300'
+              'border-2 rounded-md w-full text-center text-white ease-in-out duration-300'
             )
           )}
           type="button"
@@ -238,7 +241,7 @@ export function CopyURLButton({
 
 interface CopyShortenURLButton extends CopyURLButton {
   dataProduct: DataProduct;
-  project: Project;
+  project: ProjectDetail | ProjectItem;
   setStatus: React.Dispatch<React.SetStateAction<Status | null>>;
 }
 
@@ -273,7 +276,7 @@ export function CopyShortURLButton({
           msg: 'Failed to copy short URL',
         });
       }
-    } catch (error) {
+    } catch {
       setIsFetchingShortUrl(false);
       setButtonText(copyText);
       setStatus({
@@ -344,7 +347,7 @@ export function DownloadQRButton({
           msg: 'Failed to generate QR Code',
         });
       }
-    } catch (error) {
+    } catch {
       setIsFetchingShortUrl(false);
       setButtonText(title);
       setStatus({

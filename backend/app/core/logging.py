@@ -129,6 +129,7 @@ def get_http_info(request: Request, response: Response) -> Dict:
     return {
         "req": {
             "url": request.url.path,
+            "query_string": request.url.query,
             "query_params": dict(request.query_params),
             "headers": {
                 "host": request.headers.get("host"),
@@ -138,6 +139,10 @@ def get_http_info(request: Request, response: Response) -> Dict:
                 "content-length": request.headers.get("content-length"),
             },
             "method": request.method,
+            "client": {
+                "host": request.client.host if request.client else None,
+                "port": request.client.port if request.client else None,
+            },
         },
         "res": {
             "status_code": response.status_code,
@@ -153,10 +158,9 @@ def get_http_info(request: Request, response: Response) -> Dict:
 def setup_logger() -> None:
     os.makedirs(API_LOGDIR, exist_ok=True)
 
-    for logger in list(logging.root.manager.loggerDict.values()):
-        if isinstance(logger, logging.Logger):
-            logger.handlers.clear()
-            logger.propagate = True
+    # Reset only the root logger handlers so third-party loggers keep theirs
+    root_logger = logging.getLogger()
+    root_logger.handlers.clear()
 
     try:
         logger_config: Any = get_logger_config()

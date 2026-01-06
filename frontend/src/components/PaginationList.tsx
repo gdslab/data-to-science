@@ -1,9 +1,8 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useState } from 'react';
 
 import Pagination from './Pagination';
-import { IForester } from './pages/workspace/projects/Project';
 
-export default function PaginationList({
+export default function PaginationList<T extends Record<string, unknown>>({
   children,
   dataList,
   maxItems = 12,
@@ -12,11 +11,11 @@ export default function PaginationList({
   updatePageData,
 }: {
   children: ReactNode;
-  dataList: any[];
+  dataList: T[];
   maxItems?: number;
   searchKeywords?: string[];
   searchText?: string;
-  updatePageData: (pageData: IForester[]) => void;
+  updatePageData: (pageData: T[]) => void;
 }) {
   const [currentPage, setCurrentPage] = useState(0);
 
@@ -43,45 +42,53 @@ export default function PaginationList({
    * @param dataList Array of objects to filter.
    * @returns Filtered objects.
    */
-  function filterSearch<T extends Record<string, any>>(dataList: T[]): T[] {
-    if (!searchText) return dataList;
+  const filterSearch = useCallback(
+    (list: T[]): T[] => {
+      if (!searchText) return list;
 
-    return dataList.filter((data) => {
-      searchKeywords.some(
-        (keyword) =>
-          typeof data?.[keyword] === 'string' &&
-          data[keyword].toLowerCase().includes(searchText.toLowerCase())
-      );
-    });
-  }
+      return list.filter((data) => {
+        return searchKeywords.some(
+          (keyword) =>
+            typeof data?.[keyword] === 'string' &&
+            String(data[keyword])
+              .toLowerCase()
+              .includes(searchText.toLowerCase())
+        );
+      });
+    },
+    [searchText, searchKeywords]
+  );
 
   /**
    * Filters dataList by search text and limits to current page.
    * @param dataList Array of objects
    * @returns Filtered objects.
    */
-  function filterAndSlice<T extends Record<string, any>>(dataList: T[]): T[] {
-    return filterSearch(dataList).slice(
-      currentPage * maxItems,
-      maxItems + currentPage * maxItems
-    );
-  }
+  const filterAndSlice = useCallback(
+    (list: T[]): T[] => {
+      return filterSearch(list).slice(
+        currentPage * maxItems,
+        maxItems + currentPage * maxItems
+      );
+    },
+    [filterSearch, currentPage, maxItems]
+  );
 
   useEffect(() => {
     if (filterAndSlice(dataList).length < maxItems) {
       setCurrentPage(0);
     }
-  }, [searchText]);
+  }, [dataList, filterAndSlice, maxItems, searchText]);
 
   useEffect(() => {
     updatePageData(filterAndSlice(dataList));
-  }, [currentPage, dataList, TOTAL_PAGES]);
+  }, [currentPage, dataList, filterAndSlice, TOTAL_PAGES, updatePageData]);
 
   return (
     <div className="h-full w-full flex flex-col gap-4">
-      <div className="flex-grow overflow-y-auto">{children}</div>
+      <div className="grow overflow-y-auto">{children}</div>
       {/* Pagination */}
-      <div className="flex-shrink-0 h-8 w-full bg-slate-200 px-6">
+      <div className="shrink-0 h-8 w-full bg-slate-200 px-6">
         <div className="flex justify-center">
           <Pagination
             currentPage={currentPage}

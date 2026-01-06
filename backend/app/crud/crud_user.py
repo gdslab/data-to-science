@@ -1,5 +1,6 @@
 import glob
 import os
+from datetime import datetime, timezone
 from typing import Any, Optional, Sequence
 from uuid import UUID
 
@@ -62,6 +63,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             hashed_password=get_password_hash(obj_in.password),
             first_name=obj_in.first_name,
             last_name=obj_in.last_name,
+            registration_intent=obj_in.registration_intent,
         )
         with db as session:
             session.add(user)
@@ -94,16 +96,18 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             session.commit()
             return db_obj
 
-    def get_multi_by_query(self, db: Session, q: str | None = "") -> Sequence[User]:
+    def get_multi_by_query(
+        self, db: Session, q: str | None = "", include_all: bool = False
+    ) -> Sequence[User]:
         if not q:
             q = ""
-        statement = select(User).where(
-            and_(
-                User.is_approved,
-                User.is_email_confirmed,
-                func.lower(User.full_name).contains(func.lower(q)),
-            )
-        )
+        # Build filters conditionally based on include_all parameter
+        filters = [func.lower(User.full_name).contains(func.lower(q))]
+        if not include_all:
+            # Only include approved and confirmed users for non-admin queries
+            filters.extend([User.is_approved, User.is_email_confirmed])
+
+        statement = select(User).where(and_(*filters))
         with db as session:
             users = session.scalars(statement).all()
             for user in users:
@@ -144,6 +148,43 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
 
     def is_superuser(self, user: User) -> bool:
         return user.is_superuser
+
+    def update_last_login(self, db: Session, *, user: User) -> User:
+        """Update last_login_at and last_activity_at timestamps for password-based login."""
+        now = datetime.now(timezone.utc)
+        user.last_login_at = now
+        user.last_activity_at = now
+        with db as session:
+            session.add(user)
+            session.commit()
+            session.refresh(user)
+        return user
+
+    def update_last_activity(
+        self, db: Session, *, user: User, throttle_minutes: int = 15
+    ) -> Optional[User]:
+        """
+        Update last_activity_at timestamp if it's older than throttle_minutes.
+        Returns updated user if timestamp was updated, None otherwise.
+        """
+        now = datetime.now(timezone.utc)
+
+        # Only update if last_activity_at is None or older than throttle
+        if user.last_activity_at is None:
+            should_update = True
+        else:
+            time_since_last_activity = now - user.last_activity_at
+            should_update = time_since_last_activity.total_seconds() > (throttle_minutes * 60)
+
+        if should_update:
+            user.last_activity_at = now
+            with db as session:
+                session.add(user)
+                session.commit()
+                session.refresh(user)
+            return user
+
+        return None
 
 
 def find_profile_img(user_id: str) -> Optional[str]:

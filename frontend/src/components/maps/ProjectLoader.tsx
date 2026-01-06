@@ -2,32 +2,27 @@ import { AxiosResponse, isAxiosError } from 'axios';
 import { useEffect } from 'react';
 
 import { useMapContext } from './MapContext';
-import { Project } from '../pages/workspace/projects/ProjectList';
+import { ProjectItem } from '../pages/workspace/projects/Project';
 
 import api from '../../api';
-import {
-  areProjectsEqual,
-  getLocalStorageProjects,
-  filterValidProjects,
-} from './utils';
+import { getLocalStorageProjects, filterValidProjects } from './utils';
 
 export default function ProjectLoader() {
-  const { projectsDispatch, projectsLoadedDispatch, projects } =
-    useMapContext();
+  const { projectsDispatch, projectsLoadedDispatch } = useMapContext();
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
         const geojsonUrl = `/projects?include_all=${false}`;
-        const response: AxiosResponse<Project[]> = await api.get(geojsonUrl);
+        const response: AxiosResponse<ProjectItem[]> = await api.get(
+          geojsonUrl
+        );
 
         // Filter out projects with invalid geographic coordinates
         const validProjects = filterValidProjects(response.data);
 
-        // Only update projects if they are new or differ from the current state
-        if (!projects || !areProjectsEqual(projects, validProjects)) {
-          projectsDispatch({ type: 'set', payload: validProjects });
-        }
+        // Reducer will check if projects differ before updating state
+        projectsDispatch({ type: 'set', payload: validProjects });
         projectsLoadedDispatch({ type: 'set', payload: 'loaded' });
       } catch (error) {
         // Clear any previously set data and update loading state
@@ -58,7 +53,7 @@ export default function ProjectLoader() {
     }
     // Always fetch latest projects from the backend
     fetchProjects();
-  }, []); // Consider dependencies if projects can change elsewhere
+  }, [projectsDispatch, projectsLoadedDispatch]); // Consider dependencies if projects can change elsewhere
 
   return null;
 }

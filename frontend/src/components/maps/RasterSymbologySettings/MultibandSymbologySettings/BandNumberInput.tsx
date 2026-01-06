@@ -63,8 +63,9 @@ export default function BandNumberInput({
     >
       {label}
       <input
-        className="py-1 px-4 block text-xs focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none border border-gray-400 rounded w-full appearance-none disabled:bg-gray-200 disabled:cursor-not-allowed"
+        className="py-1 px-4 block text-xs focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-hidden border border-gray-400 rounded-sm w-full appearance-none disabled:bg-gray-200 disabled:cursor-not-allowed"
         type="number"
+        id={`${bandColor}${label}`}
         name={`${bandColor}${label}`}
         min={min}
         max={max}

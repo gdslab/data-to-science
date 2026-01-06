@@ -54,6 +54,10 @@ def login_access_token(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Account requires approval"
         )
+
+    # Update login and activity timestamps
+    crud.user.update_last_login(db, user=user)
+
     access_token = security.create_access_token(user.id)
     refresh_token = security.create_refresh_token(db, user.id)
 

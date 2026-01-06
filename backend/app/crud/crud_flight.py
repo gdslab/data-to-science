@@ -11,12 +11,13 @@ from sqlalchemy.orm import joinedload, Session
 from app import crud
 from app.crud.base import CRUDBase
 from app.crud.crud_data_product import (
-    set_bbox_attr,
+    set_spatial_metadata_attrs,
     set_public_attr,
     set_signature_attr,
     set_url_attr,
     set_user_style_attr,
 )
+from app.models.constants import NON_RASTER_TYPES, PROCESSING_JOB_NAMES
 from app.models.data_product import DataProduct
 from app.models.flight import Flight
 from app.models.job import Job
@@ -113,6 +114,40 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
         )
         with db as session:
             flights_with_data = session.execute(statement).scalars().unique().all()
+
+            # Batch load all relevant jobs for all data products to avoid N+1 queries
+            all_data_product_ids = [
+                dp.id
+                for flight in flights_with_data
+                for dp in flight.data_products
+            ]
+
+            jobs_by_data_product_id = {}
+            if not include_all and all_data_product_ids:
+                jobs_query = select(Job).where(
+                    and_(
+                        Job.data_product_id.in_(all_data_product_ids),
+                        Job.name.in_(PROCESSING_JOB_NAMES),
+                        Job.state == State.COMPLETED,
+                        Job.status == Status.SUCCESS,
+                    )
+                )
+                jobs = session.execute(jobs_query).scalars().all()
+                for job in jobs:
+                    jobs_by_data_product_id[job.data_product_id] = job
+
+            # Batch load all user styles to avoid N+1 queries
+            user_styles_by_data_product_id = {}
+            if all_data_product_ids:
+                user_styles_query = (
+                    select(UserStyle)
+                    .where(UserStyle.data_product_id.in_(all_data_product_ids))
+                    .where(UserStyle.user_id == user_id)
+                )
+                user_styles = session.execute(user_styles_query).scalars().all()
+                for user_style in user_styles:
+                    user_styles_by_data_product_id[user_style.data_product_id] = user_style
+
             # flights returned by crud
             final_flights = []
             for flight in flights_with_data:
@@ -121,28 +156,7 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                 if not include_all:
                     keep_data_products: List[DataProduct] = []
                     for data_product in flight.data_products:
-                        job_query = select(Job).where(
-                            and_(
-                                Job.data_product_id == data_product.id,
-                                or_(
-                                    Job.name == "upload-data-product",
-                                    Job.name == "exg",
-                                    Job.name == "exg-process",
-                                    Job.name == "ndvi",
-                                    Job.name == "ndvi-process",
-                                    Job.name == "vari",
-                                    Job.name == "chm",
-                                    Job.name == "hillshade",
-                                    Job.name == "dtm",
-                                ),
-                            )
-                        )
-                        job = session.execute(job_query).scalar_one_or_none()
-                        if (
-                            job
-                            and job.state == State.COMPLETED
-                            and job.status == Status.SUCCESS
-                        ):
+                        if data_product.id in jobs_by_data_product_id:
                             keep_data_products.append(data_product)
                     flight.data_products = keep_data_products
 
@@ -151,37 +165,26 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                 for data_product in flight.data_products:
                     if data_product.filepath != "null":
                         if (
-                            data_product.data_type == "panoramic"
-                            or data_product.data_type == "point_cloud"
-                            or data_product.data_type == "3dgs"
-                            or data_product.data_type != "point_cloud"
-                            and data_product.stac_properties
+                            data_product.data_type in NON_RASTER_TYPES
+                            or (
+                                data_product.data_type not in NON_RASTER_TYPES
+                                and data_product.stac_properties
+                            )
                         ):
                             # do not include geotiffs without stac props
                             available_data_products.append(data_product)
-                            set_bbox_attr(data_product)
+                            set_spatial_metadata_attrs(data_product)
                             set_public_attr(
                                 data_product, data_product.file_permission.is_public
                             )
                             set_signature_attr(data_product)
                             set_url_attr(data_product, upload_dir)
                             # check for saved user style
-                            user_style_query = (
-                                select(UserStyle)
-                                .where(UserStyle.data_product_id == data_product.id)
-                                .where(UserStyle.user_id == user_id)
-                            )
-                            user_style = session.execute(
-                                user_style_query
-                            ).scalar_one_or_none()
+                            user_style = user_styles_by_data_product_id.get(data_product.id)
                             if user_style:
                                 set_user_style_attr(data_product, user_style.settings)
-                            if (
-                                has_raster
-                                and data_product.data_type != "point_cloud"
-                                and data_product.data_type != "panoramic"
-                                and data_product.data_type != "3dgs"
-                            ):
+                            # Track if this flight has raster data when filtering by raster
+                            if has_raster and data_product.data_type not in NON_RASTER_TYPES:
                                 has_required_data_type = True
                 flight.data_products = available_data_products
 
