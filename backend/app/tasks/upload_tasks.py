@@ -5,15 +5,18 @@ import os
 import shutil
 import subprocess
 import tarfile
+from datetime import datetime
 from pathlib import Path
 from uuid import UUID
 
 import geopandas as gpd
+import pandas as pd
 from celery.utils.log import get_task_logger
 from fastapi.encoders import jsonable_encoder
 
 from app import crud, schemas
 from app.api.deps import get_db
+from app.utils.date_utils import parse_date
 from app.api.utils import (
     is_geometry_match,
     save_vector_layer_parquet,
@@ -346,6 +349,110 @@ def upload_geotiff(
     return None
 
 
+def extract_dates_from_indoor_spreadsheet(
+    file_path: str, indoor_project_data_id: UUID
+) -> tuple[datetime | None, datetime | None]:
+    """Extract planting date and scan date range from indoor project spreadsheet.
+
+    Args:
+        file_path (str): Path to the Excel spreadsheet
+        indoor_project_data_id (UUID): ID for logging purposes
+
+    Returns:
+        tuple[datetime | None, datetime | None]: (start_date, end_date) where:
+            - start_date is PLANTING_DATE from PPEW, or min SCAN_DATE from Top
+            - end_date is max SCAN_DATE from Top
+            Either can be None if extraction fails
+    """
+    try:
+        # Read PPEW worksheet
+        ppew_df = None
+        try:
+            ppew_df = pd.read_excel(
+                file_path,
+                sheet_name="PPEW",
+                dtype={"VARIETY": str, "PI": str}
+            )
+        except ValueError:
+            logger.warning(f"PPEW worksheet not found in {indoor_project_data_id}")
+
+        # Read Top worksheet
+        top_df = None
+        try:
+            top_df = pd.read_excel(
+                file_path,
+                sheet_name="Top",
+                dtype={"VARIETY": str}
+            )
+        except ValueError:
+            logger.warning(f"Top worksheet not found in {indoor_project_data_id}")
+
+        # Initialize return values
+        start_date = None
+        end_date = None
+
+        # Extract planting_date from PPEW worksheet
+        if ppew_df is not None and not ppew_df.empty:
+            # Normalize column names (lowercase, replace spaces with underscores)
+            ppew_df.columns = ppew_df.columns.str.lower()
+            ppew_df.columns = ppew_df.columns.str.replace(" ", "_")
+
+            if 'planting_date' in ppew_df.columns:
+                try:
+                    planting_date_series = ppew_df['planting_date'].dropna()
+                    if not planting_date_series.empty:
+                        planting_date_value = planting_date_series.iloc[0]
+                        start_date = parse_date(planting_date_value)
+                        logger.info(f"Extracted planting_date: {start_date}")
+                except Exception as e:
+                    logger.warning(f"Failed to parse planting_date: {e}")
+
+        # Extract min/max scan_date from Top worksheet
+        if top_df is not None and not top_df.empty:
+            # Normalize column names
+            top_df.columns = top_df.columns.str.lower()
+            top_df.columns = top_df.columns.str.replace(" ", "_")
+
+            if 'scan_date' in top_df.columns:
+                try:
+                    # Drop NaN values before parsing to avoid errors
+                    scan_dates = top_df['scan_date'].dropna()
+
+                    # Ensure scan_date is datetime type
+                    if not scan_dates.empty and not pd.api.types.is_datetime64_any_dtype(scan_dates):
+                        scan_dates = scan_dates.apply(parse_date)
+                    if not scan_dates.empty:
+                        min_scan_date = scan_dates.min()
+                        max_scan_date = scan_dates.max()
+
+                        # Use min_scan_date as fallback for start_date if planting_date not found
+                        if start_date is None:
+                            start_date = (
+                                min_scan_date.to_pydatetime()
+                                if hasattr(min_scan_date, 'to_pydatetime')
+                                else min_scan_date
+                            )
+                            logger.info(f"Using min scan_date as start_date: {start_date}")
+
+                        # Use max_scan_date as end_date
+                        end_date = (
+                            max_scan_date.to_pydatetime()
+                            if hasattr(max_scan_date, 'to_pydatetime')
+                            else max_scan_date
+                        )
+                        logger.info(f"Extracted max scan_date as end_date: {end_date}")
+                except Exception as e:
+                    logger.warning(f"Failed to parse scan_date: {e}")
+
+        return start_date, end_date
+
+    except Exception as e:
+        logger.exception(
+            f"Unexpected error extracting dates from {indoor_project_data_id}: {e}"
+        )
+        return None, None
+
+
 @celery_app.task(name="upload_indoor_project_data_task")
 def upload_indoor_project_data(
     indoor_project_data_id: UUID,
@@ -430,6 +537,73 @@ def upload_indoor_project_data(
         tar_processor.remove()
 
         logger.info("Extracting indoor project data tar archive contents...Done!")
+    else:
+        # For non-tar files, try to extract dates if it's an xlsx file
+        if destination_filepath.lower().endswith('.xlsx'):
+            logger.info(f"Attempting to extract dates from spreadsheet: {indoor_project_data_id}")
+
+            try:
+                # Extract dates from spreadsheet
+                extracted_start, extracted_end = extract_dates_from_indoor_spreadsheet(
+                    destination_filepath, indoor_project_data_id
+                )
+
+                # Fetch the parent indoor_project (must explicitly get it)
+                indoor_project = crud.indoor_project.get(
+                    db, id=indoor_project_data.indoor_project_id
+                )
+
+                if not indoor_project:
+                    logger.warning(
+                        f"Could not find indoor project {indoor_project_data.indoor_project_id} "
+                        f"to update dates"
+                    )
+                else:
+                    # Build update dict with only dates that aren't already set
+                    update_data: dict[str, datetime] = {}
+
+                    # Only update start_date if not already set
+                    if indoor_project.start_date is None and extracted_start is not None:
+                        # Validate that extracted start_date doesn't come after existing end_date
+                        if indoor_project.end_date is not None and extracted_start > indoor_project.end_date:
+                            logger.warning(
+                                f"Extracted start_date {extracted_start} comes after existing end_date "
+                                f"{indoor_project.end_date}, not setting start_date"
+                            )
+                        else:
+                            update_data['start_date'] = extracted_start
+                            logger.info(f"Setting start_date to {extracted_start}")
+
+                    # Only update end_date if not already set
+                    if indoor_project.end_date is None and extracted_end is not None:
+                        # Validate that extracted end_date doesn't come before existing start_date
+                        if indoor_project.start_date is not None and extracted_end < indoor_project.start_date:
+                            logger.warning(
+                                f"Extracted end_date {extracted_end} comes before existing start_date "
+                                f"{indoor_project.start_date}, not setting end_date"
+                            )
+                        else:
+                            update_data['end_date'] = extracted_end
+                            logger.info(f"Setting end_date to {extracted_end}")
+
+                    # Update if we have any dates to set
+                    if update_data:
+                        crud.indoor_project.update(
+                            db,
+                            db_obj=indoor_project,
+                            obj_in=schemas.indoor_project.IndoorProjectUpdate(**update_data)
+                        )
+                        logger.info(
+                            f"Successfully updated indoor project dates: {update_data}"
+                        )
+                    else:
+                        logger.info("No date updates needed - dates already set or not extracted")
+
+            except Exception as e:
+                logger.exception(
+                    f"Failed to extract/update dates for {indoor_project_data_id}, "
+                    f"continuing with upload: {e}"
+                )
 
     # update indoor project data to indicate initial processing is complete
     crud.indoor_project_data.update(

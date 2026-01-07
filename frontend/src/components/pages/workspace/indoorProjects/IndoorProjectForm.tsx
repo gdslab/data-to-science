@@ -22,8 +22,6 @@ export type IndoorProjectFormInput = {
 const defaultValues = {
   title: '',
   description: '',
-  startDate: undefined,
-  endDate: undefined,
 };
 
 export const validationSchema = Yup.object({
@@ -33,32 +31,6 @@ export const validationSchema = Yup.object({
   description: Yup.string()
     .max(300, 'Must be less than 300 characters')
     .required('Description is required'),
-  startDate: Yup.mixed<Date | string>()
-    .transform((value, originalValue) =>
-      originalValue === '' ? undefined : value
-    )
-    .test('date-max', 'Start date must be before end date', function (value) {
-      const { endDate } = this.parent;
-      if (!value || !endDate) return true;
-      const startDateObj = typeof value === 'string' ? new Date(value) : value;
-      const endDateObj =
-        typeof endDate === 'string' ? new Date(endDate) : endDate;
-      return startDateObj <= endDateObj;
-    })
-    .optional(),
-  endDate: Yup.mixed<Date | string>()
-    .transform((value, originalValue) =>
-      originalValue === '' ? undefined : value
-    )
-    .test('date-min', 'End date must be after start date', function (value) {
-      const { startDate } = this.parent;
-      if (!value || !startDate) return true;
-      const endDateObj = typeof value === 'string' ? new Date(value) : value;
-      const startDateObj =
-        typeof startDate === 'string' ? new Date(startDate) : startDate;
-      return endDateObj >= startDateObj;
-    })
-    .optional(),
 });
 
 export default function IndoorProjectForm({
@@ -81,17 +53,14 @@ export default function IndoorProjectForm({
     formState: { isSubmitting },
     reset,
     handleSubmit,
-    trigger,
   } = methods;
 
   const onSubmit: SubmitHandler<IndoorProjectFormInput> = async (values) => {
     try {
-      const { title, description, startDate, endDate } = values;
+      const { title, description } = values;
       const payload = {
         title,
         description,
-        start_date: startDate,
-        end_date: endDate,
       };
 
       const response: AxiosResponse<IndoorProjectAPIResponse> = await api.post(
@@ -132,18 +101,6 @@ export default function IndoorProjectForm({
           >
             <InputField label="Title" name="title" />
             <InputField label="Description" name="description" />
-            <InputField
-              type="date"
-              label="Start date"
-              name="startDate"
-              onChange={() => setTimeout(() => trigger('endDate'), 0)}
-            />
-            <InputField
-              type="date"
-              label="End date"
-              name="endDate"
-              onChange={() => setTimeout(() => trigger('startDate'), 0)}
-            />
             <div className="mt-4 flex flex-col gap-2">
               <Button type="submit" disabled={isSubmitting}>
                 {!isSubmitting ? 'Create' : 'Creating...'}

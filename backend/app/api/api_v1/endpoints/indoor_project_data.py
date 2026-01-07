@@ -3,7 +3,6 @@ import os
 from datetime import datetime, timedelta, date
 from typing import Any, Dict, List, Optional, Union, Sequence, Tuple
 
-import numpy as np
 import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import UUID4, ValidationError
@@ -11,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
-from app.api.api_v1.endpoints.data_products import get_static_dir
+from app.api.utils import get_static_dir
 
 logger = logging.getLogger("__name__")
 

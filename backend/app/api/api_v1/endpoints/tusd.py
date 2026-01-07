@@ -2,6 +2,7 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -86,7 +87,7 @@ def _get_approved_user_from_token(db: Session, token: str) -> models.User:
 
 
 def _handle_pre_create_authorization(
-    payload: TUSDHook, db: Session, project_id: str
+    payload: TUSDHook, db: Session, project_id: UUID
 ) -> dict[str, str]:
     """Handle pre-create hook authorization for both UAS and indoor projects.
 
@@ -255,9 +256,7 @@ def handle_tusd_http_hooks(
         return {"status": "ok"}
 
     # Determine if this is an indoor project or UAS project
-    is_indoor_project = x_indoor_project_id and len(x_indoor_project_id) == 1
-
-    if is_indoor_project:
+    if x_indoor_project_id is not None and len(x_indoor_project_id) == 1:
         return _handle_indoor_project_hooks(
             payload,
             db,
@@ -330,6 +329,8 @@ def _handle_uas_project_hooks(
 
     if payload.Type == "post-finish":
         _update_upload_record_to_finished(db, existing_upload)
+        # After _update_upload_record_to_finished, existing_upload is guaranteed not None
+        assert existing_upload is not None
 
         # only run post processing if upload was in progress
         if is_uploading == True or not existing_upload:
@@ -370,7 +371,7 @@ def _handle_indoor_project_hooks(
     upload_id: str,
     existing_upload: models.Upload | None,
     is_uploading: bool | None,
-    indoor_project_id: str,
+    indoor_project_id: UUID,
 ) -> Any:
     """Handle TUSD hooks for indoor projects."""
     # For pre-create and post-create, we may not have existing_upload yet
@@ -383,6 +384,8 @@ def _handle_indoor_project_hooks(
 
     # For post-finish, check if user has permission to read/write to indoor project
     if payload.Type == "post-finish":
+        # Type narrowing: existing_upload is guaranteed not None by guard above
+        assert existing_upload is not None
         indoor_project = crud.indoor_project.read_by_user_id(
             db, indoor_project_id=indoor_project_id, user_id=existing_upload.user_id
         )
@@ -410,6 +413,8 @@ def _handle_indoor_project_hooks(
         return {"status": "ok"}
 
     if payload.Type == "post-finish":
+        # Type narrowing: existing_upload is guaranteed not None by guard above
+        assert existing_upload is not None
         _update_upload_record_to_finished(db, existing_upload)
 
         # only run post processing if upload was in progress

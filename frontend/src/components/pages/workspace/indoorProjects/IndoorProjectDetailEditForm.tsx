@@ -61,8 +61,8 @@ export default function IndoorProjectDetailEditForm({
       const payload = {
         title,
         description,
-        start_date: startDate,
-        end_date: endDate,
+        start_date: startDate || undefined,
+        end_date: endDate || undefined,
       };
 
       await api.put(`/indoor_projects/${id}`, payload);
