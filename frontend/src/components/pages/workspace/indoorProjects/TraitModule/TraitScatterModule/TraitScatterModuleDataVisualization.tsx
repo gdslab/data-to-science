@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ResponsiveScatterPlot, ScatterPlotNodeProps } from '@nivo/scatterplot';
 import { ColorSchemeId } from '@nivo/colors';
+import { animated } from '@react-spring/web';
 
 import ColorMapSelect from '../ColorMapSelect';
 import { IndoorProjectDataVizScatterAPIResponse } from '../../IndoorProject';
@@ -8,7 +9,6 @@ import { titleCaseConversion, nivoCategoricalColors } from '../../utils';
 
 import { useScatterData } from './useScatterData';
 import { useSymbolMapping } from './useSymbolMapping';
-import { drawSymbol } from './SymbolRenderer';
 import ScatterLegend from './ScatterLegend';
 import ScatterTooltip from './ScatterTooltip';
 import { ScatterDataPoint, SymbolKind } from './types';
@@ -24,12 +24,77 @@ function makeNodeComponent(getSymbolForSerie: (serieId: string) => SymbolKind) {
       onMouseLeave,
       onClick,
     } = props;
+    const symbol = getSymbolForSerie(String(node.serieId));
+    const stroke = '#333';
+
+    // Extract static values for position/size (these don't change during color transitions)
     const cx = style.x.get();
     const cy = style.y.get();
     const r = (style.size.get() ?? 8) / 2;
-    const stroke = '#333'; // Use a default border color or derive from theme
-    const fill = style.color.get();
-    const symbol = getSymbolForSerie(String(node.serieId));
+
+    const renderSymbol = () => {
+      switch (symbol) {
+        case 'circle':
+          return (
+            <animated.circle
+              cx={cx}
+              cy={cy}
+              r={r}
+              fill={style.color}
+              stroke={stroke}
+              strokeWidth={1.5}
+            />
+          );
+        case 'square':
+          return (
+            <animated.rect
+              x={cx - r}
+              y={cy - r}
+              width={2 * r}
+              height={2 * r}
+              fill={style.color}
+              stroke={stroke}
+              strokeWidth={1.5}
+            />
+          );
+        case 'triangle':
+          return (
+            <animated.path
+              d={`M ${cx} ${cy - r} L ${cx - r} ${cy + r} L ${cx + r} ${
+                cy + r
+              } Z`}
+              fill={style.color}
+              stroke={stroke}
+              strokeWidth={1.5}
+            />
+          );
+        case 'diamond':
+          return (
+            <animated.path
+              d={`M ${cx} ${cy - r} L ${cx + r} ${cy} L ${cx} ${cy + r} L ${
+                cx - r
+              } ${cy} Z`}
+              fill={style.color}
+              stroke={stroke}
+              strokeWidth={1.5}
+            />
+          );
+        case 'cross':
+          return (
+            <g stroke={stroke} strokeWidth={1.5}>
+              <line x1={cx - r} y1={cy} x2={cx + r} y2={cy} />
+              <line x1={cx} y1={cy - r} x2={cx} y2={cy + r} />
+              <animated.circle
+                cx={cx}
+                cy={cy}
+                r={r * 0.6}
+                fill={style.color}
+                stroke="none"
+              />
+            </g>
+          );
+      }
+    };
 
     return (
       <g
@@ -39,7 +104,7 @@ function makeNodeComponent(getSymbolForSerie: (serieId: string) => SymbolKind) {
         onMouseLeave={onMouseLeave ? (e) => onMouseLeave(node, e) : undefined}
         onClick={onClick ? (e) => onClick(node, e) : undefined}
       >
-        {drawSymbol(symbol, cx, cy, r, fill, stroke)}
+        {renderSymbol()}
       </g>
     );
   };
