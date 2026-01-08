@@ -15,6 +15,8 @@ from app.schemas.indoor_project import IndoorProjectUpdate
 from app.schemas.role import Role
 from app.tests.utils.indoor_project import create_indoor_project
 from app.tests.utils.project_member import create_project_member
+from app.tests.utils.team import create_team
+from app.tests.utils.team_member import create_team_member
 
 API_URL = f"{settings.API_V1_STR}/indoor_projects"
 
@@ -506,3 +508,114 @@ def test_get_deactivated_indoor_project(
     response = client.get(f"{API_URL}/{indoor_project.id}")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_create_indoor_project_with_team(
+    client: TestClient, normal_user_access_token: str, db: Session
+) -> None:
+    """
+    Test creating an indoor project with team via API.
+    """
+    # Create team owned by current user
+    current_user = get_current_user(db, normal_user_access_token)
+    team = create_team(db, owner_id=current_user.id)
+
+    # Create indoor project with team
+    payload = {
+        "title": "Test Indoor Project with Team",
+        "description": "Test description",
+        "team_id": str(team.id),
+    }
+
+    response = client.post(API_URL, json=payload)
+
+    assert response.status_code == status.HTTP_201_CREATED
+    response_data = response.json()
+    assert response_data["team_id"] == str(team.id)
+
+
+def test_create_indoor_project_without_team(
+    client: TestClient, normal_user_access_token: str, db: Session
+) -> None:
+    """
+    Test creating an indoor project without team (team_id=null) via API.
+    """
+    payload = {
+        "title": "Test Indoor Project No Team",
+        "description": "Test description",
+        "team_id": None,
+    }
+
+    response = client.post(API_URL, json=payload)
+
+    assert response.status_code == status.HTTP_201_CREATED
+    response_data = response.json()
+    assert response_data.get("team_id") is None
+
+
+def test_update_indoor_project_team_as_owner(
+    client: TestClient, normal_user_access_token: str, db: Session
+) -> None:
+    """
+    Test updating indoor project team as owner.
+    Verifies that team members are added as project members.
+    """
+    # Create indoor project and team with additional members
+    current_user = get_current_user(db, normal_user_access_token)
+    indoor_project = create_indoor_project(db, owner_id=current_user.id)
+    team = create_team(db, owner_id=current_user.id)
+
+    # Add additional member to team
+    team_member = create_team_member(db, team_id=team.id, role=Role.VIEWER)
+
+    # Update to add team
+    update_data = {"team_id": str(team.id)}
+    response = client.put(f"{API_URL}/{indoor_project.id}", json=update_data)
+
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["team_id"] == str(team.id)
+
+    # Verify team members are added as project members
+    project_members = crud.project_member.get_list_of_project_members(
+        db, project_uuid=indoor_project.id, project_type=ProjectType.INDOOR_PROJECT
+    )
+    project_member_ids = [member.member_id for member in project_members]
+    assert current_user.id in project_member_ids  # Owner should be member
+    assert team_member.member_id in project_member_ids  # Team member should be added
+
+    # Update to remove team
+    update_data = {"team_id": None}
+    response = client.put(f"{API_URL}/{indoor_project.id}", json=update_data)
+
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data.get("team_id") is None
+
+
+def test_read_indoor_project_includes_team_id(
+    client: TestClient, normal_user_access_token: str, db: Session
+) -> None:
+    """
+    Test that reading an indoor project includes team_id in response.
+    """
+    # Create indoor project with team
+    current_user = get_current_user(db, normal_user_access_token)
+    team = create_team(db, owner_id=current_user.id)
+
+    # Create via API to test full flow
+    create_payload = {
+        "title": "Test Project",
+        "description": "Test description",
+        "team_id": str(team.id),
+    }
+    create_response = client.post(API_URL, json=create_payload)
+    indoor_project_id = create_response.json()["id"]
+
+    # Read the project
+    response = client.get(f"{API_URL}/{indoor_project_id}")
+
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert "team_id" in response_data
+    assert response_data["team_id"] == str(team.id)

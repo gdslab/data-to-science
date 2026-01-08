@@ -11,13 +11,14 @@ from urllib.parse import unquote
 from app import crud, models
 from app.api import deps
 from app.core import security
-from urllib.parse import unquote
+from app.core.exceptions import PermissionDenied, ResourceNotFound
+from app.schemas import TUSDHook, UploadUpdate
+from app.schemas.role import Role
 from app.utils.tusd.post_processing import (
     process_data_product_uploaded_to_tusd,
     process_indoor_data_uploaded_to_tusd,
     process_raw_data_uploaded_to_tusd,
 )
-from app.schemas import TUSDHook, UploadUpdate
 
 
 router = APIRouter()
@@ -89,7 +90,7 @@ def _get_approved_user_from_token(db: Session, token: str) -> models.User:
 def _handle_pre_create_authorization(
     payload: TUSDHook, db: Session, project_id: UUID
 ) -> dict[str, str]:
-    """Handle pre-create hook authorization for both UAS and indoor projects.
+    """Handle pre-create hook authorization for UAS projects.
 
     Args:
         payload: TUSD hook payload
@@ -120,6 +121,51 @@ def _handle_pre_create_authorization(
         db, user_id=approved_user.id, project_id=project_id, permission="rw"
     )
     if not project_response:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+        )
+
+    return {"status": "authorized"}
+
+
+def _handle_pre_create_authorization_indoor(
+    payload: TUSDHook, db: Session, indoor_project_id: UUID
+) -> dict[str, str]:
+    """Handle pre-create hook authorization for indoor projects.
+
+    Args:
+        payload: TUSD hook payload
+        db: Database session
+        indoor_project_id: Indoor project ID to verify access to
+
+    Returns:
+        Dictionary with authorization status
+
+    Raises:
+        HTTPException: If authorization fails
+    """
+    # Extract access token from Cookie header forwarded by tusd
+    cookies_list = payload.Event.HTTPRequest.Header.Cookie or []
+    access_token_value = _extract_access_token_from_cookie_headers(cookies_list)
+
+    if not access_token_value:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Access token missing",
+        )
+
+    # Validate token and load user
+    approved_user = _get_approved_user_from_token(db, access_token_value)
+
+    # Verify user has manager or owner access to indoor project
+    try:
+        crud.indoor_project.get_with_permission(
+            db,
+            indoor_project_id=indoor_project_id,
+            user_id=approved_user.id,
+            required_permission=Role.MANAGER,
+        )
+    except (PermissionDenied, ResourceNotFound):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
         )
@@ -386,17 +432,22 @@ def _handle_indoor_project_hooks(
     if payload.Type == "post-finish":
         # Type narrowing: existing_upload is guaranteed not None by guard above
         assert existing_upload is not None
-        indoor_project = crud.indoor_project.read_by_user_id(
-            db, indoor_project_id=indoor_project_id, user_id=existing_upload.user_id
-        )
-        if not indoor_project:
+        try:
+            crud.indoor_project.get_with_permission(
+                db,
+                indoor_project_id=indoor_project_id,
+                user_id=existing_upload.user_id,
+                required_permission=Role.MANAGER,
+            )
+        except (PermissionDenied, ResourceNotFound):
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Indoor project not found"
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Permission denied",
             )
 
     # Handle hook types
     if payload.Type == "pre-create":
-        return _handle_pre_create_authorization(payload, db, indoor_project_id)
+        return _handle_pre_create_authorization_indoor(payload, db, indoor_project_id)
 
     if payload.Type == "post-create":
         # Note: approved_user needs to be obtained for indoor projects

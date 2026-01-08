@@ -194,23 +194,108 @@ class CRUDIndoorProject(
     def read_multi_by_user_id(
         self, db: Session, user_id: UUID
     ) -> Sequence[IndoorProject]:
-        """Read all existing indoor projects owned by user.
+        """Read all existing indoor projects where user is a member.
+
+        Returns projects where the user has any role (OWNER, MANAGER, or VIEWER).
+        Sets the role attribute on each project based on user's membership.
 
         Args:
             db (Session): Database session.
-            user_id (UUID): ID of user indoor projects must belong to.
+            user_id (UUID): ID of user.
 
         Returns:
-            Sequence[IndoorProject]: All indoor projects owned by user.
+            Sequence[IndoorProject]: All indoor projects where user is a member.
         """
-        statement = select(IndoorProject).where(
-            and_(IndoorProject.owner_id == user_id, IndoorProject.is_active)
+        statement = (
+            select(IndoorProject, ProjectMember)
+            .join(IndoorProject.indoor_members)
+            .where(
+                and_(
+                    IndoorProject.is_active,
+                    ProjectMember.member_id == user_id
+                )
+            )
         )
 
         with db as session:
-            indoor_projects = session.scalars(statement).all()
+            results = session.execute(statement).all()
+            indoor_projects = []
+
+            for indoor_project_obj, member_obj in results:
+                # Set the user's role on the indoor project for API response
+                setattr(indoor_project_obj, "role", member_obj.role.value)
+                indoor_projects.append(indoor_project_obj)
 
             return indoor_projects
+
+    def update_indoor_project(
+        self,
+        db: Session,
+        indoor_project_id: UUID,
+        indoor_project_obj: IndoorProject,
+        indoor_project_in: IndoorProjectUpdate,
+        user_id: UUID,
+    ) -> IndoorProject:
+        """Update indoor project and add team members as project members if a new team is being added.
+
+        Args:
+            db (Session): Database session.
+            indoor_project_id (UUID): ID of indoor project to update.
+            indoor_project_obj (IndoorProject): Indoor project object to update.
+            indoor_project_in (IndoorProjectUpdate): Indoor project update object.
+            user_id (UUID): ID of user updating indoor project.
+
+        Returns:
+            IndoorProject: Updated indoor project.
+        """
+        indoor_project_in_data = jsonable_encoder(indoor_project_in)
+
+        # Only process team changes if a new team_id is provided and it's different from current
+        if (
+            indoor_project_in_data.get("team_id") is not None
+            and indoor_project_obj.team_id != indoor_project_in_data["team_id"]
+        ):
+            team_members = crud.team_member.get_list_of_team_members(
+                db, team_id=indoor_project_in_data["team_id"]
+            )
+            # Check permissions
+            if len(team_members) == 0 or not is_team_owner(
+                user_id, team_members, include_manager=True
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only team owner or manager can perform this action",
+                )
+
+            # Add team members as project members
+            crud.project_member.create_multi_with_project(
+                db,
+                new_members=[
+                    (team_member.member_id, team_member.role)
+                    for team_member in team_members
+                ],
+                project_uuid=indoor_project_id,
+                project_type=ProjectType.INDOOR_PROJECT,
+            )
+
+        # Finish updating indoor project
+        updated_indoor_project = self.update(
+            db, db_obj=indoor_project_obj, obj_in=indoor_project_in
+        )
+
+        # Get project role for user updating indoor project
+        project_member = crud.project_member.get_by_project_and_member_id(
+            db,
+            project_uuid=indoor_project_id,
+            member_id=user_id,
+            project_type=ProjectType.INDOOR_PROJECT,
+        )
+        if project_member:
+            setattr(updated_indoor_project, "role", project_member.role.value)
+        else:
+            setattr(updated_indoor_project, "role", "viewer")
+
+        return updated_indoor_project
 
     def deactivate(
         self, db: Session, indoor_project_id: UUID

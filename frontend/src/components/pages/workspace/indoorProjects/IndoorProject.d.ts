@@ -5,6 +5,7 @@ export type IndoorProjectAPIResponse = {
   description: string;
   start_date?: Date;
   end_date?: Date;
+  team_id?: string | null;
 };
 
 export interface IndoorProjectMember {

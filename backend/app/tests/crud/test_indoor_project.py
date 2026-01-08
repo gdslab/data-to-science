@@ -504,3 +504,89 @@ def test_get_with_permission_inactive_project_raises_not_found(db: Session) -> N
         )
 
     assert "indoor project not found" in str(exc_info.value.detail).lower()
+
+
+def test_create_indoor_project_with_team(db: Session) -> None:
+    """
+    Test creating an indoor project with a team assigned.
+    """
+    from app.tests.utils.team import create_team
+
+    # Create owner and team
+    owner = create_user(db)
+    team = create_team(db, owner_id=owner.id)
+
+    # Create indoor project with team
+    indoor_project_in = IndoorProjectCreate(
+        title="Test Indoor Project with Team",
+        description="Test description",
+        team_id=team.id,
+    )
+
+    indoor_project = crud.indoor_project.create_with_owner(
+        db, obj_in=indoor_project_in, owner_id=owner.id
+    )
+
+    assert indoor_project.id
+    assert indoor_project.team_id == team.id
+    assert indoor_project.title == "Test Indoor Project with Team"
+
+
+def test_update_indoor_project_team(db: Session) -> None:
+    """
+    Test updating an indoor project to add/change/remove team.
+    """
+    from app.tests.utils.team import create_team
+
+    # Create indoor project without team
+    existing_indoor_project = create_indoor_project(db)
+    assert existing_indoor_project.team_id is None
+
+    # Create team
+    team = create_team(db, owner_id=existing_indoor_project.owner_id)
+
+    # Update to add team
+    indoor_project_update_in = IndoorProjectUpdate(team_id=team.id)
+    updated_indoor_project = crud.indoor_project.update(
+        db, db_obj=existing_indoor_project, obj_in=indoor_project_update_in
+    )
+    assert updated_indoor_project.team_id == team.id
+
+    # Update to remove team (set to None)
+    indoor_project_update_in = IndoorProjectUpdate(team_id=None)
+    updated_indoor_project = crud.indoor_project.update(
+        db, db_obj=updated_indoor_project, obj_in=indoor_project_update_in
+    )
+    assert updated_indoor_project.team_id is None
+
+
+def test_read_multi_by_user_id_includes_member_projects(db: Session) -> None:
+    """Test that non-owner members can see indoor projects."""
+    from app.tests.utils.user import create_user
+    from app.schemas.project_member import ProjectMemberCreate
+
+    # Create project owned by user1
+    user1 = create_user(db)
+    indoor_project = create_indoor_project(db, owner_id=user1.id)
+
+    # Add user2 as viewer
+    user2 = create_user(db)
+    project_member_in = ProjectMemberCreate(email=user2.email, role=Role.VIEWER)
+    crud.project_member.create_with_project(
+        db,
+        obj_in=project_member_in,
+        project_uuid=indoor_project.id,
+        project_type=ProjectType.INDOOR_PROJECT,
+    )
+
+    # User1 (owner) should see 1 project with owner role
+    user1_projects = crud.indoor_project.read_multi_by_user_id(db, user_id=user1.id)
+    assert len(user1_projects) == 1
+    assert user1_projects[0].id == indoor_project.id
+    assert user1_projects[0].role == "owner"
+
+    # User2 (viewer) should see 1 project with viewer role
+    user2_projects = crud.indoor_project.read_multi_by_user_id(db, user_id=user2.id)
+    assert len(user2_projects) == 1
+    assert user2_projects[0].id == indoor_project.id
+    assert user2_projects[0].role == "viewer"

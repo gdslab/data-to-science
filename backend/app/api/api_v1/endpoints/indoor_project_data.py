@@ -60,7 +60,7 @@ def validate_plotted_by_according_to_combination(plotted_by, according_to):
 def read_indoor_project_data(
     indoor_project_id: UUID4,
     indoor_project: models.IndoorProject = Depends(
-        deps.can_read_write_delete_indoor_project
+        deps.can_read_indoor_project
     ),
     db: Session = Depends(deps.get_db),
 ) -> Any:
@@ -82,7 +82,7 @@ def read_indoor_project_data_spreadsheet(
     indoor_project_id: UUID4,
     indoor_project_data_id: UUID4,
     indoor_project: models.IndoorProject = Depends(
-        deps.can_read_write_delete_indoor_project
+        deps.can_read_indoor_project
     ),
     db: Session = Depends(deps.get_db),
 ) -> Any:
@@ -252,7 +252,7 @@ def read_indoor_project_data_plant(
     indoor_project_data_id: UUID4,
     plant_id: str,
     indoor_project: models.IndoorProject = Depends(
-        deps.can_read_write_delete_indoor_project
+        deps.can_read_indoor_project
     ),
     db: Session = Depends(deps.get_db),
 ) -> Any:
@@ -518,7 +518,7 @@ def read_indoor_project_data_plant_for_viz(
     plotted_by: schemas.indoor_project_data.PlottedBy,
     pot_barcode: Optional[int] = None,
     indoor_project: models.IndoorProject = Depends(
-        deps.can_read_write_delete_indoor_project
+        deps.can_read_indoor_project
     ),
     db: Session = Depends(deps.get_db),
 ) -> Any:
@@ -596,7 +596,7 @@ def read_indoor_project_data_plant_for_viz2(
     trait: str,
     pot_barcode: Optional[int] = None,
     indoor_project: models.IndoorProject = Depends(
-        deps.can_read_write_delete_indoor_project
+        deps.can_read_indoor_project
     ),
     db: Session = Depends(deps.get_db),
 ) -> Any:
@@ -683,7 +683,7 @@ def read_indoor_project_data_plant_for_scatter(
     trait_y: str,
     pot_barcode: Optional[int] = None,
     indoor_project: models.IndoorProject = Depends(
-        deps.can_read_write_delete_indoor_project
+        deps.can_read_indoor_project
     ),
     db: Session = Depends(deps.get_db),
 ) -> Any:

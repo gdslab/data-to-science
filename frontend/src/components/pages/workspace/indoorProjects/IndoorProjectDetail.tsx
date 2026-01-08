@@ -8,6 +8,7 @@ import api from '../../../../api';
 import Alert from '../../../Alert';
 import { IndoorProjectAPIResponse } from './IndoorProject.d';
 import LoadingBars from '../../../LoadingBars';
+import { Team } from '../../teams/Teams';
 
 import PotModuleDataVisualization from './PotModule/PotModuleDataVisualization';
 import PotGroupModuleForm from './PotGroupModule/PotGroupModuleForm';
@@ -19,15 +20,35 @@ import TraitScatterModuleDataVisualization from './TraitModule/TraitScatterModul
 import { useIndoorProjectData } from './hooks/useIndoorProjectData';
 import IndoorProjectUploadForm from './IndoorProjectUploadForm';
 import IndoorProjectDetailEditForm from './IndoorProjectDetailEditForm';
-import { useIndoorProjectContext } from './IndoorProjectContext';
+import {
+  useIndoorProjectContext,
+  getProjectMembers,
+} from './IndoorProjectContext';
 
 export async function loader({ params }: { params: Params<string> }) {
   try {
-    const indoorProjectResponse: AxiosResponse<IndoorProjectAPIResponse> =
-      await api.get(`/indoor_projects/${params.indoorProjectId}`);
+    const [indoorProjectResponse, teamsResponse]: [
+      AxiosResponse<IndoorProjectAPIResponse>,
+      AxiosResponse<Team[]>
+    ] = await Promise.all([
+      api.get(`/indoor_projects/${params.indoorProjectId}`),
+      api.get('/teams', { params: { owner_only: true } }),
+    ]);
+
     if (indoorProjectResponse && indoorProjectResponse.status == 200) {
+      // Add synthetic "No team" option at beginning
+      const teams = teamsResponse.data;
+      teams.unshift({
+        title: 'No team',
+        id: 'no_team',
+        is_owner: false,
+        description: '',
+        exts: [],
+      });
+
       return {
         indoorProject: indoorProjectResponse.data,
+        teams: teams,
       };
     } else {
       throw new Response('Indoor project not found', { status: 404 });
@@ -38,8 +59,9 @@ export async function loader({ params }: { params: Params<string> }) {
 }
 
 export default function IndoorProjectDetail() {
-  const { indoorProject } = useLoaderData() as {
+  const { indoorProject, teams } = useLoaderData() as {
     indoorProject: IndoorProjectAPIResponse;
+    teams: Team[];
   };
   const {
     indoorProjectData,
@@ -63,17 +85,28 @@ export default function IndoorProjectDetail() {
 
   const {
     state: { projectRole },
+    dispatch,
   } = useIndoorProjectContext();
 
   const indoorProjectDataId = indoorProjectData.find(
     ({ file_type }) => file_type === '.xlsx'
   )?.id;
 
+  const indoorProjectId = indoorProject.id;
+  const teamId = indoorProject.team_id;
+
   useEffect(() => {
     if (!hasUserToggledUploadPane) {
       setIsUploadPaneCollapsed(!!indoorProjectDataSpreadsheet);
     }
   }, [indoorProjectDataSpreadsheet, hasUserToggledUploadPane]);
+
+  useEffect(() => {
+    // update project members if team changes
+    if (!indoorProjectId || !teamId) return;
+
+    getProjectMembers(indoorProjectId, dispatch);
+  }, [indoorProjectId, dispatch, teamId]);
 
   if (!indoorProject)
     return (
@@ -92,7 +125,7 @@ export default function IndoorProjectDetail() {
           <div className="flex items-start gap-2">
             {projectRole === 'owner' || projectRole === 'manager' ? (
               <div className="flex-1">
-                <IndoorProjectDetailEditForm indoorProject={indoorProject} />
+                <IndoorProjectDetailEditForm indoorProject={indoorProject} teams={teams} />
               </div>
             ) : (
               <div className="flex-1">
@@ -112,54 +145,60 @@ export default function IndoorProjectDetail() {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0 relative">
-          {/* Upload form */}
-          <div
-            className={`${
-              isUploadPaneCollapsed
-                ? 'w-0 overflow-hidden'
-                : 'flex flex-col w-full lg:w-1/3 gap-8 p-4 pb-2 border-b lg:border-b-0 lg:border-r border-gray-700 h-auto lg:h-full overflow-y-auto'
-            } transition-all duration-300 relative`}
-          >
-            <IndoorProjectUploadForm
-              indoorProjectId={indoorProject.id}
-              indoorProjectData={indoorProjectData}
-              indoorProjectDataSpreadsheet={
-                indoorProjectDataSpreadsheet || undefined
-              }
-              onUploadSuccess={refetch}
-            />
-          </div>
+          {/* Upload form - only visible to managers and owners */}
+          {(projectRole === 'owner' || projectRole === 'manager') && (
+            <>
+              <div
+                className={`${
+                  isUploadPaneCollapsed
+                    ? 'w-0 overflow-hidden'
+                    : 'flex flex-col w-full lg:w-1/3 gap-8 p-4 pb-2 border-b lg:border-b-0 lg:border-r border-gray-700 h-auto lg:h-full overflow-y-auto'
+                } transition-all duration-300 relative`}
+              >
+                <IndoorProjectUploadForm
+                  indoorProjectId={indoorProject.id}
+                  indoorProjectData={indoorProjectData}
+                  indoorProjectDataSpreadsheet={
+                    indoorProjectDataSpreadsheet || undefined
+                  }
+                  onUploadSuccess={refetch}
+                />
+              </div>
 
-          {/* Toggle button */}
-          <button
-            type="button"
-            onClick={() => {
-              setHasUserToggledUploadPane(true);
-              setIsUploadPaneCollapsed((v) => !v);
-            }}
-            className={`${
-              isUploadPaneCollapsed
-                ? '-left-4 rounded-r-lg'
-                : 'left-[calc(33.333%-1rem)] lg:left-[calc(33.333%-1rem)] rounded-full'
-            } absolute top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-8 h-12 bg-gray-800 hover:bg-gray-700 text-white shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50`}
-            aria-pressed={isUploadPaneCollapsed}
-            aria-label={
-              isUploadPaneCollapsed ? 'Show upload form' : 'Hide upload form'
-            }
-            title={
-              isUploadPaneCollapsed ? 'Show upload form' : 'Hide upload form'
-            }
-          >
-            {isUploadPaneCollapsed ? (
-              <ChevronRightIcon className="w-5 h-5" />
-            ) : (
-              <ChevronLeftIcon className="w-5 h-5" />
-            )}
-          </button>
+              {/* Toggle button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setHasUserToggledUploadPane(true);
+                  setIsUploadPaneCollapsed((v) => !v);
+                }}
+                className={`${
+                  isUploadPaneCollapsed
+                    ? '-left-4 rounded-r-lg'
+                    : 'left-[calc(33.333%-1rem)] lg:left-[calc(33.333%-1rem)] rounded-full'
+                } absolute top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-8 h-12 bg-gray-800 hover:bg-gray-700 text-white shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50`}
+                aria-pressed={isUploadPaneCollapsed}
+                aria-label={
+                  isUploadPaneCollapsed ? 'Show upload form' : 'Hide upload form'
+                }
+                title={
+                  isUploadPaneCollapsed ? 'Show upload form' : 'Hide upload form'
+                }
+              >
+                {isUploadPaneCollapsed ? (
+                  <ChevronRightIcon className="w-5 h-5" />
+                ) : (
+                  <ChevronLeftIcon className="w-5 h-5" />
+                )}
+              </button>
+            </>
+          )}
           {/* Data visualization */}
           <div
             className={`flex flex-col w-full ${
-              isUploadPaneCollapsed ? 'lg:w-full' : 'lg:w-2/3'
+              (projectRole === 'owner' || projectRole === 'manager') && !isUploadPaneCollapsed
+                ? 'lg:w-2/3'
+                : 'lg:w-full'
             } gap-8 p-4 pb-2 h-auto lg:h-full`}
           >
             {isLoading && <LoadingBars />}

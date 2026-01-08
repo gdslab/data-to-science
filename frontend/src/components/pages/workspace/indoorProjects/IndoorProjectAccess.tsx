@@ -197,7 +197,7 @@ export default function IndoorProjectAccess() {
           </div>
         </div>
         <div className="overflow-x-auto">
-          <div className="grow min-h-0 min-w-[1000px]">
+          <div className="min-w-[1000px]">
             <Table>
               <TableHead
                 align="left"

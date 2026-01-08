@@ -1,5 +1,5 @@
 import { DocumentIcon } from '@heroicons/react/24/solid';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+// import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
 import {
   IndoorProjectDataAPIResponse,
@@ -78,13 +78,13 @@ export default function IndoorProjectUploadForm({
                         }
                       </a>
                     </div>
-                    <button
+                    {/* <button
                       type="button"
                       title="Remove Spreadsheet"
                       className="p-1 text-gray-400 hover:text-red-600 transition-colors"
                     >
                       <XMarkIcon className="w-4 h-4" />
-                    </button>
+                    </button> */}
                   </div>
                   <div className="text-sm text-gray-500 italic mt-2">
                     Uploaded on{' '}
@@ -149,13 +149,13 @@ export default function IndoorProjectUploadForm({
                                   {uploadedData.original_filename}
                                 </a>
                               </div>
-                              <button
+                              {/* <button
                                 type="button"
                                 title="Remove TAR archive"
                                 className="p-1 text-gray-400 hover:text-red-600 transition-colors"
                               >
                                 <XMarkIcon className="w-4 h-4" />
-                              </button>
+                              </button> */}
                             </div>
                             <div className="text-sm text-gray-500 italic mt-2">
                               Uploaded on {formattedDate(uploadedData)}

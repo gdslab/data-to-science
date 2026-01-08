@@ -96,8 +96,12 @@ def update_indoor_project(
                 detail="Start date must be before end date",
             )
 
-    updated_indoor_project = crud.indoor_project.update(
-        db, db_obj=indoor_project, obj_in=indoor_project_in
+    updated_indoor_project = crud.indoor_project.update_indoor_project(
+        db,
+        indoor_project_id=indoor_project_id,
+        indoor_project_obj=indoor_project,
+        indoor_project_in=indoor_project_in,
+        user_id=current_user.id,
     )
     return updated_indoor_project
 

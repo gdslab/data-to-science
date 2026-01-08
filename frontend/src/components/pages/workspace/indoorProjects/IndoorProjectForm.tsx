@@ -8,20 +8,40 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import api from '../../../../api';
 import Alert, { Status } from '../../../Alert';
 import { Button } from '../../../Buttons';
-import { InputField } from '../../../FormFields';
+import { InputField, SelectField } from '../../../FormFields';
 
 import { IndoorProjectAPIResponse } from './IndoorProject';
+import { Team } from '../../teams/Teams';
+
+export async function loader() {
+  const response = await api.get('/teams', { params: { owner_only: true } });
+  if (response) {
+    const teams = response.data;
+    teams.unshift({
+      title: 'No team',
+      id: 'no_team',
+      is_owner: false,
+      description: '',
+      exts: [],
+    });
+    return teams;
+  } else {
+    return [];
+  }
+}
 
 export type IndoorProjectFormInput = {
   title: string;
   description: string;
   startDate?: Date | string;
   endDate?: Date | string;
+  teamId?: string;
 };
 
 const defaultValues = {
   title: '',
   description: '',
+  teamId: 'no_team',
 };
 
 export const validationSchema = Yup.object({
@@ -31,6 +51,33 @@ export const validationSchema = Yup.object({
   description: Yup.string()
     .max(300, 'Must be less than 300 characters')
     .required('Description is required'),
+  startDate: Yup.mixed<Date | string>()
+    .transform((value, originalValue) =>
+      originalValue === '' ? undefined : value
+    )
+    .test('date-max', 'Start date must be before end date', function (value) {
+      const { endDate } = this.parent;
+      if (!value || !endDate) return true;
+      const startDateObj = typeof value === 'string' ? new Date(value) : value;
+      const endDateObj =
+        typeof endDate === 'string' ? new Date(endDate) : endDate;
+      return startDateObj <= endDateObj;
+    })
+    .optional(),
+  endDate: Yup.mixed<Date | string>()
+    .transform((value, originalValue) =>
+      originalValue === '' ? undefined : value
+    )
+    .test('date-min', 'End date must be after start date', function (value) {
+      const { startDate } = this.parent;
+      if (!value || !startDate) return true;
+      const endDateObj = typeof value === 'string' ? new Date(value) : value;
+      const startDateObj =
+        typeof startDate === 'string' ? new Date(startDate) : startDate;
+      return endDateObj >= startDateObj;
+    })
+    .optional(),
+  teamId: Yup.string().optional(),
 });
 
 export default function IndoorProjectForm({
@@ -39,6 +86,7 @@ export default function IndoorProjectForm({
   setModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const [status, setStatus] = useState<Status | null>(null);
+  const [teams, setTeams] = useState<Team[]>([]);
 
   const navigate = useNavigate();
 
@@ -57,10 +105,11 @@ export default function IndoorProjectForm({
 
   const onSubmit: SubmitHandler<IndoorProjectFormInput> = async (values) => {
     try {
-      const { title, description } = values;
+      const { title, description, teamId } = values;
       const payload = {
         title,
         description,
+        team_id: teamId && teamId !== 'no_team' ? teamId : null,
       };
 
       const response: AxiosResponse<IndoorProjectAPIResponse> = await api.post(
@@ -87,6 +136,18 @@ export default function IndoorProjectForm({
   };
 
   useEffect(() => {
+    async function loadTeams() {
+      try {
+        const teams = await loader();
+        if (teams) setTeams(teams);
+      } catch {
+        setTeams([]);
+      }
+    }
+    loadTeams();
+  }, []);
+
+  useEffect(() => {
     reset();
   }, [reset]);
 
@@ -101,6 +162,15 @@ export default function IndoorProjectForm({
           >
             <InputField label="Title" name="title" />
             <InputField label="Description" name="description" />
+            <SelectField
+              label="Team (Optional)"
+              name="teamId"
+              required={false}
+              options={teams.map((team) => ({
+                label: team.title,
+                value: team.id,
+              }))}
+            />
             <div className="mt-4 flex flex-col gap-2">
               <Button type="submit" disabled={isSubmitting}>
                 {!isSubmitting ? 'Create' : 'Creating...'}

@@ -11,16 +11,19 @@ import Alert, { Status } from '../../../Alert';
 import { LinkButton } from '../../../Buttons';
 import { IndoorProjectAPIResponse } from './IndoorProject.d';
 import { IndoorProjectFormInput, validationSchema } from './IndoorProjectForm';
-import { InputField } from '../../../FormFields';
+import { InputField, SelectField } from '../../../FormFields';
 import Table, { TableBody, TableHead } from '../../../Table';
 import { useIndoorProjectContext } from './IndoorProjectContext';
+import { Team } from '../../teams/Teams';
 
 type IndoorProjectDetailEditFormProps = {
   indoorProject: IndoorProjectAPIResponse;
+  teams: Team[];
 };
 
 export default function IndoorProjectDetailEditForm({
   indoorProject,
+  teams,
 }: IndoorProjectDetailEditFormProps) {
   const { id, ...defaultValues } = indoorProject;
 
@@ -41,6 +44,7 @@ export default function IndoorProjectDetailEditForm({
       endDate: defaultValues.end_date
         ? new Date(defaultValues.end_date).toISOString().split('T')[0]
         : undefined,
+      teamId: indoorProject.team_id || 'no_team',
     },
     resolver: yupResolver(validationSchema),
     mode: 'onChange',
@@ -57,12 +61,13 @@ export default function IndoorProjectDetailEditForm({
     setStatus(null);
 
     try {
-      const { title, description, startDate, endDate } = values;
+      const { title, description, startDate, endDate, teamId } = values;
       const payload = {
         title,
         description,
         start_date: startDate || undefined,
         end_date: endDate || undefined,
+        team_id: teamId && teamId !== 'no_team' ? teamId : null,
       };
 
       await api.put(`/indoor_projects/${id}`, payload);
@@ -105,7 +110,7 @@ export default function IndoorProjectDetailEditForm({
 
           <Table>
             <TableHead
-              columns={['Title', 'Description', 'Start Date', 'End Date']}
+              columns={['Title', 'Description', 'Start Date', 'End Date', 'Team']}
             />
             <TableBody
               rows={[
@@ -134,6 +139,17 @@ export default function IndoorProjectDetailEditForm({
                         onChange={() =>
                           setTimeout(() => trigger('startDate'), 0)
                         }
+                      />
+                    </div>,
+                    <div className="flex justify-center">
+                      <SelectField
+                        label="Team"
+                        name="teamId"
+                        required={false}
+                        options={teams.map((team) => ({
+                          label: team.title,
+                          value: team.id,
+                        }))}
                       />
                     </div>,
                   ],
