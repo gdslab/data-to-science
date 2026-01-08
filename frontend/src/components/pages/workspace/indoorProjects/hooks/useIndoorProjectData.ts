@@ -191,7 +191,6 @@ export function useIndoorProjectData({
   }, [indoorProjectId, indoorProjectData]);
 
   const refetch = () => {
-    console.log('running refetch');
     // Clear existing data and trigger a fresh fetch
     setIndoorProjectData([]);
     setIndoorProjectDataSpreadsheet(null);

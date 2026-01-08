@@ -1,5 +1,5 @@
 import { AxiosResponse } from 'axios';
-import { Params, useLoaderData } from 'react-router';
+import { Params, useLoaderData, useRevalidator } from 'react-router';
 import { useEffect, useState } from 'react';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
@@ -63,6 +63,7 @@ export default function IndoorProjectDetail() {
     indoorProject: IndoorProjectAPIResponse;
     teams: Team[];
   };
+  const revalidator = useRevalidator();
   const {
     indoorProjectData,
     indoorProjectDataSpreadsheet,
@@ -87,6 +88,11 @@ export default function IndoorProjectDetail() {
     state: { projectRole },
     dispatch,
   } = useIndoorProjectContext();
+
+  const handleOnUploadSuccess = () => {
+    revalidator.revalidate();
+    refetch();
+  };
 
   const indoorProjectDataId = indoorProjectData.find(
     ({ file_type }) => file_type === '.xlsx'
@@ -161,7 +167,7 @@ export default function IndoorProjectDetail() {
                   indoorProjectDataSpreadsheet={
                     indoorProjectDataSpreadsheet || undefined
                   }
-                  onUploadSuccess={refetch}
+                  onUploadSuccess={handleOnUploadSuccess}
                 />
               </div>
 

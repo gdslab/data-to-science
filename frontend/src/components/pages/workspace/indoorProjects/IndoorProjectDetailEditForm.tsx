@@ -1,5 +1,5 @@
 import { isAxiosError } from 'axios';
-import { useContext, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { useRevalidator } from 'react-router';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -55,7 +55,23 @@ export default function IndoorProjectDetailEditForm({
     formState: { isSubmitting },
     handleSubmit,
     trigger,
+    reset,
   } = methods;
+
+  // Update form when indoorProject prop changes (e.g., after upload)
+  useEffect(() => {
+    reset({
+      title: indoorProject.title,
+      description: indoorProject.description,
+      startDate: indoorProject.start_date
+        ? new Date(indoorProject.start_date).toISOString().split('T')[0]
+        : undefined,
+      endDate: indoorProject.end_date
+        ? new Date(indoorProject.end_date).toISOString().split('T')[0]
+        : undefined,
+      teamId: indoorProject.team_id || 'no_team',
+    });
+  }, [indoorProject, reset]);
 
   const onSubmit: SubmitHandler<IndoorProjectFormInput> = async (values) => {
     setStatus(null);

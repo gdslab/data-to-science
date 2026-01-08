@@ -10,10 +10,7 @@ import Tus from '@uppy/tus';
 import { IndoorProjectUploadInputProps } from './IndoorProject';
 import Modal from '../../../Modal';
 import { useInterval } from '../../../hooks';
-import {
-  ErrorResponseBody,
-  ValidationError,
-} from '../../../../types/uppy';
+import { ErrorResponseBody, ValidationError } from '../../../../types/uppy';
 import { refreshTokenIfNeeded } from '../../../../api';
 
 type IndoorProjectUploadModalProps = {
@@ -130,12 +127,9 @@ function IndoorProjectUploadInput({
     setElapsedSeconds(seconds);
 
     if (elapsed > 60000) {
-      console.log('Polling timeout reached (60s), stopping...');
       setIsPolling(false);
       return;
     }
-
-    console.log(`Polling for uploaded data... (${seconds}s elapsed)`);
 
     setIsPolling(false);
     onUploadSuccess();
@@ -147,7 +141,6 @@ function IndoorProjectUploadInput({
 
   useEffect(() => {
     if (uploadSuccess && onUploadSuccess && !isPolling) {
-      console.log('Upload successful, starting to poll for data...');
       setIsPolling(true);
       setPollStartTime(Date.now());
       setElapsedSeconds(0);

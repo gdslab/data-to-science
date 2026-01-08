@@ -23,8 +23,6 @@ export default function PotModuleDataVisualization({
     dispatch,
   } = useIndoorProjectContext();
 
-  console.log('selectedDAP in PotModuleDataVisualization', selectedDAP);
-
   // Get unique treatments from spreadsheet
   const treatments = useMemo(
     () => [...new Set(indoorProjectDataSpreadsheet.summary.treatment)],
