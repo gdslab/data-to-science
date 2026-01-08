@@ -124,7 +124,7 @@ export function RadioField({
                   type="radio"
                   value={opt.value}
                   {...register(name)}
-                  className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-purple-500 focus:ring-2 cursor-pointer"
+                  className="w-4 h-4 cursor-pointer checked:bg-accent2 checked:hover:bg-accent2"
                 />
                 <span className="text-sm text-gray-700">{opt.label}</span>
               </label>
