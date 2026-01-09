@@ -7,7 +7,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import api from '../../../../api';
 import Alert from '../../../Alert';
 import { IndoorProjectAPIResponse } from './IndoorProject.d';
-import LoadingBars from '../../../LoadingBars';
+import IndoorProjectDetailSkeleton from './IndoorProjectDetailSkeleton';
 import { Team } from '../../teams/Teams';
 
 import PotModuleDataVisualization from './PotModule/PotModuleDataVisualization';
@@ -207,7 +207,7 @@ export default function IndoorProjectDetail() {
                 : 'lg:w-full'
             } gap-8 p-4 pb-2 h-auto lg:h-full`}
           >
-            {isLoading && <LoadingBars />}
+            {isLoading && <IndoorProjectDetailSkeleton />}
 
             {!isLoading && indoorProjectData.length === 0 && (
               <div className="flex flex-col justify-center items-center h-full">
