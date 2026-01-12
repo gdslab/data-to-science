@@ -37,7 +37,10 @@ export default function DrawToolbar() {
     const originalOnAdd = drawControl.onAdd.bind(drawControl);
     drawControl.onAdd = (map) => {
       const controlContainer = originalOnAdd(map);
-      controlContainer.classList.add('maplibregl-ctrl', 'maplibregl-ctrl-group');
+      controlContainer.classList.add(
+        'maplibregl-ctrl',
+        'maplibregl-ctrl-group'
+      );
       return controlContainer;
     };
 
@@ -45,9 +48,8 @@ export default function DrawToolbar() {
     // but `addControl` expects an IControl
     map.addControl(drawControl as unknown as IControl, 'top-left');
 
-    map.on('draw.create', (e: DrawCreateEvent) => {
+    map.on('draw.create', (_e: DrawCreateEvent) => {
       // do something on create
-      console.log(e.features);
     });
 
     return () => {

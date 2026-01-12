@@ -36,20 +36,10 @@ function initUppyWithTus(indoorProjectId: string, treatment?: string | null) {
     onBeforeFileAdded: (currentFile) => {
       const modifiedFile = {
         ...currentFile,
-        id: [
-          currentFile.id,
-          indoorProjectId,
-          treatment || 'no-treatment',
-        ].join('__'),
+        id: [currentFile.id, indoorProjectId, treatment || 'no-treatment'].join(
+          '__'
+        ),
       };
-
-      console.log('[Uppy File Added with Custom ID]', {
-        originalId: currentFile.id,
-        customId: modifiedFile.id,
-        fileName: currentFile.name,
-        projectId: indoorProjectId,
-        treatment: treatment || 'none',
-      });
 
       return modifiedFile;
     },
@@ -123,8 +113,7 @@ export default function IndoorProjectUploadInline({
     // Set restrictions
     uppy.setOptions({ restrictions });
 
-    const handleRestrictionFailed = (e: unknown) => {
-      console.log(e);
+    const handleRestrictionFailed = () => {
       uppy.info(
         {
           message: 'Unsupported file type',
@@ -138,12 +127,6 @@ export default function IndoorProjectUploadInline({
     };
 
     const handleUpload = async () => {
-      console.log('[Upload Started]', {
-        projectId: indoorProjectId,
-        treatment: activeTreatment || 'none',
-        fileType,
-      });
-
       // Mark upload as started
       if (onUploadStateChange) {
         onUploadStateChange(true);
