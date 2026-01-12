@@ -26,8 +26,6 @@ export default function PotGroupModuleDataVisualization({
     dispatch,
   } = useIndoorProjectContext();
 
-  console.log('selectedDAP in PotGroupModuleDataVisualization', selectedDAP);
-
   const result = useMemo(() => {
     const grouped = data.results.reduce((acc, item) => {
       (acc[item.group] ??= []).push(item);
@@ -58,7 +56,7 @@ export default function PotGroupModuleDataVisualization({
           getNormalizedAndStretchedValues(group.map((g) => [g]));
         return (
           <div key={i} className="flex items-center px-4 gap-4">
-            <span className="truncate w-32" title={group[0].group}>
+            <span className="truncate w-32 flex-shrink-0" title={group[0].group}>
               {group[0].group}
             </span>
             {/* <InformationCircleIcon
@@ -158,9 +156,10 @@ export default function PotGroupModuleDataVisualization({
           </div>
         );
       })}
-      <div className="min-w-max flex items-center px-4 py-5">
+      <div className="min-w-max flex items-center px-4 py-5 gap-4">
+        {/* Spacer to align with group labels */}
+        <div className="w-32" />
         <div className="flex justify-between gap-0.5">
-          <div className="relative w-36 p-2.5 flex flex-col text-center" />
           {result[0]?.map(({ interval_days }) => (
             <div
               key={`interval-${interval_days}`}
