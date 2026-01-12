@@ -1,17 +1,17 @@
 import { DocumentIcon } from '@heroicons/react/24/solid';
-// import { XMarkIcon } from '@heroicons/react/24/outline';
-import { useState } from 'react';
+
 import {
   IndoorProjectDataAPIResponse,
   IndoorProjectDataSpreadsheetAPIResponse,
 } from './IndoorProject.d';
-import IndoorProjectUploadModal from './IndoorProjectUploadModal';
+import IndoorProjectUploadInline from './IndoorProjectUploadInline';
 
 interface IndoorProjectUploadFormProps {
   indoorProjectId: string;
   indoorProjectData: IndoorProjectDataAPIResponse[];
   indoorProjectDataSpreadsheet?: IndoorProjectDataSpreadsheetAPIResponse;
   onUploadSuccess?: () => void;
+  onUploadStateChange?: (isUploading: boolean) => void;
 }
 
 export default function IndoorProjectUploadForm({
@@ -19,9 +19,8 @@ export default function IndoorProjectUploadForm({
   indoorProjectData,
   indoorProjectDataSpreadsheet,
   onUploadSuccess,
+  onUploadStateChange,
 }: IndoorProjectUploadFormProps) {
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [activeTreatment, setActiveTreatment] = useState<string | null>(null);
 
   // Check if spreadsheet data exists
   const hasSpreadsheet = !!indoorProjectDataSpreadsheet;
@@ -50,66 +49,50 @@ export default function IndoorProjectUploadForm({
             data.
           </p>
           <hr className="my-3 border-gray-300" />
-          <div className="flex items-start justify-between min-w-0">
-            <div className="flex-1 min-w-0">
-              {indoorProjectData.find((data) => data.file_type === '.xlsx') ? (
-                <>
-                  <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
-                    <DocumentIcon className="w-4 h-4 text-gray-400" />
-                    <div className="flex-1 min-w-0 overflow-hidden">
-                      <a
-                        href={
-                          indoorProjectData.find(
-                            (data) => data.file_type === '.xlsx'
-                          )?.file_path
-                        }
-                        download
-                        className="font-medium text-blue-600 hover:text-blue-800 hover:underline truncate block"
-                        title={
-                          indoorProjectData.find(
-                            (data) => data.file_type === '.xlsx'
-                          )?.original_filename
-                        }
-                      >
-                        {
-                          indoorProjectData.find(
-                            (data) => data.file_type === '.xlsx'
-                          )?.original_filename
-                        }
-                      </a>
-                    </div>
-                    {/* <button
-                      type="button"
-                      title="Remove Spreadsheet"
-                      className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                    >
-                      <XMarkIcon className="w-4 h-4" />
-                    </button> */}
-                  </div>
-                  <div className="text-sm text-gray-500 italic mt-2">
-                    Uploaded on{' '}
-                    {formattedDate(
-                      indoorProjectData.find(
-                        (data) => data.file_type === '.xlsx'
-                      )!
-                    )}
-                  </div>
-                </>
-              ) : (
-                <div className="text-sm text-gray-500">
-                  No spreadsheet uploaded yet
-                </div>
+          {indoorProjectData.find((data) => data.file_type === '.xlsx') ? (
+            <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
+              <DocumentIcon className="w-4 h-4 text-gray-400" />
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <a
+                  href={
+                    indoorProjectData.find(
+                      (data) => data.file_type === '.xlsx'
+                    )?.file_path
+                  }
+                  download
+                  className="font-medium text-blue-600 hover:text-blue-800 hover:underline truncate block"
+                  title={
+                    indoorProjectData.find(
+                      (data) => data.file_type === '.xlsx'
+                    )?.original_filename
+                  }
+                >
+                  {
+                    indoorProjectData.find(
+                      (data) => data.file_type === '.xlsx'
+                    )?.original_filename
+                  }
+                </a>
+              </div>
+            </div>
+          ) : (
+            <IndoorProjectUploadInline
+              indoorProjectId={indoorProjectId}
+              fileType=".xlsx"
+              onUploadSuccess={onUploadSuccess}
+              onUploadStateChange={onUploadStateChange}
+            />
+          )}
+          {indoorProjectData.find((data) => data.file_type === '.xlsx') && (
+            <div className="text-sm text-gray-500 italic mt-2">
+              Uploaded on{' '}
+              {formattedDate(
+                indoorProjectData.find(
+                  (data) => data.file_type === '.xlsx'
+                )!
               )}
             </div>
-            <button
-              type="button"
-              onClick={() => setIsUploadModalOpen(true)}
-              className="ml-4 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shrink-0"
-              title="Upload Spreadsheet"
-            >
-              Upload File
-            </button>
-          </div>
+          )}
         </div>
       </div>
 
@@ -132,86 +115,54 @@ export default function IndoorProjectUploadForm({
                     Upload TAR archive containing treatment data.
                   </p>
                   <hr className="my-3 border-gray-300" />
-                  <div className="flex items-start justify-between min-w-0">
-                    <div className="flex-1 min-w-0">
-                      {uploadedData ? (
-                        uploadedData.is_initial_processing_completed ? (
-                          <>
-                            <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
-                              <DocumentIcon className="w-4 h-4 text-gray-400" />
-                              <div className="flex-1 min-w-0 overflow-hidden">
-                                <a
-                                  href={uploadedData.file_path}
-                                  download
-                                  className="font-medium text-blue-600 hover:text-blue-800 hover:underline truncate block"
-                                  title={uploadedData.original_filename}
-                                >
-                                  {uploadedData.original_filename}
-                                </a>
-                              </div>
-                              {/* <button
-                                type="button"
-                                title="Remove TAR archive"
-                                className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                              >
-                                <XMarkIcon className="w-4 h-4" />
-                              </button> */}
-                            </div>
-                            <div className="text-sm text-gray-500 italic mt-2">
-                              Uploaded on {formattedDate(uploadedData)}
-                            </div>
-                          </>
-                        ) : (
-                          <div className="flex items-center gap-2 text-amber-600">
-                            <div className="w-4 h-4 border-2 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
-                            <div>
-                              <div className="text-sm font-medium">
-                                Processing
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                This may take several minutes
-                              </div>
-                            </div>
+                  {uploadedData ? (
+                    uploadedData.is_initial_processing_completed ? (
+                      <>
+                        <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
+                          <DocumentIcon className="w-4 h-4 text-gray-400" />
+                          <div className="flex-1 min-w-0 overflow-hidden">
+                            <a
+                              href={uploadedData.file_path}
+                              download
+                              className="font-medium text-blue-600 hover:text-blue-800 hover:underline truncate block"
+                              title={uploadedData.original_filename}
+                            >
+                              {uploadedData.original_filename}
+                            </a>
                           </div>
-                        )
-                      ) : (
-                        <div className="text-sm text-gray-500">
-                          No file uploaded yet
                         </div>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveTreatment(treatment);
-                        setIsUploadModalOpen(true);
-                      }}
-                      className="ml-4 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shrink-0"
-                      title="Upload TAR archive"
-                    >
-                      Upload File
-                    </button>
-                  </div>
+                        <div className="text-sm text-gray-500 italic mt-2">
+                          Uploaded on {formattedDate(uploadedData)}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-center gap-2 text-amber-600">
+                        <div className="w-4 h-4 border-2 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
+                        <div>
+                          <div className="text-sm font-medium">
+                            Processing
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            This may take several minutes
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  ) : (
+                    <IndoorProjectUploadInline
+                      indoorProjectId={indoorProjectId}
+                      fileType=".tar"
+                      activeTreatment={treatment}
+                      onUploadSuccess={onUploadSuccess}
+                      onUploadStateChange={onUploadStateChange}
+                    />
+                  )}
                 </div>
               );
             })}
           </div>
         </div>
       )}
-      <IndoorProjectUploadModal
-        activeTreatment={activeTreatment}
-        indoorProjectId={indoorProjectId}
-        btnLabel={
-          activeTreatment
-            ? `Upload ${activeTreatment} TAR`
-            : 'Upload Spreadsheet'
-        }
-        isOpen={isUploadModalOpen}
-        setIsOpen={setIsUploadModalOpen}
-        hideBtn={true}
-        fileType={activeTreatment ? '.tar' : '.xlsx'}
-        onUploadSuccess={onUploadSuccess}
-      />
     </div>
   );
 }

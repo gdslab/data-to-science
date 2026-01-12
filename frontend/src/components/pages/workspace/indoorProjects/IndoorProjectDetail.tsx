@@ -1,5 +1,5 @@
 import { AxiosResponse } from 'axios';
-import { Params, useLoaderData, useRevalidator } from 'react-router';
+import { Params, useLoaderData, useRevalidator, useBlocker } from 'react-router';
 import { useEffect, useState } from 'react';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
@@ -83,6 +83,7 @@ export default function IndoorProjectDetail() {
   );
   const [hasUserToggledUploadPane, setHasUserToggledUploadPane] =
     useState(false);
+  const [activeUploadsCount, setActiveUploadsCount] = useState(0);
 
   const {
     state: { projectRole },
@@ -93,6 +94,30 @@ export default function IndoorProjectDetail() {
     revalidator.revalidate();
     refetch();
   };
+
+  const handleUploadStateChange = (isUploading: boolean) => {
+    setActiveUploadsCount((prev) => (isUploading ? prev + 1 : Math.max(0, prev - 1)));
+  };
+
+  // Block navigation when uploads are active
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      activeUploadsCount > 0 &&
+      currentLocation.pathname !== nextLocation.pathname
+  );
+
+  useEffect(() => {
+    if (blocker.state === 'blocked') {
+      const shouldProceed = window.confirm(
+        'Upload in progress. Leaving this page will pause the upload, but you can resume it later. Continue?'
+      );
+      if (shouldProceed) {
+        blocker.proceed();
+      } else {
+        blocker.reset();
+      }
+    }
+  }, [blocker]);
 
   const indoorProjectDataId = indoorProjectData.find(
     ({ file_type }) => file_type === '.xlsx'
@@ -168,6 +193,7 @@ export default function IndoorProjectDetail() {
                     indoorProjectDataSpreadsheet || undefined
                   }
                   onUploadSuccess={handleOnUploadSuccess}
+                  onUploadStateChange={handleUploadStateChange}
                 />
               </div>
 

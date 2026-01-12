@@ -1,92 +1,27 @@
 import '@uppy/core/css/style.min.css';
 import '@uppy/dashboard/css/style.min.css';
 
-import { useState, Dispatch, SetStateAction, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import Uppy from '@uppy/core';
+import { UppyContextProvider } from '@uppy/react';
 import Dashboard from '@uppy/react/dashboard';
 import Tus from '@uppy/tus';
 
-import { IndoorProjectUploadInputProps } from './IndoorProject';
-import Modal from '../../../Modal';
 import { useInterval } from '../../../hooks';
 import { ErrorResponseBody, ValidationError } from '../../../../types/uppy';
 import { refreshTokenIfNeeded } from '../../../../api';
 
-type IndoorProjectUploadModalProps = {
-  btnLabel?: string;
+interface IndoorProjectUploadInlineProps {
   indoorProjectId: string;
-  isOpen?: boolean;
-  setIsOpen?: Dispatch<SetStateAction<boolean>>;
-  hideBtn?: boolean;
-  fileType?: string;
+  fileType: '.xlsx' | '.tar';
   activeTreatment?: string | null;
   onUploadSuccess?: () => void;
-};
-
-export default function IndoorProjectUploadModal({
-  btnLabel = 'Upload',
-  indoorProjectId,
-  isOpen: controlledIsOpen,
-  setIsOpen: controlledSetIsOpen,
-  hideBtn = false,
-  fileType = '.xlsx',
-  activeTreatment = null,
-  onUploadSuccess,
-}: IndoorProjectUploadModalProps) {
-  const [internalIsOpen, setInternalIsOpen] = useState<boolean>(false);
-
-  // Use controlled state if provided, otherwise use internal state
-  const isOpen = controlledIsOpen ?? internalIsOpen;
-  const setIsOpen = controlledSetIsOpen ?? setInternalIsOpen;
-
-  const handleUploadSuccess = () => {
-    if (onUploadSuccess) {
-      onUploadSuccess();
-    }
-    // Close the modal after triggering refetch
-    setIsOpen(false);
-  };
-
-  const handleClick = () => setIsOpen(!isOpen);
-
-  return (
-    <div className="relative">
-      {!controlledIsOpen && !hideBtn && (
-        <div className="flex">
-          <button
-            type="button"
-            onClick={handleClick}
-            className="w-full px-4 py-2 bg-blue-500 text-white font-medium rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300"
-          >
-            {btnLabel}
-          </button>
-        </div>
-      )}
-      <Modal open={isOpen} setOpen={setIsOpen}>
-        <div className="relative flex flex-col p-4 gap-2 bg-[#FAFAFA]">
-          <span className="block font-bold">Required files:</span>
-          <ul className="list-disc list-inside">
-            {fileType === '.xlsx' ? (
-              <li>Spreadsheet (.xls, .xlsx)</li>
-            ) : (
-              <li>TAR archive (.tar)</li>
-            )}
-          </ul>
-          <IndoorProjectUploadInput
-            indoorProjectId={indoorProjectId}
-            fileType={fileType}
-            activeTreatment={activeTreatment}
-            onUploadSuccess={handleUploadSuccess}
-          />
-        </div>
-      </Modal>
-    </div>
-  );
+  onUploadStateChange?: (isUploading: boolean) => void;
 }
 
-function initUppyWithTus(indoorProjectId, treatment?: string | null) {
-  const headers = {
+function initUppyWithTus(indoorProjectId: string, treatment?: string | null) {
+  const headers: Record<string, string> = {
     'X-Indoor-Project-ID': indoorProjectId,
   };
 
@@ -94,21 +29,43 @@ function initUppyWithTus(indoorProjectId, treatment?: string | null) {
     headers['X-Treatment'] = treatment;
   }
 
-  return new Uppy().use(Tus, {
+  return new Uppy({
+    // Customize file IDs before files are added to include project and treatment context
+    // Since @uppy/tus uses file.id in its fingerprint, this ensures
+    // the same file uploaded to different projects/treatments is treated as separate uploads
+    onBeforeFileAdded: (currentFile) => {
+      const modifiedFile = {
+        ...currentFile,
+        id: [
+          currentFile.id,
+          indoorProjectId,
+          treatment || 'no-treatment',
+        ].join('__'),
+      };
+
+      console.log('[Uppy File Added with Custom ID]', {
+        originalId: currentFile.id,
+        customId: modifiedFile.id,
+        fileName: currentFile.name,
+        projectId: indoorProjectId,
+        treatment: treatment || 'none',
+      });
+
+      return modifiedFile;
+    },
+  }).use(Tus, {
     endpoint: '/files',
     headers,
   });
 }
 
-function IndoorProjectUploadInput({
+export default function IndoorProjectUploadInline({
   indoorProjectId,
   fileType = '.xlsx',
   activeTreatment = null,
   onUploadSuccess,
-}: IndoorProjectUploadInputProps & {
-  fileType?: string;
-  onUploadSuccess?: () => void;
-}) {
+  onUploadStateChange,
+}: IndoorProjectUploadInlineProps) {
   const [uppy] = useState(() =>
     initUppyWithTus(indoorProjectId, activeTreatment)
   );
@@ -181,6 +138,17 @@ function IndoorProjectUploadInput({
     };
 
     const handleUpload = async () => {
+      console.log('[Upload Started]', {
+        projectId: indoorProjectId,
+        treatment: activeTreatment || 'none',
+        fileType,
+      });
+
+      // Mark upload as started
+      if (onUploadStateChange) {
+        onUploadStateChange(true);
+      }
+
       // Refresh token if needed before upload starts
       const tokenRefreshed = await refreshTokenIfNeeded();
       if (!tokenRefreshed) {
@@ -194,6 +162,9 @@ function IndoorProjectUploadInput({
           'error',
           5000
         );
+        if (onUploadStateChange) {
+          onUploadStateChange(false);
+        }
         return;
       }
     };
@@ -203,6 +174,11 @@ function IndoorProjectUploadInput({
       _error: unknown,
       response?: { status?: number; body?: unknown }
     ) => {
+      // Mark upload as finished on error
+      if (onUploadStateChange) {
+        onUploadStateChange(false);
+      }
+
       // Handle auth expiry propagated as 500 from tusd hook endpoint
       if (
         response &&
@@ -227,6 +203,10 @@ function IndoorProjectUploadInput({
 
           const tokenRefreshed = await refreshTokenIfNeeded();
           if (tokenRefreshed && _file) {
+            // Mark as uploading again since we're retrying
+            if (onUploadStateChange) {
+              onUploadStateChange(true);
+            }
             setTimeout(() => {
               uppy.retryUpload(_file.id);
             }, 1000);
@@ -276,8 +256,20 @@ function IndoorProjectUploadInput({
     };
 
     const handleComplete = (result: { successful?: unknown[] }) => {
+      // Mark upload as finished
+      if (onUploadStateChange) {
+        onUploadStateChange(false);
+      }
+
       if (result.successful && result.successful.length > 0) {
         setUploadSuccess(true);
+      }
+    };
+
+    const handleCancelAll = () => {
+      // Mark upload as finished if user cancels
+      if (onUploadStateChange) {
+        onUploadStateChange(false);
       }
     };
 
@@ -286,6 +278,7 @@ function IndoorProjectUploadInput({
     uppy.on('upload', handleUpload);
     uppy.on('upload-error', handleUploadError);
     uppy.on('complete', handleComplete);
+    uppy.on('cancel-all', handleCancelAll);
 
     // Cleanup function to remove listeners
     return () => {
@@ -293,8 +286,16 @@ function IndoorProjectUploadInput({
       uppy.off('upload', handleUpload);
       uppy.off('upload-error', handleUploadError);
       uppy.off('complete', handleComplete);
+      uppy.off('cancel-all', handleCancelAll);
     };
-  }, [uppy, restrictions]);
+  }, [
+    uppy,
+    restrictions,
+    onUploadStateChange,
+    fileType,
+    indoorProjectId,
+    activeTreatment,
+  ]);
 
   if (uploadSuccess) {
     return (
@@ -321,18 +322,12 @@ function IndoorProjectUploadInput({
   }
 
   return (
-    <div className="relative flex flex-col gap-2">
-      <Dashboard
-        uppy={uppy}
-        height={400}
-        locale={{
-          strings: {
-            dropHint: 'Drop here or %{myDevice}',
-            myDevice: 'browse local files',
-          },
-        }}
-        proudlyDisplayPoweredByUppy={false}
-      />
-    </div>
+    <UppyContextProvider uppy={uppy}>
+      <div className="relative flex flex-col gap-3">
+        <div className="inline-block">
+          <Dashboard uppy={uppy} height={200} width="auto" />
+        </div>
+      </div>
+    </UppyContextProvider>
   );
 }
