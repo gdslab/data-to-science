@@ -171,7 +171,7 @@ export default function ProjectList({
     );
   } else {
     return (
-      <div className="flex flex-col gap-4 p-4 h-full">
+      <div className="flex flex-col gap-4 pt-4 px-4 h-full overflow-hidden">
         {/* Project header and search */}
         <div className="flex flex-col gap-4">
           <ProjectListHeader />
@@ -244,7 +244,7 @@ export default function ProjectList({
           </div>
         )}
         {filteredProjects && filteredProjects.length > 0 && (
-          <div className="flex-1 flex flex-wrap gap-4 pb-24 overflow-y-auto">
+          <div className="flex-1 min-h-0 flex flex-wrap gap-4 pb-24 overflow-y-auto">
             {filteredAndSortedProjects.map((project) => (
               <ProjectCard
                 key={project.id}
@@ -256,7 +256,7 @@ export default function ProjectList({
         )}
         {/* Pagination */}
         {filteredProjects && filteredProjects.length > 0 && (
-          <div className="w-full bg-slate-200 fixed bottom-4 py-4 px-6">
+          <div className="w-full bg-slate-200 fixed bottom-0 left-0 right-0 py-4 px-6 z-10">
             <div className="flex justify-center">
               <Pagination
                 currentPage={currentPage}

@@ -125,7 +125,7 @@ export default function Workspace() {
 
   return (
     <TabGroup
-      className="m-4"
+      className="m-4 h-[calc(100%-2rem)] flex flex-col"
       selectedIndex={selectedIndex}
       onChange={setSelectedIndex}
     >
@@ -137,14 +137,14 @@ export default function Workspace() {
           Indoor Projects
         </Tab>
       </TabList>
-      <TabPanels>
-        <TabPanel>
+      <TabPanels className="flex-1 min-h-0">
+        <TabPanel className="h-full">
           <ProjectList
             projects={projects}
             revalidate={revalidator.revalidate}
           />
         </TabPanel>
-        <TabPanel>
+        <TabPanel className="h-full">
           <IndoorProjectList indoorProjects={indoorProjects} />
         </TabPanel>
       </TabPanels>
