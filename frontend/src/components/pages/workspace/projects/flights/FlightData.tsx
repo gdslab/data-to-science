@@ -7,7 +7,7 @@ import { DataProduct, Flight } from '../Project';
 import FlightDataTabNav from './FlightDataTabNav';
 
 import { RawDataProps } from './RawData/RawData.types';
-import { User } from '../../../../AuthContext';
+import { User } from '../../../../../AuthContext';
 
 import api from '../../../../../api';
 
@@ -51,7 +51,8 @@ export type FlightData = {
 };
 
 export default function FlightData() {
-  const { dataProducts, rawData, flights, role } = useLoaderData() as FlightData;
+  const { dataProducts, rawData, flights, role } =
+    useLoaderData() as FlightData;
   const {
     flights: contextFlights,
     flightsDispatch,

@@ -6,7 +6,7 @@ import XHRUpload from '@uppy/xhr-upload';
 import '@uppy/core/css/style.min.css';
 import '@uppy/dashboard/css/style.min.css';
 
-import { ErrorResponseBody, ValidationError } from '../../../types/uppy';
+import { ErrorResponseBody, ValidationError } from '../../../../types/uppy';
 
 // Don’t forget to keep the Uppy instance outside of your component.
 function createUppy(endpoint: string) {
