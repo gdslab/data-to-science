@@ -534,12 +534,14 @@ async def verify_static_file_access(request: Request) -> None:
         # Verify user has access to indoor project
         db_indoor = SessionLocal()
         try:
-            indoor_project = crud.indoor_project.read_by_user_id(
-                db_indoor,
-                user_id=user.id,
-                indoor_project_id=indoor_project_id_uuid,
-            )
-            if not indoor_project:
+            try:
+                indoor_project = crud.indoor_project.get_with_permission(
+                    db_indoor,
+                    indoor_project_id=indoor_project_id_uuid,
+                    user_id=user.id,
+                )
+            except Exception:
+                # User doesn't have permission or project doesn't exist
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="indoor project not found",
