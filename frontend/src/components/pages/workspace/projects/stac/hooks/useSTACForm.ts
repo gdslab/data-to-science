@@ -26,7 +26,9 @@ interface UseSTACFormReturn {
 const DEFAULT_LICENSE = 'CC-BY-NC-4.0';
 
 export function useSTACForm(
-  stacMetadata: STACMetadata | null
+  stacMetadata: STACMetadata | null,
+  projectOwnerName?: string,
+  projectOwnerEmail?: string
 ): UseSTACFormReturn {
   const [formState, setFormState] = useState<FormState>({
     contactName: '',
@@ -40,6 +42,18 @@ export function useSTACForm(
 
   // Initialize form fields from existing metadata
   useEffect(() => {
+    // If no collection data exists, fall back to project owner info
+    if (!stacMetadata?.collection) {
+      if (projectOwnerName || projectOwnerEmail) {
+        setFormState((prev) => ({
+          ...prev,
+          contactName: prev.contactName || projectOwnerName || '',
+          contactEmail: prev.contactEmail || projectOwnerEmail || '',
+        }));
+      }
+      return;
+    }
+
     if (stacMetadata?.collection) {
       setFormState((prev) => {
         // Get server values for scientific metadata
@@ -79,16 +93,18 @@ export function useSTACForm(
             ? prev.license
             : serverLicense;
 
-        // For contact fields, only use cached values if they exist
-        // Preserve user input if it differs from server data
+        // For contact fields, use this precedence:
+        // 1. User input that differs from server data (preserve unsaved changes)
+        // 2. Server data (existing saved values)
+        // 3. Project owner info (fallback for new forms)
         const finalContactName =
           prev.contactName && prev.contactName !== serverContactName
             ? prev.contactName
-            : serverContactName;
+            : serverContactName || projectOwnerName || '';
         const finalContactEmail =
           prev.contactEmail && prev.contactEmail !== serverContactEmail
             ? prev.contactEmail
-            : serverContactEmail;
+            : serverContactEmail || projectOwnerEmail || '';
 
         return {
           ...prev,
@@ -173,7 +189,7 @@ export function useSTACForm(
         };
       });
     }
-  }, [stacMetadata]);
+  }, [stacMetadata, projectOwnerName, projectOwnerEmail]);
 
   const updateFormField = <K extends keyof FormState>(
     field: K,

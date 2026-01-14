@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { LoaderFunctionArgs, useLoaderData, useParams } from 'react-router';
 
 import { ProjectDetail } from '../Project';
@@ -28,10 +29,18 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
   // Try to get cached STAC metadata first
   let stacMetadata = null;
-  const cachedResponse = await api.get(
-    `/projects/${params.projectId}/stac-cache`
-  );
-  stacMetadata = cachedResponse.data;
+  try {
+    const cachedResponse = await api.get(
+      `/projects/${params.projectId}/stac-cache`
+    );
+    stacMetadata = cachedResponse.data;
+  } catch (error) {
+    // 404 is expected for new projects - no cached metadata yet
+    // Other errors should propagate
+    if (!axios.isAxiosError(error) || error.response?.status !== 404) {
+      throw error;
+    }
+  }
 
   return {
     stacMetadata,
@@ -50,13 +59,20 @@ export default function ProjectSTACPublishing() {
 
   // Custom hooks for state management
   const operations = useSTACOperations();
+
+  // Prepare project owner info for form auto-population fallback
+  const projectOwnerName = loaderProject.created_by
+    ? `${loaderProject.created_by.first_name} ${loaderProject.created_by.last_name}`
+    : undefined;
+  const projectOwnerEmail = loaderProject.created_by?.email;
+
   const {
     formState,
     updateFormField,
     buildRequestPayload,
     toggleRawDataLink,
     toggleAllRawDataLinks,
-  } = useSTACForm(initialStacMetadata);
+  } = useSTACForm(initialStacMetadata, projectOwnerName, projectOwnerEmail);
 
   // STAC metadata management
   const { stacMetadata, allItems, generatePreview } = useSTACData({
