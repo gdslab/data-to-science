@@ -369,9 +369,7 @@ def extract_dates_from_indoor_spreadsheet(
         ppew_df = None
         try:
             ppew_df = pd.read_excel(
-                file_path,
-                sheet_name="PPEW",
-                dtype={"VARIETY": str, "PI": str}
+                file_path, sheet_name="PPEW", dtype={"VARIETY": str, "PI": str}
             )
         except ValueError:
             logger.warning(f"PPEW worksheet not found in {indoor_project_data_id}")
@@ -379,11 +377,7 @@ def extract_dates_from_indoor_spreadsheet(
         # Read Top worksheet
         top_df = None
         try:
-            top_df = pd.read_excel(
-                file_path,
-                sheet_name="Top",
-                dtype={"VARIETY": str}
-            )
+            top_df = pd.read_excel(file_path, sheet_name="Top", dtype={"VARIETY": str})
         except ValueError:
             logger.warning(f"Top worksheet not found in {indoor_project_data_id}")
 
@@ -397,9 +391,9 @@ def extract_dates_from_indoor_spreadsheet(
             ppew_df.columns = ppew_df.columns.str.lower()
             ppew_df.columns = ppew_df.columns.str.replace(" ", "_")
 
-            if 'planting_date' in ppew_df.columns:
+            if "planting_date" in ppew_df.columns:
                 try:
-                    planting_date_series = ppew_df['planting_date'].dropna()
+                    planting_date_series = ppew_df["planting_date"].dropna()
                     if not planting_date_series.empty:
                         planting_date_value = planting_date_series.iloc[0]
                         start_date = parse_date(planting_date_value)
@@ -413,13 +407,16 @@ def extract_dates_from_indoor_spreadsheet(
             top_df.columns = top_df.columns.str.lower()
             top_df.columns = top_df.columns.str.replace(" ", "_")
 
-            if 'scan_date' in top_df.columns:
+            if "scan_date" in top_df.columns:
                 try:
                     # Drop NaN values before parsing to avoid errors
-                    scan_dates = top_df['scan_date'].dropna()
+                    scan_dates = top_df["scan_date"].dropna()
 
                     # Ensure scan_date is datetime type
-                    if not scan_dates.empty and not pd.api.types.is_datetime64_any_dtype(scan_dates):
+                    if (
+                        not scan_dates.empty
+                        and not pd.api.types.is_datetime64_any_dtype(scan_dates)
+                    ):
                         scan_dates = scan_dates.apply(parse_date)
                     if not scan_dates.empty:
                         min_scan_date = scan_dates.min()
@@ -429,15 +426,17 @@ def extract_dates_from_indoor_spreadsheet(
                         if start_date is None:
                             start_date = (
                                 min_scan_date.to_pydatetime()
-                                if hasattr(min_scan_date, 'to_pydatetime')
+                                if hasattr(min_scan_date, "to_pydatetime")
                                 else min_scan_date
                             )
-                            logger.info(f"Using min scan_date as start_date: {start_date}")
+                            logger.info(
+                                f"Using min scan_date as start_date: {start_date}"
+                            )
 
                         # Use max_scan_date as end_date
                         end_date = (
                             max_scan_date.to_pydatetime()
-                            if hasattr(max_scan_date, 'to_pydatetime')
+                            if hasattr(max_scan_date, "to_pydatetime")
                             else max_scan_date
                         )
                         logger.info(f"Extracted max scan_date as end_date: {end_date}")
@@ -539,8 +538,10 @@ def upload_indoor_project_data(
         logger.info("Extracting indoor project data tar archive contents...Done!")
     else:
         # For non-tar files, try to extract dates if it's an xlsx file
-        if destination_filepath.lower().endswith('.xlsx'):
-            logger.info(f"Attempting to extract dates from spreadsheet: {indoor_project_data_id}")
+        if destination_filepath.lower().endswith(".xlsx"):
+            logger.info(
+                f"Attempting to extract dates from spreadsheet: {indoor_project_data_id}"
+            )
 
             try:
                 # Extract dates from spreadsheet
@@ -563,27 +564,36 @@ def upload_indoor_project_data(
                     update_data: dict[str, datetime] = {}
 
                     # Only update start_date if not already set
-                    if indoor_project.start_date is None and extracted_start is not None:
+                    if (
+                        indoor_project.start_date is None
+                        and extracted_start is not None
+                    ):
                         # Validate that extracted start_date doesn't come after existing end_date
-                        if indoor_project.end_date is not None and extracted_start > indoor_project.end_date:
+                        if (
+                            indoor_project.end_date is not None
+                            and extracted_start > indoor_project.end_date
+                        ):
                             logger.warning(
                                 f"Extracted start_date {extracted_start} comes after existing end_date "
                                 f"{indoor_project.end_date}, not setting start_date"
                             )
                         else:
-                            update_data['start_date'] = extracted_start
+                            update_data["start_date"] = extracted_start
                             logger.info(f"Setting start_date to {extracted_start}")
 
                     # Only update end_date if not already set
                     if indoor_project.end_date is None and extracted_end is not None:
                         # Validate that extracted end_date doesn't come before existing start_date
-                        if indoor_project.start_date is not None and extracted_end < indoor_project.start_date:
+                        if (
+                            indoor_project.start_date is not None
+                            and extracted_end < indoor_project.start_date
+                        ):
                             logger.warning(
                                 f"Extracted end_date {extracted_end} comes before existing start_date "
                                 f"{indoor_project.start_date}, not setting end_date"
                             )
                         else:
-                            update_data['end_date'] = extracted_end
+                            update_data["end_date"] = extracted_end
                             logger.info(f"Setting end_date to {extracted_end}")
 
                     # Update if we have any dates to set
@@ -591,13 +601,17 @@ def upload_indoor_project_data(
                         crud.indoor_project.update(
                             db,
                             db_obj=indoor_project,
-                            obj_in=schemas.indoor_project.IndoorProjectUpdate(**update_data)
+                            obj_in=schemas.indoor_project.IndoorProjectUpdate(
+                                **update_data
+                            ),
                         )
                         logger.info(
                             f"Successfully updated indoor project dates: {update_data}"
                         )
                     else:
-                        logger.info("No date updates needed - dates already set or not extracted")
+                        logger.info(
+                            "No date updates needed - dates already set or not extracted"
+                        )
 
             except Exception as e:
                 logger.exception(
@@ -1044,7 +1058,9 @@ def upload_vector_layer(
             # Generate FlatGeobuf file
             try:
                 save_vector_layer_flatgeobuf(project_id, layer_id, gdf, static_dir)
-                logger.info(f"Successfully generated FlatGeobuf file for layer {layer_id}")
+                logger.info(
+                    f"Successfully generated FlatGeobuf file for layer {layer_id}"
+                )
             except Exception:
                 logger.exception(
                     f"Failed to generate FlatGeobuf for layer {layer_id}, continuing without FlatGeobuf"
