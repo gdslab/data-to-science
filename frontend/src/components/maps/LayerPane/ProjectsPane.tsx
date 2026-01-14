@@ -12,8 +12,8 @@ import CountBadge from '../../CountBadge';
 import Filter from '../../Filter';
 import LayerCard from './LayerCard';
 import Pagination, { getPaginationResults } from '../../Pagination';
-import { ProjectItem } from '../../pages/projects/Project';
-import ProjectSearch from '../../pages/projects/ProjectSearch';
+import { ProjectItem } from '../../pages/workspace/projects/Project';
+import ProjectSearch from '../../pages/workspace/projects/ProjectSearch';
 import Sort, { sortProjects, SortSelection } from '../../Sort';
 import { useMapContext } from '../MapContext';
 

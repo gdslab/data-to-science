@@ -9,7 +9,7 @@ import AuthContext, { User } from '../../../AuthContext';
 import { confirm } from '../../ConfirmationDialog';
 import api from '../../../api';
 
-import { downloadFile as downloadCSV } from '../projects/fieldCampaigns/utils';
+import { downloadFile as downloadCSV } from '../workspace/projects/fieldCampaigns/utils';
 
 const UserProfilePicture = ({ user }: { user: User }) =>
   user.profile_url ? (

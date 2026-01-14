@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import List, TYPE_CHECKING
 
 from datetime import date
@@ -32,7 +32,7 @@ class Project(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[str] = mapped_column(String(300))
+    description: Mapped[str] = mapped_column(String(300), nullable=False)
     planting_date: Mapped[date] = mapped_column(Date, nullable=True)
     harvest_date: Mapped[date] = mapped_column(Date, nullable=True)
     location_id: Mapped[uuid.UUID] = mapped_column(
@@ -57,16 +57,13 @@ class Project(Base):
         DateTime(timezone=True), nullable=True
     )
 
-    uas_members: Mapped[List["ProjectMember"]] = relationship(
+    # Relationships
+    members: Mapped[List["ProjectMember"]] = relationship(
         "ProjectMember",
         back_populates="uas_project",
         cascade="all, delete-orphan",
         primaryjoin="and_(ProjectMember.project_type == 'PROJECT', ProjectMember.project_uuid == Project.id)",
         foreign_keys="[ProjectMember.project_uuid]",
-    )
-    # TODO: Remove this relationship after migration
-    members: Mapped[List["ProjectMember"]] = relationship(
-        back_populates="project", cascade="all, delete-orphan"
     )
     modules: Mapped[List["ProjectModule"]] = relationship(back_populates="project")
     location: Mapped["Location"] = relationship(back_populates="project")
@@ -92,7 +89,7 @@ class Project(Base):
     def __repr__(self) -> str:
         return (
             f"Project(id={self.id!r}, title={self.title!r}, "
-            f"description={self.description!r} "
+            f"description={self.description!r}, "
             f"planting_date={self.planting_date!r}, "
             f"harvest_date={self.harvest_date!r}, owner_id={self.owner_id!r}, "
             f"team_id={self.team_id!r})"

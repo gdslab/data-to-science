@@ -55,7 +55,7 @@ def test_read_data_product_with_project_manager_role(
     create_project_member(
         db,
         member_id=current_user.id,
-        project_id=data_product.project.id,
+        project_uuid=data_product.project.id,
         role=Role.MANAGER,
     )
     response = client.get(
@@ -75,7 +75,7 @@ def test_read_data_product_with_project_viewer_role(
     create_project_member(
         db,
         member_id=current_user.id,
-        project_id=data_product.project.id,
+        project_uuid=data_product.project.id,
         role=Role.VIEWER,
     )
     response = client.get(
@@ -133,7 +133,7 @@ def test_generate_data_product_colorbar_with_viewer_role(
     create_project_member(
         db,
         member_id=current_user.id,
-        project_id=data_product.project.id,
+        project_uuid=data_product.project.id,
         role=Role.VIEWER,
     )
     response = client.get(
@@ -179,7 +179,7 @@ def test_generate_data_product_colorbar_with_invalid_parameters(
     create_project_member(
         db,
         member_id=current_user.id,
-        project_id=data_product.project.id,
+        project_uuid=data_product.project.id,
         role=Role.VIEWER,
     )
     response = client.get(
@@ -241,7 +241,7 @@ def test_read_data_products_with_manager_role(
     create_project_member(
         db,
         member_id=current_user.id,
-        project_id=project.id,
+        project_uuid=project.id,
         role=Role.MANAGER,
     )
     response = client.get(
@@ -281,7 +281,7 @@ def test_read_data_products_with_viewer_role(
     create_project_member(
         db,
         member_id=current_user.id,
-        project_id=project.id,
+        project_uuid=project.id,
         role=Role.VIEWER,
     )
     response = client.get(
@@ -356,7 +356,7 @@ def test_update_data_product_bands_with_project_manager_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
     create_project_member(
-        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_uuid=project.id
     )
     data_product = SampleDataProduct(db, project=project)
     # Create payload for updating bands
@@ -382,7 +382,7 @@ def test_update_data_product_bands_with_project_viewer_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
     create_project_member(
-        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_uuid=project.id
     )
     data_product = SampleDataProduct(db, project=project)
     # Create payload for updating bands
@@ -488,7 +488,7 @@ def test_update_data_product_data_type_with_project_manager_role(
     data_product = SampleDataProduct(db, data_type=old_data_type, project=project)
     # add current user as a manager to the data product's project
     create_project_member(
-        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_uuid=project.id
     )
     payload = {"data_type": new_data_type}
     response = client.put(
@@ -512,7 +512,7 @@ def test_update_data_product_data_type_with_project_viewer_role(
     data_product = SampleDataProduct(db, data_type=old_data_type, project=project)
     # add current user as a viewer to the data product's project
     create_project_member(
-        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_uuid=project.id
     )
     payload = {"data_type": new_data_type}
     response = client.put(
@@ -586,7 +586,7 @@ def test_deactivate_data_product_with_manager_role(
         db,
         role=Role.MANAGER,
         member_id=current_user.id,
-        project_id=data_product.project.id,
+        project_uuid=data_product.project.id,
     )
     response = client.delete(
         f"{settings.API_V1_STR}/projects/{data_product.project.id}"
@@ -604,7 +604,7 @@ def test_deactivate_data_product_with_viewer_role(
         db,
         role=Role.VIEWER,
         member_id=current_user.id,
-        project_id=data_product.project.id,
+        project_uuid=data_product.project.id,
     )
     response = client.delete(
         f"{settings.API_V1_STR}/projects/{data_product.project.id}"
@@ -694,7 +694,7 @@ def test_get_zonal_statistics(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
     create_project_member(
-        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_uuid=project.id
     )
     data_product = SampleDataProduct(db, data_type="dsm", project=project)
     # get single polygon feature inside the sample data product
@@ -762,7 +762,7 @@ def test_get_zonal_statistics_by_layer_id(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
     create_project_member(
-        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_uuid=project.id
     )
     data_product = SampleDataProduct(db, data_type="dsm", project=project)
     # create zonal statistics metadata for data product

@@ -96,7 +96,6 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         # add project memebers to db
         member_db_obj = ProjectMember(
             member_id=owner_id,
-            project_id=project_db_obj.id,
             project_type=ProjectType.PROJECT,
             project_uuid=project_db_obj.id,
             role=Role.OWNER,
@@ -114,7 +113,6 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     project_members.append(
                         ProjectMember(
                             member_id=team_member.member_id,
-                            project_id=project_db_obj.id,
                             project_type=ProjectType.PROJECT,
                             project_uuid=project_db_obj.id,
                             role=team_member.role,
@@ -227,11 +225,15 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 setattr(
                     project[0],
                     "created_by",
-                    {
-                        "first_name": project[0].owner.first_name,
-                        "last_name": project[0].owner.last_name,
-                        "email": project[0].owner.email,
-                    } if project[0].owner else None,
+                    (
+                        {
+                            "first_name": project[0].owner.first_name,
+                            "last_name": project[0].owner.last_name,
+                            "email": project[0].owner.email,
+                        }
+                        if project[0].owner
+                        else None
+                    ),
                 )
                 return {
                     "response_code": status.HTTP_200_OK,

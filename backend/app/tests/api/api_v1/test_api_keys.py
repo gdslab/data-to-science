@@ -85,7 +85,7 @@ def test_access_authorized_data_product_with_api_key(
     project = data_product.project
     # add current user as member of project with default "viewer" role
     create_project_member(
-        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_uuid=project.id
     )
 
     # current user has access to the data product project
@@ -109,7 +109,7 @@ def test_access_authorized_deactivated_data_product_with_api_key(
     project = data_product.project
     # add current user as member of project with default "viewer" role
     create_project_member(
-        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_uuid=project.id
     )
     # deactivate data product
     deactivated_data_product = crud.data_product.deactivate(
@@ -195,7 +195,7 @@ def test_access_authorized_raw_data_with_api_key(
     project = raw_data.project
     # add current user as member of project with default "viewer" role
     create_project_member(
-        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_uuid=project.id
     )
 
     # current user has access to the raw data project
@@ -220,7 +220,7 @@ def test_access_authorized_deactivated_raw_data_with_api_key(
     project = raw_data.project
     # add current user as member of project with default "viewer" role
     create_project_member(
-        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_uuid=project.id
     )
     # deactivate raw data
     deactivated_raw_data = crud.raw_data.deactivate(db, raw_data_id=raw_data.obj.id)

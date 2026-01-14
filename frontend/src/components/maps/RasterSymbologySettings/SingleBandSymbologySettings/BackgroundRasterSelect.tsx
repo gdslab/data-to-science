@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import Select, { SingleValue } from 'react-select';
 
-import { DataProduct } from '../../../pages/projects/Project';
+import { DataProduct } from '../../../pages/workspace/projects/Project';
 
 import { useMapContext } from '../../MapContext';
 

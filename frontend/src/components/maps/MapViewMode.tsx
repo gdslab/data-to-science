@@ -1,20 +1,21 @@
 import { AxiosResponse } from 'axios';
 import { useEffect, useRef } from 'react';
 
-import { useMapContext } from './MapContext';
-import { useMapApiKeys } from './MapApiKeysContext';
-import { MapLayer } from '../pages/projects/Project';
+import { MapLayer } from '../pages/workspace/projects/Project';
 import CompareMap from './CompareMap';
 import HomeMap from './HomeMap';
 import PanoViewer from './PanoViewer';
 import PotreeViewer from './PotreeViewer';
+
+import { useMapApiKeys } from './MapApiKeysContext';
+import { useMapContext } from './MapContext';
 import PlayCanvasglTFViewer from './PlayCanvasglTFViewer';
 import LCCViewer from './LCCViewer';
 import { useMapLayerContext } from './MapLayersContext';
+import { useRasterSymbologyContext } from './RasterSymbologyContext';
 
 import api from '../../api';
 import { mapApiResponseToLayers } from './utils';
-import { useRasterSymbologyContext } from './RasterSymbologyContext';
 
 export default function MapViewMode() {
   const { activeDataProduct, activeMapTool, activeProject } = useMapContext();

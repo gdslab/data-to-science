@@ -41,7 +41,7 @@ def test_update_file_permission_with_project_manager_role(
     create_project_member(
         db,
         member_id=current_user.id,
-        project_id=data_product.project.id,
+        project_uuid=data_product.project.id,
         role=Role.MANAGER,
     )
     updated_data = {"is_public": True}
@@ -62,7 +62,7 @@ def test_update_file_permission_with_project_viewer_role(
     create_project_member(
         db,
         member_id=current_user.id,
-        project_id=data_product.project.id,
+        project_uuid=data_product.project.id,
         role=Role.VIEWER,
     )
     updated_data = {"is_public": True}

@@ -6,6 +6,8 @@ from app.api.api_v1.endpoints import (
     file_permission,
     flights,
     health,
+    indoor_projects,
+    indoor_project_data,
     locations,
     public,
     projects,
@@ -46,6 +48,14 @@ api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
 api_router.include_router(health.router, prefix="/health", tags=["health"])
 api_router.include_router(locations.router, prefix="/locations", tags=["locations"])
 api_router.include_router(public.router, prefix="/public", tags=["public"])
+api_router.include_router(
+    indoor_projects.router, prefix="/indoor_projects", tags=["indoor_projects"]
+)
+api_router.include_router(
+    indoor_project_data.router,
+    prefix="/indoor_projects/{indoor_project_id}/uploaded",
+    tags=["indoor_project_data"],
+)
 api_router.include_router(projects.router, prefix="/projects", tags=["projects"])
 api_router.include_router(
     flights.router, prefix="/projects/{project_id}/flights", tags=["flights"]
@@ -83,6 +93,11 @@ api_router.include_router(
 api_router.include_router(
     project_members.router,
     prefix="/projects/{project_id}/members",
+    tags=["project_members"],
+)
+api_router.include_router(
+    project_members.indoor_router,
+    prefix="/indoor_projects/{indoor_project_id}/members",
     tags=["project_members"],
 )
 api_router.include_router(

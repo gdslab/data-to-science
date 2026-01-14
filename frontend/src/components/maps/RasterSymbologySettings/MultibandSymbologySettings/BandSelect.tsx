@@ -6,7 +6,7 @@ import {
   MultibandSymbology,
   useRasterSymbologyContext,
 } from '../../RasterSymbologyContext';
-import { DataProduct } from '../../../pages/projects/Project';
+import { DataProduct } from '../../../pages/workspace/projects/Project';
 
 export default function BandSelect({
   bandColor,
@@ -73,7 +73,8 @@ export default function BandSelect({
         defaultValue={options[symbology[bandColor].idx - 1]}
         options={options}
         onChange={(bandOption) =>
-          bandOption && handleBandInputChange(bandColor, toNumber(bandOption.value))
+          bandOption &&
+          handleBandInputChange(bandColor, toNumber(bandOption.value))
         }
       />
     </label>

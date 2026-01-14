@@ -5,7 +5,7 @@ import {
   SingleBandSymbology,
   useRasterSymbologyContext,
 } from '../../RasterSymbologyContext';
-import { DataProduct } from '../../../pages/projects/Project';
+import { DataProduct } from '../../../pages/workspace/projects/Project';
 
 export default function SingleBandColorRampSelect({
   dataProduct,

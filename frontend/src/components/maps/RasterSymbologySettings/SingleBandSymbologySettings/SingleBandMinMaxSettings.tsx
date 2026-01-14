@@ -1,4 +1,4 @@
-import { DataProduct } from '../../../pages/projects/Project';
+import { DataProduct } from '../../../pages/workspace/projects/Project';
 import {
   SingleBandSymbology,
   useRasterSymbologyContext,
@@ -20,8 +20,16 @@ export default function SingleBandMinMaxSettings({
       <RasterSymbologyModeRadioGroup dataProduct={dataProduct} />
       {symbology.mode === 'minMax' && (
         <div className="flex justify-between gap-4">
-          <SingleBandNumberInput name="min" dataProduct={dataProduct} disabled />
-          <SingleBandNumberInput name="max" dataProduct={dataProduct} disabled />
+          <SingleBandNumberInput
+            name="min"
+            dataProduct={dataProduct}
+            disabled
+          />
+          <SingleBandNumberInput
+            name="max"
+            dataProduct={dataProduct}
+            disabled
+          />
         </div>
       )}
       {symbology.mode === 'userDefined' && (

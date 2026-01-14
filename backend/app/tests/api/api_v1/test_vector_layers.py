@@ -51,7 +51,7 @@ def test_read_vector_layer_with_manager_owner_role(
     project = create_project(db)
     point_feature_collection = create_feature_collection(db, "point", project.id)
     create_project_member(
-        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_uuid=project.id
     )
     vector_layer_feature_id = point_feature_collection.features[0].properties[
         "feature_id"
@@ -82,7 +82,7 @@ def test_read_vector_layer_with_project_viewer_role(
     project = create_project(db)
     point_feature_collection = create_feature_collection(db, "point", project.id)
     create_project_member(
-        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_uuid=project.id
     )
     vector_layer_feature_id = point_feature_collection.features[0].properties[
         "feature_id"
@@ -181,7 +181,7 @@ def test_read_vector_layers_with_project_manager_role(
     fc2 = create_feature_collection(db, "linestring", project_id=project.id)
     fc3 = create_feature_collection(db, "polygon", project_id=project.id)
     create_project_member(
-        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_uuid=project.id
     )
 
     response = client.get(f"{settings.API_V1_STR}/projects/{project.id}/vector_layers")
@@ -209,7 +209,7 @@ def test_read_vector_layers_with_project_viewer_role(
     fc2 = create_feature_collection(db, "linestring", project_id=project.id)
     fc3 = create_feature_collection(db, "polygon", project_id=project.id)
     create_project_member(
-        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_uuid=project.id
     )
 
     response = client.get(f"{settings.API_V1_STR}/projects/{project.id}/vector_layers")
@@ -298,7 +298,7 @@ def test_remove_vector_layer_with_project_manager_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
     create_project_member(
-        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_uuid=project.id
     )
     feature_collection = create_feature_collection(
         db, geom_type="multipoint", project_id=project.id
@@ -322,7 +322,7 @@ def test_remove_vector_layer_with_project_viewer_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
     create_project_member(
-        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_uuid=project.id
     )
     feature_collection = create_feature_collection(
         db, geom_type="multipoint", project_id=project.id
@@ -376,7 +376,7 @@ def test_update_vector_layer_with_project_manager_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
     create_project_member(
-        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_uuid=project.id
     )
     feature_collection = create_feature_collection(db, "point", project_id=project.id)
     layer_id = feature_collection.features[0].properties["layer_id"]
@@ -398,7 +398,7 @@ def test_update_vector_layer_with_project_viewer_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
     create_project_member(
-        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_uuid=project.id
     )
     feature_collection = create_feature_collection(db, "point", project_id=project.id)
     layer_id = feature_collection.features[0].properties["layer_id"]
@@ -551,7 +551,7 @@ def test_create_vector_layer_from_geojson_with_manager_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
     create_project_member(
-        db, role=Role.MANAGER, member_id=current_user.id, project_id=project.id
+        db, role=Role.MANAGER, member_id=current_user.id, project_uuid=project.id
     )
     vector_layer_data = get_geojson_feature_collection("point")
 
@@ -568,7 +568,7 @@ def test_create_vector_layer_from_geojson_with_viewer_role(
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
     create_project_member(
-        db, role=Role.VIEWER, member_id=current_user.id, project_id=project.id
+        db, role=Role.VIEWER, member_id=current_user.id, project_uuid=project.id
     )
     vector_layer_data = get_geojson_feature_collection("point")
 

@@ -2,7 +2,7 @@ import { AxiosResponse, isAxiosError } from 'axios';
 import { useEffect } from 'react';
 
 import { useMapContext } from './MapContext';
-import { ProjectItem } from '../pages/projects/Project';
+import { ProjectItem } from '../pages/workspace/projects/Project';
 
 import api from '../../api';
 import { getLocalStorageProjects, filterValidProjects } from './utils';

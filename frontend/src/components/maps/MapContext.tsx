@@ -13,7 +13,7 @@ import {
   Flight,
   MapLayerFeatureCollection,
   ProjectItem,
-} from '../pages/projects/Project';
+} from '../pages/workspace/projects/Project';
 import {
   ActiveDataProductAction,
   ActiveMapToolAction,

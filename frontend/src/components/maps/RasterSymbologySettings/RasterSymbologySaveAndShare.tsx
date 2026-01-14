@@ -2,7 +2,11 @@ import { AxiosResponse } from 'axios';
 import { useState } from 'react';
 
 import { Button } from '../../Buttons';
-import { DataProduct, ProjectDetail, ProjectItem } from '../../pages/projects/Project';
+import {
+  DataProduct,
+  ProjectDetail,
+  ProjectItem,
+} from '../../pages/workspace/projects/Project';
 import Modal from '../../Modal';
 import RasterSymbologyAccessControls from './RasterSymbologyAccessControls';
 import { useMapContext } from '../MapContext';

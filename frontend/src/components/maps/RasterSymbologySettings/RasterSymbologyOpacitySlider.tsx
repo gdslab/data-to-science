@@ -1,4 +1,4 @@
-import { DataProduct } from '../../pages/projects/Project';
+import { DataProduct } from '../../pages/workspace/projects/Project';
 import OpacitySlider from '../OpacitySlider';
 import {
   MultibandSymbology,
@@ -43,7 +43,10 @@ export default function RasterSymbologyOpacitySlider({
           payload: updatedSymbology,
         });
       } else if (isMultibandSymbology(symbology)) {
-        const updatedSymbology = { ...symbology, opacity: value } as MultibandSymbology;
+        const updatedSymbology = {
+          ...symbology,
+          opacity: value,
+        } as MultibandSymbology;
         dispatch({
           type: 'SET_SYMBOLOGY',
           rasterId: dataProduct.id,

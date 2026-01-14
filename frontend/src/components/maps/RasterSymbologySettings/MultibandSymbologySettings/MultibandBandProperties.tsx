@@ -1,5 +1,5 @@
 import BandSettings from './BandSettings';
-import { DataProduct } from '../../../pages/projects/Project';
+import { DataProduct } from '../../../pages/workspace/projects/Project';
 
 export default function MultibandBandProperties({
   dataProduct,

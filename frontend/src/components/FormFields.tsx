@@ -5,7 +5,8 @@ export const styles = {
   label: 'block text-sm text-gray-400 font-bold pt-2 pb-1',
   inputText:
     'focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-hidden border border-gray-400 rounded-sm py-1 px-4 block w-full appearance-none',
-  inputTextArea: 'w-full resize-none rounded-sm border border-gray-400 py-1 px-4',
+  inputTextArea:
+    'w-full resize-none rounded-sm border border-gray-400 py-1 px-4',
 };
 
 type InputField = {
@@ -14,6 +15,7 @@ type InputField = {
   placeholder?: string;
   required?: boolean;
   type?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 };
 
 interface InputSelectField extends InputField {
@@ -29,29 +31,37 @@ export function InputField({
   placeholder = '',
   required = true,
   type = 'text',
+  onChange,
 }: InputField) {
   return (
     <ConnectForm>
-      {({ formState: { errors }, register }) => (
-        <div>
-          <label className={styles.label}>
-            {label}
-            {required && '*'}
-          </label>
-          <input
-            className={styles.inputText}
-            type={type}
-            placeholder={placeholder}
-            {...register(name)}
-            aria-invalid={errors[name] ? 'true' : 'false'}
-          />
-          {errors[name] && (
-            <p role="alert" className={styles.error}>
-              {errors[name].message}
-            </p>
-          )}
-        </div>
-      )}
+      {({ formState: { errors }, register }) => {
+        const { onChange: registerOnChange, ...registerRest } = register(name);
+        return (
+          <div>
+            <label className={styles.label}>
+              {label}
+              {required && '*'}
+            </label>
+            <input
+              className={styles.inputText}
+              type={type}
+              placeholder={placeholder}
+              {...registerRest}
+              onChange={(e) => {
+                registerOnChange(e);
+                onChange?.(e);
+              }}
+              aria-invalid={errors[name] ? 'true' : 'false'}
+            />
+            {errors[name] && (
+              <p role="alert" className={styles.error}>
+                {errors[name].message}
+              </p>
+            )}
+          </div>
+        );
+      }}
     </ConnectForm>
   );
 }
@@ -75,12 +85,51 @@ export function SelectField({
             {...register(name)}
             aria-invalid={errors[name] ? 'true' : 'false'}
           >
+            <option value="">Select an option...</option>
             {options.map((opt, i) => (
-              <option key={i} disabled={!opt.value} value={opt.value}>
+              <option key={i} value={opt.value}>
                 {opt.label}
               </option>
             ))}
           </select>
+          {errors[name] && (
+            <p role="alert" className={styles.error}>
+              {errors[name].message}
+            </p>
+          )}
+        </div>
+      )}
+    </ConnectForm>
+  );
+}
+
+export function RadioField({
+  label,
+  name,
+  options,
+  required = true,
+}: InputSelectField) {
+  return (
+    <ConnectForm>
+      {({ formState: { errors }, register }) => (
+        <div>
+          <label className={styles.label}>
+            {label}
+            {required && '*'}
+          </label>
+          <div className="flex flex-col gap-2">
+            {options.map((opt, i) => (
+              <label key={i} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  value={opt.value}
+                  {...register(name)}
+                  className="w-4 h-4 cursor-pointer checked:bg-accent2 checked:hover:bg-accent2"
+                />
+                <span className="text-sm text-gray-700">{opt.label}</span>
+              </label>
+            ))}
+          </div>
           {errors[name] && (
             <p role="alert" className={styles.error}>
               {errors[name].message}

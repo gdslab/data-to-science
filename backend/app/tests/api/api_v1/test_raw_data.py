@@ -40,7 +40,7 @@ def test_read_raw_data_with_project_manager_role(
     create_project_member(
         db,
         member_id=current_user.id,
-        project_id=raw_data.project.id,
+        project_uuid=raw_data.project.id,
         role=Role.MANAGER,
     )
     response = client.get(
@@ -60,7 +60,7 @@ def test_read_raw_data_with_project_viewer_role(
     create_project_member(
         db,
         member_id=current_user.id,
-        project_id=raw_data.project.id,
+        project_uuid=raw_data.project.id,
         role=Role.VIEWER,
     )
     response = client.get(
@@ -92,7 +92,7 @@ def test_download_raw_data_with_viewer_role(
     create_project_member(
         db,
         member_id=current_user.id,
-        project_id=raw_data.project.id,
+        project_uuid=raw_data.project.id,
         role=Role.VIEWER,
     )
     response = client.get(
@@ -153,7 +153,7 @@ def test_read_multi_raw_data_with_manager_role(
     create_project_member(
         db,
         member_id=current_user.id,
-        project_id=project.id,
+        project_uuid=project.id,
         role=Role.MANAGER,
     )
     response = client.get(
@@ -181,7 +181,7 @@ def test_read_multi_raw_data_with_viewer_role(
     create_project_member(
         db,
         member_id=current_user.id,
-        project_id=project.id,
+        project_uuid=project.id,
         role=Role.VIEWER,
     )
     response = client.get(
@@ -243,7 +243,10 @@ def test_deactivate_raw_data_with_manager_role(
     current_user = get_current_user(db, normal_user_access_token)
     raw_data = SampleRawData(db)
     create_project_member(
-        db, role=Role.MANAGER, member_id=current_user.id, project_id=raw_data.project.id
+        db,
+        role=Role.MANAGER,
+        member_id=current_user.id,
+        project_uuid=raw_data.project.id,
     )
     response = client.delete(
         f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
@@ -258,7 +261,10 @@ def test_deactivate_raw_data_with_viewer_role(
     current_user = get_current_user(db, normal_user_access_token)
     raw_data = SampleRawData(db)
     create_project_member(
-        db, role=Role.VIEWER, member_id=current_user.id, project_id=raw_data.project.id
+        db,
+        role=Role.VIEWER,
+        member_id=current_user.id,
+        project_uuid=raw_data.project.id,
     )
     response = client.delete(
         f"{settings.API_V1_STR}/projects/{raw_data.project.id}"

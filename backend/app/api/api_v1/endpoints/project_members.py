@@ -6,9 +6,11 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
+from app.models.project_type import ProjectType
 from app.schemas.role import Role
 
 router = APIRouter()
+indoor_router = APIRouter()
 
 
 @router.post(
@@ -22,7 +24,7 @@ def create_project_member(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     project_member = crud.project_member.create_with_project(
-        db, obj_in=project_member_in, project_id=project.id
+        db, obj_in=project_member_in, project_uuid=project.id
     )
     if not project_member:
         raise HTTPException(
@@ -129,6 +131,147 @@ def remove_project_member(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Project creator cannot be removed",
+        )
+    removed_project_member = crud.project_member.remove(db, id=project_member_id)
+    return removed_project_member
+
+
+# Indoor Project Members Endpoints
+@indoor_router.post(
+    "", response_model=schemas.ProjectMember, status_code=status.HTTP_201_CREATED
+)
+def create_indoor_project_member(
+    indoor_project_id: UUID,
+    project_member_in: schemas.ProjectMemberCreate,
+    indoor_project: models.IndoorProject = Depends(
+        deps.can_read_write_delete_indoor_project
+    ),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    project_member = crud.project_member.create_with_project(
+        db,
+        obj_in=project_member_in,
+        project_uuid=indoor_project.id,
+        project_type=ProjectType.INDOOR_PROJECT,
+    )
+    if not project_member:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+    return project_member
+
+
+@indoor_router.post(
+    "/multi",
+    response_model=list[schemas.ProjectMember],
+    status_code=status.HTTP_201_CREATED,
+)
+def create_indoor_project_members(
+    indoor_project_id: UUID,
+    project_members: list[UUID],
+    indoor_project: models.IndoorProject = Depends(
+        deps.can_read_write_delete_indoor_project
+    ),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    # Ensure that dependency injections for indoor_project and current user are used
+    _ = indoor_project, current_user  # noqa: F841
+
+    # Create list of tuples with project member and role
+    new_members = [(project_member, Role.VIEWER) for project_member in project_members]
+    # Create project member objects
+    project_member_objs = crud.project_member.create_multi_with_project(
+        db,
+        new_members=new_members,
+        project_uuid=indoor_project_id,
+        project_type=ProjectType.INDOOR_PROJECT,
+    )
+
+    return project_member_objs
+
+
+@indoor_router.get("/{project_member_id}", response_model=schemas.ProjectMember)
+def read_indoor_project_member(
+    project_member_id: UUID,
+    db: Session = Depends(deps.get_db),
+    indoor_project: models.IndoorProject = Depends(deps.can_read_indoor_project),
+) -> Any:
+    project_member = crud.project_member.get_by_project_and_member_id(
+        db,
+        project_uuid=indoor_project.id,
+        member_id=project_member_id,
+        project_type=ProjectType.INDOOR_PROJECT,
+    )
+    if not project_member:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+    return project_member
+
+
+@indoor_router.get("", response_model=list[schemas.ProjectMember])
+def read_indoor_project_members(
+    db: Session = Depends(deps.get_db),
+    indoor_project: models.IndoorProject = Depends(deps.can_read_indoor_project),
+) -> Any:
+    project_members = crud.project_member.get_list_of_project_members(
+        db, project_uuid=indoor_project.id, project_type=ProjectType.INDOOR_PROJECT
+    )
+
+    return project_members
+
+
+@indoor_router.put("/{project_member_id}", response_model=schemas.ProjectMember)
+def update_indoor_project_member(
+    project_member_id: UUID,
+    project_member_in: schemas.ProjectMemberUpdate,
+    indoor_project: models.IndoorProject = Depends(
+        deps.can_read_write_delete_indoor_project
+    ),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    project_member_db = crud.project_member.get(db, id=project_member_id)
+    if not project_member_db:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project member not found"
+        )
+    project_member_user_obj = crud.user.get(db, id=project_member_db.member_id)
+    if not project_member_user_obj or (
+        project_member_user_obj and project_member_user_obj.is_demo
+    ):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Permission denied")
+
+    updated_project_member = crud.project_member.update_project_member(
+        db, project_member_obj=project_member_db, project_member_in=project_member_in
+    )
+    if updated_project_member["response_code"] != status.HTTP_200_OK:
+        raise HTTPException(
+            status_code=updated_project_member["response_code"],
+            detail=updated_project_member["message"],
+        )
+    return updated_project_member["result"]
+
+
+@indoor_router.delete("/{project_member_id}", response_model=schemas.ProjectMember)
+def remove_indoor_project_member(
+    project_member_id: UUID,
+    indoor_project: models.IndoorProject = Depends(
+        deps.can_read_write_delete_indoor_project
+    ),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    project_member = crud.project_member.get(db, id=project_member_id)
+    if not project_member:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project member not found"
+        )
+    if project_member.member_id == indoor_project.owner_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Indoor project creator cannot be removed",
         )
     removed_project_member = crud.project_member.remove(db, id=project_member_id)
     return removed_project_member

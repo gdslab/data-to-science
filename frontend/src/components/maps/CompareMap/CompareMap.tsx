@@ -195,7 +195,10 @@ export default function CompareMap() {
       position: 'absolute',
       width: mode === 'side-by-side' ? '50%' : '100%',
       height: '100%',
-      clipPath: mode === 'split-screen' ? `inset(0 ${100 - sliderPosition}% 0 0)` : 'none',
+      clipPath:
+        mode === 'split-screen'
+          ? `inset(0 ${100 - sliderPosition}% 0 0)`
+          : 'none',
       borderRight: mode === 'side-by-side' ? '2px solid white' : 'none',
     }),
     [sliderPosition, mode]
@@ -207,7 +210,8 @@ export default function CompareMap() {
       left: mode === 'side-by-side' ? '50%' : 0,
       width: mode === 'side-by-side' ? '50%' : '100%',
       height: '100%',
-      clipPath: mode === 'split-screen' ? `inset(0 0 0 ${sliderPosition}%)` : 'none',
+      clipPath:
+        mode === 'split-screen' ? `inset(0 0 0 ${sliderPosition}%)` : 'none',
     }),
     [sliderPosition, mode]
   );
