@@ -2,7 +2,7 @@ import axios from 'axios';
 import { Feature } from 'geojson';
 import { useEffect, useState } from 'react';
 
-import { DataProduct } from '../pages/projects/Project';
+import { DataProduct } from '../pages/workspace/projects/Project';
 import {
   MultibandSymbology,
   SingleBandSymbology,

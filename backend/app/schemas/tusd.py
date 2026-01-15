@@ -1,7 +1,6 @@
 from typing import Dict, List, Optional
-from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, UUID4
 
 
 class Storage(BaseModel):
@@ -56,9 +55,13 @@ class Header(BaseModel):
     X_Forwarded_Host: List[str] = Field(alias="X-Forwarded-Host")
     X_Forwarded_Proto: List[str] = Field(alias="X-Forwarded-Proto")
     # custom headers
-    X_Project_ID: Optional[List[UUID]] = Field(alias="X-Project-Id", default=None)
-    X_Flight_ID: Optional[List[UUID]] = Field(alias="X-Flight-Id", default=None)
+    X_Project_ID: Optional[List[UUID4]] = Field(alias="X-Project-Id", default=None)
+    X_Flight_ID: Optional[List[UUID4]] = Field(alias="X-Flight-Id", default=None)
     X_Data_Type: Optional[List[str]] = Field(alias="X-Data-Type", default=None)
+    X_Indoor_Project_ID: Optional[List[UUID4]] = Field(
+        alias="X-Indoor-Project-Id", default=None
+    )
+    X_Treatment: Optional[List[str]] = Field(alias="X-Treatment", default=None)
 
 
 class HTTPRequest(BaseModel):

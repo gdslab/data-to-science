@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 
-import { DataProduct } from '../pages/projects/Project';
+import { DataProduct } from '../pages/workspace/projects/Project';
 import {
   SingleBandSymbology,
   useRasterSymbologyContext,

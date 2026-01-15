@@ -1,6 +1,7 @@
-from typing import Dict, Union
+from typing import Any, Dict, List, Union
 from uuid import UUID
 
+from geojson_pydantic import Feature, FeatureCollection, Polygon
 from pydantic import BaseModel, ConfigDict
 
 
@@ -40,6 +41,15 @@ class DataProductMetadata(DataProductMetadataInDBBase):
 # additional properties stored in DB
 class DataProductMetadataInDB(DataProductMetadataInDBBase):
     pass
+
+
+class ZonalFeature(Feature):
+    geometry: Polygon
+    properties: Dict[Any, Any]
+
+
+class ZonalFeatureCollection(FeatureCollection):
+    features: List[ZonalFeature]
 
 
 class ZonalStatistics(BaseModel):

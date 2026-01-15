@@ -16,8 +16,8 @@ import { MapGeoJSONFeature } from 'react-map-gl/dist/esm/types';
 import { GeoJsonShapeFeature } from '@geoman-io/maplibre-geoman-free';
 
 import GeomanControl from '../GeomanControl';
-import { GeoJSONFeature } from '../../pages/projects/Project';
-import { useProjectContext } from '../../pages/projects/ProjectContext';
+import { GeoJSONFeature } from '../../pages/workspace/projects/Project';
+import { useProjectContext } from '../../pages/workspace/projects/ProjectContext';
 
 import {
   getMapboxSatelliteBasemapStyle,

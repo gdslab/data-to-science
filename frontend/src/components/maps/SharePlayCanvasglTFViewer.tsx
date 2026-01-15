@@ -4,7 +4,7 @@ import { useLocation } from 'react-router';
 
 import { AlertBar, Status } from '../Alert';
 import PlayCanvasglTFViewer from './PlayCanvasglTFViewer';
-import { DataProduct } from '../pages/projects/Project';
+import { DataProduct } from '../pages/workspace/projects/Project';
 
 import api from '../../api';
 

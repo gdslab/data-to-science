@@ -15,7 +15,7 @@ import {
   ProjectFeatureCollection,
   ProjectItem,
   STACProperties,
-} from '../pages/projects/Project';
+} from '../pages/workspace/projects/Project';
 import {
   SingleBandSymbology,
   MultibandSymbology,

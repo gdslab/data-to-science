@@ -200,6 +200,37 @@ def get_data_product_dir(project_id: str, flight_id: str, data_product_id: str) 
     return data_product_dir
 
 
+def get_indoor_project_data_dir(
+    indoor_project_id: str, indoor_project_data_id: str
+) -> Path:
+    """Construct path to directory that will store uploaded indoor project data.
+
+    Args:
+        indoor_project_id (str): Indoor project ID associated with indoor project.
+        indoor_project_data_id (str): ID for indoor project data.
+
+    Returns:
+        Path: Full path to indoor project data directory.
+    """
+    # get root static path
+    if os.environ.get("RUNNING_TESTS") == "1":
+        indoor_project_data_dir = Path(settings.TEST_STATIC_DIR)
+    else:
+        indoor_project_data_dir = Path(settings.STATIC_DIR)
+    # construct path to indoor_project/indoor_project_data
+    indoor_project_data_dir = (
+        indoor_project_data_dir / "indoor_projects" / indoor_project_id
+    )
+    indoor_project_data_dir = (
+        indoor_project_data_dir / "uploaded" / indoor_project_data_id
+    )
+    # create folder for indoor project data
+    if not os.path.exists(indoor_project_data_dir):
+        os.makedirs(indoor_project_data_dir)
+
+    return indoor_project_data_dir
+
+
 def str_to_bool(value: str | bool) -> bool:
     """Converts a boolean str into a boolean object.
 

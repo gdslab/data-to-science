@@ -42,29 +42,37 @@ export default function PaginationList<T extends Record<string, unknown>>({
    * @param dataList Array of objects to filter.
    * @returns Filtered objects.
    */
-  const filterSearch = useCallback((list: T[]): T[] => {
-    if (!searchText) return list;
+  const filterSearch = useCallback(
+    (list: T[]): T[] => {
+      if (!searchText) return list;
 
-    return list.filter((data) => {
-      return searchKeywords.some(
-        (keyword) =>
-          typeof data?.[keyword] === 'string' &&
-          String(data[keyword]).toLowerCase().includes(searchText.toLowerCase())
-      );
-    });
-  }, [searchText, searchKeywords]);
+      return list.filter((data) => {
+        return searchKeywords.some(
+          (keyword) =>
+            typeof data?.[keyword] === 'string' &&
+            String(data[keyword])
+              .toLowerCase()
+              .includes(searchText.toLowerCase())
+        );
+      });
+    },
+    [searchText, searchKeywords]
+  );
 
   /**
    * Filters dataList by search text and limits to current page.
    * @param dataList Array of objects
    * @returns Filtered objects.
    */
-  const filterAndSlice = useCallback((list: T[]): T[] => {
-    return filterSearch(list).slice(
-      currentPage * maxItems,
-      maxItems + currentPage * maxItems
-    );
-  }, [filterSearch, currentPage, maxItems]);
+  const filterAndSlice = useCallback(
+    (list: T[]): T[] => {
+      return filterSearch(list).slice(
+        currentPage * maxItems,
+        maxItems + currentPage * maxItems
+      );
+    },
+    [filterSearch, currentPage, maxItems]
+  );
 
   useEffect(() => {
     if (filterAndSlice(dataList).length < maxItems) {

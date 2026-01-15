@@ -3,8 +3,8 @@ import { useMapContext } from '../MapContext';
 import LayerCard from './LayerCard';
 import RasterStats from './RasterStats';
 import RasterSymbologySettings from '../RasterSymbologySettings';
-import { DataProduct } from '../../pages/projects/Project';
-import { getDataProductName } from '../../pages/projects/flights/DataProducts/DataProductsTable';
+import { DataProduct } from '../../pages/workspace/projects/Project';
+import { getDataProductName } from '../../pages/workspace/projects/flights/DataProducts/DataProductsTable';
 import { useRasterSymbologyContext } from '../RasterSymbologyContext';
 
 export default function DataProductCard({

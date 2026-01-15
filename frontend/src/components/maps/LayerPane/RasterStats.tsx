@@ -1,4 +1,4 @@
-import { Band } from '../../pages/projects/Project';
+import { Band } from '../../pages/workspace/projects/Project';
 
 export default function RasterStats({ stats }: { stats: Band['stats'] }) {
   return (

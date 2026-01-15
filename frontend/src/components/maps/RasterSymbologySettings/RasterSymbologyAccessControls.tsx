@@ -13,7 +13,7 @@ import {
   DataProduct,
   ProjectDetail,
   ProjectItem,
-} from '../../pages/projects/Project';
+} from '../../pages/workspace/projects/Project';
 import { useMapContext } from '../MapContext';
 import {
   MultibandSymbology,
@@ -21,7 +21,7 @@ import {
 } from '../RasterSymbologyContext';
 
 import api from '../../../api';
-import { createAndClickDownloadLink } from '../../pages/projects/mapLayers/utils';
+import { createAndClickDownloadLink } from '../../pages/workspace/projects/mapLayers/utils';
 
 export default function RasterSymbologyAccessControls({
   dataProduct,

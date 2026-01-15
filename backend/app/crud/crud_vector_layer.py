@@ -45,11 +45,20 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
         for _, row in gdf.iterrows():
             # Get geometry in WKT format
             wkt_geometry = row.geometry.wkt
+
             # Convert to postgis compatible geometry
             geom = func.ST_Force2D(
                 func.ST_GeomFromText(text(f"'{wkt_geometry}'"), 4326)
             )
-            properties = jsonable_encoder(row.drop("geometry").to_dict())
+
+            props_series = row.drop("geometry")
+
+            # Convert missing values (np.nan, pd.NA) to None on the Series
+            props_series = props_series.where(props_series.notna(), None)
+
+            props = props_series.to_dict()
+            properties = jsonable_encoder(props)
+
             # Layer ID will be same for each feature from the feature collection
             vector_layer = VectorLayer(
                 layer_name=file_name,

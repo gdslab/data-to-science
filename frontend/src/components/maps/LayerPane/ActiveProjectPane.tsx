@@ -7,7 +7,7 @@ import MapLayersPanel from './MapLayersPanel';
 import { useMapContext } from '../MapContext';
 import { useMapLayerContext } from '../MapLayersContext';
 import MapToolbar from '../MapToolbar';
-import { ProjectItem } from '../../pages/projects/Project';
+import { ProjectItem } from '../../pages/workspace/projects/Project';
 
 import { sortedFlightsByDateAndId } from './utils';
 
@@ -31,36 +31,39 @@ export default function ActiveProjectPane({ project }: ActiveProjectPaneProps) {
   }, [flights]);
 
   // Function to attempt scrolling to active data product
-  const scrollToActiveDataProduct = useCallback((delay = 100) => {
-    if (activeDataProduct && scrollContainerRef.current) {
-      const scrollToElement = () => {
-        if (scrollContainerRef.current) {
-          const activeCard = scrollContainerRef.current.querySelector(
-            `[data-product-id="${activeDataProduct.id}"]`
-          );
-          if (activeCard) {
-            activeCard.scrollIntoView({
-              behavior: 'smooth',
-              block: 'start',
-            });
-            return true; // Successfully found and scrolled
-          } else {
-            return false; // Not found
+  const scrollToActiveDataProduct = useCallback(
+    (delay = 100) => {
+      if (activeDataProduct && scrollContainerRef.current) {
+        const scrollToElement = () => {
+          if (scrollContainerRef.current) {
+            const activeCard = scrollContainerRef.current.querySelector(
+              `[data-product-id="${activeDataProduct.id}"]`
+            );
+            if (activeCard) {
+              activeCard.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+              });
+              return true; // Successfully found and scrolled
+            } else {
+              return false; // Not found
+            }
           }
-        }
-        return false;
-      };
+          return false;
+        };
 
-      // Try immediately with requestAnimationFrame
-      requestAnimationFrame(() => {
-        if (!scrollToElement()) {
-          // If not found immediately, try again with delay
-          const timeoutId = setTimeout(scrollToElement, delay);
-          return () => clearTimeout(timeoutId);
-        }
-      });
-    }
-  }, [activeDataProduct]);
+        // Try immediately with requestAnimationFrame
+        requestAnimationFrame(() => {
+          if (!scrollToElement()) {
+            // If not found immediately, try again with delay
+            const timeoutId = setTimeout(scrollToElement, delay);
+            return () => clearTimeout(timeoutId);
+          }
+        });
+      }
+    },
+    [activeDataProduct]
+  );
 
   // Handle changes to activeDataProduct (when clicking within LayerPane)
   useEffect(() => {

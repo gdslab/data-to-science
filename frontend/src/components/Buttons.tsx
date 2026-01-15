@@ -13,7 +13,7 @@ import {
   DataProduct,
   ProjectDetail,
   ProjectItem,
-} from './pages/projects/Project';
+} from './pages/workspace/projects/Project';
 import { Status } from './Alert';
 
 import api from '../api';

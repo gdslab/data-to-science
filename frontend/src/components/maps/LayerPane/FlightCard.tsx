@@ -2,7 +2,7 @@ import { useMapContext } from '../MapContext';
 import { FaCircleChevronRight } from 'react-icons/fa6';
 
 import DataProductCard from './DataProductCard';
-import { Flight } from '../../pages/projects/Project';
+import { Flight } from '../../pages/workspace/projects/Project';
 import LayerCard from './LayerCard';
 import { LinkOutlineButton } from '../../Buttons';
 

@@ -1,4 +1,4 @@
-import { Flight } from '../../pages/projects/Project';
+import { Flight } from '../../pages/workspace/projects/Project';
 
 import pointIcon from '../../../assets/point-icon.svg';
 import lineIcon from '../../../assets/line-icon.svg';

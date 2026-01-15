@@ -10,7 +10,7 @@ import {
 } from '@geoman-io/maplibre-geoman-free';
 
 import { geomanOptions } from './styles/geomanOptions';
-import { GeoJSONFeature } from '../pages/projects/Project';
+import { GeoJSONFeature } from '../pages/workspace/projects/Project';
 import { fitMapToGeoJSON } from './utils';
 
 interface GeomanFeature {

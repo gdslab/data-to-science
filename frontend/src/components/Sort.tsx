@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { ProjectItem } from './pages/projects/Project';
+import { ProjectItem } from './pages/workspace/projects/Project';
 
 import { sorter } from './utils';
 

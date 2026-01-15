@@ -1,5 +1,5 @@
 import { createContext, Dispatch, useContext, useReducer } from 'react';
-import { DataProduct } from '../pages/projects/Project';
+import { DataProduct } from '../pages/workspace/projects/Project';
 
 export type SymbologyMode = 'meanStdDev' | 'minMax' | 'userDefined';
 

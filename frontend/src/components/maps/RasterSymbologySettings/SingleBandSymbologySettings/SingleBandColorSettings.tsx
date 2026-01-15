@@ -1,4 +1,4 @@
-import { DataProduct } from '../../../pages/projects/Project';
+import { DataProduct } from '../../../pages/workspace/projects/Project';
 import RasterSymbologyFieldSet from '../RasterSymbologyFieldset';
 import RasterSymbologyOpacitySlider from '../RasterSymbologyOpacitySlider';
 import SingleBandColorRampSelect from './SingleBandColorRampSelect';

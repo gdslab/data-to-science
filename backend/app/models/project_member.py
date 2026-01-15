@@ -12,6 +12,7 @@ from app.schemas.project_member import Role
 
 if TYPE_CHECKING:
     from .project import Project
+    from .indoor_project import IndoorProject
     from .user import User
 
 
@@ -33,10 +34,6 @@ class ProjectMember(Base):
         server_default="PROJECT",
     )
     project_uuid: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    # TODO: Remove this column after migration
-    project_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("projects.id"), nullable=False
-    )
 
     # Role
     role: Mapped[Role] = mapped_column(
@@ -54,7 +51,7 @@ class ProjectMember(Base):
         ),
         # Sanity check that the project_type is valid
         CheckConstraint(
-            "project_type IN ('PROJECT')",
+            "project_type IN ('PROJECT', 'INDOOR_PROJECT')",
             name="check_project_type",
         ),
     )
@@ -64,11 +61,19 @@ class ProjectMember(Base):
         "Project",
         primaryjoin="and_(ProjectMember.project_type == 'PROJECT', ProjectMember.project_uuid == Project.id)",
         foreign_keys="[ProjectMember.project_uuid]",
-        back_populates="uas_members",
+        back_populates="members",
+        overlaps="indoor_project",
+    )
+    indoor_project: Mapped["IndoorProject"] = relationship(
+        "IndoorProject",
+        primaryjoin="and_(ProjectMember.project_type == 'INDOOR_PROJECT', ProjectMember.project_uuid == IndoorProject.id)",
+        foreign_keys="[ProjectMember.project_uuid]",
+        back_populates="indoor_members",
+        overlaps="uas_project",
     )
     member: Mapped["User"] = relationship(back_populates="project_memberships")
     # TODO: Remove this relationship after migration
-    project: Mapped["Project"] = relationship(back_populates="members")
+    # project: Mapped["Project"] = relationship(back_populates="members")
 
     @property
     def target_project(self):
@@ -77,7 +82,9 @@ class ProjectMember(Base):
         """
         if self.project_type is ProjectType.PROJECT:
             return self.uas_project
-        return self.uas_project
+        elif self.project_type is ProjectType.INDOOR_PROJECT:
+            return self.indoor_project
+        return None
 
     def __repr__(self) -> str:
         return (

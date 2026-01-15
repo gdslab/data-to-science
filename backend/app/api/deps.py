@@ -1,6 +1,6 @@
 import logging
 from collections.abc import Generator
-from typing import Any, Optional, Union
+from typing import Any, Generator, Optional, Union
 from uuid import UUID
 
 from fastapi import BackgroundTasks, Depends, HTTPException, Request, status
@@ -18,6 +18,7 @@ from app.crud.crud_project import ReadProject
 from app.db.session import SessionLocal
 from app.api.utils import is_valid_api_key
 from app.schemas.raw_data import MetashapeQueryParams, ODMQueryParams
+from app.schemas.role import Role
 
 logger = logging.getLogger("__name__")
 
@@ -232,6 +233,48 @@ def can_read_write_team(
             status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
         )
     return team
+
+
+def can_read_write_delete_indoor_project(
+    indoor_project_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_approved_user),
+) -> models.IndoorProject:
+    """Return indoor project if current user is owner."""
+    return crud.indoor_project.get_with_permission(
+        db,
+        indoor_project_id=indoor_project_id,
+        user_id=current_user.id,
+        required_permission=Role.OWNER,
+    )
+
+
+def can_read_write_indoor_project(
+    indoor_project_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_approved_user),
+) -> models.IndoorProject:
+    """Return indoor project if current user is owner or manager."""
+    return crud.indoor_project.get_with_permission(
+        db,
+        indoor_project_id=indoor_project_id,
+        user_id=current_user.id,
+        required_permission=Role.MANAGER,
+    )
+
+
+def can_read_indoor_project(
+    indoor_project_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_approved_user),
+) -> models.IndoorProject:
+    """Return indoor project if current user is owner, manager, or viewer."""
+    return crud.indoor_project.get_with_permission(
+        db,
+        indoor_project_id=indoor_project_id,
+        user_id=current_user.id,
+        required_permission=Role.VIEWER,
+    )
 
 
 def can_read_write_delete_team(

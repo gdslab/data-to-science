@@ -6,7 +6,7 @@ import area from '@turf/area';
 
 import FeaturePreviewImage from './FeaturePreviewImage';
 import { PopupInfoProps } from './HomeMap';
-import { ZonalFeature } from '../pages/projects/Project';
+import { ZonalFeature } from '../pages/workspace/projects/Project';
 import { useMapContext } from './MapContext';
 import StripedTable from '../StripedTable';
 import {

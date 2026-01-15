@@ -107,7 +107,7 @@ def test_create_project_creates_project_member_for_owner(db: Session) -> None:
     assert project_member
     assert project_member.role == Role.OWNER
     assert user.id == project_member.member_id
-    assert project.id == project_member.project_id
+    assert project.id == project_member.project_uuid
 
 
 def test_get_project_by_id(db: Session) -> None:
@@ -196,9 +196,9 @@ def test_get_projects_by_project_member(db: Session) -> None:
     project1 = create_project(db)
     project2 = create_project(db)
     project3 = create_project(db)
-    create_project_member(db, member_id=user.id, project_id=project1.id)
-    create_project_member(db, member_id=user.id, project_id=project2.id)
-    create_project_member(db, member_id=user.id, project_id=project3.id)
+    create_project_member(db, member_id=user.id, project_uuid=project1.id)
+    create_project_member(db, member_id=user.id, project_uuid=project2.id)
+    create_project_member(db, member_id=user.id, project_uuid=project3.id)
     projects = crud.project.get_user_projects(db, user=user)
     assert projects
     assert isinstance(projects, list)
@@ -215,9 +215,9 @@ def test_get_projects_with_data_products_by_type(db: Session) -> None:
     project3 = create_project(db)
     projects = [project1, project2, project3]
     # add user as project member to all three projects
-    create_project_member(db, member_id=user.id, project_id=project1.id)
-    create_project_member(db, member_id=user.id, project_id=project2.id)
-    create_project_member(db, member_id=user.id, project_id=project3.id)
+    create_project_member(db, member_id=user.id, project_uuid=project1.id)
+    create_project_member(db, member_id=user.id, project_uuid=project2.id)
+    create_project_member(db, member_id=user.id, project_uuid=project3.id)
     # create flight for each project
     for project_idx, project in enumerate(projects):
         flight = create_flight(db, project_id=project.id)

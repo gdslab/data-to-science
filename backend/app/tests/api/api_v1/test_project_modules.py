@@ -42,7 +42,7 @@ def test_read_project_modules_with_project_manager_role(
 
     # Add current user as project manager
     create_project_member(
-        db, project_id=project.id, member_id=current_user.id, role=Role.MANAGER
+        db, project_uuid=project.id, member_id=current_user.id, role=Role.MANAGER
     )
 
     response = client.get(f"{settings.API_V1_STR}/projects/{project.id}/modules")
@@ -61,7 +61,7 @@ def test_read_project_modules_with_project_viewer_role(
 
     # Add current user as project viewer
     create_project_member(
-        db, project_id=project.id, member_id=current_user.id, role=Role.VIEWER
+        db, project_uuid=project.id, member_id=current_user.id, role=Role.VIEWER
     )
 
     response = client.get(f"{settings.API_V1_STR}/projects/{project.id}/modules")
@@ -127,7 +127,7 @@ def test_update_project_module_with_project_manager_role(
 
     # Add current user as project manager
     create_project_member(
-        db, project_id=project.id, member_id=current_user.id, role=Role.MANAGER
+        db, project_uuid=project.id, member_id=current_user.id, role=Role.MANAGER
     )
 
     # Get initial modules to find a module to update
@@ -158,7 +158,7 @@ def test_update_project_module_with_project_viewer_role(
 
     # Add current user as project viewer
     create_project_member(
-        db, project_id=project.id, member_id=current_user.id, role=Role.VIEWER
+        db, project_uuid=project.id, member_id=current_user.id, role=Role.VIEWER
     )
 
     # Get initial modules to find a module to update
