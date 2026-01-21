@@ -3,7 +3,7 @@ import { Params, useLoaderData } from 'react-router';
 
 import FlightDataNav from './FlightDataNav';
 import { useProjectContext } from '../ProjectContext';
-import { DataProduct, Flight } from '../Project';
+import { DataProduct, Flight, ProjectDetail } from '../Project';
 import FlightDataTabNav from './FlightDataTabNav';
 
 import { RawDataProps } from './RawData/RawData.types';
@@ -14,7 +14,14 @@ import api from '../../../../../api';
 export async function loader({ params }: { params: Params<string> }) {
   const profile = localStorage.getItem('userProfile');
   const user: User | null = profile ? JSON.parse(profile) : null;
-  if (!user) return { dataProducts: [], rawData: [], flights: [], role: null };
+  if (!user)
+    return {
+      dataProducts: [],
+      rawData: [],
+      flights: [],
+      role: null,
+      project: null,
+    };
 
   try {
     const dataProducts = await api.get(
@@ -27,19 +34,33 @@ export async function loader({ params }: { params: Params<string> }) {
     const project_member = await api.get(
       `/projects/${params.projectId}/members/${user.id}`
     );
-    if (dataProducts && rawData && flights && project_member) {
+    const project = await api.get(`/projects/${params.projectId}`);
+    if (dataProducts && rawData && flights && project_member && project) {
       return {
         dataProducts: dataProducts.data,
         rawData: rawData.data,
         flights: flights.data,
         role: project_member.data.role,
+        project: project.data,
       };
     } else {
-      return { dataProducts: [], rawData: [], flights: [], role: null };
+      return {
+        dataProducts: [],
+        rawData: [],
+        flights: [],
+        role: null,
+        project: null,
+      };
     }
   } catch {
     console.error('Unable to retrieve raw data and data products');
-    return { dataProducts: [], rawData: [], flights: [], role: null };
+    return {
+      dataProducts: [],
+      rawData: [],
+      flights: [],
+      role: null,
+      project: null,
+    };
   }
 }
 
@@ -48,16 +69,18 @@ export type FlightData = {
   rawData: RawDataProps[];
   flights: Flight[];
   role: string | null;
+  project: ProjectDetail | null;
 };
 
 export default function FlightData() {
-  const { dataProducts, rawData, flights, role } =
+  const { dataProducts, rawData, flights, role, project } =
     useLoaderData() as FlightData;
   const {
     flights: contextFlights,
     flightsDispatch,
     flightsFilterSelection,
     flightsFilterSelectionDispatch,
+    projectDispatch,
     projectRoleDispatch,
   } = useProjectContext();
 
@@ -66,6 +89,10 @@ export default function FlightData() {
   useEffect(() => {
     if (role) projectRoleDispatch({ type: 'set', payload: role });
   }, [projectRoleDispatch, role]);
+
+  useEffect(() => {
+    if (project) projectDispatch({ type: 'set', payload: project });
+  }, [project, projectDispatch]);
 
   useEffect(() => {
     // Only update if flights data actually changed (not just reference)
