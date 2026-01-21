@@ -5,6 +5,7 @@ import {
   useLoaderData,
   useNavigate,
   useParams,
+  useRevalidator,
 } from 'react-router';
 
 import Alert from '../../../../Alert';
@@ -45,9 +46,11 @@ export default function FlightForm({
   editMode?: boolean;
   setOpen?: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
-  const { flight } = useLoaderData() as { flight: Flight };
+  const loaderData = useLoaderData() as { flight: Flight } | undefined;
+  const flight = editMode ? loaderData?.flight : undefined;
   const params = useParams();
   const navigate = useNavigate();
+  const revalidator = useRevalidator();
   const { projectRole, projectMembers } = useProjectContext();
 
   return (
@@ -57,8 +60,9 @@ export default function FlightForm({
         {projectMembers && projectMembers.length > 0 ? (
           <Formik
             initialValues={{
-              ...getInitialValues(editMode ? flight : null),
-              pilotId: editMode ? flight.pilot_id : projectMembers[0].member_id,
+              ...getInitialValues(editMode && flight ? flight : null),
+              pilotId:
+                editMode && flight ? flight.pilot_id : projectMembers[0].member_id,
             }}
             validationSchema={validationSchema}
             onSubmit={async (values, { setSubmitting, setStatus }) => {
@@ -93,8 +97,14 @@ export default function FlightForm({
                     type: 'success',
                     msg: editMode ? 'Updated' : 'Created',
                   });
-                  if (setOpen) setOpen(false);
-                  navigate(`/projects/${params.projectId}`);
+                  if (setOpen) {
+                    // Modal usage - revalidate to refresh flights data, then close modal
+                    revalidator.revalidate();
+                    setOpen(false);
+                  } else {
+                    // Route usage - navigate back to project detail (will trigger loader)
+                    navigate(`/projects/${params.projectId}`);
+                  }
                 } else {
                   // do something
                 }
@@ -164,7 +174,7 @@ export default function FlightForm({
                   >
                     Cancel
                   </OutlineButton>
-                  {projectRole === 'owner' && editMode ? (
+                  {projectRole === 'owner' && editMode && flight ? (
                     <FlightDeleteModal flight={flight} iconOnly={false} />
                   ) : null}
                 </div>
