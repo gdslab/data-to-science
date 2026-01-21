@@ -110,8 +110,13 @@ export default function ProjectAccess() {
   const params = useParams();
 
   useEffect(() => {
-    // limit access to project owners
-    if (projectRole && projectRole === 'owner') {
+    // Wait for projectRole to be loaded before checking access
+    if (projectRole === undefined) {
+      return;
+    }
+
+    // Limit access to project owners
+    if (projectRole === 'owner') {
       setIsLoading(false);
     } else {
       navigate(-1);
