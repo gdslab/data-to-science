@@ -22,56 +22,56 @@ export default function DataProductShareModal({
 
   const { project } = useProjectContext();
 
-  if (project) {
-    return (
-      <div>
-        <div>
-          {tableView ? (
-            <div
-              className="flex items-center text-sky-600 text-sm cursor-pointer"
-              onClick={() => setOpenShareModal(true)}
-            >
-              <div className="relative rounded-full accent3 p-1 focus:outline-hidden">
-                {dataProduct.public ? (
-                  <LockOpenIcon className="w-4 w-4" />
-                ) : (
-                  <LockClosedIcon className="w-4 w-4" />
-                )}
-              </div>
-              <span>Share</span>
-            </div>
-          ) : iconOnly ? (
-            <div
-              className="cursor-pointer"
-              onClick={() => setOpenShareModal(true)}
-            >
-              <span className="sr-only">Share</span>
-              {dataProduct.public ? (
-                <LockOpenIcon className="w-5 w-5 cursor-pointer hover:scale-110" />
-              ) : (
-                <LockClosedIcon className="w-5 w-5 cursor-pointer hover:scale-110" />
-              )}
-            </div>
-          ) : (
-            <Button
-              type="button"
-              icon="trash"
-              onClick={() => setOpenShareModal(true)}
-            >
-              Share
-            </Button>
-          )}
-        </div>
-        <Modal open={openShareModal} setOpen={setOpenShareModal}>
-          <ShareControls
-            dataProduct={dataProduct}
-            project={project}
-            refreshUrl={`/projects/${projectId}/flights/${flightId}/data`}
-          />
-        </Modal>
-      </div>
-    );
-  } else {
+  if (!project) {
     return null;
   }
+
+  return (
+    <div>
+      <div>
+        {tableView ? (
+          <div
+            className="flex items-center text-sky-600 text-sm cursor-pointer"
+            onClick={() => setOpenShareModal(true)}
+          >
+            <div className="relative rounded-full accent3 p-1 focus:outline-hidden">
+              {dataProduct.public ? (
+                <LockOpenIcon className="w-4 h-4" />
+              ) : (
+                <LockClosedIcon className="w-4 h-4" />
+              )}
+            </div>
+            <span>Share</span>
+          </div>
+        ) : iconOnly ? (
+          <div
+            className="cursor-pointer"
+            onClick={() => setOpenShareModal(true)}
+          >
+            <span className="sr-only">Share</span>
+            {dataProduct.public ? (
+              <LockOpenIcon className="w-5 h-5 cursor-pointer hover:scale-110" />
+            ) : (
+              <LockClosedIcon className="w-5 h-5 cursor-pointer hover:scale-110" />
+            )}
+          </div>
+        ) : (
+          <Button
+            type="button"
+            icon="trash"
+            onClick={() => setOpenShareModal(true)}
+          >
+            Share
+          </Button>
+        )}
+      </div>
+      <Modal open={openShareModal} setOpen={setOpenShareModal}>
+        <ShareControls
+          dataProduct={dataProduct}
+          project={project}
+          refreshUrl={`/projects/${projectId}/flights/${flightId}/data`}
+        />
+      </Modal>
+    </div>
+  );
 }
