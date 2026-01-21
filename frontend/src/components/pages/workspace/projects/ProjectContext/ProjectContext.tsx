@@ -225,14 +225,6 @@ export function ProjectContextProvider({ children }: ProjectContextProvider) {
     }
   }, [params.projectId]);
 
-  useEffect(() => {
-    if (params.projectId) {
-      getProjectMembers(params.projectId, projectMembersDispatch);
-    } else {
-      projectMembersDispatch({ type: 'clear', payload: null });
-    }
-  }, [params.projectId]);
-
   return (
     <ProjectContext.Provider
       value={{

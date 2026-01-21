@@ -6,6 +6,7 @@ import ProjectContextProvider, { useProjectContext } from './ProjectContext';
 import FieldCampaignContextProvider from './fieldCampaigns/FieldCampaignContext';
 import FlightContextProvider from './FlightContext';
 import { Flight, ProjectDetail, ProjectModule } from './Project';
+import { ProjectMember } from './ProjectAccess';
 import { Team } from '../../teams/Teams';
 import { User } from '../../../../AuthContext';
 
@@ -15,6 +16,7 @@ export type ProjectLayoutData = {
   project: ProjectDetail | null;
   role: string | null;
   flights: Flight[];
+  project_members: ProjectMember[];
   project_modules: ProjectModule[];
   teams: Team[];
 };
@@ -31,22 +33,24 @@ export async function loader({ params }: { params: Params<string> }) {
       project: null,
       role: null,
       flights: [],
+      project_members: [],
       project_modules: [],
       teams: [],
     };
   }
 
   try {
-    const [project, projectMember, flights, projectModules, teams] =
+    const [project, projectMember, flights, projectMembers, projectModules, teams] =
       await Promise.all([
         api.get(`/projects/${params.projectId}`),
         api.get(`/projects/${params.projectId}/members/${user.id}`),
         api.get(`/projects/${params.projectId}/flights`),
+        api.get(`/projects/${params.projectId}/members`),
         api.get(`/projects/${params.projectId}/modules`),
         api.get('/teams', { params: { owner_only: true } }),
       ]);
 
-    if (project && projectMember && flights && projectModules && teams) {
+    if (project && projectMember && flights && projectMembers && projectModules && teams) {
       const teamsData = teams.data as Team[];
       teamsData.unshift({
         title: 'No team',
@@ -60,6 +64,7 @@ export async function loader({ params }: { params: Params<string> }) {
         project: project.data,
         role: projectMember.data.role,
         flights: flights.data,
+        project_members: projectMembers.data,
         project_modules: projectModules.data,
         teams: teamsData,
       };
@@ -68,6 +73,7 @@ export async function loader({ params }: { params: Params<string> }) {
         project: null,
         role: null,
         flights: [],
+        project_members: [],
         project_modules: [],
         teams: [],
       };
@@ -77,6 +83,7 @@ export async function loader({ params }: { params: Params<string> }) {
       project: null,
       role: null,
       flights: [],
+      project_members: [],
       project_modules: [],
       teams: [],
     };
@@ -93,6 +100,7 @@ export function ProjectOutlet() {
   const {
     projectDispatch,
     projectRoleDispatch,
+    projectMembersDispatch,
     projectModulesDispatch,
     flightsDispatch,
     flightsFilterSelectionDispatch,
@@ -122,6 +130,15 @@ export function ProjectOutlet() {
       });
     }
   }, [loaderData?.project_modules, projectModulesDispatch]);
+
+  useEffect(() => {
+    if (loaderData?.project_members) {
+      projectMembersDispatch({
+        type: 'set',
+        payload: loaderData.project_members,
+      });
+    }
+  }, [loaderData?.project_members, projectMembersDispatch]);
 
   useEffect(() => {
     const flights = loaderData?.flights;
