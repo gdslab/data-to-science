@@ -47,10 +47,11 @@ import PasswordRecovery from './components/pages/auth/PasswordRecovery';
 import PasswordResetForm from './components/pages/auth/PasswordResetForm';
 import Profile from './components/pages/auth/Profile';
 import ProjectAccess from './components/pages/workspace/projects/ProjectAccess';
-import ProjectDetail, {
-  loader as projectDetailLoader,
-} from './components/pages/workspace/projects/ProjectDetail';
-import ProjectLayout from './components/pages/workspace/projects/ProjectLayout';
+import ProjectDetail from './components/pages/workspace/projects/ProjectDetail';
+import ProjectLayout, {
+  ProjectOutlet,
+  loader as projectLayoutLoader,
+} from './components/pages/workspace/projects/ProjectLayout';
 import ProjectModules from './components/pages/workspace/projects/ProjectModules';
 import ProjectSTACPublishing, {
   loader as stacPublishingLoader,
@@ -184,60 +185,68 @@ export const router = createBrowserRouter(
           element: <ProjectLayout />,
           children: [
             {
-              path: '/projects/:projectId/access',
-              element: <ProjectAccess />,
-            },
-            {
-              path: '/projects/:projectId/modules',
-              element: <ProjectModules />,
-            },
-            // Conditionally include STAC route based on environment variable
-            ...(import.meta.env.VITE_STAC_ENABLED === 'true'
-              ? [
-                  {
-                    path: '/projects/:projectId/stac',
-                    element: <ProjectSTACPublishing />,
-                    loader: stacPublishingLoader,
-                  },
-                ]
-              : [
-                  {
-                    path: '/projects/:projectId/stac',
-                    element: <STACDisabled />,
-                  },
-                ]),
-            {
-              path: '/projects/:projectId/campaigns/create',
-              element: <FieldCampaignCreate />,
-            },
-            {
-              path: '/projects/:projectId/campaigns/:campaignId',
-              element: <FieldCampaignForm />,
-              loader: fieldCampaignLoader,
-            },
-            {
-              path: '/projects/:projectId/flights/:flightId/data',
-              element: <FlightData />,
-              loader: flightDataLoader,
-            },
-            {
-              path: '/projects/:projectId/flights/:flightId/edit',
-              element: <FlightForm editMode={true} />,
-              loader: flightFormLoader,
-            },
-            {
-              path: '/projects/:projectId/iforester',
-              element: <IForesterLayout />,
-            },
-            {
-              path: '/projects/:projectId',
-              element: <ProjectDetail />,
-              loader: projectDetailLoader,
-            },
-            {
               path: '/projects',
               element: <Workspace />,
               loader: workspaceLoader,
+            },
+            {
+              // Nested route group for project-specific routes with shared loader
+              path: '/projects/:projectId',
+              id: 'projectLayout',
+              element: <ProjectOutlet />,
+              loader: projectLayoutLoader,
+              children: [
+                {
+                  path: '/projects/:projectId/access',
+                  element: <ProjectAccess />,
+                },
+                {
+                  path: '/projects/:projectId/modules',
+                  element: <ProjectModules />,
+                },
+                // Conditionally include STAC route based on environment variable
+                ...(import.meta.env.VITE_STAC_ENABLED === 'true'
+                  ? [
+                      {
+                        path: '/projects/:projectId/stac',
+                        element: <ProjectSTACPublishing />,
+                        loader: stacPublishingLoader,
+                      },
+                    ]
+                  : [
+                      {
+                        path: '/projects/:projectId/stac',
+                        element: <STACDisabled />,
+                      },
+                    ]),
+                {
+                  path: '/projects/:projectId/campaigns/create',
+                  element: <FieldCampaignCreate />,
+                },
+                {
+                  path: '/projects/:projectId/campaigns/:campaignId',
+                  element: <FieldCampaignForm />,
+                  loader: fieldCampaignLoader,
+                },
+                {
+                  path: '/projects/:projectId/flights/:flightId/data',
+                  element: <FlightData />,
+                  loader: flightDataLoader,
+                },
+                {
+                  path: '/projects/:projectId/flights/:flightId/edit',
+                  element: <FlightForm editMode={true} />,
+                  loader: flightFormLoader,
+                },
+                {
+                  path: '/projects/:projectId/iforester',
+                  element: <IForesterLayout />,
+                },
+                {
+                  index: true,
+                  element: <ProjectDetail />,
+                },
+              ],
             },
           ],
         },
