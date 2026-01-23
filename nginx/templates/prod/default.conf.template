@@ -134,6 +134,16 @@ server {
         proxy_pass http://backend;
     }
 
+    # Force download for GeoTIFF and point cloud files
+    location ~* ^/static/.*\.(tif|tiff|copc\.laz)$ {
+        proxy_set_header Host $host;
+        proxy_pass http://backend;
+
+        proxy_hide_header Content-Disposition;
+        add_header Content-Disposition "attachment" always;
+        add_header X-Content-Type-Options "nosniff" always;
+    }
+
     location ~ ^/(potree|share-potree) {
         proxy_set_header Host $host;
 
@@ -143,7 +153,6 @@ server {
     location = /pc-gltf-viewer {
         return 301 /pc-gltf-viewer/;
     }
-
 
     location = /pc-gltf-viewer/index.html {
         return 301 /pc-gltf-viewer/;
