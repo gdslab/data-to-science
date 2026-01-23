@@ -154,7 +154,6 @@ server {
         return 301 /pc-gltf-viewer/;
     }
 
-
     location = /pc-gltf-viewer/index.html {
         return 301 /pc-gltf-viewer/;
     }
