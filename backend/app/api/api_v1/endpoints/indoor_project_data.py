@@ -566,6 +566,14 @@ def read_indoor_project_data_plant_for_viz(
             how="inner",
         )
 
+    # Filter to only include interval_days (dfp) values common across ALL pots
+    # This handles rare cases where some pots have different measurement intervals
+    intervals_by_pot = img_df.groupby("pot_barcode")["dfp"].apply(set)
+    if len(intervals_by_pot) > 0:
+        common_intervals = set.intersection(*intervals_by_pot)
+        date_intervals = sorted([d for d in date_intervals if d in common_intervals])
+        img_df = img_df[img_df["dfp"].isin(common_intervals)]
+
     group_by = validate_plotted_by_according_to_combination(plotted_by, according_to)
 
     # Groups records and computes mean hsv
@@ -652,6 +660,14 @@ def read_indoor_project_data_plant_for_viz2(
             on="pot_barcode",
             how="inner",
         )
+
+    # Filter to only include interval_days (dfp) values common across ALL pots
+    # This handles rare cases where some pots have different measurement intervals
+    intervals_by_pot = img_df.groupby("pot_barcode")["dfp"].apply(set)
+    if len(intervals_by_pot) > 0:
+        common_intervals = set.intersection(*intervals_by_pot)
+        date_intervals = sorted([d for d in date_intervals if d in common_intervals])
+        img_df = img_df[img_df["dfp"].isin(common_intervals)]
 
     # Groups records and computes mean hsv
     grouped_mean_hsv_df = group_and_average_hsv(
@@ -745,6 +761,14 @@ def read_indoor_project_data_plant_for_scatter(
             on="pot_barcode",
             how="inner",
         )
+
+    # Filter to only include interval_days (dfp) values common across ALL pots
+    # This handles rare cases where some pots have different measurement intervals
+    intervals_by_pot = img_df.groupby("pot_barcode")["dfp"].apply(set)
+    if len(intervals_by_pot) > 0:
+        common_intervals = set.intersection(*intervals_by_pot)
+        date_intervals = sorted([d for d in date_intervals if d in common_intervals])
+        img_df = img_df[img_df["dfp"].isin(common_intervals)]
 
     # Process data for scatter plot
     scatter_df = group_and_average_scatter(
