@@ -19,6 +19,7 @@ type ValueRange = {
 export interface SingleBandSymbology extends Symbology, ValueRange {
   background?: DataProduct;
   colorRamp: string;
+  nodata?: number | null;
 }
 
 export interface ColorBand extends ValueRange {

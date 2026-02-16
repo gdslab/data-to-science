@@ -305,6 +305,7 @@ const createDefaultSingleBandSymbology = (
   colorRamp: 'rainbow',
   meanStdDev: 2,
   mode: 'minMax',
+  nodata: null,
   opacity: 100,
   min: stacProperties.raster[0].stats.minimum,
   max: stacProperties.raster[0].stats.maximum,
@@ -519,6 +520,9 @@ function getTitilerQueryParams(
       'rescale',
       getSingleBandMinMax(dataProduct.stac_properties, s).flat().join(',')
     );
+    if (s.nodata != null) {
+      queryParams.append('nodata', s.nodata.toString());
+    }
   } else {
     const s = symbology as MultibandSymbology;
     queryParams.append('bidx', s.red.idx.toString());
