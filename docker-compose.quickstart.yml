@@ -230,7 +230,7 @@ services:
       - VARNISH_SIZE=2G
 
   pg_tileserv:
-    image: pramsey/pg_tileserv:latest
+    image: pramsey/pg_tileserv:20250131-amd64
     platform: linux/x86_64
     volumes:
       - ./pg_tileserv.toml:/config/pg_tileserv.toml:ro
@@ -251,7 +251,7 @@ services:
       - no-new-privileges=true
 
   titiler:
-    image: ghcr.io/developmentseed/titiler:0.23.1
+    image: ghcr.io/developmentseed/titiler:1.2.0
     volumes:
       - user-data:/static
     environment:
@@ -312,7 +312,7 @@ services:
       - no-new-privileges=true
 
   tusd:
-    image: tusproject/tusd:latest
+    image: tusproject/tusd:sha-0e52ad6
     command: -behind-proxy -hooks-http http://proxy/api/v1/tusd -hooks-http-forward-headers Cookie X-Project-ID X-Flight-ID X-Data-Type
     volumes:
       - tusd-data:/srv/tusd-data/data
