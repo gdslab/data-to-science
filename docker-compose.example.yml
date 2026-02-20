@@ -4,6 +4,7 @@ services:
       context: ./frontend
       dockerfile: frontend.dockerfile
     image: d2s-app:dev
+    pull_policy: build
     platform: linux/x86_64
     command: yarn run dev --host 0.0.0.0 --port 8080
     volumes:
@@ -24,6 +25,7 @@ services:
       args:
         INSTALL_DEV: true
     image: d2s-api:dev
+    pull_policy: build
     platform: linux/x86_64
     volumes:
       - ./backend:/app
@@ -65,7 +67,7 @@ services:
       - db.env
 
   pgadmin:
-    image: dpage/pgadmin4
+    image: dpage/pgadmin4:9.12.0
     platform: linux/x86_64
     restart: always
     depends_on:
@@ -87,7 +89,13 @@ services:
     
 
   celery_worker:
+    build:
+      context: ./backend
+      dockerfile: backend.dockerfile
+      args:
+        INSTALL_DEV: true
     image: d2s-api:dev
+    pull_policy: build
     platform: linux/x86_64
     command: /app/celery/worker-start.sh
     volumes:
@@ -106,7 +114,13 @@ services:
       - db.env
 
   celery_beat:
+    build:
+      context: ./backend
+      dockerfile: backend.dockerfile
+      args:
+        INSTALL_DEV: true
     image: d2s-api:dev
+    pull_policy: build
     platform: linux/x86_64
     command: /app/celery/beat-start.sh
     volumes:
@@ -124,7 +138,13 @@ services:
       - db.env
 
   flower:
+    build:
+      context: ./backend
+      dockerfile: backend.dockerfile
+      args:
+        INSTALL_DEV: true
     image: d2s-api:dev
+    pull_policy: build
     platform: linux/x86_64
     command: /app/celery/flower-start.sh
     volumes:
@@ -148,6 +168,7 @@ services:
       args:
         - DEFAULT_CONF=dev
     image: d2s-proxy:dev
+    pull_policy: build
     platform: linux/x86_64
     tmpfs:
       - /tmp
@@ -162,6 +183,7 @@ services:
       context: ./varnish
       dockerfile: varnish.dockerfile
     image: d2s-varnish:dev
+    pull_policy: build
     tmpfs:
       - /var/lib/varnish/varnishd:exec
     command: "-p default_keep=300"
@@ -174,7 +196,7 @@ services:
       - VARNISH_SIZE=2G
 
   pg_tileserv:
-    image: pramsey/pg_tileserv:latest
+    image: pramsey/pg_tileserv:20250131-amd64
     platform: linux/x86_64
     volumes:
       - ./pg_tileserv.toml:/config/pg_tileserv.toml:ro
@@ -188,7 +210,7 @@ services:
       - db.env
 
   titiler:
-    image: ghcr.io/developmentseed/titiler:0.23.1
+    image: ghcr.io/developmentseed/titiler:1.2.0
     volumes:
       - user-data:/static
     environment:
@@ -220,7 +242,7 @@ services:
       # - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
 
   tusd:
-    image: tusproject/tusd:latest
+    image: tusproject/tusd:sha-0e52ad6
     command: -verbose -behind-proxy -hooks-http http://proxy/api/v1/tusd -hooks-http-forward-headers Cookie X-Project-ID X-Flight-ID X-Data-Type
     volumes:
       - ./tusd/hooks:/srv/tusd-hooks

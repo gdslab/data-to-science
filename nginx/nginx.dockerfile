@@ -1,4 +1,4 @@
-FROM nginxinc/nginx-unprivileged:latest
+FROM nginxinc/nginx-unprivileged:1.29
 
 ARG DEFAULT_CONF
 
