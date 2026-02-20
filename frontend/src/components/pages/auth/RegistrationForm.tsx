@@ -2,7 +2,7 @@ import { isAxiosError } from 'axios';
 import clsx from 'clsx';
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { Link } from 'react-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { yupResolver } from '@hookform/resolvers/yup';
 
 import Layout from './Layout';
@@ -30,7 +30,20 @@ export default function RegistrationForm() {
   const [showPassword, toggleShowPassword] = useState(false);
   const [turnstileError, setTurnstileError] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+  const [turnstileSiteKey, setTurnstileSiteKey] = useState<string>('');
+
+  useEffect(() => {
+    fetch('/config.json')
+      .then((response) => response.json())
+      .then((config) => {
+        if (config.turnstileSiteKey) {
+          setTurnstileSiteKey(config.turnstileSiteKey);
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to load config.json:', error);
+      });
+  }, []);
 
   const methods = useForm<RegistrationFormData>({
     defaultValues,

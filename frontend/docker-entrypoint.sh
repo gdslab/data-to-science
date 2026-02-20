@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Generate a runtime configuration file with the environment variables
-CONFIG_CONTENT="{\"mapboxAccessToken\": \"${VITE_MAPBOX_ACCESS_TOKEN}\", \"maptilerApiKey\": \"${VITE_MAPTILER_API_KEY}\", \"osmLabelFilter\": \"${VITE_OSM_LABEL_FILTER:-}\"}"
+CONFIG_CONTENT="{\"mapboxAccessToken\": \"${VITE_MAPBOX_ACCESS_TOKEN}\", \"maptilerApiKey\": \"${VITE_MAPTILER_API_KEY}\", \"osmLabelFilter\": \"${VITE_OSM_LABEL_FILTER:-}\", \"turnstileSiteKey\": \"${VITE_TURNSTILE_SITE_KEY:-}\"}"
 
 # Write to public folder (for development yarn server)
 echo "$CONFIG_CONTENT" > /app/public/config.json

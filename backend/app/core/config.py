@@ -144,9 +144,11 @@ class Settings(BaseSettings):
 
     @field_validator(
         "EXTERNAL_VIEWER_URL",
+        "MAPBOX_ACCESS_TOKEN",
         "STAC_API_URL",
         "STAC_API_TEST_URL",
         "STAC_BROWSER_URL",
+        "TURNSTILE_SECRET_KEY",
         mode="before",
     )
     @classmethod

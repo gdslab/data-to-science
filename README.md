@@ -158,6 +158,7 @@ This allows cookies to work correctly in non-localhost HTTP environments.
 
 - `VITE_MAPBOX_ACCESS_TOKEN`: Mapbox access token for satellite imagery (optional).
 - `VITE_MAPTILER_API_KEY`: Maptiler API key for OSM labels (optional).
+- `VITE_TURNSTILE_SITE_KEY`: Cloudflare Turnstile site key for bot protection on registration (optional). Leave empty to disable. Must be paired with `TURNSTILE_SECRET_KEY` in `backend.env`.
 
 3. Open `backend.env` in a text editor. Below is a list of the environment variables that can be set inside `backend.env`. You may use the default values or change them as needed.
 
@@ -225,7 +226,6 @@ This allows cookies to work correctly in non-localhost HTTP environments.
 
    - `VITE_META_OG_IMAGE`: Preview image URL for social media shares.
    - `VITE_META_OG_URL`: Hostname for site.
-   - `VITE_TURNSTILE_SITE_KEY`: Cloudflare Turnstile site key for bot protection on registration (optional). Leave empty to disable.
 
 ### 🛠️ Build Docker images for services
 
