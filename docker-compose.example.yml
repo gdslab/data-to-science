@@ -76,9 +76,15 @@ services:
       - PGADMIN_DEFAULT_PASSWORD=password
 
   redis:
-    image: redis:alpine
+    image: redis:8.6.0-alpine
     platform: linux/x86_64
+    user: redis
+    read_only: true
+    tmpfs:
+      - /data:uid=999,gid=999,mode=0755
+    command: redis-server --save "" --appendonly no
     restart: always
+    
 
   celery_worker:
     image: d2s-api:dev
