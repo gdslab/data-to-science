@@ -105,10 +105,13 @@ services:
       - db.env
 
   redis:
-    image: redis:alpine
+    image: redis:8.6.0-alpine
     platform: linux/x86_64
     user: redis
     read_only: true
+    tmpfs:
+      - /data:uid=999,gid=999,mode=0755
+    command: redis-server --save "" --appendonly no
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 1m30s
