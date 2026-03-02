@@ -32,7 +32,7 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
   >(null);
   const [searchText, setSearchText] = useState('');
   const [sortSelection, setSortSelection] = useState<SortSelection>(
-    getSortPreferenceFromLocalStorage('sortPreference')
+    getSortPreferenceFromLocalStorage('sortPreference'),
   );
   const {
     activeDataProductDispatch,
@@ -52,13 +52,13 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
 
     if (projectFilterSelection.includes('myProjects')) {
       filteredProjects = filteredProjects.filter(
-        (project) => project.role === 'owner'
+        (project) => project.role === 'owner',
       );
     }
 
     if (projectFilterSelection.includes('likedProjects')) {
       filteredProjects = filteredProjects.filter(
-        (project) => project.liked || false
+        (project) => project.liked || false,
       );
     }
 
@@ -67,7 +67,7 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
       selectedTeamIds.length > 0
     ) {
       filteredProjects = filteredProjects.filter(
-        (project) => project.team && selectedTeamIds.includes(project.team.id)
+        (project) => project.team && selectedTeamIds.includes(project.team.id),
       );
     }
 
@@ -85,7 +85,7 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
     return Array.from(unique.entries())
       .map(([id, title]) => ({ label: title, value: id }))
       .sort((a, b) =>
-        a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })
+        a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }),
       );
   }, [projects]);
 
@@ -98,7 +98,7 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
         (project) =>
           !project.title ||
           project.title.toLowerCase().includes(searchText.toLowerCase()) ||
-          project.description.toLowerCase().includes(searchText.toLowerCase())
+          project.description.toLowerCase().includes(searchText.toLowerCase()),
       );
   }, [filteredProjects, projectsVisible, searchText]);
 
@@ -106,14 +106,14 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
   const currentPageProjects = useMemo(() => {
     return sortProjects(filteredVisibleProjects, sortSelection).slice(
       currentPage * MAX_ITEMS,
-      MAX_ITEMS + currentPage * MAX_ITEMS
+      MAX_ITEMS + currentPage * MAX_ITEMS,
     );
   }, [currentPage, filteredVisibleProjects, sortSelection]);
 
   // Total number of pages
   const totalPages = useMemo(
     () => Math.ceil(filteredVisibleProjects.length / MAX_ITEMS),
-    [filteredVisibleProjects]
+    [filteredVisibleProjects],
   );
 
   // Activate clicked on project and clear any active data products
@@ -122,7 +122,7 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
       activeDataProductDispatch({ type: 'clear', payload: null });
       activeProjectDispatch({ type: 'set', payload: project });
     },
-    [activeDataProductDispatch, activeProjectDispatch]
+    [activeDataProductDispatch, activeProjectDispatch],
   );
 
   // Update search text when user interacts with projects search bar
@@ -141,7 +141,7 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
         setCurrentPage(newPage);
       }
     },
-    [totalPages]
+    [totalPages],
   );
 
   // Reset current page when there are fewer filtered visible projects than MAX_ITEMS
@@ -170,7 +170,7 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
                 currentPage,
                 MAX_ITEMS,
                 currentPageProjects.length,
-                filteredVisibleProjects.length
+                filteredVisibleProjects.length,
               )}
               <div className="flex flex-row gap-8">
                 <Filter
@@ -229,11 +229,11 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
                           alt="Image of project boundary"
                         />
                       </div>
-                      <div className="col-span-2 flex flex-col items-start gap-2">
-                        <strong className="font-bold text-slate-700 line-clamp-1">
+                      <div className="col-span-2 flex flex-col items-start gap-2 min-w-0">
+                        <strong className="font-bold text-slate-700 truncate w-full">
                           {project.title}
                         </strong>
-                        <div className="text-slate-700 text-sm line-clamp-1">
+                        <div className="text-slate-700 text-sm truncate w-full">
                           {project.description}
                         </div>
                       </div>
@@ -248,7 +248,7 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
                             }
                             rank={getCategory(
                               project.data_product_count,
-                              'flight'
+                              'flight',
                             )}
                           />
                           {project.team ? (
