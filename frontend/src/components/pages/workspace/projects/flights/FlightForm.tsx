@@ -1,5 +1,6 @@
 import { AxiosResponse, isAxiosError } from 'axios';
-import { Formik, Form } from 'formik';
+import { Formik, Form, useFormikContext } from 'formik';
+import { useState } from 'react';
 import {
   Params,
   useLoaderData,
@@ -24,12 +25,62 @@ import validationSchema from './validationSchema';
 
 import { useProjectContext } from '../ProjectContext';
 
+function FtToMConverter() {
+  const { setFieldValue } = useFormikContext();
+  const [ftValue, setFtValue] = useState('');
+
+  return (
+    <div>
+      <div className="flex items-start gap-2">
+        <div className="flex-1">
+          <TextField label="Altitude (meters)" name="altitude" />
+        </div>
+        <div>
+          <label className="block text-sm text-gray-400 font-bold pt-2 pb-1">
+            Convert from ft
+          </label>
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              value={ftValue}
+              onChange={(e) => setFtValue(e.target.value)}
+              placeholder="ft"
+              className="focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-hidden border border-gray-400 rounded-sm py-1 px-2 w-24 appearance-none"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                const ft = parseFloat(ftValue);
+                if (!isNaN(ft)) {
+                  setFieldValue(
+                    'altitude',
+                    Math.round(ft * 0.3048 * 100) / 100,
+                  );
+                  setFtValue('');
+                }
+              }}
+              className="bg-primary text-white text-sm font-medium rounded-sm py-1 px-2 hover:bg-primary/80 whitespace-nowrap"
+            >
+              ft &rarr; m
+            </button>
+          </div>
+        </div>
+      </div>
+      <p className="text-xs text-gray-400 mt-1">
+        If your altitude is in feet, use the &ldquo;Convert from ft&rdquo; field
+        on the right to enter the value and click the button to automatically
+        fill in the altitude in meters.
+      </p>
+    </div>
+  );
+}
+
 import api from '../../../../../api';
 import { classNames } from '../../../../utils';
 
 export async function loader({ params }: { params: Params<string> }) {
   const flight = await api.get(
-    `/projects/${params.projectId}/flights/${params.flightId}`
+    `/projects/${params.projectId}/flights/${params.flightId}`,
   );
 
   if (flight) {
@@ -62,7 +113,9 @@ export default function FlightForm({
             initialValues={{
               ...getInitialValues(editMode && flight ? flight : null),
               pilotId:
-                editMode && flight ? flight.pilot_id : projectMembers[0].member_id,
+                editMode && flight
+                  ? flight.pilot_id
+                  : projectMembers[0].member_id,
             }}
             validationSchema={validationSchema}
             onSubmit={async (values, { setSubmitting, setStatus }) => {
@@ -84,12 +137,12 @@ export default function FlightForm({
                 if (editMode && flight) {
                   response = await api.put(
                     `/projects/${params.projectId}/flights/${flight.id}`,
-                    data
+                    data,
                   );
                 } else {
                   response = await api.post(
                     `/projects/${params.projectId}/flights`,
-                    data
+                    data,
                   );
                 }
                 if (response) {
@@ -134,7 +187,7 @@ export default function FlightForm({
                   label="Acquisition date"
                   name="acquisitionDate"
                 />
-                <TextField label="Altitude (m)" name="altitude" />
+                <FtToMConverter />
                 <TextField label="Side overlap (%)" name="sideOverlap" />
                 <TextField label="Forward overlap (%)" name="forwardOverlap" />
                 <SelectField
