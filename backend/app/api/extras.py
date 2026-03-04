@@ -395,6 +395,42 @@ def generate_potree_viewer_html(
     <script src="/potree/libs/plasio/js/laslaz.js"></script>
     <script src="/potree/libs/Cesium/Cesium.js"></script>
 
+    <script>
+      // Reformat Potree measurement labels: metric first, imperial in parentheses
+      (function() {{
+        if (typeof Potree === 'undefined' || !Potree.Measure) return;
+        var srcIsFt = PC_Z_UNIT_FACTOR < 1;
+        function toFt(v) {{ return srcIsFt ? v : v * 3.28084; }}
+        function toM(v)  {{ return srcIsFt ? v * 0.3048 : v; }}
+        function fmtDist(raw) {{
+          var ft = toFt(raw), m = toM(raw);
+          return m.toFixed(2) + ' m (' + ft.toFixed(2) + ' ft)';
+        }}
+        function fmtArea(raw) {{
+          var sqft, sqm;
+          if (srcIsFt) {{ sqft = raw; sqm = raw * 0.092903; }}
+          else         {{ sqm = raw;  sqft = raw * 10.7639; }}
+          if (sqm >= 10000)
+            return (sqm / 10000).toFixed(2) + ' ha (' + (sqft / 43560).toFixed(2) + ' ac)';
+          return sqm.toFixed(1) + ' m\u00B2 (' + sqft.toFixed(1) + ' ft\u00B2)';
+        }}
+        function patchLabel(label, fmt) {{
+          if (!label || !label.text) return;
+          var v = parseFloat(label.text);
+          if (!isNaN(v) && v > 0) label.setText(fmt(v));
+        }}
+        var _upd = Potree.Measure.prototype.update;
+        Potree.Measure.prototype.update = function() {{
+          _upd.call(this);
+          if (this.edgeLabels)
+            this.edgeLabels.forEach(function(l) {{ patchLabel(l, fmtDist); }});
+          patchLabel(this.lengthLabel, fmtDist);
+          patchLabel(this.circleRadiusLabel, fmtDist);
+          patchLabel(this.areaLabel, fmtArea);
+        }};
+      }})();
+    </script>
+
     <div class="potree_container">
       <div id="potree_render_area">
         <div id="potree_toolbar"></div>
