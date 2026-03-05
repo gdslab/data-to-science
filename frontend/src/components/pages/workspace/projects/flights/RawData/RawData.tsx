@@ -133,7 +133,7 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
         });
       }
     },
-    imageProcessingJobStatus.length > 0 ? 5000 : null
+    imageProcessingJobStatus.length > 0 ? 15000 : null
   );
 
   useEffect(() => {

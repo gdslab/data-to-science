@@ -98,3 +98,8 @@ class ODMQueryParams(BaseModel):
     disclaimer: bool
     orthoResolution: float
     pcQuality: Literal["lowest", "low", "medium", "high", "ultra"]
+
+
+class ProgressUpdate(BaseModel):
+    job_id: UUID4
+    progress: float

@@ -180,6 +180,11 @@ def transfer_raw_data(
                     f"{project_id}/flights/{flight_id}/data_products/"
                     "create_from_ext_storage"
                 ),
+                "progress_callback_url": (
+                    f"{settings.API_DOMAIN}{settings.API_V1_STR}/projects/"
+                    f"{project_id}/flights/{flight_id}/raw_data/"
+                    f"{raw_data_id}/progress_update"
+                ),
                 "created_at": datetime.now(tz=timezone.utc).strftime(
                     "%Y-%m-%dT%H:%M:%S"
                 ),
@@ -219,15 +224,13 @@ def start_raw_data_processing(task_data: Tuple[UUID, str]) -> None:
     """
     job_id, raw_data_identifier = task_data
 
-    rpc_client = None
-
     try:
         # Get job manager for current job
         job = JobManager(job_id=job_id)
 
         # publish message to external server
-        rpc_client = RpcClient(routing_key="raw-data-start-process-queue")
-        batch_id = rpc_client.call(raw_data_identifier)
+        with RpcClient(routing_key="raw-data-start-process-queue") as rpc_client:
+            batch_id = rpc_client.call(raw_data_identifier)
 
         # if no batch id returned, update job state as failed
         if not batch_id:
@@ -240,6 +243,3 @@ def start_raw_data_processing(task_data: Tuple[UUID, str]) -> None:
         logger.exception("Error while publishing to RabbitMQ channel")
         # update job
         job.update(status=Status.FAILED)
-    finally:
-        if rpc_client and getattr(rpc_client.connection, "is_open", False):
-            rpc_client.connection.close()
