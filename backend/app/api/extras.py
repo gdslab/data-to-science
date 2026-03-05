@@ -634,8 +634,32 @@ def generate_potree_viewer_html(
         viewer.update(viewer.clock.getDelta(), timestamp);
         viewer.render();
 
+        // HQ splatting is incompatible with orthographic projection —
+        // force Standard quality while in ortho and restore on return.
+        if (!PC_IS_MOBILE) {{
+          const isOrtho = viewer.scene.getActiveCamera().isOrthographicCamera;
+          if (isOrtho && viewer.useHQ) {{
+            viewer._hqBeforeOrtho = true;
+            viewer.useHQ = false;
+            $('#splat_quality_options').find('input[value=standard]').trigger('click');
+          }} else if (!isOrtho && viewer._hqBeforeOrtho) {{
+            viewer._hqBeforeOrtho = false;
+            viewer.useHQ = true;
+            $('#splat_quality_options').find('input[value=hq]').trigger('click');
+          }}
+        }}
+
         if (typeof window.toMap !== 'undefined' && cesiumViewer) {{
           const camera = viewer.scene.getActiveCamera();
+
+          // Skip Cesium sync when Potree is in orthographic mode —
+          // Cesium's tile imagery requires a perspective frustum.
+          const cesiumEl = document.getElementById('cesiumContainer');
+          if (camera.isOrthographicCamera) {{
+            cesiumEl.style.display = 'none';
+            return;
+          }}
+          cesiumEl.style.display = 'block';
 
           const pPos    = new THREE.Vector3(0, 0, 0).applyMatrix4(camera.matrixWorld);
           const pRight  = new THREE.Vector3(600, 0, 0).applyMatrix4(camera.matrixWorld);
@@ -857,7 +881,7 @@ def generate_potree_viewer_html(
       
         {{// POINT BUDGET
           const minBudget = PC_IS_MOBILE ? 50_000 : 100_000;
-          const maxBudget = PC_IS_MOBILE ? 1_000_000 : 2_000_000;
+          const maxBudget = PC_IS_MOBILE ? 1_000_000 : 10_000_000;
           const stepBudget = PC_IS_MOBILE ? 50_000 : 100_000;
           
           elToolbar.find('#sldPointBudget').slider({{
@@ -869,8 +893,9 @@ def generate_potree_viewer_html(
           }});
       
           const onBudgetChange = () => {{
-            let budget = (viewer.getPointBudget() / (1000_000)).toFixed(1) + "M";
-            elToolbar.find('span[name=lblPointBudget]').html(budget);
+            let budget = viewer.getPointBudget();
+            elToolbar.find('span[name=lblPointBudget]').html((budget / 1000_000).toFixed(1) + "M");
+            elToolbar.find('#sldPointBudget').slider('value', budget);
           }};
       
           onBudgetChange();
