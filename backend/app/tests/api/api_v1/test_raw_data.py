@@ -1,13 +1,18 @@
 import os
 from datetime import datetime, timezone
+from unittest.mock import patch
+from uuid import uuid4
 
 from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
+from app.schemas.job import JobUpdate, Status
 from app.schemas.role import Role
+from app.tests.utils.job import create_job
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
 from app.tests.utils.flight import create_flight
@@ -282,4 +287,123 @@ def test_deactivate_raw_data_without_project_access(
         f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
         f"/flights/{raw_data.flight.id}/raw_data/{raw_data.obj.id}"
     )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def _patch_job_manager_db(db: Session):
+    """Patch get_db in job_manager module so JobManager uses the test session."""
+    return patch("app.utils.job_manager.get_db", return_value=iter([db]))
+
+
+def test_progress_update_sets_progress_on_job(client: TestClient, db: Session) -> None:
+    raw_data = SampleRawData(db)
+    job = create_job(db, name="processing-raw-data", raw_data_id=raw_data.obj.id)
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
+        f"/flights/{raw_data.flight.id}/raw_data/{raw_data.obj.id}/progress_update",
+        json={"job_id": str(job.id), "progress": 42.5},
+    )
+    assert response.status_code == status.HTTP_202_ACCEPTED
+    assert response.json()["detail"] == "Progress updated"
+    updated_job = crud.job.get(db, id=job.id)
+    assert updated_job
+    assert updated_job.extra["progress"] == 42.5
+
+
+def test_progress_update_failure_signal_marks_job_failed(
+    client: TestClient, db: Session
+) -> None:
+    raw_data = SampleRawData(db)
+    job = create_job(db, name="processing-raw-data", raw_data_id=raw_data.obj.id)
+    with _patch_job_manager_db(db):
+        response = client.post(
+            f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
+            f"/flights/{raw_data.flight.id}/raw_data/{raw_data.obj.id}/progress_update",
+            json={"job_id": str(job.id), "progress": -9999},
+        )
+    assert response.status_code == status.HTTP_202_ACCEPTED
+    assert response.json()["detail"] == "Job marked as failed"
+    updated_job = crud.job.get(db, id=job.id)
+    assert updated_job
+    assert updated_job.status == Status.FAILED
+
+
+def test_progress_update_with_invalid_job_id(client: TestClient, db: Session) -> None:
+    raw_data = SampleRawData(db)
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
+        f"/flights/{raw_data.flight.id}/raw_data/{raw_data.obj.id}/progress_update",
+        json={"job_id": str(uuid4()), "progress": 50.0},
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_check_progress_returns_stored_progress(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    raw_data = SampleRawData(db, user=current_user)
+    job = create_job(
+        db,
+        name="processing-raw-data",
+        raw_data_id=raw_data.obj.id,
+        extra={"progress": 75.0},
+    )
+    with _patch_job_manager_db(db):
+        response = client.get(
+            f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
+            f"/flights/{raw_data.flight.id}/raw_data/{raw_data.obj.id}"
+            f"/check_progress/{job.id}"
+        )
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["progress"] == "75.0"
+
+
+def test_check_progress_returns_zero_when_no_progress(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    raw_data = SampleRawData(db, user=current_user)
+    job = create_job(db, name="processing-raw-data", raw_data_id=raw_data.obj.id)
+    with _patch_job_manager_db(db):
+        response = client.get(
+            f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
+            f"/flights/{raw_data.flight.id}/raw_data/{raw_data.obj.id}"
+            f"/check_progress/{job.id}"
+        )
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["progress"] == "0"
+
+
+def test_check_progress_returns_error_when_job_failed(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    raw_data = SampleRawData(db, user=current_user)
+    job = create_job(
+        db,
+        name="processing-raw-data",
+        raw_data_id=raw_data.obj.id,
+        status=Status.FAILED,
+    )
+    with _patch_job_manager_db(db):
+        response = client.get(
+            f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
+            f"/flights/{raw_data.flight.id}/raw_data/{raw_data.obj.id}"
+            f"/check_progress/{job.id}"
+        )
+    assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
+
+def test_check_progress_with_invalid_job_id(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    raw_data = SampleRawData(db, user=current_user)
+    with _patch_job_manager_db(db):
+        response = client.get(
+            f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
+            f"/flights/{raw_data.flight.id}/raw_data/{raw_data.obj.id}"
+            f"/check_progress/{uuid4()}"
+        )
     assert response.status_code == status.HTTP_404_NOT_FOUND
