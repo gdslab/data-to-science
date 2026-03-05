@@ -27,6 +27,14 @@ class RpcClient:
         self.corr_id: Optional[str] = None
         self.routing_key = routing_key
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.connection and self.connection.is_open:
+            self.connection.close()
+        return False
+
     def on_response(
         self,
         ch: pika.channel.Channel,

@@ -14,7 +14,7 @@ from app import crud, models, schemas
 from app.api import deps
 from app.core.config import settings
 from app.schemas.image_processing_backend import ImageProcessingBackend
-from app.schemas.job import State, Status
+from app.schemas.job import JobUpdate, State, Status
 from app.schemas.raw_data import MetashapeQueryParams, ODMQueryParams
 from app.schemas.role import Role
 from app.tasks.raw_image_processing_tasks import (
@@ -23,7 +23,6 @@ from app.tasks.raw_image_processing_tasks import (
 )
 from app.tasks.utils import is_valid_filename
 from app.utils.job_manager import JobManager
-from app.utils.RpcClient import RpcClient
 
 router = APIRouter()
 
@@ -306,27 +305,48 @@ def check_raw_data_processing_progress(
             detail="Job not found",
         )
 
-    # if job exists, check "extra" for key "batch_id"
-    extra = job_db_obj.extra
-    if not extra or not isinstance(extra, Dict) or not "batch_id" in extra.keys():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Job does not have required Batch ID",
-        )
-
-    # if batch_id exists, use rpcclient to check for progress %
-    batch_id = extra["batch_id"]
-    logger.info(f"Requesting progress for Batch ID: {batch_id}")
-    rpc_client = RpcClient(routing_key="raw-data-check-progress-queue")
-    progress = rpc_client.call(batch_id)
-    rpc_client.connection.close()
-
-    if not progress or float(progress) == -9999:
-        job.update(status=Status.FAILED)
+    # check if job has failed
+    if job_db_obj.status == Status.FAILED:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error occurred while running job",
         )
 
-    # report back {"progress": str}
-    return {"progress": progress}
+    # read progress from DB (pushed by remote server)
+    extra = job_db_obj.extra
+    progress = 0
+    if extra and isinstance(extra, Dict):
+        progress = extra.get("progress", 0)
+
+    return {"progress": str(progress)}
+
+
+@router.post(
+    "/{raw_data_id}/progress_update", status_code=status.HTTP_202_ACCEPTED
+)
+def update_progress_from_remote(
+    raw_data_id: UUID,
+    payload: schemas.ProgressUpdate,
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Accepts progress pushes from the remote image processing server."""
+    # look up the job using the FastAPI db session directly
+    job_db_obj = crud.job.get(db, id=payload.job_id)
+    if not job_db_obj:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job not found",
+        )
+
+    # if progress indicates failure, mark job as failed
+    if payload.progress == -9999:
+        job = JobManager(job_id=payload.job_id)
+        job.update(status=Status.FAILED)
+        return {"detail": "Job marked as failed"}
+
+    # update progress in job extra without changing state/status
+    existing_extra = dict(job_db_obj.extra) if job_db_obj.extra else {}
+    existing_extra["progress"] = payload.progress
+    crud.job.update(db, db_obj=job_db_obj, obj_in=JobUpdate(extra=existing_extra))
+
+    return {"detail": "Progress updated"}

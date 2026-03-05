@@ -34,7 +34,12 @@ def get_pika_connection() -> pika.connection.Connection:
     try:
         connection = pika.BlockingConnection(
             pika.ConnectionParameters(
-                host=host, credentials=pika.PlainCredentials(username, password)
+                host=host,
+                credentials=pika.PlainCredentials(username, password),
+                heartbeat=120,
+                blocked_connection_timeout=300,
+                connection_attempts=3,
+                retry_delay=5,
             )
         )
     except AMQPConnectionError as e:
