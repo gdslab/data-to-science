@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useRevalidator } from 'react-router';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 
 import DataProducts from './DataProducts';
@@ -35,10 +36,12 @@ export default function FlightDataTabNav({
   const [selectedIndex, setSelectedIndex] = useState(
     getFlightDataTabSelectionFromLS()
   );
+  const revalidator = useRevalidator();
 
   function onChange(index: number) {
     localStorage.setItem('flightDataTabSelection', index.toString());
     setSelectedIndex(index);
+    revalidator.revalidate();
   }
 
   return (

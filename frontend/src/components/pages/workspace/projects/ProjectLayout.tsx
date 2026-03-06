@@ -104,7 +104,6 @@ export function ProjectOutlet() {
     projectModulesDispatch,
     flightsDispatch,
     flightsFilterSelectionDispatch,
-    flights: contextFlights,
   } = useProjectContext();
 
   const flightsLoaderRef = useRef<Flight[] | null>(null);
@@ -145,28 +144,12 @@ export function ProjectOutlet() {
     if (flights && flightsLoaderRef.current !== flights) {
       flightsLoaderRef.current = flights;
       flightsDispatch({ type: 'set', payload: flights });
-
-      // Initialize filter selection
-      if (contextFlights) {
-        if (contextFlights.length === 0) {
-          flightsFilterSelectionDispatch({
-            type: 'set',
-            payload: [...new Set(flights.map(({ sensor }) => sensor))],
-          });
-        }
-      } else {
-        flightsFilterSelectionDispatch({
-          type: 'set',
-          payload: [...new Set(flights.map(({ sensor }) => sensor))],
-        });
-      }
+      flightsFilterSelectionDispatch({
+        type: 'set',
+        payload: [...new Set(flights.map(({ sensor }) => sensor))],
+      });
     }
-  }, [
-    loaderData?.flights,
-    flightsDispatch,
-    flightsFilterSelectionDispatch,
-    contextFlights,
-  ]);
+  }, [loaderData?.flights, flightsDispatch, flightsFilterSelectionDispatch]);
 
   return <Outlet context={loaderData} />;
 }
