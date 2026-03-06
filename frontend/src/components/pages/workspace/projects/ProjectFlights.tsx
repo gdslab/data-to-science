@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useRouteLoaderData } from 'react-router';
 import { PencilIcon } from '@heroicons/react/24/outline';
 
 import { Button } from '../../../Buttons';
@@ -10,6 +10,7 @@ import FlightForm from './flights/FlightForm';
 import Modal from '../../../Modal';
 import TableCardRadioInput from '../../../TableCardRadioInput';
 import { useProjectContext } from './ProjectContext';
+import { ProjectLayoutData } from './ProjectLayout';
 
 import { getUnique, sorter } from '../../../utils';
 import MoveFlightModal from './flights/MoveFlightModal';
@@ -31,13 +32,17 @@ export default function ProjectFlights() {
     getFlightsDisplayModeFromLS()
   );
 
+  const loaderData = useRouteLoaderData('projectLayout') as ProjectLayoutData | undefined;
   const {
-    flights,
+    flights: contextFlights,
     flightsFilterSelection,
     flightsFilterSelectionDispatch,
-    project,
+    project: contextProject,
     projectRole,
   } = useProjectContext();
+
+  const flights = contextFlights ?? loaderData?.flights ?? null;
+  const project = contextProject ?? loaderData?.project ?? null;
 
   function updateFlightsFilter(filterSelections: string[]) {
     flightsFilterSelectionDispatch({ type: 'set', payload: filterSelections });
