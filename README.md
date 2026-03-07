@@ -69,30 +69,30 @@ If you can successfully run `python3 --version`, `docker --version`, and `docker
 From the root directory of the repository, run the following commands to set up and start the quickstart deployment:
 
 ```
-python -m d2s_admin quickstart init
-python -m d2s_admin quickstart up
+python3 -m d2s_admin quickstart init
+python3 -m d2s_admin quickstart up
 ```
 
 The `init` command copies the example environment files and creates the `tusd-data/` upload directory. The `up` command starts all service containers in the background.
-
-### ⏹️ Stop the containers
-
-```
-python -m d2s_admin quickstart down
-```
 
 ### 👤 Create a superuser
 
 Once the containers are running, create an admin account:
 
 ```
-python -m d2s_admin createsuperuser
+python3 -m d2s_admin createsuperuser
 ```
 
 You will be prompted for an email, first name, last name, and password. You can also pass these as flags:
 
 ```
-python -m d2s_admin createsuperuser --email admin@example.com --first-name Admin --last-name User --password yourpassword
+python3 -m d2s_admin createsuperuser --email admin@example.com --first-name Admin --last-name User --password yourpassword
+```
+
+### ⏹️ Stop the containers
+
+```
+python3 -m d2s_admin quickstart down
 ```
 
 <details>

@@ -28,7 +28,9 @@ def _check_docker():
         sys.exit(1)
     except subprocess.CalledProcessError:
         print("Error: 'docker compose' is not available.")
-        print("Please install Docker Compose v2: https://docs.docker.com/compose/install/")
+        print(
+            "Please install Docker Compose v2: https://docs.docker.com/compose/install/"
+        )
         sys.exit(1)
 
 
@@ -54,7 +56,7 @@ def init(args):
         print("  Created: tusd-data/")
 
     print("\nQuickstart environment initialized.")
-    print("You can now run: python -m d2s_admin quickstart up")
+    print("You can now run: python3 -m d2s_admin quickstart up")
 
 
 def up(args):

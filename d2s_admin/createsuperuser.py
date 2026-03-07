@@ -63,6 +63,8 @@ def run(args):
     last_name = _prompt_value("Last name", args.last_name)
     password = _prompt_password(args.password)
 
+    print("Creating superuser account (this may take a moment)...", flush=True)
+
     cmd = [
         "docker", "compose", "-f", compose_file,
         "exec",
@@ -79,7 +81,13 @@ def run(args):
         "--password", password,
     ])
 
-    result = subprocess.run(cmd, cwd=repo_root)
+    result = subprocess.run(cmd, cwd=repo_root, capture_output=True, text=True)
+    if result.returncode == 0:
+        print(result.stdout.strip())
+    else:
+        print(result.stdout.strip())
+        if result.stderr.strip():
+            print(result.stderr.strip(), file=sys.stderr)
     sys.exit(result.returncode)
 
 

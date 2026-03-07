@@ -1,8 +1,11 @@
 import argparse
 import logging
 import sys
+import warnings
 
 from sqlalchemy import func, select
+
+warnings.filterwarnings("ignore", message="relationship .* will copy column")
 
 from app.core.security import get_password_hash
 from app.db.session import SessionLocal

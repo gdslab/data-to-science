@@ -21,10 +21,8 @@ from passlib.context import CryptContext
 from passlib.hash import sha256_crypt
 from sqlalchemy.orm import Session
 
-from app import crud
 from app.core.config import settings
 from app.models.single_use_token import SingleUseToken
-from app.schemas.refresh_token import RefreshTokenCreate
 
 logger = logging.getLogger("__name__")
 
@@ -78,6 +76,9 @@ def create_refresh_token(
         user_uuid = UUID(subject)
 
     # Store token in database
+    from app import crud
+    from app.schemas.refresh_token import RefreshTokenCreate
+
     refresh_token_create = RefreshTokenCreate(
         jti=jti, user_id=user_uuid, issued_at=now, expires_at=expire
     )
