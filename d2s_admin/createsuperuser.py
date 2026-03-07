@@ -1,5 +1,6 @@
 import getpass
 import os
+import re
 import subprocess
 import sys
 
@@ -59,6 +60,9 @@ def run(args):
         sys.exit(1)
 
     email = _prompt_value("Email", args.email)
+    if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+        print("Error: Invalid email address.")
+        sys.exit(1)
     first_name = _prompt_value("First name", args.first_name)
     last_name = _prompt_value("Last name", args.last_name)
     password = _prompt_password(args.password)
@@ -83,9 +87,11 @@ def run(args):
 
     result = subprocess.run(cmd, cwd=repo_root, capture_output=True, text=True)
     if result.returncode == 0:
-        print(result.stdout.strip())
+        print(f"Superuser '{email}' created successfully.")
     else:
-        print(result.stdout.strip())
+        output = result.stdout.strip()
+        if output:
+            print(output)
         if result.stderr.strip():
             print(result.stderr.strip(), file=sys.stderr)
     sys.exit(result.returncode)
