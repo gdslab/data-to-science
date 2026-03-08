@@ -69,7 +69,7 @@ def up(args):
         sys.exit(1)
 
     result = subprocess.run(
-        ["docker", "compose", "-f", compose_file, "up", "-d"],
+        ["docker", "compose", "-f", compose_file, "up", "-d", "--wait"],
         cwd=repo_root,
     )
     sys.exit(result.returncode)
