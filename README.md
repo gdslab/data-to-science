@@ -59,44 +59,67 @@ Additional documentation and tutorials are available for users who want to explo
 
 ### 📋 Prerequisites
 
-[Docker Engine](https://docs.docker.com/engine/install/) and [Docker Compose](https://docs.docker.com/compose/install/) are required to run the container with the following instructions. If you can successfully run `docker --version` and `docker compose --version` from a terminal then you are ready to proceed to the next section.
+- [Python 3](https://www.python.org/) (standard library only — no additional packages required)
+- [Docker Engine](https://docs.docker.com/engine/install/) and [Docker Compose](https://docs.docker.com/compose/install/)
 
-### Copy env example files
+If you can successfully run `python3 --version`, `docker --version`, and `docker compose --version` from a terminal then you are ready to proceed.
 
-1. Navigate to the root directory of the repository.
-2. Copy `backend.example.env` to a new file named `backend.env`.
-   ```
-   cp backend.example.env backend.env
-   ```
-3. Copy `db.example.env` to a new file named `db.env`.
-   ```
-   cp db.example.env db.env
-   ```
-4. Copy `frontend.example.env` to a new file named `frontend.env`.
-   ```
-   cp frontend.example.env frontend.env
-   ```
+### Initialize and start
 
-### Create tusd-data directory for uploads
+From the root directory of the repository, run the following commands to set up and start the quickstart deployment:
 
-1. Create a folder for data to be stored during the upload process.
-   ```
-   mkdir tusd-data
-   ```
+```
+python3 -m d2s_admin quickstart init
+python3 -m d2s_admin quickstart up
+```
 
-### ▶️ Start the containers
+The `init` command copies the example environment files and creates the `tusd-data/` upload directory. The `up` command starts all service containers in the background.
 
-1. Use the following command to run the service containers in the background:
-   ```
-   docker compose -f docker-compose.quickstart.yml up -d
-   ```
+### 👤 Create a superuser
+
+Once the containers are running, create an admin account:
+
+```
+python3 -m d2s_admin createsuperuser
+```
+
+You will be prompted for an email, first name, last name, and password. You can also pass these as flags:
+
+```
+python3 -m d2s_admin createsuperuser --email admin@example.com --first-name Admin --last-name User --password yourpassword
+```
 
 ### ⏹️ Stop the containers
 
-1. Use the following command to stop the containers:
+```
+python3 -m d2s_admin quickstart down
+```
+
+<details>
+<summary>Manual setup (without d2s_admin)</summary>
+
+If you prefer to set up manually instead of using `d2s_admin`:
+
+1. Copy the example environment files:
+   ```
+   cp backend.example.env backend.env
+   cp db.example.env db.env
+   cp frontend.example.env frontend.env
+   ```
+2. Create the upload directory:
+   ```
+   mkdir tusd-data
+   ```
+3. Start the containers:
+   ```
+   docker compose -f docker-compose.quickstart.yml up -d
+   ```
+4. Stop the containers:
    ```
    docker compose -f docker-compose.quickstart.yml stop
    ```
+
+</details>
 
 ### 🌍 Accessing the web application
 
