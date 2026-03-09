@@ -18,6 +18,8 @@
   - [Quick Start](#-quick-start)
   - [Local Development](#-local-development)
 - [Example Deployment](#example-deployment)
+- [Companion Tools](#-companion-tools)
+- [Contributing](#-contributing)
 - [Documentation](#-documentation)
 
 ## What is D2S?
@@ -141,13 +143,7 @@ If you prefer to set up manually instead of using `d2s_admin`:
 
 #### 🌍 Accessing the web application
 
-The Data To Science web application can be accessed from `http://localhost:8000`. It may take up to a minute for the backend to finish initializing. If you are running D2S on a virtual machine or remote server and accessing it via a LAN IP over HTTP, update `HTTP_COOKIE_SECURE` in your `backend.env` file to:
-
-```env
-HTTP_COOKIE_SECURE=0
-```
-
-This allows cookies to work correctly in non-localhost HTTP environments.
+The Data To Science web application can be accessed from `http://localhost:8000`. It may take up to a minute for the backend to finish initializing.
 
 ### 🛠️ Local Development
 
@@ -158,6 +154,28 @@ For building from source, configuring environment variables, running tests, and 
 An example deployment of the Data to Science platform is available at https://ps2.d2s.org. This publicly accessible instance is managed by the Geospatial Data Science Lab at Purdue University and is open for use and exploration.
 
 While this instance provides a convenient way to try D2S, the platform is designed to be self-deployable, allowing researchers and organizations to host their own instances tailored to their specific needs.
+
+# 🧰 Companion Tools
+
+## d2spy — Python Client
+
+Python package for interacting with D2S programmatically — manage projects, flights, and data products from Python scripts and notebooks.
+
+```
+pip install d2spy
+```
+
+[Documentation](https://py.d2s.org) | [GitHub](https://github.com/gdslab/d2spy)
+
+## D2S Browser — QGIS Plugin
+
+Browse and manage your D2S project data directly from QGIS — access existing datasets or create projects, flights, and upload data products without leaving the desktop.
+
+[QGIS Plugin Page](https://plugins.qgis.org/plugins/d2s_browser/)
+
+# 🤝 Contributing
+
+We welcome contributions, feedback, and discussion from the community. See [CONTRIBUTING.md](CONTRIBUTING.md) for details on reporting bugs, suggesting features, and contributing code.
 
 # 📘 Documentation
 
