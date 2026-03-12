@@ -1,8 +1,8 @@
-# Role-Based Access Control (RBAC) Documentation
+# Roles and Permissions
 
-This document summarizes what each role can do across the Data to Science platform.
+This document summarizes what each role can do across the D2S platform. For the design rationale behind this system, see [Authentication and Authorization](../explanation/authentication.md).
 
-## Role Hierarchy
+## Role hierarchy
 
 The platform uses a three-tier role hierarchy for both **Team Members** and **Project Members**:
 
@@ -14,11 +14,11 @@ The platform uses a three-tier role hierarchy for both **Team Members** and **Pr
 
 ---
 
-## Team Permissions
+## Team permissions
 
 Teams are used to organize users and can be associated with projects.
 
-### Team Operations
+### Team operations
 
 | Action | Owner | Manager | Viewer |
 |--------|:-----:|:-------:|:------:|
@@ -28,7 +28,7 @@ Teams are used to organize users and can be associated with projects.
 | Update team | Yes | No | No |
 | Delete team | Yes | No | No |
 
-### Team Member Management
+### Team member management
 
 | Action | Owner | Manager | Viewer |
 |--------|:-----:|:-------:|:------:|
@@ -40,17 +40,18 @@ Teams are used to organize users and can be associated with projects.
 
 *\*Managers can update roles but **cannot** modify owners or promote members to owner.*
 
-**Special Restrictions:**
+**Special restrictions:**
+
 - The team creator (original owner) cannot be modified or removed
 - Demo users cannot perform write/delete operations on teams
 
 ---
 
-## Project Permissions
+## Project permissions
 
 Projects are the primary organizational unit containing flights, data products, and other resources.
 
-### Project Operations
+### Project operations
 
 | Action | Owner | Manager | Viewer |
 |--------|:-----:|:-------:|:------:|
@@ -61,7 +62,7 @@ Projects are the primary organizational unit containing flights, data products, 
 | Deactivate (delete) project | Yes | No | No |
 | Bookmark/unbookmark project | Yes | Yes | Yes |
 
-### Project Member Management
+### Project member management
 
 | Action | Owner | Manager | Viewer |
 |--------|:-----:|:-------:|:------:|
@@ -72,17 +73,18 @@ Projects are the primary organizational unit containing flights, data products, 
 | Update project member role | Yes | No | No |
 | Remove project member | Yes | No | No |
 
-**Special Restrictions:**
+**Special restrictions:**
+
 - The project creator (original owner) cannot be removed
 - Demo users cannot perform write/delete operations on projects
 
 ---
 
-## Flight Permissions
+## Flight permissions
 
 Flights belong to projects and contain raw data and data products.
 
-### Flight Operations
+### Flight operations
 
 | Action | Owner | Manager | Viewer |
 |--------|:-----:|:-------:|:------:|
@@ -96,18 +98,19 @@ Flights belong to projects and contain raw data and data products.
 
 *\*User must be Owner of both source and destination projects.*
 
-*\*\*Flight deletion requires `can_read_write_flight` AND `can_read_write_delete_project` - effectively requiring Manager+ on flight and Owner on project.*
+*\*\*Flight deletion requires `can_read_write_flight` AND `can_read_write_delete_project` — effectively requiring Manager+ on flight and Owner on project.*
 
-**Additional Restriction:**
+**Additional restriction:**
+
 - Flights cannot be deactivated when the project is published to a STAC catalog
 
 ---
 
-## Data Product Permissions
+## Data product permissions
 
 Data products are derived outputs (GeoTIFFs, point clouds, etc.) associated with flights.
 
-### Data Product Operations
+### Data product operations
 
 | Action | Owner | Manager | Viewer |
 |--------|:-----:|:-------:|:------:|
@@ -120,17 +123,18 @@ Data products are derived outputs (GeoTIFFs, point clouds, etc.) associated with
 | Run processing tools (NDVI, CHM, etc.) | Yes | Yes | No |
 | Calculate zonal statistics | Yes | Yes | Yes |
 
-**Additional Restrictions:**
+**Additional restrictions:**
+
 - Data products cannot be deactivated when the project is published to a STAC catalog
 - Point cloud and panoramic data types cannot be changed
 
 ---
 
-## Raw Data Permissions
+## Raw data permissions
 
 Raw data represents unprocessed uploads associated with flights.
 
-### Raw Data Operations
+### Raw data operations
 
 | Action | Owner | Manager | Viewer |
 |--------|:-----:|:-------:|:------:|
@@ -143,11 +147,11 @@ Raw data represents unprocessed uploads associated with flights.
 
 ---
 
-## Vector Layer Permissions
+## Vector layer permissions
 
 Vector layers are GeoJSON/shapefile data associated with projects.
 
-### Vector Layer Operations
+### Vector layer operations
 
 | Action | Owner | Manager | Viewer |
 |--------|:-----:|:-------:|:------:|
@@ -161,11 +165,11 @@ Vector layers are GeoJSON/shapefile data associated with projects.
 
 ---
 
-## Campaign (Field Data) Permissions
+## Campaign (field data) permissions
 
 Campaigns are field data collection configurations within projects.
 
-### Campaign Operations
+### Campaign operations
 
 | Action | Owner | Manager | Viewer |
 |--------|:-----:|:-------:|:------:|
@@ -177,11 +181,11 @@ Campaigns are field data collection configurations within projects.
 
 ---
 
-## Location Permissions
+## Location permissions
 
 Locations are geographic boundaries within projects.
 
-### Location Operations
+### Location operations
 
 | Action | Owner | Manager | Viewer |
 |--------|:-----:|:-------:|:------:|
@@ -192,11 +196,11 @@ Locations are geographic boundaries within projects.
 
 ---
 
-## STAC Catalog Permissions
+## STAC catalog permissions
 
 STAC (SpatioTemporal Asset Catalog) operations for publishing project data.
 
-### STAC Operations
+### STAC operations
 
 | Action | Owner | Manager | Viewer |
 |--------|:-----:|:-------:|:------:|
@@ -208,26 +212,27 @@ STAC (SpatioTemporal Asset Catalog) operations for publishing project data.
 
 ---
 
-## File Permission Management
+## File permission management
 
 Controls public visibility of data products.
 
-### File Permission Operations
+### File permission operations
 
 | Action | Owner | Manager | Viewer |
 |--------|:-----:|:-------:|:------:|
 | Update file permission (public/private) | Yes | No | No |
 
-**Additional Restriction:**
+**Additional restriction:**
+
 - Files cannot be made private when the project is published to a STAC catalog
 
 ---
 
-## Indoor Project Permissions
+## Indoor project permissions
 
 Indoor projects are separate from regular projects and have their own permission system.
 
-### Indoor Project Operations
+### Indoor project operations
 
 | Action | Owner | Manager | Viewer |
 |--------|:-----:|:-------:|:------:|
@@ -237,7 +242,7 @@ Indoor projects are separate from regular projects and have their own permission
 | Update indoor project | Yes | Yes | No |
 | Deactivate indoor project | Yes | No | No |
 
-### Indoor Project Member Management
+### Indoor project member management
 
 | Action | Owner | Manager | Viewer |
 |--------|:-----:|:-------:|:------:|
@@ -248,7 +253,7 @@ Indoor projects are separate from regular projects and have their own permission
 | Update project member role | Yes | No | No |
 | Remove project member | Yes | No | No |
 
-### Indoor Project Data Operations
+### Indoor project data operations
 
 | Action | Owner | Manager | Viewer |
 |--------|:-----:|:-------:|:------:|
@@ -257,17 +262,18 @@ Indoor projects are separate from regular projects and have their own permission
 | View plant data | Yes | Yes | Yes |
 | View visualization data | Yes | Yes | Yes |
 
-**Special Restrictions:**
+**Special restrictions:**
+
 - Demo users cannot create indoor projects
 - The indoor project creator cannot be removed as a member
 
 ---
 
-## Admin Permissions
+## Admin permissions
 
 Admin users (superusers) have special elevated privileges.
 
-### Admin-Only Operations
+### Admin-only operations
 
 | Action | Regular User | Admin |
 |--------|:------------:|:-----:|
@@ -281,7 +287,7 @@ Admin users (superusers) have special elevated privileges.
 
 ---
 
-## Demo User Restrictions
+## Demo user restrictions
 
 Demo users have special restrictions that prevent modifications:
 
@@ -296,7 +302,7 @@ Demo users have special restrictions that prevent modifications:
 
 ---
 
-## API Key Authentication
+## API key authentication
 
 Some endpoints support authentication via API key in addition to JWT tokens:
 
@@ -309,44 +315,50 @@ Some endpoints support authentication via API key in addition to JWT tokens:
 
 ---
 
-## Permission Inheritance
+## Permission inheritance
 
 When a project is created with a team:
+
 - All team members are automatically added as project members
 - Team member roles are inherited as project member roles
 - Owner of team becomes Owner of project members
 
 ---
 
-## Dependency Functions Reference
+## Dependency functions reference
 
 The following dependency functions control access in the API:
 
-### User Authentication
-- `get_current_user` - Validates JWT token
-- `get_current_approved_user` - User must be approved and email confirmed
-- `get_current_admin_user` - User must be superuser
-- `get_current_approved_user_by_jwt_or_api_key` - Accepts JWT or API key
-- `get_optional_current_user` - Returns None if auth fails (no error)
+### User authentication
 
-### Team Permissions
-- `can_read_team` - Any team member
-- `can_read_write_team` - Manager or Owner
-- `can_read_write_delete_team` - Owner only
+- `get_current_user` — Validates JWT token
+- `get_current_approved_user` — User must be approved and email confirmed
+- `get_current_admin_user` — User must be superuser
+- `get_current_approved_user_by_jwt_or_api_key` — Accepts JWT or API key
+- `get_optional_current_user` — Returns None if auth fails (no error)
 
-### Project Permissions
-- `can_read_project` - Viewer, Manager, or Owner
-- `can_read_write_project` - Manager or Owner
-- `can_read_write_delete_project` - Owner only
-- `can_read_project_with_jwt_or_api_key` - Read access via JWT or API key
-- `can_read_write_project_with_jwt_or_api_key` - Write access via JWT or API key
+### Team permissions
 
-### Flight Permissions
-- `can_read_flight` - Viewer, Manager, or Owner
-- `can_read_write_flight` - Manager or Owner
-- `can_read_write_delete_flight` - Owner only
+- `can_read_team` — Any team member
+- `can_read_write_team` — Manager or Owner
+- `can_read_write_delete_team` — Owner only
 
-### Indoor Project Permissions
-- `can_read_indoor_project` - Viewer, Manager, or Owner
-- `can_read_write_indoor_project` - Manager or Owner
-- `can_read_write_delete_indoor_project` - Owner only
+### Project permissions
+
+- `can_read_project` — Viewer, Manager, or Owner
+- `can_read_write_project` — Manager or Owner
+- `can_read_write_delete_project` — Owner only
+- `can_read_project_with_jwt_or_api_key` — Read access via JWT or API key
+- `can_read_write_project_with_jwt_or_api_key` — Write access via JWT or API key
+
+### Flight permissions
+
+- `can_read_flight` — Viewer, Manager, or Owner
+- `can_read_write_flight` — Manager or Owner
+- `can_read_write_delete_flight` — Owner only
+
+### Indoor project permissions
+
+- `can_read_indoor_project` — Viewer, Manager, or Owner
+- `can_read_write_indoor_project` — Manager or Owner
+- `can_read_write_delete_indoor_project` — Owner only

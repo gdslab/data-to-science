@@ -1,11 +1,11 @@
-# Configuration Options
+# Configuration
 
 D2S uses environment files to configure its services. This document describes all available environment variables organized by file.
 
 ## `.env`
 
 | Variable | Description |
-|---|---|
+|----------|-------------|
 | `EXTERNAL_STORAGE` | Location where raw image zips and metadata will be sent for image processing jobs. It could be a mapped network drive or any other directory on the host machine. This **should be left empty** unless you have set up an image processing backend that works with the D2S image processing Celery task. |
 | `TUSD_STORAGE` | Location of Docker managed volume or mapped host directory that stores user uploaded datasets. |
 | `TILE_SIGNING_SECRET` | Secret key used for creating a signed URL that the client can use to access raster tiles and MVT tiles. |
@@ -13,7 +13,7 @@ D2S uses environment files to configure its services. This document describes al
 ## `frontend.env`
 
 | Variable | Description |
-|---|---|
+|----------|-------------|
 | `VITE_MAPBOX_ACCESS_TOKEN` | Mapbox access token for satellite imagery (optional). |
 | `VITE_MAPTILER_API_KEY` | Maptiler API key for OSM labels (optional). |
 | `VITE_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key for bot protection on registration (optional). Leave empty to disable. Must be paired with `TURNSTILE_SECRET_KEY` in `backend.env`. |
@@ -23,7 +23,7 @@ D2S uses environment files to configure its services. This document describes al
 You must provide a value for `SECRET_KEY` in your `backend.env` file. Use a cryptographically secure random string of at least 32 characters.
 
 | Variable | Description |
-|---|---|
+|----------|-------------|
 | `API_PROJECT_NAME` | Name that will appear in the FastAPI docs. |
 | `API_DOMAIN` | Domain used for accessing the application (e.g., `http://localhost` or `https://customdomain`). |
 | `CELERY_BROKER_URL` | Address for local redis service. |
@@ -68,7 +68,7 @@ If you change `POSTGRES_USER` or `POSTGRES_HOST`, you must also update these env
 ## `frontend/.env`
 
 | Variable | Description |
-|---|---|
+|----------|-------------|
 | `VITE_API_V1_STR` | Path for API endpoints. Do not change from default value unless the path has been changed in the backend. |
 | `VITE_BRAND_FULL` | Full name of application. |
 | `VITE_BRAND_SHORT` | Abbreviated name of application. |
@@ -83,6 +83,6 @@ If you change `POSTGRES_USER` or `POSTGRES_HOST`, you must also update these env
 ## `frontend/.env.development`
 
 | Variable | Description |
-|---|---|
+|----------|-------------|
 | `VITE_META_OG_IMAGE` | Preview image URL for social media shares. |
 | `VITE_META_OG_URL` | Hostname for site. |
