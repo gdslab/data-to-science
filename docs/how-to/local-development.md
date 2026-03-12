@@ -11,6 +11,9 @@ docker --version
 docker compose --version
 ```
 
+!!! note "Platform support"
+    D2S containers target the `linux/x86_64` architecture. If you are running Docker Desktop on Apple Silicon (ARM), emulation is handled automatically, but you may notice slower build times and startup.
+
 ## Copy environment files
 
 Navigate to the root directory of the repository and copy the example environment files:

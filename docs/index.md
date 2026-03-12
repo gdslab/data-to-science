@@ -25,6 +25,10 @@ This documentation is organized into four sections, each serving a different pur
 - **QGIS plugin:** [D2S Browser](https://plugins.qgis.org/plugins/d2s_browser/)
 - **Website:** [d2s.org](https://d2s.org)
 
+## Public dataset catalog
+
+D2S deployments can connect to a [STAC API](https://stacspec.org/) to publish data. The public catalog at [stac.d2s.org](https://stac.d2s.org) contains datasets published from [ps2.d2s.org](https://ps2.d2s.org) as well as other sources.
+
 ## Contributing
 
 We welcome contributions, feedback, and discussion from the community. See [CONTRIBUTING.md](https://github.com/gdslab/data-to-science/blob/main/CONTRIBUTING.md) for details.
