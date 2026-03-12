@@ -1,0 +1,75 @@
+site_name: Data to Science (D2S)
+site_description: Documentation for the Data to Science platform
+site_url: https://gdslab.github.io/data-to-science/
+repo_url: https://github.com/gdslab/data-to-science
+repo_name: gdslab/data-to-science
+
+extra_css:
+  - stylesheets/extra.css
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - content.code.copy
+    - toc.follow
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+      primary: custom
+      accent: purple
+    - scheme: slate
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+      primary: custom
+      accent: lime
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+  - attr_list
+
+exclude_docs: |
+  README.md
+  paper.md
+  paper.bib
+
+nav:
+  - Home: index.md
+  - Tutorials:
+      - tutorials/index.md
+      - Getting Started: tutorials/quickstart.md
+  - How-To Guides:
+      - how-to/index.md
+      - Local Development Setup: how-to/local-development.md
+      - Deploy to Production: how-to/deployment.md
+      - Run the Test Suite: how-to/run-tests.md
+      - Manage Database Migrations: how-to/manage-migrations.md
+      - Add an API Endpoint: how-to/add-api-endpoint.md
+      - Work with Celery Tasks: how-to/celery-tasks.md
+      - Generate Vector Format Files: how-to/generate-vector-formats.md
+  - Reference:
+      - reference/index.md
+      - API: reference/api.md
+      - Configuration: reference/configuration.md
+      - Backend Structure: reference/backend-structure.md
+      - Data Models: reference/data-models.md
+      - Roles and Permissions: reference/roles-permissions.md
+  - Explanation:
+      - explanation/index.md
+      - Architecture: explanation/architecture.md
+      - Data Pipeline: explanation/data-pipeline.md
+      - Authentication and Authorization: explanation/authentication.md
+      - Tile Serving: explanation/tile-serving.md

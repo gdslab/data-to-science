@@ -147,7 +147,7 @@ The Data To Science web application can be accessed from `http://localhost:8000`
 
 ### 🛠️ Local Development
 
-For building from source, configuring environment variables, running tests, and working with database migrations, see the [Local Development Guide](docs/local_development.md).
+For building from source, configuring environment variables, running tests, and working with database migrations, see the [Local Development Guide](docs/how-to/local-development.md).
 
 # Example Deployment
 
@@ -179,4 +179,11 @@ We welcome contributions, feedback, and discussion from the community. See [CONT
 
 # 📘 Documentation
 
-For detailed documentation, visit [documentation here](docs/README.md).
+Full documentation is available at [gdslab.github.io/data-to-science](https://gdslab.github.io/data-to-science/), covering architecture, configuration, API reference, and development guides.
+
+To build the docs locally:
+
+```
+pip install mkdocs-material
+mkdocs serve
+```
