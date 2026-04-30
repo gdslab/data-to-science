@@ -148,6 +148,64 @@ def test_create_project_with_demo_user(
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
+def test_create_project_rejects_multipolygon(
+    client: TestClient, normal_user_access_token: str, db: Session
+) -> None:
+    create_location(db)
+    polygon_coords = get_geojson_feature_collection("polygon")["geojson"][
+        "features"
+    ][0]["geometry"]["coordinates"]
+    multipolygon_feature = {
+        "type": "Feature",
+        "properties": {},
+        "geometry": {
+            "type": "MultiPolygon",
+            "coordinates": [polygon_coords],
+        },
+    }
+    data = jsonable_encoder(
+        {
+            "title": random_team_name(),
+            "description": random_team_description(),
+            "location": multipolygon_feature,
+        }
+    )
+    response = client.post(API_URL, json=data)
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    detail = response.json()["detail"]
+    assert isinstance(detail, list)
+    assert len(detail) == 1, f"Expected single-message detail, got: {detail}"
+    msg = detail[0]["msg"]
+    assert "MultiPolygon" in msg
+    assert "Polygon" in msg
+
+
+def test_create_project_rejects_point_geometry(
+    client: TestClient, normal_user_access_token: str, db: Session
+) -> None:
+    create_location(db)
+    point_feature = {
+        "type": "Feature",
+        "properties": {},
+        "geometry": {"type": "Point", "coordinates": [-86.94, 41.44]},
+    }
+    data = jsonable_encoder(
+        {
+            "title": random_team_name(),
+            "description": random_team_description(),
+            "location": point_feature,
+        }
+    )
+    response = client.post(API_URL, json=data)
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    detail = response.json()["detail"]
+    assert isinstance(detail, list)
+    assert len(detail) == 1, f"Expected single-message detail, got: {detail}"
+    msg = detail[0]["msg"]
+    assert "Polygon" in msg
+    assert "Point" in msg
+
+
 def test_create_project_date_validation(
     client: TestClient, normal_user_access_token: str, db: Session
 ) -> None:
