@@ -79,12 +79,6 @@ export default function ProjectList({
     projectDispatch({ type: 'clear', payload: null });
   }, [locationDispatch, project, projectDispatch]);
 
-  useEffect(() => {
-    if (projects && filterAndSlice(projects).length < MAX_ITEMS) {
-      setCurrentPage(0);
-    }
-  }, [filterAndSlice, projects]);
-
   /**
    * Updates the current search text.
    */
@@ -143,6 +137,15 @@ export default function ProjectList({
 
     return filteredProjects;
   }, [projects, projectFilterSelection, selectedTeamIds]);
+
+  useEffect(() => {
+    if (!projects) return;
+    const filteredCount = filterSearch(filteredProjects).length;
+    const maxPage = Math.max(0, Math.ceil(filteredCount / MAX_ITEMS) - 1);
+    if (currentPage > maxPage) {
+      setCurrentPage(maxPage);
+    }
+  }, [projects, filteredProjects, filterSearch, currentPage]);
 
   const filteredAndSortedProjects = useMemo(
     () =>
