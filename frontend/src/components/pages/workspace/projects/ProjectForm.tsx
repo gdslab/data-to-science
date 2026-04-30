@@ -1,4 +1,3 @@
-import { isAxiosError } from 'axios';
 import { Formik, Form } from 'formik';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -14,6 +13,7 @@ import { projectCreateValidationSchema } from './validationSchema';
 import { useProjectContext } from './ProjectContext';
 
 import api from '../../../../api';
+import { formatApiError } from '../../../../utils/formatApiError';
 
 export async function loader() {
   const response = await api.get('/teams', { params: { owner_only: true } });
@@ -81,17 +81,13 @@ export default function ProjectForm({
               });
             }
           } catch (err) {
-            if (isAxiosError(err) && err.response && err.response.data.detail) {
-              setStatus({
-                type: 'error',
-                msg: err.response.data.detail,
-              });
-            } else {
-              setStatus({
-                type: 'error',
-                msg: 'Unexpected error occurred. Unable to create project.',
-              });
-            }
+            setStatus({
+              type: 'error',
+              msg: formatApiError(
+                err,
+                'Unexpected error occurred. Unable to create project.'
+              ),
+            });
           }
           setSubmitting(false);
         }}

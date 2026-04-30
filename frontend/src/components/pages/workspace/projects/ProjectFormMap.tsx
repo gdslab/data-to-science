@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { Button, OutlineButton } from '../../../Buttons';
 import DrawFieldMap from '../../../maps/DrawFieldMap/DrawFieldMap';
+import { normalizeToPolygon } from '../../../maps/DrawFieldMap/normalizeToPolygon';
 import { GeoJSONFeature } from './Project';
 import HintText from '../../../HintText';
 import { useProjectContext } from './ProjectContext';
@@ -69,15 +70,28 @@ export default function ProjectFormMap({
 
   useEffect(() => {
     if (featureCollection && featureCollection.features.length === 1) {
-      setFieldValue('location', featureCollection.features[0]);
+      const raw = featureCollection.features[0] as unknown as GeoJSONFeature;
+      const { feature, pickedLargestOf } = normalizeToPolygon(raw);
+
+      setFieldValue('location', feature);
       setFieldTouched('location', true);
 
-      locationDispatch({
-        type: 'set',
-        payload: featureCollection.features[0] as unknown as GeoJSONFeature,
-      });
+      locationDispatch({ type: 'set', payload: feature });
+
+      if (pickedLargestOf) {
+        setStatus({
+          type: 'info',
+          msg: `This file contained ${pickedLargestOf} polygons in one feature. We kept the largest. Redraw or re-upload if you want a different one.`,
+        });
+      }
     }
-  }, [featureCollection, setFieldValue, setFieldTouched, locationDispatch]);
+  }, [
+    featureCollection,
+    setFieldValue,
+    setFieldTouched,
+    setStatus,
+    locationDispatch,
+  ]);
 
   // Handle draw start callback
   const handleDrawStart = () => {

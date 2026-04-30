@@ -18,6 +18,7 @@ import { GeoJsonShapeFeature } from '@geoman-io/maplibre-geoman-free';
 import GeomanControl from '../GeomanControl';
 import { GeoJSONFeature } from '../../pages/workspace/projects/Project';
 import { useProjectContext } from '../../pages/workspace/projects/ProjectContext';
+import { normalizeToPolygon } from './normalizeToPolygon';
 
 import {
   getMapboxSatelliteBasemapStyle,
@@ -58,18 +59,6 @@ export default function DrawFieldMap({
   const mapRef = useRef<MapRef>(null);
   const { setFieldValue, setFieldTouched } = useFormikContext();
   const { locationDispatch } = useProjectContext();
-
-  // Utility: ensure a feature is a Polygon (convert first polygon of MultiPolygon)
-  const normalizeToPolygon = (feature: GeoJSONFeature): GeoJSONFeature => {
-    if (feature?.geometry?.type !== 'MultiPolygon') return feature;
-    return {
-      ...feature,
-      geometry: {
-        type: 'Polygon',
-        coordinates: (feature.geometry.coordinates as number[][][][])[0],
-      },
-    };
-  };
 
   // Load config for osmLabelFilter
   useEffect(() => {
@@ -126,7 +115,7 @@ export default function DrawFieldMap({
   // Handle draw end - update formik location field with drawn feature
   const handleDrawEnd = (feature: GeoJsonShapeFeature) => {
     const geoJsonFeature = feature as unknown as GeoJSONFeature;
-    const convertedFeature = normalizeToPolygon(geoJsonFeature);
+    const { feature: convertedFeature } = normalizeToPolygon(geoJsonFeature);
 
     // Update formik location field
     setFieldValue('location', convertedFeature);
@@ -144,7 +133,7 @@ export default function DrawFieldMap({
   // Handle edit - update formik location field with edited feature
   const handleEdit = (feature: GeoJsonShapeFeature) => {
     const geoJsonFeature = feature as unknown as GeoJSONFeature;
-    const convertedFeature = normalizeToPolygon(geoJsonFeature);
+    const { feature: convertedFeature } = normalizeToPolygon(geoJsonFeature);
 
     // Update formik location field only - don't update context until user clicks Update Field
     setFieldValue('location', convertedFeature);
