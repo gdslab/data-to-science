@@ -27,6 +27,10 @@ You must provide a value for `SECRET_KEY` in your `backend.env` file. Use a cryp
 |----------|-------------|
 | `API_PROJECT_NAME` | Name that will appear in the FastAPI docs. |
 | `API_DOMAIN` | Domain used for accessing the application (e.g., `http://localhost` or `https://customdomain`). |
+| `AWS_S3_BUCKET_NAME` | S3 bucket name for STAC asset storage (optional). When set, data products and raw data are uploaded to S3 during STAC publishing and the S3 URLs are used as asset hrefs in published items. Leave empty to use local server URLs. |
+| `AWS_S3_REGION` | AWS region for the S3 bucket (e.g., `us-east-1`). Defaults to `us-east-1` when unset. |
+| `AWS_ACCESS_KEY_ID` | AWS access key ID for the S3 bucket (optional). Leave empty to fall back to the boto3 default credential chain (e.g., IAM role). |
+| `AWS_SECRET_ACCESS_KEY` | AWS secret access key for the S3 bucket (optional). Pair with `AWS_ACCESS_KEY_ID`. |
 | `CELERY_BROKER_URL` | Address for local redis service. |
 | `CELERY_RESULT_BACKEND` | Address for local redis service. |
 | `BREEDBASE_ALLOWED_HOSTS` | Comma-separated list of allowed BreedBase hostnames for the BrAPI proxy (optional). When empty, any public host with a `/brapi/` path is allowed. Set to restrict which servers the proxy can reach. |

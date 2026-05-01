@@ -144,7 +144,17 @@ class Settings(BaseSettings):
     STAC_BROWSER_URL: Optional[AnyHttpUrl] = None
     EXTERNAL_VIEWER_URL: Optional[AnyHttpUrl] = None
 
+    # AWS S3 storage for STAC publishing
+    AWS_S3_BUCKET_NAME: Optional[str] = None
+    AWS_S3_REGION: Optional[str] = None
+    AWS_ACCESS_KEY_ID: Optional[str] = None
+    AWS_SECRET_ACCESS_KEY: Optional[str] = None
+
     @field_validator(
+        "AWS_ACCESS_KEY_ID",
+        "AWS_S3_BUCKET_NAME",
+        "AWS_S3_REGION",
+        "AWS_SECRET_ACCESS_KEY",
         "EXTERNAL_VIEWER_URL",
         "MAPBOX_ACCESS_TOKEN",
         "STAC_API_URL",

@@ -36,6 +36,7 @@ class DataProduct(Base):
     bbox: Mapped[dict] = mapped_column(JSONB, nullable=True)
     crs: Mapped[dict] = mapped_column(JSONB, nullable=True)
     resolution: Mapped[dict] = mapped_column(JSONB, nullable=True)
+    s3_url: Mapped[str] = mapped_column(String, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_initial_processing_completed: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False

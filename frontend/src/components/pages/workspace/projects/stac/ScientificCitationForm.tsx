@@ -53,13 +53,13 @@ export default function ScientificCitationForm({
           >
             License <span className="text-red-500">*</span>
           </label>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center flex-wrap gap-2">
             <select
               id="license"
               value={license}
               onChange={(e) => setLicense(e.target.value)}
               required
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="flex-1 min-w-0 pl-3 pr-8 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">Select a license...</option>
               {availableLicenses.map((licenseOption) => (

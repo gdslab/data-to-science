@@ -131,3 +131,57 @@ def test_create_raw_data_creates_file_permission(db: Session) -> None:
     assert file_permission.raw_data_id == raw_data.id
     assert file_permission.file_id is None
     assert file_permission.is_public is False  # Should default to private
+
+
+def test_update_s3_url_sets_value(db: Session) -> None:
+    raw = SampleRawData(db)
+    assert raw.obj.s3_url is None
+
+    crud.raw_data.update_s3_url(
+        db,
+        raw_data_id=raw.obj.id,
+        s3_url="https://my-bucket.s3.us-east-1.amazonaws.com/d2s/host/raw.zip",
+    )
+
+    refreshed = crud.raw_data.get(db, id=raw.obj.id)
+    assert refreshed is not None
+    assert refreshed.s3_url == (
+        "https://my-bucket.s3.us-east-1.amazonaws.com/d2s/host/raw.zip"
+    )
+
+
+def test_clear_s3_urls_for_project_only_clears_matching_project(db: Session) -> None:
+    raw_a = SampleRawData(db)
+    raw_b = SampleRawData(db)
+
+    crud.raw_data.update_s3_url(db, raw_data_id=raw_a.obj.id, s3_url="https://a")
+    crud.raw_data.update_s3_url(db, raw_data_id=raw_b.obj.id, s3_url="https://b")
+
+    rowcount = crud.raw_data.clear_s3_urls_for_project(
+        db, project_id=raw_a.project.id
+    )
+
+    assert rowcount == 1
+    assert crud.raw_data.get(db, id=raw_a.obj.id).s3_url is None
+    assert crud.raw_data.get(db, id=raw_b.obj.id).s3_url == "https://b"
+
+
+def test_get_raw_data_with_s3_urls_for_project(db: Session) -> None:
+    raw_uploaded = SampleRawData(db)
+    raw_not_uploaded = SampleRawData(
+        db, project=raw_uploaded.project, flight=raw_uploaded.flight
+    )
+
+    crud.raw_data.update_s3_url(
+        db,
+        raw_data_id=raw_uploaded.obj.id,
+        s3_url="https://my-bucket.s3.us-east-1.amazonaws.com/key",
+    )
+
+    results = crud.raw_data.get_raw_data_with_s3_urls_for_project(
+        db, project_id=raw_uploaded.project.id
+    )
+
+    result_ids = {rd.id for rd in results}
+    assert raw_uploaded.obj.id in result_ids
+    assert raw_not_uploaded.obj.id not in result_ids

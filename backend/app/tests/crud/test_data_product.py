@@ -426,3 +426,85 @@ def test_lazy_migration_only_runs_once(db: Session) -> None:
     # Both requests should return the same bbox values
     # (In production, the second request uses the cached database value)
     assert first_bbox_value == second_bbox_value
+
+
+def test_update_s3_url_sets_value(db: Session) -> None:
+    dp = SampleDataProduct(db)
+    assert dp.obj.s3_url is None
+
+    crud.data_product.update_s3_url(
+        db,
+        data_product_id=dp.obj.id,
+        s3_url="https://my-bucket.s3.us-east-1.amazonaws.com/d2s/host/file.tif",
+    )
+
+    refreshed = crud.data_product.get(db, id=dp.obj.id)
+    assert refreshed is not None
+    assert refreshed.s3_url == (
+        "https://my-bucket.s3.us-east-1.amazonaws.com/d2s/host/file.tif"
+    )
+
+
+def test_clear_s3_urls_for_project_only_clears_matching_project(db: Session) -> None:
+    project_a = SampleDataProduct(db)
+    project_b = SampleDataProduct(db)
+
+    crud.data_product.update_s3_url(
+        db, data_product_id=project_a.obj.id, s3_url="https://a"
+    )
+    crud.data_product.update_s3_url(
+        db, data_product_id=project_b.obj.id, s3_url="https://b"
+    )
+
+    rowcount = crud.data_product.clear_s3_urls_for_project(
+        db, project_id=project_a.project.id
+    )
+
+    assert rowcount == 1
+    assert crud.data_product.get(db, id=project_a.obj.id).s3_url is None
+    # Other project untouched
+    assert crud.data_product.get(db, id=project_b.obj.id).s3_url == "https://b"
+
+
+def test_clear_s3_urls_for_project_zero_when_nothing_to_clear(db: Session) -> None:
+    dp = SampleDataProduct(db)
+    rowcount = crud.data_product.clear_s3_urls_for_project(
+        db, project_id=dp.project.id
+    )
+    assert rowcount == 0
+
+
+def test_get_data_products_with_s3_urls_for_project(db: Session) -> None:
+    dp_uploaded = SampleDataProduct(db)
+    flight = create_flight(db, project_id=dp_uploaded.project.id)
+    dp_not_uploaded = SampleDataProduct(
+        db, project=dp_uploaded.project, flight=flight
+    )
+
+    crud.data_product.update_s3_url(
+        db,
+        data_product_id=dp_uploaded.obj.id,
+        s3_url="https://my-bucket.s3.us-east-1.amazonaws.com/key",
+    )
+
+    results = crud.data_product.get_data_products_with_s3_urls_for_project(
+        db, project_id=dp_uploaded.project.id
+    )
+
+    result_ids = {dp.id for dp in results}
+    assert dp_uploaded.obj.id in result_ids
+    assert dp_not_uploaded.obj.id not in result_ids
+
+
+def test_get_data_products_with_s3_urls_excludes_inactive(db: Session) -> None:
+    dp = SampleDataProduct(db)
+    crud.data_product.update_s3_url(
+        db, data_product_id=dp.obj.id, s3_url="https://x"
+    )
+    crud.data_product.deactivate(db, data_product_id=dp.obj.id)
+
+    results = crud.data_product.get_data_products_with_s3_urls_for_project(
+        db, project_id=dp.project.id
+    )
+
+    assert dp.obj.id not in {row.id for row in results}

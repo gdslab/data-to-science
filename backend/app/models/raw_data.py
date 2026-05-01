@@ -23,6 +23,7 @@ class RawData(Base):
     )
     filepath: Mapped[str] = mapped_column(String, nullable=False)
     original_filename: Mapped[str] = mapped_column(String, nullable=False)
+    s3_url: Mapped[str] = mapped_column(String, nullable=True)
     flight_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("flights.id"), nullable=False
     )

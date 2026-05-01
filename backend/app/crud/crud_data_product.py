@@ -17,6 +17,7 @@ from app.crud.base import CRUDBase
 from app.db.session import SessionLocal
 from app.models.constants import NON_RASTER_TYPES, PROCESSING_JOB_NAMES
 from app.models.data_product import DataProduct
+from app.models.flight import Flight
 from app.models.job import Job
 from app.models.utils.utcnow import utcnow
 from app.schemas.data_product import (
@@ -219,6 +220,50 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             session.commit()
 
         return crud.data_product.get(db, id=data_product_id)
+
+    def update_s3_url(
+        self, db: Session, data_product_id: UUID, s3_url: str
+    ) -> None:
+        """Set the s3_url for a single data product."""
+        stmt = (
+            update(DataProduct)
+            .where(DataProduct.id == data_product_id)
+            .values(s3_url=s3_url)
+        )
+        with db as session:
+            session.execute(stmt)
+            session.commit()
+
+    def clear_s3_urls_for_project(self, db: Session, project_id: UUID) -> int:
+        """Bulk clear s3_url for all data products in a project."""
+        stmt = (
+            update(DataProduct)
+            .where(
+                DataProduct.flight_id.in_(
+                    select(Flight.id).where(Flight.project_id == project_id)
+                ),
+                DataProduct.s3_url.isnot(None),
+            )
+            .values(s3_url=None)
+        )
+        with db as session:
+            result = session.execute(stmt)
+            session.commit()
+            return result.rowcount
+
+    def get_data_products_with_s3_urls_for_project(
+        self, db: Session, project_id: UUID
+    ) -> Sequence[DataProduct]:
+        """Return data products with non-null s3_url for a project."""
+        stmt = select(DataProduct).where(
+            DataProduct.flight_id.in_(
+                select(Flight.id).where(Flight.project_id == project_id)
+            ),
+            DataProduct.s3_url.isnot(None),
+            DataProduct.is_active,
+        )
+        with db as session:
+            return session.execute(stmt).scalars().all()
 
 
 def set_status_attr(data_product_obj: DataProduct, jobs: List[Job]) -> bool:

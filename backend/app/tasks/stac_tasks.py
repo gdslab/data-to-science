@@ -20,13 +20,23 @@ class UUIDEncoder(json.JSONEncoder):
 from celery.utils.log import get_task_logger
 from sqlalchemy.orm import Session
 
-from app import crud, schemas
+from pystac import Item
+
+from app import crud, models, schemas
 from app.api.deps import get_db
+from app.api.utils import get_static_dir
 from app.core.celery_app import celery_app
 from app.core.config import settings
 from app.models.job import Job as JobModel
 from app.schemas.job import Status
 from app.utils.job_manager import JobManager
+from app.utils.s3 import (
+    is_s3_configured,
+    build_s3_key,
+    upload_file_to_s3,
+    delete_s3_objects,
+    parse_s3_key_from_url,
+)
 
 # Import these at module level for testing/mocking purposes
 # They will be imported again inside functions to avoid circular imports during normal operation
@@ -61,6 +71,121 @@ def get_stac_timestamp(job: Optional[JobModel] = None) -> Optional[str]:
         return job.start_time.isoformat()
     else:
         return None
+
+
+def _upload_to_s3_and_rewrite_hrefs(
+    db: Session,
+    items: List[Item],
+    flights: List[models.Flight],
+    include_raw_data_links: Optional[List[str]],
+) -> List[str]:
+    """Upload successful data products (and raw data) to S3 and rewrite STAC item hrefs.
+
+    Called after STAC generation, only for items that succeeded.
+    Returns a list of S3 keys that were uploaded (for rollback on failure).
+
+    Raises on upload failure so the caller can handle rollback.
+    """
+    upload_dir = get_static_dir()
+    uploaded_s3_keys: List[str] = []
+
+    # Build a lookup from data_product_id -> data_product model
+    dp_lookup: Dict[str, models.DataProduct] = {}
+    for flight in flights:
+        for dp in flight.data_products:
+            dp_lookup[str(dp.id)] = dp
+
+    # Collect flight IDs that have items with derived_from links (for raw data upload)
+    include_raw_data_set = set(include_raw_data_links) if include_raw_data_links else set()
+    flights_needing_raw_data: set = set()
+
+    # Upload data product files and rewrite asset hrefs
+    for item in items:
+        dp = dp_lookup.get(item.id)
+        if not dp:
+            logger.warning(f"Data product not found for item {item.id}, skipping S3 upload")
+            continue
+
+        # Skip if already uploaded (idempotent for backfill)
+        if dp.s3_url:
+            s3_url = dp.s3_url
+        else:
+            # Upload the data product file
+            s3_key = build_s3_key(dp.filepath, upload_dir)
+            s3_url = upload_file_to_s3(dp.filepath, s3_key)
+            uploaded_s3_keys.append(s3_key)
+
+            # Update DB
+            crud.data_product.update_s3_url(db, data_product_id=dp.id, s3_url=s3_url)
+
+        # Rewrite the asset href
+        if item.id in item.assets:
+            item.assets[item.id].href = s3_url
+
+        # Rewrite external viewer link if present
+        for link in item.links:
+            if link.rel == "external" and hasattr(link, "href"):
+                # Replace the url= query parameter with the S3 URL
+                if settings.EXTERNAL_VIEWER_URL:
+                    link.target = f"{settings.EXTERNAL_VIEWER_URL}?url={s3_url}"
+
+        # Track if this item needs raw data uploaded
+        if item.id in include_raw_data_set:
+            flights_needing_raw_data.add(dp.flight_id)
+
+    # Upload raw data files for flights that have derived_from links
+    if flights_needing_raw_data:
+        for flight_id in flights_needing_raw_data:
+            # Query raw data for this flight
+            raw_data_list = crud.raw_data.get_multi_by_flight(
+                db=db, flight_id=flight_id, upload_dir=upload_dir,
+            )
+
+            for rd in raw_data_list:
+                local_url = getattr(rd, "url", None)
+                if not local_url:
+                    continue
+
+                # Skip if already uploaded (idempotent for backfill)
+                if rd.s3_url:
+                    s3_url = rd.s3_url
+                else:
+                    # Upload raw data file
+                    s3_key = build_s3_key(rd.filepath, upload_dir)
+                    s3_url = upload_file_to_s3(rd.filepath, s3_key)
+                    uploaded_s3_keys.append(s3_key)
+
+                    # Update DB
+                    crud.raw_data.update_s3_url(db, raw_data_id=rd.id, s3_url=s3_url)
+
+                # Rewrite derived_from links on items that reference this flight
+                for item in items:
+                    dp = dp_lookup.get(item.id)
+                    if dp and dp.flight_id == flight_id:
+                        for link in item.links:
+                            if link.rel == "derived_from" and link.href == local_url:
+                                link.target = s3_url
+
+    return uploaded_s3_keys
+
+
+def _rollback_s3_uploads(db: Session, project_id: UUID, uploaded_s3_keys: List[str]) -> None:
+    """Clean up S3 uploads and DB records on publish failure.
+
+    Preserves s3_url columns when the S3 delete does not fully succeed so the
+    orphaned objects can be cleaned up on a future retry.
+    """
+    try:
+        if uploaded_s3_keys and not delete_s3_objects(uploaded_s3_keys):
+            logger.error(
+                f"S3 rollback did not fully succeed for project {project_id}; "
+                f"preserving s3_url columns for retry"
+            )
+            return
+        crud.data_product.clear_s3_urls_for_project(db, project_id=project_id)
+        crud.raw_data.clear_s3_urls_for_project(db, project_id=project_id)
+    except Exception:
+        logger.exception("Failed to rollback S3 uploads")
 
 
 @celery_app.task(name="generate_stac_preview_task", bind=True)
@@ -201,6 +326,13 @@ def publish_stac_catalog(
         items = sg.items
         failed_items = sg.failed_items
 
+        # Upload successful items to S3 and rewrite asset hrefs
+        uploaded_s3_keys: List[str] = []
+        if is_s3_configured() and len(items) > 0:
+            uploaded_s3_keys = _upload_to_s3_and_rewrite_hrefs(
+                db, items, sg.flights, include_raw_data_links,
+            )
+
         # Publish to catalog if we have successful items
         stac_report = None
         if len(items) > 0:
@@ -274,6 +406,13 @@ def publish_stac_catalog(
                 scm.remove_from_catalog()
         except Exception:
             logger.exception("Failed to rollback STAC publication")
+
+        # Rollback S3 uploads if any were made
+        if is_s3_configured():
+            _rollback_s3_uploads(
+                db, project_uuid,
+                uploaded_s3_keys if "uploaded_s3_keys" in locals() else [],
+            )
 
         # Cache error response
         error_response = {
@@ -442,6 +581,13 @@ def publish_stac_catalog_task(
         items = sg.items
         failed_items = sg.failed_items
 
+        # Upload successful items to S3 and rewrite asset hrefs
+        uploaded_s3_keys: List[str] = []
+        if is_s3_configured() and len(items) > 0:
+            uploaded_s3_keys = _upload_to_s3_and_rewrite_hrefs(
+                db, items, sg.flights, include_raw_data_links,
+            )
+
         # Publish to catalog if we have successful items
         stac_report = None
         if len(items) > 0:
@@ -515,6 +661,13 @@ def publish_stac_catalog_task(
                 scm.remove_from_catalog()
         except Exception:
             logger.exception("Failed to rollback STAC publication")
+
+        # Rollback S3 uploads if any were made
+        if is_s3_configured():
+            _rollback_s3_uploads(
+                db, project_uuid,
+                uploaded_s3_keys if "uploaded_s3_keys" in locals() else [],
+            )
 
         # Cache error response
         error_response = {

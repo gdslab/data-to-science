@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.core.config import settings
 from app.crud.base import CRUDBase
+from app.models.flight import Flight
 from app.models.job import Job
 from app.models.raw_data import RawData
 from app.models.utils.utcnow import utcnow
@@ -85,6 +86,48 @@ class CRUDRawData(CRUDBase[RawData, RawDataCreate, RawDataUpdate]):
             session.commit()
 
         return crud.raw_data.get(db, id=raw_data_id)
+
+    def update_s3_url(self, db: Session, raw_data_id: UUID, s3_url: str) -> None:
+        """Set the s3_url for a single raw data record."""
+        stmt = (
+            update(RawData)
+            .where(RawData.id == raw_data_id)
+            .values(s3_url=s3_url)
+        )
+        with db as session:
+            session.execute(stmt)
+            session.commit()
+
+    def clear_s3_urls_for_project(self, db: Session, project_id: UUID) -> int:
+        """Bulk clear s3_url for all raw data in a project."""
+        stmt = (
+            update(RawData)
+            .where(
+                RawData.flight_id.in_(
+                    select(Flight.id).where(Flight.project_id == project_id)
+                ),
+                RawData.s3_url.isnot(None),
+            )
+            .values(s3_url=None)
+        )
+        with db as session:
+            result = session.execute(stmt)
+            session.commit()
+            return result.rowcount
+
+    def get_raw_data_with_s3_urls_for_project(
+        self, db: Session, project_id: UUID
+    ) -> Sequence[RawData]:
+        """Return raw data records with non-null s3_url for a project."""
+        stmt = select(RawData).where(
+            RawData.flight_id.in_(
+                select(Flight.id).where(Flight.project_id == project_id)
+            ),
+            RawData.s3_url.isnot(None),
+            RawData.is_active,
+        )
+        with db as session:
+            return session.execute(stmt).scalars().all()
 
 
 def set_status_attr(raw_data_obj: RawData, jobs: List[Job]) -> bool:
