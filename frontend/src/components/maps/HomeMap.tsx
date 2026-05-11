@@ -15,6 +15,7 @@ import AnnotationLayers from './AnnotationLayers';
 import AnnotationPopup from './AnnotationPopup';
 import AnnotationToolsToggle from './AnnotationToolsToggle';
 import ColorBarControl from './ColorBarControl';
+import DataProductZoom from './DataProductZoom';
 import GeocoderControl from './GeocoderControl';
 import ProjectCluster from './ProjectCluster';
 import FeaturePopup from './FeaturePopup';
@@ -278,6 +279,9 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
       {activeProject && (
         <ProjectBoundary setActiveProjectBBox={setActiveProjectBBox} />
       )}
+
+      {/* Zoom to data product extent when a raster data product is activated */}
+      {activeProject && <DataProductZoom />}
 
       {/* Annotation tool toggle (renders drawing tools when annotation mode active) */}
       {activeProject && <AnnotationToolsToggle />}

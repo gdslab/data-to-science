@@ -6,6 +6,7 @@ import RasterSymbologySettings from '../RasterSymbologySettings';
 import { DataProduct } from '../../pages/workspace/projects/Project';
 import { getDataProductName } from '../../pages/workspace/projects/flights/DataProducts/DataProductsTable';
 import { useRasterSymbologyContext } from '../RasterSymbologyContext';
+import { NON_MAP_DATA_TYPES } from './utils';
 
 export default function DataProductCard({
   dataProduct,
@@ -16,8 +17,7 @@ export default function DataProductCard({
 
   const { dispatch } = useRasterSymbologyContext();
 
-  // Check if this is a raster data type (not point cloud, panoramic, or 3dgs)
-  const isRasterType = !['point_cloud', 'panoramic', '3dgs'].includes(
+  const isRasterType = !(NON_MAP_DATA_TYPES as readonly string[]).includes(
     dataProduct.data_type
   );
 
