@@ -88,10 +88,13 @@ function formatArea(feature: Feature): string {
   return `${acres.toFixed(1)} ac`;
 }
 
+const NON_MAP_DATA_TYPES = ['point_cloud', 'panoramic', '3dgs'] as const;
+
 export {
   formatArea,
   formatDate,
   formatLength,
   getGeomTypeIcon,
+  NON_MAP_DATA_TYPES,
   sortedFlightsByDateAndId,
 };
