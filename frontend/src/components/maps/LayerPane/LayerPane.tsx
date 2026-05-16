@@ -28,24 +28,24 @@ export default function LayerPane({
     activeMapToolDispatch,
     activeProject,
     activeProjectDispatch,
+    pointCloudViewer,
     projects,
     projectsLoaded,
   } = useMapContext();
 
   const { state } = useLocation();
 
-  // Hide the pane when a point cloud is active or when the compare tool is active
+  // Hide the pane for full-screen viewers (Potree, panoramic, 3dgs) and compare mode
   useEffect(() => {
-    if (
-      (activeDataProduct &&
-        (activeDataProduct.data_type === 'point_cloud' ||
-          activeDataProduct.data_type === 'panoramic' ||
-          activeDataProduct.data_type === '3dgs')) ||
-      activeMapTool === 'compare'
-    ) {
+    const isFullScreenViewer =
+      activeDataProduct?.data_type === 'panoramic' ||
+      activeDataProduct?.data_type === '3dgs' ||
+      (activeDataProduct?.data_type === 'point_cloud' &&
+        pointCloudViewer === 'potree');
+    if (isFullScreenViewer || activeMapTool === 'compare') {
       toggleHidePane(true);
     }
-  }, [activeDataProduct, activeMapTool, toggleHidePane]);
+  }, [activeDataProduct, activeMapTool, pointCloudViewer, toggleHidePane]);
 
   // Set the active project and data product when a user navigates to
   // homepage with a project and data product in the URL (e.g. from a

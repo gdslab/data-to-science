@@ -18,7 +18,12 @@ import api from '../../api';
 import { mapApiResponseToLayers } from './utils';
 
 export default function MapViewMode() {
-  const { activeDataProduct, activeMapTool, activeProject } = useMapContext();
+  const {
+    activeDataProduct,
+    activeMapTool,
+    activeProject,
+    pointCloudViewer,
+  } = useMapContext();
   const { mapboxAccessTokenDispatch, maptilerApiKeyDispatch } = useMapApiKeys();
   const {
     state: { layers },
@@ -104,23 +109,20 @@ export default function MapViewMode() {
 
   if (activeMapTool === 'compare') {
     return <CompareMap />;
-  } else if (
-    !activeDataProduct ||
-    (activeDataProduct &&
-      activeDataProduct.data_type !== 'point_cloud' &&
-      activeDataProduct.data_type !== 'panoramic' &&
-      activeDataProduct.data_type !== '3dgs')
-  ) {
-    return <HomeMap layers={layers} />;
-  } else if (activeDataProduct.data_type === 'panoramic') {
+  } else if (activeDataProduct?.data_type === 'panoramic') {
     return <PanoViewer imageUrl={activeDataProduct.url} />;
-  } else if (activeDataProduct.data_type === '3dgs') {
+  } else if (activeDataProduct?.data_type === '3dgs') {
     if (activeDataProduct.url.endsWith('.lcc')) {
       return <LCCViewer lccUrl={activeDataProduct.url} />;
     }
     return <PlayCanvasglTFViewer src={activeDataProduct.url} />;
+  } else if (
+    activeDataProduct?.data_type === 'point_cloud' &&
+    pointCloudViewer === 'potree'
+  ) {
+    return <PotreeViewer copcPath={activeDataProduct.url} />;
   } else {
-    const copcPath = activeDataProduct.url;
-    return <PotreeViewer copcPath={copcPath} />;
+    // no active product, raster, or point cloud in map mode
+    return <HomeMap layers={layers} />;
   }
 }

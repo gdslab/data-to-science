@@ -2,7 +2,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import './HomeMap.css';
 import { Feature } from 'geojson';
 import maplibregl from 'maplibre-gl';
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import Map, {
   MapLayerMouseEvent,
   NavigationControl,
@@ -10,6 +10,8 @@ import Map, {
   ViewStateChangeEvent,
 } from 'react-map-gl/maplibre';
 import { useLocation } from 'react-router';
+
+const ProjectPointCloudLayer = lazy(() => import('./ProjectPointCloudLayer'));
 
 import AnnotationLayers from './AnnotationLayers';
 import AnnotationPopup from './AnnotationPopup';
@@ -59,6 +61,7 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
   const {
     activeDataProduct,
     activeProject,
+    pointCloudViewer,
     projects,
     projectsVisibleDispatch,
   } = useMapContext();
@@ -253,6 +256,16 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
           dataProduct={activeDataProduct}
         />
       )}
+      {/* Display point cloud layer on map when point cloud viewer mode is 'map' */}
+      {activeProject &&
+        activeDataProduct &&
+        activeDataProduct.data_type === 'point_cloud' &&
+        pointCloudViewer === 'map' && (
+          <Suspense fallback={null}>
+            <ProjectPointCloudLayer dataProduct={activeDataProduct} />
+          </Suspense>
+        )}
+
       {/* Show background raster if one is set */}
       {activeProject && activeDataProduct && showBackgroundRaster()}
 

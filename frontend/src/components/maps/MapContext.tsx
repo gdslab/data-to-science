@@ -21,6 +21,8 @@ import {
   FlightsAction,
   GeoRasterIdAction,
   MapTool,
+  PointCloudViewer,
+  PointCloudViewerAction,
   ProjectsAction,
   ProjectsLoadedAction,
   ProjectFilterSelectionAction,
@@ -256,6 +258,20 @@ function tileScaleReducer(state: number, action: TileScaleAction) {
   }
 }
 
+function pointCloudViewerReducer(
+  state: PointCloudViewer,
+  action: PointCloudViewerAction
+) {
+  switch (action.type) {
+    case 'set':
+      return action.payload ?? 'potree';
+    case 'clear':
+      return 'potree' as PointCloudViewer;
+    default:
+      return state;
+  }
+}
+
 const context: {
   activeDataProduct: DataProduct | null;
   activeDataProductDispatch: React.Dispatch<ActiveDataProductAction>;
@@ -268,6 +284,8 @@ const context: {
   geoRasterIdDispatch: React.Dispatch<GeoRasterIdAction>;
   mapViewProperties: MapViewPropertiesState;
   mapViewPropertiesDispatch: React.Dispatch<MapViewPropertiesAction>;
+  pointCloudViewer: PointCloudViewer;
+  pointCloudViewerDispatch: React.Dispatch<PointCloudViewerAction>;
   projectLayers: MapLayerFeatureCollection[];
   projectLayersDispatch: React.Dispatch<ProjectLayersAction>;
   projects: ProjectItem[] | null;
@@ -294,6 +312,8 @@ const context: {
   geoRasterIdDispatch: () => {},
   mapViewProperties: null,
   mapViewPropertiesDispatch: () => {},
+  pointCloudViewer: 'potree',
+  pointCloudViewerDispatch: () => {},
   projectLayers: [],
   projectLayersDispatch: () => {},
   projects: null,
@@ -358,6 +378,10 @@ export function MapContextProvider({
     []
   );
   const [tileScale, tileScaleDispatch] = useReducer(tileScaleReducer, 2);
+  const [pointCloudViewer, pointCloudViewerDispatch] = useReducer(
+    pointCloudViewerReducer,
+    'potree'
+  );
 
   async function getFlights(projectId) {
     try {
@@ -388,6 +412,13 @@ export function MapContextProvider({
     }
   }, [activeDataProduct, activeProject]);
 
+  // reset point cloud viewer choice when no point cloud is active
+  useEffect(() => {
+    if (!activeDataProduct || activeDataProduct.data_type !== 'point_cloud') {
+      pointCloudViewerDispatch({ type: 'clear' });
+    }
+  }, [activeDataProduct]);
+
   const contextValue = useMemo(
     () => ({
       activeDataProduct,
@@ -402,6 +433,8 @@ export function MapContextProvider({
 
       mapViewProperties,
       mapViewPropertiesDispatch,
+      pointCloudViewer,
+      pointCloudViewerDispatch,
       projectFilterSelection,
       projectFilterSelectionDispatch,
       projectLayers,
@@ -424,6 +457,7 @@ export function MapContextProvider({
       flights,
       geoRasterId,
       mapViewProperties,
+      pointCloudViewer,
       projectFilterSelection,
       projectLayers,
       projects,
