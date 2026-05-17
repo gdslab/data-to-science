@@ -4,7 +4,7 @@ import LayerCard from './LayerCard';
 import RasterStats from './RasterStats';
 import RasterSymbologySettings from '../RasterSymbologySettings';
 import { DataProduct } from '../../pages/workspace/projects/Project';
-import { getDataProductName } from '../../pages/workspace/projects/flights/DataProducts/DataProductsTable';
+import { getDataProductName, getDataProductTitle } from '../../pages/workspace/projects/flights/DataProducts/DataProductsTable';
 import { useRasterSymbologyContext } from '../RasterSymbologyContext';
 import { NON_MAP_DATA_TYPES } from './utils';
 import { PointCloudViewer } from '../Maps';
@@ -41,7 +41,7 @@ export default function DataProductCard({
 
   return (
     <LayerCard
-      hover={true}
+      hover={!isPointCloud}
       active={
         activeDataProduct !== null && dataProduct.id === activeDataProduct.id
       }
@@ -59,6 +59,7 @@ export default function DataProductCard({
               <button
                 type="button"
                 className="w-full rounded border border-slate-300 px-2 py-1.5 text-left hover:bg-slate-100"
+                title={`View ${getDataProductTitle(dataProduct.data_type)} in Potree`}
                 onClick={() => handleViewerSelect('potree')}
               >
                 <div className="text-xs font-semibold">View in Potree</div>
@@ -70,6 +71,7 @@ export default function DataProductCard({
               <button
                 type="button"
                 className="w-full rounded border border-slate-300 px-2 py-1.5 text-left hover:bg-slate-100"
+                title={`View ${getDataProductTitle(dataProduct.data_type)} on map`}
                 onClick={() => handleViewerSelect('map')}
               >
                 <div className="text-xs font-semibold">View on map</div>
@@ -82,6 +84,7 @@ export default function DataProductCard({
         ) : (
           <div
             className="flex flex-col gap-1.5"
+            title={`Activate ${getDataProductTitle(dataProduct.data_type)} layer`}
             onClick={() => {
               dispatch({
                 type: 'SET_READY_STATE',
