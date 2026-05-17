@@ -1,0 +1,23 @@
+/* Add breathing room so focus rings on checkboxes aren't clipped by
+   overflow-x: hidden on .lidar-control-content. */
+.lidar-control-content {
+  padding-inline: 4px;
+}
+
+/* Hide the built-in file/URL load section. The app auto-loads the selected
+   COPC, so this UI is redundant. No constructor option exists to disable it;
+   migrate to one if maplibre-gl-lidar ever adds it. */
+.lidar-control-panel .lidar-control-section:has(.lidar-file-input-wrapper) {
+  display: none;
+}
+
+/* Hide the remove button in the Loaded Point Clouds list — no constructor
+   option exists for this. */
+.lidar-pointcloud-action.remove {
+  display: none;
+}
+
+/* Hide the 3D Terrain control group — no constructor option exists for this. */
+.lidar-control-group:has(#lidar-terrain-checkbox) {
+  display: none;
+}

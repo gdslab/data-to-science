@@ -1,4 +1,5 @@
 import 'maplibre-gl-lidar/style.css';
+import './ProjectPointCloudLayer.css';
 import { LidarControl } from 'maplibre-gl-lidar';
 import { useEffect, useRef } from 'react';
 import { useMap } from 'react-map-gl/maplibre';
@@ -20,7 +21,9 @@ export default function ProjectPointCloudLayer({
       copcLoadingMode: 'dynamic',
       colorScheme: 'elevation',
       opacity: 1,
-      pickable: true,
+      pickable: false,
+      shareUrl: false,
+      restoreFromUrl: false,
     });
     map.addControl(ctrl, 'top-left');
     ctrl.loadPointCloud(dataProduct.url);
