@@ -138,6 +138,24 @@ export default function ProjectList({
     return filteredProjects;
   }, [projects, projectFilterSelection, selectedTeamIds]);
 
+  const hasAnyProjects = !!projects && projects.length > 0;
+
+  const emptyFilterMessage = useMemo(() => {
+    if (filteredProjects.length === 0) {
+      if (projectFilterSelection.includes('likedProjects')) {
+        return 'You have not favorited any projects yet.';
+      }
+      if (projectFilterSelection.includes('myProjects')) {
+        return "You have no projects of your own — try unchecking 'My projects' to also see shared projects.";
+      }
+      if (projectFilterSelection.includes('myTeams')) {
+        return 'No projects match the selected team(s).';
+      }
+      return 'No projects match the current filters.';
+    }
+    return 'No projects match your search.';
+  }, [filteredProjects, projectFilterSelection]);
+
   useEffect(() => {
     if (!projects) return;
     const filteredCount = filterSearch(filteredProjects).length;
@@ -178,15 +196,14 @@ export default function ProjectList({
         {/* Project header and search */}
         <div className="flex flex-col gap-4">
           <ProjectListHeader />
-          {!filteredProjects ||
-            (filteredProjects.length === 0 && (
-              <p>
-                Use the above button to create your first project. Your projects
-                will appear in the space below.
-              </p>
-            ))}
+          {!hasAnyProjects && (
+            <p>
+              Use the above button to create your first project. Your projects
+              will appear in the space below.
+            </p>
+          )}
         </div>
-        {filteredProjects && filteredProjects.length > 0 && (
+        {hasAnyProjects && (
           <div>
             <div className="w-96 mb-4">
               <ProjectSearch
@@ -246,19 +263,23 @@ export default function ProjectList({
             </div>
           </div>
         )}
-        {filteredProjects && filteredProjects.length > 0 && (
+        {hasAnyProjects && (
           <div className="flex-1 min-h-0 flex flex-wrap gap-4 pb-24 overflow-y-auto">
-            {filteredAndSortedProjects.map((project) => (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                revalidate={revalidate}
-              />
-            ))}
+            {filteredAndSortedProjects.length > 0 ? (
+              filteredAndSortedProjects.map((project) => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  revalidate={revalidate}
+                />
+              ))
+            ) : (
+              <p className="text-gray-600">{emptyFilterMessage}</p>
+            )}
           </div>
         )}
         {/* Pagination */}
-        {filteredProjects && filteredProjects.length > 0 && (
+        {hasAnyProjects && filteredAndSortedProjects.length > 0 && (
           <div className="w-full bg-slate-200 fixed bottom-0 left-0 right-0 py-4 px-6 z-10">
             <div className="flex justify-center">
               <Pagination
