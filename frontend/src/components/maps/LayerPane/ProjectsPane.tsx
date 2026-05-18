@@ -74,6 +74,27 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
     return filteredProjects;
   }, [projects, projectFilterSelection, selectedTeamIds]);
 
+  const hasAnyProjects = !!projects && projects.length > 0;
+
+  const emptyFilterMessage = useMemo(() => {
+    if (filteredProjects.length === 0) {
+      if (projectFilterSelection.includes('likedProjects')) {
+        return 'You have not favorited any projects yet.';
+      }
+      if (projectFilterSelection.includes('myProjects')) {
+        return "You have no projects of your own — try unchecking 'My projects' to also see shared projects.";
+      }
+      if (projectFilterSelection.includes('myTeams')) {
+        return 'No projects match the selected team(s).';
+      }
+      return 'No projects match the current filters.';
+    }
+    if (searchText) {
+      return 'No projects match your search.';
+    }
+    return 'No projects are visible in the current map view.';
+  }, [filteredProjects, projectFilterSelection, searchText]);
+
   const teamCategories = useMemo(() => {
     if (!projects) return [] as { label: string; value: string }[];
     const unique = new Map<string, string>();
@@ -159,7 +180,7 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
     <div className="h-[calc(100%-44px)] p-4 flex flex-col">
       <div className="h-36">
         <h1>Projects</h1>
-        {filteredProjects && filteredProjects.length > 0 && (
+        {hasAnyProjects && (
           <div className="flex flex-col gap-2 my-2">
             <ProjectSearch
               searchText={searchText}
@@ -204,7 +225,7 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
         )}
       </div>
       <div className="flex-1 min-h-0">
-        {filteredProjects && filteredProjects.length > 0 ? (
+        {currentPageProjects.length > 0 ? (
           <ul className="h-full space-y-2 overflow-y-auto">
             {currentPageProjects.map((project) => (
               <li key={project.id}>
@@ -268,6 +289,8 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
               </li>
             ))}
           </ul>
+        ) : hasAnyProjects ? (
+          <p className="text-sm text-gray-600">{emptyFilterMessage}</p>
         ) : (
           <div>
             <p className="mb-4">
