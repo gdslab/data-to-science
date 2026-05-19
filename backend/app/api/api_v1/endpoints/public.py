@@ -1,12 +1,13 @@
 import os
 import urllib.parse
 from io import BytesIO
-from typing import Annotated, Any, List, Optional
+from typing import Annotated, Any, List, Optional, Union
 
 import httpx
 import rasterio
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import RedirectResponse, StreamingResponse
+from geojson_pydantic import FeatureCollection
 from pydantic import UUID4
 from rasterio.warp import transform_bounds
 from sqlalchemy.orm import Session
@@ -207,3 +208,37 @@ def read_data_product_bounds(
 
     # return bounds
     return {"bounds": list(wgs84_bounds)}
+
+
+@router.get(
+    "/projects",
+    response_model=Union[List[schemas.project.PublishedProjects], FeatureCollection],
+)
+def read_published_projects(
+    has_raster: bool = False,
+    format: str = Query("json", pattern="^(json|geojson)$"),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Retrieve all active published projects. No authentication required."""
+    projects = crud.project.get_published_projects(db, has_raster=has_raster)
+
+    if format == "geojson":
+        return {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [project.centroid.x, project.centroid.y],
+                    },
+                    "properties": {
+                        "id": str(project.id),
+                        "title": project.title,
+                        "description": project.description,
+                    },
+                }
+                for project in projects
+            ],
+        }
+    return projects

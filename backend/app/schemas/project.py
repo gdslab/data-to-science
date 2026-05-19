@@ -103,6 +103,20 @@ class Projects(BaseModel, from_attributes=True):
     team: Optional[Team] = None
 
 
+# schema returned for publicly visible published projects (no auth context)
+class PublishedProjects(BaseModel, from_attributes=True):
+    id: UUID4
+    centroid: Centroid
+    title: str
+    description: str
+    data_product_count: int = 0
+    flight_count: int = 0
+    planting_date: Optional[date] = None
+    harvest_date: Optional[date] = None
+    most_recent_flight: Optional[date] = None
+    team: Optional[Team] = None
+
+
 # additional properties stored in DB
 class ProjectInDB(ProjectInDBBase):
     pass

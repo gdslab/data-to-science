@@ -20,6 +20,7 @@ from app.models.project import Project
 from app.models.project_like import ProjectLike
 from app.models.project_member import ProjectMember
 from app.models.project_module import ProjectModule
+from app.models.constants import NON_RASTER_TYPES
 from app.models.enums.project_type import ProjectType
 from app.models.raw_data import RawData
 from app.models.team_member import TeamMember
@@ -31,6 +32,7 @@ from app.schemas.project import (
     ProjectUpdate,
     Project as ProjectSchema,
     Projects,
+    PublishedProjects,
 )
 from app.schemas.team_member import Role
 
@@ -273,7 +275,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                     and_(
                         Flight.is_active,
                         DataProduct.is_active,
-                        DataProduct.data_type != "point_cloud",
+                        DataProduct.data_type.notin_(NON_RASTER_TYPES),
                     )
                 )
                 .label("raster_count"),
@@ -400,6 +402,86 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
                 else:
                     setattr(project_obj, "role", member_obj.role)
                 # add updated project obj to final list
+                final_projects.append(project_obj)
+
+            return final_projects
+
+    def get_published_projects(
+        self,
+        db: Session,
+        has_raster: bool = False,
+    ) -> List[PublishedProjects]:
+        flight_stats_subquery = (
+            select(
+                Flight.project_id,
+                func.count(func.distinct(Flight.id))
+                .filter(Flight.is_active)
+                .label("flight_count"),
+                func.max(Flight.acquisition_date)
+                .filter(Flight.is_active)
+                .label("most_recent_flight"),
+                func.count(DataProduct.id)
+                .filter(and_(Flight.is_active, DataProduct.is_active))
+                .label("data_product_count"),
+                func.count(DataProduct.id)
+                .filter(
+                    and_(
+                        Flight.is_active,
+                        DataProduct.is_active,
+                        DataProduct.data_type.notin_(NON_RASTER_TYPES),
+                    )
+                )
+                .label("raster_count"),
+            )
+            .outerjoin(DataProduct, DataProduct.flight_id == Flight.id)
+            .group_by(Flight.project_id)
+            .subquery()
+        )
+
+        statement = (
+            select(
+                Project,
+                func.ST_X(func.ST_Centroid(Location.geom)).label("center_x"),
+                func.ST_Y(func.ST_Centroid(Location.geom)).label("center_y"),
+                func.coalesce(flight_stats_subquery.c.flight_count, 0).label(
+                    "flight_count"
+                ),
+                flight_stats_subquery.c.most_recent_flight,
+                func.coalesce(flight_stats_subquery.c.data_product_count, 0).label(
+                    "data_product_count"
+                ),
+                func.coalesce(flight_stats_subquery.c.raster_count, 0).label(
+                    "raster_count"
+                ),
+            )
+            .join(Project.location)
+            .outerjoin(
+                flight_stats_subquery,
+                flight_stats_subquery.c.project_id == Project.id,
+            )
+            .where(and_(Project.is_active, Project.is_published))
+            .options(selectinload(Project.team))
+        )
+
+        if has_raster:
+            statement = statement.where(flight_stats_subquery.c.raster_count > 0)
+
+        with db as session:
+            final_projects = []
+            for project in session.execute(statement).all():
+                (
+                    project_obj,
+                    center_x,
+                    center_y,
+                    flight_count,
+                    most_recent_flight,
+                    data_product_count,
+                    raster_count,
+                ) = project
+                setattr(project_obj, "centroid", Centroid(x=center_x, y=center_y))
+                setattr(project_obj, "data_product_count", data_product_count)
+                setattr(project_obj, "flight_count", flight_count)
+                setattr(project_obj, "most_recent_flight", most_recent_flight)
                 final_projects.append(project_obj)
 
             return final_projects
