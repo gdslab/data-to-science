@@ -100,11 +100,11 @@ function FieldTimepoints({
                   if (response.status === 200) {
                     // get blob from response data
                     const blob = new Blob([response.data], {
-                      type: response.headers['content-type'],
+                      type: response.headers['content-type'] as string,
                     });
                     // get filename from content-disposition header
                     const filename = getFilenameFromContentDisposition(
-                      response.headers['content-disposition']
+                      response.headers['content-disposition'] as string
                     );
                     // download file
                     downloadFile(blob, filename ? filename : 'template.csv');
@@ -326,11 +326,11 @@ export default function FieldCampaignTable() {
                     if (response.status === 200) {
                       // get blob from response data
                       const blob = new Blob([response.data], {
-                        type: response.headers['content-type'],
+                        type: response.headers['content-type'] as string,
                       });
                       // get filename from content-disposition header
                       const filename = getFilenameFromContentDisposition(
-                        response.headers['content-disposition']
+                        response.headers['content-disposition'] as string
                       );
                       // download file
                       downloadFile(
