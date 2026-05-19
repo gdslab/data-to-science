@@ -1,8 +1,13 @@
+import { useState } from 'react';
+
 import { useMapContext } from '../MapContext';
 
 import LayerCard from './LayerCard';
+import Modal from '../../Modal';
 import RasterStats from './RasterStats';
 import RasterSymbologySettings from '../RasterSymbologySettings';
+import RasterSymbologyAccessControls from '../RasterSymbologySettings/RasterSymbologyAccessControls';
+import { Button } from '../../Buttons';
 import { DataProduct } from '../../pages/workspace/projects/Project';
 import { getDataProductName, getDataProductTitle } from '../../pages/workspace/projects/flights/DataProducts/DataProductsTable';
 import { useRasterSymbologyContext } from '../RasterSymbologyContext';
@@ -17,8 +22,11 @@ export default function DataProductCard({
   const {
     activeDataProduct,
     activeDataProductDispatch,
+    activeProject,
     pointCloudViewerDispatch,
   } = useMapContext();
+
+  const [shareOpen, setShareOpen] = useState(false);
 
   const { dispatch } = useRasterSymbologyContext();
 
@@ -80,6 +88,24 @@ export default function DataProductCard({
                 </div>
               </button>
             </div>
+            {activeProject && (
+              <div className="w-36">
+                <Button
+                  type="button"
+                  size="sm"
+                  icon="share2"
+                  onClick={() => setShareOpen(true)}
+                >
+                  Share
+                </Button>
+                <Modal open={shareOpen} setOpen={setShareOpen}>
+                  <RasterSymbologyAccessControls
+                    dataProduct={dataProduct}
+                    project={activeProject}
+                  />
+                </Modal>
+              </div>
+            )}
           </div>
         ) : (
           <div
