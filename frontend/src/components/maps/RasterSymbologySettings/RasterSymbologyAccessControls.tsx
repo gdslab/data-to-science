@@ -38,6 +38,8 @@ export default function RasterSymbologyAccessControls({
   const [status, setStatus] = useState<Status | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [qrCode, setQrCode] = useState<Blob | null>(null);
+  const [pcDropdownOpen, setPcDropdownOpen] = useState(false);
+  const [pcViewerMode, setPcViewerMode] = useState<'potree' | 'map'>('potree');
 
   const navigate = useNavigate();
 
@@ -319,31 +321,95 @@ export default function RasterSymbologyAccessControls({
               </div>
             </>
           )}
-          {dataProduct.data_type === 'point_cloud' && (
-            <>
+          {dataProduct.data_type === 'point_cloud' && (() => {
+            const pcShareUrl =
+              window.origin +
+              (pcViewerMode === 'potree' ? '/sharepotree' : '/sharecopcmap') +
+              `?file_id=${dataProduct.id}`;
+            return (
               <div className="col-span-2">
-                <CopyURLButton
-                  copyText="Copy Share URL"
-                  copiedText="Copied"
-                  url={window.origin + `/sharepotree?file_id=${dataProduct.id}`}
-                  title="Copy link that can be used to share the point cloud with potree"
-                />
+                <div className="relative">
+                  <button
+                    type="button"
+                    className="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 whitespace-nowrap min-w-[180px]"
+                    onClick={() => setPcDropdownOpen(!pcDropdownOpen)}
+                  >
+                    Share Point Cloud
+                    <ChevronDownIcon
+                      className="-mr-1 h-5 w-5 text-gray-400"
+                      aria-hidden="true"
+                    />
+                  </button>
+                  {pcDropdownOpen && (
+                    <div
+                      className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-hidden"
+                      style={{ bottom: '100%', marginBottom: '0.5rem' }}
+                    >
+                      <div className="py-1">
+                        <div className="px-4 py-2 flex gap-4 border-b border-gray-100">
+                          <label className="flex items-center gap-1 text-sm cursor-pointer">
+                            <input
+                              type="radio"
+                              name="pcViewerMode"
+                              value="potree"
+                              checked={pcViewerMode === 'potree'}
+                              onChange={() => setPcViewerMode('potree')}
+                            />
+                            Potree
+                          </label>
+                          <label className="flex items-center gap-1 text-sm cursor-pointer">
+                            <input
+                              type="radio"
+                              name="pcViewerMode"
+                              value="map"
+                              checked={pcViewerMode === 'map'}
+                              onChange={() => setPcViewerMode('map')}
+                            />
+                            Map
+                          </label>
+                        </div>
+                        <div className="px-4 py-2">
+                          <CopyURLButton
+                            copyText="Copy Share URL"
+                            copiedText="Copied"
+                            url={pcShareUrl}
+                            title={
+                              pcViewerMode === 'potree'
+                                ? 'Copy link that opens the point cloud in the Potree viewer'
+                                : 'Copy link that opens the point cloud on a MapLibre map'
+                            }
+                          />
+                        </div>
+                        <div className="px-4 py-2">
+                          <CopyShortURLButton
+                            copyText="Copy Short URL"
+                            copiedText="Copied"
+                            dataProduct={dataProduct}
+                            project={project}
+                            setStatus={setStatus}
+                            url={pcShareUrl}
+                          />
+                        </div>
+                        <div className="px-4 py-2">
+                          <DownloadQRButton
+                            closeShareButton={() => setPcDropdownOpen(false)}
+                            dataProductId={dataProduct.id}
+                            flightId={dataProduct.flight_id}
+                            projectId={project.id}
+                            setStatus={setStatus}
+                            setQrCode={setQrCode}
+                            title="Show QR Code"
+                            titleOnSubmission="Generating QR Code..."
+                            url={pcShareUrl}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="col-span-2">
-                <DownloadQRButton
-                  closeShareButton={() => setIsOpen(false)}
-                  dataProductId={dataProduct.id}
-                  flightId={dataProduct.flight_id}
-                  projectId={project.id}
-                  setStatus={setStatus}
-                  setQrCode={setQrCode}
-                  title="Show QR Code"
-                  titleOnSubmission="Generating QR Code..."
-                  url={window.origin + `/sharepotree?file_id=${dataProduct.id}`}
-                />
-              </div>
-            </>
-          )}
+            );
+          })()}
         </div>
         {status ? <Alert alertType={status.type}>{status.msg}</Alert> : null}
       </div>

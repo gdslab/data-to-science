@@ -46,6 +46,23 @@ export function getDataProductName(dataType: string): string {
   }
 }
 
+export function getDataProductTitle(dataType: string): string {
+  switch (dataType) {
+    case '3dgs':
+      return '3D Gaussian Splatting (3DGS)';
+    case 'dsm':
+      return 'Digital Surface Model (DSM)';
+    case 'ortho':
+      return 'Orthomosaic';
+    case 'panoramic':
+      return 'Panoramic';
+    case 'point_cloud':
+      return 'Cloud Optimized Point Cloud (COPC)';
+    default:
+      return dataType;
+  }
+}
+
 function getDataProductActions(
   role: string | undefined,
   data: DataProduct[],

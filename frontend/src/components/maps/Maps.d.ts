@@ -37,3 +37,10 @@ export type SymbologySettingsAction = {
 };
 
 export type TileScaleAction = { type: string; payload: number };
+
+export type PointCloudViewer = 'potree' | 'map';
+
+export type PointCloudViewerAction = {
+  type: 'set' | 'clear';
+  payload?: PointCloudViewer;
+};

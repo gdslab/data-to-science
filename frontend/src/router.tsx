@@ -59,6 +59,7 @@ import ProjectSTACPublishing, {
 import STACDisabled from './components/pages/workspace/projects/stac/STACDisabled';
 import RegistrationForm from './components/pages/auth/RegistrationForm';
 import { RasterSymbologyProvider } from './components/maps/RasterSymbologyContext';
+import ShareCopcMapViewer from './components/maps/ShareCopcMapViewer';
 import ShareLCCViewer from './components/maps/ShareLCCViewer';
 import SharePanoViewer from './components/maps/SharePanoViewer';
 import SharePlayCanvasglTFViewer from './components/maps/SharePlayCanvasglTFViewer';
@@ -143,6 +144,13 @@ export const router = createBrowserRouter(
           path: '/sharelcc',
           element: <RootProtected />,
           children: [{ path: '/sharelcc', element: <ShareLCCViewer /> }],
+        },
+        {
+          path: '/sharecopcmap',
+          element: <RootProtected />,
+          children: [
+            { path: '/sharecopcmap', element: <ShareCopcMapViewer /> },
+          ],
         },
       ],
     },

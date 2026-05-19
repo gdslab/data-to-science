@@ -52,6 +52,7 @@
     "formik": "^2.4.2",
     "localforage": "^1.10.0",
     "maplibre-gl": "^4.7.1",
+    "maplibre-gl-lidar": "^0.13.0",
     "papaparse": "^5.4.1",
     "playcanvas": "2.11.8",
     "react": "^19",
