@@ -486,6 +486,77 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
 
             return final_projects
 
+    def get_published_project_by_id(
+        self,
+        db: Session,
+        project_id: UUID,
+    ) -> Optional[Project]:
+        flight_stats_subquery = (
+            select(
+                Flight.project_id,
+                func.count(func.distinct(Flight.id))
+                .filter(Flight.is_active)
+                .label("flight_count"),
+                func.max(Flight.acquisition_date)
+                .filter(Flight.is_active)
+                .label("most_recent_flight"),
+                func.count(DataProduct.id)
+                .filter(and_(Flight.is_active, DataProduct.is_active))
+                .label("data_product_count"),
+            )
+            .outerjoin(DataProduct, DataProduct.flight_id == Flight.id)
+            .group_by(Flight.project_id)
+            .subquery()
+        )
+
+        statement = (
+            select(
+                Project,
+                func.ST_AsGeoJSON(Location),
+                func.ST_X(func.ST_Centroid(Location.geom)).label("center_x"),
+                func.ST_Y(func.ST_Centroid(Location.geom)).label("center_y"),
+                func.coalesce(flight_stats_subquery.c.flight_count, 0).label(
+                    "flight_count"
+                ),
+                flight_stats_subquery.c.most_recent_flight,
+                func.coalesce(flight_stats_subquery.c.data_product_count, 0).label(
+                    "data_product_count"
+                ),
+            )
+            .join(Project.location)
+            .outerjoin(
+                flight_stats_subquery,
+                flight_stats_subquery.c.project_id == Project.id,
+            )
+            .where(
+                and_(Project.id == project_id, Project.is_active, Project.is_published)
+            )
+            .options(selectinload(Project.team))
+        )
+
+        with db as session:
+            row = session.execute(statement).one_or_none()
+            if row is None:
+                return None
+            (
+                project_obj,
+                geojson_str,
+                center_x,
+                center_y,
+                flight_count,
+                most_recent_flight,
+                data_product_count,
+            ) = row
+            field_dict = json.loads(geojson_str)
+            field_dict["properties"] = field_dict.get("properties") or {}
+            field_dict["properties"].update({"center_x": center_x, "center_y": center_y})
+            setattr(project_obj, "field", field_dict)
+            setattr(project_obj, "centroid", Centroid(x=center_x, y=center_y))
+            setattr(project_obj, "data_product_count", data_product_count)
+            setattr(project_obj, "flight_count", flight_count)
+            setattr(project_obj, "most_recent_flight", most_recent_flight)
+            return project_obj
+
     def update_project(
         self,
         db: Session,

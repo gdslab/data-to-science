@@ -115,6 +115,7 @@ class PublishedProjects(BaseModel, from_attributes=True):
     harvest_date: Optional[date] = None
     most_recent_flight: Optional[date] = None
     team: Optional[Team] = None
+    field: Optional[Feature[Polygon, Dict]] = None
 
 
 # additional properties stored in DB

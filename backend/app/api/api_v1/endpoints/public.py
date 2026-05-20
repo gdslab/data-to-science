@@ -1,7 +1,7 @@
 import os
 import urllib.parse
 from io import BytesIO
-from typing import Annotated, Any, List, Optional, Union
+from typing import Annotated, Any, List, Optional, Sequence, Union
 
 import httpx
 import rasterio
@@ -242,3 +242,47 @@ def read_published_projects(
             ],
         }
     return projects
+
+
+@router.get(
+    "/projects/{project_id}",
+    response_model=Union[schemas.project.PublishedProjects, FeatureCollection],
+)
+def read_published_project(
+    project_id: UUID4,
+    format: str = Query("json", pattern="^(json|geojson)$"),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Retrieve a single active published project. No authentication required."""
+    project = crud.project.get_published_project_by_id(db, project_id=project_id)
+    if project is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+        )
+    if format == "geojson":
+        return {"type": "FeatureCollection", "features": [project.field]}
+    return project
+
+
+@router.get(
+    "/projects/{project_id}/flights",
+    response_model=Sequence[schemas.Flight],
+)
+def read_published_project_flights(
+    project_id: UUID4,
+    has_raster: bool = False,
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Retrieve flights and public data products for a published project. No authentication required."""
+    project = crud.project.get_published_project_by_id(db, project_id=project_id)
+    if project is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+        )
+    if os.environ.get("RUNNING_TESTS") == "1":
+        upload_dir = settings.TEST_STATIC_DIR
+    else:
+        upload_dir = settings.STATIC_DIR
+    return crud.flight.get_public_flights_by_project(
+        db, project_id=project_id, upload_dir=upload_dir, has_raster=has_raster
+    )
