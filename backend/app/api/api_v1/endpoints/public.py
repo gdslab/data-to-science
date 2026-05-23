@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
+from app.api.utils import get_signature_for_data_product
 from app.core.config import settings
 
 
@@ -146,11 +147,17 @@ async def get_map_tiles_for_data_product(
     if colormap_name:
         query_params += f"&colormap_name={colormap_name}"
 
+    # sign varnish request (required by varnish/default.vcl)
+    signature, expiration = get_signature_for_data_product(data_product_id)
+
     # request map tile from titiler
     async with httpx.AsyncClient() as client:
         tile_url = (
             f"http://varnish/cog/tiles/WebMercatorQuad/{z}/{x}/{y}@{scale}x"
-            f"?url={data_product.filepath}{query_params}"
+            f"?url={data_product.filepath}"
+            f"&dataProductId={data_product_id}"
+            f"&expires={expiration}&secure={signature}"
+            f"{query_params}"
         )
         # timeout request after 30 seconds
         response = await client.get(tile_url, timeout=30.0)

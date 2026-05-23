@@ -415,6 +415,16 @@ async def verify_static_file_access(request: Request) -> None:
         project_id_str = safe_path_split(project_id_str, "/", 0)
         project_id_uuid = validate_and_extract_uuid(project_id_str)
 
+        # Preview images of published, active projects are publicly accessible
+        if request.url.path.endswith("/preview_map.png"):
+            db_preview = SessionLocal()
+            try:
+                preview_project = crud.project.get(db_preview, id=project_id_uuid)
+                if preview_project and preview_project.is_active and preview_project.is_published:
+                    return
+            finally:
+                db_preview.close()
+
         # Check for API_KEY authentication (for programmatic access, QGIS, etc.)
         # Support both header (preferred) and query param (legacy/QGIS)
         api_key = request.headers.get("X-API-KEY") or request.query_params.get(
