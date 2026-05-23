@@ -215,10 +215,11 @@ export interface ProjectItem {
   description: string;
   field: FieldGeoJSONFeature;
   flight_count: number;
-  liked: boolean;
+  is_public?: boolean;
+  liked?: boolean;
   location_id: string;
   most_recent_flight: string;
-  role: string;
+  role?: string | null;
   team: Team | null;
   team_id: string;
   title: string;
@@ -250,6 +251,7 @@ export interface ProjectModule {
 export interface ProjectPointFeatureProperties {
   id: string;
   description: string;
+  is_public?: boolean;
   title: string;
 }
 

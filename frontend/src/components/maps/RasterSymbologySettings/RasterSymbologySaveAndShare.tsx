@@ -38,7 +38,7 @@ function RasterSymbologyShare({
       >
         Share
       </Button>
-      <Modal open={open} setOpen={setOpen}>
+      <Modal open={open} setOpen={setOpen} overflow="visible">
         <RasterSymbologyAccessControls
           dataProduct={dataProduct}
           project={project}
@@ -133,11 +133,13 @@ export default function RasterSymbologySaveAndShare({
         project={activeProject}
         symbology={symbology}
       />
-      <RasterSymbologySave
-        dataProduct={dataProduct}
-        projectId={activeProject.id}
-        symbology={symbology}
-      />
+      {activeProject.role && (
+        <RasterSymbologySave
+          dataProduct={dataProduct}
+          projectId={activeProject.id}
+          symbology={symbology}
+        />
+      )}
     </div>
   );
 }

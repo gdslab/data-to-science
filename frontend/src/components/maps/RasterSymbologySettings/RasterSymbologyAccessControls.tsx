@@ -92,8 +92,15 @@ export default function RasterSymbologyAccessControls({
       >
         <div>
           <h1>Share Settings</h1>
+          {!project.role && (
+            <p className="mt-2 text-sm text-gray-600">
+              This data product is publicly available. Use the links below to
+              share or embed it. Anyone with the link can view the data product
+              without signing in.
+            </p>
+          )}
         </div>
-        <fieldset>
+        {project.role && <fieldset>
           <legend className="sr-only">Access Control</legend>
           <div>
             <input
@@ -172,7 +179,7 @@ export default function RasterSymbologyAccessControls({
               </label>
             </div>
           ) : null}
-        </fieldset>
+        </fieldset>}
         <div className="grid grid-cols-6 gap-4">
           <div className="col-span-2">
             <CopyURLButton
@@ -199,7 +206,6 @@ export default function RasterSymbologyAccessControls({
                 {isOpen && (
                   <div
                     className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-hidden"
-                    style={{ bottom: '100%', marginBottom: '0.5rem' }}
                   >
                     <div className="py-1">
                       <div className="px-4 py-2">
@@ -214,39 +220,43 @@ export default function RasterSymbologyAccessControls({
                           title="Copy link that can be used to share the current map and selected data product"
                         />
                       </div>
-                      <div className="px-4 py-2">
-                        <CopyShortURLButton
-                          copyText="Copy Short URL"
-                          copiedText="Copied"
-                          dataProduct={dataProduct}
-                          project={project}
-                          setStatus={setStatus}
-                          url={
-                            window.origin +
-                            `/sharemap?file_id=${
-                              dataProduct.id
-                            }&symbology=${btoa(JSON.stringify(symbology))}`
-                          }
-                        />
-                      </div>
-                      <div className="px-4 py-2">
-                        <DownloadQRButton
-                          closeShareButton={() => setIsOpen(false)}
-                          dataProductId={dataProduct.id}
-                          flightId={dataProduct.flight_id}
-                          projectId={project.id}
-                          setStatus={setStatus}
-                          setQrCode={setQrCode}
-                          title="Show QR Code"
-                          titleOnSubmission="Generating QR Code..."
-                          url={
-                            window.origin +
-                            `/sharemap?file_id=${
-                              dataProduct.id
-                            }&symbology=${btoa(JSON.stringify(symbology))}`
-                          }
-                        />
-                      </div>
+                      {project.role && (
+                        <div className="px-4 py-2">
+                          <CopyShortURLButton
+                            copyText="Copy Short URL"
+                            copiedText="Copied"
+                            dataProduct={dataProduct}
+                            project={project}
+                            setStatus={setStatus}
+                            url={
+                              window.origin +
+                              `/sharemap?file_id=${
+                                dataProduct.id
+                              }&symbology=${btoa(JSON.stringify(symbology))}`
+                            }
+                          />
+                        </div>
+                      )}
+                      {project.role && (
+                        <div className="px-4 py-2">
+                          <DownloadQRButton
+                            closeShareButton={() => setIsOpen(false)}
+                            dataProductId={dataProduct.id}
+                            flightId={dataProduct.flight_id}
+                            projectId={project.id}
+                            setStatus={setStatus}
+                            setQrCode={setQrCode}
+                            title="Show QR Code"
+                            titleOnSubmission="Generating QR Code..."
+                            url={
+                              window.origin +
+                              `/sharemap?file_id=${
+                                dataProduct.id
+                              }&symbology=${btoa(JSON.stringify(symbology))}`
+                            }
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -274,26 +284,28 @@ export default function RasterSymbologyAccessControls({
                   }
                 />
               </div>
-              <div className="col-span-2">
-                <DownloadQRButton
-                  closeShareButton={() => setIsOpen(false)}
-                  dataProductId={dataProduct.id}
-                  flightId={dataProduct.flight_id}
-                  projectId={project.id}
-                  setStatus={setStatus}
-                  setQrCode={setQrCode}
-                  title="Show QR Code"
-                  titleOnSubmission="Generating QR Code..."
-                  url={
-                    window.origin +
-                    `${
-                      dataProduct.url.toLowerCase().endsWith('.lcc')
-                        ? '/sharelcc'
-                        : '/share3dgs'
-                    }?file_id=${dataProduct.id}`
-                  }
-                />
-              </div>
+              {project.role && (
+                <div className="col-span-2">
+                  <DownloadQRButton
+                    closeShareButton={() => setIsOpen(false)}
+                    dataProductId={dataProduct.id}
+                    flightId={dataProduct.flight_id}
+                    projectId={project.id}
+                    setStatus={setStatus}
+                    setQrCode={setQrCode}
+                    title="Show QR Code"
+                    titleOnSubmission="Generating QR Code..."
+                    url={
+                      window.origin +
+                      `${
+                        dataProduct.url.toLowerCase().endsWith('.lcc')
+                          ? '/sharelcc'
+                          : '/share3dgs'
+                      }?file_id=${dataProduct.id}`
+                    }
+                  />
+                </div>
+              )}
             </>
           )}
           {dataProduct.data_type === 'panoramic' && (
@@ -306,19 +318,21 @@ export default function RasterSymbologyAccessControls({
                   title="Copy link that can be used to share the panoramic image"
                 />
               </div>
-              <div className="col-span-2">
-                <DownloadQRButton
-                  closeShareButton={() => setIsOpen(false)}
-                  dataProductId={dataProduct.id}
-                  flightId={dataProduct.flight_id}
-                  projectId={project.id}
-                  setStatus={setStatus}
-                  setQrCode={setQrCode}
-                  title="Show QR Code"
-                  titleOnSubmission="Generating QR Code..."
-                  url={window.origin + `/sharepano?file_id=${dataProduct.id}`}
-                />
-              </div>
+              {project.role && (
+                <div className="col-span-2">
+                  <DownloadQRButton
+                    closeShareButton={() => setIsOpen(false)}
+                    dataProductId={dataProduct.id}
+                    flightId={dataProduct.flight_id}
+                    projectId={project.id}
+                    setStatus={setStatus}
+                    setQrCode={setQrCode}
+                    title="Show QR Code"
+                    titleOnSubmission="Generating QR Code..."
+                    url={window.origin + `/sharepano?file_id=${dataProduct.id}`}
+                  />
+                </div>
+              )}
             </>
           )}
           {dataProduct.data_type === 'point_cloud' && (() => {
@@ -343,7 +357,6 @@ export default function RasterSymbologyAccessControls({
                   {pcDropdownOpen && (
                     <div
                       className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-hidden"
-                      style={{ bottom: '100%', marginBottom: '0.5rem' }}
                     >
                       <div className="py-1">
                         <div className="px-4 py-2 flex gap-4 border-b border-gray-100">
@@ -380,29 +393,33 @@ export default function RasterSymbologyAccessControls({
                             }
                           />
                         </div>
-                        <div className="px-4 py-2">
-                          <CopyShortURLButton
-                            copyText="Copy Short URL"
-                            copiedText="Copied"
-                            dataProduct={dataProduct}
-                            project={project}
-                            setStatus={setStatus}
-                            url={pcShareUrl}
-                          />
-                        </div>
-                        <div className="px-4 py-2">
-                          <DownloadQRButton
-                            closeShareButton={() => setPcDropdownOpen(false)}
-                            dataProductId={dataProduct.id}
-                            flightId={dataProduct.flight_id}
-                            projectId={project.id}
-                            setStatus={setStatus}
-                            setQrCode={setQrCode}
-                            title="Show QR Code"
-                            titleOnSubmission="Generating QR Code..."
-                            url={pcShareUrl}
-                          />
-                        </div>
+                        {project.role && (
+                          <div className="px-4 py-2">
+                            <CopyShortURLButton
+                              copyText="Copy Short URL"
+                              copiedText="Copied"
+                              dataProduct={dataProduct}
+                              project={project}
+                              setStatus={setStatus}
+                              url={pcShareUrl}
+                            />
+                          </div>
+                        )}
+                        {project.role && (
+                          <div className="px-4 py-2">
+                            <DownloadQRButton
+                              closeShareButton={() => setPcDropdownOpen(false)}
+                              dataProductId={dataProduct.id}
+                              flightId={dataProduct.flight_id}
+                              projectId={project.id}
+                              setStatus={setStatus}
+                              setQrCode={setQrCode}
+                              title="Show QR Code"
+                              titleOnSubmission="Generating QR Code..."
+                              url={pcShareUrl}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

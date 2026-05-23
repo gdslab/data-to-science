@@ -591,6 +591,39 @@ function setLocalStorageProjects(projects: ProjectItem[]): void {
 }
 
 /**
+ * Checks local storage for previously stored public projects.
+ * @returns Array of public projects retrieved from local storage.
+ */
+function getLocalStoragePublicProjects(): ProjectItem[] | null {
+  const lsString = localStorage.getItem('publicProjects');
+  if (lsString) {
+    const parsed: ProjectItem[] = JSON.parse(lsString);
+    if (parsed && parsed.length > 0) {
+      return parsed;
+    }
+  }
+  return null;
+}
+
+/**
+ * Stores public projects in local storage under a separate key.
+ * @param projects Public projects to cache.
+ */
+function setLocalStoragePublicProjects(projects: ProjectItem[]): void {
+  localStorage.setItem('publicProjects', JSON.stringify(projects));
+}
+
+/**
+ * Returns true when a project was fetched via the public endpoint and the
+ * current user has no membership role on it.  Used to branch between auth-
+ * required and public API paths throughout the map components.
+ * @param project Active project (may be null).
+ */
+function isPublicOnly(project: ProjectItem | null | undefined): boolean {
+  return !!project?.is_public && !project?.role;
+}
+
+/**
  * Returns the category of a value based on predefined thresholds for flights or data products.
  * @param count Value to be categorized.
  * @param type Type of count ('flight' or 'data_product').
@@ -701,11 +734,14 @@ export {
   getDefaultStyle,
   getHillshade,
   getLocalStorageProjects,
+  getLocalStoragePublicProjects,
   getMultibandMinMax,
   getSingleBandMinMax,
   getTitilerQueryParams,
   isElevationDataProduct,
+  isPublicOnly,
   isSingleBand,
   mapApiResponseToLayers,
   setLocalStorageProjects,
+  setLocalStoragePublicProjects,
 };

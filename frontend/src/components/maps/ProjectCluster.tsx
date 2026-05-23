@@ -69,6 +69,13 @@ export default function ProjectCluster({
       );
     }
 
+    // Hide public-only entries when the public projects filter is off
+    if (!projectFilterSelection.includes('publicProjects')) {
+      filteredProjects = filteredProjects.filter(
+        (project) => !project.is_public
+      );
+    }
+
     return filteredProjects;
   }, [projects, projectFilterSelection, selectedTeamIds]);
 
@@ -82,8 +89,9 @@ export default function ProjectCluster({
       },
       properties: {
         id: project.id,
-        title: project.title,
         description: project.description,
+        is_public: !!project.is_public,
+        title: project.title,
       },
     }));
     const featureCollection: ProjectFeatureCollection = {

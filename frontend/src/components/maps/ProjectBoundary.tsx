@@ -10,6 +10,7 @@ import { BBox } from './Maps';
 import { useMapContext } from './MapContext';
 
 import api from '../../api';
+import { isPublicOnly } from './utils';
 
 type ProjectBoundaryProps = {
   setActiveProjectBBox?: React.Dispatch<React.SetStateAction<BBox | null>>;
@@ -35,7 +36,9 @@ export default function ProjectBoundary({
     mapViewProperties,
     mapViewPropertiesDispatch,
   } = useMapContext();
-  const geojsonUrl = `/projects/${activeProject?.id}?format=geojson`;
+  const geojsonUrl = isPublicOnly(activeProject)
+    ? `/public/projects/${activeProject?.id}?format=geojson`
+    : `/projects/${activeProject?.id}?format=geojson`;
 
   // Store zoom in ref to access latest value without triggering effect
   const zoomRef = useRef(mapViewProperties?.zoom ?? 12);

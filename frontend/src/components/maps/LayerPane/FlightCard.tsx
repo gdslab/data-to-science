@@ -9,7 +9,7 @@ import { LinkOutlineButton } from '../../Buttons';
 import { formatDate } from './utils';
 
 export default function FlightCard({ flight }: { flight: Flight }) {
-  const { activeDataProduct } = useMapContext();
+  const { activeDataProduct, activeProject } = useMapContext();
 
   return (
     <LayerCard>
@@ -52,14 +52,16 @@ export default function FlightCard({ flight }: { flight: Flight }) {
             {flight.data_products.map((dataProduct) => (
               <DataProductCard key={dataProduct.id} dataProduct={dataProduct} />
             ))}
-            <LinkOutlineButton
-              size="sm"
-              target="_blank"
-              title="Open data management page for this flight in a new tab"
-              url={`/projects/${flight.project_id}/flights/${flight.id}/data`}
-            >
-              Manage Data
-            </LinkOutlineButton>
+            {activeProject?.role && (
+              <LinkOutlineButton
+                size="sm"
+                target="_blank"
+                title="Open data management page for this flight in a new tab"
+                url={`/projects/${flight.project_id}/flights/${flight.id}/data`}
+              >
+                Manage Data
+              </LinkOutlineButton>
+            )}
           </div>
         </details>
       )}

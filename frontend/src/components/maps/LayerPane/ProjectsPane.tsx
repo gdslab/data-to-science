@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import {
+  GlobeAltIcon,
   PaperAirplaneIcon,
   StarIcon as StarIconOutline,
   UserGroupIcon,
@@ -71,6 +72,13 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
       );
     }
 
+    // Hide public-only entries when the public projects filter is off
+    if (!projectFilterSelection.includes('publicProjects')) {
+      filteredProjects = filteredProjects.filter(
+        (project) => !project.is_public,
+      );
+    }
+
     return filteredProjects;
   }, [projects, projectFilterSelection, selectedTeamIds]);
 
@@ -83,6 +91,9 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
       }
       if (projectFilterSelection.includes('myProjects')) {
         return "You have no projects of your own — try unchecking 'My projects' to also see shared projects.";
+      }
+      if (!projectFilterSelection.includes('publicProjects')) {
+        return "Public projects are hidden — enable 'Public projects' in the filter to see them.";
       }
       if (projectFilterSelection.includes('myTeams')) {
         return 'No projects match the selected team(s).';
@@ -199,6 +210,7 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
                     { label: 'My projects', value: 'myProjects' },
                     { label: 'Favorite projects', value: 'likedProjects' },
                     { label: 'My teams', value: 'myTeams' },
+                    { label: 'Public projects', value: 'publicProjects' },
                   ]}
                   selectedCategory={projectFilterSelection}
                   setSelectedCategory={updateProjectFilter}
@@ -227,67 +239,80 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
       <div className="flex-1 min-h-0">
         {currentPageProjects.length > 0 ? (
           <ul className="h-full space-y-2 overflow-y-auto">
-            {currentPageProjects.map((project) => (
-              <li key={project.id}>
-                <LayerCard hover={true}>
-                  <div
-                    className="relative pr-4 pt-1"
-                    onClick={handleProjectClick(project)}
-                    title={project.title}
-                  >
-                    <div className="absolute top-0 right-0">
-                      {project.liked ? (
-                        <StarIconSolid className="w-3 h-3 text-amber-500" />
-                      ) : (
-                        <StarIconOutline className="w-3 h-3 text-gray-400" />
-                      )}
-                    </div>
-                    <div className="grid grid-cols-4 gap-4">
-                      <div className="flex items-center justify-between">
-                        <img
-                          className="object-cover w-16"
-                          src={`/static/projects/${project.id}/preview_map.png`}
-                          alt="Image of project boundary"
-                        />
+            {currentPageProjects.map((project) => {
+              const isPublicCard = project.is_public && !project.role;
+              return (
+                <li key={project.id}>
+                  <LayerCard hover={true} bg={isPublicCard ? 'bg-amber-100' : 'bg-white'}>
+                    <div
+                      className="relative pr-4 pt-1"
+                      onClick={handleProjectClick(project)}
+                      title={project.title}
+                    >
+                      <div className="absolute top-0 right-0">
+                        {project.role !== undefined && project.role !== null ? (
+                          project.liked ? (
+                            <StarIconSolid className="w-3 h-3 text-amber-500" />
+                          ) : (
+                            <StarIconOutline className="w-3 h-3 text-gray-400" />
+                          )
+                        ) : null}
                       </div>
-                      <div className="col-span-2 flex flex-col items-start gap-2 min-w-0">
-                        <strong className="font-bold text-slate-700 truncate w-full">
-                          {project.title}
-                        </strong>
-                        <div className="text-slate-700 text-sm truncate w-full">
-                          {project.description}
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-center">
-                        <div className="flex flex-col items-start gap-1">
-                          <CountBadge
-                            count={project.flight_count}
-                            color="sky"
-                            label="Flights"
-                            icon={
-                              <PaperAirplaneIcon className="h-4 w-4 -ms-1 me-1.5" />
-                            }
-                            rank={getCategory(
-                              project.data_product_count,
-                              'flight',
-                            )}
+                      <div className="grid grid-cols-4 gap-4">
+                        <div className="flex items-center justify-between">
+                          <img
+                            className="object-cover w-16"
+                            src={`/static/projects/${project.id}/preview_map.png`}
+                            alt="Image of project boundary"
                           />
-                          {project.team ? (
-                            <span
-                              className="inline-flex items-center justify-center rounded-full px-2.5 py-0.5 bg-indigo-50 text-indigo-700"
-                              title={project.team.title}
-                            >
-                              <UserGroupIcon className="h-4 w-4 -ms-1 me-1.5" />
-                              <p className="whitespace-nowrap text-xs">Team</p>
-                            </span>
-                          ) : null}
+                        </div>
+                        <div className="col-span-2 flex flex-col items-start gap-2 min-w-0">
+                          <strong className="font-bold text-slate-700 truncate w-full">
+                            {project.title}
+                          </strong>
+                          <div className="text-slate-700 text-sm truncate w-full">
+                            {project.description}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-center">
+                          <div className="flex flex-col items-start gap-1">
+                            <CountBadge
+                              count={project.flight_count}
+                              color="sky"
+                              label="Flights"
+                              icon={
+                                <PaperAirplaneIcon className="h-4 w-4 -ms-1 me-1.5" />
+                              }
+                              rank={getCategory(
+                                project.data_product_count,
+                                'flight',
+                              )}
+                            />
+                            {isPublicCard ? (
+                              <span
+                                className="inline-flex items-center justify-center rounded-full px-2.5 py-0.5 bg-amber-200 text-amber-800"
+                                title="Publicly available project"
+                              >
+                                <GlobeAltIcon className="h-4 w-4 -ms-1 me-1.5" />
+                                <p className="whitespace-nowrap text-xs">Public</p>
+                              </span>
+                            ) : project.team ? (
+                              <span
+                                className="inline-flex items-center justify-center rounded-full px-2.5 py-0.5 bg-indigo-50 text-indigo-700"
+                                title={project.team.title}
+                              >
+                                <UserGroupIcon className="h-4 w-4 -ms-1 me-1.5" />
+                                <p className="whitespace-nowrap text-xs">Team</p>
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </LayerCard>
-              </li>
-            ))}
+                  </LayerCard>
+                </li>
+              );
+            })}
           </ul>
         ) : hasAnyProjects ? (
           <p className="text-sm text-gray-600">{emptyFilterMessage}</p>

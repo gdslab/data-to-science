@@ -30,7 +30,7 @@ import {
   SelectedTeamIdsAction,
   TileScaleAction,
 } from './Maps';
-import { areProjectsEqual } from './utils';
+import { areProjectsEqual, isPublicOnly } from './utils';
 
 function activeDataProductReducer(
   state: DataProduct | null,
@@ -367,7 +367,7 @@ export function MapContextProvider({
   );
   const [projectFilterSelection, projectFilterSelectionDispatch] = useReducer(
     projectFilterSelectionReducer,
-    []
+    ['publicProjects']
   );
   const [projectsVisible, projectsVisibleDispatch] = useReducer(
     projectsVisibleReducer,
@@ -383,13 +383,12 @@ export function MapContextProvider({
     'potree'
   );
 
-  async function getFlights(projectId) {
+  async function getFlights(project: ProjectItem) {
     try {
-      const response = await axios.get(
-        `${
-          import.meta.env.VITE_API_V1_STR
-        }/projects/${projectId}/flights?include_all=False`
-      );
+      const url = isPublicOnly(project)
+        ? `${import.meta.env.VITE_API_V1_STR}/public/projects/${project.id}/flights`
+        : `${import.meta.env.VITE_API_V1_STR}/projects/${project.id}/flights?include_all=False`;
+      const response = await axios.get(url);
       if (response) {
         flightsDispatch({ type: 'set', payload: response.data });
       }
@@ -401,14 +400,14 @@ export function MapContextProvider({
   // fetches flights for active project
   useEffect(() => {
     if (activeProject) {
-      getFlights(activeProject.id);
+      getFlights(activeProject);
     }
   }, [activeProject]);
 
   // update flights/data products to check for changes to saved styles
   useEffect(() => {
     if (activeDataProduct && activeProject) {
-      getFlights(activeProject.id);
+      getFlights(activeProject);
     }
   }, [activeDataProduct, activeProject]);
 
