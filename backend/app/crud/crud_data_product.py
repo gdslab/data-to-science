@@ -18,6 +18,7 @@ from app.db.session import SessionLocal
 from app.models.constants import NON_RASTER_TYPES, PROCESSING_JOB_NAMES
 from app.models.data_product import DataProduct
 from app.models.flight import Flight
+from app.models.project import Project
 from app.models.job import Job
 from app.models.utils.utcnow import utcnow
 from app.schemas.data_product import (
