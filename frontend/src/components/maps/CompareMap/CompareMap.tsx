@@ -232,10 +232,7 @@ export default function CompareMap() {
       >
         {/* Display project boundary when project activated */}
         {activeProject && (
-          <ProjectBoundary
-            setActiveProjectBBox={setActiveProjectBBox}
-            setViewState={setViewState}
-          />
+          <ProjectBoundary setActiveProjectBBox={setActiveProjectBBox} />
         )}
 
         {activeProject &&
