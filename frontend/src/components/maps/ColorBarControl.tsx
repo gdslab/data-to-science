@@ -9,6 +9,8 @@ import {
   useRasterSymbologyContext,
 } from './RasterSymbologyContext';
 
+import { useMapContext } from './MapContext';
+import { isPublicOnly } from './utils';
 import api from '../../api';
 
 export default function ColorBarControl({
@@ -24,6 +26,7 @@ export default function ColorBarControl({
   const [url, setURL] = useState('');
 
   const { state } = useRasterSymbologyContext();
+  const { activeProject } = useMapContext();
 
   const symbology = state[dataProduct.id]?.symbology;
 
@@ -38,37 +41,37 @@ export default function ColorBarControl({
             .split('/projects/')[1]
             .split('/flights/')[0];
         }
-        const response = await api.get(
-          `/projects/${effectiveProjectId}/flights/${dataProduct.flight_id}/data_products/${dataProduct.id}/utils/colorbar`,
-          {
-            params: {
-              cmin:
-                symbology.mode === 'minMax'
-                  ? symbology.min.toFixed(2)
-                  : symbology.mode === 'userDefined'
-                  ? symbology.userMin.toFixed(2)
-                  : symbology.mode === 'meanStdDev'
-                  ? (stats.mean - stats.stddev * symbology.meanStdDev).toFixed(
-                      2
-                    )
-                  : symbology.min.toFixed(2),
-              cmax:
-                symbology.mode === 'minMax'
-                  ? symbology.max.toFixed(2)
-                  : symbology.mode === 'userDefined'
-                  ? symbology.userMax.toFixed(2)
-                  : symbology.mode === 'meanStdDev'
-                  ? (stats.mean + stats.stddev * symbology.meanStdDev).toFixed(
-                      2
-                    )
-                  : symbology.max.toFixed(2),
-              cmap: symbology.colorRamp,
-              refresh: refresh,
-            },
-          }
-        );
+        const colorbarPath = `/projects/${effectiveProjectId}/flights/${dataProduct.flight_id}/data_products/${dataProduct.id}/utils/colorbar`;
+        const params = {
+          cmin:
+            symbology.mode === 'minMax'
+              ? symbology.min.toFixed(2)
+              : symbology.mode === 'userDefined'
+              ? symbology.userMin.toFixed(2)
+              : symbology.mode === 'meanStdDev'
+              ? (stats.mean - stats.stddev * symbology.meanStdDev).toFixed(2)
+              : symbology.min.toFixed(2),
+          cmax:
+            symbology.mode === 'minMax'
+              ? symbology.max.toFixed(2)
+              : symbology.mode === 'userDefined'
+              ? symbology.userMax.toFixed(2)
+              : symbology.mode === 'meanStdDev'
+              ? (stats.mean + stats.stddev * symbology.meanStdDev).toFixed(2)
+              : symbology.max.toFixed(2),
+          cmap: symbology.colorRamp,
+          refresh: refresh,
+        };
+        // Use plain axios (no auth interceptor) for public-only projects so a
+        // redirect to the auth-required endpoint doesn't trigger a login redirect.
+        const response = isPublicOnly(activeProject)
+          ? await axios.get(
+              `${import.meta.env.VITE_API_V1_STR}${colorbarPath}`,
+              { params }
+            )
+          : await api.get(colorbarPath, { params });
         if (response) {
-          // only set url if it reseponds with OK status
+          // only set url if it responds with OK status
           axios
             .get(response.data.colorbar_url)
             .then(() => setURL(response.data.colorbar_url))
@@ -80,7 +83,7 @@ export default function ColorBarControl({
         throw err;
       }
     },
-    [dataProduct, projectId]
+    [dataProduct, projectId, activeProject]
   );
 
   useEffect(() => {

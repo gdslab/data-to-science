@@ -1,4 +1,4 @@
-import { AxiosResponse } from 'axios';
+import axios, { AxiosResponse } from 'axios';
 import { FeatureCollection, Polygon } from 'geojson';
 import { useEffect, useRef, useState } from 'react';
 import { Layer, Source, useMap } from 'react-map-gl/maplibre';
@@ -56,7 +56,9 @@ export default function ProjectBoundary({
     const fetchGeoJSONAndFitBounds = async () => {
       try {
         const response: AxiosResponse<FeatureCollection<Polygon>> =
-          await api.get(geojsonUrl);
+          isPublicOnly(activeProject)
+            ? await axios.get(`${import.meta.env.VITE_API_V1_STR}${geojsonUrl}`)
+            : await api.get(geojsonUrl);
         const geojsonData = await response.data;
         setProjectBoundary(geojsonData);
         // Calculate the bounds of the GeoJSON feature

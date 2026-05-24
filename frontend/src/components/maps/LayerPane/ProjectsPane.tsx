@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import {
   GlobeAltIcon,
@@ -16,6 +16,7 @@ import Pagination, { getPaginationResults } from '../../Pagination';
 import { ProjectItem } from '../../pages/workspace/projects/Project';
 import ProjectSearch from '../../pages/workspace/projects/ProjectSearch';
 import Sort, { sortProjects, SortSelection } from '../../Sort';
+import AuthContext from '../../../AuthContext';
 import { useMapContext } from '../MapContext';
 
 import { getSortPreferenceFromLocalStorage } from '../../Sort';
@@ -27,6 +28,7 @@ type ProjectsPaneProps = {
 };
 
 export default function ProjectsPane({ projects }: ProjectsPaneProps) {
+  const { user } = useContext(AuthContext);
   const [currentPage, setCurrentPage] = useState(0);
   const [openComponent, setOpenComponent] = useState<
     'filter' | 'sort' | 'teamFilter' | null
@@ -197,42 +199,44 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
               searchText={searchText}
               updateSearchText={updateSearchText}
             />
-            <div className="flex justify-between">
-              {getPaginationResults(
-                currentPage,
-                MAX_ITEMS,
-                currentPageProjects.length,
-                filteredVisibleProjects.length,
-              )}
-              <div className="flex flex-row gap-8">
-                <Filter
-                  categories={[
-                    { label: 'My projects', value: 'myProjects' },
-                    { label: 'Favorite projects', value: 'likedProjects' },
-                    { label: 'My teams', value: 'myTeams' },
-                    { label: 'Public projects', value: 'publicProjects' },
-                  ]}
-                  selectedCategory={projectFilterSelection}
-                  setSelectedCategory={updateProjectFilter}
-                  isOpen={openComponent === 'filter'}
-                  onOpen={() => setOpenComponent('filter')}
-                  onClose={() => setOpenComponent(null)}
-                  sublistParentValue="myTeams"
-                  sublistCategories={teamCategories}
-                  sublistSelected={selectedTeamIds}
-                  setSublistSelected={(teamIds) =>
-                    selectedTeamIdsDispatch({ type: 'set', payload: teamIds })
-                  }
-                />
-                <Sort
-                  sortSelection={sortSelection}
-                  setSortSelection={setSortSelection}
-                  isOpen={openComponent === 'sort'}
-                  onOpen={() => setOpenComponent('sort')}
-                  onClose={() => setOpenComponent(null)}
-                />
+            {user && (
+              <div className="flex justify-between">
+                {getPaginationResults(
+                  currentPage,
+                  MAX_ITEMS,
+                  currentPageProjects.length,
+                  filteredVisibleProjects.length,
+                )}
+                <div className="flex flex-row gap-8">
+                  <Filter
+                    categories={[
+                      { label: 'My projects', value: 'myProjects' },
+                      { label: 'Favorite projects', value: 'likedProjects' },
+                      { label: 'My teams', value: 'myTeams' },
+                      { label: 'Public projects', value: 'publicProjects' },
+                    ]}
+                    selectedCategory={projectFilterSelection}
+                    setSelectedCategory={updateProjectFilter}
+                    isOpen={openComponent === 'filter'}
+                    onOpen={() => setOpenComponent('filter')}
+                    onClose={() => setOpenComponent(null)}
+                    sublistParentValue="myTeams"
+                    sublistCategories={teamCategories}
+                    sublistSelected={selectedTeamIds}
+                    setSublistSelected={(teamIds) =>
+                      selectedTeamIdsDispatch({ type: 'set', payload: teamIds })
+                    }
+                  />
+                  <Sort
+                    sortSelection={sortSelection}
+                    setSortSelection={setSortSelection}
+                    isOpen={openComponent === 'sort'}
+                    onOpen={() => setOpenComponent('sort')}
+                    onClose={() => setOpenComponent(null)}
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
       </div>
@@ -243,7 +247,7 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
               const isPublicCard = project.is_public && !project.role;
               return (
                 <li key={project.id}>
-                  <LayerCard hover={true} bg={isPublicCard ? 'bg-amber-100' : 'bg-white'}>
+                  <LayerCard hover={true}>
                     <div
                       className="relative pr-4 pt-1"
                       onClick={handleProjectClick(project)}

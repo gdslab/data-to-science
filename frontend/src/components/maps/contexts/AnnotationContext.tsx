@@ -13,6 +13,7 @@ import { Feature } from 'geojson';
 
 import api from '../../../api';
 import { useMapContext } from '../MapContext';
+import { isPublicOnly } from '../utils';
 
 export interface AnnotationTag {
   tag: { name: string } | null;
@@ -202,7 +203,7 @@ export function AnnotationProvider({
 
   const fetchAnnotations = useCallback(
     async (signal?: AbortSignal) => {
-      if (!activeProject || !activeDataProduct) {
+      if (!activeProject || !activeDataProduct || isPublicOnly(activeProject)) {
         dispatch({ type: 'CLEAR' });
         return;
       }
@@ -250,7 +251,7 @@ export function AnnotationProvider({
 
   const debouncedSaveStyle = useCallback(
     (annotationId: string) => {
-      if (!activeProject || !activeDataProduct) return;
+      if (!activeProject || !activeDataProduct || isPublicOnly(activeProject)) return;
       clearTimeout(saveTimersRef.current[annotationId]);
       saveTimersRef.current[annotationId] = setTimeout(() => {
         const style = stylesRef.current[annotationId];

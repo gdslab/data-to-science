@@ -269,11 +269,10 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
       {/* Show background raster if one is set */}
       {activeProject && activeDataProduct && showBackgroundRaster()}
 
-      {/* Display color bar when project active, member-accessed, and single band active */}
+      {/* Display color bar when project active and single band raster active */}
       {activeProject &&
         activeDataProduct &&
-        isSingleBand(activeDataProduct) &&
-        !isPublicOnly(activeProject) && (
+        isSingleBand(activeDataProduct) && (
           <ColorBarControl
             dataProduct={activeDataProduct}
             projectId={activeProject.id}

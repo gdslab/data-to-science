@@ -88,7 +88,7 @@ export default function DataProductCard({
                 </div>
               </button>
             </div>
-            {activeProject && (
+            {activeProject?.role && (
               <div className="w-36">
                 <Button
                   type="button"

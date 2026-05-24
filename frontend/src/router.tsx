@@ -76,6 +76,7 @@ import Workspace, {
 } from './components/pages/Workspace';
 
 import { RootPublic, RootProtected } from './components/layout/Root';
+import RootExplore from './components/layout/RootExplore';
 import { RequireAdmin, RequireAuth } from './AuthContext';
 
 export const router = createBrowserRouter(
@@ -151,6 +152,11 @@ export const router = createBrowserRouter(
           children: [
             { path: '/sharecopcmap', element: <ShareCopcMapViewer /> },
           ],
+        },
+        {
+          path: '/explore',
+          element: <RootExplore />,
+          children: [{ path: '/explore', element: <MapLayout /> }],
         },
       ],
     },
