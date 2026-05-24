@@ -1,5 +1,5 @@
 import { AxiosResponse } from 'axios';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Button } from '../../Buttons';
 import {
@@ -15,6 +15,7 @@ import {
   SingleBandSymbology,
   useRasterSymbologyContext,
 } from '../RasterSymbologyContext';
+import { isPublicOnly } from '../utils';
 
 import api from '../../../api';
 
@@ -119,8 +120,15 @@ export default function RasterSymbologySaveAndShare({
   dataProduct: DataProduct;
 }) {
   const { activeProject } = useMapContext();
-
   const { state } = useRasterSymbologyContext();
+  const [stacBrowserUrl, setStacBrowserUrl] = useState<string>('');
+
+  useEffect(() => {
+    fetch('/config.json')
+      .then((r) => r.json())
+      .then((cfg) => setStacBrowserUrl(cfg.stacBrowserUrl || ''))
+      .catch(() => setStacBrowserUrl(''));
+  }, []);
 
   const symbology = state[dataProduct.id].symbology;
 
@@ -128,11 +136,27 @@ export default function RasterSymbologySaveAndShare({
 
   return (
     <div className="mt-4 w-full flex items-center justify-between">
-      <RasterSymbologyShare
-        dataProduct={dataProduct}
-        project={activeProject}
-        symbology={symbology}
-      />
+      {isPublicOnly(activeProject)
+        ? stacBrowserUrl && (
+            <div className="w-full">
+              <a
+                href={`${stacBrowserUrl}/collections/${activeProject.id}/items/${dataProduct.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Open in STAC Browser (opens in a new tab)"
+                className="inline-flex items-center justify-center w-full text-sm font-bold py-1.5 px-4 border-2 rounded-md bg-accent3 hover:bg-accent3-dark border-accent3 hover:border-accent3-dark text-white ease-in-out duration-300"
+              >
+                Open in STAC Browser
+              </a>
+            </div>
+          )
+        : (
+          <RasterSymbologyShare
+            dataProduct={dataProduct}
+            project={activeProject}
+            symbology={symbology}
+          />
+        )}
       {activeProject.role && (
         <RasterSymbologySave
           dataProduct={dataProduct}
