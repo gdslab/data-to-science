@@ -13,6 +13,8 @@ export default function Landing() {
   useEffect(() => {
     if (user) {
       navigate('/home');
+    } else if (import.meta.env.VITE_STAC_ENABLED === 'true') {
+      navigate('/explore');
     }
   }, [navigate, user]);
 
