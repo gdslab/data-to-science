@@ -267,11 +267,6 @@ dependencies:
   - openmpi
   - openpyxl
   - openssl
-  - opentelemetry-api
-  - opentelemetry-exporter-otlp
-  - opentelemetry-instrumentation-asgi
-  - opentelemetry-instrumentation-fastapi
-  - opentelemetry-sdk
   - orc
   - packaging
   - pandas
@@ -342,6 +337,7 @@ dependencies:
   - shellingham
   - simplejson
   - six
+  - slowapi
   - snappy
   - sniffio
   - snuggs
@@ -398,4 +394,3 @@ dependencies:
   - zstandard
   - zstd
   - pyarrow
-prefix: /home/ben/miniforge3/envs/d2s

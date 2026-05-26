@@ -11,6 +11,7 @@ from fastapi import (
     Depends,
     Form,
     HTTPException,
+    Request,
     Response,
     status,
 )
@@ -25,6 +26,7 @@ from app import crud, models, schemas
 from app.api import deps, mail
 from app.core import security
 from app.core.config import settings
+from app.core.limiter import limiter
 
 
 router = APIRouter()
@@ -33,7 +35,9 @@ logger = logging.getLogger("__name__")
 
 
 @router.post("/access-token")
+@limiter.limit("10/minute;100/hour")
 def login_access_token(
+    request: Request,
     response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(deps.get_db),
@@ -176,7 +180,9 @@ def confirm_user_email_address(token: str, db: Session = Depends(deps.get_db)) -
 
 
 @router.get("/request-email-confirmation", status_code=status.HTTP_200_OK)
+@limiter.limit("5/hour")
 def request_new_email_confirmation_link(
+    request: Request,
     email: EmailStr,
     background_tasks: BackgroundTasks,
     db: Session = Depends(deps.get_db),
@@ -358,7 +364,9 @@ def confirm_email_change(token: str, db: Session = Depends(deps.get_db)) -> Any:
 
 
 @router.get("/reset-password")
+@limiter.limit("5/hour")
 def send_reset_password_by_email(
+    request: Request,
     email: EmailStr,
     background_tasks: BackgroundTasks,
     db: Session = Depends(deps.get_db),
@@ -387,8 +395,12 @@ def send_reset_password_by_email(
 
 
 @router.get("/approve-account")
+@limiter.limit("10/hour")
 def approve_user_account(
-    token: str, background_tasks: BackgroundTasks, db: Session = Depends(deps.get_db)
+    request: Request,
+    token: str,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(deps.get_db),
 ) -> Any:
     token_db_obj = crud.user.get_single_use_token(
         db, token_hash=security.get_token_hash(token, salt="approve")
@@ -423,8 +435,12 @@ def approve_user_account(
 
 
 @router.post("/reset-password")
+@limiter.limit("10/hour")
 def reset_user_password(
-    password: str = Body(), token: str = Body(), db: Session = Depends(deps.get_db)
+    request: Request,
+    password: str = Body(),
+    token: str = Body(),
+    db: Session = Depends(deps.get_db),
 ) -> Any:
     """Change password for user account."""
     token_db_obj = crud.user.get_single_use_token(

@@ -66,6 +66,11 @@ WORKDIR /opt
 ARG INSTALL_DEV=false
 RUN conda create -p $CONDA_ENV_PATH --copy --file /locks/$CONDA_LOCK_FILE \
     && conda run -n d2s pip install staticmap redis types-python-jose types-passlib \
+       opentelemetry-api \
+       opentelemetry-sdk \
+       opentelemetry-exporter-otlp \
+       opentelemetry-instrumentation-asgi \
+       opentelemetry-instrumentation-fastapi \
     && conda clean -afy \
     && find /opt/conda/ -follow -type f -name '*.pyc' -delete
 

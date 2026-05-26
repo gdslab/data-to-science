@@ -16,6 +16,7 @@ from app import crud, models, schemas
 from app.api import deps
 from app.api.utils import get_signature_for_data_product
 from app.core.config import settings
+from app.core.limiter import limiter
 
 
 router = APIRouter()
@@ -170,6 +171,7 @@ async def get_map_tiles_for_data_product(
 
 
 @router.get("/bounds", response_model=schemas.data_product.DataProductBoundingBox)
+@limiter.limit("60/minute")
 def read_data_product_bounds(
     request: Request,
     data_product_id: UUID4,
@@ -221,7 +223,9 @@ def read_data_product_bounds(
     "/projects",
     response_model=Union[List[schemas.project.PublishedProjects], FeatureCollection],
 )
+@limiter.limit("60/minute")
 def read_published_projects(
+    request: Request,
     has_raster: bool = False,
     format: str = Query("json", pattern="^(json|geojson)$"),
     db: Session = Depends(deps.get_db),
@@ -255,7 +259,9 @@ def read_published_projects(
     "/projects/{project_id}",
     response_model=Union[schemas.project.PublishedProjects, FeatureCollection],
 )
+@limiter.limit("120/minute")
 def read_published_project(
+    request: Request,
     project_id: UUID4,
     format: str = Query("json", pattern="^(json|geojson)$"),
     db: Session = Depends(deps.get_db),
@@ -275,7 +281,9 @@ def read_published_project(
     "/projects/{project_id}/flights",
     response_model=Sequence[schemas.Flight],
 )
+@limiter.limit("120/minute")
 def read_published_project_flights(
+    request: Request,
     project_id: UUID4,
     has_raster: bool = False,
     db: Session = Depends(deps.get_db),

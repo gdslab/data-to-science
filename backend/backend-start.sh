@@ -23,7 +23,7 @@ python /app/app/seeds/seed_project_modules.py
 
 # start uvicorn server
 if [[ "$DEV_MODE" = true ]]; then
-    uvicorn app.main:app --host 0.0.0.0 --port 5000  --reload
+    uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload --reload-exclude 'logs'
 else
     uvicorn app.main:app --proxy-headers --workers ${UVICORN_WORKERS} --host 0.0.0.0 --port 5000 --limit-max-requests ${LIMIT_MAX_REQUESTS} --timeout-graceful-shutdown 30
 fi

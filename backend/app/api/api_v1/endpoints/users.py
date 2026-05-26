@@ -23,6 +23,7 @@ from app import crud, models, schemas
 from app.api import deps, mail
 from app.core.config import settings
 from app.core import security
+from app.core.limiter import limiter
 from app.models.utils.user import validate_password
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,7 @@ router = APIRouter()
 
 
 @router.post("", response_model=schemas.User, status_code=status.HTTP_201_CREATED)
+@limiter.limit("5/hour")
 async def create_user(
     request: Request,
     background_tasks: BackgroundTasks,

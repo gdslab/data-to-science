@@ -4,12 +4,11 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from opentelemetry.instrumentation.asgi import OpenTelemetryMiddleware
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 from app.api.api_v1.api import api_router
 from app.api.extras import extra_router
 from app.core.config import settings
+from app.core.limiter import limiter
 from app.core.logging import setup_logger
 from app.middleware import log_and_track_middleware
 from app.utils.ProtectedStaticFiles import ProtectedStaticFiles
@@ -22,8 +21,23 @@ app = FastAPI(
     title=settings.API_PROJECT_NAME,
 )
 
+if settings.RATE_LIMIT_ENABLED:
+    try:
+        from slowapi import _rate_limit_exceeded_handler
+        from slowapi.errors import RateLimitExceeded
+        from slowapi.middleware import SlowAPIMiddleware
+
+        app.state.limiter = limiter
+        app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
+        app.add_middleware(SlowAPIMiddleware)
+    except Exception as e:
+        print(f"Error setting up rate limiting: {e}")
+
 if settings.ENABLE_OPENTELEMETRY:
     try:
+        from opentelemetry.instrumentation.asgi import OpenTelemetryMiddleware
+        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
         from app.telemetry import setup_tracing
 
         setup_tracing(service_name="d2s-api")

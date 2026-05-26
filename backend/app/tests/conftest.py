@@ -1,4 +1,10 @@
 import os
+
+# Rate limiting is always disabled in tests. Unlike other feature flags, it is
+# cross-cutting and causes unrelated tests to fail with 429s. Rate-limiting
+# behaviour is verified via an isolated test app in test_rate_limiting.py.
+os.environ["RATE_LIMIT_ENABLED"] = "false"
+
 import shutil
 from typing import Generator
 import logging
