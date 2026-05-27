@@ -18,7 +18,11 @@ export default function Landing() {
     }
   }, [navigate, user]);
 
-  return !user ? (
+  if (user || import.meta.env.VITE_STAC_ENABLED === 'true') {
+    return null;
+  }
+
+  return (
     <div className="grid grid-flow-row auto-rows-max">
       {/* video pane */}
       <div className="h-screen">
@@ -82,5 +86,5 @@ export default function Landing() {
       </div>
       {/* sign up pane */}
     </div>
-  ) : null;
+  );
 }
