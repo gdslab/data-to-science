@@ -3,6 +3,7 @@ import { Link, Outlet } from 'react-router';
 
 import AuthContext from '../../AuthContext';
 import brandLogo from '../../assets/d2s-logo-white.svg';
+import WelcomeModal from '../WelcomeModal';
 
 export default function RootExplore() {
   const { user } = useContext(AuthContext);
@@ -40,6 +41,7 @@ export default function RootExplore() {
         </div>
       </nav>
       <div className="h-[calc(100vh-64px)]">
+        <WelcomeModal />
         <Outlet />
       </div>
     </div>
