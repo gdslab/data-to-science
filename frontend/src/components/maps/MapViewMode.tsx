@@ -15,7 +15,7 @@ import { useMapLayerContext } from './MapLayersContext';
 import { useRasterSymbologyContext } from './RasterSymbologyContext';
 
 import api from '../../api';
-import { mapApiResponseToLayers } from './utils';
+import { isPublicOnly, mapApiResponseToLayers } from './utils';
 
 export default function MapViewMode() {
   const {
@@ -102,8 +102,12 @@ export default function MapViewMode() {
           rasterId: rasterId,
         });
       }
-      // Fetch map layers for selected project
-      fetchMapLayers(activeProject.id);
+      // Only fetch vector layers when the user has project membership
+      if (!isPublicOnly(activeProject)) {
+        fetchMapLayers(activeProject.id);
+      } else {
+        dispatch({ type: 'SET_LAYERS', payload: [] });
+      }
     }
   }, [activeProject, dispatch, symbologyDispatch]);
 

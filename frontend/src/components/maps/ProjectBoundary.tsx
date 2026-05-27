@@ -1,4 +1,4 @@
-import { AxiosResponse } from 'axios';
+import axios, { AxiosResponse } from 'axios';
 import { FeatureCollection, Polygon } from 'geojson';
 import { useEffect, useRef, useState } from 'react';
 import { Layer, Source, useMap } from 'react-map-gl/maplibre';
@@ -10,6 +10,7 @@ import { BBox } from './Maps';
 import { useMapContext } from './MapContext';
 
 import api from '../../api';
+import { isPublicOnly } from './utils';
 
 type ProjectBoundaryProps = {
   setActiveProjectBBox?: React.Dispatch<React.SetStateAction<BBox | null>>;
@@ -35,7 +36,9 @@ export default function ProjectBoundary({
     mapViewProperties,
     mapViewPropertiesDispatch,
   } = useMapContext();
-  const geojsonUrl = `/projects/${activeProject?.id}?format=geojson`;
+  const geojsonUrl = isPublicOnly(activeProject)
+    ? `/public/projects/${activeProject?.id}?format=geojson`
+    : `/projects/${activeProject?.id}?format=geojson`;
 
   // Store zoom in ref to access latest value without triggering effect
   const zoomRef = useRef(mapViewProperties?.zoom ?? 12);
@@ -53,7 +56,9 @@ export default function ProjectBoundary({
     const fetchGeoJSONAndFitBounds = async () => {
       try {
         const response: AxiosResponse<FeatureCollection<Polygon>> =
-          await api.get(geojsonUrl);
+          isPublicOnly(activeProject)
+            ? await axios.get(`${import.meta.env.VITE_API_V1_STR}${geojsonUrl}`)
+            : await api.get(geojsonUrl);
         const geojsonData = await response.data;
         setProjectBoundary(geojsonData);
         // Calculate the bounds of the GeoJSON feature

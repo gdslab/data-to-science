@@ -40,7 +40,7 @@ import {
   getWorldImageryTopoBasemapStyle,
 } from './styles/basemapStyles';
 
-import { isSingleBand } from './utils';
+import { isPublicOnly, isSingleBand } from './utils';
 import { BBox } from './Maps';
 
 export type PopupInfoProps = {
@@ -269,7 +269,7 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
       {/* Show background raster if one is set */}
       {activeProject && activeDataProduct && showBackgroundRaster()}
 
-      {/* Display color bar when project active and single band data product active */}
+      {/* Display color bar when project active and single band raster active */}
       {activeProject &&
         activeDataProduct &&
         isSingleBand(activeDataProduct) && (
@@ -279,14 +279,14 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
           />
         )}
 
-      {/* Display project vector layers when project active and layers selected */}
-      {activeProject && <ProjectVectorTiles />}
+      {/* Display project vector layers when project active and member-accessed */}
+      {activeProject && !isPublicOnly(activeProject) && <ProjectVectorTiles />}
 
-      {/* Display checked annotation GeoJSON layers */}
-      {activeProject && <AnnotationLayers />}
+      {/* Display checked annotation GeoJSON layers (member-only) */}
+      {activeProject && !isPublicOnly(activeProject) && <AnnotationLayers />}
 
-      {/* Display popup when annotation feature clicked on map */}
-      {activeProject && <AnnotationPopup />}
+      {/* Display popup when annotation feature clicked on map (member-only) */}
+      {activeProject && !isPublicOnly(activeProject) && <AnnotationPopup />}
 
       {/* Display project boundary when project activated */}
       {activeProject && (
@@ -296,8 +296,8 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
       {/* Zoom to data product extent when a raster data product is activated */}
       {activeProject && <DataProductZoom />}
 
-      {/* Annotation tool toggle (renders drawing tools when annotation mode active) */}
-      {activeProject && <AnnotationToolsToggle />}
+      {/* Annotation tool toggle (renders drawing tools when annotation mode active, member-only) */}
+      {activeProject && !isPublicOnly(activeProject) && <AnnotationToolsToggle />}
 
       {/* Measurement tool control */}
       {activeProject && <MeasureToolsToggle />}

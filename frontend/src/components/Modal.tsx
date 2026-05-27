@@ -11,6 +11,7 @@ interface Props {
   actions?: boolean;
   children: React.ReactNode;
   open: boolean;
+  overflow?: 'hidden' | 'visible';
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
@@ -18,6 +19,7 @@ export default function Modal({
   actions = false,
   children,
   open,
+  overflow = 'hidden',
   setOpen,
 }: Props) {
   const cancelButtonRef = useRef(null);
@@ -52,7 +54,7 @@ export default function Modal({
               leaveFrom="opacity-100 translate-y-0 sm:scale-100"
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-              <DialogPanel className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all md:w-full md:max-w-5xl my-8 w-full max-w-lg">
+              <DialogPanel className={`relative transform rounded-lg bg-white text-left shadow-xl transition-all md:w-full md:max-w-5xl my-8 w-full max-w-lg ${overflow === 'visible' ? 'overflow-visible' : 'overflow-hidden'}`}>
                 {children}
                 {actions ? (
                   <div className="flex items-center justify-between bg-gray-50 px-4 py-3">

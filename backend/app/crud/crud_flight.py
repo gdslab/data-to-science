@@ -193,6 +193,79 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
 
             return final_flights
 
+    def get_public_flights_by_project(
+        self,
+        db: Session,
+        project_id: UUID,
+        upload_dir: str,
+        has_raster: bool = False,
+    ) -> Sequence[Flight]:
+        statement = (
+            select(Flight)
+            .where(and_(Flight.project_id == project_id, Flight.is_active))
+            .join(Flight.project.and_(and_(Project.is_active, Project.is_published)))
+            .options(
+                joinedload(Flight.data_products.and_(DataProduct.is_active)).joinedload(
+                    DataProduct.file_permission
+                )
+            )
+        )
+        with db as session:
+            flights_with_data = session.execute(statement).scalars().unique().all()
+
+            # Batch load completed jobs for all data products
+            all_data_product_ids = [
+                dp.id
+                for flight in flights_with_data
+                for dp in flight.data_products
+            ]
+
+            jobs_by_data_product_id = {}
+            if all_data_product_ids:
+                jobs_query = select(Job).where(
+                    and_(
+                        Job.data_product_id.in_(all_data_product_ids),
+                        Job.name.in_(PROCESSING_JOB_NAMES),
+                        Job.state == State.COMPLETED,
+                        Job.status == Status.SUCCESS,
+                    )
+                )
+                jobs = session.execute(jobs_query).scalars().all()
+                for job in jobs:
+                    jobs_by_data_product_id[job.data_product_id] = job
+
+            final_flights = []
+            for flight in flights_with_data:
+                keep_data_products: List[DataProduct] = []
+                for data_product in flight.data_products:
+                    # Only include data products that have completed processing,
+                    # are publicly accessible, and have a valid filepath
+                    if (
+                        data_product.id in jobs_by_data_product_id
+                        and data_product.file_permission
+                        and data_product.file_permission.is_public
+                        and data_product.filepath != "null"
+                        and (
+                            data_product.data_type in NON_RASTER_TYPES
+                            or data_product.stac_properties
+                        )
+                    ):
+                        keep_data_products.append(data_product)
+                        set_spatial_metadata_attrs(data_product)
+                        set_public_attr(data_product, True)
+                        set_signature_attr(data_product)
+                        set_url_attr(data_product, upload_dir)
+                flight.data_products = keep_data_products
+
+                has_required_data_type = any(
+                    dp.data_type not in NON_RASTER_TYPES
+                    for dp in flight.data_products
+                )
+                if not has_raster or has_required_data_type:
+                    final_flights.append(flight)
+
+            return final_flights
+
     def change_flight_project(
         self, db: Session, flight_id: UUID, dst_project_id: UUID
     ) -> Optional[Flight]:

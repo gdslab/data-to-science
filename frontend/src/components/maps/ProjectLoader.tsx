@@ -1,59 +1,101 @@
 import { AxiosResponse, isAxiosError } from 'axios';
-import { useEffect } from 'react';
+import { useContext, useEffect } from 'react';
 
 import { useMapContext } from './MapContext';
 import { ProjectItem } from '../pages/workspace/projects/Project';
 
+import AuthContext from '../../AuthContext';
 import api from '../../api';
-import { getLocalStorageProjects, filterValidProjects } from './utils';
+import {
+  filterValidProjects,
+  getLocalStorageProjects,
+  getLocalStoragePublicProjects,
+  setLocalStoragePublicProjects,
+} from './utils';
 
 export default function ProjectLoader() {
+  const { user } = useContext(AuthContext);
   const { projectsDispatch, projectsLoadedDispatch } = useMapContext();
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const geojsonUrl = `/projects?include_all=${false}`;
-        const response: AxiosResponse<ProjectItem[]> = await api.get(
-          geojsonUrl
-        );
+        let authProjects: ProjectItem[] = [];
 
-        // Filter out projects with invalid geographic coordinates
-        const validProjects = filterValidProjects(response.data);
+        if (user) {
+          // Authenticated path: fetch the user's own projects
+          const authResponse = await api.get<ProjectItem[]>(
+            `/projects?include_all=false`
+          );
+          authProjects = filterValidProjects(authResponse.data);
+        }
 
-        // Reducer will check if projects differ before updating state
-        projectsDispatch({ type: 'set', payload: validProjects });
+        const authIds = new Set(authProjects.map((p) => p.id));
+
+        // Always fetch public projects (no auth required)
+        const publicResponse = await api
+          .get<ProjectItem[]>(`/public/projects`)
+          .catch(() => ({ data: [] as ProjectItem[] }));
+
+        // Tag public entries and drop any already in the auth list
+        const publicOnly = filterValidProjects(
+          (publicResponse as AxiosResponse<ProjectItem[]>).data
+        )
+          .filter((p) => !authIds.has(p.id))
+          .map((p) => ({ ...p, is_public: true }));
+
+        setLocalStoragePublicProjects(publicOnly);
+
+        projectsDispatch({
+          type: 'set',
+          payload: [...authProjects, ...publicOnly],
+        });
         projectsLoadedDispatch({ type: 'set', payload: 'loaded' });
       } catch (error) {
-        // Clear any previously set data and update loading state
         projectsDispatch({ type: 'set', payload: null });
         projectsLoadedDispatch({ type: 'set', payload: 'error' });
         if (isAxiosError(error)) {
           const status = error.response?.status || 500;
           const message = error.response?.data?.message || error.message;
           console.error(
-            `Failed to load project geojson: ${status} -- ${message}`
+            `Failed to load projects: ${status} -- ${message}`
           );
-          // Optionally, display an error message instead of rethrowing
         } else {
           console.error('An unexpected error occurred.');
         }
       }
     };
 
-    // Check for cached projects in local storage
-    const localStorageProjects = getLocalStorageProjects();
-    if (localStorageProjects) {
-      // Filter cached projects as well in case they contain invalid coordinates
-      const validCachedProjects = filterValidProjects(localStorageProjects);
-      projectsDispatch({ type: 'set', payload: validCachedProjects });
-      projectsLoadedDispatch({ type: 'set', payload: 'loaded' });
+    // Seed from cache immediately while fetch is in-flight
+    if (user) {
+      const cachedAuth = getLocalStorageProjects();
+      const cachedPublic = getLocalStoragePublicProjects() ?? [];
+      if (cachedAuth) {
+        const authIds = new Set(cachedAuth.map((p) => p.id));
+        const cachedPublicFiltered = cachedPublic.filter(
+          (p) => !authIds.has(p.id)
+        );
+        projectsDispatch({
+          type: 'set',
+          payload: [...cachedAuth, ...cachedPublicFiltered],
+        });
+        projectsLoadedDispatch({ type: 'set', payload: 'loaded' });
+      } else {
+        projectsLoadedDispatch({ type: 'set', payload: 'loading' });
+      }
     } else {
-      projectsLoadedDispatch({ type: 'set', payload: 'loading' });
+      // Anonymous: seed from public cache only
+      const cachedPublic = getLocalStoragePublicProjects() ?? [];
+      if (cachedPublic.length > 0) {
+        projectsDispatch({ type: 'set', payload: cachedPublic });
+        projectsLoadedDispatch({ type: 'set', payload: 'loaded' });
+      } else {
+        projectsLoadedDispatch({ type: 'set', payload: 'loading' });
+      }
     }
-    // Always fetch latest projects from the backend
+
     fetchProjects();
-  }, [projectsDispatch, projectsLoadedDispatch]); // Consider dependencies if projects can change elsewhere
+  }, [user, projectsDispatch, projectsLoadedDispatch]);
 
   return null;
 }

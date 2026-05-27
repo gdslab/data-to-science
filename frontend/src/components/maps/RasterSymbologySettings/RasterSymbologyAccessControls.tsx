@@ -199,7 +199,6 @@ export default function RasterSymbologyAccessControls({
                 {isOpen && (
                   <div
                     className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-hidden"
-                    style={{ bottom: '100%', marginBottom: '0.5rem' }}
                   >
                     <div className="py-1">
                       <div className="px-4 py-2">
@@ -343,7 +342,6 @@ export default function RasterSymbologyAccessControls({
                   {pcDropdownOpen && (
                     <div
                       className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-hidden"
-                      style={{ bottom: '100%', marginBottom: '0.5rem' }}
                     >
                       <div className="py-1">
                         <div className="px-4 py-2 flex gap-4 border-b border-gray-100">

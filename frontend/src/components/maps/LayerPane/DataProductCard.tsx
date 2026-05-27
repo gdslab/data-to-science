@@ -88,7 +88,7 @@ export default function DataProductCard({
                 </div>
               </button>
             </div>
-            {activeProject && (
+            {activeProject?.role && (
               <div className="w-36">
                 <Button
                   type="button"
@@ -98,7 +98,7 @@ export default function DataProductCard({
                 >
                   Share
                 </Button>
-                <Modal open={shareOpen} setOpen={setShareOpen}>
+                <Modal open={shareOpen} setOpen={setShareOpen} overflow="visible">
                   <RasterSymbologyAccessControls
                     dataProduct={dataProduct}
                     project={activeProject}

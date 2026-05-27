@@ -65,7 +65,7 @@ export default function DataProductShareModal({
           </Button>
         )}
       </div>
-      <Modal open={openShareModal} setOpen={setOpenShareModal}>
+      <Modal open={openShareModal} setOpen={setOpenShareModal} overflow="visible">
         <ShareControls
           dataProduct={dataProduct}
           project={project}

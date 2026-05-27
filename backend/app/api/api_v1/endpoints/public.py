@@ -1,19 +1,22 @@
 import os
 import urllib.parse
 from io import BytesIO
-from typing import Annotated, Any, List, Optional
+from typing import Annotated, Any, List, Optional, Sequence, Union
 
 import httpx
 import rasterio
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import RedirectResponse, StreamingResponse
+from geojson_pydantic import FeatureCollection
 from pydantic import UUID4
 from rasterio.warp import transform_bounds
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
+from app.api.utils import get_signature_for_data_product
 from app.core.config import settings
+from app.core.limiter import limiter
 
 
 router = APIRouter()
@@ -145,11 +148,17 @@ async def get_map_tiles_for_data_product(
     if colormap_name:
         query_params += f"&colormap_name={colormap_name}"
 
+    # sign varnish request (required by varnish/default.vcl)
+    signature, expiration = get_signature_for_data_product(data_product_id)
+
     # request map tile from titiler
     async with httpx.AsyncClient() as client:
         tile_url = (
             f"http://varnish/cog/tiles/WebMercatorQuad/{z}/{x}/{y}@{scale}x"
-            f"?url={data_product.filepath}{query_params}"
+            f"?url={data_product.filepath}"
+            f"&dataProductId={data_product_id}"
+            f"&expires={expiration}&secure={signature}"
+            f"{query_params}"
         )
         # timeout request after 30 seconds
         response = await client.get(tile_url, timeout=30.0)
@@ -162,6 +171,7 @@ async def get_map_tiles_for_data_product(
 
 
 @router.get("/bounds", response_model=schemas.data_product.DataProductBoundingBox)
+@limiter.limit("60/minute")
 def read_data_product_bounds(
     request: Request,
     data_product_id: UUID4,
@@ -207,3 +217,87 @@ def read_data_product_bounds(
 
     # return bounds
     return {"bounds": list(wgs84_bounds)}
+
+
+@router.get(
+    "/projects",
+    response_model=Union[List[schemas.project.PublishedProjects], FeatureCollection],
+)
+@limiter.limit("60/minute")
+def read_published_projects(
+    request: Request,
+    has_raster: bool = False,
+    format: str = Query("json", pattern="^(json|geojson)$"),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Retrieve all active published projects. No authentication required."""
+    projects = crud.project.get_published_projects(db, has_raster=has_raster)
+
+    if format == "geojson":
+        return {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [project.centroid.x, project.centroid.y],
+                    },
+                    "properties": {
+                        "id": str(project.id),
+                        "title": project.title,
+                        "description": project.description,
+                    },
+                }
+                for project in projects
+            ],
+        }
+    return projects
+
+
+@router.get(
+    "/projects/{project_id}",
+    response_model=Union[schemas.project.PublishedProjects, FeatureCollection],
+)
+@limiter.limit("120/minute")
+def read_published_project(
+    request: Request,
+    project_id: UUID4,
+    format: str = Query("json", pattern="^(json|geojson)$"),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Retrieve a single active published project. No authentication required."""
+    project = crud.project.get_published_project_by_id(db, project_id=project_id)
+    if project is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+        )
+    if format == "geojson":
+        return {"type": "FeatureCollection", "features": [project.field]}
+    return project
+
+
+@router.get(
+    "/projects/{project_id}/flights",
+    response_model=Sequence[schemas.Flight],
+)
+@limiter.limit("120/minute")
+def read_published_project_flights(
+    request: Request,
+    project_id: UUID4,
+    has_raster: bool = False,
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Retrieve flights and public data products for a published project. No authentication required."""
+    project = crud.project.get_published_project_by_id(db, project_id=project_id)
+    if project is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+        )
+    if os.environ.get("RUNNING_TESTS") == "1":
+        upload_dir = settings.TEST_STATIC_DIR
+    else:
+        upload_dir = settings.STATIC_DIR
+    return crud.flight.get_public_flights_by_project(
+        db, project_id=project_id, upload_dir=upload_dir, has_raster=has_raster
+    )

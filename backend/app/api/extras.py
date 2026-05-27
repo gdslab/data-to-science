@@ -4,7 +4,7 @@ import logging
 import json
 import os
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import UUID4
 from pyproj import CRS, Transformer
@@ -18,6 +18,7 @@ from app import crud
 from app.api import deps
 from app.api.utils import get_copc_z_unit
 from app.core.config import settings
+from app.core.limiter import limiter
 
 
 extra_router = APIRouter()
@@ -907,7 +908,9 @@ def generate_potree_viewer_html(
 
 
 @extra_router.get("/potree-viewer", response_class=HTMLResponse)
+@limiter.limit("10/minute")
 async def get_potree_viewer(
+    request: Request,
     copc_path: str = Query(..., description="Path to the COPC file"),
     is_mobile: bool = Query(
         ...,
@@ -926,7 +929,9 @@ async def get_potree_viewer(
 
 
 @extra_router.get("/share-potree-viewer", response_class=HTMLResponse)
+@limiter.limit("10/minute")
 async def get_share_potree_viewer(
+    request: Request,
     file_id: UUID4 = Query(..., description="ID of the data product file"),
     is_mobile: bool = Query(
         ...,

@@ -15,7 +15,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.13.0",
     "@geoman-io/maplibre-geoman-free": "^0.4.8",
-    "@headlessui/react": "latest",
+    "@headlessui/react": "^2.2.10",
     "@heroicons/react": "^2.0.18",
     "@hookform/resolvers": "^3.6.0",
     "@mapbox/mapbox-gl-draw": "^1.5.0",

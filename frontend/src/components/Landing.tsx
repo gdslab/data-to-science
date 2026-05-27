@@ -13,10 +13,16 @@ export default function Landing() {
   useEffect(() => {
     if (user) {
       navigate('/home');
+    } else if (import.meta.env.VITE_STAC_ENABLED === 'true') {
+      navigate('/explore');
     }
   }, [navigate, user]);
 
-  return !user ? (
+  if (user || import.meta.env.VITE_STAC_ENABLED === 'true') {
+    return null;
+  }
+
+  return (
     <div className="grid grid-flow-row auto-rows-max">
       {/* video pane */}
       <div className="h-screen">
@@ -38,16 +44,31 @@ export default function Landing() {
               </span>
             </div>
           </div>
-          <div className="mt-16 flex items-center justify-center gap-16">
-            <div className="w-full md:w-1/4">
-              <Link to="/auth/register">
-                <Button>Sign up</Button>
-              </Link>
+          <div className="mt-16 flex flex-col items-center gap-8">
+            <div className="w-full flex items-center justify-center gap-16">
+              <div className="w-full md:w-1/4">
+                <Link to="/auth/register">
+                  <Button title="Create a new account">Sign up</Button>
+                </Link>
+              </div>
+              <div className="w-full md:w-1/4">
+                <Link to="/auth/login">
+                  <LandingButton title="Sign in to your account">Sign in</LandingButton>
+                </Link>
+              </div>
             </div>
-            <div className="w-full md:w-1/4">
-              <Link to="/auth/login">
-                <LandingButton>Sign in</LandingButton>
-              </Link>
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-full md:w-auto">
+                <Link to="/explore">
+                  <button
+                    type="button"
+                    className="text-sm font-bold border-2 border-amber-400 bg-amber-400 text-white rounded-md py-2 px-4 w-full hover:bg-amber-500 hover:border-amber-500 ease-in-out duration-300"
+                    title="Browse published projects — no account needed"
+                  >
+                    Explore public data
+                  </button>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -65,5 +86,5 @@ export default function Landing() {
       </div>
       {/* sign up pane */}
     </div>
-  ) : null;
+  );
 }

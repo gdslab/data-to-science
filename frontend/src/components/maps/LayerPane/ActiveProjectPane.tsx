@@ -28,7 +28,8 @@ export default function ActiveProjectPane({ project }: ActiveProjectPaneProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [shouldScrollOnMount, setShouldScrollOnMount] = useState(false);
 
-  const ANNOTATIONS_TAB_INDEX = 2;
+  const publicOnly = !project.role;
+  const ANNOTATIONS_TAB_INDEX = publicOnly ? -1 : 2;
 
   const handleTabChange = (index: number) => {
     setSelectedIndex(index);
@@ -143,24 +144,28 @@ export default function ActiveProjectPane({ project }: ActiveProjectPaneProps) {
               </span>
             </div>
           </Tab>
-          <Tab className="rounded-t-md border-2 border-slate-300 px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-all focus:outline-hidden focus:ring-2 focus:ring-slate-500 bg-slate-300 data-hover:bg-slate-200 data-selected:bg-white data-selected:border-b-white data-selected:shadow-xs">
-            <div className="flex items-center gap-1.5">
-              <FaLayerGroup className="h-3.5 w-3.5" />
-              <span>Map Layers</span>
-              <span className="text-slate-500 font-normal">
-                ({layers.length})
-              </span>
-            </div>
-          </Tab>
-          <Tab
-            disabled={!activeDataProduct}
-            className="rounded-t-md border-2 border-slate-300 px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-all focus:outline-hidden focus:ring-2 focus:ring-slate-500 bg-slate-300 data-hover:bg-slate-200 data-selected:bg-white data-selected:border-b-white data-selected:shadow-xs data-disabled:opacity-50 data-disabled:cursor-not-allowed"
-          >
-            <div className="flex items-center gap-1.5">
-              <MdEditNote className="h-3.5 w-3.5" />
-              <span>Annotations</span>
-            </div>
-          </Tab>
+          {!publicOnly && (
+            <Tab className="rounded-t-md border-2 border-slate-300 px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-all focus:outline-hidden focus:ring-2 focus:ring-slate-500 bg-slate-300 data-hover:bg-slate-200 data-selected:bg-white data-selected:border-b-white data-selected:shadow-xs">
+              <div className="flex items-center gap-1.5">
+                <FaLayerGroup className="h-3.5 w-3.5" />
+                <span>Map Layers</span>
+                <span className="text-slate-500 font-normal">
+                  ({layers.length})
+                </span>
+              </div>
+            </Tab>
+          )}
+          {!publicOnly && (
+            <Tab
+              disabled={!activeDataProduct}
+              className="rounded-t-md border-2 border-slate-300 px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-all focus:outline-hidden focus:ring-2 focus:ring-slate-500 bg-slate-300 data-hover:bg-slate-200 data-selected:bg-white data-selected:border-b-white data-selected:shadow-xs data-disabled:opacity-50 data-disabled:cursor-not-allowed"
+            >
+              <div className="flex items-center gap-1.5">
+                <MdEditNote className="h-3.5 w-3.5" />
+                <span>Annotations</span>
+              </div>
+            </Tab>
+          )}
         </TabList>
         <hr className="border-slate-300 flex-none mt-0" />
         <TabPanels className="flex-1 min-h-0 mt-3">
@@ -183,12 +188,16 @@ export default function ActiveProjectPane({ project }: ActiveProjectPaneProps) {
               )}
             </ul>
           </TabPanel>
-          <TabPanel className="h-full overflow-y-auto pb-16">
-            <MapLayersPanel />
-          </TabPanel>
-          <TabPanel className="h-full">
-            <AnnotationsTabPanel />
-          </TabPanel>
+          {!publicOnly && (
+            <TabPanel className="h-full overflow-y-auto pb-16">
+              <MapLayersPanel />
+            </TabPanel>
+          )}
+          {!publicOnly && (
+            <TabPanel className="h-full">
+              <AnnotationsTabPanel />
+            </TabPanel>
+          )}
         </TabPanels>
       </TabGroup>
     </article>

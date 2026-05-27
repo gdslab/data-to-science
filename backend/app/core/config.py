@@ -50,6 +50,12 @@ class Settings(BaseSettings):
     # OpenTelemetry
     ENABLE_OPENTELEMETRY: bool = False
 
+    # Rate limiting (slowapi)
+    RATE_LIMIT_ENABLED: bool = False
+    # Use Redis DB 1 to avoid colliding with Celery broker on DB 0.
+    # Defaults to in-memory, which is fine for local dev and single-worker deployments.
+    RATE_LIMIT_STORAGE_URI: str = "memory://"
+
     # Cloudflare Turnstile
     TURNSTILE_SECRET_KEY: str | None = None
 
