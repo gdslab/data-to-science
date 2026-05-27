@@ -1,16 +1,15 @@
-import { Fragment, useContext, useState } from 'react';
-import { Dialog, DialogPanel, Transition, TransitionChild } from '@headlessui/react';
-import { Link, useNavigate } from 'react-router';
+import { useContext, useState } from 'react';
+import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
+import { useNavigate } from 'react-router';
 import { FaMap, FaRightToBracket, FaUserPlus } from 'react-icons/fa6';
 
 import AuthContext from '../AuthContext';
 import d2sLogo from '../assets/d2s-logo-blue.svg';
-
-const STORAGE_KEY = 'exploreWelcomeDismissed';
+import Checkbox from './Checkbox';
 
 function IconBox({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-primary">
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-white">
       {children}
     </div>
   );
@@ -20,25 +19,29 @@ export default function WelcomeModal() {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [open, setOpen] = useState(
-    () => !user && localStorage.getItem(STORAGE_KEY) !== 'true'
+    () => !user && localStorage.getItem('hideWelcomeModal') !== 'true'
   );
+  const [dontShowAgain, setDontShowAgain] = useState(false);
 
   function dismiss() {
-    localStorage.setItem(STORAGE_KEY, 'true');
+    if (dontShowAgain) {
+      localStorage.setItem('hideWelcomeModal', 'true');
+    }
     setOpen(false);
   }
 
   function dismissAndNavigate(path: string) {
-    localStorage.setItem(STORAGE_KEY, 'true');
+    if (dontShowAgain) {
+      localStorage.setItem('hideWelcomeModal', 'true');
+    }
     setOpen(false);
     navigate(path);
   }
 
   return (
-    <Transition show={open} as={Fragment}>
+    <Transition show={open}>
       <Dialog as="div" className="relative z-20" onClose={dismiss}>
         <TransitionChild
-          as={Fragment}
           enter="ease-out duration-300"
           enterFrom="opacity-0"
           enterTo="opacity-100"
@@ -49,9 +52,8 @@ export default function WelcomeModal() {
           <div className="fixed inset-0 bg-black/60 transition-opacity" />
         </TransitionChild>
 
-        <div className="fixed inset-0 z-10 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-10 flex items-center justify-center overflow-y-auto p-4">
           <TransitionChild
-            as={Fragment}
             enter="ease-out duration-300"
             enterFrom="opacity-0 scale-95"
             enterTo="opacity-100 scale-100"
@@ -60,6 +62,10 @@ export default function WelcomeModal() {
             leaveTo="opacity-0 scale-95"
           >
             <DialogPanel className="w-full max-w-md rounded-xl bg-slate-100 p-6 shadow-2xl">
+              <DialogTitle className="sr-only">
+                Welcome to {import.meta.env.VITE_BRAND_FULL ?? 'Data to Science'}
+              </DialogTitle>
+
               {/* Header */}
               <div className="flex justify-center mb-4">
                 <img src={d2sLogo} alt="Data to Science" className="h-10" />
@@ -67,7 +73,7 @@ export default function WelcomeModal() {
 
               {/* Subtitle */}
               <p className="text-sm text-gray-600 mb-6">
-                Welcome to {import.meta.env.VITE_BRAND_FULL}, an open-source
+                Welcome to {import.meta.env.VITE_BRAND_FULL ?? 'Data to Science'}, an open-source
                 web platform for transforming environmental and geospatial data
                 into interactive scientific workflows, visualizations, and
                 analyses. Explore, process, and share complex spatial data
@@ -75,10 +81,10 @@ export default function WelcomeModal() {
               </p>
 
               {/* Feature rows */}
-              <div className="flex flex-col gap-4 mb-6">
+              <div className="flex flex-col gap-4">
                 <button
                   type="button"
-                  className="flex items-center gap-4 text-left group"
+                  className="flex items-center gap-4 text-left group w-full rounded-lg border border-gray-200 bg-white p-3 shadow-sm hover:shadow-md hover:border-gray-300 transition-all"
                   onClick={() => dismissAndNavigate('/auth/register')}
                 >
                   <IconBox>
@@ -96,7 +102,7 @@ export default function WelcomeModal() {
 
                 <button
                   type="button"
-                  className="flex items-center gap-4 text-left group"
+                  className="flex items-center gap-4 text-left group w-full rounded-lg border border-gray-200 bg-white p-3 shadow-sm hover:shadow-md hover:border-gray-300 transition-all"
                   onClick={() => dismissAndNavigate('/auth/login')}
                 >
                   <IconBox>
@@ -114,7 +120,7 @@ export default function WelcomeModal() {
 
                 <button
                   type="button"
-                  className="flex items-center gap-4 text-left group"
+                  className="flex items-center gap-4 text-left group w-full rounded-lg border border-gray-200 bg-white p-3 shadow-sm hover:shadow-md hover:border-gray-300 transition-all"
                   onClick={dismiss}
                 >
                   <IconBox>
@@ -131,25 +137,20 @@ export default function WelcomeModal() {
                 </button>
               </div>
 
-              {/* Buttons */}
-              <div className="flex gap-3">
-                <Link
-                  to="/auth/register"
-                  onClick={() => localStorage.setItem(STORAGE_KEY, 'true')}
-                  className="flex-1 rounded-md bg-amber-400 py-2 text-center text-sm font-semibold text-black hover:bg-amber-300 transition-colors"
+              {/* Don't show again */}
+              <div className="mt-4 flex items-center">
+                <Checkbox
+                  id="dont-show-welcome"
+                  checked={dontShowAgain}
+                  onChange={(e) => setDontShowAgain(e.target.checked)}
+                />
+                <label
+                  htmlFor="dont-show-welcome"
+                  className="ms-2 text-sm font-medium text-gray-900"
                 >
-                  Get started
-                </Link>
-                <button
-                  type="button"
-                  onClick={dismiss}
-                  className="flex-1 rounded-md border border-gray-300 py-2 text-sm font-semibold text-gray-600 hover:bg-slate-200 transition-colors"
-                >
-                  Explore as guest
-                </button>
+                  Don't show this again
+                </label>
               </div>
-
-
             </DialogPanel>
           </TransitionChild>
         </div>
