@@ -71,6 +71,7 @@ class ColorBar:
             cax=ax,
             orientation=self.orientation,
         )
+        ax.tick_params(labelsize=mpl.rcParams['font.size'] + 2)
         plt.savefig(out_fullpath, format="png", transparent=True)
 
         return out_fullpath

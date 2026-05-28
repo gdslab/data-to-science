@@ -1,7 +1,6 @@
 import axios from 'axios';
 import clsx from 'clsx';
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowPathIcon } from '@heroicons/react/24/outline';
 
 import { DataProduct } from '../pages/workspace/projects/Project';
 import {
@@ -22,7 +21,6 @@ export default function ColorBarControl({
   position?: 'left' | 'right';
   projectId?: string;
 }) {
-  const [isRefreshing, toggleIsRefreshing] = useState(false);
   const [url, setURL] = useState('');
 
   const { state } = useRasterSymbologyContext();
@@ -31,7 +29,7 @@ export default function ColorBarControl({
   const symbology = state[dataProduct.id]?.symbology;
 
   const fetchColorBar = useCallback(
-    async (symbology: SingleBandSymbology, refresh = false) => {
+    async (symbology: SingleBandSymbology) => {
       const stats = dataProduct.stac_properties.raster[0].stats;
 
       try {
@@ -60,7 +58,6 @@ export default function ColorBarControl({
               ? (stats.mean + stats.stddev * symbology.meanStdDev).toFixed(2)
               : symbology.max.toFixed(2),
           cmap: symbology.colorRamp,
-          refresh: refresh,
         };
         // Use plain axios (no auth interceptor) for public-only projects so a
         // redirect to the auth-required endpoint doesn't trigger a login redirect.
@@ -71,15 +68,12 @@ export default function ColorBarControl({
             )
           : await api.get(colorbarPath, { params });
         if (response) {
-          // only set url if it responds with OK status
           axios
             .get(response.data.colorbar_url)
             .then(() => setURL(response.data.colorbar_url))
-            .catch(() => setURL(''))
-            .finally(() => setTimeout(() => toggleIsRefreshing(false), 2000));
+            .catch(() => setURL(''));
         }
       } catch (err) {
-        setTimeout(() => toggleIsRefreshing(false), 2000);
         throw err;
       }
     },
@@ -92,35 +86,16 @@ export default function ColorBarControl({
     }
   }, [fetchColorBar, symbology]);
 
-  if (!symbology) return null;
+  if (!symbology || !url) return null;
 
-  if (url) {
-    return (
-      <div
-        className={clsx(
-          'absolute bottom-8 bg-white/75 rounded-md shadow-md px-3 py-6 m-2.5 leading-3 text-slate-600 outline-hidden',
-          { 'start-0': position === 'left', 'end-0': position === 'right' }
-        )}
-      >
-        <img src={url} className="h-80" />
-        <button
-          type="button"
-          className="flex items-center text-sky-600"
-          onClick={async () => {
-            toggleIsRefreshing(true);
-            fetchColorBar(symbology as SingleBandSymbology, true);
-          }}
-        >
-          <ArrowPathIcon
-            className={clsx('h-4 w-4 inline mr-2', {
-              'animate-spin': isRefreshing,
-            })}
-          />
-          <span>Refresh</span>
-        </button>
-      </div>
-    );
-  } else {
-    return null;
-  }
+  return (
+    <div
+      className={clsx(
+        'absolute bottom-8 max-md:bottom-20 bg-white/75 rounded-md shadow-md px-3 py-2 m-2.5 leading-3 text-slate-600 outline-hidden',
+        { 'start-0': position === 'left', 'end-0': position === 'right' }
+      )}
+    >
+      <img src={url} className="h-80 max-md:max-h-40" />
+    </div>
+  );
 }

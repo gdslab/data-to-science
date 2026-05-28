@@ -50,7 +50,7 @@ export default function MeasureToolsToggle() {
 
   return (
     <>
-      <div className="absolute bottom-9 right-2 m-2.5 flex flex-col items-end gap-2 z-10 pointer-events-none">
+      <div className="absolute bottom-9 max-md:bottom-20 right-2 m-2.5 flex flex-col items-end gap-2 z-10 pointer-events-none">
         {isExpanded && (
           <div className="bg-white rounded-md shadow-md px-3 py-2 flex items-center gap-2 relative z-10 pointer-events-auto">
             <span className="text-xs text-slate-500">Units:</span>
