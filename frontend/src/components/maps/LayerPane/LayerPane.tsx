@@ -105,7 +105,7 @@ export default function LayerPane({
               <span />
             )}
             <XMarkIcon
-              className="h-6 w-6 cursor-pointer float-right"
+              className="h-6 w-6 cursor-pointer float-right max-md:hidden"
               onClick={handleToggleClick}
             />
           </div>

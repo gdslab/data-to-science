@@ -115,7 +115,7 @@ export default function ActiveProjectPane({ project }: ActiveProjectPaneProps) {
   }, [shouldScrollOnMount, activeDataProduct, scrollToActiveDataProduct]);
 
   return (
-    <article className="h-[calc(100%-44px)] p-4 flex flex-col">
+    <article className="h-[calc(100%-44px)] p-4 max-md:pb-20 flex flex-col">
       <header className="flex-none">
         <h1 className="truncate" title={project.title}>
           {project.title}
