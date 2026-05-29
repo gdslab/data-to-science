@@ -98,7 +98,11 @@ export default function LayerPane({
         <div className="h-full text-slate-700">
           <div className="h-11 flex items-center justify-between p-2.5">
             {activeProject ? (
-              <button type="button" onClick={handleReturnClick}>
+              <button
+                type="button"
+                onClick={handleReturnClick}
+                className="inline-flex items-center justify-center max-md:h-11 max-md:w-11"
+              >
                 <ArrowUturnLeftIcon className="h-6 w-6" />
               </button>
             ) : (
