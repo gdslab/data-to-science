@@ -70,7 +70,7 @@ export default function MapLayersPanel() {
                     onChange={(event) =>
                       updateLayerProperty(layer.id, 'fill', event.target.value)
                     }
-                    className="h-7 w-10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                    className="h-11 w-11 md:h-7 md:w-10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                   />
                 </div>
                 <div className="flex flex-col items-center">
@@ -82,7 +82,7 @@ export default function MapLayersPanel() {
                     onChange={(event) =>
                       updateLayerProperty(layer.id, 'color', event.target.value)
                     }
-                    className="h-7 w-10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                    className="h-11 w-11 md:h-7 md:w-10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                   />
                 </div>
               </div>
@@ -94,7 +94,7 @@ export default function MapLayersPanel() {
                 onChange={(event) =>
                   updateLayerProperty(layer.id, 'color', event.target.value)
                 }
-                className="h-7 w-10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                className="h-11 w-11 md:h-7 md:w-10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
               />
             )}
           </div>

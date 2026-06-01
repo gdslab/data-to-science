@@ -1,5 +1,7 @@
 import Slider from '@mui/material/Slider';
 
+import { useIsMobile } from '../hooks';
+
 const marks = [
   {
     value: 0,
@@ -32,6 +34,7 @@ export default function OpacitySlider({
   currentValue: number;
   onChange: (_: Event, newValue: number | number[]) => void;
 }) {
+  const isMobile = useIsMobile();
   const getAriaValueText = (newValue: number) => `${newValue}%`;
 
   return (
@@ -52,8 +55,8 @@ export default function OpacitySlider({
           onChange={onChange}
           sx={{
             '& .MuiSlider-thumb': {
-              width: '20px',
-              height: '14px',
+              width: isMobile ? '28px' : '20px',
+              height: isMobile ? '20px' : '14px',
               backgroundColor: 'white',
               border: !disabled ? '2px solid #ABABAB' : '2px solid #ebebeb',
               borderRadius: '4px',

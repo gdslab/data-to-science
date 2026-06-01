@@ -20,7 +20,7 @@ function ModeRadioInput({
   onChange,
 }: ModeRadioInputProps) {
   return (
-    <label className="block text-sm font-semibold pt-2 pb-1">
+    <label className="block text-sm font-semibold pt-2 pb-1 max-md:flex max-md:items-center max-md:min-h-[44px] max-md:pt-0 max-md:pb-0">
       <input
         type="radio"
         name="mode"
@@ -87,7 +87,7 @@ export default function RasterSymbologyModeRadioGroup({
 
   return (
     <div
-      className="flex flex-wrap justify-between gap-1.5"
+      className="flex flex-wrap justify-between gap-1.5 max-md:flex-col"
       role="group"
       aria-labelledby="modeGroup"
     >

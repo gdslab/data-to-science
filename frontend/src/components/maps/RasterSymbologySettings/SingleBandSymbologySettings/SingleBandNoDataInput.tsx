@@ -72,7 +72,7 @@ export default function SingleBandNoDataInput({
         />
         <button
           type="button"
-          className="px-3 py-1 text-sm font-medium rounded-sm border-2 bg-accent3 hover:bg-accent3-dark border-accent3 hover:border-accent3-dark text-white ease-in-out duration-300 disabled:bg-gray-200 disabled:border-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+          className="px-3 py-1 md:py-1 min-h-[44px] md:min-h-0 text-sm font-medium rounded-sm border-2 bg-accent3 hover:bg-accent3-dark border-accent3 hover:border-accent3-dark text-white ease-in-out duration-300 disabled:bg-gray-200 disabled:border-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
           onClick={handleSet}
           disabled={isSetDisabled}
         >
@@ -81,7 +81,7 @@ export default function SingleBandNoDataInput({
         {currentNodata != null && (
           <button
             type="button"
-            className="px-3 py-1 text-sm font-medium rounded-sm border-2 text-gray-700 bg-gray-200 hover:bg-gray-300 border-gray-300 hover:border-gray-400 ease-in-out duration-300"
+            className="px-3 py-1 min-h-[44px] md:min-h-0 text-sm font-medium rounded-sm border-2 text-gray-700 bg-gray-200 hover:bg-gray-300 border-gray-300 hover:border-gray-400 ease-in-out duration-300"
             onClick={handleClear}
           >
             Clear
