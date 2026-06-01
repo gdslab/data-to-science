@@ -50,6 +50,7 @@ export default function SingleBandColorRampSelect({
             boxShadow: 'none',
           },
         }),
+        menuPortal: (base) => ({ ...base, zIndex: 9999 }),
       }}
       theme={(theme) => ({
         ...theme,
@@ -60,6 +61,7 @@ export default function SingleBandColorRampSelect({
         },
       })}
       isSearchable
+      menuPortalTarget={document.body}
       defaultValue={
         symbology.colorRamp
           ? findMatchingColorOption(symbology.colorRamp)
