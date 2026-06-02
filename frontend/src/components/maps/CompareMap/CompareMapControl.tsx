@@ -70,17 +70,18 @@ export default function CompareMapControl({
   return (
     <div
       className={clsx(
-        'absolute top-2 bg-gray-200 rounded-md shadow-md px-3 py-3 min-w-80',
+        'absolute top-2 bg-gray-200 rounded-md shadow-md px-3 py-3 md:min-w-80',
+        'max-md:px-2 max-md:py-2 max-md:max-w-[calc(50%-0.75rem)]',
         {
-          'left-14': side === 'left',
-          'right-14': side === 'right',
+          'left-14 max-md:left-2': side === 'left',
+          'right-14 max-md:right-2': side === 'right',
         }
       )}
       style={{ zIndex: 1001 }}
     >
       <div className="w-full flex flex-col gap-2">
         <select
-          className="w-full px-8 font-semibold text-gray-600 text-center truncate border-2 border-gray-300 rounded-md bg-white"
+          className="w-full px-8 max-md:px-2 max-md:text-xs font-semibold text-gray-600 text-center truncate border-2 border-gray-300 rounded-md bg-white"
           aria-label="Select flight date"
           name={`${side}FlightSelection`}
           value={mapComparisonState[side].flightId}
@@ -114,7 +115,7 @@ export default function CompareMapControl({
         </select>
         {dataProductOptions && dataProductOptions.length > 0 && (
           <select
-            className="w-full px-8 font-semibold text-gray-600 text-center truncate border-2 border-gray-300 rounded-md bg-white"
+            className="w-full px-8 max-md:px-2 max-md:text-xs font-semibold text-gray-600 text-center truncate border-2 border-gray-300 rounded-md bg-white"
             aria-label="Select data product"
             name={`${side}DataProductSelection`}
             value={mapComparisonState[side].dataProductId}

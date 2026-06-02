@@ -17,7 +17,7 @@ export default function CompareModeControl({
   );
 
   return (
-    <div className="absolute bottom-2 left-32 font-semibold text-gray-600 border-2 border-gray-300 rounded-md">
+    <div className="absolute bottom-12 left-32 font-semibold text-gray-600 border-2 border-gray-300 rounded-md" style={{ zIndex: 1001 }}>
       <select className="rounded-md" value={mode} onChange={onModeChange}>
         <option value="side-by-side">Side by side</option>
         <option value="split-screen">Split screen</option>

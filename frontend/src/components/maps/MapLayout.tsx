@@ -124,7 +124,7 @@ function MapLayoutContent() {
           aria-label="Exit viewer and return to list"
           className={clsx(
             'fixed right-3 z-[60] h-11 w-11 flex items-center justify-center rounded-full bg-white shadow-lg text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent2',
-            activeDataProduct?.data_type === 'panoramic' ? 'bottom-20' : 'bottom-6',
+            activeDataProduct?.data_type === 'panoramic' ? 'bottom-20' : 'bottom-12',
           )}
           style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
         >
