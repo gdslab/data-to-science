@@ -40,7 +40,7 @@ export default function AnnotationToolsToggle() {
   if (!activeDataProduct || !activeProject || !active) return null;
 
   return (
-    <div className="absolute bottom-9 right-2 m-2.5 z-10 pointer-events-none">
+    <div className="absolute bottom-9 max-md:bottom-20 right-2 m-2.5 z-10 pointer-events-none">
       <div className="flex items-center">
         {shouldRender && (
           <div className="annotation-tools-container pointer-events-auto mr-[-6px] pr-[8px]">

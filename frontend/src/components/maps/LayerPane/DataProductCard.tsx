@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { useMapContext } from '../MapContext';
+import { useMobileView } from '../MobileViewContext';
 
 import LayerCard from './LayerCard';
 import Modal from '../../Modal';
@@ -26,6 +27,7 @@ export default function DataProductCard({
     pointCloudViewerDispatch,
   } = useMapContext();
 
+  const { setMobileView } = useMobileView();
   const [shareOpen, setShareOpen] = useState(false);
 
   const { dispatch } = useRasterSymbologyContext();
@@ -173,6 +175,13 @@ export default function DataProductCard({
           activeDataProduct.id === dataProduct.id &&
           isRasterType && (
             <div className="mt-2">
+              <button
+                type="button"
+                onClick={() => setMobileView('map')}
+                className="md:hidden mb-2 text-sm font-semibold text-accent2 hover:text-accent2-dark"
+              >
+                View on map →
+              </button>
               <RasterSymbologySettings />
             </div>
           )}

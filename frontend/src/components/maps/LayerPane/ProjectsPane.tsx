@@ -190,7 +190,7 @@ export default function ProjectsPane({ projects }: ProjectsPaneProps) {
   }
 
   return (
-    <div className="h-[calc(100%-44px)] p-4 flex flex-col">
+    <div className="h-[calc(100%-44px)] p-4 max-md:pb-20 flex flex-col">
       <div className="h-36">
         <h1>Projects</h1>
         {hasAnyProjects && (

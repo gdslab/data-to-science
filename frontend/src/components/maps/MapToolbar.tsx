@@ -22,27 +22,27 @@ export default function MapToolbar() {
         <div
           className={classNames(
             activeMapTool === 'map' ? 'bg-accent2' : '',
-            'h-8 w-8 cursor-pointer shadow-xs hover:shadow-xl rounded-sm border-2 border-solid border-slate-500 p-1.5'
+            'h-11 w-11 md:h-8 md:w-8 flex items-center justify-center cursor-pointer shadow-xs hover:shadow-xl rounded-sm border-2 border-solid border-slate-500 p-1.5'
           )}
           onClick={() => {
             activeDataProductDispatch({ type: 'clear', payload: null });
             activeMapToolDispatch({ type: 'set', payload: 'map' });
           }}
         >
-          <MapIcon className="h-4 w-4" />
+          <MapIcon className="h-5 w-5 md:h-4 md:w-4" />
           <span className="sr-only">Map Tool</span>
         </div>
         <div
           className={classNames(
             activeMapTool === 'compare' ? 'bg-accent2' : '',
-            'h-8 w-8 cursor-pointer shadow-xs hover:shadow-xl rounded-sm border-2 border-solid border-slate-500 p-1.5'
+            'h-11 w-11 md:h-8 md:w-8 flex items-center justify-center cursor-pointer shadow-xs hover:shadow-xl rounded-sm border-2 border-solid border-slate-500 p-1.5'
           )}
           onClick={() => {
             activeDataProductDispatch({ type: 'clear', payload: null });
             activeMapToolDispatch({ type: 'set', payload: 'compare' });
           }}
         >
-          <ScaleIcon className="h-4 w-4" />
+          <ScaleIcon className="h-5 w-5 md:h-4 md:w-4" />
           <span className="sr-only">Compare Tool</span>
         </div>
         <div className="mt-4">

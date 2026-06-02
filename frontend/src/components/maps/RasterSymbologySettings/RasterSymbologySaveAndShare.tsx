@@ -30,7 +30,7 @@ function RasterSymbologyShare({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="w-36">
+    <div className="w-36 max-md:w-full">
       <Button
         type="button"
         size="sm"
@@ -101,7 +101,7 @@ function RasterSymbologySave({
   };
 
   return (
-    <div className="w-36">
+    <div className="w-36 max-md:w-full">
       <Button
         type="button"
         size="sm"
@@ -135,7 +135,7 @@ export default function RasterSymbologySaveAndShare({
   if (!activeProject || !symbology) return null;
 
   return (
-    <div className="mt-4 w-full flex items-center justify-between">
+    <div className="mt-4 w-full flex items-center justify-between max-md:flex-col max-md:items-stretch max-md:gap-2">
       {isPublicOnly(activeProject)
         ? stacBrowserUrl && (
             <div className="w-full">

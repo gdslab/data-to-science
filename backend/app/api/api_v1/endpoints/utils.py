@@ -38,10 +38,10 @@ def get_colorbar_for_data_product_with_public_access(
     cmin: int | float,
     cmax: int | float,
     cmap: str,
-    refresh: bool,
     project_id: UUID,
     flight_id: UUID,
     data_product_id: UUID,
+    refresh: bool = False,
     db: Session = Depends(deps.get_db),
 ) -> Any:
     if os.environ.get("RUNNING_TESTS") == "1":
@@ -88,8 +88,8 @@ def get_colorbar_for_data_product_with_user_access(
     cmin: int | float,
     cmax: int | float,
     cmap: str,
-    refresh: bool,
     data_product_id: UUID,
+    refresh: bool = False,
     current_user: models.User = Depends(deps.get_current_approved_user),
     project: models.Project = Depends(deps.can_read_project),
     flight: models.Flight = Depends(deps.can_read_flight),

@@ -115,7 +115,7 @@ export default function ActiveProjectPane({ project }: ActiveProjectPaneProps) {
   }, [shouldScrollOnMount, activeDataProduct, scrollToActiveDataProduct]);
 
   return (
-    <article className="h-[calc(100%-44px)] p-4 flex flex-col">
+    <article className="h-[calc(100%-44px)] p-4 max-md:pb-20 flex flex-col">
       <header className="flex-none">
         <h1 className="truncate" title={project.title}>
           {project.title}
@@ -131,12 +131,12 @@ export default function ActiveProjectPane({ project }: ActiveProjectPaneProps) {
         className="flex-1 flex flex-col min-h-0"
       >
         <TabList className="flex gap-1 flex-none mt-3">
-          <Tab className="rounded-t-md border-2 border-slate-300 px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-all focus:outline-hidden focus:ring-2 focus:ring-slate-500 bg-slate-300 data-hover:bg-slate-200 data-selected:bg-white data-selected:border-b-white data-selected:shadow-xs">
-            <div className="flex items-center gap-1.5">
+          <Tab className="max-md:flex-1 rounded-t-md border-2 border-slate-300 px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-all focus:outline-hidden focus:ring-2 focus:ring-slate-500 bg-slate-300 data-hover:bg-slate-200 data-selected:bg-white data-selected:border-b-white data-selected:shadow-xs">
+            <div className="flex items-center justify-center gap-1.5">
               <img
                 src={uasIcon}
                 alt=""
-                className="h-3.5 w-3.5 data-selected:brightness-0"
+                className="h-3.5 w-3.5 max-md:hidden data-selected:brightness-0"
               />
               <span>Flights</span>
               <span className="text-slate-500 font-normal">
@@ -145,9 +145,9 @@ export default function ActiveProjectPane({ project }: ActiveProjectPaneProps) {
             </div>
           </Tab>
           {!publicOnly && (
-            <Tab className="rounded-t-md border-2 border-slate-300 px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-all focus:outline-hidden focus:ring-2 focus:ring-slate-500 bg-slate-300 data-hover:bg-slate-200 data-selected:bg-white data-selected:border-b-white data-selected:shadow-xs">
-              <div className="flex items-center gap-1.5">
-                <FaLayerGroup className="h-3.5 w-3.5" />
+            <Tab className="max-md:flex-1 rounded-t-md border-2 border-slate-300 px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-all focus:outline-hidden focus:ring-2 focus:ring-slate-500 bg-slate-300 data-hover:bg-slate-200 data-selected:bg-white data-selected:border-b-white data-selected:shadow-xs">
+              <div className="flex items-center justify-center gap-1.5">
+                <FaLayerGroup className="h-3.5 w-3.5 max-md:hidden" />
                 <span>Map Layers</span>
                 <span className="text-slate-500 font-normal">
                   ({layers.length})
@@ -158,10 +158,10 @@ export default function ActiveProjectPane({ project }: ActiveProjectPaneProps) {
           {!publicOnly && (
             <Tab
               disabled={!activeDataProduct}
-              className="rounded-t-md border-2 border-slate-300 px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-all focus:outline-hidden focus:ring-2 focus:ring-slate-500 bg-slate-300 data-hover:bg-slate-200 data-selected:bg-white data-selected:border-b-white data-selected:shadow-xs data-disabled:opacity-50 data-disabled:cursor-not-allowed"
+              className="max-md:flex-1 rounded-t-md border-2 border-slate-300 px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-all focus:outline-hidden focus:ring-2 focus:ring-slate-500 bg-slate-300 data-hover:bg-slate-200 data-selected:bg-white data-selected:border-b-white data-selected:shadow-xs data-disabled:opacity-50 data-disabled:cursor-not-allowed"
             >
-              <div className="flex items-center gap-1.5">
-                <MdEditNote className="h-3.5 w-3.5" />
+              <div className="flex items-center justify-center gap-1.5">
+                <MdEditNote className="h-3.5 w-3.5 max-md:hidden" />
                 <span>Annotations</span>
               </div>
             </Tab>

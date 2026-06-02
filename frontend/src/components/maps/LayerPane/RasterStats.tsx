@@ -6,7 +6,7 @@ export default function RasterStats({ stats }: { stats: Band['stats'] }) {
       <legend className="block text-sm text-gray-400 font-semibold pt-1 pb-1">
         Stats
       </legend>
-      <div className="flex flex-row flex-wrap justify-between gap-1.5">
+      <div className="grid grid-cols-2 gap-2 md:flex md:flex-row md:flex-wrap md:justify-between md:gap-1.5">
         <div className="flex flex-col">
           <span className="font-semibold">Mean</span>
           <span>{stats.mean.toFixed(2)}</span>

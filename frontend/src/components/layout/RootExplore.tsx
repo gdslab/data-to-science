@@ -18,7 +18,7 @@ export default function RootExplore() {
           {user ? (
             <Link
               to="/home"
-              className="hover:text-amber-300 transition-colors"
+              className="inline-flex items-center min-h-[44px] md:min-h-0 hover:text-amber-300 transition-colors"
             >
               My workspace
             </Link>
@@ -26,13 +26,13 @@ export default function RootExplore() {
             <>
               <Link
                 to="/auth/login"
-                className="hover:text-amber-300 transition-colors"
+                className="inline-flex items-center min-h-[44px] md:min-h-0 hover:text-amber-300 transition-colors"
               >
                 Sign in
               </Link>
               <Link
                 to="/auth/register"
-                className="rounded-md bg-amber-400 px-3 py-1.5 text-sm text-black hover:bg-amber-300 transition-colors"
+                className="inline-flex items-center min-h-[44px] md:min-h-0 rounded-md bg-amber-400 px-3 py-1.5 text-sm text-black hover:bg-amber-300 transition-colors"
               >
                 Sign up
               </Link>

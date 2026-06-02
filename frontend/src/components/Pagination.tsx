@@ -55,7 +55,7 @@ function PageNumberItems({
           return (
             <li
               key={`dots-${idx}`}
-              className="block size-8 rounded-sm text-center leading-8"
+              className="flex items-center justify-center size-11 md:size-8 rounded-sm"
             >
               &#8230;
             </li>
@@ -68,7 +68,7 @@ function PageNumberItems({
               <a
                 onClick={() => updateCurrentPage(pageNumber)}
                 className={clsx(
-                  'block size-8 rounded-sm text-center leading-8',
+                  'flex items-center justify-center size-11 md:size-8 rounded-sm',
                   {
                     'border border-gray-100 bg-white text-gray-900':
                       pageNumber !== currentPage,
@@ -114,7 +114,7 @@ export default function Pagination({
           <a
             onClick={() => updateCurrentPage(currentPage - 1)}
             className={clsx(
-              'inline-flex size-8 items-center justify-center rounded-sm border border-gray-100 bg-white text-gray-900',
+              'inline-flex size-11 md:size-8 items-center justify-center rounded-sm border border-gray-100 bg-white text-gray-900',
               {
                 'opacity-75 cursor-not-allowed': currentPage < 1,
                 'cursor-pointer': currentPage > 0,
@@ -147,7 +147,7 @@ export default function Pagination({
           <a
             onClick={() => updateCurrentPage(currentPage + 1)}
             className={clsx(
-              'inline-flex size-8 items-center justify-center rounded-sm border border-gray-100 bg-white text-gray-900',
+              'inline-flex size-11 md:size-8 items-center justify-center rounded-sm border border-gray-100 bg-white text-gray-900',
               {
                 'opacity-75 cursor-not-allowed': currentPage + 1 >= totalPages,
                 'cursor-pointer': currentPage + 1 < totalPages,
