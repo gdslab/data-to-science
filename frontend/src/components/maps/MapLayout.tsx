@@ -23,19 +23,12 @@ function MapLayoutContent() {
     activeDataProductDispatch,
     activeMapTool,
     activeMapToolDispatch,
-    activeProject,
     pointCloudViewer,
   } = useMapContext();
 
   const isMobile = useIsMobile();
   const [hidePane, toggleHidePane] = useState(false);
   const [mobileView, setMobileView] = useState<MobileView>('list');
-
-  // Default view based on whether a project is active
-  useEffect(() => {
-    if (!isMobile) return;
-    setMobileView(activeProject ? 'map' : 'list');
-  }, [isMobile, activeProject]);
 
   const isFullScreenViewer =
     activeDataProduct?.data_type === 'panoramic' ||

@@ -81,7 +81,7 @@ export default function CompareMapControl({
     >
       <div className="w-full flex flex-col gap-2">
         <select
-          className="w-full px-8 max-md:px-2 max-md:text-xs font-semibold text-gray-600 text-center truncate border-2 border-gray-300 rounded-md bg-white"
+          className="w-full px-8 max-md:pl-2 max-md:pr-6 max-md:text-xs font-semibold text-gray-600 text-center truncate border-2 border-gray-300 rounded-md bg-white"
           aria-label="Select flight date"
           name={`${side}FlightSelection`}
           value={mapComparisonState[side].flightId}
@@ -115,7 +115,7 @@ export default function CompareMapControl({
         </select>
         {dataProductOptions && dataProductOptions.length > 0 && (
           <select
-            className="w-full px-8 max-md:px-2 max-md:text-xs font-semibold text-gray-600 text-center truncate border-2 border-gray-300 rounded-md bg-white"
+            className="w-full px-8 max-md:pl-2 max-md:pr-6 max-md:text-xs font-semibold text-gray-600 text-center truncate border-2 border-gray-300 rounded-md bg-white"
             aria-label="Select data product"
             name={`${side}DataProductSelection`}
             value={mapComparisonState[side].dataProductId}
