@@ -426,13 +426,13 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
         <div className="flex gap-2">
           <button
             onClick={() => setDroneVisible(!droneVisible)}
-            className="w-32 rounded-sm border border-white/30 bg-black/70 px-4 py-2 text-sm font-medium text-white"
+            className="md:w-32 rounded-sm border border-white/30 bg-black/70 px-2 py-2 md:px-4 text-sm font-medium text-white"
           >
             {droneVisible ? 'Hide Drone' : 'Show Drone'}
           </button>
           <button
             onClick={() => setShowControls(!showControls)}
-            className="w-36 rounded-sm border border-white/30 bg-black/70 px-4 py-2 text-sm font-medium text-white"
+            className="md:w-36 rounded-sm border border-white/30 bg-black/70 px-2 py-2 md:px-4 text-sm font-medium text-white"
           >
             {showControls ? 'Hide Controls' : 'Show Controls'}
           </button>
@@ -440,9 +440,9 @@ export default function LCCViewer({ lccUrl }: { lccUrl: string }) {
             onClick={() => setCollisionEnabled(!collisionEnabled)}
             disabled={!collisionAvailable}
             title={!collisionAvailable ? 'Collision detection not available for this scene' : ''}
-            className="w-44 rounded-sm border border-white/30 bg-black/70 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="md:w-44 rounded-sm border border-white/30 bg-black/70 px-2 py-2 md:px-4 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {collisionEnabled ? 'Disable Collision' : 'Enable Collision'}
+            {collisionEnabled ? 'Collision On' : 'Collision Off'}
           </button>
         </div>
         <LCCQualitySettings quality={quality} setQuality={setQuality} />
