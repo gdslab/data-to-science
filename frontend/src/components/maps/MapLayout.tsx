@@ -5,6 +5,7 @@ import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useIsMobile } from '../hooks';
 import LayerPane from './LayerPane';
 import MapListToggle from './MapListToggle';
+import { MobileViewProvider } from './MobileViewContext';
 
 import { AnnotationProvider } from './contexts/AnnotationContext';
 import { MapApiKeysContextProvider } from './MapApiKeysContext';
@@ -49,6 +50,15 @@ function MapLayoutContent() {
     if (isFullScreenViewer) setMobileView('map');
   }, [isMobile, isFullScreenViewer]);
 
+  // Auto-switch when point cloud is activated in map mode (no in-list controls to stay for)
+  const isPointCloudMapMode =
+    activeDataProduct?.data_type === 'point_cloud' && pointCloudViewer === 'map';
+
+  useEffect(() => {
+    if (!isMobile) return;
+    if (isPointCloudMapMode) setMobileView('map');
+  }, [isMobile, isPointCloudMapMode]);
+
   const handleExitFullScreenViewer = () => {
     activeDataProductDispatch({ type: 'clear', payload: null });
     if (activeMapTool === 'compare') {
@@ -64,6 +74,7 @@ function MapLayoutContent() {
   const mapHidden = isMobile && mobileView !== 'map';
 
   return (
+    <MobileViewProvider value={{ setMobileView }}>
     <div className="relative h-full md:flex md:flex-row">
       {/* sidebar / list panel */}
       <div
@@ -118,6 +129,7 @@ function MapLayoutContent() {
         </button>
       )}
     </div>
+    </MobileViewProvider>
   );
 }
 
