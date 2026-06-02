@@ -1,6 +1,13 @@
+import { useMemo, useState } from 'react';
+
 import Checkbox from '../../Checkbox';
 import { useMapLayerContext } from '../MapLayersContext';
 import OpacitySlider from '../OpacitySlider';
+import MapLayerSort, {
+  getMapLayerSortPreference,
+  MapLayerSortSelection,
+  sortMapLayers,
+} from './MapLayerSort';
 import { getGeomTypeIcon } from './utils';
 
 export default function MapLayersPanel() {
@@ -8,6 +15,16 @@ export default function MapLayersPanel() {
     state: { layers },
     dispatch,
   } = useMapLayerContext();
+
+  const [sortSelection, setSortSelection] = useState<MapLayerSortSelection>(
+    getMapLayerSortPreference()
+  );
+  const [sortOpen, setSortOpen] = useState(false);
+
+  const sortedLayers = useMemo(
+    () => sortMapLayers(layers, sortSelection),
+    [layers, sortSelection]
+  );
 
   const updateLayerProperty = (
     layerId: string,
@@ -20,18 +37,24 @@ export default function MapLayersPanel() {
     dispatch({ type: 'SET_LAYERS', payload: updatedLayers });
   };
 
-  if (layers.length === 0) {
-    return (
-      <div className="text-sm text-slate-500 italic p-2">
-        No map layers found for this project. Add map layers from the project
-        page.
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col gap-3">
-      {layers.map((layer) => (
+      <div className="flex justify-end">
+        <MapLayerSort
+          sortSelection={sortSelection}
+          setSortSelection={setSortSelection}
+          isOpen={sortOpen}
+          onOpen={() => setSortOpen(true)}
+          onClose={() => setSortOpen(false)}
+        />
+      </div>
+      {sortedLayers.length === 0 && (
+        <div className="text-sm text-slate-500 italic p-2">
+          No map layers found for this project. Add map layers from the project
+          page.
+        </div>
+      )}
+      {sortedLayers.map((layer) => (
         <div
           key={layer.id}
           className="flex flex-col p-2 bg-slate-50 rounded-sm"
