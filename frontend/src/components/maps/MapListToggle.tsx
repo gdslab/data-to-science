@@ -27,7 +27,7 @@ export default function MapListToggle({ view, onChange }: MapListToggleProps) {
       aria-label="View mode"
       onKeyDown={handleKeyDown}
       className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex rounded-full shadow-lg overflow-hidden"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
     >
       {tabs.map(({ value, label, Icon }) => {
         const isActive = view === value;
