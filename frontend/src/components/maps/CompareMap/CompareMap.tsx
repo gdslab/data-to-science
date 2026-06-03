@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Map, { MapRef, ScaleControl } from 'react-map-gl/maplibre';
+import Map, { MapRef, MapMouseEvent, ScaleControl } from 'react-map-gl/maplibre';
+import squareGrid from '@turf/square-grid';
+import distance from '@turf/distance';
+import { point } from '@turf/helpers';
+import { FeatureCollection, Polygon } from 'geojson';
 
 import ColorBarControl from '../ColorBarControl';
 import CompareMapControl from './CompareMapControl';
+import CompareToolsControl from './CompareToolsControl';
+import GridOverlay from './GridOverlay';
+import PointSyncMarkers from './PointSyncMarkers';
 import SwipeSlider from './SwipeSlider';
 import CompareModeControl, { Mode } from './CompareModeControl';
 import ProjectBoundary from '../ProjectBoundary';
@@ -21,6 +28,12 @@ import {
   createDefaultSingleBandSymbology,
 } from '../utils';
 import { isSingleBand } from '../utils';
+
+type SyncPoint = {
+  lng: number;
+  lat: number;
+  originSide: 'left' | 'right';
+};
 
 export type MapComparisonState = {
   left: {
@@ -57,6 +70,9 @@ export default function CompareMap() {
   const [mapComparisonState, setMapComparisonState] =
     useState<MapComparisonState>(defaultMapComparisonState);
   const [activeProjectBBox, setActiveProjectBBox] = useState<BBox | null>(null);
+  const [showGrid, setShowGrid] = useState(false);
+  const [pointSyncActive, setPointSyncActive] = useState(false);
+  const [syncPoint, setSyncPoint] = useState<SyncPoint | null>(null);
 
   // Refs
   const leftMapRef = useRef<MapRef>(null);
@@ -72,6 +88,44 @@ export default function CompareMap() {
   const onLeftMoveStart = useCallback(() => setActiveMap('left'), []);
   const onRightMoveStart = useCallback(() => setActiveMap('right'), []);
   const onMove = useCallback((evt) => setViewState(evt.viewState), []);
+
+  const onLeftClick = useCallback(
+    (evt: MapMouseEvent) => {
+      if (!pointSyncActive) return;
+      setSyncPoint({ lng: evt.lngLat.lng, lat: evt.lngLat.lat, originSide: 'left' });
+    },
+    [pointSyncActive]
+  );
+
+  const onRightClick = useCallback(
+    (evt: MapMouseEvent) => {
+      if (!pointSyncActive) return;
+      setSyncPoint({ lng: evt.lngLat.lng, lat: evt.lngLat.lat, originSide: 'right' });
+    },
+    [pointSyncActive]
+  );
+
+  const handleTogglePointSync = useCallback(() => {
+    setPointSyncActive((prev) => {
+      if (prev) setSyncPoint(null);
+      return !prev;
+    });
+  }, []);
+
+  // Compute square grid from project bounding box (~10 cells across the larger dimension)
+  const compareGrid = useMemo((): FeatureCollection<Polygon> | null => {
+    if (!activeProjectBBox) return null;
+    const [minLng, minLat, maxLng, maxLat] = activeProjectBBox;
+    const widthKm = distance(point([minLng, minLat]), point([maxLng, minLat]), {
+      units: 'kilometers',
+    });
+    const heightKm = distance(point([minLng, minLat]), point([minLng, maxLat]), {
+      units: 'kilometers',
+    });
+    const cellSide = Math.max(widthKm, heightKm) / 10;
+    if (cellSide <= 0) return null;
+    return squareGrid(activeProjectBBox, cellSide, { units: 'kilometers' });
+  }, [activeProjectBBox]);
 
   // Selected data products
   const selectedLeftDataProduct = useMemo(
@@ -224,6 +278,8 @@ export default function CompareMap() {
         {...viewState}
         onMoveStart={onLeftMoveStart}
         onMove={activeMap === 'left' ? onMove : undefined}
+        onClick={onLeftClick}
+        cursor={pointSyncActive ? 'crosshair' : undefined}
         style={leftMapStyle}
         mapboxAccessToken={mapboxAccessToken || undefined}
         mapStyle={mapStyle}
@@ -256,6 +312,16 @@ export default function CompareMap() {
             />
           )}
 
+        {/* Grid overlay */}
+        {activeProject && showGrid && compareGrid && (
+          <GridOverlay data={compareGrid} side="left" />
+        )}
+
+        {/* Point sync marker */}
+        {pointSyncActive && syncPoint && (
+          <PointSyncMarkers syncPoint={syncPoint} side="left" />
+        )}
+
         <ScaleControl />
       </Map>
 
@@ -265,6 +331,8 @@ export default function CompareMap() {
         {...viewState}
         onMoveStart={onRightMoveStart}
         onMove={activeMap === 'right' ? onMove : undefined}
+        onClick={onRightClick}
+        cursor={pointSyncActive ? 'crosshair' : undefined}
         style={rightMapStyle}
         mapboxAccessToken={mapboxAccessToken}
         mapStyle={mapStyle}
@@ -296,6 +364,16 @@ export default function CompareMap() {
             />
           )}
 
+        {/* Grid overlay */}
+        {activeProject && showGrid && compareGrid && (
+          <GridOverlay data={compareGrid} side="right" />
+        )}
+
+        {/* Point sync marker */}
+        {pointSyncActive && syncPoint && (
+          <PointSyncMarkers syncPoint={syncPoint} side="right" />
+        )}
+
         <ScaleControl />
       </Map>
 
@@ -308,8 +386,19 @@ export default function CompareMap() {
         />
       )}
 
-      {/* Mode toggle control */}
-      <CompareModeControl mode={mode} onModeChange={setMode} />
+      {/* Bottom controls row: tool toggles (left) + mode selector (right) */}
+      <div
+        className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1"
+        style={{ zIndex: 1001 }}
+      >
+        <CompareToolsControl
+          showGrid={showGrid}
+          onToggleGrid={() => setShowGrid((prev) => !prev)}
+          pointSyncActive={pointSyncActive}
+          onTogglePointSync={handleTogglePointSync}
+        />
+        <CompareModeControl mode={mode} onModeChange={setMode} />
+      </div>
 
       {/* Data product selection controls (outside maps so they're never clipped) */}
       <CompareMapControl
