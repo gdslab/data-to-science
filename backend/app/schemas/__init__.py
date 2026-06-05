@@ -17,6 +17,7 @@ from .data_product import (
     DataProduct,
     DataProductBands,
     DataProductCreate,
+    DataProductPointValue,
     DataProductUpdate,
     DataProductUpdateDataType,
     ProcessingRequest,

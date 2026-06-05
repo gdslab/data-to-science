@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import RedirectResponse, StreamingResponse
 from geojson_pydantic import FeatureCollection
 from pydantic import UUID4
-from rasterio.warp import transform_bounds
+from rasterio.warp import transform, transform_bounds
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
@@ -17,6 +17,7 @@ from app.api import deps
 from app.api.utils import get_signature_for_data_product
 from app.core.config import settings
 from app.core.limiter import limiter
+from app.models.constants import NON_RASTER_TYPES
 
 
 router = APIRouter()
@@ -217,6 +218,61 @@ def read_data_product_bounds(
 
     # return bounds
     return {"bounds": list(wgs84_bounds)}
+
+
+@router.get("/point", response_model=schemas.data_product.DataProductPointValue)
+@limiter.limit("60/minute")
+def read_data_product_point_value(
+    request: Request,
+    data_product_id: UUID4,
+    lon: float,
+    lat: float,
+    current_user: Optional[models.User] = Depends(deps.get_optional_current_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    if os.environ.get("RUNNING_TESTS") == "1":
+        upload_dir = settings.TEST_STATIC_DIR
+    else:
+        upload_dir = settings.STATIC_DIR
+
+    # get user id if available
+    user_id = None
+    if current_user:
+        user_id = current_user.id
+
+    # check if file is public or if user has access through project member role
+    data_product = crud.data_product.get_public_data_product_by_id(
+        db, file_id=data_product_id, upload_dir=upload_dir, user_id=user_id
+    )
+    if not data_product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
+        )
+
+    # reject non-raster products
+    if data_product.data_type in NON_RASTER_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Point value sampling is only available for raster data products",
+        )
+
+    # sample raster at the given coordinates
+    try:
+        with rasterio.open(data_product.filepath) as dataset:
+            xs, ys = transform("EPSG:4326", dataset.crs, [lon], [lat])
+            sample = next(dataset.sample([(xs[0], ys[0])]))
+            nodata = dataset.nodata
+        values = [
+            None if (nodata is not None and float(v) == nodata) else float(v)
+            for v in sample
+        ]
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to sample data product at the given coordinates",
+        )
+
+    return {"coordinates": [lon, lat], "values": values}
 
 
 @router.get(

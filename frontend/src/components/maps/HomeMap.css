@@ -1,3 +1,29 @@
 .maplibregl-popup-close-button {
     margin-right: 5px;
 }
+
+/* Identify tool popup */
+.identify-popup .maplibregl-popup-content {
+    padding: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+    min-width: 140px;
+}
+
+.identify-popup.maplibregl-popup-anchor-top .maplibregl-popup-tip {
+    border-bottom-color: #3d5a80;
+}
+
+.identify-popup .maplibregl-popup-close-button {
+    color: rgba(255, 255, 255, 0.8);
+    margin-right: 0;
+    padding: 4px 6px;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.identify-popup .maplibregl-popup-close-button:hover {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.15);
+}

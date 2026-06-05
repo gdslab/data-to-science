@@ -19,6 +19,8 @@ import AnnotationToolsToggle from './AnnotationToolsToggle';
 import ColorBarControl from './ColorBarControl';
 import DataProductZoom from './DataProductZoom';
 import GeocoderControl from './GeocoderControl';
+import IdentifyControl from './IdentifyControl';
+import IdentifyPopup from './IdentifyPopup';
 import ProjectCluster from './ProjectCluster';
 import FeaturePopup from './FeaturePopup';
 import MeasureToolsToggle from './MeasureToolsToggle';
@@ -41,7 +43,11 @@ import {
 } from './styles/basemapStyles';
 
 import { isPublicOnly, isSingleBand } from './utils';
+import { IdentifyPoint } from './usePointValue';
 import { BBox } from './Maps';
+
+// Data product types that are not sampable rasters (mirrors backend NON_RASTER_TYPES)
+const NON_RASTER_TYPES = ['panoramic', 'point_cloud', '3dgs'];
 
 export type PopupInfoProps = {
   feature: Feature;
@@ -54,6 +60,8 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
   const [activeProjectBBox, setActiveProjectBBox] = useState<BBox | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
   const [popupInfo, setPopupInfo] = useState<PopupInfoProps | null>(null);
+  const [identifyActive, setIdentifyActive] = useState(false);
+  const [identifyPoint, setIdentifyPoint] = useState<IdentifyPoint | null>(null);
   const [config, setConfig] = useState<{ osmLabelFilter?: string } | null>(
     null,
   );
@@ -104,7 +112,33 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
     }
   }, [activeProject, isMapReady]);
 
+  // True when a raster data product that supports point sampling is active
+  const isActivatedRaster =
+    !!activeProject &&
+    !!activeDataProduct &&
+    !NON_RASTER_TYPES.includes(activeDataProduct.data_type) &&
+    (activeDataProduct.stac_properties?.raster?.length ?? 0) > 0;
+
+  // Reset identify tool when no raster is active (e.g. product deactivated or changed to point cloud)
+  useEffect(() => {
+    if (!isActivatedRaster) {
+      setIdentifyActive(false);
+      setIdentifyPoint(null);
+    }
+  }, [isActivatedRaster]);
+
+  // Close any open popup when the active data product changes
+  useEffect(() => {
+    setIdentifyPoint(null);
+  }, [activeDataProduct?.id]);
+
   const handleMapClick = (event: MapLayerMouseEvent) => {
+    // Identify tool takes over map clicks while active
+    if (identifyActive) {
+      setIdentifyPoint({ lng: event.lngLat.lng, lat: event.lngLat.lat });
+      return;
+    }
+
     const map: maplibregl.Map = event.target;
 
     if (map.getLayer('unclustered-point')) {
@@ -226,6 +260,7 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
       maxZoom={25}
       onClick={handleMapClick}
       onMoveEnd={handleMoveEnd}
+      cursor={identifyActive ? 'crosshair' : undefined}
     >
       {/* Display marker cluster for project centroids when no project is active */}
       {!activeProject && (
@@ -306,6 +341,22 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
       {!activeProject && <GeocoderControl />}
 
       <NavigationControl />
+      {/* Identify tool button — sits directly below the zoom +/- controls */}
+      <IdentifyControl
+        active={identifyActive}
+        disabled={!isActivatedRaster}
+        onClick={() => setIdentifyActive((v) => !v)}
+      />
+
+      {/* Identify value popup */}
+      {identifyActive && identifyPoint && activeDataProduct && (
+        <IdentifyPopup
+          dataProduct={activeDataProduct}
+          point={identifyPoint}
+          onClose={() => setIdentifyPoint(null)}
+        />
+      )}
+
       <ScaleControl />
     </Map>
   );
