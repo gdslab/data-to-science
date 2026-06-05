@@ -2478,7 +2478,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@turf/boolean-intersects@npm:7.3.5, @turf/boolean-intersects@npm:^7.2.0":
+"@turf/boolean-intersects@npm:^7.2.0":
   version: 7.3.5
   resolution: "@turf/boolean-intersects@npm:7.3.5"
   dependencies:
@@ -2674,7 +2674,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@turf/distance@npm:7.3.5, @turf/distance@npm:^7.2.0, @turf/distance@npm:^7.3.5":
+"@turf/distance@npm:7.3.5, @turf/distance@npm:^7.2.0":
   version: 7.3.5
   resolution: "@turf/distance@npm:7.3.5"
   dependencies:
@@ -2920,19 +2920,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@turf/rectangle-grid@npm:7.3.5":
-  version: 7.3.5
-  resolution: "@turf/rectangle-grid@npm:7.3.5"
-  dependencies:
-    "@turf/boolean-intersects": "npm:7.3.5"
-    "@turf/distance": "npm:7.3.5"
-    "@turf/helpers": "npm:7.3.5"
-    "@types/geojson": "npm:^7946.0.10"
-    tslib: "npm:^2.8.1"
-  checksum: 10c0/ee45b96181875abe18c48003760536f68beee29b256c618791d4a4106fb8843a7d4a9a11a7a2735dc50d2a1993ebc352ac7906898628981b479aecfaabefccb8
-  languageName: node
-  linkType: hard
-
 "@turf/rewind@npm:^7.2.0":
   version: 7.3.5
   resolution: "@turf/rewind@npm:7.3.5"
@@ -2981,18 +2968,6 @@ __metadata:
     "@types/geojson": "npm:^7946.0.10"
     tslib: "npm:^2.8.1"
   checksum: 10c0/ed76a8701264cfb57299c1c816f1976a0619f1a509bad7a91c055e9ca1e5f18746893342f444ec14b8df16d9edf14badce55d31478b446c08fd13d198f8af0bc
-  languageName: node
-  linkType: hard
-
-"@turf/square-grid@npm:^7.3.5":
-  version: 7.3.5
-  resolution: "@turf/square-grid@npm:7.3.5"
-  dependencies:
-    "@turf/helpers": "npm:7.3.5"
-    "@turf/rectangle-grid": "npm:7.3.5"
-    "@types/geojson": "npm:^7946.0.10"
-    tslib: "npm:^2.8.1"
-  checksum: 10c0/87ea8311923fc4e5e08cf226992106e9079f9ebc404cccd1667be3a93b0ed29b56c99cfc80a5d5cac98af2f67f14be12e581f8c17aba3f897193fa45024767ed
   languageName: node
   linkType: hard
 
@@ -4394,11 +4369,9 @@ __metadata:
     "@turf/boolean-contains": "npm:^7.2.0"
     "@turf/center": "npm:^7.1.0"
     "@turf/centroid": "npm:^7.3.4"
-    "@turf/distance": "npm:^7.3.5"
     "@turf/flip": "npm:^6.5.0"
     "@turf/helpers": "npm:^7.2.0"
     "@turf/length": "npm:^7.3.4"
-    "@turf/square-grid": "npm:^7.3.5"
     "@types/chroma-js": "npm:^3.1.1"
     "@types/geojson": "npm:^7946.0.14"
     "@types/mapbox__mapbox-gl-draw": "npm:^1.4.8"

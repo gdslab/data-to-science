@@ -1,9 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Map, { MapRef, MapMouseEvent, ScaleControl } from 'react-map-gl/maplibre';
-import squareGrid from '@turf/square-grid';
-import distance from '@turf/distance';
-import { point } from '@turf/helpers';
-import { FeatureCollection, Polygon } from 'geojson';
 
 import ColorBarControl from '../ColorBarControl';
 import CompareMapControl from './CompareMapControl';
@@ -111,21 +107,6 @@ export default function CompareMap() {
       return !prev;
     });
   }, []);
-
-  // Compute square grid from project bounding box (~10 cells across the larger dimension)
-  const compareGrid = useMemo((): FeatureCollection<Polygon> | null => {
-    if (!activeProjectBBox) return null;
-    const [minLng, minLat, maxLng, maxLat] = activeProjectBBox;
-    const widthKm = distance(point([minLng, minLat]), point([maxLng, minLat]), {
-      units: 'kilometers',
-    });
-    const heightKm = distance(point([minLng, minLat]), point([minLng, maxLat]), {
-      units: 'kilometers',
-    });
-    const cellSide = Math.max(widthKm, heightKm) / 10;
-    if (cellSide <= 0) return null;
-    return squareGrid(activeProjectBBox, cellSide, { units: 'kilometers' });
-  }, [activeProjectBBox]);
 
   // Selected data products
   const selectedLeftDataProduct = useMemo(
@@ -312,11 +293,6 @@ export default function CompareMap() {
             />
           )}
 
-        {/* Grid overlay */}
-        {activeProject && showGrid && compareGrid && (
-          <GridOverlay data={compareGrid} side="left" />
-        )}
-
         {/* Point sync marker */}
         {pointSyncActive && syncPoint && (
           <PointSyncMarkers syncPoint={syncPoint} side="left" />
@@ -364,11 +340,6 @@ export default function CompareMap() {
             />
           )}
 
-        {/* Grid overlay */}
-        {activeProject && showGrid && compareGrid && (
-          <GridOverlay data={compareGrid} side="right" />
-        )}
-
         {/* Point sync marker */}
         {pointSyncActive && syncPoint && (
           <PointSyncMarkers syncPoint={syncPoint} side="right" />
@@ -376,6 +347,10 @@ export default function CompareMap() {
 
         <ScaleControl />
       </Map>
+
+      {/* Screen-space grid overlays - rendered as map siblings so they don't scale with zoom */}
+      {showGrid && <GridOverlay style={leftMapStyle} side="left" />}
+      {showGrid && <GridOverlay style={rightMapStyle} side="right" />}
 
       {/* Draggable Swipe Slider - only in split-screen mode */}
       {mode === 'split-screen' && (
