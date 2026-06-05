@@ -7,6 +7,7 @@ import CompareToolsControl from './CompareToolsControl';
 import GridOverlay from './GridOverlay';
 import PointSyncMarkers from './PointSyncMarkers';
 import SwipeSlider from './SwipeSlider';
+import { usePointValue } from './usePointValue';
 import CompareModeControl, { Mode } from './CompareModeControl';
 import ProjectBoundary from '../ProjectBoundary';
 import { useMapContext } from '../MapContext';
@@ -127,6 +128,16 @@ export default function CompareMap() {
           ({ id }) => id === mapComparisonState.right?.dataProductId
         ) || null,
     [flights, mapComparisonState.right]
+  );
+
+  // Point value sampling for both sides
+  const { data: leftPointValue, loading: leftValueLoading } = usePointValue(
+    selectedLeftDataProduct,
+    syncPoint
+  );
+  const { data: rightPointValue, loading: rightValueLoading } = usePointValue(
+    selectedRightDataProduct,
+    syncPoint
   );
 
   // Symbology initialization for left data product
@@ -295,7 +306,13 @@ export default function CompareMap() {
 
         {/* Point sync marker */}
         {pointSyncActive && syncPoint && (
-          <PointSyncMarkers syncPoint={syncPoint} side="left" />
+          <PointSyncMarkers
+            syncPoint={syncPoint}
+            side="left"
+            dataProduct={selectedLeftDataProduct}
+            value={leftPointValue?.values ?? null}
+            loading={leftValueLoading}
+          />
         )}
 
         <ScaleControl />
@@ -342,7 +359,13 @@ export default function CompareMap() {
 
         {/* Point sync marker */}
         {pointSyncActive && syncPoint && (
-          <PointSyncMarkers syncPoint={syncPoint} side="right" />
+          <PointSyncMarkers
+            syncPoint={syncPoint}
+            side="right"
+            dataProduct={selectedRightDataProduct}
+            value={rightPointValue?.values ?? null}
+            loading={rightValueLoading}
+          />
         )}
 
         <ScaleControl />

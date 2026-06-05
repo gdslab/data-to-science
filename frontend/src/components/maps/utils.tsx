@@ -722,14 +722,72 @@ const fitMapToGeoJSON = (
   }
 };
 
+/**
+ * Format a single number for display: integers as integers, floats up to 2 d.p.
+ * @param v Numeric value.
+ * @returns Formatted string.
+ */
+function formatNum(v: number): string {
+  return Number.isInteger(v) ? v.toString() : parseFloat(v.toFixed(2)).toString();
+}
+
+/**
+ * Build a human-readable label string for raster cell value(s).
+ * - Single-band: "{value} {unit}" (unit omitted if empty).
+ * - Multiband: "R: {r}  G: {g}  B: {b}" using the displayed symbology's band indices.
+ * - All-nodata or no values: "No data".
+ * @param values  Per-band values from /public/point (null = nodata/out-of-range).
+ * @param dataProduct  Active data product.
+ * @param symbologyState  Current raster symbology state keyed by data product id.
+ */
+function buildLabel(
+  values: (number | null)[] | null | undefined,
+  dataProduct: DataProduct | null | undefined,
+  symbologyState: Record<
+    string,
+    { symbology: SingleBandSymbology | MultibandSymbology | null } | undefined
+  >
+): string {
+  if (!values || !dataProduct) return '';
+
+  const allNodata = values.every((v) => v === null);
+  if (allNodata) return 'No data';
+
+  if (isSingleBand(dataProduct)) {
+    const v = values[0];
+    if (v == null) return 'No data';
+    const unit = dataProduct.stac_properties?.raster?.[0]?.unit;
+    return unit ? `${formatNum(v)} ${unit}` : formatNum(v);
+  }
+
+  // multiband — label channels using the displayed symbology if available
+  const sym = symbologyState[dataProduct.id]?.symbology;
+  if (sym && 'red' in sym) {
+    const mb = sym as MultibandSymbology;
+    const fmt = (v: number | null | undefined) =>
+      v == null ? 'n/a' : formatNum(v);
+    const r = values[mb.red.idx - 1];
+    const g = values[mb.green.idx - 1];
+    const b = values[mb.blue.idx - 1];
+    return `R: ${fmt(r)}  G: ${fmt(g)}  B: ${fmt(b)}`;
+  }
+
+  // fallback: enumerate all bands
+  return values
+    .map((v, i) => `B${i + 1}: ${v == null ? 'n/a' : formatNum(v)}`)
+    .join('  ');
+}
+
 export {
   areProjectsEqual,
+  buildLabel,
   calculateBoundsFromGeoJSON,
   createDefaultSingleBandSymbology,
   createDefaultMultibandSymbology,
   filterValidGeoJSONFeatures,
   filterValidProjects,
   fitMapToGeoJSON,
+  formatNum,
   getCategory,
   getDefaultStyle,
   getHillshade,
