@@ -1,52 +1,41 @@
-import { useEffect } from 'react';
-import { FeatureCollection, Polygon } from 'geojson';
-import { Layer, Source, useMap } from 'react-map-gl/maplibre';
+const GRID_CELL_PX = 200;
 
 type GridOverlayProps = {
-  data: FeatureCollection<Polygon>;
+  style: React.CSSProperties;
   side: 'left' | 'right';
 };
 
-export default function GridOverlay({ data, side }: GridOverlayProps) {
-  const sourceId = `compare-grid-${side}`;
-  const layerId = `compare-grid-layer-${side}`;
-  const { current: map } = useMap();
-
-  // Keep the grid layer on top of raster layers. ProjectRasterTiles re-inserts
-  // its raster on top whenever data/symbology changes, so we re-assert our
-  // position on every 'idle' event (the guard avoids a move→idle loop).
-  useEffect(() => {
-    if (!map) return;
-
-    const moveGridToTop = () => {
-      if (!map.getLayer(layerId)) return;
-      const order = map.getLayersOrder();
-      if (order[order.length - 1] !== layerId) {
-        map.moveLayer(layerId);
-      }
-    };
-
-    moveGridToTop();
-    map.on('idle', moveGridToTop);
-
-    return () => {
-      map.off('idle', moveGridToTop);
-    };
-  }, [map, layerId]);
-
+export default function GridOverlay({ style, side }: GridOverlayProps) {
+  const patternId = `compare-grid-${side}`;
   return (
-    <Source id={sourceId} type="geojson" data={data}>
-      <Layer
-        id={layerId}
-        type="line"
-        source={sourceId}
-        paint={{
-          'line-color': '#ffffff',
-          'line-opacity': 0.4,
-          'line-width': 2,
-          'line-dasharray': [4, 4],
-        }}
-      />
-    </Source>
+    <div
+      style={{
+        ...style,
+        borderRight: 'none',
+        zIndex: 999,
+        pointerEvents: 'none',
+      }}
+    >
+      <svg width="100%" height="100%">
+        <defs>
+          <pattern
+            id={patternId}
+            patternUnits="userSpaceOnUse"
+            width={GRID_CELL_PX}
+            height={GRID_CELL_PX}
+          >
+            <path
+              d={`M ${GRID_CELL_PX} 0 L 0 0 0 ${GRID_CELL_PX}`}
+              fill="none"
+              stroke="#ffffff"
+              strokeOpacity={0.4}
+              strokeWidth={2}
+              strokeDasharray="4 4"
+            />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill={`url(#${patternId})`} />
+      </svg>
+    </div>
   );
 }
