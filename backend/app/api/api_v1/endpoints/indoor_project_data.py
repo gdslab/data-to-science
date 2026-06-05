@@ -16,6 +16,56 @@ logger = logging.getLogger("__name__")
 
 router = APIRouter()
 
+# PPEW worksheet columns that the response schema declares as str / List[str].
+# These must be coerced to strings before the dtype-branching fillna so that
+# empty or numeric-typed columns receive "" (not the integer -9999 sentinel).
+PPEW_STRING_COLUMNS = [
+    "treatment",
+    "species_name",
+    "entry",
+    "pottype",
+    "ct_configuration",
+    "variety",
+    "location",
+    "pi",
+]
+
+
+def _coerce_string_columns(df: pd.DataFrame, columns: List[str]) -> pd.DataFrame:
+    """Force the given columns to plain-string (object) dtype with "" for missing.
+
+    Handles pandas 3.0 ``future.infer_string`` behavior where ``astype(str)``
+    yields ``StringDtype`` and keeps missing values as ``<NA>`` rather than the
+    literal string "nan".  We must fill missing values *before* the
+    dtype-branching ``fillna(-9999)`` that handles genuinely numeric columns, so
+    those columns never receive the numeric sentinel.
+
+    Steps per column:
+    1. ``.where(notna(), "")`` — fills NaN / <NA> to "" while the column is
+       still nullable (works for float64, object, and StringDtype alike).
+    2. ``.astype(str)`` — stringify surviving values.
+    3. ``.replace({...})`` — scrub any "-9999"/"-9999.0" sentinel that survived
+       as a string, plus defensive textual missing markers.
+    4. ``.astype(object)`` — return to plain object dtype so the downstream
+       ``apply(col.dtype == "object")`` fill treats this as a string column.
+    """
+    for col in columns:
+        if col in df.columns:
+            series = df[col].where(df[col].notna(), "")
+            series = series.astype(str).replace(
+                {
+                    "-9999": "",
+                    "-9999.0": "",
+                    "nan": "",
+                    "NaN": "",
+                    "None": "",
+                    "NaT": "",
+                    "<NA>": "",
+                }
+            )
+            df[col] = series.astype(object)
+    return df
+
 
 def validate_plotted_by_according_to_combination(plotted_by, according_to):
     """
@@ -128,15 +178,10 @@ def read_indoor_project_data_spreadsheet(
             ppew_df["planting_date"].apply(parse_date).dt.strftime("%Y-%m-%d %H:%M:%S")
         )
 
-        # entry might be an integer, convert to string
-        ppew_df["entry"] = ppew_df["entry"].astype(str)
-
-        # treatment might be an integer, convert to string
-        ppew_df["treatment"] = ppew_df["treatment"].astype(str)
-
-        # convert location and pi to string to ensure nans are replaced with ""
-        ppew_df["location"] = ppew_df["location"].astype(str)
-        ppew_df["pi"] = ppew_df["pi"].astype(str)
+        # Coerce schema string columns to plain object dtype with "" for missing,
+        # before the dtype-branching fillna so numeric columns get -9999 but
+        # string columns get "".  See _coerce_string_columns for details.
+        ppew_df = _coerce_string_columns(ppew_df, PPEW_STRING_COLUMNS)
 
         # replace nan with "" for object columns and -9999 for numeric columns
         ppew_df = ppew_df.apply(
@@ -370,6 +415,12 @@ def read_indoor_project_data_plant(
     pot_top_df["scan_date"] = pot_top_df["scan_date"].dt.strftime("%Y-%m-%d")
     pot_side_avg_df["scan_date"] = pot_side_avg_df["scan_date"].dt.strftime("%Y-%m-%d")
 
+    # Coerce schema string columns to plain object dtype with "" for missing,
+    # before the dtype-branching fillna so numeric columns get -9999 but
+    # string columns get "".  See _coerce_string_columns for details.
+    for df in (pot_ppew_df, pot_top_df, pot_side_avg_df):
+        _coerce_string_columns(df, PPEW_STRING_COLUMNS)
+
     # replace nan with "" for object columns and -9999 for numeric columns
     pot_ppew_df = pot_ppew_df.apply(
         lambda col: col.fillna("") if col.dtype == "object" else col.fillna(-9999)
@@ -380,14 +431,6 @@ def read_indoor_project_data_plant(
     pot_side_avg_df = pot_side_avg_df.apply(
         lambda col: col.fillna("") if col.dtype == "object" else col.fillna(-9999)
     )
-
-    # Ensure treatment is always a string
-    if "treatment" in pot_ppew_df.columns:
-        pot_ppew_df["treatment"] = pot_ppew_df["treatment"].astype(str)
-    if "treatment" in pot_top_df.columns:
-        pot_top_df["treatment"] = pot_top_df["treatment"].astype(str)
-    if "treatment" in pot_side_avg_df.columns:
-        pot_side_avg_df["treatment"] = pot_side_avg_df["treatment"].astype(str)
 
     # columns to send to client from ppew worksheet
     ppew_columns_of_interest = [
