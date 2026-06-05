@@ -83,6 +83,11 @@ class DataProductBoundingBox(BaseModel):
     bounds: List[float]
 
 
+class DataProductPointValue(BaseModel):
+    coordinates: List[float]
+    values: List[Optional[float]]
+
+
 class DataProductBand(BaseModel):
     name: str
     description: str
