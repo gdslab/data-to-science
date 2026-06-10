@@ -17,6 +17,8 @@ from app.crud.base import CRUDBase
 from app.db.session import SessionLocal
 from app.models.constants import NON_RASTER_TYPES, PROCESSING_JOB_NAMES
 from app.models.data_product import DataProduct
+from app.models.data_product_like import DataProductLike
+from app.models.data_product_view import DataProductView
 from app.models.flight import Flight
 from app.models.project import Project
 from app.models.job import Job
@@ -56,7 +58,30 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
     def get_single_by_id(
         self, db: Session, data_product_id: UUID, user_id: UUID, upload_dir: str
     ) -> Optional[DataProduct]:
-        data_product_query = select(DataProduct).where(
+        liked_exists = (
+            select(1)
+            .where(
+                and_(
+                    DataProductLike.data_product_id == DataProduct.id,
+                    DataProductLike.user_id == user_id,
+                )
+            )
+            .exists()
+            .label("liked")
+        )
+        like_count_sq = (
+            select(func.count(DataProductLike.id))
+            .where(DataProductLike.data_product_id == DataProduct.id)
+            .scalar_subquery()
+            .label("like_count")
+        )
+        view_count_sq = (
+            select(func.count(DataProductView.id))
+            .where(DataProductView.data_product_id == DataProduct.id)
+            .scalar_subquery()
+            .label("view_count")
+        )
+        data_product_query = select(DataProduct, liked_exists, like_count_sq, view_count_sq).where(
             and_(DataProduct.id == data_product_id, DataProduct.is_active)
         )
         user_style_query = select(UserStyle).where(
@@ -66,9 +91,13 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             )
         )
         with db as session:
-            data_product = session.execute(data_product_query).scalar_one_or_none()
+            row = session.execute(data_product_query).one_or_none()
             user_style = session.execute(user_style_query).scalar_one_or_none()
-            if data_product:
+            if row:
+                data_product, liked, like_count, view_count = row
+                setattr(data_product, "liked", liked)
+                setattr(data_product, "like_count", like_count)
+                setattr(data_product, "view_count", view_count)
                 set_spatial_metadata_attrs(data_product)
                 set_url_attr(data_product, upload_dir)
                 is_status_set = set_status_attr(data_product, data_product.jobs)
@@ -88,8 +117,20 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
         upload_dir: str,
         user_id: Optional[UUID] = None,
     ) -> Optional[DataProduct]:
+        like_count_sq = (
+            select(func.count(DataProductLike.id))
+            .where(DataProductLike.data_product_id == DataProduct.id)
+            .scalar_subquery()
+            .label("like_count")
+        )
+        view_count_sq = (
+            select(func.count(DataProductView.id))
+            .where(DataProductView.data_product_id == DataProduct.id)
+            .scalar_subquery()
+            .label("view_count")
+        )
         data_product_query = (
-            select(DataProduct)
+            select(DataProduct, like_count_sq, view_count_sq)
             .join(DataProduct.file_permission)
             .join(DataProduct.flight)
             .options(joinedload(DataProduct.file_permission))
@@ -103,13 +144,21 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             )
         )
         with db as session:
-            data_product = session.scalar(data_product_query)
-            if data_product and data_product.file_permission.is_public:
+            # .unique() is required here because .options(joinedload(DataProduct.flight))
+            # triggers Flight.data_products/raw_data (lazy="joined"), which duplicates the
+            # parent DataProduct row; .unique() collapses those duplicates.
+            row = session.execute(data_product_query).unique().one_or_none()
+            if not row:
+                return None
+            data_product, like_count, view_count = row
+            setattr(data_product, "like_count", like_count)
+            setattr(data_product, "view_count", view_count)
+            if data_product.file_permission.is_public:
                 set_spatial_metadata_attrs(data_product)
                 set_signature_attr(data_product)
                 set_url_attr(data_product, upload_dir)
                 return data_product
-            elif data_product and user_id:
+            elif user_id:
                 project_id = data_product.flight.project_id
                 project_member = crud.project_member.get_by_project_and_member_id(
                     db, project_uuid=project_id, member_id=user_id
@@ -127,19 +176,40 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
     def get_multi_by_flight(
         self, db: Session, flight_id: UUID, upload_dir: str, user_id: UUID
     ) -> Sequence[DataProduct]:
+        liked_exists = (
+            select(1)
+            .where(
+                and_(
+                    DataProductLike.data_product_id == DataProduct.id,
+                    DataProductLike.user_id == user_id,
+                )
+            )
+            .exists()
+            .label("liked")
+        )
+        like_count_sq = (
+            select(func.count(DataProductLike.id))
+            .where(DataProductLike.data_product_id == DataProduct.id)
+            .scalar_subquery()
+            .label("like_count")
+        )
+        view_count_sq = (
+            select(func.count(DataProductView.id))
+            .where(DataProductView.data_product_id == DataProduct.id)
+            .scalar_subquery()
+            .label("view_count")
+        )
         data_products_query = (
-            select(DataProduct)
+            select(DataProduct, liked_exists, like_count_sq, view_count_sq)
             .join(DataProduct.file_permission)
             .join(DataProduct.jobs)
             .where(and_(DataProduct.flight_id == flight_id, DataProduct.is_active))
         )
         with db as session:
-            data_products = (
-                session.execute(data_products_query).scalars().unique().all()
-            )
+            rows = session.execute(data_products_query).unique().all()
 
             # Batch load all user styles to avoid N+1 queries
-            data_product_ids = [dp.id for dp in data_products]
+            data_product_ids = [row[0].id for row in rows]
             user_styles_by_data_product_id = {}
             if data_product_ids:
                 user_styles_query = (
@@ -154,7 +224,12 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                     )
 
             updated_data_products = []
-            for data_product in data_products:
+            for row in rows:
+                data_product, liked, like_count, view_count = row
+                setattr(data_product, "liked", liked)
+                setattr(data_product, "like_count", like_count)
+                setattr(data_product, "view_count", view_count)
+
                 # if not a non-raster type, find user style settings for data product
                 if data_product.data_type not in NON_RASTER_TYPES:
                     user_style = user_styles_by_data_product_id.get(data_product.id)

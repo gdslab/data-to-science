@@ -7,8 +7,10 @@ from app.models.annotation_attachment import AnnotationAttachment
 from app.models.annotation_tag import AnnotationTag
 from app.models.breedbase_connection import BreedbaseConnection
 from app.models.campaign import Campaign
+from app.models.data_product_like import DataProductLike
 from app.models.data_product_metadata import DataProductMetadata
 from app.models.data_product import DataProduct
+from app.models.data_product_view import DataProductView
 from app.models.disk_usage_stats import DiskUsageStats
 from app.models.extension import Extension
 from app.models.file_permission import FilePermission
@@ -19,6 +21,7 @@ from app.models.indoor_project_data import IndoorProjectData
 from app.models.job import Job
 from app.models.location import Location
 from app.models.project import Project
+from app.models.project_like import ProjectLike
 from app.models.project_member import ProjectMember
 from app.models.raw_data import RawData
 from app.models.shortened_url import ShortenedUrl

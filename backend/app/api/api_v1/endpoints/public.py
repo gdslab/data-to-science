@@ -2,10 +2,11 @@ import os
 import urllib.parse
 from io import BytesIO
 from typing import Annotated, Any, List, Optional, Sequence, Union
+from uuid import UUID
 
 import httpx
 import rasterio
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response, status
 from fastapi.responses import RedirectResponse, StreamingResponse
 from geojson_pydantic import FeatureCollection
 from pydantic import UUID4
@@ -301,3 +302,64 @@ def read_published_project_flights(
     return crud.flight.get_public_flights_by_project(
         db, project_id=project_id, upload_dir=upload_dir, has_raster=has_raster
     )
+
+
+@router.post("/data_products/{data_product_id}/view")
+@limiter.limit("60/minute")
+def record_public_data_product_view(
+    request: Request,
+    response: Response,
+    data_product_id: UUID,
+    session_id: Annotated[Optional[str], Header(alias="X-Session-Id")] = None,
+    current_user: Optional[models.User] = Depends(deps.get_optional_current_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Record an anonymous or authenticated view for a data product.
+
+    Authenticated callers use their user_id. Anonymous callers must supply an
+    X-Session-Id header and the project must be published. Returns 201 on insert,
+    200 on dedup-skip, 400 on missing identity, 404 on not-found or unpublished.
+    """
+    data_product = crud.data_product.get(db, id=data_product_id)
+    if (
+        not data_product
+        or not data_product.is_active
+        or not data_product.is_initial_processing_completed
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
+        )
+
+    if not current_user:
+        # Anonymous callers: require the project to be published
+        flight = crud.flight.get(db, id=data_product.flight_id)
+        project = crud.project.get(db, id=flight.project_id) if flight else None
+        if not project or not project.is_published:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
+            )
+        if not session_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="X-Session-Id is required for anonymous views",
+            )
+
+    user_id = current_user.id if current_user else None
+    try:
+        view = crud.data_product_view.create_if_not_recent(
+            db,
+            data_product_id=data_product_id,
+            user_id=user_id,
+            session_id=session_id,
+        )
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="X-Session-Id is required for anonymous views",
+        )
+
+    if view:
+        response.status_code = status.HTTP_201_CREATED
+        return {"message": "View recorded"}
+    response.status_code = status.HTTP_200_OK
+    return {"message": "View already recorded"}

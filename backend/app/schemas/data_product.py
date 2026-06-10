@@ -72,6 +72,9 @@ class DataProduct(DataProductInDBBase):
     signature: Optional[DataProductSignature] = None
     status: Optional[str] = None
     url: Optional[AnyHttpUrl] = None
+    liked: bool = False
+    like_count: int = 0
+    view_count: int = 0
 
 
 # additional properties stored in DB

@@ -15,6 +15,8 @@ if TYPE_CHECKING:
     from .annotation import Annotation
     from .api_key import APIKey
     from .campaign import Campaign
+    from .data_product_like import DataProductLike
+    from .data_product_view import DataProductView
     from .flight import Flight
     from .indoor_project import IndoorProject
     from .project_like import ProjectLike
@@ -81,6 +83,12 @@ class User(Base):
     )
     indoor_projects: Mapped[List["IndoorProject"]] = relationship(
         back_populates="owner", cascade="all, delete"
+    )
+    data_product_likes: Mapped[List["DataProductLike"]] = relationship(
+        back_populates="user", cascade="all, delete"
+    )
+    data_product_views: Mapped[List["DataProductView"]] = relationship(
+        back_populates="user", cascade="all, delete"
     )
     project_likes: Mapped[List["ProjectLike"]] = relationship(
         back_populates="user", cascade="all, delete"

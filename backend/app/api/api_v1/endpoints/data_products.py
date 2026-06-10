@@ -9,7 +9,7 @@ from urllib.parse import urlparse, parse_qs
 from uuid import UUID, uuid4
 
 import segno
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
 from geojson_pydantic import Feature, FeatureCollection, Polygon, MultiPolygon
@@ -148,6 +148,70 @@ def get_shortened_url(
         return StreamingResponse(buffer, media_type="image/png")
     else:
         return schemas.ShortenedUrlApiResponse(shortened_url=url)
+
+
+@router.post("/{data_product_id}/like", status_code=status.HTTP_201_CREATED)
+def like_data_product(
+    data_product_id: UUID,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    flight: models.Flight = Depends(deps.can_read_flight),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Like a data product. Returns 400 if already liked."""
+    existing = crud.data_product_like.get_by_data_product_id_and_user_id(
+        db, data_product_id=data_product_id, user_id=current_user.id
+    )
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Data product already liked",
+        )
+    crud.data_product_like.create(
+        db,
+        obj_in=schemas.DataProductLikeCreate(
+            data_product_id=data_product_id, user_id=current_user.id
+        ),
+    )
+    return {"message": "Data product liked"}
+
+
+@router.delete("/{data_product_id}/like", status_code=status.HTTP_200_OK)
+def unlike_data_product(
+    data_product_id: UUID,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    flight: models.Flight = Depends(deps.can_read_flight),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Remove a like from a data product. Returns 400 if not currently liked."""
+    existing = crud.data_product_like.get_by_data_product_id_and_user_id(
+        db, data_product_id=data_product_id, user_id=current_user.id
+    )
+    if not existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Data product not liked",
+        )
+    crud.data_product_like.remove(db, id=existing.id)
+    return {"message": "Data product unliked"}
+
+
+@router.post("/{data_product_id}/view")
+def record_data_product_view(
+    data_product_id: UUID,
+    response: Response,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    flight: models.Flight = Depends(deps.can_read_flight),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Record a view for a data product. Returns 201 on insert, 200 on dedup-skip."""
+    view = crud.data_product_view.create_if_not_recent(
+        db, data_product_id=data_product_id, user_id=current_user.id
+    )
+    if view:
+        response.status_code = status.HTTP_201_CREATED
+        return {"message": "View recorded"}
+    response.status_code = status.HTTP_200_OK
+    return {"message": "View already recorded"}
 
 
 @router.get("/{data_product_id}", response_model=schemas.DataProduct)

@@ -5,7 +5,9 @@ from .crud_api_key import api_key
 from .crud_breedbase_connection import breedbase_connection
 from .crud_campaign import campaign
 from .crud_data_product import data_product
+from .crud_data_product_like import data_product_like
 from .crud_data_product_metadata import data_product_metadata
+from .crud_data_product_view import data_product_view
 from .crud_disk_usage_stats import disk_usage_stats
 from .crud_extension import extension
 from .crud_file_permission import file_permission

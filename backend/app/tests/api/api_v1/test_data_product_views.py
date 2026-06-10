@@ -1,0 +1,154 @@
+from datetime import datetime, timedelta, timezone
+
+from fastapi import status
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
+from app import crud
+from app.api.deps import get_current_user
+from app.core.config import settings
+from app.tests.utils.data_product import SampleDataProduct
+from app.tests.utils.data_product_view import create_data_product_view
+from app.tests.utils.project import create_project
+from app.tests.utils.user import create_user
+
+
+def _view_url(data_product: SampleDataProduct) -> str:
+    return (
+        f"{settings.API_V1_STR}/projects/{data_product.project.id}"
+        f"/flights/{data_product.flight.id}"
+        f"/data_products/{data_product.obj.id}/view"
+    )
+
+
+def _public_view_url(data_product: SampleDataProduct) -> str:
+    return f"{settings.API_V1_STR}/public/data_products/{data_product.obj.id}/view"
+
+
+# ── Authenticated view endpoint ──────────────────────────────────────────────
+
+
+def test_authenticated_view_returns_201(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+
+    response = client.post(_view_url(data_product))
+
+    assert response.status_code == status.HTTP_201_CREATED
+
+
+def test_authenticated_view_within_window_returns_200(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+
+    client.post(_view_url(data_product))
+    response = client.post(_view_url(data_product))
+
+    assert response.status_code == status.HTTP_200_OK
+
+
+def test_authenticated_view_after_window_returns_201(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+    old_time = datetime.now(tz=timezone.utc) - timedelta(hours=2)
+
+    create_data_product_view(
+        db,
+        data_product_id=data_product.obj.id,
+        user_id=current_user.id,
+        viewed_at=old_time,
+    )
+    response = client.post(_view_url(data_product))
+
+    assert response.status_code == status.HTTP_201_CREATED
+
+
+# ── Public anonymous view endpoint ───────────────────────────────────────────
+
+
+def _make_published(db: Session, data_product: SampleDataProduct) -> None:
+    """Publish the data product's project."""
+    crud.project.update_project_visibility(
+        db, project_id=data_product.project.id, is_public=True
+    )
+
+
+def test_public_anonymous_view_with_session_id_returns_201(
+    client: TestClient, db: Session
+) -> None:
+    data_product = SampleDataProduct(db)
+    _make_published(db, data_product)
+
+    response = client.post(
+        _public_view_url(data_product),
+        headers={"X-Session-Id": "test-session-001"},
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED
+
+
+def test_public_anonymous_view_without_session_id_returns_400(
+    client: TestClient, db: Session
+) -> None:
+    data_product = SampleDataProduct(db)
+    _make_published(db, data_product)
+
+    response = client.post(_public_view_url(data_product))
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_public_view_on_unpublished_project_returns_404(
+    client: TestClient, db: Session
+) -> None:
+    data_product = SampleDataProduct(db)
+
+    response = client.post(
+        _public_view_url(data_product),
+        headers={"X-Session-Id": "test-session-002"},
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_public_view_dedup_same_session_returns_200(
+    client: TestClient, db: Session
+) -> None:
+    data_product = SampleDataProduct(db)
+    _make_published(db, data_product)
+
+    client.post(
+        _public_view_url(data_product),
+        headers={"X-Session-Id": "test-session-003"},
+    )
+    response = client.post(
+        _public_view_url(data_product),
+        headers={"X-Session-Id": "test-session-003"},
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+
+
+def test_public_view_different_sessions_both_count(
+    client: TestClient, db: Session
+) -> None:
+    data_product = SampleDataProduct(db)
+    _make_published(db, data_product)
+
+    client.post(
+        _public_view_url(data_product), headers={"X-Session-Id": "session-A"}
+    )
+    client.post(
+        _public_view_url(data_product), headers={"X-Session-Id": "session-B"}
+    )
+
+    count = crud.data_product_view.get_count_by_data_product_id(
+        db, data_product_id=data_product.obj.id
+    )
+    assert count == 2
