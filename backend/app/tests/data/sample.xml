@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <idinfo>
+    <citation>
+      <citeinfo>
+        <origin>Test Origin</origin>
+        <title>Sample Data Product Metadata</title>
+      </citeinfo>
+    </citation>
+    <descript>
+      <abstract>Sample XML metadata file used for testing.</abstract>
+      <purpose>Testing XML uploads for data products.</purpose>
+    </descript>
+  </idinfo>
+</metadata>

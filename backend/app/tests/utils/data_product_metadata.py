@@ -1,7 +1,8 @@
 import json
 import os
+import shutil
 from typing import Dict, List, Tuple, TypedDict, Union
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi.encoders import jsonable_encoder
 from geojson_pydantic import Feature, FeatureCollection
@@ -67,6 +68,52 @@ def get_zonal_feature_collection(
         return zones_feature_collection.features[0]
     else:
         return zones_feature_collection
+
+
+def get_sample_xml_filepath() -> str:
+    """Returns path to sample XML file in test data directory."""
+    return os.path.join(os.sep, "app", "app", "tests", "data", "sample.xml")
+
+
+def create_xml_metadata(
+    db: Session, data_product_id: UUID | None = None
+) -> DataProductMetadata:
+    """Create DataProductMetadata record for an XML file. Copies the sample XML
+    test file into the data product's directory.
+
+    Args:
+        db (Session): Database session.
+        data_product_id (UUID | None, optional): Data product ID. Defaults to None.
+
+    Returns:
+        DataProductMetadata: Instance of DataProductMetadata with category "xml".
+    """
+    # create data product if ID for one is not provided
+    if not data_product_id:
+        data_product = SampleDataProduct(db, data_type="dsm").obj
+    else:
+        data_product_in_db = crud.data_product.get(db, id=data_product_id)
+        if not data_product_in_db:
+            raise Exception("Cannot find test data product in db")
+        data_product = data_product_in_db
+    # copy sample xml file into data product directory
+    src_filepath = get_sample_xml_filepath()
+    dest_filepath = os.path.join(
+        os.path.dirname(data_product.filepath), f"{uuid4()}.xml"
+    )
+    shutil.copyfile(src_filepath, dest_filepath)
+    metadata_in = DataProductMetadataCreate(
+        category="xml",
+        properties={
+            "filepath": dest_filepath,
+            "original_filename": "sample.xml",
+            "file_size": os.path.getsize(dest_filepath),
+        },
+    )
+    metadata = crud.data_product_metadata.create_with_data_product(
+        db, obj_in=metadata_in, data_product_id=data_product.id
+    )
+    return metadata
 
 
 def create_zonal_metadata(

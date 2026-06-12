@@ -64,6 +64,12 @@ class DataProductSignature(BaseModel):
     secure: str
 
 
+class DataProductXMLMetadata(BaseModel):
+    original_filename: str
+    file_size: int
+    content: str
+
+
 class DataProduct(DataProductInDBBase):
     bbox: Optional[List[float]] = None
     crs: Optional[Dict] = None
@@ -72,6 +78,7 @@ class DataProduct(DataProductInDBBase):
     signature: Optional[DataProductSignature] = None
     status: Optional[str] = None
     url: Optional[AnyHttpUrl] = None
+    xml_metadata: Optional[DataProductXMLMetadata] = None
 
 
 # additional properties stored in DB

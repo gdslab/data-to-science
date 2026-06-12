@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import shutil
+import xml.etree.ElementTree as ET
 from io import BytesIO
 from pathlib import Path
 from typing import Annotated, Any, Optional, Sequence, Union
@@ -9,7 +10,7 @@ from urllib.parse import urlparse, parse_qs
 from uuid import UUID, uuid4
 
 import segno
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
 from geojson_pydantic import Feature, FeatureCollection, Polygon, MultiPolygon
@@ -34,11 +35,13 @@ from app.schemas.shortened_url import ShortenedUrlApiResponse, UrlPayload
 from app.utils.job_manager import JobManager
 from app.utils.tusd.post_processing import process_data_product_uploaded_to_tusd
 
-
 router = APIRouter()
 
 
 logger = logging.getLogger("__name__")
+
+
+XML_FILE_MAX_SIZE = 10 * 1024 * 1024  # 10 MiB
 
 
 def get_static_dir() -> str:
@@ -329,6 +332,126 @@ def deactivate_data_product(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to deactivate"
         )
     return deactivated_data_product
+
+
+@router.post(
+    "/{data_product_id}/xml",
+    response_model=schemas.DataProductMetadata,
+    status_code=status.HTTP_201_CREATED,
+)
+def upload_data_product_xml(
+    data_product_id: UUID,
+    file: UploadFile,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    flight: models.Flight = Depends(deps.can_read_write_flight),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Uploads XML file and associates it with a data product. Only one XML file
+    can be associated with a data product at a time. The existing XML file must
+    be deleted before a new one can be uploaded.
+    """
+    if not flight:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
+        )
+
+    upload_dir = get_static_dir()
+    data_product = crud.data_product.get_single_by_id(
+        db,
+        data_product_id=data_product_id,
+        upload_dir=upload_dir,
+        user_id=current_user.id,
+    )
+    if not data_product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
+        )
+
+    # only accept files with an .xml extension
+    if not file.filename or Path(file.filename).suffix.lower() != ".xml":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File must have an .xml extension",
+        )
+
+    # limit file size and verify file contains well-formed xml
+    xml_content = file.file.read()
+    if len(xml_content) > XML_FILE_MAX_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="XML file exceeds maximum size of 10 MB",
+        )
+    try:
+        ET.fromstring(xml_content)
+    except ET.ParseError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File is not well-formed XML",
+        )
+
+    # only one xml file allowed per data product
+    existing_metadata = crud.data_product_metadata.get_by_data_product(
+        db, category="xml", data_product_id=data_product_id
+    )
+    if len(existing_metadata) > 0:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "Data product already has an XML file. "
+                "Delete it before uploading a new one."
+            ),
+        )
+
+    # write xml file to data product directory
+    data_product_dir = utils.get_data_product_dir(
+        str(flight.project_id), str(flight.id), str(data_product_id)
+    )
+    xml_filepath = data_product_dir / f"{uuid4()}.xml"
+    with open(xml_filepath, "wb") as xml_file:
+        xml_file.write(xml_content)
+
+    metadata_in = schemas.DataProductMetadataCreate(
+        category="xml",
+        properties={
+            "filepath": str(xml_filepath),
+            "original_filename": file.filename,
+            "file_size": len(xml_content),
+        },
+    )
+    metadata = crud.data_product_metadata.create_with_data_product(
+        db, obj_in=metadata_in, data_product_id=data_product_id
+    )
+    return metadata
+
+
+@router.delete("/{data_product_id}/xml", response_model=schemas.DataProductMetadata)
+def delete_data_product_xml(
+    data_product_id: UUID,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    flight: models.Flight = Depends(deps.can_read_write_flight),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Removes XML file associated with a data product."""
+    if not flight:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
+        )
+
+    existing_metadata = crud.data_product_metadata.get_by_data_product(
+        db, category="xml", data_product_id=data_product_id
+    )
+    if len(existing_metadata) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="XML file not found"
+        )
+
+    xml_metadata = existing_metadata[0]
+    xml_filepath = xml_metadata.properties.get("filepath")
+    if xml_filepath and os.path.exists(xml_filepath):
+        os.remove(xml_filepath)
+
+    removed_metadata = crud.data_product_metadata.remove(db, id=xml_metadata.id)
+    return removed_metadata
 
 
 @router.post("/create_from_ext_storage", status_code=status.HTTP_202_ACCEPTED)
