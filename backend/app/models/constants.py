@@ -7,6 +7,9 @@ across CRUD operations and avoid code duplication.
 # Data type classifications for data products
 NON_RASTER_TYPES = frozenset({"panoramic", "point_cloud", "3dgs"})
 
+# Data product types that cannot have XML metadata attached
+XML_METADATA_EXCLUDED_TYPES = frozenset({"panoramic", "3dgs"})
+
 # Job names used for filtering processing jobs
 PROCESSING_JOB_NAMES = frozenset({
     "upload-data-product",

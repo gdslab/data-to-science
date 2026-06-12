@@ -49,6 +49,14 @@ export interface DataProduct {
   status: string;
   url: string;
   user_style: SingleBandSymbology | MultibandSymbology;
+  xml_metadata?: XmlMetadata | null;
+}
+
+// supplemental xml file attached to a data product
+export interface XmlMetadata {
+  original_filename: string;
+  file_size: number;
+  content: string;
 }
 
 // earth observation info from gdalinfo

@@ -15,6 +15,7 @@ import DataProductDeleteModal from './DataProductDeleteModal';
 import DataProductMetadataModal from './DataProductMetadataModal';
 import EditableDataType from './EditableDataType';
 import ToolboxModal from './ToolboxModal';
+import XmlMetadataAttachment from './XmlMetadata/XmlMetadataAttachment';
 import { useProjectContext } from '../../ProjectContext';
 import DataProductShareModal from './DataProductShareModal';
 
@@ -166,6 +167,10 @@ export default function DataProductCard({
               {!isEditing && (
                 <div className="flex flex-row gap-4">
                   <DataProductMetadataModal dataProduct={dataProduct} />
+                  <XmlMetadataAttachment
+                    dataProduct={dataProduct}
+                    variant="icon"
+                  />
                   <a href={dataProduct.url} target="_blank" download>
                     <ArrowDownTrayIcon
                       className="w-5 h-5 hover:scale-110"
