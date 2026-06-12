@@ -764,6 +764,31 @@ def test_upload_data_product_xml_when_xml_already_exists(
     assert response.status_code == status.HTTP_409_CONFLICT
 
 
+def test_upload_data_product_xml_with_unsupported_data_type(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    for data_type in ["panoramic", "3dgs"]:
+        data_product = SampleDataProduct(db, data_type=data_type, user=current_user)
+        response = client.post(
+            get_data_product_xml_url(data_product),
+            files={"file": ("sample.xml", read_sample_xml_bytes(), "text/xml")},
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_upload_data_product_xml_with_point_cloud_data_type(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, data_type="point_cloud", user=current_user)
+    response = client.post(
+        get_data_product_xml_url(data_product),
+        files={"file": ("sample.xml", read_sample_xml_bytes(), "text/xml")},
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+
+
 def test_read_data_product_includes_xml_metadata(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:

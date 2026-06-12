@@ -22,6 +22,7 @@ from app import crud, models, schemas
 from app.api import deps, utils
 from app.core import security
 from app.core.config import settings
+from app.models.constants import XML_METADATA_EXCLUDED_TYPES
 from app.models.vector_layer import VectorLayer
 from app.schemas.data_product_metadata import ZonalStatisticsProps
 from app.schemas.job import Status
@@ -365,6 +366,16 @@ def upload_data_product_xml(
     if not data_product:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
+        )
+
+    # xml metadata limited to raster and point cloud data products
+    if data_product.data_type.lower() in XML_METADATA_EXCLUDED_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "XML metadata is only supported for raster and point cloud "
+                "data products"
+            ),
         )
 
     # only accept files with an .xml extension
