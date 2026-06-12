@@ -18,6 +18,7 @@ import EditableDataType from './EditableDataType';
 import { useProjectContext } from '../../ProjectContext';
 import Table, { TableBody, TableHead } from '../../../../../Table';
 import ToolboxModal from './ToolboxModal';
+import XmlMetadataAttachment from './XmlMetadata/XmlMetadataAttachment';
 import DataProductShareModal from './DataProductShareModal';
 import { DataProduct, ProjectDetail } from '../../Project';
 
@@ -277,12 +278,16 @@ export default function DataProductsTable({
                     dataset.status === 'SUCCESS' ? (
                       <div
                         key={`row-${dataset.id}-file`}
-                        className="h-full flex items-center justify-center"
+                        className="h-full flex flex-col items-center justify-center gap-2.5"
                       >
                         <CopyURLButton
                           copyText="Copy File URL"
                           copiedText="Copied"
                           url={dataset.url}
+                        />
+                        <XmlMetadataAttachment
+                          dataProduct={dataset}
+                          compact={true}
                         />
                       </div>
                     ) : (
