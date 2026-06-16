@@ -172,7 +172,10 @@ def like_data_product(
             data_product_id=data_product_id, user_id=current_user.id
         ),
     )
-    return {"message": "Data product liked"}
+    like_count = crud.data_product_like.get_count_by_data_product_id(
+        db, data_product_id=data_product_id
+    )
+    return {"liked": True, "like_count": like_count}
 
 
 @router.delete("/{data_product_id}/like", status_code=status.HTTP_200_OK)
@@ -192,7 +195,10 @@ def unlike_data_product(
             detail="Data product not liked",
         )
     crud.data_product_like.remove(db, id=existing.id)
-    return {"message": "Data product unliked"}
+    like_count = crud.data_product_like.get_count_by_data_product_id(
+        db, data_product_id=data_product_id
+    )
+    return {"liked": False, "like_count": like_count}
 
 
 @router.post("/{data_product_id}/view")

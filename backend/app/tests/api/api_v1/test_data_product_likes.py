@@ -28,6 +28,24 @@ def test_like_data_product_returns_201(
     response = client.post(_like_url(data_product))
 
     assert response.status_code == status.HTTP_201_CREATED
+    assert response.json() == {"liked": True, "like_count": 1}
+
+
+def test_like_returns_total_like_count(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+    # A like from another user already exists
+    other_user = create_user(db)
+    create_data_product_like(
+        db, data_product_id=data_product.obj.id, user_id=other_user.id
+    )
+
+    response = client.post(_like_url(data_product))
+
+    assert response.status_code == status.HTTP_201_CREATED
+    assert response.json() == {"liked": True, "like_count": 2}
 
 
 def test_duplicate_like_returns_400(
@@ -54,6 +72,7 @@ def test_unlike_data_product_returns_200(
     response = client.delete(_like_url(data_product))
 
     assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {"liked": False, "like_count": 0}
 
 
 def test_unlike_not_liked_returns_400(

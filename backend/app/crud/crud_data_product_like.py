@@ -1,7 +1,7 @@
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
@@ -29,6 +29,14 @@ class CRUDDataProductLike(
 
         with db as session:
             return session.scalar(statement)
+
+    def get_count_by_data_product_id(self, db: Session, data_product_id: UUID) -> int:
+        """Return total like count for a data product."""
+        statement = select(func.count(DataProductLike.id)).where(
+            DataProductLike.data_product_id == data_product_id
+        )
+        with db as session:
+            return session.scalar(statement) or 0
 
 
 data_product_like = CRUDDataProductLike(DataProductLike)
