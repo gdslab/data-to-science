@@ -14,6 +14,8 @@ from app.schemas.data_product import DataProductCreate
 from app.schemas.flight import FlightUpdate
 from app.schemas.job import State, Status
 from app.tests.utils.data_product import SampleDataProduct
+from app.tests.utils.data_product_like import create_data_product_like
+from app.tests.utils.data_product_view import create_data_product_view
 from app.tests.utils.flight import create_flight
 from app.tests.utils.job import create_job
 from app.tests.utils.project import create_project
@@ -128,6 +130,59 @@ def test_get_flights_with_raster_data_products(db: Session) -> None:
     assert isinstance(flights_with_rasters, list)
     assert len(flights_with_rasters) == 1
     assert flights_with_rasters[0].id == flight1.id
+
+
+def test_get_flights_populates_like_view_counts(db: Session) -> None:
+    user = create_user(db)
+    project = create_project(db, owner_id=user.id)
+    flight = create_flight(db, project_id=project.id)
+    data_product = SampleDataProduct(
+        db, data_type="ortho", flight=flight, project=project
+    )
+    # One like by the requesting user and two views from distinct sessions
+    create_data_product_like(db, data_product_id=data_product.obj.id, user_id=user.id)
+    create_data_product_view(
+        db, data_product_id=data_product.obj.id, user_id=user.id
+    )
+    create_data_product_view(
+        db, data_product_id=data_product.obj.id, session_id="anon-session"
+    )
+
+    upload_dir = settings.TEST_STATIC_DIR
+    flights = crud.flight.get_multi_by_project(
+        db,
+        project_id=project.id,
+        upload_dir=upload_dir,
+        user_id=user.id,
+        include_all=True,
+    )
+
+    assert len(flights) == 1
+    returned = flights[0].data_products[0]
+    assert returned.like_count == 1
+    assert returned.view_count == 2
+    assert returned.liked is True
+
+
+def test_get_flights_like_view_counts_default_to_zero(db: Session) -> None:
+    user = create_user(db)
+    project = create_project(db, owner_id=user.id)
+    flight = create_flight(db, project_id=project.id)
+    SampleDataProduct(db, data_type="ortho", flight=flight, project=project)
+
+    upload_dir = settings.TEST_STATIC_DIR
+    flights = crud.flight.get_multi_by_project(
+        db,
+        project_id=project.id,
+        upload_dir=upload_dir,
+        user_id=user.id,
+        include_all=True,
+    )
+
+    returned = flights[0].data_products[0]
+    assert returned.like_count == 0
+    assert returned.view_count == 0
+    assert returned.liked is False
 
 
 def test_get_flights_excluding_processing_or_failed_data_products(db: Session) -> None:

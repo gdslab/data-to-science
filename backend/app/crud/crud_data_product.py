@@ -95,9 +95,8 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             user_style = session.execute(user_style_query).scalar_one_or_none()
             if row:
                 data_product, liked, like_count, view_count = row
-                setattr(data_product, "liked", liked)
-                setattr(data_product, "like_count", like_count)
-                setattr(data_product, "view_count", view_count)
+                set_like_attrs(data_product, like_count, liked)
+                set_view_count_attr(data_product, view_count)
                 set_spatial_metadata_attrs(data_product)
                 set_url_attr(data_product, upload_dir)
                 is_status_set = set_status_attr(data_product, data_product.jobs)
@@ -151,8 +150,9 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             if not row:
                 return None
             data_product, like_count, view_count = row
-            setattr(data_product, "like_count", like_count)
-            setattr(data_product, "view_count", view_count)
+            # Public/share read: no authenticated user, so liked is always False.
+            set_like_attrs(data_product, like_count, False)
+            set_view_count_attr(data_product, view_count)
             if data_product.file_permission.is_public:
                 set_spatial_metadata_attrs(data_product)
                 set_signature_attr(data_product)
@@ -226,9 +226,8 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             updated_data_products = []
             for row in rows:
                 data_product, liked, like_count, view_count = row
-                setattr(data_product, "liked", liked)
-                setattr(data_product, "like_count", like_count)
-                setattr(data_product, "view_count", view_count)
+                set_like_attrs(data_product, like_count, liked)
+                set_view_count_attr(data_product, view_count)
 
                 # if not a non-raster type, find user style settings for data product
                 if data_product.data_type not in NON_RASTER_TYPES:
@@ -461,6 +460,17 @@ def set_url_attr(data_product_obj: DataProduct, upload_dir: str) -> None:
 
 def set_user_style_attr(data_product_obj: DataProduct, user_style: Dict) -> None:
     setattr(data_product_obj, "user_style", user_style)
+
+
+def set_like_attrs(
+    data_product_obj: DataProduct, like_count: int, liked: bool
+) -> None:
+    setattr(data_product_obj, "like_count", like_count)
+    setattr(data_product_obj, "liked", liked)
+
+
+def set_view_count_attr(data_product_obj: DataProduct, view_count: int) -> None:
+    setattr(data_product_obj, "view_count", view_count)
 
 
 def calculate_raster_metadata(filepath: str) -> Optional[Dict]:
