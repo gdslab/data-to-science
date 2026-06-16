@@ -310,7 +310,9 @@ def record_public_data_product_view(
     request: Request,
     response: Response,
     data_product_id: UUID,
-    session_id: Annotated[Optional[str], Header(alias="X-Session-Id")] = None,
+    session_id: Annotated[
+        Optional[str], Header(alias="X-Session-Id", max_length=64)
+    ] = None,
     current_user: Optional[models.User] = Depends(deps.get_optional_current_user),
     db: Session = Depends(deps.get_db),
 ) -> Any:

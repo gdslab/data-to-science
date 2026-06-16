@@ -2,11 +2,13 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
 from app.schemas.role import Role
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.data_product_like import create_data_product_like
+from app.tests.utils.flight import create_flight
 from app.tests.utils.project_member import create_project_member
 from app.tests.utils.user import create_user
 
@@ -17,6 +19,49 @@ def _like_url(data_product: SampleDataProduct) -> str:
         f"/flights/{data_product.flight.id}"
         f"/data_products/{data_product.obj.id}/like"
     )
+
+
+def test_like_with_mismatched_flight_returns_403(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # IDOR guard: passing a flight the user owns must not allow liking a data
+    # product that belongs to a different flight.
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+    other_flight = create_flight(db, project_id=data_product.project.id)
+    url = (
+        f"{settings.API_V1_STR}/projects/{data_product.project.id}"
+        f"/flights/{other_flight.id}"
+        f"/data_products/{data_product.obj.id}/like"
+    )
+
+    response = client.post(url)
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_concurrent_like_returns_400_not_500(
+    client: TestClient,
+    db: Session,
+    normal_user_access_token: str,
+    monkeypatch,
+) -> None:
+    # Simulate a race: a like already exists, but the pre-check misses it, so the
+    # insert hits the unique constraint. Expect a graceful 400, not a 500.
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+    create_data_product_like(
+        db, data_product_id=data_product.obj.id, user_id=current_user.id
+    )
+    monkeypatch.setattr(
+        crud.data_product_like,
+        "get_by_data_product_id_and_user_id",
+        lambda *args, **kwargs: None,
+    )
+
+    response = client.post(_like_url(data_product))
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
 def test_like_data_product_returns_201(

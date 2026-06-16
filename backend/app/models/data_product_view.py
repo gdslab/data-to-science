@@ -28,10 +28,12 @@ class DataProductView(Base):
 
     # Foreign keys
     data_product_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("data_products.id"), nullable=False
+        ForeignKey("data_products.id", ondelete="CASCADE"), nullable=False
     )
+    # CASCADE (not SET NULL): nulling user_id on an authenticated-only view row
+    # would violate the dp_view_requires_viewer_identity check constraint.
     user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True
     )
 
     # Relationships

@@ -22,8 +22,8 @@ def upgrade() -> None:
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('user_id', sa.UUID(), nullable=False),
     sa.Column('data_product_id', sa.UUID(), nullable=False),
-    sa.ForeignKeyConstraint(['data_product_id'], ['data_products.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['data_product_id'], ['data_products.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('user_id', 'data_product_id', name='like_unique_to_data_product_and_user')
     )
@@ -34,8 +34,8 @@ def upgrade() -> None:
     sa.Column('data_product_id', sa.UUID(), nullable=False),
     sa.Column('user_id', sa.UUID(), nullable=True),
     sa.CheckConstraint('user_id IS NOT NULL OR session_id IS NOT NULL', name='dp_view_requires_viewer_identity'),
-    sa.ForeignKeyConstraint(['data_product_id'], ['data_products.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['data_product_id'], ['data_products.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index('ix_dp_views_data_product_id', 'data_product_views', ['data_product_id'], unique=False)

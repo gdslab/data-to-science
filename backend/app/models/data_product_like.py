@@ -22,8 +22,12 @@ class DataProductLike(Base):
     )
 
     # Foreign keys
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
-    data_product_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("data_products.id"))
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE")
+    )
+    data_product_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("data_products.id", ondelete="CASCADE")
+    )
 
     # Relationships
     user: Mapped["User"] = relationship(back_populates="data_product_likes")

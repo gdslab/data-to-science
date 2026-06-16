@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.models.data_product_view import DataProductView
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.data_product_view import create_data_product_view
+from app.tests.utils.flight import create_flight
 from app.tests.utils.project import create_project
 from app.tests.utils.user import create_user
 
@@ -71,6 +72,25 @@ def test_authenticated_view_after_window_returns_201(
     assert response.status_code == status.HTTP_201_CREATED
 
 
+def test_authenticated_view_with_mismatched_flight_returns_403(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # IDOR guard: a flight the user owns in the path must not allow recording a
+    # view against a data product that belongs to a different flight.
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+    other_flight = create_flight(db, project_id=data_product.project.id)
+    url = (
+        f"{settings.API_V1_STR}/projects/{data_product.project.id}"
+        f"/flights/{other_flight.id}"
+        f"/data_products/{data_product.obj.id}/view"
+    )
+
+    response = client.post(url)
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
 # ── Public anonymous view endpoint ───────────────────────────────────────────
 
 
@@ -79,6 +99,35 @@ def _make_published(db: Session, data_product: SampleDataProduct) -> None:
     crud.project.update_project_visibility(
         db, project_id=data_product.project.id, is_public=True
     )
+
+
+def test_public_view_session_id_too_long_returns_422(
+    client: TestClient, db: Session
+) -> None:
+    # An over-length header is rejected before the DB call (no String(64) DataError/500).
+    data_product = SampleDataProduct(db)
+    _make_published(db, data_product)
+
+    response = client.post(
+        _public_view_url(data_product),
+        headers={"X-Session-Id": "x" * 65},
+    )
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+def test_public_view_session_id_at_max_length_returns_201(
+    client: TestClient, db: Session
+) -> None:
+    data_product = SampleDataProduct(db)
+    _make_published(db, data_product)
+
+    response = client.post(
+        _public_view_url(data_product),
+        headers={"X-Session-Id": "x" * 64},
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED
 
 
 def test_public_anonymous_view_with_session_id_returns_201(
