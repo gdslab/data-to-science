@@ -1,7 +1,10 @@
-import { Fragment, useMemo } from 'react';
+import { Fragment, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router';
 
 import { AlertBar } from '../Alert';
+
+import api from '../../api';
+import { recordDataProductView } from '../../utils/recordDataProductView';
 
 function useQuery() {
   const { search } = useLocation();
@@ -12,6 +15,27 @@ function useQuery() {
 export default function SharePotreeViewer() {
   const query = useQuery();
   const fileID = query.get('file_id');
+
+  // Resolve the data product id from the file id, then record a view. The
+  // iframe itself only receives the file id, so we look up the product the same
+  // way ShareCopcMapViewer does.
+  useEffect(() => {
+    if (!fileID) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await api.get(`/public?file_id=${fileID}`);
+        if (!cancelled && response?.data?.id) {
+          recordDataProductView(response.data.id);
+        }
+      } catch {
+        // Best-effort: a failed lookup simply means no view is recorded.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [fileID]);
 
   // Detect mobile device outside of iframe content
   const isMobile =

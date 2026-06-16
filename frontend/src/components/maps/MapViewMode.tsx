@@ -15,6 +15,7 @@ import { useMapLayerContext } from './MapLayersContext';
 import { useRasterSymbologyContext } from './RasterSymbologyContext';
 
 import api from '../../api';
+import { recordDataProductView } from '../../utils/recordDataProductView';
 import { isPublicOnly, mapApiResponseToLayers } from './utils';
 
 export default function MapViewMode() {
@@ -110,6 +111,16 @@ export default function MapViewMode() {
       }
     }
   }, [activeProject, dispatch, symbologyDispatch]);
+
+  // Record a view whenever a data product is activated. Covers every in-app
+  // viewer (point cloud, raster, panoramic, 3dgs, LCC) on both /explore and the
+  // workspace. The backend de-duplicates within a 30-minute window, so re-fires
+  // (including React StrictMode double-invocation) are harmless.
+  useEffect(() => {
+    if (activeDataProduct?.id) {
+      recordDataProductView(activeDataProduct.id);
+    }
+  }, [activeDataProduct?.id]);
 
   if (activeMapTool === 'compare') {
     return <CompareMap />;

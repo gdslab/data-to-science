@@ -2,11 +2,13 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import status
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
+from app.models.data_product_view import DataProductView
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.data_product_view import create_data_product_view
 from app.tests.utils.project import create_project
@@ -152,3 +154,56 @@ def test_public_view_different_sessions_both_count(
         db, data_product_id=data_product.obj.id
     )
     assert count == 2
+
+
+# ── Public view endpoint — signed-in callers ─────────────────────────────────
+# The TestClient persists the access_token cookie set by the
+# normal_user_access_token fixture, so requests below are authenticated as the
+# normal user. The public endpoint reads that cookie via get_optional_current_user.
+
+
+def test_public_view_signed_in_member_unpublished_returns_201(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    # Data product owned by the current user, project left unpublished.
+    data_product = SampleDataProduct(db, user=current_user)
+
+    response = client.post(_public_view_url(data_product))
+
+    assert response.status_code == status.HTTP_201_CREATED
+    view = db.scalar(
+        select(DataProductView).where(
+            DataProductView.data_product_id == data_product.obj.id
+        )
+    )
+    assert view is not None
+    assert view.user_id == current_user.id
+    assert view.session_id is None
+
+
+def test_public_view_signed_in_non_member_unpublished_returns_404(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # Data product owned by a different user; current user is not a member.
+    data_product = SampleDataProduct(db)
+
+    response = client.post(_public_view_url(data_product))
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    count = crud.data_product_view.get_count_by_data_product_id(
+        db, data_product_id=data_product.obj.id
+    )
+    assert count == 0
+
+
+def test_public_view_signed_in_non_member_published_returns_201(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # Published project owned by another user; current user is not a member.
+    data_product = SampleDataProduct(db)
+    _make_published(db, data_product)
+
+    response = client.post(_public_view_url(data_product))
+
+    assert response.status_code == status.HTTP_201_CREATED

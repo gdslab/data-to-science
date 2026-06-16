@@ -13,6 +13,7 @@ import {
 } from './styles/basemapStyles';
 
 import api from '../../api';
+import { recordDataProductView } from '../../utils/recordDataProductView';
 
 function useQuery() {
   const { search } = useLocation();
@@ -62,6 +63,7 @@ export default function ShareCopcMapViewer() {
         const response = await api.get(`/public?file_id=${fileID}`);
         if (response) {
           setDataProduct(response.data);
+          recordDataProductView(response.data.id);
         } else {
           setStatus({ type: 'error', msg: 'Unable to load data product' });
         }
