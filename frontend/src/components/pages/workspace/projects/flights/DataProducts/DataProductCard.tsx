@@ -7,6 +7,10 @@ import {
   EyeIcon,
   PhotoIcon,
 } from '@heroicons/react/24/outline';
+import { FaRegEye, FaRegThumbsUp, FaThumbsUp } from 'react-icons/fa6';
+
+import { useDataProductLike } from '../../../../../Engagement/useDataProductLike';
+import { formatCount } from '../../../../../../utils/formatCount';
 
 import { Status } from '../../../../../Alert';
 import Card from '../../../../../Card';
@@ -44,6 +48,11 @@ export default function DataProductCard({
   const [isEditing, setIsEditing] = useState(false);
   const { project, projectRole } = useProjectContext();
   const navigate = useNavigate();
+  const { engagement, toggleLike } = useDataProductLike(
+    dataProduct,
+    project?.id,
+    dataProduct.flight_id
+  );
 
   return (
     <div className="flex items-center justify-center min-h-80">
@@ -52,6 +61,33 @@ export default function DataProductCard({
           <div className="grid grid-flow-row auto-rows-max gap-2 relative">
             {/* preview image */}
             <div className="relative flex items-center justify-center bg-accent3/20">
+              {/* engagement overlay */}
+              <span className="absolute top-2.5 left-2.5 z-10 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900/60 backdrop-blur-sm text-white text-xs">
+                <FaRegEye size={14} />
+                {formatCount(engagement.viewCount)} views
+              </span>
+              <button
+                type="button"
+                onClick={toggleLike}
+                aria-pressed={engagement.likedByMe}
+                aria-label={
+                  engagement.likedByMe
+                    ? 'Unlike this data product'
+                    : 'Like this data product'
+                }
+                className={`absolute top-2.5 right-2.5 z-10 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-white text-xs ${
+                  engagement.likedByMe
+                    ? 'bg-accent2'
+                    : 'bg-slate-900/60 backdrop-blur-sm'
+                }`}
+              >
+                {engagement.likedByMe ? (
+                  <FaThumbsUp size={14} />
+                ) : (
+                  <FaRegThumbsUp size={14} />
+                )}
+                {formatCount(engagement.likeCount)}
+              </button>
               {dataProduct.status === 'SUCCESS' &&
               isGeoTIFF(dataProduct.data_type) &&
               dataProduct.url ? (

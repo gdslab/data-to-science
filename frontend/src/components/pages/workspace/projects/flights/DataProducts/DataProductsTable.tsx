@@ -19,6 +19,7 @@ import { useProjectContext } from '../../ProjectContext';
 import Table, { TableBody, TableHead } from '../../../../../Table';
 import ToolboxModal from './ToolboxModal';
 import DataProductShareModal from './DataProductShareModal';
+import DataProductEngagement from '../../../../../Engagement/DataProductEngagement';
 import { DataProduct, ProjectDetail } from '../../Project';
 
 export function isGeoTIFF(dataType: string): boolean {
@@ -206,7 +207,13 @@ export default function DataProductsTable({
   const navigate = useNavigate();
   const { project, projectRole } = useProjectContext();
 
-  const dataProductColumns = ['Data Type', 'Preview', 'File', 'Action'];
+  const dataProductColumns = [
+    'Data Type',
+    'Preview',
+    'Likes & Views',
+    'File',
+    'Action',
+  ];
 
   if (data.length > 0) {
     return (
@@ -273,6 +280,18 @@ export default function DataProductsTable({
                       ) : (
                         <div>No preview</div>
                       )}
+                    </div>,
+                    <div
+                      key={`row-${dataset.id}-engagement`}
+                      className="h-full flex items-center justify-center"
+                    >
+                      <DataProductEngagement
+                        dataProduct={dataset}
+                        projectId={project?.id}
+                        flightId={dataset.flight_id}
+                        size="sm"
+                        vertical
+                      />
                     </div>,
                     dataset.status === 'SUCCESS' ? (
                       <div
