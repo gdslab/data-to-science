@@ -59,7 +59,11 @@ api.interceptors.response.use(
           })
           .catch((err) => {
             processQueue(err);
-            window.location.href = '/auth/login';
+            // Don't hard-redirect here: that bounces users off public pages
+            // (e.g. /explore) too. Instead notify the app that the session is
+            // gone and let React Router decide — protected routes redirect to
+            // login via RequireAuth, public routes keep rendering.
+            window.dispatchEvent(new Event('auth:session-expired'));
             reject(err);
           })
           .finally(() => {

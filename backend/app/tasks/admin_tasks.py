@@ -19,6 +19,11 @@ celery_app.conf.beat_schedule = {
         "schedule": crontab(hour=6, minute=5),
         "args": (),
     },
+    "cleanup-refresh-tokens": {
+        "task": "cleanup_refresh_tokens_task",
+        "schedule": crontab(hour=3, minute=0),
+        "args": (),
+    },
 }
 
 
@@ -51,3 +56,14 @@ def calculate_disk_usage() -> None:
 
     # Update job status
     job.update(status=Status.SUCCESS)
+
+
+@celery_app.task(name="cleanup_refresh_tokens_task")
+def cleanup_refresh_tokens() -> None:
+    """Purge expired and long-revoked refresh tokens to keep the table bounded."""
+    db = next(get_db())
+    try:
+        deleted = crud.refresh_token.delete_stale(db)
+        logger.info("Purged %d stale refresh token(s)", deleted)
+    except Exception:
+        logger.exception("Unable to clean up refresh tokens")

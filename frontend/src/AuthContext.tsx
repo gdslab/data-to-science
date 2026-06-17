@@ -1,5 +1,11 @@
 import axios from 'axios';
-import { ReactNode, createContext, useContext, useState } from 'react';
+import {
+  ReactNode,
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 import { Navigate, useLocation } from 'react-router';
 
 interface Login {
@@ -47,6 +53,20 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
     return null;
   });
 
+  // When the api interceptor exhausts a token refresh, it dispatches
+  // 'auth:session-expired' instead of forcing a redirect. Clear the cached
+  // profile and user state so RequireAuth redirects protected routes while
+  // public routes (e.g. /explore) keep rendering with anonymous data.
+  useEffect(() => {
+    function handleSessionExpired() {
+      localStorage.removeItem('userProfile');
+      setUser(null);
+    }
+    window.addEventListener('auth:session-expired', handleSessionExpired);
+    return () =>
+      window.removeEventListener('auth:session-expired', handleSessionExpired);
+  }, []);
+
   async function login(data: { username: string; password: string }) {
     await axios.post('/api/v1/auth/access-token', data, {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -64,7 +84,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
   async function logout() {
     localStorage.removeItem('userProfile');
     await axios
-      .get('/api/v1/auth/remove-access-token')
+      .get('/api/v1/auth/remove-access-token', { withCredentials: true })
       .then(() => setUser(null));
   }
 

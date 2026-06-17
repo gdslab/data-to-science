@@ -41,6 +41,9 @@ class Settings(BaseSettings):
     # 15 minutes
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
+    # Grace window (seconds) during which a just-rotated refresh token is still
+    # accepted, so concurrent/cross-tab refreshes do not self-revoke each other.
+    REFRESH_TOKEN_REUSE_GRACE_SECONDS: int = 10
     # Activity tracking throttle in minutes (only update last_activity_at if older than this)
     ACTIVITY_TRACKING_THROTTLE_MINUTES: int = 15
 
