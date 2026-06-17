@@ -13,6 +13,10 @@ D2S uses JSON Web Tokens (JWT) for session-based authentication:
 
 Tokens are signed using the `SECRET_KEY` environment variable. In production, `HTTP_COOKIE_SECURE` should be set to `1` to ensure cookies are only sent over HTTPS.
 
+### Cross-origin login
+
+By default the API answers cross-origin requests with `Access-Control-Allow-Origin: *` and allows only anonymous `GET` requests, which browsers reject for credentialed (cookie-bearing) requests. To let a partner web app log in from another origin, list its origin(s) in the `BACKEND_CORS_ORIGINS` environment variable. When set, the API returns the explicit origin together with `Access-Control-Allow-Credentials: true` and permits all methods, so the browser will send the auth cookie. This requires `HTTP_COOKIE_SECURE=1` (the production default), which issues the cookie with `SameSite=None; Secure` so it can be sent cross-origin. See [Configuration](../reference/configuration.md) for details.
+
 ### API keys
 
 For programmatic access, users can generate API keys. These are passed via the `X-API-Key` header and currently support a limited set of read-only endpoints (project details, flight listings, vector layer access).

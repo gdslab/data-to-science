@@ -17,6 +17,12 @@ class Settings(BaseSettings):
     ENV: str = "dev"
     API_V1_STR: str = "/api/v1"
 
+    # Comma-separated list of browser origins allowed to make credentialed
+    # (cookie-bearing) cross-origin requests. Empty falls back to anonymous GETs
+    # from any origin. Kept as a plain string (split at use site) because the list
+    # may include non-HTTP schemes such as "tauri://localhost".
+    BACKEND_CORS_ORIGINS: str = ""
+
     SECRET_KEY: str = ""
     # Secret key used for signing pg_tileserv and titiler requests
     TILE_SIGNING_SECRET_KEY: str = ""

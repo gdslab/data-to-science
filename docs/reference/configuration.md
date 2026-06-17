@@ -31,6 +31,7 @@ You must provide a value for `SECRET_KEY` in your `backend.env` file. Use a cryp
 | `AWS_S3_REGION` | AWS region for the S3 bucket (e.g., `us-east-1`). Defaults to `us-east-1` when unset. |
 | `AWS_ACCESS_KEY_ID` | AWS access key ID for the S3 bucket (optional). Leave empty to fall back to the boto3 default credential chain (e.g., IAM role). |
 | `AWS_SECRET_ACCESS_KEY` | AWS secret access key for the S3 bucket (optional). Pair with `AWS_ACCESS_KEY_ID`. |
+| `BACKEND_CORS_ORIGINS` | Comma-separated list of browser origins allowed to make credentialed (cookie-bearing) cross-origin requests (e.g., `https://partner.app,https://viewer.partner.app`). When set, those origins may authenticate and call any method; when empty, the API falls back to allowing only anonymous `GET` requests from any origin. Required for partner web apps that log in cross-origin. |
 | `CELERY_BROKER_URL` | Address for local redis service. |
 | `CELERY_RESULT_BACKEND` | Address for local redis service. |
 | `BREEDBASE_ALLOWED_HOSTS` | Comma-separated list of allowed BreedBase hostnames for the BrAPI proxy (optional). When empty, any public host with a `/brapi/` path is allowed. Set to restrict which servers the proxy can reach. |
