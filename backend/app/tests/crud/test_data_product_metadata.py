@@ -15,6 +15,7 @@ from app.schemas.data_product_metadata import (
 )
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.data_product_metadata import (
+    create_xml_metadata,
     create_zonal_metadata,
     get_zonal_statistics,
 )
@@ -205,6 +206,64 @@ def test_update_data_product_metadata(db: Session) -> None:
     assert metadata_in_db[0].properties["count"] == updated_properties["count"]
     assert metadata_in_db[0].properties["median"] == updated_properties["median"]
     assert metadata_in_db[0].properties["std"] == updated_properties["std"]
+
+
+def test_create_xml_metadata(db: Session) -> None:
+    data_product = SampleDataProduct(db, data_type="dsm")
+    metadata = create_xml_metadata(db, data_product_id=data_product.obj.id)
+    assert metadata
+    assert metadata.category == "xml"
+    assert metadata.data_product_id == data_product.obj.id
+    assert metadata.vector_layer_feature_id is None
+    assert os.path.exists(metadata.properties["filepath"])
+    assert metadata.properties["original_filename"] == "sample.xml"
+    assert metadata.properties["file_size"] > 0
+
+
+def test_read_xml_metadata_by_data_product(db: Session) -> None:
+    metadata = create_xml_metadata(db)
+    metadata_in_db = crud.data_product_metadata.get_by_data_product(
+        db, category="xml", data_product_id=metadata.data_product_id
+    )
+    assert isinstance(metadata_in_db, list)
+    assert len(metadata_in_db) == 1
+    assert metadata_in_db[0].id == metadata.id
+    assert metadata_in_db[0].category == "xml"
+    assert metadata_in_db[0].properties == metadata.properties
+
+
+def test_xml_metadata_coexists_with_zonal_metadata(db: Session) -> None:
+    data_product = SampleDataProduct(db, data_type="dsm")
+    zonal_stats = {
+        "min": 1.0,
+        "max": 2.0,
+        "mean": 1.5,
+        "median": 1.5,
+        "std": 0.5,
+        "count": 4,
+    }
+    zonal_metadata_in = DataProductMetadataCreate(
+        category="zonal", properties={"stats": zonal_stats}
+    )
+    zonal_metadata = crud.data_product_metadata.create_with_data_product(
+        db, obj_in=zonal_metadata_in, data_product_id=data_product.obj.id
+    )
+    xml_metadata = create_xml_metadata(db, data_product_id=data_product.obj.id)
+    assert xml_metadata.data_product_id == zonal_metadata.data_product_id
+    # zonal metadata record should be unchanged by xml metadata creation
+    zonal_metadata_in_db = crud.data_product_metadata.get(db, id=zonal_metadata.id)
+    assert zonal_metadata_in_db
+    assert zonal_metadata_in_db.category == "zonal"
+    assert zonal_metadata_in_db.properties == {"stats": zonal_stats}
+
+
+def test_delete_xml_metadata(db: Session) -> None:
+    metadata = create_xml_metadata(db)
+    metadata_removed = crud.data_product_metadata.remove(db, id=metadata.id)
+    metadata_get_after_removed = crud.data_product_metadata.get(db, id=metadata.id)
+    assert metadata_get_after_removed is None
+    assert metadata_removed
+    assert metadata_removed.id == metadata.id
 
 
 def test_delete_data_product_metadata(db: Session) -> None:

@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timezone
 from unittest.mock import patch, MagicMock
 
@@ -13,7 +14,9 @@ from app.schemas.file_permission import FilePermissionUpdate
 from app.schemas.role import Role
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.data_product_metadata import (
+    create_xml_metadata,
     create_zonal_metadata,
+    get_sample_xml_filepath,
     get_zonal_feature_collection,
 )
 from app.tests.utils.project import create_project
@@ -661,6 +664,233 @@ def test_deactivate_data_product_when_project_is_published(
         f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}"
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def get_data_product_xml_url(data_product: SampleDataProduct) -> str:
+    return (
+        f"{settings.API_V1_STR}/projects/{data_product.project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}/xml"
+    )
+
+
+def read_sample_xml_bytes() -> bytes:
+    with open(get_sample_xml_filepath(), "rb") as xml_file:
+        return xml_file.read()
+
+
+def test_upload_data_product_xml_with_project_owner_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+    response = client.post(
+        get_data_product_xml_url(data_product),
+        files={"file": ("sample.xml", read_sample_xml_bytes(), "text/xml")},
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    response_metadata = response.json()
+    assert response_metadata["category"] == "xml"
+    assert response_metadata["data_product_id"] == str(data_product.obj.id)
+    assert response_metadata["properties"]["original_filename"] == "sample.xml"
+    assert os.path.exists(response_metadata["properties"]["filepath"])
+
+
+def test_upload_data_product_xml_with_project_manager_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db)
+    create_project_member(
+        db,
+        role=Role.MANAGER,
+        member_id=current_user.id,
+        project_uuid=data_product.project.id,
+    )
+    response = client.post(
+        get_data_product_xml_url(data_product),
+        files={"file": ("sample.xml", read_sample_xml_bytes(), "text/xml")},
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+
+
+def test_upload_data_product_xml_with_project_viewer_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db)
+    create_project_member(
+        db,
+        role=Role.VIEWER,
+        member_id=current_user.id,
+        project_uuid=data_product.project.id,
+    )
+    response = client.post(
+        get_data_product_xml_url(data_product),
+        files={"file": ("sample.xml", read_sample_xml_bytes(), "text/xml")},
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_upload_data_product_xml_without_project_access(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    data_product = SampleDataProduct(db)
+    response = client.post(
+        get_data_product_xml_url(data_product),
+        files={"file": ("sample.xml", read_sample_xml_bytes(), "text/xml")},
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_upload_data_product_xml_with_malformed_xml(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+    response = client.post(
+        get_data_product_xml_url(data_product),
+        files={"file": ("sample.xml", b"<metadata><unclosed></metadata>", "text/xml")},
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_upload_data_product_xml_with_wrong_extension(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+    response = client.post(
+        get_data_product_xml_url(data_product),
+        files={"file": ("sample.txt", read_sample_xml_bytes(), "text/plain")},
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_upload_data_product_xml_when_xml_already_exists(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+    create_xml_metadata(db, data_product_id=data_product.obj.id)
+    response = client.post(
+        get_data_product_xml_url(data_product),
+        files={"file": ("sample.xml", read_sample_xml_bytes(), "text/xml")},
+    )
+    assert response.status_code == status.HTTP_409_CONFLICT
+
+
+def test_upload_data_product_xml_with_unsupported_data_type(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    for data_type in ["panoramic", "3dgs"]:
+        data_product = SampleDataProduct(db, data_type=data_type, user=current_user)
+        response = client.post(
+            get_data_product_xml_url(data_product),
+            files={"file": ("sample.xml", read_sample_xml_bytes(), "text/xml")},
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_upload_data_product_xml_with_point_cloud_data_type(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, data_type="point_cloud", user=current_user)
+    response = client.post(
+        get_data_product_xml_url(data_product),
+        files={"file": ("sample.xml", read_sample_xml_bytes(), "text/xml")},
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+
+
+def test_read_data_product_includes_xml_metadata(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+    create_xml_metadata(db, data_product_id=data_product.obj.id)
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{data_product.project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}"
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_data_product = response.json()
+    assert response_data_product["xml_metadata"] is not None
+    assert response_data_product["xml_metadata"]["original_filename"] == "sample.xml"
+    assert response_data_product["xml_metadata"][
+        "content"
+    ] == read_sample_xml_bytes().decode("utf-8")
+
+
+def test_read_data_products_includes_xml_metadata(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id)
+    flight = create_flight(db, project_id=project.id)
+    data_product = SampleDataProduct(
+        db, flight=flight, project=project, user=current_user
+    )
+    SampleDataProduct(db, flight=flight, project=project, user=current_user)
+    create_xml_metadata(db, data_product_id=data_product.obj.id)
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{project.id}"
+        f"/flights/{flight.id}/data_products"
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_data_products = response.json()
+    assert len(response_data_products) == 2
+    for response_data_product in response_data_products:
+        if response_data_product["id"] == str(data_product.obj.id):
+            assert response_data_product["xml_metadata"] is not None
+            assert (
+                response_data_product["xml_metadata"]["original_filename"]
+                == "sample.xml"
+            )
+        else:
+            assert response_data_product["xml_metadata"] is None
+
+
+def test_delete_data_product_xml_with_project_owner_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+    metadata = create_xml_metadata(db, data_product_id=data_product.obj.id)
+    xml_filepath = metadata.properties["filepath"]
+    assert os.path.exists(xml_filepath)
+    response = client.delete(get_data_product_xml_url(data_product))
+    assert response.status_code == status.HTTP_200_OK
+    response_metadata = response.json()
+    assert response_metadata["id"] == str(metadata.id)
+    assert not os.path.exists(xml_filepath)
+    assert crud.data_product_metadata.get(db, id=metadata.id) is None
+
+
+def test_delete_data_product_xml_with_project_viewer_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db)
+    create_project_member(
+        db,
+        role=Role.VIEWER,
+        member_id=current_user.id,
+        project_uuid=data_product.project.id,
+    )
+    create_xml_metadata(db, data_product_id=data_product.obj.id)
+    response = client.delete(get_data_product_xml_url(data_product))
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_delete_data_product_xml_when_no_xml_exists(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+    response = client.delete(get_data_product_xml_url(data_product))
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 def test_running_tool_on_data_product(

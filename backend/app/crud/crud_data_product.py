@@ -18,6 +18,7 @@ from app.db.session import SessionLocal
 from app.models.constants import NON_RASTER_TYPES, PROCESSING_JOB_NAMES
 from app.models.data_product import DataProduct
 from app.models.data_product_like import DataProductLike
+from app.models.data_product_metadata import DataProductMetadata
 from app.models.data_product_view import DataProductView
 from app.models.flight import Flight
 from app.models.project import Project
@@ -90,6 +91,12 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                 UserStyle.user_id == user_id,
             )
         )
+        xml_metadata_query = select(DataProductMetadata).where(
+            and_(
+                DataProductMetadata.data_product_id == data_product_id,
+                DataProductMetadata.category == "xml",
+            )
+        )
         with db as session:
             row = session.execute(data_product_query).one_or_none()
             user_style = session.execute(user_style_query).scalar_one_or_none()
@@ -102,6 +109,9 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                 is_status_set = set_status_attr(data_product, data_product.jobs)
                 if user_style:
                     set_user_style_attr(data_product, user_style.settings)
+                xml_metadata = session.execute(xml_metadata_query).scalar_one_or_none()
+                if xml_metadata:
+                    set_xml_metadata_attr(data_product, xml_metadata)
                 # do not return if record shows initial processing incomplete, and
                 # there is not a job for the initial processing
                 if is_status_set:
@@ -223,6 +233,21 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                         user_style
                     )
 
+            # Batch load all xml metadata to avoid N+1 queries
+            xml_metadata_by_data_product_id = {}
+            if data_product_ids:
+                xml_metadata_query = select(DataProductMetadata).where(
+                    and_(
+                        DataProductMetadata.data_product_id.in_(data_product_ids),
+                        DataProductMetadata.category == "xml",
+                    )
+                )
+                xml_metadata_rows = session.execute(xml_metadata_query).scalars().all()
+                for xml_metadata_row in xml_metadata_rows:
+                    xml_metadata_by_data_product_id[
+                        xml_metadata_row.data_product_id
+                    ] = xml_metadata_row
+
             updated_data_products = []
             for row in rows:
                 data_product, liked, like_count, view_count = row
@@ -241,6 +266,9 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                 set_signature_attr(data_product)
                 set_url_attr(data_product, upload_dir)
                 is_status_set = set_status_attr(data_product, data_product.jobs)
+                xml_metadata = xml_metadata_by_data_product_id.get(data_product.id)
+                if xml_metadata:
+                    set_xml_metadata_attr(data_product, xml_metadata)
 
                 # Only include data product if a status was set
                 if is_status_set and hasattr(data_product, "status"):
@@ -296,9 +324,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
 
         return crud.data_product.get(db, id=data_product_id)
 
-    def update_s3_url(
-        self, db: Session, data_product_id: UUID, s3_url: str
-    ) -> None:
+    def update_s3_url(self, db: Session, data_product_id: UUID, s3_url: str) -> None:
         """Set the s3_url for a single data product."""
         stmt = (
             update(DataProduct)
@@ -416,7 +442,7 @@ def set_spatial_metadata_attrs(data_product: DataProduct) -> None:
                     .values(
                         bbox=metadata["bbox"],
                         crs=metadata["crs"],
-                        resolution=metadata["resolution"]
+                        resolution=metadata["resolution"],
                     )
                 )
                 migration_session.execute(update_stmt)
@@ -471,6 +497,37 @@ def set_like_attrs(
 
 def set_view_count_attr(data_product_obj: DataProduct, view_count: int) -> None:
     setattr(data_product_obj, "view_count", view_count)
+
+
+def set_xml_metadata_attr(
+    data_product_obj: DataProduct, xml_metadata: DataProductMetadata
+) -> None:
+    """Sets XML file metadata and contents to the "xml_metadata" attribute.
+
+    Args:
+        data_product_obj (DataProduct): Data product object.
+        xml_metadata (DataProductMetadata): Metadata record with category "xml".
+    """
+    filepath = xml_metadata.properties.get("filepath")
+    if not filepath:
+        return
+    try:
+        with open(filepath, "r") as xml_file:
+            content = xml_file.read()
+    except OSError as e:
+        logger.warning(
+            f"Unable to read XML file for data product {data_product_obj.id}: {e}"
+        )
+        return
+    setattr(
+        data_product_obj,
+        "xml_metadata",
+        {
+            "original_filename": xml_metadata.properties.get("original_filename", ""),
+            "file_size": xml_metadata.properties.get("file_size", len(content)),
+            "content": content,
+        },
+    )
 
 
 def calculate_raster_metadata(filepath: str) -> Optional[Dict]:

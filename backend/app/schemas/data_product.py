@@ -64,6 +64,12 @@ class DataProductSignature(BaseModel):
     secure: str
 
 
+class DataProductXMLMetadata(BaseModel):
+    original_filename: str
+    file_size: int
+    content: str
+
+
 class DataProduct(DataProductInDBBase):
     bbox: Optional[List[float]] = None
     crs: Optional[Dict] = None
@@ -75,6 +81,7 @@ class DataProduct(DataProductInDBBase):
     liked: bool = False
     like_count: int = 0
     view_count: int = 0
+    xml_metadata: Optional[DataProductXMLMetadata] = None
 
 
 # additional properties stored in DB
@@ -84,6 +91,11 @@ class DataProductInDB(DataProductInDBBase):
 
 class DataProductBoundingBox(BaseModel):
     bounds: List[float]
+
+
+class DataProductPointValue(BaseModel):
+    coordinates: List[float]
+    values: List[Optional[float]]
 
 
 class DataProductBand(BaseModel):

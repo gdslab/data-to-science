@@ -16,6 +16,7 @@ import { useProjectContext } from '../ProjectContext';
 import { AlertBar, Status } from '../../../../Alert';
 
 import api from '../../../../../api';
+import { sorter } from '../../../../utils';
 
 import pointIcon from '../../../../../assets/point-icon.svg';
 import lineIcon from '../../../../../assets/line-icon.svg';
@@ -67,6 +68,7 @@ export default function ProjectLayersTable() {
   const { projectId } = useParams();
 
   const [status, setStatus] = useState<Status | null>(null);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState<string>('');
   const [previewModalOpen, setPreviewModalOpen] = useState<boolean>(false);
@@ -77,9 +79,9 @@ export default function ProjectLayersTable() {
 
   const sortedMapLayers = useMemo(() => {
     return [...mapLayers].sort((a, b) =>
-      a.layer_name.localeCompare(b.layer_name)
+      sorter(a.layer_name.toLowerCase(), b.layer_name.toLowerCase(), sortOrder)
     );
-  }, [mapLayers]);
+  }, [mapLayers, sortOrder]);
 
   const handleEdit = (layer: MapLayer) => {
     setEditingLayerId(layer.layer_id);
@@ -162,7 +164,25 @@ export default function ProjectLayersTable() {
   };
 
   return (
-    <div className="max-h-96 overflow-auto">
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-row items-center gap-2">
+        <label
+          htmlFor="mapLayerSortOrder"
+          className="text-sm font-medium text-gray-900 w-20"
+        >
+          Sort by
+        </label>
+        <select
+          id="mapLayerSortOrder"
+          value={sortOrder}
+          onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+          className="w-36 px-1.5 font-semibold rounded-md border-2 border-zinc-300 text-gray-700 sm:text-sm"
+        >
+          <option value="asc">Name (A-Z)</option>
+          <option value="desc">Name (Z-A)</option>
+        </select>
+      </div>
+      <div className="max-h-96 overflow-auto">
       <table className="relative w-full border-separate border-spacing-y-1 border-spacing-x-1">
         <thead>
           <tr className="h-12 sticky top-0 text-white bg-slate-300">
@@ -347,6 +367,7 @@ export default function ProjectLayersTable() {
           layerName={selectedPreview.name}
         />
       )}
+      </div>
     </div>
   );
 }
