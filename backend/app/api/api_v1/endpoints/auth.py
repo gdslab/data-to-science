@@ -28,7 +28,6 @@ from app.core import security
 from app.core.config import settings
 from app.core.limiter import limiter
 
-
 router = APIRouter()
 
 logger = logging.getLogger("__name__")
@@ -101,20 +100,31 @@ def refresh_access_token(
         )
     jti = UUID(jti_str)
 
-    # Check if token is revoked
+    # Check if token is revoked or expired
+    now = datetime.now(timezone.utc)
     db_token = crud.refresh_token.get_by_jti(db, jti=jti)
-    if (
-        not db_token
-        or db_token.revoked
-        or db_token.expires_at < datetime.now(timezone.utc)
-    ):
+    if not db_token or db_token.expires_at < now:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token revoked or expired",
         )
 
-    # Revoke the old refresh token
-    crud.refresh_token.revoke(db, jti=jti)
+    if db_token.revoked:
+        # Tolerate a recently-rotated token within a short grace window so that
+        # concurrent/cross-tab refreshes of the same token do not 401 each other.
+        within_grace = (
+            db_token.revoked_at is not None
+            and (now - db_token.revoked_at).total_seconds()
+            <= settings.REFRESH_TOKEN_REUSE_GRACE_SECONDS
+        )
+        if not within_grace:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token revoked or expired",
+            )
+    else:
+        # Revoke the old refresh token (rotation)
+        crud.refresh_token.revoke(db, jti=jti)
 
     # Get user from payload
     user = security.get_user_from_token_payload(db, payload)
@@ -135,9 +145,28 @@ def refresh_access_token(
 
 
 @router.get("/remove-access-token")
-def logout_access_token(response: Response) -> Any:
-    """Remove cookie containing JWT access token."""
-    response.delete_cookie(key="access_token")
+def logout_access_token(
+    response: Response,
+    refresh_token: str = Cookie(None),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Log out by revoking the refresh token and clearing both auth cookies."""
+    # Best-effort revoke the refresh token in the database so the now-persistent
+    # refresh cookie can't be replayed to mint new access tokens after logout.
+    if refresh_token and refresh_token.startswith("Bearer "):
+        token = refresh_token.removeprefix("Bearer ").strip()
+        try:
+            # Ignore expiration so an expired token's jti is still revoked (signature
+            # is still verified); a garbage/invalid token falls through to the except.
+            payload = security.decode_token(token, verify_exp=False)
+            jti_str = payload.get("jti")
+            if jti_str:
+                crud.refresh_token.revoke(db, jti=UUID(jti_str))
+        except Exception:
+            # A malformed/invalid refresh token doesn't need revoking; still clear cookies.
+            logger.debug("Could not revoke refresh token during logout", exc_info=True)
+
+    security.delete_auth_cookies(response)
     return status.HTTP_200_OK
 
 

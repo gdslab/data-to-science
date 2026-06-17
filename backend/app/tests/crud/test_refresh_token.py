@@ -1,9 +1,10 @@
 import uuid
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
 from app import crud
-from app.schemas.refresh_token import RefreshTokenUpdate
+from app.schemas.refresh_token import RefreshTokenCreate, RefreshTokenUpdate
 from app.tests.utils.refresh_token import create_refresh_token_data
 from app.tests.utils.user import create_user
 
@@ -100,6 +101,54 @@ def test_delete_refresh_token(db: Session) -> None:
     # Verify token is actually deleted
     retrieved_token = crud.refresh_token.get_by_jti(db, jti=refresh_token.jti)
     assert retrieved_token is None
+
+
+def test_delete_stale_refresh_tokens(db: Session) -> None:
+    """delete_stale purges expired and long-revoked tokens, keeps live/fresh ones."""
+    user = create_user(db)
+    now = datetime.now(timezone.utc)
+
+    # Expired token (past expires_at) -> should be deleted
+    expired = crud.refresh_token.create(
+        db,
+        obj_in=RefreshTokenCreate(
+            jti=uuid.uuid4(),
+            user_id=user.id,
+            issued_at=now - timedelta(days=31),
+            expires_at=now - timedelta(days=1),
+        ),
+    )
+
+    # Revoked long ago (beyond retention) but not yet expired -> should be deleted
+    revoked_old = crud.refresh_token.create(
+        db, obj_in=create_refresh_token_data(user.id)
+    )
+    crud.refresh_token.update(
+        db,
+        db_obj=revoked_old,
+        obj_in=RefreshTokenUpdate(revoked=True, revoked_at=now - timedelta(days=2)),
+    )
+
+    # Recently revoked (within retention) -> should be kept
+    revoked_recent = crud.refresh_token.create(
+        db, obj_in=create_refresh_token_data(user.id)
+    )
+    crud.refresh_token.update(
+        db,
+        db_obj=revoked_recent,
+        obj_in=RefreshTokenUpdate(revoked=True, revoked_at=now),
+    )
+
+    # Fresh, valid token -> should be kept
+    fresh = crud.refresh_token.create(db, obj_in=create_refresh_token_data(user.id))
+
+    deleted = crud.refresh_token.delete_stale(db)
+
+    assert deleted >= 2
+    assert crud.refresh_token.get_by_jti(db, jti=expired.jti) is None
+    assert crud.refresh_token.get_by_jti(db, jti=revoked_old.jti) is None
+    assert crud.refresh_token.get_by_jti(db, jti=revoked_recent.jti) is not None
+    assert crud.refresh_token.get_by_jti(db, jti=fresh.jti) is not None
 
 
 def test_get_multi_refresh_tokens(db: Session) -> None:

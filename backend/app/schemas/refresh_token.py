@@ -20,6 +20,7 @@ class RefreshTokenCreate(RefreshTokenBase):
 # properties to receive via API on update
 class RefreshTokenUpdate(BaseModel):
     revoked: bool | None = None
+    revoked_at: datetime | None = None
 
 
 # properties shared by models stored in DB

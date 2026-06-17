@@ -87,9 +87,19 @@ def create_refresh_token(
     return token
 
 
-def decode_token(token: str) -> dict[str, Any]:
-    """Decode JWT token and return payload."""
-    return jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+def decode_token(token: str, verify_exp: bool = True) -> dict[str, Any]:
+    """Decode JWT token and return payload.
+
+    The signature is always verified. ``verify_exp=False`` skips only the
+    expiration check, which logout uses so an expired refresh token's ``jti`` can
+    still be extracted and revoked in the database.
+    """
+    return jwt.decode(
+        token,
+        settings.SECRET_KEY,
+        algorithms=[ALGORITHM],
+        options={"verify_exp": verify_exp},
+    )
 
 
 def sign_map_tile_payload(payload: str, expiration: int = 600) -> Tuple[str, int]:
@@ -134,7 +144,9 @@ def get_token_hash(token: str, salt: str) -> str:
 
 def check_token_expired(token: SingleUseToken, minutes: int = 60) -> bool:
     """Check if token is older than value passed in minutes (defaults to 1 hour)."""
-    return datetime.now(tz=timezone.utc) > (token.created_at + timedelta(minutes=minutes))
+    return datetime.now(tz=timezone.utc) > (
+        token.created_at + timedelta(minutes=minutes)
+    )
 
 
 def validate_token_and_get_payload(token: str, expected_type: str) -> dict[str, Any]:
@@ -217,20 +229,20 @@ def get_user_from_token_payload(db: Session, payload: dict[str, Any]):
     return user
 
 
-def set_auth_cookies(response: Response, access_token: str, refresh_token: str) -> None:
-    """Set authentication cookies with proper security settings.
+def _resolve_cookie_security() -> tuple[bool, Literal["lax", "strict", "none"]]:
+    """Resolve the secure/samesite cookie attributes from the environment.
 
-    Args:
-        response: FastAPI Response object
-        access_token: JWT access token
-        refresh_token: JWT refresh token
+    Production (HTTPS) issues ``Secure``, ``SameSite=None`` cookies so they work
+    cross-origin. Tests and non-HTTPS/quickstart deployments fall back to
+    ``secure=False``, ``samesite="lax"``. Both setting and deleting auth cookies
+    must use these same attributes, otherwise browsers may refuse to apply the
+    deletion in a cross-site context and the cookie lingers.
     """
     # Import here to avoid circular imports
     from app.api.utils import str_to_bool
 
-    # Toggle secure off if running tests
     secure_cookie = True
-    samesite: Literal["lax", "strict", "none"] | None = "none"
+    samesite: Literal["lax", "strict", "none"] = "none"
     try:
         if str_to_bool(os.environ.get("RUNNING_TESTS", False)) or not str_to_bool(
             os.environ.get("HTTP_COOKIE_SECURE", True)
@@ -240,6 +252,19 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str) 
     except ValueError:
         logger.exception("Defaulting to secure cookie")
 
+    return secure_cookie, samesite
+
+
+def set_auth_cookies(response: Response, access_token: str, refresh_token: str) -> None:
+    """Set authentication cookies with proper security settings.
+
+    Args:
+        response: FastAPI Response object
+        access_token: JWT access token
+        refresh_token: JWT refresh token
+    """
+    secure_cookie, samesite = _resolve_cookie_security()
+
     # Set access token cookie
     response.set_cookie(
         key="access_token",
@@ -248,14 +273,37 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str) 
         secure=secure_cookie,
         samesite=samesite,
     )
-    # Set refresh token cookie
+    # Set refresh token cookie. Unlike the access token, give the refresh cookie an
+    # explicit max_age so it persists across browser sessions for the full refresh
+    # token lifetime; otherwise it becomes a session cookie and is dropped when the
+    # browser session ends, forcing the user to log in again on their next visit.
     response.set_cookie(
         key="refresh_token",
         value=f"Bearer {refresh_token}",
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
         httponly=True,
         secure=secure_cookie,
         samesite=samesite,
     )
+
+
+def delete_auth_cookies(response: Response) -> None:
+    """Clear the auth cookies, mirroring the attributes used to set them.
+
+    The deletion ``Set-Cookie`` must carry the same ``secure``/``samesite``
+    attributes as ``set_auth_cookies``; otherwise a browser may reject clearing a
+    ``SameSite=None; Secure`` cookie from a cross-site context, leaving the user
+    effectively logged in.
+    """
+    secure_cookie, samesite = _resolve_cookie_security()
+    for key in ("access_token", "refresh_token"):
+        response.delete_cookie(
+            key=key,
+            path="/",
+            httponly=True,
+            secure=secure_cookie,
+            samesite=samesite,
+        )
 
 
 async def validate_turnstile(

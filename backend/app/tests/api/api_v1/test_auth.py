@@ -3,9 +3,9 @@ import secrets
 import string
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
-from uuid import uuid4
+from uuid import UUID, uuid4
 
-from fastapi import status
+from fastapi import Response, status
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -17,7 +17,7 @@ from app.models.single_use_token import SingleUseToken
 from app.api.deps import get_current_user
 from app.core import security
 from app.core.config import settings
-from app.schemas.refresh_token import RefreshTokenCreate
+from app.schemas.refresh_token import RefreshTokenCreate, RefreshTokenUpdate
 from app.schemas.single_use_token import SingleUseTokenCreate
 from app.schemas.user import UserUpdate
 from app.tests.utils.user import create_user
@@ -73,11 +73,56 @@ def test_logout_removes_authorization_cookie(client: TestClient, db: Session) ->
     assert r.status_code == 200
     assert r.cookies.get("access_token")
     assert client.cookies.get("access_token")
+    assert client.cookies.get("refresh_token")
     # logout
     r = client.get(f"{settings.API_V1_STR}/auth/remove-access-token")
     assert r.status_code == 200
     assert r.cookies.get("access_token") is None
     assert client.cookies.get("access_token") is None
+    # both cookies cleared
+    assert client.cookies.get("refresh_token") is None
+
+
+def test_logout_revokes_refresh_token(client: TestClient, db: Session) -> None:
+    """Logout should revoke the refresh token so it cannot be reused."""
+    user = create_user(db, password="mysecretpassword")
+    login = client.post(
+        f"{settings.API_V1_STR}/auth/access-token",
+        data={"username": user.email, "password": "mysecretpassword"},
+        headers={"content_type": "application/x-www-form-urlencoded"},
+    )
+    assert login.status_code == 200
+    refresh_token = login.cookies.get("refresh_token")
+    assert refresh_token is not None
+
+    # Identify the token's jti before logging out (cookie value is quoted because
+    # it contains a space, so strip quotes before stripping the Bearer prefix)
+    raw_token = refresh_token.strip('"').removeprefix("Bearer ").strip()
+    jti = UUID(security.decode_token(raw_token)["jti"])
+    assert crud.refresh_token.get_by_jti(db, jti=jti).revoked is False
+
+    logout = client.get(f"{settings.API_V1_STR}/auth/remove-access-token")
+    assert logout.status_code == 200
+
+    # Token is revoked in the DB
+    assert crud.refresh_token.get_by_jti(db, jti=jti).revoked is True
+
+    # And reusing it (past the grace window) is rejected
+    db_token = crud.refresh_token.get_by_jti(db, jti=jti)
+    crud.refresh_token.update(
+        db,
+        db_obj=db_token,
+        obj_in=RefreshTokenUpdate(
+            revoked=True,
+            revoked_at=datetime.now(timezone.utc)
+            - timedelta(seconds=settings.REFRESH_TOKEN_REUSE_GRACE_SECONDS + 1),
+        ),
+    )
+    reuse = client.post(
+        f"{settings.API_V1_STR}/auth/refresh-token",
+        cookies={"refresh_token": refresh_token},
+    )
+    assert reuse.status_code == 401
 
 
 def test_email_confirmation_with_valid_token(client: TestClient, db: Session) -> None:
@@ -93,9 +138,7 @@ def test_email_confirmation_with_valid_token(client: TestClient, db: Session) ->
     assert user_in_db and user_in_db.is_email_confirmed is True
 
 
-def test_email_confirmation_with_expired_token(
-    client: TestClient, db: Session
-) -> None:
+def test_email_confirmation_with_expired_token(client: TestClient, db: Session) -> None:
     token = secrets.token_urlsafe()
     user = create_user(db, token=token)
     # Back-date token to 120 minutes ago (past the 60-minute expiry)
@@ -256,16 +299,27 @@ def test_refresh_token_missing_jti(client: TestClient, db: Session) -> None:
 
 
 def test_refresh_token_revoked(client: TestClient, db: Session) -> None:
-    """Test refresh token endpoint with revoked token."""
+    """Test refresh token endpoint rejects a token revoked beyond the grace window."""
     user = create_user(db)
 
     # Create a refresh token
     refresh_token_str = security.create_refresh_token(db, subject=str(user.id))
 
-    # Decode to get JTI and revoke the token
+    # Decode to get JTI and revoke the token, backdating revoked_at past the grace
+    # window so the reuse-grace path does not apply.
     payload = security.decode_token(refresh_token_str)
     jti = payload["jti"]
-    crud.refresh_token.revoke(db, jti=jti)
+    db_token = crud.refresh_token.get_by_jti(db, jti=jti)
+    assert db_token is not None
+    crud.refresh_token.update(
+        db,
+        db_obj=db_token,
+        obj_in=RefreshTokenUpdate(
+            revoked=True,
+            revoked_at=datetime.now(timezone.utc)
+            - timedelta(seconds=settings.REFRESH_TOKEN_REUSE_GRACE_SECONDS + 60),
+        ),
+    )
 
     response = client.post(
         f"{settings.API_V1_STR}/auth/refresh-token",
@@ -362,6 +416,163 @@ def test_refresh_token_revokes_old_token(client: TestClient, db: Session) -> Non
     db_token_after = crud.refresh_token.get_by_jti(db, jti=jti)
     assert db_token_after is not None
     assert db_token_after.revoked
+    # revoked_at should be recorded so the reuse-grace window can be evaluated
+    assert db_token_after.revoked_at is not None
+
+
+def test_delete_auth_cookies_mirrors_secure_attributes(monkeypatch) -> None:
+    """delete_auth_cookies must mirror the prod Secure/SameSite=None attributes."""
+    monkeypatch.delenv("RUNNING_TESTS", raising=False)
+    monkeypatch.setenv("HTTP_COOKIE_SECURE", "1")
+
+    response = Response()
+    security.delete_auth_cookies(response)
+
+    set_cookies = [v.decode() for k, v in response.raw_headers if k == b"set-cookie"]
+    assert len(set_cookies) == 2
+    assert any(h.startswith("access_token=") for h in set_cookies)
+    assert any(h.startswith("refresh_token=") for h in set_cookies)
+    for header in set_cookies:
+        assert "Secure" in header
+        assert "samesite=none" in header.lower()
+
+
+def test_logout_revokes_expired_refresh_token(client: TestClient, db: Session) -> None:
+    """An expired refresh token is still revoked in the DB on logout."""
+    user = create_user(db)
+    token_jti = uuid4()
+    crud.refresh_token.create(
+        db,
+        obj_in=RefreshTokenCreate(
+            jti=token_jti,
+            user_id=user.id,
+            issued_at=datetime.now(timezone.utc) - timedelta(days=1),
+            expires_at=datetime.now(timezone.utc) + timedelta(days=29),
+        ),
+    )
+    # Craft a refresh JWT whose signature is valid but whose exp is in the past
+    expired_jwt = jwt.encode(
+        {
+            "sub": str(user.id),
+            "jti": str(token_jti),
+            "type": "refresh",
+            "exp": datetime.now(timezone.utc) - timedelta(minutes=1),
+            "iat": datetime.now(timezone.utc) - timedelta(days=1),
+        },
+        settings.SECRET_KEY,
+        algorithm=security.ALGORITHM,
+    )
+
+    response = client.get(
+        f"{settings.API_V1_STR}/auth/remove-access-token",
+        cookies={"refresh_token": f"Bearer {expired_jwt}"},
+    )
+    assert response.status_code == 200
+
+    db_token = crud.refresh_token.get_by_jti(db, jti=token_jti)
+    assert db_token is not None
+    assert db_token.revoked is True
+
+
+def test_login_sets_persistent_refresh_cookie(client: TestClient, db: Session) -> None:
+    """Login should set a persistent (Max-Age) refresh cookie, not a session cookie."""
+    user = create_user(db, password="mysecretpassword")
+
+    response = client.post(
+        f"{settings.API_V1_STR}/auth/access-token",
+        data={"username": user.email, "password": "mysecretpassword"},
+        headers={"content_type": "application/x-www-form-urlencoded"},
+    )
+    assert response.status_code == 200
+
+    set_cookie_headers = response.headers.get_list("set-cookie")
+    refresh_cookie = next(
+        (h for h in set_cookie_headers if h.startswith("refresh_token=")), None
+    )
+    access_cookie = next(
+        (h for h in set_cookie_headers if h.startswith("access_token=")), None
+    )
+    assert refresh_cookie is not None
+    assert access_cookie is not None
+    # Refresh cookie persists across browser sessions; access cookie stays a session cookie
+    assert "Max-Age" in refresh_cookie
+    assert "Max-Age" not in access_cookie
+
+
+def test_refresh_token_within_grace_window_succeeds(
+    client: TestClient, db: Session
+) -> None:
+    """A just-rotated refresh token is still accepted within the grace window."""
+    user = create_user(db)
+
+    refresh_token_str = security.create_refresh_token(db, subject=str(user.id))
+    payload = security.decode_token(refresh_token_str)
+    jti = payload["jti"]
+
+    # Revoke just now (revoked_at = now), simulating a concurrent rotation
+    crud.refresh_token.revoke(db, jti=jti)
+
+    response = client.post(
+        f"{settings.API_V1_STR}/auth/refresh-token",
+        cookies={"refresh_token": f"Bearer {refresh_token_str}"},
+    )
+
+    assert response.status_code == 200
+    assert response.cookies.get("access_token") is not None
+    assert response.cookies.get("refresh_token") is not None
+
+
+def test_refresh_token_reuse_after_grace_window_fails(
+    client: TestClient, db: Session
+) -> None:
+    """A revoked token reused past the grace window is rejected."""
+    user = create_user(db)
+
+    refresh_token_str = security.create_refresh_token(db, subject=str(user.id))
+    payload = security.decode_token(refresh_token_str)
+    jti = payload["jti"]
+
+    db_token = crud.refresh_token.get_by_jti(db, jti=jti)
+    assert db_token is not None
+    crud.refresh_token.update(
+        db,
+        db_obj=db_token,
+        obj_in=RefreshTokenUpdate(
+            revoked=True,
+            revoked_at=datetime.now(timezone.utc)
+            - timedelta(seconds=settings.REFRESH_TOKEN_REUSE_GRACE_SECONDS + 1),
+        ),
+    )
+
+    response = client.post(
+        f"{settings.API_V1_STR}/auth/refresh-token",
+        cookies={"refresh_token": f"Bearer {refresh_token_str}"},
+    )
+
+    assert response.status_code == 401
+    assert "Refresh token revoked or expired" in response.json()["detail"]
+
+
+def test_refresh_token_concurrent_reuse_both_succeed(
+    client: TestClient, db: Session
+) -> None:
+    """Two refreshes of the same token within the grace window both succeed."""
+    user = create_user(db)
+
+    refresh_token_str = security.create_refresh_token(db, subject=str(user.id))
+
+    first = client.post(
+        f"{settings.API_V1_STR}/auth/refresh-token",
+        cookies={"refresh_token": f"Bearer {refresh_token_str}"},
+    )
+    assert first.status_code == 200
+
+    # Reusing the same (now rotated/revoked) token again immediately is tolerated
+    second = client.post(
+        f"{settings.API_V1_STR}/auth/refresh-token",
+        cookies={"refresh_token": f"Bearer {refresh_token_str}"},
+    )
+    assert second.status_code == 200
 
 
 def test_login_updates_last_login_and_activity_timestamps(
@@ -422,6 +633,7 @@ def test_activity_tracking_updates_last_activity_on_authenticated_request(
 
     # Wait a moment and make an authenticated request
     import time
+
     time.sleep(1)
 
     # Make authenticated request (test token endpoint)
@@ -454,9 +666,7 @@ def test_activity_tracking_throttle_prevents_frequent_updates(
     db.refresh(user)
 
     # Test the CRUD method directly
-    updated_user = crud.user.update_last_activity(
-        db, user=user, throttle_minutes=15
-    )
+    updated_user = crud.user.update_last_activity(db, user=user, throttle_minutes=15)
 
     # Should return None because within throttle window
     assert updated_user is None
@@ -482,9 +692,7 @@ def test_activity_tracking_updates_when_outside_throttle_window(
 
     # Test the CRUD method directly
     before_update = datetime.now(timezone.utc)
-    updated_user = crud.user.update_last_activity(
-        db, user=user, throttle_minutes=15
-    )
+    updated_user = crud.user.update_last_activity(db, user=user, throttle_minutes=15)
     after_update = datetime.now(timezone.utc)
 
     # Should return updated user because outside throttle window
@@ -510,9 +718,7 @@ def test_activity_tracking_updates_when_last_activity_is_none(
 
     # Test the CRUD method directly
     before_update = datetime.now(timezone.utc)
-    updated_user = crud.user.update_last_activity(
-        db, user=user, throttle_minutes=15
-    )
+    updated_user = crud.user.update_last_activity(db, user=user, throttle_minutes=15)
     after_update = datetime.now(timezone.utc)
 
     # Should return updated user because last_activity_at was None
@@ -528,8 +734,11 @@ def test_activity_tracking_updates_when_last_activity_is_none(
 @patch("app.api.api_v1.endpoints.auth.mail.send_email_change_notification")
 @patch("app.api.api_v1.endpoints.auth.mail.send_email_change_verification")
 def test_change_email_success(
-    mock_verify, mock_notify,
-    client: TestClient, db: Session, normal_user_access_token: str
+    mock_verify,
+    mock_notify,
+    client: TestClient,
+    db: Session,
+    normal_user_access_token: str,
 ) -> None:
     """Test successful email change request sets pending_email."""
     current_user = get_current_user(db, normal_user_access_token)
@@ -546,8 +755,11 @@ def test_change_email_success(
 @patch("app.api.api_v1.endpoints.auth.mail.send_email_change_notification")
 @patch("app.api.api_v1.endpoints.auth.mail.send_email_change_verification")
 def test_change_email_wrong_password(
-    mock_verify, mock_notify,
-    client: TestClient, db: Session, normal_user_access_token: str
+    mock_verify,
+    mock_notify,
+    client: TestClient,
+    db: Session,
+    normal_user_access_token: str,
 ) -> None:
     """Test email change fails with wrong password."""
     new_email = random_email()
@@ -559,8 +771,11 @@ def test_change_email_wrong_password(
 @patch("app.api.api_v1.endpoints.auth.mail.send_email_change_notification")
 @patch("app.api.api_v1.endpoints.auth.mail.send_email_change_verification")
 def test_change_email_same_email(
-    mock_verify, mock_notify,
-    client: TestClient, db: Session, normal_user_access_token: str
+    mock_verify,
+    mock_notify,
+    client: TestClient,
+    db: Session,
+    normal_user_access_token: str,
 ) -> None:
     """Test email change fails when new email matches current email."""
     current_user = get_current_user(db, normal_user_access_token)
@@ -572,8 +787,11 @@ def test_change_email_same_email(
 @patch("app.api.api_v1.endpoints.auth.mail.send_email_change_notification")
 @patch("app.api.api_v1.endpoints.auth.mail.send_email_change_verification")
 def test_change_email_duplicate_email(
-    mock_verify, mock_notify,
-    client: TestClient, db: Session, normal_user_access_token: str
+    mock_verify,
+    mock_notify,
+    client: TestClient,
+    db: Session,
+    normal_user_access_token: str,
 ) -> None:
     """Test email change fails when new email is already in use."""
     other_user = create_user(db)
@@ -585,8 +803,11 @@ def test_change_email_duplicate_email(
 @patch("app.api.api_v1.endpoints.auth.mail.send_email_change_notification")
 @patch("app.api.api_v1.endpoints.auth.mail.send_email_change_verification")
 def test_change_email_demo_user(
-    mock_verify, mock_notify,
-    client: TestClient, db: Session, normal_user_access_token: str
+    mock_verify,
+    mock_notify,
+    client: TestClient,
+    db: Session,
+    normal_user_access_token: str,
 ) -> None:
     """Test email change is blocked for demo users."""
     current_user = get_current_user(db, normal_user_access_token)
@@ -597,9 +818,7 @@ def test_change_email_demo_user(
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_confirm_email_change_with_valid_token(
-    client: TestClient, db: Session
-) -> None:
+def test_confirm_email_change_with_valid_token(client: TestClient, db: Session) -> None:
     """Test confirming an email change with a valid token."""
     new_email = random_email()
     user = create_user(db, password="mysecretpassword")
@@ -673,9 +892,7 @@ def test_confirm_email_change_with_invalid_token(
     assert r.request.url == settings.API_DOMAIN + "/auth/login?error=invalid"
 
 
-def test_confirm_email_change_duplicate_email(
-    client: TestClient, db: Session
-) -> None:
+def test_confirm_email_change_duplicate_email(client: TestClient, db: Session) -> None:
     """Test TOCTOU guard: another user registers the email before confirmation."""
     new_email = random_email()
     user = create_user(db, password="mysecretpassword")
@@ -707,8 +924,11 @@ def test_confirm_email_change_duplicate_email(
 @patch("app.api.api_v1.endpoints.auth.mail.send_email_change_notification")
 @patch("app.api.api_v1.endpoints.auth.mail.send_email_change_verification")
 def test_change_email_cleans_up_previous_token(
-    mock_verify, mock_notify,
-    client: TestClient, db: Session, normal_user_access_token: str
+    mock_verify,
+    mock_notify,
+    client: TestClient,
+    db: Session,
+    normal_user_access_token: str,
 ) -> None:
     """Test that requesting a new email change cleans up previous tokens."""
     current_user = get_current_user(db, normal_user_access_token)

@@ -26,6 +26,9 @@ class RefreshToken(Base):
         DateTime(timezone=True), nullable=False
     )
     revoked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    revoked_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     # Foreign keys
     user_id: Mapped[uuid.UUID] = mapped_column(
