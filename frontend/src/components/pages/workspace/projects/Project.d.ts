@@ -34,6 +34,8 @@ export interface DataProduct {
   data_type: string;
   filepath: string;
   flight_id: string;
+  like_count?: number;
+  liked?: boolean;
   original_filename: string;
   public: boolean;
   resolution?: {
@@ -49,6 +51,7 @@ export interface DataProduct {
   status: string;
   url: string;
   user_style: SingleBandSymbology | MultibandSymbology;
+  view_count?: number;
   xml_metadata?: XmlMetadata | null;
 }
 

@@ -22,11 +22,13 @@ from .data_product import (
     DataProductUpdateDataType,
     ProcessingRequest,
 )
+from .data_product_like import DataProductLike, DataProductLikeCreate, DataProductLikeUpdate
 from .data_product_metadata import (
     DataProductMetadata,
     DataProductMetadataCreate,
     DataProductMetadataUpdate,
 )
+from .data_product_view import DataProductView, DataProductViewCreate, DataProductViewUpdate
 from .disk_usage_stats import DiskUsageStats, DiskUsageStatsCreate, DiskUsageStatsUpdate
 from .extension import Extension, ExtensionCreate, ExtensionUpdate
 from .file_permission import FilePermission, FilePermissionCreate, FilePermissionUpdate

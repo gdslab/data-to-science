@@ -5,20 +5,24 @@ from uuid import UUID
 
 from fastapi import status
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import and_, or_, select, true, update
+from sqlalchemy import and_, func, or_, select, true, update
 from sqlalchemy.orm import joinedload, Session
 
 from app import crud
 from app.crud.base import CRUDBase
 from app.crud.crud_data_product import (
+    set_like_attrs,
     set_spatial_metadata_attrs,
     set_public_attr,
     set_signature_attr,
     set_url_attr,
     set_user_style_attr,
+    set_view_count_attr,
 )
 from app.models.constants import NON_RASTER_TYPES, PROCESSING_JOB_NAMES
 from app.models.data_product import DataProduct
+from app.models.data_product_like import DataProductLike
+from app.models.data_product_view import DataProductView
 from app.models.flight import Flight
 from app.models.job import Job
 from app.models.project import Project
@@ -34,6 +38,45 @@ class ReadFlight(TypedDict):
     response_code: int
     message: str
     result: Optional[Flight]
+
+
+def _load_like_view_counts(
+    session: Session,
+    data_product_ids: List[UUID],
+    user_id: Optional[UUID] = None,
+) -> tuple[dict[UUID, int], dict[UUID, int], set[UUID]]:
+    """Batch-load like/view counts and the caller's liked ids for data products.
+
+    Returns (like_counts, view_counts, liked_ids). ``liked_ids`` is empty when
+    ``user_id`` is None (e.g. anonymous/public reads). Done in bulk to avoid the
+    per-data-product subqueries used by the single-product read paths.
+    """
+    if not data_product_ids:
+        return {}, {}, set()
+
+    like_counts_stmt = (
+        select(DataProductLike.data_product_id, func.count(DataProductLike.id))
+        .where(DataProductLike.data_product_id.in_(data_product_ids))
+        .group_by(DataProductLike.data_product_id)
+    )
+    like_counts = {row[0]: row[1] for row in session.execute(like_counts_stmt).all()}
+
+    view_counts_stmt = (
+        select(DataProductView.data_product_id, func.count(DataProductView.id))
+        .where(DataProductView.data_product_id.in_(data_product_ids))
+        .group_by(DataProductView.data_product_id)
+    )
+    view_counts = {row[0]: row[1] for row in session.execute(view_counts_stmt).all()}
+
+    liked_ids: set[UUID] = set()
+    if user_id is not None:
+        liked_stmt = select(DataProductLike.data_product_id).where(
+            DataProductLike.data_product_id.in_(data_product_ids),
+            DataProductLike.user_id == user_id,
+        )
+        liked_ids = {row[0] for row in session.execute(liked_stmt).all()}
+
+    return like_counts, view_counts, liked_ids
 
 
 class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
@@ -148,6 +191,11 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                 for user_style in user_styles:
                     user_styles_by_data_product_id[user_style.data_product_id] = user_style
 
+            # Batch load like/view counts and the caller's liked state
+            like_counts, view_counts, liked_ids = _load_like_view_counts(
+                session, all_data_product_ids, user_id=user_id
+            )
+
             # flights returned by crud
             final_flights = []
             for flight in flights_with_data:
@@ -179,6 +227,14 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                             )
                             set_signature_attr(data_product)
                             set_url_attr(data_product, upload_dir)
+                            set_like_attrs(
+                                data_product,
+                                like_counts.get(data_product.id, 0),
+                                data_product.id in liked_ids,
+                            )
+                            set_view_count_attr(
+                                data_product, view_counts.get(data_product.id, 0)
+                            )
                             # check for saved user style
                             user_style = user_styles_by_data_product_id.get(data_product.id)
                             if user_style:
@@ -234,6 +290,11 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                 for job in jobs:
                     jobs_by_data_product_id[job.data_product_id] = job
 
+            # Batch load like/view counts (anonymous reads have no liked state)
+            like_counts, view_counts, _liked_ids = _load_like_view_counts(
+                session, all_data_product_ids
+            )
+
             final_flights = []
             for flight in flights_with_data:
                 keep_data_products: List[DataProduct] = []
@@ -255,6 +316,14 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                         set_public_attr(data_product, True)
                         set_signature_attr(data_product)
                         set_url_attr(data_product, upload_dir)
+                        set_like_attrs(
+                            data_product,
+                            like_counts.get(data_product.id, 0),
+                            False,
+                        )
+                        set_view_count_attr(
+                            data_product, view_counts.get(data_product.id, 0)
+                        )
                 flight.data_products = keep_data_products
 
                 has_required_data_type = any(

@@ -11,7 +11,9 @@ from app.models.utils.utcnow import utcnow
 
 if TYPE_CHECKING:
     from .annotation import Annotation
+    from .data_product_like import DataProductLike
     from .data_product_metadata import DataProductMetadata
+    from .data_product_view import DataProductView
     from .file_permission import FilePermission
     from .flight import Flight
     from .job import Job
@@ -77,6 +79,12 @@ class DataProduct(Base):
         back_populates="data_product", cascade="all, delete"
     )
     vector_layer: Mapped[List["VectorLayer"]] = relationship(
+        back_populates="data_product", cascade="all, delete"
+    )
+    likes: Mapped[List["DataProductLike"]] = relationship(
+        back_populates="data_product", cascade="all, delete"
+    )
+    views: Mapped[List["DataProductView"]] = relationship(
         back_populates="data_product", cascade="all, delete"
     )
 

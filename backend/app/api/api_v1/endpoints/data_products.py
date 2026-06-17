@@ -10,12 +10,21 @@ from urllib.parse import urlparse, parse_qs
 from uuid import UUID, uuid4
 
 import segno
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    Response,
+    UploadFile,
+    status,
+)
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
 from geojson_pydantic import Feature, FeatureCollection, Polygon, MultiPolygon
 from pydantic import BaseModel, UUID4
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
@@ -154,27 +163,103 @@ def get_shortened_url(
         return schemas.ShortenedUrlApiResponse(shortened_url=url)
 
 
+@router.post("/{data_product_id}/like", status_code=status.HTTP_201_CREATED)
+def like_data_product(
+    data_product_id: UUID,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    data_product: models.DataProduct = Depends(deps.can_read_data_product),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Like a data product. Returns 400 if already liked."""
+    existing = crud.data_product_like.get_by_data_product_id_and_user_id(
+        db, data_product_id=data_product_id, user_id=current_user.id
+    )
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Data product already liked",
+        )
+    try:
+        crud.data_product_like.create(
+            db,
+            obj_in=schemas.DataProductLikeCreate(
+                data_product_id=data_product_id, user_id=current_user.id
+            ),
+        )
+    except IntegrityError:
+        # Concurrent like for the same user/product hit the unique constraint.
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Data product already liked",
+        )
+    like_count = crud.data_product_like.get_count_by_data_product_id(
+        db, data_product_id=data_product_id
+    )
+    return {"liked": True, "like_count": like_count}
+
+
+@router.delete("/{data_product_id}/like", status_code=status.HTTP_200_OK)
+def unlike_data_product(
+    data_product_id: UUID,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    data_product: models.DataProduct = Depends(deps.can_read_data_product),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Remove a like from a data product. Returns 400 if not currently liked."""
+    existing = crud.data_product_like.get_by_data_product_id_and_user_id(
+        db, data_product_id=data_product_id, user_id=current_user.id
+    )
+    if not existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Data product not liked",
+        )
+    crud.data_product_like.remove(db, id=existing.id)
+    like_count = crud.data_product_like.get_count_by_data_product_id(
+        db, data_product_id=data_product_id
+    )
+    return {"liked": False, "like_count": like_count}
+
+
+@router.post("/{data_product_id}/view")
+def record_data_product_view(
+    data_product_id: UUID,
+    response: Response,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    data_product: models.DataProduct = Depends(deps.can_read_data_product),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Record a view for a data product. Returns 201 on insert, 200 on dedup-skip."""
+    view = crud.data_product_view.create_if_not_recent(
+        db, data_product_id=data_product_id, user_id=current_user.id
+    )
+    if view:
+        response.status_code = status.HTTP_201_CREATED
+        return {"message": "View recorded"}
+    response.status_code = status.HTTP_200_OK
+    return {"message": "View already recorded"}
+
+
 @router.get("/{data_product_id}", response_model=schemas.DataProduct)
 def read_data_product(
     data_product_id: UUID,
     flight_id: UUID,
     current_user: models.User = Depends(deps.get_current_approved_user),
-    flight: models.Flight = Depends(deps.can_read_flight),
+    data_product: models.DataProduct = Depends(deps.can_read_data_product),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    """Retrieve raw data for flight if user can access it."""
-    if not flight:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
-        )
+    """Retrieve a data product if the user can access it.
+
+    Authorization (and the data-product-belongs-to-flight check) is enforced by
+    the can_read_data_product dependency; this returns the enriched read model.
+    """
     upload_dir = get_static_dir()
-    data_product = crud.data_product.get_single_by_id(
+    return crud.data_product.get_single_by_id(
         db,
         data_product_id=data_product_id,
         upload_dir=upload_dir,
         user_id=current_user.id,
     )
-    return data_product
 
 
 @router.get("", response_model=Sequence[schemas.DataProduct])

@@ -50,6 +50,21 @@ def test_read_data_product_with_project_owner_role(
     assert "user_style" in response_data_product
 
 
+def test_read_data_product_with_mismatched_flight_returns_403(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # IDOR guard: a flight the user owns in the path must not grant access to a
+    # data product that belongs to a different flight.
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+    other_flight = create_flight(db, project_id=data_product.project.id)
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{data_product.project.id}"
+        f"/flights/{other_flight.id}/data_products/{data_product.obj.id}"
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
 def test_read_data_product_with_project_manager_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:

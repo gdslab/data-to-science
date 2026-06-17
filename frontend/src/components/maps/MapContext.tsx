@@ -95,6 +95,15 @@ function flightsReducer(state: Flight[], action: FlightsAction) {
     case 'clear': {
       return [];
     }
+    case 'update_view_count': {
+      const { dataProductId, viewCount } = action.payload;
+      return state.map((flight) => ({
+        ...flight,
+        data_products: flight.data_products.map((dp) =>
+          dp.id === dataProductId ? { ...dp, view_count: viewCount } : dp
+        ),
+      }));
+    }
     default: {
       return state;
     }
@@ -280,6 +289,7 @@ const context: {
   activeProject: ProjectItem | null;
   activeProjectDispatch: React.Dispatch<ActiveProjectAction>;
   flights: Flight[];
+  flightsDispatch: React.Dispatch<FlightsAction>;
   geoRasterId: string;
   geoRasterIdDispatch: React.Dispatch<GeoRasterIdAction>;
   mapViewProperties: MapViewPropertiesState;
@@ -308,6 +318,7 @@ const context: {
   activeProject: null,
   activeProjectDispatch: () => {},
   flights: [],
+  flightsDispatch: () => {},
   geoRasterId: '',
   geoRasterIdDispatch: () => {},
   mapViewProperties: null,
@@ -404,13 +415,6 @@ export function MapContextProvider({
     }
   }, [activeProject]);
 
-  // update flights/data products to check for changes to saved styles
-  useEffect(() => {
-    if (activeDataProduct && activeProject) {
-      getFlights(activeProject);
-    }
-  }, [activeDataProduct, activeProject]);
-
   // reset point cloud viewer choice when no point cloud is active
   useEffect(() => {
     if (!activeDataProduct || activeDataProduct.data_type !== 'point_cloud') {
@@ -427,6 +431,7 @@ export function MapContextProvider({
       activeProject,
       activeProjectDispatch,
       flights,
+      flightsDispatch,
       geoRasterId,
       geoRasterIdDispatch,
 

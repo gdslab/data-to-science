@@ -15,6 +15,7 @@ import { useMapLayerContext } from './MapLayersContext';
 import { useRasterSymbologyContext } from './RasterSymbologyContext';
 
 import api from '../../api';
+import { recordDataProductView } from '../../utils/recordDataProductView';
 import { isPublicOnly, mapApiResponseToLayers } from './utils';
 
 export default function MapViewMode() {
@@ -22,6 +23,7 @@ export default function MapViewMode() {
     activeDataProduct,
     activeMapTool,
     activeProject,
+    flightsDispatch,
     pointCloudViewer,
   } = useMapContext();
   const { mapboxAccessTokenDispatch, maptilerApiKeyDispatch } = useMapApiKeys();
@@ -110,6 +112,29 @@ export default function MapViewMode() {
       }
     }
   }, [activeProject, dispatch, symbologyDispatch]);
+
+  // Record a view whenever a data product is activated. Covers every in-app
+  // viewer (point cloud, raster, panoramic, 3dgs, LCC) on both /explore and the
+  // workspace. The backend de-duplicates within a 30-minute window, so re-fires
+  // (including React StrictMode double-invocation) are harmless. The endpoint
+  // returns the authoritative view count, which we write back into flights
+  // state so the displayed count updates without an extra fetch.
+  useEffect(() => {
+    const dataProductId = activeDataProduct?.id;
+    if (!dataProductId) return;
+    let cancelled = false;
+    recordDataProductView(dataProductId).then((viewCount) => {
+      if (!cancelled && viewCount !== null) {
+        flightsDispatch({
+          type: 'update_view_count',
+          payload: { dataProductId, viewCount },
+        });
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeDataProduct?.id, flightsDispatch]);
 
   if (activeMapTool === 'compare') {
     return <CompareMap />;

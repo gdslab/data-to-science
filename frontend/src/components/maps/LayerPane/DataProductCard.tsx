@@ -14,6 +14,8 @@ import { getDataProductName, getDataProductTitle } from '../../pages/workspace/p
 import { useRasterSymbologyContext } from '../RasterSymbologyContext';
 import { NON_MAP_DATA_TYPES } from './utils';
 import { PointCloudViewer } from '../Maps';
+import EngagementInline from '../../Engagement/EngagementInline';
+import { useDataProductLike } from '../../Engagement/useDataProductLike';
 
 export default function DataProductCard({
   dataProduct,
@@ -36,6 +38,18 @@ export default function DataProductCard({
     dataProduct.data_type
   );
   const isPointCloud = dataProduct.data_type === 'point_cloud';
+
+  // Likes are member-only; non-members (e.g. anonymous /explore) see a
+  // read-only count. The like button stops click propagation so liking never
+  // activates the card (clicking elsewhere on the card still does). The
+  // engagement sits in the card's title row in a fixed spot/size regardless of
+  // whether the card is expanded.
+  const interactive = Boolean(activeProject?.role);
+  const { engagement, toggleLike } = useDataProductLike(
+    dataProduct,
+    activeProject?.id,
+    dataProduct.flight_id
+  );
 
   const activateDataProduct = () => {
     dispatch({ type: 'SET_READY_STATE', rasterId: dataProduct.id, payload: false });
@@ -60,10 +74,16 @@ export default function DataProductCard({
       <div className="text-slate-600 text-sm">
         {isPointCloud ? (
           <div className="flex flex-col gap-2">
-            <div>
+            <div className="flex items-center justify-between gap-2">
               <span className="font-bold">
                 {getDataProductName(dataProduct.data_type)}
               </span>
+              <EngagementInline
+                engagement={engagement}
+                onToggleLike={toggleLike}
+                interactive={interactive}
+                size="sm"
+              />
             </div>
             <div className="flex flex-col gap-1.5">
               <button
@@ -114,17 +134,15 @@ export default function DataProductCard({
             className="flex flex-col gap-1.5"
             title={`Activate ${getDataProductTitle(dataProduct.data_type)} layer`}
             onClick={() => {
-              dispatch({
-                type: 'SET_READY_STATE',
-                rasterId: dataProduct.id,
-                payload: false,
-              });
-              if (
-                (dataProduct && !activeDataProduct) ||
-                (dataProduct &&
-                  activeDataProduct &&
-                  dataProduct.id !== activeDataProduct.id)
-              ) {
+              // Only (re)activate when this isn't already the active product.
+              // Clicking an already-active card must not reset its ready state,
+              // which would hide the layer without re-activating it.
+              if (!activeDataProduct || dataProduct.id !== activeDataProduct.id) {
+                dispatch({
+                  type: 'SET_READY_STATE',
+                  rasterId: dataProduct.id,
+                  payload: false,
+                });
                 activeDataProductDispatch({
                   type: 'set',
                   payload: dataProduct,
@@ -132,10 +150,16 @@ export default function DataProductCard({
               }
             }}
           >
-            <div>
+            <div className="flex items-center justify-between gap-2">
               <span className="font-bold">
                 {getDataProductName(dataProduct.data_type)}
               </span>
+              <EngagementInline
+                engagement={engagement}
+                onToggleLike={toggleLike}
+                interactive={interactive}
+                size="sm"
+              />
             </div>
             {isRasterType &&
               dataProduct.resolution &&

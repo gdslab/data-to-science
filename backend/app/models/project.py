@@ -63,7 +63,9 @@ class Project(Base):
         primaryjoin="and_(ProjectMember.project_type == 'PROJECT', ProjectMember.project_uuid == Project.id)",
         foreign_keys="[ProjectMember.project_uuid]",
     )
-    modules: Mapped[List["ProjectModule"]] = relationship(back_populates="project")
+    modules: Mapped[List["ProjectModule"]] = relationship(
+        back_populates="project", cascade="all, delete"
+    )
     location: Mapped["Location"] = relationship(back_populates="project")
     owner: Mapped["User"] = relationship(back_populates="projects")
     team: Mapped["Team"] = relationship(back_populates="projects")
