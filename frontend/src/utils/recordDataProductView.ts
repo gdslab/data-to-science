@@ -9,14 +9,23 @@ import { getSessionId } from './sessionId';
 //
 // View recording is best-effort — failures (e.g. 404 for an unauthorized or
 // unpublished product) are swallowed and never surfaced to the user.
+//
+// Returns the authoritative view count from the response (so callers can update
+// state without an extra fetch), or null if the request failed.
 export async function recordDataProductView(
   dataProductId: string
-): Promise<void> {
+): Promise<number | null> {
   try {
-    await api.post(`/public/data_products/${dataProductId}/view`, null, {
-      headers: { 'X-Session-Id': getSessionId() },
-    });
+    const response = await api.post(
+      `/public/data_products/${dataProductId}/view`,
+      null,
+      { headers: { 'X-Session-Id': getSessionId() } }
+    );
+    return typeof response.data?.view_count === 'number'
+      ? response.data.view_count
+      : null;
   } catch {
     // Intentionally ignored: view tracking must not disrupt the viewer.
+    return null;
   }
 }

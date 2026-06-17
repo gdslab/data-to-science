@@ -142,6 +142,7 @@ def test_public_anonymous_view_with_session_id_returns_201(
     )
 
     assert response.status_code == status.HTTP_201_CREATED
+    assert response.json() == {"view_count": 1}
 
 
 def test_public_anonymous_view_without_session_id_returns_400(
@@ -184,6 +185,7 @@ def test_public_view_dedup_same_session_returns_200(
     )
 
     assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {"view_count": 1}
 
 
 def test_public_view_different_sessions_both_count(

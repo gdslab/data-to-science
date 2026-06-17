@@ -372,8 +372,10 @@ def record_public_data_product_view(
             detail="X-Session-Id is required for anonymous views",
         )
 
-    if view:
-        response.status_code = status.HTTP_201_CREATED
-        return {"message": "View recorded"}
-    response.status_code = status.HTTP_200_OK
-    return {"message": "View already recorded"}
+    response.status_code = (
+        status.HTTP_201_CREATED if view else status.HTTP_200_OK
+    )
+    view_count = crud.data_product_view.get_count_by_data_product_id(
+        db, data_product_id=data_product_id
+    )
+    return {"view_count": view_count}
