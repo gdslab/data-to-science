@@ -48,29 +48,38 @@ if settings.ENABLE_OPENTELEMETRY:
         print(f"Error setting up OpenTelemetry tracing: {e}")
 
 
-cors_origins = [
-    origin.strip()
-    for origin in settings.BACKEND_CORS_ORIGINS.split(",")
-    if origin.strip()
-]
+def configure_cors(app: FastAPI, allowed_origins: str) -> None:
+    """Configure CORS from a comma-separated origin allowlist.
 
-if cors_origins:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=cors_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-        expose_headers=["*"],
-    )
-else:
-    # Backward-compatible default: anonymous, browser GETs from any origin.
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_methods=["GET"],
-        allow_headers=["*"],
-    )
+    When ``allowed_origins`` lists one or more origins, those origins may make
+    credentialed (cookie-bearing) cross-origin requests with any method. When it
+    is empty, the API falls back to allowing anonymous ``GET`` requests from any
+    origin (the historical default).
+    """
+    cors_origins = [
+        origin.strip() for origin in allowed_origins.split(",") if origin.strip()
+    ]
+
+    if cors_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=cors_origins,
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+            expose_headers=["*"],
+        )
+    else:
+        # Backward-compatible default: anonymous, browser GETs from any origin.
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_methods=["GET"],
+            allow_headers=["*"],
+        )
+
+
+configure_cors(app, settings.BACKEND_CORS_ORIGINS)
 
 setup_logger()
 logger = logging.getLogger(__name__)
