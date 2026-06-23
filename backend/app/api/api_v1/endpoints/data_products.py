@@ -167,7 +167,7 @@ def get_shortened_url(
 def like_data_product(
     data_product_id: UUID,
     current_user: models.User = Depends(deps.get_current_approved_user),
-    data_product: models.DataProduct = Depends(deps.can_read_data_product),
+    data_product: models.DataProduct = Depends(deps.can_read_or_public_data_product),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Like a data product. Returns 400 if already liked."""
@@ -202,7 +202,7 @@ def like_data_product(
 def unlike_data_product(
     data_product_id: UUID,
     current_user: models.User = Depends(deps.get_current_approved_user),
-    data_product: models.DataProduct = Depends(deps.can_read_data_product),
+    data_product: models.DataProduct = Depends(deps.can_read_or_public_data_product),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Remove a like from a data product. Returns 400 if not currently liked."""

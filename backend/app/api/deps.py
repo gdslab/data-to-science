@@ -481,6 +481,56 @@ def can_read_data_product(
     return data_product
 
 
+def can_read_or_public_data_product(
+    project_id: UUID,
+    flight_id: UUID,
+    data_product_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_approved_user),
+) -> models.DataProduct:
+    """Return data product if the current user can read it.
+
+    Access is granted when the data product is publicly accessible (its file
+    permission is_public is True, which is also set when the parent project is
+    published) OR the user is a member of the project. Used by engagement
+    endpoints so any authenticated user who can see a data product can engage
+    with it, not only project members.
+    """
+    data_product = crud.data_product.get(db, id=data_product_id)
+    if not data_product or not data_product.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
+        )
+    # IDOR guards: the data product must belong to the flight, and the flight
+    # to the project named in the path.
+    flight = crud.flight.get(db, id=flight_id)
+    if not flight or data_product.flight_id != flight.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Data product does not belong to specified flight",
+        )
+    if flight.project_id != project_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Flight does not belong to specified project",
+        )
+    # Publicly accessible files are readable by any authenticated user.
+    file_permission = crud.file_permission.get_by_data_product(
+        db, file_id=data_product_id
+    )
+    if file_permission and file_permission.is_public:
+        return data_product
+    # Otherwise require project membership.
+    project_member = crud.project_member.get_by_project_and_member_id(
+        db, project_uuid=project_id, member_id=current_user.id
+    )
+    if project_member:
+        return data_product
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
+    )
+
+
 def can_read_write_data_product(
     data_product_id: UUID,
     db: Session = Depends(get_db),
