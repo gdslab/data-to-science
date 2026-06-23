@@ -9,7 +9,10 @@ import {
 } from '@heroicons/react/24/outline';
 import { yupResolver } from '@hookform/resolvers/yup';
 
+import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
+
 import ChangeEmailForm from './ChangeEmailForm';
+import ProfileActivity from './activity/ProfileActivity';
 import ProfilePictureUpload from './ProfilePictureUpload';
 import { passwordHintText } from './RegistrationForm';
 import Alert, { Status } from '../../Alert';
@@ -421,6 +424,7 @@ export default function Profile() {
   const [showChangeEmailForm, setShowChangeEmailForm] = useState(false);
   const [showChangePasswordForm, setShowChangePasswordForm] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   return (
     <div className="min-h-full flex flex-row justify-center bg-linear-to-b from-primary from-20% to-slate-200 to-10% px-4 py-4">
@@ -430,8 +434,19 @@ export default function Profile() {
           {!user ? (
             <span>Unable to load user profile</span>
           ) : (
-            <div>
-              {/* profile column */}
+            <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
+              <TabList className="mb-6 flex gap-4 border-b border-gray-200">
+                <Tab className="-mb-px border-b-[3px] border-transparent px-1 py-2 font-medium text-gray-500 focus:outline-none data-selected:border-accent2 data-selected:text-accent3">
+                  Profile
+                </Tab>
+                <Tab className="-mb-px border-b-[3px] border-transparent px-1 py-2 font-medium text-gray-500 focus:outline-none data-selected:border-accent2 data-selected:text-accent3">
+                  Activity & stats
+                </Tab>
+              </TabList>
+              <TabPanels>
+                <TabPanel>
+                  <div>
+                    {/* profile column */}
               <div className="flex flex-col items-center gap-1.5">
                 <span className="font-semibold">
                   {user.first_name} {user.last_name}
@@ -528,7 +543,13 @@ export default function Profile() {
                   <Alert alertType={status.type}>{status.msg}</Alert>
                 ) : null}
               </div>
-            </div>
+                  </div>
+                </TabPanel>
+                <TabPanel unmount={false}>
+                  <ProfileActivity active={selectedIndex === 1} />
+                </TabPanel>
+              </TabPanels>
+            </TabGroup>
           )}
         </Card>
       </div>
