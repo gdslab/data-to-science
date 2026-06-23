@@ -9,7 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { FaRegEye, FaRegThumbsUp, FaThumbsUp } from 'react-icons/fa6';
 
-import { useDataProductLike } from '../../../../../Engagement/useDataProductLike';
+import { useDataProductLike } from '../../../../../engagement/useDataProductLike';
 import { formatCount } from '../../../../../../utils/formatCount';
 
 import { Status } from '../../../../../Alert';

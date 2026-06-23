@@ -20,7 +20,7 @@ import Table, { TableBody, TableHead } from '../../../../../Table';
 import ToolboxModal from './ToolboxModal';
 import XmlMetadataAttachment from './XmlMetadata/XmlMetadataAttachment';
 import DataProductShareModal from './DataProductShareModal';
-import DataProductEngagement from '../../../../../Engagement/DataProductEngagement';
+import DataProductEngagement from '../../../../../engagement/DataProductEngagement';
 import { DataProduct, ProjectDetail } from '../../Project';
 
 export function isGeoTIFF(dataType: string): boolean {

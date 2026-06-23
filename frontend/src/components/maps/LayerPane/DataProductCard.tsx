@@ -14,8 +14,8 @@ import { getDataProductName, getDataProductTitle } from '../../pages/workspace/p
 import { useRasterSymbologyContext } from '../RasterSymbologyContext';
 import { NON_MAP_DATA_TYPES } from './utils';
 import { PointCloudViewer } from '../Maps';
-import EngagementInline from '../../Engagement/EngagementInline';
-import { useDataProductLike } from '../../Engagement/useDataProductLike';
+import EngagementInline from '../../engagement/EngagementInline';
+import { useDataProductLike } from '../../engagement/useDataProductLike';
 
 export default function DataProductCard({
   dataProduct,
