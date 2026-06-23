@@ -1,6 +1,7 @@
 import logging
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, List, Literal, Optional, Sequence
 from uuid import UUID
 
 import rasterio
@@ -20,14 +21,19 @@ from app.models.data_product import DataProduct
 from app.models.data_product_like import DataProductLike
 from app.models.data_product_metadata import DataProductMetadata
 from app.models.data_product_view import DataProductView
+from app.models.enums.project_type import ProjectType
+from app.models.file_permission import FilePermission
 from app.models.flight import Flight
 from app.models.project import Project
+from app.models.project_member import ProjectMember
 from app.models.job import Job
+from app.models.user import User
 from app.models.utils.utcnow import utcnow
 from app.schemas.data_product import (
     DataProductCreate,
     DataProductUpdate,
 )
+from app.schemas.project_member import Role
 from app.schemas.job import Status
 from app.models.user_style import UserStyle
 
@@ -365,6 +371,250 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
         )
         with db as session:
             return session.execute(stmt).scalars().all()
+
+    def _owned_project_ids_subquery(self, user_id: UUID):
+        """Project IDs where user_id holds the OWNER role.
+
+        Ownership is role-based, not the single Project.owner_id creator: the
+        creator is added as a ProjectMember with role=OWNER, and other members
+        can be promoted to OWNER. This captures all of them.
+        """
+        return select(ProjectMember.project_uuid).where(
+            and_(
+                ProjectMember.member_id == user_id,
+                ProjectMember.role == Role.OWNER,
+                ProjectMember.project_type == ProjectType.PROJECT,
+            )
+        )
+
+    def _owned_data_product_ids_subquery(self, user_id: UUID):
+        """Active data products belonging to projects owned by user_id."""
+        return (
+            select(DataProduct.id)
+            .join(Flight, Flight.id == DataProduct.flight_id)
+            .join(Project, Project.id == Flight.project_id)
+            .where(
+                and_(
+                    Project.id.in_(self._owned_project_ids_subquery(user_id)),
+                    Project.is_active,
+                    Flight.is_active,
+                    DataProduct.is_active,
+                )
+            )
+        )
+
+    def get_owner_stats(self, db: Session, user_id: UUID) -> Dict:
+        """Aggregate view/like/visibility stats for data products owned by user_id."""
+        owned_subq = self._owned_data_product_ids_subquery(user_id).subquery()
+        owned_ids = select(owned_subq.c.id)
+        with db as session:
+            data_product_count = session.execute(
+                select(func.count()).select_from(owned_subq)
+            ).scalar_one()
+            total_views = session.execute(
+                select(func.count(DataProductView.id)).where(
+                    DataProductView.data_product_id.in_(owned_ids)
+                )
+            ).scalar_one()
+            total_likes = session.execute(
+                select(func.count(DataProductLike.id)).where(
+                    DataProductLike.data_product_id.in_(owned_ids)
+                )
+            ).scalar_one()
+            public_count = session.execute(
+                select(func.count(FilePermission.id)).where(
+                    and_(
+                        FilePermission.file_id.in_(owned_ids),
+                        FilePermission.is_public,
+                    )
+                )
+            ).scalar_one()
+            project_count = session.execute(
+                select(func.count(func.distinct(Project.id))).where(
+                    and_(
+                        Project.id.in_(self._owned_project_ids_subquery(user_id)),
+                        Project.is_active,
+                    )
+                )
+            ).scalar_one()
+        return {
+            "total_views": total_views,
+            "total_likes": total_likes,
+            "data_product_count": data_product_count,
+            "public_count": public_count,
+            "project_count": project_count,
+        }
+
+    def get_owner_views_trend(
+        self, db: Session, user_id: UUID, weeks: int = 12
+    ) -> List[Dict]:
+        """Weekly view counts (oldest -> newest, zero-filled) for owned data products."""
+        owned_subq = self._owned_data_product_ids_subquery(user_id).subquery()
+        week_start_col = func.date_trunc("week", DataProductView.viewed_at).label(
+            "week_start"
+        )
+        with db as session:
+            rows = session.execute(
+                select(week_start_col, func.count(DataProductView.id).label("views"))
+                .where(
+                    DataProductView.data_product_id.in_(select(owned_subq.c.id))
+                )
+                .group_by(week_start_col)
+            ).all()
+
+        views_by_week = {row.week_start.date(): row.views for row in rows}
+        today = datetime.now(timezone.utc).date()
+        current_week_start = today - timedelta(days=today.weekday())
+        points = []
+        for i in range(weeks - 1, -1, -1):
+            week_start = current_week_start - timedelta(weeks=i)
+            points.append(
+                {
+                    "week_start": week_start.isoformat(),
+                    "views": views_by_week.get(week_start, 0),
+                }
+            )
+        return points
+
+    def get_owner_top(
+        self,
+        db: Session,
+        user_id: UUID,
+        metric: Literal["views", "likes"] = "views",
+        limit: int = 5,
+    ) -> List[Dict]:
+        """Top owned data products ranked by view or like count."""
+        view_count_sq = (
+            select(func.count(DataProductView.id))
+            .where(DataProductView.data_product_id == DataProduct.id)
+            .scalar_subquery()
+        )
+        like_count_sq = (
+            select(func.count(DataProductLike.id))
+            .where(DataProductLike.data_product_id == DataProduct.id)
+            .scalar_subquery()
+        )
+        order_col = view_count_sq if metric == "views" else like_count_sq
+        query = (
+            select(
+                DataProduct.id,
+                DataProduct.data_type,
+                Project.id.label("project_id"),
+                Project.title.label("project_name"),
+                Flight.id.label("flight_id"),
+                Flight.acquisition_date.label("flight_date"),
+                view_count_sq.label("views"),
+                like_count_sq.label("likes"),
+            )
+            .join(Flight, Flight.id == DataProduct.flight_id)
+            .join(Project, Project.id == Flight.project_id)
+            .where(
+                and_(
+                    Project.id.in_(self._owned_project_ids_subquery(user_id)),
+                    Project.is_active,
+                    Flight.is_active,
+                    DataProduct.is_active,
+                )
+            )
+            .order_by(order_col.desc(), DataProduct.id)
+            .limit(limit)
+        )
+        with db as session:
+            rows = session.execute(query).all()
+        return [dict(row._mapping) for row in rows]
+
+    def get_activity_counts(self, db: Session, user_id: UUID) -> Dict:
+        """Distinct count of data products user_id has viewed / liked."""
+        with db as session:
+            viewed_count = session.execute(
+                select(
+                    func.count(func.distinct(DataProductView.data_product_id))
+                ).where(DataProductView.user_id == user_id)
+            ).scalar_one()
+            liked_count = session.execute(
+                select(
+                    func.count(func.distinct(DataProductLike.data_product_id))
+                ).where(DataProductLike.user_id == user_id)
+            ).scalar_one()
+        return {"viewed_count": viewed_count, "liked_count": liked_count}
+
+    def get_recent_activity(
+        self,
+        db: Session,
+        user_id: UUID,
+        action: Literal["viewed", "liked"] = "viewed",
+        limit: int = 3,
+    ) -> List[Dict]:
+        """Most recent data products user_id viewed or liked, with owner name."""
+        if action == "viewed":
+            activity_model = DataProductView
+            timestamp_col = DataProductView.viewed_at
+        else:
+            activity_model = DataProductLike
+            timestamp_col = DataProductLike.created_at
+
+        last_action_sq = (
+            select(func.max(timestamp_col))
+            .where(
+                and_(
+                    activity_model.data_product_id == DataProduct.id,
+                    activity_model.user_id == user_id,
+                )
+            )
+            .scalar_subquery()
+        )
+        query = (
+            select(
+                DataProduct.id,
+                DataProduct.data_type,
+                Project.id.label("project_id"),
+                Project.title.label("project_name"),
+                Project.owner_id,
+                Flight.id.label("flight_id"),
+                Flight.acquisition_date.label("flight_date"),
+                last_action_sq.label("last_action_at"),
+            )
+            .join(Flight, Flight.id == DataProduct.flight_id)
+            .join(Project, Project.id == Flight.project_id)
+            .where(
+                and_(
+                    DataProduct.id.in_(
+                        select(activity_model.data_product_id).where(
+                            activity_model.user_id == user_id
+                        )
+                    ),
+                    DataProduct.is_active,
+                )
+            )
+            .order_by(last_action_sq.desc())
+            .limit(limit)
+        )
+        with db as session:
+            rows = session.execute(query).all()
+            owner_ids = {row.owner_id for row in rows}
+            owners_by_id = {}
+            if owner_ids:
+                owners = session.execute(
+                    select(User).where(User.id.in_(owner_ids))
+                ).scalars().all()
+                owners_by_id = {
+                    owner.id: f"{owner.first_name} {owner.last_name}"
+                    for owner in owners
+                }
+
+        return [
+            {
+                "id": row.id,
+                "data_type": row.data_type,
+                "project_id": row.project_id,
+                "project_name": row.project_name,
+                "owner_name": owners_by_id.get(row.owner_id, ""),
+                "flight_id": row.flight_id,
+                "flight_date": row.flight_date,
+                "last_action_at": row.last_action_at,
+            }
+            for row in rows
+        ]
 
 
 def set_status_attr(data_product_obj: DataProduct, jobs: List[Job]) -> bool:

@@ -1,12 +1,14 @@
 import uuid
+from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.schema import UniqueConstraint
 
 from app.db.base_class import Base
+from app.models.utils.utcnow import utcnow
 
 if TYPE_CHECKING:
     from .data_product import DataProduct
@@ -19,6 +21,9 @@ class DataProductLike(Base):
     # Columns
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=utcnow(), nullable=False
     )
 
     # Foreign keys
@@ -45,5 +50,5 @@ class DataProductLike(Base):
     def __repr__(self) -> str:
         return (
             f"DataProductLike(id={self.id}, user_id={self.user_id}, "
-            f"data_product_id={self.data_product_id})"
+            f"data_product_id={self.data_product_id}, created_at={self.created_at})"
         )
