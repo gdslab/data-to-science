@@ -156,3 +156,37 @@ def test_like_denied_for_non_member(
     response = client.post(_like_url(data_product))
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_like_allowed_for_non_member_when_public(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # Any authenticated user can like a data product in a published/public
+    # project, even without project membership.
+    data_product = SampleDataProduct(db)
+    crud.project.update_project_visibility(
+        db, project_id=data_product.project.id, is_public=True
+    )
+
+    response = client.post(_like_url(data_product))
+
+    assert response.status_code == status.HTTP_201_CREATED
+    assert response.json() == {"liked": True, "like_count": 1}
+
+
+def test_unlike_allowed_for_non_member_when_public(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db)
+    crud.project.update_project_visibility(
+        db, project_id=data_product.project.id, is_public=True
+    )
+    create_data_product_like(
+        db, data_product_id=data_product.obj.id, user_id=current_user.id
+    )
+
+    response = client.delete(_like_url(data_product))
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {"liked": False, "like_count": 0}

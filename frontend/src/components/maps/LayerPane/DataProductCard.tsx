@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 
+import AuthContext from '../../../AuthContext';
 import { useMapContext } from '../MapContext';
 import { useMobileView } from '../MobileViewContext';
 
@@ -30,6 +31,7 @@ export default function DataProductCard({
   } = useMapContext();
 
   const { setMobileView } = useMobileView();
+  const { user } = useContext(AuthContext);
   const [shareOpen, setShareOpen] = useState(false);
 
   const { dispatch } = useRasterSymbologyContext();
@@ -39,12 +41,13 @@ export default function DataProductCard({
   );
   const isPointCloud = dataProduct.data_type === 'point_cloud';
 
-  // Likes are member-only; non-members (e.g. anonymous /explore) see a
-  // read-only count. The like button stops click propagation so liking never
-  // activates the card (clicking elsewhere on the card still does). The
-  // engagement sits in the card's title row in a fixed spot/size regardless of
-  // whether the card is expanded.
-  const interactive = Boolean(activeProject?.role);
+  // Likes require authentication; anonymous viewers (e.g. /explore) see a
+  // read-only count. Any logged-in user can like a data product they can see,
+  // including non-members viewing a published/public project. The like button
+  // stops click propagation so liking never activates the card (clicking
+  // elsewhere on the card still does). The engagement sits in the card's title
+  // row in a fixed spot/size regardless of whether the card is expanded.
+  const interactive = Boolean(user);
   const { engagement, toggleLike } = useDataProductLike(
     dataProduct,
     activeProject?.id,
