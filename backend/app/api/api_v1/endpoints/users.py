@@ -251,3 +251,37 @@ def get_user_extensions(
         db, user_id=current_user.id
     )
     return user_extensions
+
+
+@router.get("/current/stats", response_model=schemas.ProfileStats)
+def get_current_user_stats(
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Bundled engagement stats for the Profile page Activity tab.
+
+    Single round trip covering both segments: owner totals/trend/top lists for
+    data the user owns, and the user's own view/like activity.
+    """
+    owner_stats = crud.data_product.get_owner_stats(db, user_id=current_user.id)
+    owner_stats["views_trend"] = crud.data_product.get_owner_views_trend(
+        db, user_id=current_user.id
+    )
+    owner_stats["top_viewed"] = crud.data_product.get_owner_top(
+        db, user_id=current_user.id, metric="views"
+    )
+    owner_stats["top_liked"] = crud.data_product.get_owner_top(
+        db, user_id=current_user.id, metric="likes"
+    )
+
+    activity_counts = crud.data_product.get_activity_counts(
+        db, user_id=current_user.id
+    )
+    activity_counts["recently_viewed"] = crud.data_product.get_recent_activity(
+        db, user_id=current_user.id, action="viewed"
+    )
+    activity_counts["recently_liked"] = crud.data_product.get_recent_activity(
+        db, user_id=current_user.id, action="liked"
+    )
+
+    return {"received": owner_stats, "activity": activity_counts}

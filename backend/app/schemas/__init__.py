@@ -46,6 +46,14 @@ from .indoor_project_data import (
 )
 from .job import Job, JobCreate, JobUpdate
 from .location import Location, LocationCreate, LocationUpdate
+from .profile_stats import (
+    ActivityCounts,
+    DataProductStatRow,
+    OwnerStats,
+    ProfileStats,
+    RecentActivityRow,
+    ViewsTrendPoint,
+)
 from .project import Project, ProjectCreate, ProjectUpdate
 from .project_like import ProjectLike, ProjectLikeCreate, ProjectLikeUpdate
 from .project_member import ProjectMember, ProjectMemberCreate, ProjectMemberUpdate
