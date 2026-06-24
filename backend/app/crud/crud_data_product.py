@@ -111,6 +111,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                 set_like_attrs(data_product, like_count, liked)
                 set_view_count_attr(data_product, view_count)
                 set_spatial_metadata_attrs(data_product)
+                set_signature_attr(data_product)
                 set_url_attr(data_product, upload_dir)
                 is_status_set = set_status_attr(data_product, data_product.jobs)
                 if user_style:
