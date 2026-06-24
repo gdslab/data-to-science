@@ -9,8 +9,10 @@ from sqlalchemy import and_, select, update
 from sqlalchemy.orm import Session
 
 from app import crud
+from app.api.utils import get_static_dir
 from app.core.config import settings
 from app.crud.base import CRUDBase
+from app.crud.crud_admin import get_static_directory_size
 from app.models.flight import Flight
 from app.models.job import Job
 from app.models.raw_data import RawData
@@ -86,6 +88,40 @@ class CRUDRawData(CRUDBase[RawData, RawDataCreate, RawDataUpdate]):
             session.commit()
 
         return crud.raw_data.get(db, id=raw_data_id)
+
+    def set_file_size(self, db: Session, raw_data_id: UUID) -> int | None:
+        """Compute and persist the on-disk byte size of a raw data directory.
+
+        Captured at upload finalization (and by the backfill) so per-user data
+        usage is a fast SQL SUM instead of a filesystem walk at read time.
+        Returns the size in bytes, or None if the raw data no longer exists.
+        """
+        with db as session:
+            location = session.execute(
+                select(Flight.project_id, RawData.flight_id)
+                .join(Flight, Flight.id == RawData.flight_id)
+                .where(RawData.id == raw_data_id)
+            ).first()
+            if location is None:
+                return None
+            project_id, flight_id = location
+            raw_data_dir = os.path.join(
+                get_static_dir(),
+                "projects",
+                str(project_id),
+                "flights",
+                str(flight_id),
+                "raw_data",
+                str(raw_data_id),
+            )
+            file_size = get_static_directory_size(raw_data_dir)
+            session.execute(
+                update(RawData)
+                .where(RawData.id == raw_data_id)
+                .values(file_size=file_size)
+            )
+            session.commit()
+        return file_size
 
     def update_s3_url(self, db: Session, raw_data_id: UUID, s3_url: str) -> None:
         """Set the s3_url for a single raw data record."""

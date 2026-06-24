@@ -8,6 +8,7 @@ from pydantic import AnyHttpUrl, BaseModel, UUID4
 class RawDataBase(BaseModel):
     filepath: Optional[str] = None
     original_filename: Optional[str] = None
+    file_size: Optional[int] = None
     is_active: Optional[bool] = True
     is_initial_processing_completed: bool = False
 

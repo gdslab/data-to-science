@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import { Link, useLocation } from 'react-router';
 import {
+  BoltIcon,
   CircleStackIcon,
   HomeIcon,
   MapIcon,
@@ -27,7 +28,7 @@ export default function SidePanel() {
                     'bg-blue-50 text-blue-700': currentPage === 'dashboard',
                     'text-gray-500 hover:bg-gray-50 hover:text-gray-700':
                       currentPage !== 'dashboard',
-                  }
+                  },
                 )}
               >
                 <HomeIcon className="h-5 w-5 opacity-75" strokeWidth={2} />
@@ -48,7 +49,7 @@ export default function SidePanel() {
                       'bg-blue-50 text-blue-700': currentPage === 'users',
                       'text-gray-500 hover:bg-gray-50 hover:text-gray-700':
                         currentPage !== 'users',
-                    }
+                    },
                   )}
                 >
                   <UsersIcon className="h-5 w-5 opacity-75" strokeWidth={2} />
@@ -68,7 +69,7 @@ export default function SidePanel() {
                       'bg-blue-50 text-blue-700': currentPage === 'map',
                       'text-gray-500 hover:bg-gray-50 hover:text-gray-700':
                         currentPage !== 'map',
-                    }
+                    },
                   )}
                 >
                   <MapIcon className="h-5 w-5 opacity-75" strokeWidth={2} />
@@ -88,7 +89,7 @@ export default function SidePanel() {
                       'bg-blue-50 text-blue-700': currentPage === 'extensions',
                       'text-gray-500 hover:bg-gray-50 hover:text-gray-700':
                         currentPage !== 'extensions',
-                    }
+                    },
                   )}
                 >
                   <PuzzlePieceIcon
@@ -111,7 +112,7 @@ export default function SidePanel() {
                       'bg-blue-50 text-blue-700': currentPage === 'storage',
                       'text-gray-500 hover:bg-gray-50 hover:text-gray-700':
                         currentPage !== 'storage',
-                    }
+                    },
                   )}
                 >
                   <CircleStackIcon
@@ -134,7 +135,7 @@ export default function SidePanel() {
                       'bg-blue-50 text-blue-700': currentPage === 'charts',
                       'text-gray-500 hover:bg-gray-50 hover:text-gray-700':
                         currentPage !== 'charts',
-                    }
+                    },
                   )}
                 >
                   <PresentationChartBarIcon
@@ -144,6 +145,26 @@ export default function SidePanel() {
 
                   <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded-sm bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
                     Charts
+                  </span>
+                </Link>
+              </li>
+
+              <li>
+                <Link
+                  to="/admin/dashboard/activity"
+                  className={clsx(
+                    'group relative flex justify-center rounded-sm px-1 py-1.5 md:px-2',
+                    {
+                      'bg-blue-50 text-blue-700': currentPage === 'activity',
+                      'text-gray-500 hover:bg-gray-50 hover:text-gray-700':
+                        currentPage !== 'activity',
+                    },
+                  )}
+                >
+                  <BoltIcon className="h-5 w-5 opacity-75" strokeWidth={2} />
+
+                  <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded-sm bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
+                    User Activity
                   </span>
                 </Link>
               </li>
