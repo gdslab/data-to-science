@@ -129,12 +129,12 @@ function SectionHeading({
   const { title } = SECTION_INFO[infoKey];
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      <h2 className="text-xl font-semibold">{title}</h2>
+      <h2 className="mb-0 text-xl font-semibold">{title}</h2>
       <button
         type="button"
         onClick={() => onInfo(infoKey)}
         aria-label={`About ${title}`}
-        className="text-gray-400 hover:text-blue-600"
+        className="inline-flex items-center text-gray-400 hover:text-blue-600"
       >
         <FaCircleInfo className="h-4 w-4" />
       </button>
