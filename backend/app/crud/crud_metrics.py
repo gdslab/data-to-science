@@ -102,11 +102,12 @@ def get_engagement_leaderboard(
 ) -> List[EngagementLeaderRow]:
     """Top users ranked by content created or engagement received.
 
-    Content is attributed to its creator, consistent with the existing
-    ``/admin/project_statistics`` convention: projects and received views/likes
-    to ``Project.owner_id``, flights to ``Flight.pilot_id``. Counts are gathered
-    with separate GROUP BY queries (rather than one wide join) so that, e.g., a
-    project with many flights and many views does not multiply either total.
+    Everything is attributed to the project owner (``Project.owner_id``),
+    consistent with the existing ``/admin/project_statistics`` convention:
+    projects, their flights and data products, and the views/likes/storage those
+    accrue. Counts are gathered with separate GROUP BY queries (rather than one
+    wide join) so that, e.g., a project with many flights and many views does not
+    multiply either total.
     """
     project_counts = dict(
         db.execute(
@@ -117,9 +118,11 @@ def get_engagement_leaderboard(
     )
     flight_counts = dict(
         db.execute(
-            select(Flight.pilot_id, func.count(Flight.id))
-            .where(Flight.is_active)
-            .group_by(Flight.pilot_id)
+            select(Project.owner_id, func.count(Flight.id))
+            .select_from(Flight)
+            .join(Project, Project.id == Flight.project_id)
+            .where(and_(Flight.is_active, Project.is_active))
+            .group_by(Project.owner_id)
         ).all()
     )
     data_product_counts = dict(

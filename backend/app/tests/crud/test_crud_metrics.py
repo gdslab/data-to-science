@@ -8,6 +8,8 @@ from app.schemas.raw_data import RawDataUpdate
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.data_product_like import create_data_product_like
 from app.tests.utils.data_product_view import create_data_product_view
+from app.tests.utils.flight import create_flight
+from app.tests.utils.project import create_project
 from app.tests.utils.raw_data import SampleRawData
 from app.tests.utils.user import create_user
 
@@ -79,6 +81,22 @@ def test_get_engagement_leaderboard_orders_and_limits_by_metric(db: Session) -> 
     assert len(top) == 1
     assert top[0].user_id == popular.id
     assert top[0].total_views == 5
+
+
+def test_leaderboard_credits_flights_to_owner_not_pilot(db: Session) -> None:
+    owner = create_user(db)
+    pilot = create_user(db)
+    project = create_project(db, owner_id=owner.id)
+    create_flight(db, project_id=project.id, pilot_id=pilot.id)
+
+    rows = crud.metrics.get_engagement_leaderboard(db, metric="flights", limit=100)
+    owner_row = next((row for row in rows if row.user_id == owner.id), None)
+    pilot_row = next((row for row in rows if row.user_id == pilot.id), None)
+
+    assert owner_row is not None
+    assert owner_row.flight_count == 1
+    # The pilot owns nothing, so they are not credited for the flight.
+    assert pilot_row is None
 
 
 def test_leaderboard_data_usage_sums_data_products_and_raw_data(db: Session) -> None:
