@@ -148,7 +148,6 @@ export default function ProfileActivity({ active }: { active: boolean }) {
                     subline={subline(row.data_type, row.flight_date)}
                     dataProductId={row.id}
                     projectId={row.project_id}
-                    flightId={row.flight_id}
                     metric={
                       <span className="flex items-center gap-1 text-gray-600">
                         <FaRegEye className="h-4 w-4" />
@@ -171,7 +170,6 @@ export default function ProfileActivity({ active }: { active: boolean }) {
                     subline={subline(row.data_type, row.flight_date)}
                     dataProductId={row.id}
                     projectId={row.project_id}
-                    flightId={row.flight_id}
                     metric={
                       <span className="flex items-center gap-1 text-accent2">
                         <FaHeart className="h-4 w-4" />
@@ -230,7 +228,6 @@ export default function ProfileActivity({ active }: { active: boolean }) {
                     )}
                     dataProductId={row.id}
                     projectId={row.project_id}
-                    flightId={row.flight_id}
                     metric={
                       <span className="text-xs text-gray-400">
                         {formatRelativeTime(row.last_action_at)}
@@ -255,7 +252,6 @@ export default function ProfileActivity({ active }: { active: boolean }) {
                     )}
                     dataProductId={row.id}
                     projectId={row.project_id}
-                    flightId={row.flight_id}
                     metric={
                       <span className="text-xs text-gray-400">
                         {formatRelativeTime(row.last_action_at)}
