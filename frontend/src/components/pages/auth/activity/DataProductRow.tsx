@@ -3,14 +3,13 @@ import { ReactNode, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import api from '../../../../api';
-import { DataProduct, ProjectDetail } from '../../workspace/projects/Project';
+import { DataProduct, ProjectItem } from '../../workspace/projects/Project';
 
 export default function DataProductRow({
   dataProductId,
   projectName,
   subline,
   projectId,
-  flightId,
   rank,
   metric,
 }: {
@@ -18,7 +17,6 @@ export default function DataProductRow({
   projectName: string;
   subline: string;
   projectId: string;
-  flightId: string;
   rank?: number;
   metric: ReactNode;
 }) {
@@ -27,20 +25,35 @@ export default function DataProductRow({
 
   // Open the data product in the map workspace, mirroring the "View" action in
   // DataProductCard/DataProductsTable. The map's LayerPane expects the full
-  // project and data product objects in navigation state, so fetch them first.
+  // project and data product objects in navigation state.
+  //
+  // "Your activity" rows can reference data products in published projects the
+  // user is not a member of, so both fetches must work for non-members:
+  //  - project: try the member endpoint, then fall back to the public published
+  //    endpoint, tagging it is_public (as ProjectLoader does) so the map uses
+  //    its public data sources.
+  //  - data product: /public/user_access returns the signed data product for
+  //    members and public viewers alike.
   async function handleClick() {
     if (isLoading) return;
     setIsLoading(true);
     try {
-      const [projectResponse, dataProductResponse] = await Promise.all([
-        api.get<ProjectDetail>(`/projects/${projectId}`),
-        api.get<DataProduct>(
-          `/projects/${projectId}/flights/${flightId}/data_products/${dataProductId}`
-        ),
-      ]);
+      let project: ProjectItem;
+      try {
+        const response = await api.get<ProjectItem>(`/projects/${projectId}`);
+        project = response.data;
+      } catch {
+        const response = await api.get<ProjectItem>(
+          `/public/projects/${projectId}`
+        );
+        project = { ...response.data, is_public: true };
+      }
+      const dataProductResponse = await api.get<DataProduct>(
+        `/public/user_access?file_id=${dataProductId}`
+      );
       navigate('/home', {
         state: {
-          project: projectResponse.data,
+          project,
           dataProduct: dataProductResponse.data,
           navContext: 'dataProductCard',
         },
