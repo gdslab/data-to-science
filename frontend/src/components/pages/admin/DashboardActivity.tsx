@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLoaderData } from 'react-router';
 import { ResponsiveLine } from '@nivo/line';
+import { FaCircleInfo, FaXmark } from 'react-icons/fa6';
 
 import {
   ActivitySummary,
@@ -9,6 +10,7 @@ import {
   LeaderboardMetric,
 } from './DashboardTypes';
 import StatCard from './StatCard';
+import Modal from '../../Modal';
 import Pagination from '../../Pagination';
 
 import api from '../../../api';
@@ -38,6 +40,146 @@ const METRIC_TO_FIELD: Record<LeaderboardMetric, keyof EngagementLeaderRow> = {
 
 function bytesToGB(bytes: number): string {
   return (bytes / 1024 ** 3).toFixed(2);
+}
+
+type InfoKey = 'active' | 'trend' | 'funnel' | 'leaderboard';
+
+// Per-section explanations surfaced through the info icon next to each heading.
+const SECTION_INFO: Record<InfoKey, { title: string; body: React.ReactNode }> =
+  {
+    active: {
+      title: 'Active users',
+      body: (
+        <>
+          <p>
+            <strong>Active (24h / 7d / 30d)</strong> count the distinct users
+            who performed any authenticated action within the trailing window,
+            based on each user's most recent activity. These are the daily,
+            weekly, and monthly active user (DAU / WAU / MAU) totals as of now.
+          </p>
+          <p>
+            <strong>Active users</strong> is the total number of approved and
+            email-confirmed accounts — your activated user base.
+          </p>
+        </>
+      ),
+    },
+    trend: {
+      title: 'Active users over time (DAU / WAU / MAU)',
+      body: (
+        <>
+          <p>
+            Daily, weekly, and monthly active-user counts recorded once per day.
+            Because only each user's most recent activity is stored, this
+            history builds going forward from when daily snapshots began and
+            cannot be backfilled.
+          </p>
+          <p>
+            <strong>Stickiness (DAU/MAU)</strong> is the share of monthly-active
+            users who were also active in the last 24 hours — higher means users
+            return more often.
+          </p>
+        </>
+      ),
+    },
+    funnel: {
+      title: 'Activation funnel',
+      body: (
+        <>
+          <p>
+            Shows how far new users progress: signed up → confirmed email →
+            approved by an admin → created their first project.
+          </p>
+          <p>
+            Each stage is a subset of the one before it, so the drop-off between
+            bars highlights where users stall.
+          </p>
+        </>
+      ),
+    },
+    leaderboard: {
+      title: 'Engagement leaderboard (power users)',
+      body: (
+        <>
+          <p>
+            Ranks users by the content they created (projects, flights, data
+            products), the engagement their data products received (views,
+            likes), or their data usage. Use the <strong>Rank by</strong>{' '}
+            buttons to change the metric.
+          </p>
+          <p>
+            All totals are credited to the project owner. Data usage sums stored
+            data product and raw data file sizes; vector layers are not
+            included.
+          </p>
+        </>
+      ),
+    },
+  };
+
+function SectionHeading({
+  infoKey,
+  onInfo,
+  className = 'mb-4',
+}: {
+  infoKey: InfoKey;
+  onInfo: (key: InfoKey) => void;
+  className?: string;
+}) {
+  const { title } = SECTION_INFO[infoKey];
+  return (
+    <div className={`flex items-center gap-2 ${className}`}>
+      <h2 className="text-xl font-semibold">{title}</h2>
+      <button
+        type="button"
+        onClick={() => onInfo(infoKey)}
+        aria-label={`About ${title}`}
+        className="text-gray-400 hover:text-blue-600"
+      >
+        <FaCircleInfo className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+function SectionInfoModal({
+  activeInfo,
+  onClose,
+}: {
+  activeInfo: InfoKey | null;
+  onClose: () => void;
+}) {
+  // Adapt the shared Modal's boolean setter to clearing the active section.
+  const setOpen: React.Dispatch<React.SetStateAction<boolean>> = (value) => {
+    const next =
+      typeof value === 'function' ? value(activeInfo !== null) : value;
+    if (!next) onClose();
+  };
+
+  return (
+    <Modal open={activeInfo !== null} setOpen={setOpen}>
+      {activeInfo && (
+        <div className="p-6">
+          <div className="flex items-start justify-between gap-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              {SECTION_INFO[activeInfo].title}
+            </h3>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <FaXmark className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="mt-3 space-y-2 text-sm text-gray-600">
+            {SECTION_INFO[activeInfo].body}
+          </div>
+        </div>
+      )}
+    </Modal>
+  );
 }
 
 type ActivityLoaderData = {
@@ -327,6 +469,7 @@ export default function DashboardActivity() {
   const [metric, setMetric] = useState<LeaderboardMetric>('data_products');
   const [leaderboard, setLeaderboard] =
     useState<EngagementLeaderRow[]>(initialLeaderboard);
+  const [activeInfo, setActiveInfo] = useState<InfoKey | null>(null);
 
   // Re-rank server-side when the metric changes so users outside the initial
   // top-N (by data products) can still surface for views, likes, etc.
@@ -357,14 +500,16 @@ export default function DashboardActivity() {
     <section className="h-full w-full overflow-y-auto bg-white p-4">
       <div className="flex flex-col gap-10">
         <div>
-          <h2 className="mb-4 text-xl font-semibold">Active users</h2>
+          <SectionHeading infoKey="active" onInfo={setActiveInfo} />
           <ActiveUserCards summary={summary} />
         </div>
 
         <div>
-          <h2 className="mb-1 text-xl font-semibold">
-            Active users over time (DAU / WAU / MAU)
-          </h2>
+          <SectionHeading
+            infoKey="trend"
+            onInfo={setActiveInfo}
+            className="mb-1"
+          />
           {stickiness !== null && (
             <p className="mb-3 text-sm text-gray-500">
               Latest stickiness (DAU/MAU): {(stickiness * 100).toFixed(0)}%
@@ -376,14 +521,12 @@ export default function DashboardActivity() {
         </div>
 
         <div>
-          <h2 className="mb-4 text-xl font-semibold">Activation funnel</h2>
+          <SectionHeading infoKey="funnel" onInfo={setActiveInfo} />
           <ActivationFunnel summary={summary} />
         </div>
 
         <div>
-          <h2 className="mb-4 text-xl font-semibold">
-            Engagement leaderboard (power users)
-          </h2>
+          <SectionHeading infoKey="leaderboard" onInfo={setActiveInfo} />
           <EngagementLeaderboard
             rows={leaderboard}
             metric={metric}
@@ -391,6 +534,11 @@ export default function DashboardActivity() {
           />
         </div>
       </div>
+
+      <SectionInfoModal
+        activeInfo={activeInfo}
+        onClose={() => setActiveInfo(null)}
+      />
     </section>
   );
 }
