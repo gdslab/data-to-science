@@ -7,6 +7,7 @@ from app.api.deps import get_current_user, get_current_approved_user
 from app.core.config import settings
 from app.schemas.file_permission import FilePermissionUpdate
 from app.tests.utils.data_product import SampleDataProduct
+from app.tests.utils.data_product_like import create_data_product_like
 
 # Center of test.tif (EPSG:32616, WGS84 bounds approx -86.9445, 41.4440)
 TEST_TIF_CENTER_LON = -86.94447585281846
@@ -167,3 +168,39 @@ def test_read_data_product_point_value_non_raster(client: TestClient, db: Sessio
         f"&lon={TEST_TIF_CENTER_LON}&lat={TEST_TIF_CENTER_LAT}"
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_user_access_returns_liked_true_for_member_who_liked(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """A member opening their own (private) liked data product sees liked=True."""
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    # Owned by the current user, not public.
+    data_product = SampleDataProduct(db, user=current_user)
+    create_data_product_like(
+        db, data_product_id=data_product.obj.id, user_id=current_user.id
+    )
+
+    response = client.get(
+        f"{settings.API_V1_STR}/public/user_access?file_id={data_product.obj.id}"
+    )
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["liked"] is True
+
+
+def test_user_access_returns_liked_false_when_not_liked(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """The same access path reports liked=False when the user has not liked it."""
+    current_user = get_current_approved_user(
+        get_current_user(db, normal_user_access_token)
+    )
+    data_product = SampleDataProduct(db, user=current_user)
+
+    response = client.get(
+        f"{settings.API_V1_STR}/public/user_access?file_id={data_product.obj.id}"
+    )
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["liked"] is False

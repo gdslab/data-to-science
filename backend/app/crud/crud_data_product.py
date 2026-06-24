@@ -133,6 +133,20 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
         upload_dir: str,
         user_id: Optional[UUID] = None,
     ) -> Optional[DataProduct]:
+        # Whether the requesting user has liked this data product. With user_id
+        # None (anonymous/share read), `user_id == None` renders IS NULL and
+        # matches no rows, so liked resolves to False.
+        liked_exists = (
+            select(1)
+            .where(
+                and_(
+                    DataProductLike.data_product_id == DataProduct.id,
+                    DataProductLike.user_id == user_id,
+                )
+            )
+            .exists()
+            .label("liked")
+        )
         like_count_sq = (
             select(func.count(DataProductLike.id))
             .where(DataProductLike.data_product_id == DataProduct.id)
@@ -146,7 +160,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             .label("view_count")
         )
         data_product_query = (
-            select(DataProduct, like_count_sq, view_count_sq)
+            select(DataProduct, liked_exists, like_count_sq, view_count_sq)
             .join(DataProduct.file_permission)
             .join(DataProduct.flight)
             .options(joinedload(DataProduct.file_permission))
@@ -166,9 +180,8 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             row = session.execute(data_product_query).unique().one_or_none()
             if not row:
                 return None
-            data_product, like_count, view_count = row
-            # Public/share read: no authenticated user, so liked is always False.
-            set_like_attrs(data_product, like_count, False)
+            data_product, liked, like_count, view_count = row
+            set_like_attrs(data_product, like_count, liked)
             set_view_count_attr(data_product, view_count)
             if data_product.file_permission.is_public:
                 set_spatial_metadata_attrs(data_product)
