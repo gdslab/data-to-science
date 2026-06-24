@@ -18,7 +18,7 @@ docker compose exec backend alembic upgrade head
 docker compose exec backend python app/utils/backfill_file_sizes.py
 ```
 
-The command walks each active data product and raw data directory that is still missing a `file_size`, stores the computed size, and prints a per-record line plus a summary of successes and errors. It only touches rows where `file_size` is `NULL`, so it is safe to re-run.
+The command walks each data product and raw data directory that is still missing a `file_size`, stores the computed size, and prints a per-record line plus a summary of successes and errors. It only touches rows where `file_size` is `NULL`, so it is safe to re-run. Deactivated records are included — their files remain on disk (and count toward total usage) until the cleanup script purges both the files and the database record.
 
 ## What counts as data usage
 

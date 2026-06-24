@@ -27,23 +27,16 @@ def backfill_file_sizes():
     db = SessionLocal()
 
     try:
+        # Include inactive records: a deactivated data product / raw data keeps
+        # its files on disk until the cleanup script purges both the files and
+        # the DB record, so its size still counts toward total on-disk usage.
         data_product_ids = (
-            db.execute(
-                select(DataProduct.id).where(
-                    DataProduct.is_active == True,
-                    DataProduct.file_size.is_(None),
-                )
-            )
+            db.execute(select(DataProduct.id).where(DataProduct.file_size.is_(None)))
             .scalars()
             .all()
         )
         raw_data_ids = (
-            db.execute(
-                select(RawData.id).where(
-                    RawData.is_active == True,
-                    RawData.file_size.is_(None),
-                )
-            )
+            db.execute(select(RawData.id).where(RawData.file_size.is_(None)))
             .scalars()
             .all()
         )

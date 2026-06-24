@@ -94,12 +94,18 @@ def get_project_data_usage(db: Session) -> list[dict]:
     ).all()
 
     def storage_by_owner(model: Union[Type[DataProduct], Type[RawData]]) -> dict:
+        # Total = every record still on disk (active + deactivated-pending-purge).
+        # Active = fully live data only, matching the engagement leaderboard
+        # (record, flight, and project all active).
         rows = db.execute(
             select(
                 Project.owner_id,
                 func.coalesce(func.sum(model.file_size), 0),
                 func.coalesce(
-                    func.sum(model.file_size).filter(Project.is_active), 0
+                    func.sum(model.file_size).filter(
+                        and_(model.is_active, Flight.is_active, Project.is_active)
+                    ),
+                    0,
                 ),
             )
             .select_from(model)
