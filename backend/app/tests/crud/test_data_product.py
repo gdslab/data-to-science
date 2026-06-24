@@ -51,6 +51,11 @@ def test_read_data_product(db: Session) -> None:
     )
     assert hasattr(stored_data_product, "url")
     assert hasattr(stored_data_product, "user_style")
+    # Signature is required for the map to request secure COG tiles; without it
+    # the tile URL has an empty secure value and expires=0 (403 URL expired).
+    assert hasattr(stored_data_product, "signature")
+    assert stored_data_product.signature["secure"]
+    assert stored_data_product.signature["expires"]
     assert stored_data_product.created_at is not None
     assert stored_data_product.updated_at is not None
 
