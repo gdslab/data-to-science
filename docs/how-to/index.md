@@ -11,3 +11,4 @@ How-to guides are **task-oriented** recipes that help you accomplish a specific 
 | [Add an API Endpoint](add-api-endpoint.md) | Add a new endpoint to the FastAPI backend |
 | [Work with Celery Tasks](celery-tasks.md) | Add or modify asynchronous background tasks |
 | [Generate Vector Format Files](generate-vector-formats.md) | Backfill GeoParquet and FlatGeobuf exports for vector layers |
+| [Backfill File Sizes](backfill-file-sizes.md) | Populate `file_size` for existing data products and raw data |
