@@ -1,10 +1,12 @@
 from fastapi import status
 from fastapi.testclient import TestClient
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
+from app.models import Flight, Project
 from app.schemas.role import Role
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.data_product_like import create_data_product_like
@@ -190,3 +192,39 @@ def test_unlike_allowed_for_non_member_when_public(
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"liked": False, "like_count": 0}
+
+
+def test_like_on_deactivated_flight_returns_404(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # Defensive guard: a desync where the data product stays active but its
+    # parent flight is deactivated must not allow engagement.
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+    db.execute(
+        update(Flight)
+        .where(Flight.id == data_product.flight.id)
+        .values(is_active=False)
+    )
+    db.commit()
+
+    response = client.post(_like_url(data_product))
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_like_on_deactivated_project_returns_404(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+    db.execute(
+        update(Project)
+        .where(Project.id == data_product.project.id)
+        .values(is_active=False)
+    )
+    db.commit()
+
+    response = client.post(_like_url(data_product))
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND

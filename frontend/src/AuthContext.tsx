@@ -135,7 +135,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
   async function logout() {
     localStorage.removeItem('userProfile');
     await axios
-      .get('/api/v1/auth/remove-access-token', { withCredentials: true })
+      .post('/api/v1/auth/remove-access-token', null, { withCredentials: true })
       .then(() => {
         setUser(null);
         setAuthChecked(true);
