@@ -133,7 +133,7 @@ def update_project(
     if project_in.planting_date and project.harvest_date:
         if project.harvest_date < project_in.planting_date:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=[
                     {
                         "loc": ["body", "harvest_date"],
@@ -146,7 +146,7 @@ def update_project(
     if project_in.harvest_date and project.planting_date:
         if project_in.harvest_date < project.planting_date:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=[
                     {
                         "loc": ["body", "harvest_date"],

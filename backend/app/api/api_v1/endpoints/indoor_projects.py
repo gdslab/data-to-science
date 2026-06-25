@@ -92,7 +92,7 @@ def update_indoor_project(
     if effective_start_date and effective_end_date:
         if effective_start_date > effective_end_date:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="Start date must be before end date",
             )
 

@@ -47,7 +47,12 @@ def calculate_zonal_statistics(
         # required zonal statistics
         required_stats = "count min max mean median std"
         # get stats for zone
-        stats = zonal_stats(zones, data, affine=window_affine, stats=required_stats)
+        # rasterstats only receives the array, so pass the source nodata explicitly
+        # (falling back to its internal -999 sentinel) to silence its NodataWarning.
+        nodata = src.nodata if src.nodata is not None else -999
+        stats = zonal_stats(
+            zones, data, affine=window_affine, stats=required_stats, nodata=nodata
+        )
 
     job.update(status=Status.SUCCESS)
 

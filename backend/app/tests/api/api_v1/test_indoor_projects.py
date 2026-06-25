@@ -72,7 +72,7 @@ def test_create_indoor_project_with_invalid_date(
     # post indoor project form data
     response = client.post(API_URL, json=payload)
 
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_create_indoor_project_with_invalid_end_date(
@@ -91,7 +91,7 @@ def test_create_indoor_project_with_invalid_end_date(
     # post indoor project form data
     response = client.post(API_URL, json=payload)
 
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_read_indoor_project(
@@ -390,7 +390,7 @@ def test_update_indoor_project_date_validation(
     )
     update_data = jsonable_encoder({"end_date": datetime(2024, 5, 1).isoformat()})
     response = client.put(f"{API_URL}/{indoor_project.id}", json=update_data)
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     # Invalid - start_date after end_date
     indoor_project = create_indoor_project(
@@ -401,7 +401,7 @@ def test_update_indoor_project_date_validation(
     )
     update_data = jsonable_encoder({"start_date": datetime(2024, 6, 2).isoformat()})
     response = client.put(f"{API_URL}/{indoor_project.id}", json=update_data)
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_deactivate_indoor_project_as_owner(

@@ -1,6 +1,6 @@
 import os
 import tempfile
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 from sqlalchemy.orm import Session
@@ -32,7 +32,7 @@ def test_create_indoor_data(db: Session) -> None:
         file_path = indoor_data_file.name
         file_size = os.stat(indoor_data_file.name).st_size
         file_type = os.path.splitext(original_filenamme)[1]
-        upload_date = datetime.utcnow()
+        upload_date = datetime.now(timezone.utc).replace(tzinfo=None)
         # indoor data creation object
         indoor_data_in = IndoorProjectDataCreate(
             original_filename=original_filenamme,
@@ -190,4 +190,6 @@ def test_deactivate_indoor_data(db: Session) -> None:
     assert deactivated_indoor_project_data.id == existing_indoor_project_data.id
     assert deactivated_indoor_project_data.is_active is False
     assert deactivated_indoor_project_data.deactivated_at
-    assert deactivated_indoor_project_data.deactivated_at < datetime.utcnow()
+    assert deactivated_indoor_project_data.deactivated_at < datetime.now(
+        timezone.utc
+    ).replace(tzinfo=None)

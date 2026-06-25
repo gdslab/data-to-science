@@ -21,7 +21,6 @@ from app.utils.stac.STACGenerator import STACGenerator, date_to_datetime
 
 
 @pytest.fixture
-@pytest_requires_stac
 def stac_collection_published(
     db: Session,
 ) -> Generator[STACCollectionHelper, None, None]:
@@ -37,7 +36,6 @@ def stac_collection_published(
 
 
 @pytest.fixture
-@pytest_requires_stac
 def stac_collection_unpublished(
     db: Session,
 ) -> Generator[STACCollectionHelper, None, None]:

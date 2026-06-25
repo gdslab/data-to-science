@@ -2,7 +2,7 @@ from datetime import date, datetime
 from enum import Enum
 from typing import Dict, List, Optional
 
-from pydantic import BaseModel, Extra, Field, field_validator, RootModel, UUID4
+from pydantic import BaseModel, ConfigDict, Field, field_validator, RootModel, UUID4
 
 
 class IndoorProjectDataBase(BaseModel):
@@ -158,10 +158,6 @@ class IndoorProjectDataPlantSideAvg(BaseModel):
     intensity: int
     fluorescence: int
 
-    class Config:
-        # extra = Extra.allow  # allows h0, h1, h2, etc. fields to be dynamically added
-        pass
-
     @classmethod
     def validate_dynamic_hue_fields(cls, values: Dict[str, int]) -> Dict[str, int]:
         for key in values:
@@ -234,10 +230,6 @@ class IndoorProjectDataPlantTop(BaseModel):
     saturation: int
     intensity: int
     fluorescence: int
-
-    class Config:
-        # extra = Extra.allow  # allows h0, h1, h2, etc. fields to be dynamically added
-        pass
 
     @classmethod
     def validate_dynamic_hue_fields(cls, values: Dict[str, int]) -> Dict[str, int]:
@@ -360,8 +352,7 @@ class VizRecord2(BaseModel):
     group: str
     interval_days: int
 
-    class Config:
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
 
 class IndoorProjectDataViz2Response(BaseModel):

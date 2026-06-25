@@ -42,6 +42,7 @@ class IndoorProject(Base):
         cascade="all, delete-orphan",
         primaryjoin="and_(ProjectMember.project_type == 'INDOOR_PROJECT', ProjectMember.project_uuid == IndoorProject.id)",
         foreign_keys="[ProjectMember.project_uuid]",
+        overlaps="members",
     )
 
     def __repr__(self) -> str:

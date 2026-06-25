@@ -1,6 +1,6 @@
 import os
 import tempfile
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
@@ -37,7 +37,7 @@ def create_indoor_project_data(
         file_path = indoor_data_file.name
         file_size = os.stat(indoor_data_file.name).st_size
         file_type = os.path.splitext(original_filenamme)[1]
-        upload_date = datetime.utcnow()
+        upload_date = datetime.now(timezone.utc).replace(tzinfo=None)
         # indoor data creation object
         indoor_data_in = IndoorProjectDataCreate(
             original_filename=original_filenamme,
