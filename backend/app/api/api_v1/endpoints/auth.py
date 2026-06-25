@@ -144,7 +144,7 @@ def refresh_access_token(
     }
 
 
-@router.get("/remove-access-token")
+@router.post("/remove-access-token")
 def logout_access_token(
     response: Response,
     refresh_token: str = Cookie(None),

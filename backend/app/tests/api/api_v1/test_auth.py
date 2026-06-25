@@ -75,7 +75,7 @@ def test_logout_removes_authorization_cookie(client: TestClient, db: Session) ->
     assert client.cookies.get("access_token")
     assert client.cookies.get("refresh_token")
     # logout
-    r = client.get(f"{settings.API_V1_STR}/auth/remove-access-token")
+    r = client.post(f"{settings.API_V1_STR}/auth/remove-access-token")
     assert r.status_code == 200
     assert r.cookies.get("access_token") is None
     assert client.cookies.get("access_token") is None
@@ -101,7 +101,7 @@ def test_logout_revokes_refresh_token(client: TestClient, db: Session) -> None:
     jti = UUID(security.decode_token(raw_token)["jti"])
     assert crud.refresh_token.get_by_jti(db, jti=jti).revoked is False
 
-    logout = client.get(f"{settings.API_V1_STR}/auth/remove-access-token")
+    logout = client.post(f"{settings.API_V1_STR}/auth/remove-access-token")
     assert logout.status_code == 200
 
     # Token is revoked in the DB
@@ -463,7 +463,7 @@ def test_logout_revokes_expired_refresh_token(client: TestClient, db: Session) -
         algorithm=security.ALGORITHM,
     )
 
-    response = client.get(
+    response = client.post(
         f"{settings.API_V1_STR}/auth/remove-access-token",
         cookies={"refresh_token": f"Bearer {expired_jwt}"},
     )
