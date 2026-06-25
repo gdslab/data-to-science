@@ -514,6 +514,13 @@ def can_read_or_public_data_product(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Flight does not belong to specified project",
         )
+    # Explicitly validate the parent hierarchy's soft-delete state rather than
+    # relying solely on the deactivation cascade reaching the data product.
+    project = crud.project.get(db, id=project_id)
+    if not flight.is_active or not project or not project.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
+        )
     # Publicly accessible files are readable by any authenticated user.
     file_permission = crud.file_permission.get_by_data_product(
         db, file_id=data_product_id
