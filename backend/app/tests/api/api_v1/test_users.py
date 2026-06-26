@@ -577,7 +577,7 @@ def test_create_user_with_registration_intent_too_short(
     }
     with patch.object(settings, "TURNSTILE_SECRET_KEY", None):
         response = client.post(f"{settings.API_V1_STR}/users/", json=data)
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_create_user_with_registration_intent_too_long(
@@ -594,7 +594,7 @@ def test_create_user_with_registration_intent_too_long(
     }
     with patch.object(settings, "TURNSTILE_SECRET_KEY", None):
         response = client.post(f"{settings.API_V1_STR}/users/", json=data)
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_create_user_with_registration_intent_empty_string(
@@ -612,7 +612,7 @@ def test_create_user_with_registration_intent_empty_string(
     with patch.object(settings, "TURNSTILE_SECRET_KEY", None):
         response = client.post(f"{settings.API_V1_STR}/users/", json=data)
     # This should fail validation since empty strings don't meet min_length
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_create_user_with_registration_intent_whitespace_normalized(
@@ -652,7 +652,7 @@ def test_create_user_with_registration_intent_only_whitespace(
     with patch.object(settings, "TURNSTILE_SECRET_KEY", None):
         response = client.post(f"{settings.API_V1_STR}/users/", json=data)
     # Should fail since whitespace doesn't meet min_length at API layer
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_create_user_with_name_whitespace_normalized(

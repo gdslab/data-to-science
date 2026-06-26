@@ -457,7 +457,7 @@ def test_brapi_proxy_rejects_invalid_method(
         json=payload,
     )
 
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 @pytest_requires_breedbase

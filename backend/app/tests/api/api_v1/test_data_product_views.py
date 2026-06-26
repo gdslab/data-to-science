@@ -113,7 +113,7 @@ def test_public_view_session_id_too_long_returns_422(
         headers={"X-Session-Id": "x" * 65},
     )
 
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_public_view_session_id_at_max_length_returns_201(

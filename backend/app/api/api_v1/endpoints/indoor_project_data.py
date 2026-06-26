@@ -283,7 +283,7 @@ def read_indoor_project_data_spreadsheet(
             return payload_validated
         except ValidationError as e:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=e.errors()
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=e.errors()
             )
 
 
@@ -544,7 +544,7 @@ def read_indoor_project_data_plant(
         return payload_validated
     except ValidationError as e:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=e.errors()
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=e.errors()
         )
 
 

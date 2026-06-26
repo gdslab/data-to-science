@@ -82,7 +82,7 @@ def test_email_contact_message_with_too_few_characters(
 
     payload = {"subject": subject, "message": message}
     response = client.post(f"{settings.API_V1_STR}/contact", json=payload)
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 @pytest_requires_mail
@@ -102,7 +102,7 @@ def test_email_contact_message_with_too_many_characters(
 
     payload = {"subject": subject, "message": message}
     response = client.post(f"{settings.API_V1_STR}/contact", json=payload)
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 @pytest_requires_mail

@@ -62,6 +62,7 @@ class Project(Base):
         cascade="all, delete-orphan",
         primaryjoin="and_(ProjectMember.project_type == 'PROJECT', ProjectMember.project_uuid == Project.id)",
         foreign_keys="[ProjectMember.project_uuid]",
+        overlaps="indoor_members",
     )
     modules: Mapped[List["ProjectModule"]] = relationship(
         back_populates="project", cascade="all, delete"
