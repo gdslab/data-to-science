@@ -6,6 +6,7 @@ import { DataProduct } from '../pages/workspace/projects/Project';
 import { AlertBar, Status } from '../Alert';
 
 import api from '../../api';
+import { recordDataProductView } from '../../utils/recordDataProductView';
 
 function useQuery() {
   const { search } = useLocation();
@@ -29,6 +30,7 @@ export default function SharePanoViewer() {
         );
         if (response.status === 200) {
           setImageUrl(response.data.url);
+          recordDataProductView(response.data.id);
         } else {
           setStatus({ type: 'error', msg: 'Unable to load image' });
         }

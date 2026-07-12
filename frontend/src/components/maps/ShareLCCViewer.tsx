@@ -7,6 +7,7 @@ import { AlertBar, Status } from '../Alert';
 
 import api from '../../api';
 import LCCViewer from './LCCViewer';
+import { recordDataProductView } from '../../utils/recordDataProductView';
 
 function useQuery() {
   const { search } = useLocation();
@@ -29,6 +30,7 @@ export default function ShareLCCViewer() {
         );
         if (response.status === 200) {
           setLccUrl(response.data.url);
+          recordDataProductView(response.data.id);
         } else {
           setStatus({ type: 'error', msg: 'Unable to load file' });
         }
