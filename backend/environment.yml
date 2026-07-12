@@ -307,6 +307,7 @@ dependencies:
   - pystac-client
   - pytest~=8.4.2
   - pytest-cov
+  - pytest-xdist
   - python-dateutil
   - python-dotenv
   - python-jose
