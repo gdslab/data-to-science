@@ -375,9 +375,10 @@ def record_public_data_product_view(
     """Record an anonymous or authenticated view for a data product.
 
     Authenticated callers use their user_id. Anonymous callers must supply an
-    X-Session-Id header. A view is recorded only when the project is published or
-    the caller is a project member. Returns 201 on insert, 200 on dedup-skip,
-    400 on missing identity, 404 on not-found or unauthorized.
+    X-Session-Id header. A view is recorded only when the project is published,
+    the data product's file permission is public (shared link), or the caller is
+    a project member. Returns 201 on insert, 200 on dedup-skip, 400 on missing
+    identity, 404 on not-found or unauthorized.
     """
     data_product = crud.data_product.get(db, id=data_product_id)
     if (
@@ -389,7 +390,8 @@ def record_public_data_product_view(
             status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
         )
 
-    # Require access via publication or project membership for every caller.
+    # Require access via publication, a public file permission (shared link),
+    # or project membership for every caller.
     flight = crud.flight.get(db, id=data_product.flight_id)
     project = crud.project.get(db, id=flight.project_id) if flight else None
     if not project:
@@ -404,9 +406,13 @@ def record_public_data_product_view(
         )
     )
     if not project.is_published and not is_member:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
+        file_permission = crud.file_permission.get_by_data_product(
+            db, file_id=data_product_id
         )
+        if not file_permission or not file_permission.is_public:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
+            )
 
     if not current_user and not session_id:
         raise HTTPException(
