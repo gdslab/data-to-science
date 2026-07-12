@@ -7,6 +7,7 @@ import PlayCanvasglTFViewer from './PlayCanvasglTFViewer';
 import { DataProduct } from '../pages/workspace/projects/Project';
 
 import api from '../../api';
+import { recordDataProductView } from '../../utils/recordDataProductView';
 
 function useQuery() {
   const { search } = useLocation();
@@ -29,6 +30,7 @@ export default function SharePlayCanvasglTFViewer() {
         );
         if (response.status === 200) {
           setModelUrl(response.data.url);
+          recordDataProductView(response.data.id);
         } else {
           setStatus({ type: 'error', msg: 'Unable to load file' });
         }
