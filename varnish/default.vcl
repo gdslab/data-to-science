@@ -174,6 +174,14 @@ sub vcl_hash {
 }
 
 sub vcl_backend_response {
+    # Never cache error responses; a transient backend failure (e.g. a tile
+    # requested before its layer exists) must not be served for a day
+    if (beresp.status < 200 || beresp.status >= 300) {
+        set beresp.ttl = 10s;
+        set beresp.uncacheable = true;
+        return (deliver);
+    }
+
     # Set TTL and grace period
     set beresp.ttl = 1d;
     set beresp.grace = 6h;
