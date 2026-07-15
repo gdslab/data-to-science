@@ -121,6 +121,7 @@ dependencies:
   - httpcore
   - httptools
   - httpx
+  - httpx2
   - humanize
   - hyperframe
   - icu
