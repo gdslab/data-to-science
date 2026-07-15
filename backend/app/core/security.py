@@ -26,9 +26,15 @@ from app.models.single_use_token import SingleUseToken
 
 logger = logging.getLogger("__name__")
 
+# Use bcrypt's minimum cost factor under the test suite. Hashing passwords at
+# the production cost factor dominates test runtime (every user fixture hashes a
+# password); the minimum factor still exercises the real bcrypt code path while
+# running ~hundreds of times faster.
+_bcrypt_rounds = 4 if os.environ.get("RUNNING_TESTS") == "1" else 12
 pwd_context = CryptContext(
     schemes=["bcrypt"],
     deprecated="auto",  # only allow bcrypt
+    bcrypt__rounds=_bcrypt_rounds,
 )
 
 ALGORITHM = "HS256"

@@ -1,3 +1,5 @@
+from email.utils import getaddresses, parseaddr
+
 from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -35,9 +37,12 @@ def test_email_contact_message_with_contact_recipients(
             outbox[0]["from"]
             == settings.MAIL_FROM_NAME + " <" + settings.MAIL_FROM + ">"
         )
-        assert outbox[0]["To"] == settings.EMAIL_TEST_USER
-        assert outbox[0]["Cc"] == "admin1@example.com, admin2@example.com"
-        assert outbox[0]["Reply-To"] == settings.EMAIL_TEST_USER
+        assert parseaddr(outbox[0]["To"])[1] == settings.EMAIL_TEST_USER
+        assert [addr for _, addr in getaddresses([outbox[0]["Cc"]])] == [
+            "admin1@example.com",
+            "admin2@example.com",
+        ]
+        assert parseaddr(outbox[0]["Reply-To"])[1] == settings.EMAIL_TEST_USER
         assert (
             outbox[0]["Subject"]
             == f"Data to Science Contact Form: BUG REPORT ({api_domain})"
@@ -66,7 +71,7 @@ def test_email_contact_message_fallback_without_contact_recipients(
 
         assert response.status_code == status.HTTP_202_ACCEPTED
         assert len(outbox) == 1
-        assert outbox[0]["To"] == settings.MAIL_FROM
+        assert parseaddr(outbox[0]["To"])[1] == settings.MAIL_FROM
         assert (
             outbox[0]["Subject"]
             == f"Data to Science Contact Form: BUG REPORT ({api_domain})"

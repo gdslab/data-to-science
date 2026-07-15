@@ -1,10 +1,11 @@
+import time
 from typing import Any, Dict, TypedDict, Union
 
 from faker import Faker
 from geojson_pydantic import Feature, FeatureCollection, LineString, Point, Polygon
 from pydantic import PostgresDsn
 from sqlalchemy import create_engine, text
-from sqlalchemy.exc import ProgrammingError
+from sqlalchemy.exc import OperationalError, ProgrammingError
 
 from app.core.config import settings
 
@@ -67,21 +68,35 @@ def create_test_db_postgis_extension(db_path: str) -> None:
             connection.rollback()
 
 
-def create_test_db(db_path: str) -> None:
-    """Create test database if it does not already exist."""
+def create_test_db(db_path: str, max_retries: int = 5) -> None:
+    """Create test database if it does not already exist.
+
+    Retries on transient lock contention, which can occur when several
+    pytest-xdist workers issue ``CREATE DATABASE`` against the shared template
+    database at the same time.
+    """
     already_exists = False
     # connect to default "postgres" database
     engine = create_engine(
         build_sqlalchemy_uri(db_path="postgres").unicode_string(), pool_pre_ping=True
     )
-    # attempt to create test database
-    with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as connection:
+    # attempt to create test database, retrying on transient lock contention
+    for attempt in range(max_retries):
         try:
-            connection.execute(text(f"CREATE DATABASE {db_path}"))
+            with engine.connect().execution_options(
+                isolation_level="AUTOCOMMIT"
+            ) as connection:
+                connection.execute(text(f"CREATE DATABASE {db_path}"))
+            break
         except ProgrammingError:
             # duplicate database
             already_exists = True
-            connection.rollback()
+            break
+        except OperationalError:
+            # template database temporarily locked by a concurrent worker
+            if attempt == max_retries - 1:
+                raise
+            time.sleep(0.5 * (attempt + 1))
 
     if not already_exists:
         create_test_db_postgis_extension(db_path=db_path)

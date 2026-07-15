@@ -1,4 +1,5 @@
 import os
+from email.utils import getaddresses, parseaddr
 from typing import List
 from unittest.mock import AsyncMock, patch
 
@@ -56,7 +57,7 @@ def test_create_user_new_email(client: TestClient, db: Session) -> None:
             outbox[0]["from"]
             == settings.MAIL_FROM_NAME + " <" + settings.MAIL_FROM + ">"
         )
-        assert outbox[0]["To"] == user.email
+        assert parseaddr(outbox[0]["To"])[1] == user.email
         assert (
             outbox[0]["Subject"]
             == "Welcome to Data to Science - please confirm your email"
@@ -65,7 +66,9 @@ def test_create_user_new_email(client: TestClient, db: Session) -> None:
             outbox[1]["from"]
             == settings.MAIL_FROM_NAME + " <" + settings.MAIL_FROM + ">"
         )
-        assert outbox[1]["To"] == settings.MAIL_ADMINS.replace(",", ", ")
+        assert [
+            addr for _, addr in getaddresses([outbox[1]["To"]])
+        ] == settings.MAIL_ADMINS.split(",")
         assert (
             outbox[1]["Subject"]
             == f"New Data to Science account awaiting approval ({api_domain})"
