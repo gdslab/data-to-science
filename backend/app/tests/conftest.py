@@ -232,6 +232,7 @@ def cleanup_stac_catalog() -> Generator[None, None, None]:
         logger.error(f"Failed to cleanup STAC catalog: {str(e)}")
 
 
+@pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     """Confine STAC tests to a single xdist worker.
 
@@ -239,6 +240,14 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     workers causes collisions. Assigning them all to the same ``xdist_group``
     makes ``--dist loadgroup`` schedule them onto one worker, where they run
     serially relative to each other.
+
+    ``tryfirst`` is required: this conftest loads as an *initial* conftest
+    (``testpaths`` in pytest.ini, pytest >= 8.1), i.e. before xdist's worker
+    plugin registers. Hooks run last-registered-first, so without ``tryfirst``
+    xdist's own ``pytest_collection_modifyitems`` -- which turns ``xdist_group``
+    markers into the ``@group`` nodeid suffix the loadgroup scheduler groups
+    by -- would run before this hook and see no markers, silently scattering
+    STAC tests across all workers.
     """
     for item in items:
         if "stac" in item.nodeid.lower():
