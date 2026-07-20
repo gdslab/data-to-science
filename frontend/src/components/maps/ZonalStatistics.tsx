@@ -7,7 +7,10 @@ import StripedTable from '../StripedTable';
 import { download as downloadGeoJSON } from '../pages/workspace/projects/mapLayers/utils';
 import { downloadFile as downloadCSV } from '../pages/workspace/projects/fieldCampaigns/utils';
 import { isSingleBand } from './utils';
-import { removeKeysFromFeatureProperties } from '../pages/workspace/projects/mapLayers/utils';
+import {
+  removeKeysFromFeatureProperties,
+  RESERVED_FEATURE_PROPERTY_KEYS,
+} from '../pages/workspace/projects/mapLayers/utils';
 
 export type ZonalStatistics = {
   min: number;
@@ -81,15 +84,7 @@ export const DownloadZonalStatistic = ({
           const csvData = Papa.unparse([
             Object.fromEntries(
               Object.entries(zonalFeature.properties).filter(
-                ([key]) =>
-                  ![
-                    'id',
-                    'layer_id',
-                    'is_active',
-                    'project_id',
-                    'flight_id',
-                    'data_product_id',
-                  ].includes(key)
+                ([key]) => !RESERVED_FEATURE_PROPERTY_KEYS.includes(key)
               )
             ),
           ]);
@@ -111,15 +106,7 @@ export const DownloadZonalStatistic = ({
                 type: 'FeatureCollection',
                 features: [zonalFeature],
               },
-              [
-                'id',
-                'feature_id',
-                'layer_id',
-                'is_active',
-                'project_id',
-                'flight_id',
-                'data_product_id',
-              ]
+              RESERVED_FEATURE_PROPERTY_KEYS
             ),
             'zonal_statistics.geojson'
           );
