@@ -323,3 +323,64 @@ def test_remove_vector_layer_removes_metadata_associated_with_layer(
         isinstance(metadata_other_after_remove, list)
         and len(metadata_other_after_remove) == 1
     )
+
+
+def test_create_vector_layer_strips_reserved_property_keys(db: Session) -> None:
+    """Uploaded features must not carry D2S-internal keys (e.g., from a
+    re-uploaded export) into the stored properties JSONB, where they would
+    shadow the real columns in map tiles.
+    """
+    project = create_project(db)
+    stale_feature_id = "6e0e6b9e-52d5-4c31-a9c4-949b90ce9d29"
+    feature: Dict[str, Any] = {
+        "type": "Feature",
+        "geometry": {"type": "Point", "coordinates": [102.0, 0.5]},
+        "properties": {
+            "plot": "A1",
+            "id": "stale-id",
+            "feature_id": stale_feature_id,
+            "layer_name": "old_name.geojson",
+            "layer_id": "OLDLAYERID12",
+            "is_active": False,
+            "project_id": "stale-project-id",
+            "flight_id": "stale-flight-id",
+            "data_product_id": "stale-data-product-id",
+        },
+    }
+    gdf = gpd.GeoDataFrame.from_features([feature], crs="EPSG:4326")
+
+    created = crud.vector_layer.create_with_project(
+        db, file_name="new_name.geojson", gdf=gdf, project_id=project.id
+    )
+
+    assert len(created) == 1
+    props = created[0].properties
+    assert props
+    # feature keeps its own identity columns, not the embedded stale values
+    assert props.get("layer_name") == "new_name.geojson"
+    assert props.get("feature_id") != stale_feature_id
+    # user attributes survive; a user-supplied "id" is preserved as "fid";
+    # reserved keys are dropped from stored properties
+    assert props.get("properties") == {"plot": "A1", "fid": "stale-id"}
+
+
+def test_create_vector_layer_preserves_existing_fid_property(db: Session) -> None:
+    """A feature carrying both "fid" and "id" attributes must keep its
+    original "fid" value rather than have it overwritten by the renamed "id".
+    """
+    project = create_project(db)
+    feature: Dict[str, Any] = {
+        "type": "Feature",
+        "geometry": {"type": "Point", "coordinates": [102.0, 0.5]},
+        "properties": {"plot": "A1", "fid": "plot-42", "id": "internal-uuid"},
+    }
+    gdf = gpd.GeoDataFrame.from_features([feature], crs="EPSG:4326")
+
+    created = crud.vector_layer.create_with_project(
+        db, file_name="plots.geojson", gdf=gdf, project_id=project.id
+    )
+
+    assert len(created) == 1
+    props = created[0].properties
+    assert props
+    assert props.get("properties") == {"plot": "A1", "fid": "plot-42"}

@@ -1,14 +1,18 @@
 import { AxiosResponse } from 'axios';
 import { Field, useFormikContext } from 'formik';
 import Papa from 'papaparse';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
 
 import HintText from '../../../../../HintText';
+import { useInterval } from '../../../../../hooks';
 import { SelectField } from '../../../../../InputFields';
 import { DataProduct, ZonalFeatureCollection } from '../../Project';
 import { ToolboxFields } from './ToolboxModal';
-import { removeKeysFromFeatureProperties } from '../../mapLayers/utils';
+import {
+  removeKeysFromFeatureProperties,
+  RESERVED_FEATURE_PROPERTY_KEYS,
+} from '../../mapLayers/utils';
 import { useProjectContext } from '../../ProjectContext';
 import { downloadFile as downloadCSV } from '../../fieldCampaigns/utils';
 import { download as downloadGeoJSON } from '../../mapLayers/utils';
@@ -307,14 +311,7 @@ const DownloadZonalStatistics = ({
   const { projectId, flightId } = useParams();
   const { project, flights } = useProjectContext();
 
-  const keysToSkip = [
-    'id',
-    'layer_id',
-    'is_active',
-    'project_id',
-    'flight_id',
-    'data_product_id',
-  ];
+  const keysToSkip = RESERVED_FEATURE_PROPERTY_KEYS;
 
   const generateFilename = (extension: string): string => {
     // Helper function to sanitize filename parts
@@ -420,9 +417,127 @@ const DownloadZonalStatistics = ({
   );
 };
 
+interface ZonalJob {
+  id: string;
+  name: string;
+  state: string;
+  status: 'WAITING' | 'INPROGRESS' | 'SUCCESS' | 'FAILED';
+  start_time: string;
+  end_time: string | null;
+  extra: {
+    layer_id?: string;
+    detail?: string;
+    zones_total?: number;
+    zones_with_data?: number;
+  } | null;
+}
+
+const isActiveJob = (job: ZonalJob) =>
+  job.status === 'WAITING' || job.status === 'INPROGRESS';
+
+const ZonalLayerStatus = ({
+  dataProduct,
+  layerId,
+  job,
+}: {
+  dataProduct: DataProduct;
+  layerId: string;
+  job: ZonalJob | null;
+}) => {
+  if (job && isActiveJob(job)) {
+    return (
+      <span className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+        <span className="h-2 w-2 animate-pulse rounded-full bg-amber-500"></span>
+        Processing...
+      </span>
+    );
+  }
+
+  // per-run zone summary (present on jobs run after zone-summary tracking)
+  const zonesTotal = job?.extra?.zones_total;
+  const zonesWithData = job?.extra?.zones_with_data;
+  const summaryKnown =
+    job?.status === 'SUCCESS' &&
+    typeof zonesTotal === 'number' &&
+    typeof zonesWithData === 'number';
+  const noOverlap = summaryKnown && zonesWithData === 0;
+  const partialOverlap =
+    summaryKnown && zonesWithData > 0 && zonesWithData < zonesTotal;
+
+  // no zone overlapped the raster: a retry won't help, so report it as an
+  // informational outcome rather than a failure and skip the download links
+  if (noOverlap) {
+    return (
+      <span
+        className="ml-2 inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700"
+        title="The selected zones fall outside this data product's extent or cover only no-data pixels."
+      >
+        No overlapping raster data
+      </span>
+    );
+  }
+
+  // job finished (or predates job tracking); offer downloads for any
+  // previously computed results, alongside the latest run's outcome
+  return (
+    <span className="inline-flex items-center">
+      {job && job.status === 'FAILED' && (
+        <span
+          className="ml-2 inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800"
+          title={job.extra?.detail || 'Zonal statistics could not be calculated'}
+        >
+          Failed &mdash; select the layer and click Start to retry
+        </span>
+      )}
+      <DownloadZonalStatistics dataProduct={dataProduct} layerId={layerId} />
+      {partialOverlap ? (
+        <span className="ml-2 text-xs font-normal text-amber-700">
+          {zonesWithData} of {zonesTotal} zones had data
+        </span>
+      ) : (
+        job &&
+        job.status === 'SUCCESS' &&
+        job.end_time && (
+          <span className="ml-2 text-xs font-normal text-gray-400">
+            computed {new Date(job.end_time).toLocaleString()}
+          </span>
+        )
+      )}
+    </span>
+  );
+};
+
 const ZonalStatisticTools = ({ dataProduct }: { dataProduct: DataProduct }) => {
-  const { values } = useFormikContext<ToolboxFields>();
+  const { isSubmitting, submitCount, values } =
+    useFormikContext<ToolboxFields>();
   const { mapLayers } = useProjectContext();
+  const { projectId, flightId } = useParams();
+
+  const [jobs, setJobs] = useState<ZonalJob[]>([]);
+
+  const fetchJobs = useCallback(async () => {
+    if (!projectId || !flightId || !dataProduct.id) return;
+    try {
+      const response: AxiosResponse<ZonalJob[]> = await api.get(
+        `/projects/${projectId}/flights/${flightId}/data_products/${dataProduct.id}/jobs`,
+        { params: { name: 'zonal' } }
+      );
+      setJobs(response.data);
+    } catch {
+      console.log('Unable to check status of zonal statistics jobs');
+    }
+  }, [projectId, flightId, dataProduct.id]);
+
+  // fetch on reveal and after each form submission completes
+  useEffect(() => {
+    if (values.zonal && !isSubmitting) {
+      fetchJobs();
+    }
+  }, [values.zonal, isSubmitting, submitCount, fetchJobs]);
+
+  // poll while any zonal job is still running
+  const hasActiveJob = jobs.some(isActiveJob);
+  useInterval(fetchJobs, values.zonal && hasActiveJob ? 5000 : null);
 
   const filteredAndSortedMapLayers = useMemo(() => {
     return mapLayers
@@ -450,28 +565,31 @@ const ZonalStatisticTools = ({ dataProduct }: { dataProduct: DataProduct }) => {
           {values.zonal && (
             <div>
               <span className="text-sm">Select Layer with Zonal Features:</span>
-              {filteredAndSortedMapLayers.map(
-                ({ layer_id, layer_name, geom_type }) => (
-                  <label
+              {filteredAndSortedMapLayers.map(({ layer_id, layer_name }) => {
+                // jobs are returned newest first
+                const layerJob =
+                  jobs.find((job) => job.extra?.layer_id === layer_id) ?? null;
+                return (
+                  <div
                     key={layer_id}
-                    className="block text-sm text-gray-600 font-bold pb-1"
+                    className="flex items-center text-sm text-gray-600 font-bold pb-1"
                   >
-                    <Field
-                      type="radio"
-                      name="zonal_layer_id"
-                      value={layer_id}
-                    />
-                    <span className="ml-2">{layer_name}</span>
-                    {(geom_type.toLowerCase() === 'polygon' ||
-                      geom_type.toLowerCase() === 'multipolygon') && (
-                      <DownloadZonalStatistics
-                        dataProduct={dataProduct}
-                        layerId={layer_id}
+                    <label className="inline-flex items-center">
+                      <Field
+                        type="radio"
+                        name="zonal_layer_id"
+                        value={layer_id}
                       />
-                    )}
-                  </label>
-                )
-              )}
+                      <span className="ml-2">{layer_name}</span>
+                    </label>
+                    <ZonalLayerStatus
+                      dataProduct={dataProduct}
+                      layerId={layer_id}
+                      job={layerJob}
+                    />
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

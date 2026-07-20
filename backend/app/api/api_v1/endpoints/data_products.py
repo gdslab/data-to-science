@@ -23,7 +23,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
 from geojson_pydantic import Feature, FeatureCollection, Polygon, MultiPolygon
 from pydantic import BaseModel, UUID4
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -663,7 +663,7 @@ def process_data_product_from_external_storage(
 
 
 @router.post("/{data_product_id}/tools", status_code=status.HTTP_202_ACCEPTED)
-async def run_processing_tool(
+def run_processing_tool(
     data_product_id: UUID,
     toolbox_in: schemas.ProcessingRequest,
     current_user: models.User = Depends(deps.get_current_approved_user),
@@ -931,27 +931,87 @@ async def run_processing_tool(
         )
 
     # zonal
-    if toolbox_in.zonal and not os.environ.get("RUNNING_TESTS") == "1":
+    accepted_jobs = []
+    if toolbox_in.zonal:
+        if not toolbox_in.zonal_layer_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Vector layer is required for zonal statistics",
+            )
         features = crud.vector_layer.get_vector_layer_by_id(
             db, project_id=project.id, layer_id=toolbox_in.zonal_layer_id
         )
+        if len(features) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Vector layer not found",
+            )
+        for feature in features:
+            geom_type = feature.geometry.type if feature.geometry else None
+            if geom_type not in ("Polygon", "MultiPolygon"):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Vector layer must only contain polygon features",
+                )
         feature_collection = FeatureCollection(
             **{"type": "FeatureCollection", "features": features}
         )
-        calculate_bulk_zonal_statistics.apply_async(
-            args=(
-                data_product.filepath,
-                data_product_id,
-                jsonable_encoder(feature_collection.__dict__),
-            )
+        # create job up front so its id can be returned to the client;
+        # layer_id in extra lets clients match the job to a vector layer
+        zonal_job = JobManager(
+            data_product_id=data_product_id,
+            job_name="zonal",
+            extra={"layer_id": toolbox_in.zonal_layer_id},
+            db=db,
         )
+        try:
+            calculate_bulk_zonal_statistics.apply_async(
+                args=(
+                    data_product.filepath,
+                    data_product_id,
+                    jsonable_encoder(feature_collection.__dict__),
+                    zonal_job.job_id,
+                )
+            )
+        except Exception:
+            # dispatch failed; no worker will ever update the job, so mark it
+            # failed instead of leaving it WAITING forever
+            zonal_job.update(status=Status.FAILED)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Unable to start zonal statistics job",
+            )
+        accepted_jobs.append(
+            {
+                "id": zonal_job.job_id,
+                "name": "zonal",
+                "layer_id": toolbox_in.zonal_layer_id,
+            }
+        )
+
+    return {"jobs": accepted_jobs}
+
+
+@router.get("/{data_product_id}/jobs", response_model=Sequence[schemas.Job])
+def read_data_product_jobs(
+    name: Optional[str] = None,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    data_product: models.DataProduct = Depends(deps.can_read_data_product),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Retrieve jobs associated with a data product, optionally filtered by
+    job name (e.g., "zonal"). Newest jobs are returned first.
+    """
+    return crud.job.get_multi_by_data_product(
+        db, data_product_id=data_product.id, job_name=name
+    )
 
 
 @router.post(
     "/{data_product_id}/zonal_statistics",
     response_model=Feature[Union[Polygon, MultiPolygon], ZonalStatisticsProps],
 )
-async def create_zonal_statistics(
+def create_zonal_statistics(
     data_product_id: UUID,
     zone_in: Feature,
     current_user: models.User = Depends(deps.get_current_approved_user),
@@ -969,6 +1029,10 @@ async def create_zonal_statistics(
         upload_dir=upload_dir,
         user_id=current_user.id,
     )
+    if not data_product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
+        )
 
     if not zone_in.properties:
         raise HTTPException(
@@ -978,11 +1042,31 @@ async def create_zonal_statistics(
 
     vector_layer_feature_id = zone_in.properties.get("feature_id", None)
 
+    # only trust a claimed feature id if it resolves to an active vector layer
+    # in this flight's project; a stale id (e.g., embedded in a re-uploaded
+    # export) must not return another feature's cached stats and geometry
+    if vector_layer_feature_id and utils.is_valid_uuid(vector_layer_feature_id):
+        feature_in_project_query = select(VectorLayer.feature_id).where(
+            and_(
+                VectorLayer.feature_id == vector_layer_feature_id,
+                VectorLayer.project_id == flight.project_id,
+                VectorLayer.is_active,
+            )
+        )
+        with db as session:
+            if (
+                session.execute(feature_in_project_query).scalar_one_or_none()
+                is None
+            ):
+                vector_layer_feature_id = None
+    else:
+        vector_layer_feature_id = None
+
     # required zonal stats
     required_stats = {"count", "min", "max", "mean", "median", "std"}
 
     # check if zonal stats already exist for this feature/data product
-    if vector_layer_feature_id and utils.is_valid_uuid(vector_layer_feature_id):
+    if vector_layer_feature_id:
         metadata = crud.data_product_metadata.get_by_data_product(
             db,
             category="zonal",
@@ -991,11 +1075,7 @@ async def create_zonal_statistics(
         )
         if len(metadata) == 1:
             # return previously generated zonal stats
-            if (
-                "stats" in metadata[0].properties
-                and vector_layer_feature_id
-                and utils.is_valid_uuid(vector_layer_feature_id)
-            ):
+            if "stats" in metadata[0].properties:
                 # if all required stats are present
                 if all(
                     key in metadata[0].properties["stats"] for key in required_stats
@@ -1036,7 +1116,7 @@ async def create_zonal_statistics(
             detail="Unable to calculate zonal statistics",
         )
 
-    if vector_layer_feature_id and utils.is_valid_uuid(vector_layer_feature_id):
+    if vector_layer_feature_id:
         metadata_in = schemas.DataProductMetadataCreate(
             category="zonal",
             properties={"stats": zonal_stats[0]},
@@ -1058,7 +1138,13 @@ async def create_zonal_statistics(
                 **zonal_stats[0],
             }
 
-    return update_feature_properties(Feature(**vector_layer_geojson_dict))
+        return update_feature_properties(Feature(**vector_layer_geojson_dict))
+
+    # anonymous zone (no matching vector layer in this project): return the
+    # submitted feature with stats merged, without caching metadata
+    zone_dict = zone_in.model_dump()
+    zone_dict["properties"] = {**(zone_in.properties or {}), **zonal_stats[0]}
+    return update_feature_properties(Feature(**zone_dict))
 
 
 @router.get(

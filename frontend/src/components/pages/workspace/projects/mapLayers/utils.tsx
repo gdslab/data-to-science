@@ -212,6 +212,21 @@ export function createAndClickDownloadLink(blob: Blob, filename: string) {
 }
 
 /**
+ * Internal D2S property keys excluded from user-facing downloads
+ * (mirrors RESERVED_VECTOR_PROPERTY_KEYS in backend/app/models/constants.py).
+ */
+export const RESERVED_FEATURE_PROPERTY_KEYS = [
+  'id',
+  'feature_id',
+  'layer_id',
+  'layer_name',
+  'is_active',
+  'project_id',
+  'flight_id',
+  'data_product_id',
+];
+
+/**
  * Removes provided array of key names from feature properties.
  * @param {ZonalFeatureCollection} featureCollection Feature collection with features.
  * @param {string[]} unwantedKeys Array of unwanted keys in feature properties.

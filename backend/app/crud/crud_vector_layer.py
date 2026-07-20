@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api.utils import create_vector_layer_preview
 from app.crud.base import CRUDBase
+from app.models.constants import RESERVED_VECTOR_PROPERTY_KEYS
 from app.models.data_product_metadata import DataProductMetadata
 from app.models.vector_layer import VectorLayer
 from app.schemas.vector_layer import VectorLayerCreate, VectorLayerUpdate
@@ -57,6 +58,17 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
             props_series = props_series.where(props_series.notna(), None)
 
             props = props_series.to_dict()
+            # Preserve a user-supplied "id" attribute (common in GIS exports)
+            # under the "fid" name zonal statistic exports already use
+            if "id" in props and "fid" not in props:
+                props["fid"] = props.pop("id")
+            # Drop reserved internal keys (e.g., from a re-uploaded D2S export)
+            # so they cannot shadow the real columns in map tiles
+            props = {
+                key: value
+                for key, value in props.items()
+                if key not in RESERVED_VECTOR_PROPERTY_KEYS
+            }
             properties = jsonable_encoder(props)
 
             # Layer ID will be same for each feature from the feature collection
