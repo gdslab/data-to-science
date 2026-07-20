@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 from typing import Dict, Optional
 from uuid import UUID
 
+from sqlalchemy.orm import Session
+
 from app import crud
 from app.api.deps import get_db
 from app.models import Job as JobModel
@@ -18,23 +20,28 @@ class JobManager:
         job_id: Optional[UUID] = None,
         job_name: Optional[str] = None,
         raw_data_id: Optional[UUID] = None,
+        extra: Optional[Dict] = None,
+        db: Optional[Session] = None,
     ) -> None:
         """Initialize the JobManager instance.
 
         Args:
             data_product_id (Optional[UUID], optional): ID of the associated data product.
-            job_id (Optional[UUID], optional): Existing jbo ID to lookup. If provided, the job will be retrieved from the DB.
+            job_id (Optional[UUID], optional): Existing job ID to lookup. If provided, the job will be retrieved from the DB.
             job_name (Optional[str], optional): Name of the job. If not provided, defaults to 'default-job'.
             raw_data_id (Optional[UUID], optional): ID of the raw data associated with the job.
+            extra (Optional[Dict], optional): Extra details stored with a newly created job.
+            db (Optional[Session], optional): Database session. A new session is created if not provided.
 
         Raises:
             ValueError: Raised if a job_id is provided but the job is not found in the database.
         """
         self.data_product_id = data_product_id
         self.raw_data_id = raw_data_id
+        self.extra = extra
 
-        # Retrieve a database session from the dependency injection.
-        self.db = next(get_db())
+        # Use provided session or retrieve one from the dependency injection.
+        self.db = db if db is not None else next(get_db())
 
         self.job_id = job_id
         self.job_name = job_name
@@ -70,6 +77,9 @@ class JobManager:
 
         if self.raw_data_id:
             job_obj_in.raw_data_id = self.raw_data_id
+
+        if self.extra:
+            job_obj_in.extra = self.extra
 
         # Create the job using the CRUD utility and update the job_id attribute
         job = crud.job.create(self.db, obj_in=job_obj_in)

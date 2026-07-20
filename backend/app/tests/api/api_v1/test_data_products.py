@@ -1,6 +1,8 @@
 import os
 from datetime import datetime, timezone
+from typing import Any
 from unittest.mock import patch, MagicMock
+from uuid import UUID
 
 from geojson_pydantic import Feature, FeatureCollection
 from fastapi import status
@@ -11,6 +13,7 @@ from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
 from app.schemas.file_permission import FilePermissionUpdate
+from app.schemas.job import Status as JobStatus
 from app.schemas.role import Role
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.data_product_metadata import (
@@ -19,11 +22,13 @@ from app.tests.utils.data_product_metadata import (
     get_sample_xml_filepath,
     get_zonal_feature_collection,
 )
+from app.tests.utils.job import create_job
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
 from app.tests.utils.flight import create_flight
 from app.tests.utils.user import create_user
 from app.tests.utils.vector_layers import (
+    create_feature_collection,
     create_vector_layer_with_provided_feature_collection,
 )
 from app.utils.ColorBar import create_outfilename
@@ -893,13 +898,11 @@ def test_delete_data_product_xml_when_no_xml_exists(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_running_tool_on_data_product(
-    client: TestClient, db: Session, normal_user_access_token: str
-) -> None:
-    current_user = get_current_user(db, normal_user_access_token)
-    rgb_data_product = SampleDataProduct(
-        db, data_type="ortho", multispectral=True, user=current_user
-    )
+def get_processing_request(**overrides: Any) -> dict:
+    """Return a processing tool request payload with no tools selected.
+
+    Keyword arguments override individual fields (e.g., zonal=True).
+    """
     processing_request = {
         "chm": False,
         "chmResolution": 0.5,
@@ -908,7 +911,7 @@ def test_running_tool_on_data_product(
         "dtm": False,
         "dtmResolution": 0.5,
         "dtmRigidness": 2,
-        "exg": True,
+        "exg": False,
         "exgRed": 3,
         "exgGreen": 2,
         "exgBlue": 1,
@@ -916,13 +919,33 @@ def test_running_tool_on_data_product(
         "ndvi": False,
         "ndviNIR": 4,
         "ndviRed": 3,
-        "vari": True,
+        "vari": False,
         "variRed": 3,
         "variGreen": 2,
         "variBlue": 1,
         "zonal": False,
         "zonal_layer_id": "",
     }
+    processing_request.update(overrides)
+    return processing_request
+
+
+def get_tools_url(data_product: SampleDataProduct) -> str:
+    return (
+        f"{settings.API_V1_STR}/projects/{data_product.project.id}"
+        f"/flights/{data_product.flight.id}"
+        f"/data_products/{data_product.obj.id}/tools"
+    )
+
+
+def test_running_tool_on_data_product(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    rgb_data_product = SampleDataProduct(
+        db, data_type="ortho", multispectral=True, user=current_user
+    )
+    processing_request = get_processing_request(exg=True, vari=True)
 
     response = client.post(
         f"{settings.API_V1_STR}/projects/{rgb_data_product.project.id}"
@@ -1037,3 +1060,263 @@ def test_get_zonal_statistics_by_layer_id(
     # check that original feature collection properties are present
     for key in properties:
         assert key in response_first_feature.properties
+
+
+def test_running_zonal_tool_on_data_product(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, data_type="dsm", user=current_user)
+    zones = get_zonal_feature_collection()
+    vector_layer = create_vector_layer_with_provided_feature_collection(
+        db, feature_collection=zones, project_id=data_product.project.id
+    )
+    layer_id = vector_layer.features[0].properties["layer_id"]
+
+    with patch(
+        "app.tasks.toolbox_tasks.calculate_bulk_zonal_statistics.apply_async"
+    ) as mock_apply_async:
+        response = client.post(
+            get_tools_url(data_product),
+            json=get_processing_request(zonal=True, zonal_layer_id=layer_id),
+        )
+
+    assert response.status_code == status.HTTP_202_ACCEPTED
+    response_jobs = response.json()["jobs"]
+    assert len(response_jobs) == 1
+    assert response_jobs[0]["name"] == "zonal"
+    assert response_jobs[0]["layer_id"] == layer_id
+
+    # job record created with layer id in extra
+    job = crud.job.get(db, id=UUID(response_jobs[0]["id"]))
+    assert job is not None
+    assert job.status == JobStatus.WAITING
+    assert job.extra == {"layer_id": layer_id}
+    assert job.data_product_id == data_product.obj.id
+
+    # task dispatched with raster path, data product id, features, and job id
+    mock_apply_async.assert_called_once()
+    task_args = mock_apply_async.call_args.kwargs["args"]
+    assert task_args[0] == data_product.obj.filepath
+    assert task_args[1] == data_product.obj.id
+    assert len(task_args[2]["features"]) == len(vector_layer.features)
+    assert task_args[3] == job.id
+
+
+def test_running_zonal_tool_without_layer_id(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, data_type="dsm", user=current_user)
+    response = client.post(
+        get_tools_url(data_product),
+        json=get_processing_request(zonal=True, zonal_layer_id=""),
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_running_zonal_tool_with_unknown_layer_id(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, data_type="dsm", user=current_user)
+    response = client.post(
+        get_tools_url(data_product),
+        json=get_processing_request(zonal=True, zonal_layer_id="nonexistent"),
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_running_zonal_tool_with_layer_from_other_project(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, data_type="dsm", user=current_user)
+    other_project = create_project(db)
+    zones = get_zonal_feature_collection()
+    vector_layer = create_vector_layer_with_provided_feature_collection(
+        db, feature_collection=zones, project_id=other_project.id
+    )
+    layer_id = vector_layer.features[0].properties["layer_id"]
+    response = client.post(
+        get_tools_url(data_product),
+        json=get_processing_request(zonal=True, zonal_layer_id=layer_id),
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_running_zonal_tool_with_non_polygon_layer(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, data_type="dsm", user=current_user)
+    point_layer = create_feature_collection(
+        db, "point", project_id=data_product.project.id
+    )
+    layer_id = point_layer.features[0].properties["layer_id"]
+    response = client.post(
+        get_tools_url(data_product),
+        json=get_processing_request(zonal=True, zonal_layer_id=layer_id),
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_running_tool_with_no_product_selected(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, data_type="dsm", user=current_user)
+    response = client.post(
+        get_tools_url(data_product), json=get_processing_request()
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_running_tool_with_project_viewer_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, data_type="dsm")
+    create_project_member(
+        db,
+        role=Role.VIEWER,
+        member_id=current_user.id,
+        project_uuid=data_product.project.id,
+    )
+    response = client.post(
+        get_tools_url(data_product), json=get_processing_request(hillshade=True)
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_read_data_product_jobs(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, data_type="dsm", user=current_user)
+    zonal_job = create_job(
+        db,
+        data_product_id=data_product.obj.id,
+        name="zonal",
+        extra={"layer_id": "abc12345"},
+    )
+    create_job(db, data_product_id=data_product.obj.id, name="hillshade")
+
+    url = (
+        f"{settings.API_V1_STR}/projects/{data_product.project.id}"
+        f"/flights/{data_product.flight.id}"
+        f"/data_products/{data_product.obj.id}/jobs"
+    )
+
+    # all jobs for data product (SampleDataProduct also creates an upload job)
+    response = client.get(url)
+    assert response.status_code == status.HTTP_200_OK
+    response_job_names = [job["name"] for job in response.json()]
+    assert "zonal" in response_job_names
+    assert "hillshade" in response_job_names
+
+    # filtered by job name
+    response = client.get(url, params={"name": "zonal"})
+    assert response.status_code == status.HTTP_200_OK
+    response_jobs = response.json()
+    assert len(response_jobs) == 1
+    assert response_jobs[0]["id"] == str(zonal_job.id)
+    assert response_jobs[0]["name"] == "zonal"
+    assert response_jobs[0]["status"] == "WAITING"
+    assert response_jobs[0]["extra"] == {"layer_id": "abc12345"}
+
+
+def test_read_data_product_jobs_with_non_project_member(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    data_product = SampleDataProduct(db, data_type="dsm")
+    create_job(db, data_product_id=data_product.obj.id, name="zonal")
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{data_product.project.id}"
+        f"/flights/{data_product.flight.id}"
+        f"/data_products/{data_product.obj.id}/jobs"
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_read_data_product_jobs_with_data_product_from_other_flight(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """A data product id from another project must not be readable through a
+    flight the user can access.
+    """
+    current_user = get_current_user(db, normal_user_access_token)
+    own_data_product = SampleDataProduct(db, data_type="dsm", user=current_user)
+    other_data_product = SampleDataProduct(db, data_type="dsm")
+    create_job(db, data_product_id=other_data_product.obj.id, name="zonal")
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{own_data_product.project.id}"
+        f"/flights/{own_data_product.flight.id}"
+        f"/data_products/{other_data_product.obj.id}/jobs"
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_get_zonal_statistics_ignores_feature_id_not_in_project(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """A stale feature_id embedded in the submitted zone (e.g., from a
+    re-uploaded export) that does not resolve to a vector layer in this
+    project must trigger a fresh computation for the submitted geometry
+    instead of returning another feature's cached stats.
+    """
+    current_user = get_current_user(db, normal_user_access_token)
+    # cached zonal stats for a feature that lives in a different project
+    other_project = create_project(db)
+    other_data_product = SampleDataProduct(db, data_type="dsm", project=other_project)
+    other_metadata, _, _ = create_zonal_metadata(
+        db, data_product_id=other_data_product.obj.id, project_id=other_project.id
+    )
+    foreign_feature_id = str(other_metadata[0].vector_layer_feature_id)
+
+    # current user's own project and data product
+    data_product = SampleDataProduct(db, data_type="dsm", user=current_user)
+    zone_feature = get_zonal_feature_collection(single_feature=True)
+    zone_dict = zone_feature.model_dump()
+    zone_dict["properties"] = {
+        **(zone_dict.get("properties") or {}),
+        "feature_id": foreign_feature_id,
+    }
+
+    mocked_stats = {
+        "min": 187.371,
+        "max": 187.444,
+        "mean": 187.404,
+        "count": 576,
+        "std": 0.0135,
+        "median": 187.402,
+    }
+    with patch(
+        "app.tasks.toolbox_tasks.calculate_zonal_statistics.apply_async"
+    ) as mock_apply_async:
+        mock_task = MagicMock()
+        mock_task.get.return_value = [mocked_stats]
+        mock_apply_async.return_value = mock_task
+        response = client.post(
+            f"{settings.API_V1_STR}/projects/{data_product.project.id}"
+            f"/flights/{data_product.flight.id}"
+            f"/data_products/{data_product.obj.id}/zonal_statistics",
+            json=zone_dict,
+        )
+
+    assert response.status_code == status.HTTP_200_OK
+    # a fresh computation ran; the foreign cache was not used
+    mock_apply_async.assert_called_once()
+    response_feature = Feature(**response.json())
+    assert response_feature.properties is not None
+    assert response_feature.properties["mean"] == mocked_stats["mean"]
+    # the submitted geometry is returned, not the foreign feature's geometry
+    assert response_feature.geometry == zone_feature.geometry
+    # no metadata cached against the foreign feature id for this data product
+    metadata = crud.data_product_metadata.get_by_data_product(
+        db,
+        category="zonal",
+        data_product_id=data_product.obj.id,
+        vector_layer_feature_id=other_metadata[0].vector_layer_feature_id,
+    )
+    assert len(metadata) == 0

@@ -1,5 +1,6 @@
+import math
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 import geopandas as gpd
@@ -18,8 +19,54 @@ from app.schemas.data_product_metadata import ZonalStatisticsProps
 from app.schemas.job import Status
 from app.utils.Toolbox import Toolbox
 
-
 logger = get_task_logger(__name__)
+
+
+def compute_zonal_statistics(
+    input_raster: str, feature_collection: Dict[str, Any]
+) -> List[ZonalStatisticsProps]:
+    """Compute zonal statistics for a raster using a feature collection."""
+    features = feature_collection.get("features", [])
+    if len(features) == 0:
+        return []
+
+    with rasterio.open(input_raster) as src:
+        # convert feature collection to dataframe and update crs to match src crs
+        zones = gpd.GeoDataFrame.from_features(features, crs="EPSG:4326")
+        zones = zones.to_crs(src.crs)
+        minx, miny, maxx, maxy = zones.total_bounds
+        # affine transformation
+        affine = src.transform
+        # create window for total bounding box of all zones in zone_feature
+        # snap to whole pixels (floor offsets, ceil ends) so the window fully
+        # covers the zones and its transform matches the read array
+        window = rasterio.windows.from_bounds(minx, miny, maxx, maxy, affine)
+        col_off = math.floor(window.col_off)
+        row_off = math.floor(window.row_off)
+        width = math.ceil(window.col_off + window.width) - col_off
+        height = math.ceil(window.row_off + window.height) - row_off
+        window = rasterio.windows.Window(col_off, row_off, width, height)
+        window_affine = rasterio.windows.transform(window, src.transform)
+        # rasterstats only receives the array, so pass the source nodata explicitly
+        # to silence its NodataWarning. Without a source nodata, fall back to
+        # rasterstats' internal -999 sentinel when the band dtype can hold it,
+        # else the dtype's maximum (-999 overflows unsigned integer bands)
+        nodata = src.nodata
+        if nodata is None:
+            dtype_min, dtype_max = rasterio.dtypes.dtype_ranges[src.dtypes[0]]
+            nodata = -999 if dtype_min <= -999 <= dtype_max else dtype_max
+        # read first band contained within window into array
+        # boundless read keeps the array aligned with window_affine when zones
+        # extend past the raster's edge; out-of-raster pixels become nodata
+        data = src.read(1, window=window, boundless=True, fill_value=nodata)
+        # required zonal statistics
+        required_stats = "count min max mean median std"
+        # get stats for zone
+        stats = zonal_stats(
+            zones, data, affine=window_affine, stats=required_stats, nodata=nodata
+        )
+
+    return stats
 
 
 @celery_app.task(name="calculate_zonal_statistics_task")
@@ -30,53 +77,51 @@ def calculate_zonal_statistics(
     job = JobManager(job_name="zonal")
     job.start()
 
-    with rasterio.open(input_raster) as src:
-        # convert feature collection to dataframe and update crs to match src crs
-        zones = gpd.GeoDataFrame.from_features(
-            feature_collection["features"], crs="EPSG:4326"
-        )
-        zones = zones.to_crs(src.crs)
-        minx, miny, maxx, maxy = zones.total_bounds
-        # affine transformation
-        affine = src.transform
-        # create window for total bounding box of all zones in zone_feature
-        window = rasterio.windows.from_bounds(minx, miny, maxx, maxy, affine)
-        window_affine = rasterio.windows.transform(window, src.transform)
-        # read first band contained within window into array
-        data = src.read(1, window=window)
-        # required zonal statistics
-        required_stats = "count min max mean median std"
-        # get stats for zone
-        # rasterstats only receives the array, so pass the source nodata explicitly
-        # (falling back to its internal -999 sentinel) to silence its NodataWarning.
-        nodata = src.nodata if src.nodata is not None else -999
-        stats = zonal_stats(
-            zones, data, affine=window_affine, stats=required_stats, nodata=nodata
-        )
+    try:
+        stats = compute_zonal_statistics(input_raster, feature_collection)
+    except Exception:
+        logger.exception("Unable to calculate zonal statistics")
+        job.update(status=Status.FAILED)
+        # re-raise so callers blocking on the result see a server error
+        # rather than mistaking the failure for an empty result
+        raise
 
     job.update(status=Status.SUCCESS)
 
     return stats
 
 
+def _fail_job(job: JobManager, detail: str) -> None:
+    """Mark a job as failed, preserving existing extra and recording a reason."""
+    existing_extra = job.job.extra if job.job and job.job.extra else {}
+    job.update(status=Status.FAILED, extra={**existing_extra, "detail": detail[:200]})
+
+
 @celery_app.task(name="calculate_bulk_zonal_statistics_task")
 def calculate_bulk_zonal_statistics(
-    input_raster: str, data_product_id: UUID, feature_collection_dict: Dict[str, Any]
+    input_raster: str,
+    data_product_id: UUID,
+    feature_collection_dict: Dict[str, Any],
+    job_id: Optional[UUID] = None,
 ) -> List[ZonalStatisticsProps]:
     # database session for updating data product and job tables
     db = next(get_db())
 
-    # create new job for tool process
-    job = JobManager(data_product_id=data_product_id, job_name="zonal")
+    # use job created by the tools endpoint, or create one if not provided
+    if job_id:
+        job = JobManager(job_id=job_id, db=db)
+    else:
+        job = JobManager(data_product_id=data_product_id, job_name="zonal", db=db)
 
     try:
         job.start()
-        all_zonal_stats = calculate_zonal_statistics(
+        all_zonal_stats = compute_zonal_statistics(
             input_raster, feature_collection_dict
         )
-    except Exception:
+    except Exception as e:
         logger.exception("Unable to complete tool process")
-        job.update(status=Status.FAILED)
+        # record only the exception class; str(e) can contain server paths
+        _fail_job(job, f"Unable to calculate zonal statistics ({type(e).__name__})")
         return []
 
     try:
@@ -115,11 +160,11 @@ def calculate_bulk_zonal_statistics(
                     )
                 else:
                     logger.exception("Unable to save zonal statistics")
-                    job.update(status=Status.FAILED)
+                    _fail_job(job, "Unable to save zonal statistics")
                     return []
-    except Exception:
+    except Exception as e:
         logger.exception("Unable to save zonal statistics")
-        job.update(status=Status.FAILED)
+        _fail_job(job, f"Unable to save zonal statistics ({type(e).__name__})")
         return []
 
     # update job to indicate process finished
