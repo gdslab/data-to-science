@@ -102,9 +102,7 @@ def test_leaderboard_credits_flights_to_owner_not_pilot(db: Session) -> None:
 def test_leaderboard_data_usage_sums_data_products_and_raw_data(db: Session) -> None:
     owner = create_user(db)
     sample = SampleDataProduct(db, user=owner)
-    raw = SampleRawData(
-        db, user=owner, project=sample.project, flight=sample.flight
-    )
+    raw = SampleRawData(db, user=owner, project=sample.project, flight=sample.flight)
     # Deterministic sizes via partial update (CRUDBase.update excludes unset).
     crud.data_product.update(
         db, db_obj=sample.obj, obj_in=DataProductUpdate(file_size=1000)
@@ -177,3 +175,26 @@ def test_get_activity_trends_computes_stickiness(db: Session) -> None:
 
     expected = round(today_point.active_24h / today_point.active_30d, 3)
     assert today_point.stickiness == expected
+
+
+def test_leaderboard_excludes_engagement_on_deactivated_content(db: Session) -> None:
+    """Views and likes on deactivated data products drop out, like every other
+    leaderboard metric."""
+    owner = create_user(db)
+    live = SampleDataProduct(db, user=owner)
+    removed = SampleDataProduct(
+        db, user=owner, project=live.project, flight=live.flight
+    )
+    create_data_product_view(db, data_product_id=live.obj.id)
+    create_data_product_view(db, data_product_id=removed.obj.id)
+    create_data_product_like(db, data_product_id=live.obj.id)
+    create_data_product_like(db, data_product_id=removed.obj.id)
+
+    crud.data_product.deactivate(db, data_product_id=removed.obj.id)
+
+    rows = crud.metrics.get_engagement_leaderboard(db, metric="views", limit=100)
+    owner_row = next(row for row in rows if row.user_id == owner.id)
+
+    assert owner_row.data_product_count == 1
+    assert owner_row.total_views == 1
+    assert owner_row.total_likes == 1

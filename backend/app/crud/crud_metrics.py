@@ -105,9 +105,10 @@ def get_engagement_leaderboard(
     Everything is attributed to the project owner (``Project.owner_id``),
     consistent with the existing ``/admin/project_statistics`` convention:
     projects, their flights and data products, and the views/likes/storage those
-    accrue. Counts are gathered with separate GROUP BY queries (rather than one
-    wide join) so that, e.g., a project with many flights and many views does not
-    multiply either total.
+    accrue. Every metric counts fully live content only: the data product, its
+    flight, and its project must all be active. Counts are gathered with separate
+    GROUP BY queries (rather than one wide join) so that, e.g., a project with
+    many flights and many views does not multiply either total.
     """
     project_counts = dict(
         db.execute(
@@ -142,6 +143,7 @@ def get_engagement_leaderboard(
             .join(DataProduct, DataProduct.id == DataProductView.data_product_id)
             .join(Flight, Flight.id == DataProduct.flight_id)
             .join(Project, Project.id == Flight.project_id)
+            .where(and_(DataProduct.is_active, Flight.is_active, Project.is_active))
             .group_by(Project.owner_id)
         ).all()
     )
@@ -152,6 +154,7 @@ def get_engagement_leaderboard(
             .join(DataProduct, DataProduct.id == DataProductLike.data_product_id)
             .join(Flight, Flight.id == DataProduct.flight_id)
             .join(Project, Project.id == Flight.project_id)
+            .where(and_(DataProduct.is_active, Flight.is_active, Project.is_active))
             .group_by(Project.owner_id)
         ).all()
     )
