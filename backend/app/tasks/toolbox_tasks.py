@@ -263,6 +263,8 @@ def run_toolbox(
                 data_product_id=new_data_product.id,
                 user_id=user_id,
             )
+            # record on-disk size so per-user data usage stays a fast SQL SUM
+            crud.data_product.set_file_size(db, new_data_product.id)
     except Exception:
         logger.exception("Unable to update data product and create user style")
         job.update(status=Status.FAILED)
