@@ -339,10 +339,12 @@ function EngagementLeaderboard({
   rows,
   metric,
   onMetricChange,
+  error,
 }: {
   rows: EngagementLeaderRow[];
   metric: LeaderboardMetric;
   onMetricChange: (metric: LeaderboardMetric) => void;
+  error: string | null;
 }) {
   const [currentPage, setCurrentPage] = useState(0);
   const totalPages = Math.ceil(rows.length / MAX_ITEMS);
@@ -401,7 +403,11 @@ function EngagementLeaderboard({
         ))}
       </div>
 
-      {rows.length === 0 ? (
+      {error ? (
+        <section className="w-full bg-white text-sm text-red-600">
+          {error}
+        </section>
+      ) : rows.length === 0 ? (
         <section className="w-full bg-white">No activity yet</section>
       ) : (
         <>
@@ -469,11 +475,13 @@ export default function DashboardActivity() {
   const [metric, setMetric] = useState<LeaderboardMetric>('data_products');
   const [leaderboard, setLeaderboard] =
     useState<EngagementLeaderRow[]>(initialLeaderboard);
+  const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
   const [activeInfo, setActiveInfo] = useState<InfoKey | null>(null);
 
   // Re-rank server-side when the metric changes so users outside the initial
   // top-N (by data products) can still surface for views, likes, etc.
   useEffect(() => {
+    setLeaderboardError(null);
     if (metric === 'data_products') {
       setLeaderboard(initialLeaderboard);
       return;
@@ -485,6 +493,14 @@ export default function DashboardActivity() {
       )
       .then((res) => {
         if (active) setLeaderboard(res.data);
+      })
+      .catch((error) => {
+        console.error('Failed to load leaderboard:', error);
+        if (!active) return;
+        // Drop the previous rows so a stale ranking is never shown under the
+        // newly selected metric.
+        setLeaderboard([]);
+        setLeaderboardError('Failed to load leaderboard for this metric.');
       });
     return () => {
       active = false;
@@ -531,6 +547,7 @@ export default function DashboardActivity() {
             rows={leaderboard}
             metric={metric}
             onMetricChange={setMetric}
+            error={leaderboardError}
           />
         </div>
       </div>
