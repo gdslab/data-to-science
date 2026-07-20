@@ -1,6 +1,7 @@
 import random
 import secrets
 import string
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 from uuid import UUID, uuid4
@@ -22,6 +23,22 @@ from app.schemas.single_use_token import SingleUseTokenCreate
 from app.schemas.user import UserUpdate
 from app.tests.utils.user import create_user
 from app.tests.utils.utils import random_email
+
+
+@contextmanager
+def refresh_token_cookie(client: TestClient, token: str):
+    """Set the refresh_token cookie on the client for the wrapped request.
+
+    httpx deprecated per-request ``cookies=``; cookies must be set on the client
+    instance instead. The cookie is removed on exit to keep requests isolated.
+    """
+    client.cookies.set("refresh_token", token)
+    try:
+        yield
+    finally:
+        # delete() removes every refresh_token cookie by name; using pop()/get()
+        # here would raise CookieConflict when the response sets its own copy.
+        client.cookies.delete("refresh_token")
 
 
 def test_login_with_valid_credentials(client: TestClient, db: Session) -> None:
@@ -118,10 +135,8 @@ def test_logout_revokes_refresh_token(client: TestClient, db: Session) -> None:
             - timedelta(seconds=settings.REFRESH_TOKEN_REUSE_GRACE_SECONDS + 1),
         ),
     )
-    reuse = client.post(
-        f"{settings.API_V1_STR}/auth/refresh-token",
-        cookies={"refresh_token": refresh_token},
-    )
+    with refresh_token_cookie(client, refresh_token):
+        reuse = client.post(f"{settings.API_V1_STR}/auth/refresh-token")
     assert reuse.status_code == 401
 
 
@@ -223,10 +238,8 @@ def test_refresh_token_success(client: TestClient, db: Session) -> None:
     assert refresh_token is not None
 
     # Use refresh token to get new tokens
-    refresh_response = client.post(
-        f"{settings.API_V1_STR}/auth/refresh-token",
-        cookies={"refresh_token": refresh_token},
-    )
+    with refresh_token_cookie(client, refresh_token):
+        refresh_response = client.post(f"{settings.API_V1_STR}/auth/refresh-token")
 
     assert refresh_response.status_code == 200
     response_data = refresh_response.json()
@@ -253,10 +266,8 @@ def test_refresh_token_missing(client: TestClient, db: Session) -> None:
 def test_refresh_token_malformed(client: TestClient, db: Session) -> None:
     """Test refresh token endpoint with malformed token."""
     # Test without Bearer prefix
-    response = client.post(
-        f"{settings.API_V1_STR}/auth/refresh-token",
-        cookies={"refresh_token": "invalid-token-format"},
-    )
+    with refresh_token_cookie(client, "invalid-token-format"):
+        response = client.post(f"{settings.API_V1_STR}/auth/refresh-token")
 
     assert response.status_code == 401
     assert "Refresh token missing or malformed" in response.json()["detail"]
@@ -264,10 +275,8 @@ def test_refresh_token_malformed(client: TestClient, db: Session) -> None:
 
 def test_refresh_token_invalid_jwt(client: TestClient, db: Session) -> None:
     """Test refresh token endpoint with invalid JWT."""
-    response = client.post(
-        f"{settings.API_V1_STR}/auth/refresh-token",
-        cookies={"refresh_token": "Bearer invalid.jwt.token"},
-    )
+    with refresh_token_cookie(client, "Bearer invalid.jwt.token"):
+        response = client.post(f"{settings.API_V1_STR}/auth/refresh-token")
 
     assert response.status_code == 401
     # Should fail during JWT validation
@@ -289,10 +298,8 @@ def test_refresh_token_missing_jti(client: TestClient, db: Session) -> None:
         payload, settings.SECRET_KEY, algorithm=security.ALGORITHM
     )
 
-    response = client.post(
-        f"{settings.API_V1_STR}/auth/refresh-token",
-        cookies={"refresh_token": f"Bearer {invalid_token}"},
-    )
+    with refresh_token_cookie(client, f"Bearer {invalid_token}"):
+        response = client.post(f"{settings.API_V1_STR}/auth/refresh-token")
 
     assert response.status_code == 401
     assert "Refresh token payload missing jti" in response.json()["detail"]
@@ -321,10 +328,8 @@ def test_refresh_token_revoked(client: TestClient, db: Session) -> None:
         ),
     )
 
-    response = client.post(
-        f"{settings.API_V1_STR}/auth/refresh-token",
-        cookies={"refresh_token": f"Bearer {refresh_token_str}"},
-    )
+    with refresh_token_cookie(client, f"Bearer {refresh_token_str}"):
+        response = client.post(f"{settings.API_V1_STR}/auth/refresh-token")
 
     assert response.status_code == 401
     assert "Refresh token revoked or expired" in response.json()["detail"]
@@ -345,10 +350,8 @@ def test_refresh_token_nonexistent_in_db(client: TestClient, db: Session) -> Non
 
     token = jwt.encode(payload, settings.SECRET_KEY, algorithm=security.ALGORITHM)
 
-    response = client.post(
-        f"{settings.API_V1_STR}/auth/refresh-token",
-        cookies={"refresh_token": f"Bearer {token}"},
-    )
+    with refresh_token_cookie(client, f"Bearer {token}"):
+        response = client.post(f"{settings.API_V1_STR}/auth/refresh-token")
 
     assert response.status_code == 401
     assert "Refresh token revoked or expired" in response.json()["detail"]
@@ -381,10 +384,8 @@ def test_refresh_token_expired_in_db(client: TestClient, db: Session) -> None:
 
     token = jwt.encode(payload, settings.SECRET_KEY, algorithm=security.ALGORITHM)
 
-    response = client.post(
-        f"{settings.API_V1_STR}/auth/refresh-token",
-        cookies={"refresh_token": f"Bearer {token}"},
-    )
+    with refresh_token_cookie(client, f"Bearer {token}"):
+        response = client.post(f"{settings.API_V1_STR}/auth/refresh-token")
 
     assert response.status_code == 401
     assert "Refresh token revoked or expired" in response.json()["detail"]
@@ -405,10 +406,8 @@ def test_refresh_token_revokes_old_token(client: TestClient, db: Session) -> Non
     assert not db_token_before.revoked
 
     # Use refresh token
-    response = client.post(
-        f"{settings.API_V1_STR}/auth/refresh-token",
-        cookies={"refresh_token": f"Bearer {refresh_token_str}"},
-    )
+    with refresh_token_cookie(client, f"Bearer {refresh_token_str}"):
+        response = client.post(f"{settings.API_V1_STR}/auth/refresh-token")
 
     assert response.status_code == 200
 
@@ -463,10 +462,8 @@ def test_logout_revokes_expired_refresh_token(client: TestClient, db: Session) -
         algorithm=security.ALGORITHM,
     )
 
-    response = client.post(
-        f"{settings.API_V1_STR}/auth/remove-access-token",
-        cookies={"refresh_token": f"Bearer {expired_jwt}"},
-    )
+    with refresh_token_cookie(client, f"Bearer {expired_jwt}"):
+        response = client.post(f"{settings.API_V1_STR}/auth/remove-access-token")
     assert response.status_code == 200
 
     db_token = crud.refresh_token.get_by_jti(db, jti=token_jti)
@@ -512,10 +509,8 @@ def test_refresh_token_within_grace_window_succeeds(
     # Revoke just now (revoked_at = now), simulating a concurrent rotation
     crud.refresh_token.revoke(db, jti=jti)
 
-    response = client.post(
-        f"{settings.API_V1_STR}/auth/refresh-token",
-        cookies={"refresh_token": f"Bearer {refresh_token_str}"},
-    )
+    with refresh_token_cookie(client, f"Bearer {refresh_token_str}"):
+        response = client.post(f"{settings.API_V1_STR}/auth/refresh-token")
 
     assert response.status_code == 200
     assert response.cookies.get("access_token") is not None
@@ -544,10 +539,8 @@ def test_refresh_token_reuse_after_grace_window_fails(
         ),
     )
 
-    response = client.post(
-        f"{settings.API_V1_STR}/auth/refresh-token",
-        cookies={"refresh_token": f"Bearer {refresh_token_str}"},
-    )
+    with refresh_token_cookie(client, f"Bearer {refresh_token_str}"):
+        response = client.post(f"{settings.API_V1_STR}/auth/refresh-token")
 
     assert response.status_code == 401
     assert "Refresh token revoked or expired" in response.json()["detail"]
@@ -561,17 +554,13 @@ def test_refresh_token_concurrent_reuse_both_succeed(
 
     refresh_token_str = security.create_refresh_token(db, subject=str(user.id))
 
-    first = client.post(
-        f"{settings.API_V1_STR}/auth/refresh-token",
-        cookies={"refresh_token": f"Bearer {refresh_token_str}"},
-    )
+    with refresh_token_cookie(client, f"Bearer {refresh_token_str}"):
+        first = client.post(f"{settings.API_V1_STR}/auth/refresh-token")
     assert first.status_code == 200
 
     # Reusing the same (now rotated/revoked) token again immediately is tolerated
-    second = client.post(
-        f"{settings.API_V1_STR}/auth/refresh-token",
-        cookies={"refresh_token": f"Bearer {refresh_token_str}"},
-    )
+    with refresh_token_cookie(client, f"Bearer {refresh_token_str}"):
+        second = client.post(f"{settings.API_V1_STR}/auth/refresh-token")
     assert second.status_code == 200
 
 

@@ -774,7 +774,7 @@ class STACGenerator:
             raise ValueError("Project must have a boundary.")
 
         try:
-            gdf = gpd.read_file(geojson.model_dump_json(), driver="GeoJSON")
+            gdf = gpd.read_file(geojson.model_dump_json())
             bounds = list(gdf.total_bounds)
         except Exception as e:
             logger.exception(e)

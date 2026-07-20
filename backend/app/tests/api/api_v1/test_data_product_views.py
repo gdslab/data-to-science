@@ -9,6 +9,7 @@ from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
 from app.models.data_product_view import DataProductView
+from app.schemas.file_permission import FilePermissionUpdate
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.data_product_view import create_data_product_view
 from app.tests.utils.flight import create_flight
@@ -101,6 +102,17 @@ def _make_published(db: Session, data_product: SampleDataProduct) -> None:
     )
 
 
+def _make_file_public(db: Session, data_product: SampleDataProduct) -> None:
+    """Mark the data product's file permission as public (shared link)."""
+    file_permission = crud.file_permission.get_by_data_product(
+        db, file_id=data_product.obj.id
+    )
+    assert file_permission
+    crud.file_permission.update(
+        db, db_obj=file_permission, obj_in=FilePermissionUpdate(is_public=True)
+    )
+
+
 def test_public_view_session_id_too_long_returns_422(
     client: TestClient, db: Session
 ) -> None:
@@ -113,7 +125,7 @@ def test_public_view_session_id_too_long_returns_422(
         headers={"X-Session-Id": "x" * 65},
     )
 
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_public_view_session_id_at_max_length_returns_201(
@@ -167,6 +179,23 @@ def test_public_view_on_unpublished_project_returns_404(
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_public_view_anonymous_file_public_unpublished_returns_201(
+    client: TestClient, db: Session
+) -> None:
+    # Shared-link access model: a public file permission must allow view
+    # recording even when the project itself is not published.
+    data_product = SampleDataProduct(db)
+    _make_file_public(db, data_product)
+
+    response = client.post(
+        _public_view_url(data_product),
+        headers={"X-Session-Id": "test-session-share"},
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED
+    assert response.json() == {"view_count": 1}
 
 
 def test_public_view_dedup_same_session_returns_200(
@@ -246,6 +275,27 @@ def test_public_view_signed_in_non_member_unpublished_returns_404(
         db, data_product_id=data_product.obj.id
     )
     assert count == 0
+
+
+def test_public_view_signed_in_non_member_file_public_unpublished_returns_201(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # Shared-link access model: signed-in non-members can record views on a
+    # publicly shared file in an unpublished project.
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db)
+    _make_file_public(db, data_product)
+
+    response = client.post(_public_view_url(data_product))
+
+    assert response.status_code == status.HTTP_201_CREATED
+    view = db.scalar(
+        select(DataProductView).where(
+            DataProductView.data_product_id == data_product.obj.id
+        )
+    )
+    assert view is not None
+    assert view.user_id == current_user.id
 
 
 def test_public_view_signed_in_non_member_published_returns_201(

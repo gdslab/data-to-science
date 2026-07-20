@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 from uuid import uuid4
 
@@ -186,7 +186,9 @@ def test_deactivate_indoor_project(db: Session) -> None:
     assert deactivated_indoor_project.id == existing_indoor_project.id
     assert deactivated_indoor_project.is_active is False
     assert deactivated_indoor_project.deactivated_at
-    assert deactivated_indoor_project.deactivated_at < datetime.utcnow()
+    assert deactivated_indoor_project.deactivated_at < datetime.now(timezone.utc).replace(
+        tzinfo=None
+    )
 
 
 def test_get_with_permission_owner_can_access_with_viewer_permission(

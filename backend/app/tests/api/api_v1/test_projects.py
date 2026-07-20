@@ -175,7 +175,7 @@ def test_create_project_rejects_multipolygon(
         }
     )
     response = client.post(API_URL, json=data)
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     detail = response.json()["detail"]
     assert isinstance(detail, list)
     assert len(detail) == 1, f"Expected single-message detail, got: {detail}"
@@ -201,7 +201,7 @@ def test_create_project_rejects_point_geometry(
         }
     )
     response = client.post(API_URL, json=data)
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     detail = response.json()["detail"]
     assert isinstance(detail, list)
     assert len(detail) == 1, f"Expected single-message detail, got: {detail}"
@@ -228,7 +228,7 @@ def test_create_project_date_validation(
         }
     )
     response = client.post(API_URL, json=data)
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     # valid - only planting_date
     data = jsonable_encoder(
@@ -791,7 +791,7 @@ def test_update_project_date_validation(
     )
     update_data = jsonable_encoder({"harvest_date": date(current_year, 5, 1)})
     response = client.put(f"{API_URL}/{project.id}", json=update_data)
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     # invalid - harvest_date before planting_date
     project = create_project(
@@ -802,7 +802,7 @@ def test_update_project_date_validation(
     )
     update_data = jsonable_encoder({"planting_date": date(current_year, 6, 7)})
     response = client.put(f"{API_URL}/{project.id}", json=update_data)
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_dropping_team_from_project(

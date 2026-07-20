@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios';
 import { Form, Formik } from 'formik';
 import { useEffect, useState } from 'react';
 import { useParams, useRevalidator } from 'react-router';
@@ -156,17 +157,23 @@ export default function ToolboxModal({
                     if (response) {
                       setStatus({
                         type: 'success',
-                        msg: 'Processing has begun. You may close this window.',
+                        msg: values.zonal
+                          ? 'Processing has begun. Zonal statistics status will update next to the selected layer.'
+                          : 'Processing has begun. You may close this window.',
                       });
                       actions.resetForm({ values: values });
                       setTimeout(() => {
                         revalidator.revalidate();
                       }, 3000);
                     }
-                  } catch {
+                  } catch (err) {
                     setStatus({
                       type: 'error',
-                      msg: 'Unable to complete request',
+                      msg:
+                        isAxiosError(err) &&
+                        typeof err.response?.data?.detail === 'string'
+                          ? err.response.data.detail
+                          : 'Unable to complete request',
                     });
                   }
                 } else {

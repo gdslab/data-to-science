@@ -1,4 +1,5 @@
 import os
+from email.utils import getaddresses, parseaddr
 from typing import List
 from unittest.mock import AsyncMock, patch
 
@@ -56,7 +57,7 @@ def test_create_user_new_email(client: TestClient, db: Session) -> None:
             outbox[0]["from"]
             == settings.MAIL_FROM_NAME + " <" + settings.MAIL_FROM + ">"
         )
-        assert outbox[0]["To"] == user.email
+        assert parseaddr(outbox[0]["To"])[1] == user.email
         assert (
             outbox[0]["Subject"]
             == "Welcome to Data to Science - please confirm your email"
@@ -65,7 +66,9 @@ def test_create_user_new_email(client: TestClient, db: Session) -> None:
             outbox[1]["from"]
             == settings.MAIL_FROM_NAME + " <" + settings.MAIL_FROM + ">"
         )
-        assert outbox[1]["To"] == settings.MAIL_ADMINS.replace(",", ", ")
+        assert [
+            addr for _, addr in getaddresses([outbox[1]["To"]])
+        ] == settings.MAIL_ADMINS.split(",")
         assert (
             outbox[1]["Subject"]
             == f"New Data to Science account awaiting approval ({api_domain})"
@@ -577,7 +580,7 @@ def test_create_user_with_registration_intent_too_short(
     }
     with patch.object(settings, "TURNSTILE_SECRET_KEY", None):
         response = client.post(f"{settings.API_V1_STR}/users/", json=data)
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_create_user_with_registration_intent_too_long(
@@ -594,7 +597,7 @@ def test_create_user_with_registration_intent_too_long(
     }
     with patch.object(settings, "TURNSTILE_SECRET_KEY", None):
         response = client.post(f"{settings.API_V1_STR}/users/", json=data)
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_create_user_with_registration_intent_empty_string(
@@ -612,7 +615,7 @@ def test_create_user_with_registration_intent_empty_string(
     with patch.object(settings, "TURNSTILE_SECRET_KEY", None):
         response = client.post(f"{settings.API_V1_STR}/users/", json=data)
     # This should fail validation since empty strings don't meet min_length
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_create_user_with_registration_intent_whitespace_normalized(
@@ -652,7 +655,7 @@ def test_create_user_with_registration_intent_only_whitespace(
     with patch.object(settings, "TURNSTILE_SECRET_KEY", None):
         response = client.post(f"{settings.API_V1_STR}/users/", json=data)
     # Should fail since whitespace doesn't meet min_length at API layer
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_create_user_with_name_whitespace_normalized(

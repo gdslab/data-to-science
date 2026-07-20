@@ -62,14 +62,14 @@ class ProjectMember(Base):
         primaryjoin="and_(ProjectMember.project_type == 'PROJECT', ProjectMember.project_uuid == Project.id)",
         foreign_keys="[ProjectMember.project_uuid]",
         back_populates="members",
-        overlaps="indoor_project",
+        overlaps="indoor_project,indoor_members",
     )
     indoor_project: Mapped["IndoorProject"] = relationship(
         "IndoorProject",
         primaryjoin="and_(ProjectMember.project_type == 'INDOOR_PROJECT', ProjectMember.project_uuid == IndoorProject.id)",
         foreign_keys="[ProjectMember.project_uuid]",
         back_populates="indoor_members",
-        overlaps="uas_project",
+        overlaps="uas_project,members",
     )
     member: Mapped["User"] = relationship(back_populates="project_memberships")
     # TODO: Remove this relationship after migration
