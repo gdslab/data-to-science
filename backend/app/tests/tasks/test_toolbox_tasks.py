@@ -14,7 +14,7 @@ from rasterio.warp import transform_bounds
 from rasterstats import zonal_stats
 from sqlalchemy.orm import Session
 
-from app import crud
+from app import crud, schemas
 from app.schemas.job import Status
 from app.tasks.toolbox_tasks import (
     calculate_bulk_zonal_statistics,
@@ -36,6 +36,31 @@ def create_zonal_vector_layer(db: Session, project_id) -> FeatureCollection:
     return create_vector_layer_with_provided_feature_collection(
         db, feature_collection=zones, project_id=project_id
     )
+
+
+def outside_polygon_feature(raster_path: str) -> dict:
+    """Return a GeoJSON polygon feature that lies entirely to the left of the
+    raster's extent (in EPSG:4326), so it overlaps no valid raster pixels.
+    """
+    with rasterio.open(raster_path) as src:
+        minx, miny, maxx, maxy = transform_bounds(src.crs, "EPSG:4326", *src.bounds)
+    width = maxx - minx
+    return {
+        "type": "Feature",
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [minx - 2 * width, miny],
+                    [minx - width, miny],
+                    [minx - width, maxy],
+                    [minx - 2 * width, maxy],
+                    [minx - 2 * width, miny],
+                ]
+            ],
+        },
+        "properties": {},
+    }
 
 
 def test_calculate_bulk_zonal_statistics(db: Session) -> None:
@@ -73,7 +98,10 @@ def test_calculate_bulk_zonal_statistics(db: Session) -> None:
     assert job_in_db is not None
     assert job_in_db.status == Status.SUCCESS
     # layer id passed at job creation must be preserved
-    assert job_in_db.extra == {"layer_id": layer_id}
+    assert job_in_db.extra["layer_id"] == layer_id
+    # every zone overlaps the raster, so the summary reports full coverage
+    assert job_in_db.extra["zones_total"] == len(vector_layer.features)
+    assert job_in_db.extra["zones_with_data"] == len(vector_layer.features)
     # task must not create a second (orphaned) job for the same run
     jobs = crud.job.get_multi_by_data_product(
         db, data_product_id=data_product.obj.id, job_name="zonal"
@@ -236,3 +264,140 @@ def test_compute_zonal_statistics_with_unsigned_raster_without_nodata(
     assert stats[0]["count"] == 50
     assert stats[0]["min"] == 100
     assert stats[0]["max"] == 100
+
+
+def test_calculate_bulk_zonal_statistics_all_zones_outside_raster(
+    db: Session,
+) -> None:
+    """When no zone overlaps the raster, the job still succeeds but the
+    summary reports zero zones with data and nothing is persisted.
+    """
+    data_product = SampleDataProduct(db, data_type="dsm")
+    outside_fc = FeatureCollection(
+        type="FeatureCollection",
+        features=[
+            outside_polygon_feature(data_product.obj.filepath),
+            outside_polygon_feature(data_product.obj.filepath),
+        ],
+    )
+    vector_layer = create_vector_layer_with_provided_feature_collection(
+        db, feature_collection=outside_fc, project_id=data_product.project.id
+    )
+    layer_id = vector_layer.features[0].properties["layer_id"]
+    fc_dict = jsonable_encoder(vector_layer.__dict__)
+    job = JobManager(
+        data_product_id=data_product.obj.id,
+        job_name="zonal",
+        extra={"layer_id": layer_id},
+        db=db,
+    )
+
+    with patch("app.tasks.toolbox_tasks.get_db", side_effect=lambda: iter([db])):
+        calculate_bulk_zonal_statistics(
+            data_product.obj.filepath, data_product.obj.id, fc_dict, job.job_id
+        )
+
+    job_in_db = crud.job.get(db, id=job.job_id)
+    assert job_in_db is not None
+    assert job_in_db.status == Status.SUCCESS
+    assert job_in_db.extra["layer_id"] == layer_id
+    assert job_in_db.extra["zones_total"] == len(vector_layer.features)
+    assert job_in_db.extra["zones_with_data"] == 0
+    # no empty-zone metadata should be persisted
+    for feature in vector_layer.features:
+        metadata = crud.data_product_metadata.get_by_data_product(
+            db,
+            category="zonal",
+            data_product_id=data_product.obj.id,
+            vector_layer_feature_id=feature.properties["feature_id"],
+        )
+        assert len(metadata) == 0
+
+
+def test_calculate_bulk_zonal_statistics_partial_overlap(db: Session) -> None:
+    """A run where only some zones overlap the raster persists metadata for
+    the overlapping zones only and reports the partial count.
+    """
+    data_product = SampleDataProduct(db, data_type="dsm")
+    inside_feature = get_zonal_feature_collection(single_feature=True).model_dump()
+    mixed_fc = FeatureCollection(
+        type="FeatureCollection",
+        features=[
+            inside_feature,
+            outside_polygon_feature(data_product.obj.filepath),
+        ],
+    )
+    vector_layer = create_vector_layer_with_provided_feature_collection(
+        db, feature_collection=mixed_fc, project_id=data_product.project.id
+    )
+    fc_dict = jsonable_encoder(vector_layer.__dict__)
+    job = JobManager(data_product_id=data_product.obj.id, job_name="zonal", db=db)
+
+    with patch("app.tasks.toolbox_tasks.get_db", side_effect=lambda: iter([db])):
+        calculate_bulk_zonal_statistics(
+            data_product.obj.filepath, data_product.obj.id, fc_dict, job.job_id
+        )
+
+    job_in_db = crud.job.get(db, id=job.job_id)
+    assert job_in_db is not None
+    assert job_in_db.status == Status.SUCCESS
+    assert job_in_db.extra["zones_total"] == 2
+    assert job_in_db.extra["zones_with_data"] == 1
+
+    # metadata persisted for the inside zone, absent for the outside zone
+    inside_metadata = crud.data_product_metadata.get_by_data_product(
+        db,
+        category="zonal",
+        data_product_id=data_product.obj.id,
+        vector_layer_feature_id=vector_layer.features[0].properties["feature_id"],
+    )
+    outside_metadata = crud.data_product_metadata.get_by_data_product(
+        db,
+        category="zonal",
+        data_product_id=data_product.obj.id,
+        vector_layer_feature_id=vector_layer.features[1].properties["feature_id"],
+    )
+    assert len(inside_metadata) == 1
+    assert len(outside_metadata) == 0
+
+
+def test_calculate_bulk_zonal_statistics_removes_stale_empty_metadata(
+    db: Session,
+) -> None:
+    """A zone that no longer overlaps the raster has its previously stored
+    stats removed rather than left behind to poison the download endpoint.
+    """
+    data_product = SampleDataProduct(db, data_type="dsm")
+    outside_fc = FeatureCollection(
+        type="FeatureCollection",
+        features=[outside_polygon_feature(data_product.obj.filepath)],
+    )
+    vector_layer = create_vector_layer_with_provided_feature_collection(
+        db, feature_collection=outside_fc, project_id=data_product.project.id
+    )
+    feature_id = vector_layer.features[0].properties["feature_id"]
+    # pre-seed a stale zonal metadata row for the (now-outside) zone
+    crud.data_product_metadata.create_with_data_product(
+        db,
+        obj_in=schemas.DataProductMetadataCreate(
+            category="zonal",
+            properties={"stats": {"count": 5, "min": 1, "max": 2}},
+            vector_layer_feature_id=feature_id,
+        ),
+        data_product_id=data_product.obj.id,
+    )
+    fc_dict = jsonable_encoder(vector_layer.__dict__)
+    job = JobManager(data_product_id=data_product.obj.id, job_name="zonal", db=db)
+
+    with patch("app.tasks.toolbox_tasks.get_db", side_effect=lambda: iter([db])):
+        calculate_bulk_zonal_statistics(
+            data_product.obj.filepath, data_product.obj.id, fc_dict, job.job_id
+        )
+
+    stale_metadata = crud.data_product_metadata.get_by_data_product(
+        db,
+        category="zonal",
+        data_product_id=data_product.obj.id,
+        vector_layer_feature_id=feature_id,
+    )
+    assert len(stale_metadata) == 0

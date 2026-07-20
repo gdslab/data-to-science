@@ -97,6 +97,16 @@ def _fail_job(job: JobManager, detail: str) -> None:
     job.update(status=Status.FAILED, extra={**existing_extra, "detail": detail[:200]})
 
 
+def _zone_has_data(zstats: Dict[str, Any]) -> bool:
+    """Return True if a zone overlaps valid raster pixels.
+
+    rasterstats returns an integer ``count`` of valid (non-nodata) pixels; a
+    zone that falls outside the raster or covers only no-data pixels has a
+    count of 0 and ``None`` for every other statistic.
+    """
+    return bool(zstats.get("count"))
+
+
 @celery_app.task(name="calculate_bulk_zonal_statistics_task")
 def calculate_bulk_zonal_statistics(
     input_raster: str,
@@ -133,6 +143,19 @@ def calculate_bulk_zonal_statistics(
         # create metadata record for each zone
         for index, zstats in enumerate(all_zonal_stats):
             vector_layer_feature_id = features[index].properties["feature_id"]
+            # a zone with no valid raster data produces only None stats; skip
+            # persisting it so it never poisons the download endpoint, and drop
+            # any stale row from an earlier run of the same layer
+            if not _zone_has_data(zstats):
+                stale_metadata = crud.data_product_metadata.get_by_data_product(
+                    db,
+                    category="zonal",
+                    data_product_id=data_product_id,
+                    vector_layer_feature_id=vector_layer_feature_id,
+                )
+                for stale in stale_metadata:
+                    crud.data_product_metadata.remove(db, id=stale.id)
+                continue
             metadata_in = schemas.DataProductMetadataCreate(
                 category="zonal",
                 properties={"stats": zstats},
@@ -167,8 +190,19 @@ def calculate_bulk_zonal_statistics(
         _fail_job(job, f"Unable to save zonal statistics ({type(e).__name__})")
         return []
 
-    # update job to indicate process finished
-    job.update(status=Status.SUCCESS)
+    # update job to indicate process finished, recording how many zones
+    # actually overlapped the raster so the UI can report the outcome
+    existing_extra = job.job.extra if job.job and job.job.extra else {}
+    job.update(
+        status=Status.SUCCESS,
+        extra={
+            **existing_extra,
+            "zones_total": len(all_zonal_stats),
+            "zones_with_data": sum(
+                1 for zstats in all_zonal_stats if _zone_has_data(zstats)
+            ),
+        },
+    )
 
     return all_zonal_stats
 

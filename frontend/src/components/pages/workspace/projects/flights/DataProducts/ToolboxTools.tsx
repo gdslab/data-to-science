@@ -424,7 +424,12 @@ interface ZonalJob {
   status: 'WAITING' | 'INPROGRESS' | 'SUCCESS' | 'FAILED';
   start_time: string;
   end_time: string | null;
-  extra: { layer_id?: string; detail?: string } | null;
+  extra: {
+    layer_id?: string;
+    detail?: string;
+    zones_total?: number;
+    zones_with_data?: number;
+  } | null;
 }
 
 const isActiveJob = (job: ZonalJob) =>
@@ -448,6 +453,30 @@ const ZonalLayerStatus = ({
     );
   }
 
+  // per-run zone summary (present on jobs run after zone-summary tracking)
+  const zonesTotal = job?.extra?.zones_total;
+  const zonesWithData = job?.extra?.zones_with_data;
+  const summaryKnown =
+    job?.status === 'SUCCESS' &&
+    typeof zonesTotal === 'number' &&
+    typeof zonesWithData === 'number';
+  const noOverlap = summaryKnown && zonesWithData === 0;
+  const partialOverlap =
+    summaryKnown && zonesWithData > 0 && zonesWithData < zonesTotal;
+
+  // no zone overlapped the raster: a retry won't help, so report it as an
+  // informational outcome rather than a failure and skip the download links
+  if (noOverlap) {
+    return (
+      <span
+        className="ml-2 inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700"
+        title="The selected zones fall outside this data product's extent or cover only no-data pixels."
+      >
+        No overlapping raster data
+      </span>
+    );
+  }
+
   // job finished (or predates job tracking); offer downloads for any
   // previously computed results, alongside the latest run's outcome
   return (
@@ -461,10 +490,18 @@ const ZonalLayerStatus = ({
         </span>
       )}
       <DownloadZonalStatistics dataProduct={dataProduct} layerId={layerId} />
-      {job && job.status === 'SUCCESS' && job.end_time && (
-        <span className="ml-2 text-xs font-normal text-gray-400">
-          computed {new Date(job.end_time).toLocaleString()}
+      {partialOverlap ? (
+        <span className="ml-2 text-xs font-normal text-amber-700">
+          {zonesWithData} of {zonesTotal} zones had data
         </span>
+      ) : (
+        job &&
+        job.status === 'SUCCESS' &&
+        job.end_time && (
+          <span className="ml-2 text-xs font-normal text-gray-400">
+            computed {new Date(job.end_time).toLocaleString()}
+          </span>
+        )
       )}
     </span>
   );
