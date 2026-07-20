@@ -1,7 +1,5 @@
-import logging
-from datetime import date, datetime, timedelta, timezone
-from typing import Dict, List, Literal, Optional
-from uuid import UUID
+from datetime import datetime, timedelta, timezone
+from typing import Dict, List, Literal
 
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
@@ -22,8 +20,6 @@ from app.schemas.activity import (
     ActivityTrendPoint,
     EngagementLeaderRow,
 )
-
-logger = logging.getLogger("__name__")
 
 LeaderboardMetric = Literal[
     "projects", "flights", "data_products", "views", "likes", "storage"
@@ -216,7 +212,11 @@ def get_engagement_leaderboard(
     sort_field = _METRIC_TO_FIELD[metric]
     # Tie-break on data_product_count then user_id for a stable ordering.
     rows.sort(
-        key=lambda row: (row[sort_field], row["data_product_count"], str(row["user_id"])),
+        key=lambda row: (
+            row[sort_field],
+            row["data_product_count"],
+            str(row["user_id"]),
+        ),
         reverse=True,
     )
     top_rows = rows[:limit]
@@ -250,7 +250,7 @@ def get_engagement_leaderboard(
 
 def get_activity_trends(db: Session, *, days: int = 90) -> List[ActivityTrendPoint]:
     """Active-user time series from recorded daily snapshots (oldest -> newest)."""
-    cutoff = date.today() - timedelta(days=days)
+    cutoff = datetime.now(timezone.utc).date() - timedelta(days=days)
     snapshots = (
         db.execute(
             select(ActivitySnapshot)
@@ -281,16 +281,15 @@ def get_activity_trends(db: Session, *, days: int = 90) -> List[ActivityTrendPoi
     return points
 
 
-def create_activity_snapshot(
-    db: Session, *, snapshot_date: Optional[date] = None
-) -> ActivitySnapshot:
+def create_activity_snapshot(db: Session) -> ActivitySnapshot:
     """Compute and persist today's activity counts (idempotent per day).
 
     Re-running for a date that already has a row updates it in place, so a manual
-    re-trigger or a retried Celery task never creates duplicates.
+    re-trigger or a retried Celery task never creates duplicates. The counts are
+    always measured as of now, so there is no way to record a past date.
     """
     now = datetime.now(timezone.utc)
-    target_date = snapshot_date or now.date()
+    target_date = now.date()
 
     active_24h = db.execute(
         select(func.count(User.id)).where(

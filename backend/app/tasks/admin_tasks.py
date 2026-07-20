@@ -71,8 +71,7 @@ def snapshot_activity_metrics() -> None:
 
     db = next(get_db())
     try:
-        snapshot = crud.metrics.create_activity_snapshot(db)
-        assert snapshot
+        crud.metrics.create_activity_snapshot(db)
     except Exception:
         logger.exception("Unable to create activity snapshot")
         job.update(status=Status.FAILED)

@@ -11,13 +11,13 @@ from app.api.deps import get_current_user
 from app.core.config import settings
 from app.schemas.data_product import DataProductUpdate
 from app.schemas.user import UserUpdate
+from app.tests.utils.data_product import SampleDataProduct
+from app.tests.utils.data_product_view import create_data_product_view
 from app.tests.utils.extension import (
     create_extension,
     create_team_extension,
     create_user_extension,
 )
-from app.tests.utils.data_product import SampleDataProduct
-from app.tests.utils.data_product_view import create_data_product_view
 from app.tests.utils.team import create_team
 from app.tests.utils.user import create_user, update_regular_user_to_superuser
 
