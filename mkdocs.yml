@@ -60,6 +60,7 @@ nav:
       - Add an API Endpoint: how-to/add-api-endpoint.md
       - Work with Celery Tasks: how-to/celery-tasks.md
       - Generate Vector Format Files: how-to/generate-vector-formats.md
+      - Backfill File Sizes: how-to/backfill-file-sizes.md
   - Reference:
       - reference/index.md
       - API: reference/api.md

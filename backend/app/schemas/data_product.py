@@ -23,6 +23,7 @@ class DataProductBase(BaseModel):
     filepath: Optional[str] = None
     original_filename: Optional[str] = None
     stac_properties: Optional[STACProperties] = None
+    file_size: Optional[int] = None
     is_active: bool = True
     is_initial_processing_completed: bool = False
 

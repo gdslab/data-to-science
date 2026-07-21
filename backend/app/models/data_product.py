@@ -1,8 +1,8 @@
 import uuid
 from datetime import datetime
-from typing import List, TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -39,6 +39,9 @@ class DataProduct(Base):
     crs: Mapped[dict] = mapped_column(JSONB, nullable=True)
     resolution: Mapped[dict] = mapped_column(JSONB, nullable=True)
     s3_url: Mapped[str] = mapped_column(String, nullable=True)
+    # On-disk size in bytes of the data product directory, captured at upload
+    # finalization so per-user data usage can be a fast SQL SUM.
+    file_size: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_initial_processing_completed: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False

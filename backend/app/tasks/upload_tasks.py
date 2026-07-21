@@ -119,6 +119,9 @@ def upload_3dgs(
         ),
     )
 
+    # record on-disk size so per-user data usage stays a fast SQL SUM
+    crud.data_product.set_file_size(db, data_product.id)
+
     # update job to indicate process finished
     job.update(status=Status.SUCCESS)
 
@@ -223,6 +226,9 @@ def upload_3dgs_lcc(
         ),
     )
 
+    # record on-disk size so per-user data usage stays a fast SQL SUM
+    crud.data_product.set_file_size(db, data_product.id)
+
     # update job to indicate process finished
     job.update(status=Status.SUCCESS)
 
@@ -325,6 +331,9 @@ def upload_geotiff(
         db_obj=data_product,
         obj_in=DataProductUpdate(is_initial_processing_completed=True),
     )
+
+    # record on-disk size so per-user data usage stays a fast SQL SUM
+    crud.data_product.set_file_size(db, data_product.id)
 
     # create user style record for data product and user
     crud.user_style.create_with_data_product_and_user(
@@ -724,6 +733,9 @@ def upload_panoramic(
         ),
     )
 
+    # record on-disk size so per-user data usage stays a fast SQL SUM
+    crud.data_product.set_file_size(db, data_product.id)
+
     # update job to indicate process finished
     job.update(status=Status.SUCCESS)
 
@@ -876,6 +888,9 @@ def upload_point_cloud(
         ),
     )
 
+    # record on-disk size so per-user data usage stays a fast SQL SUM
+    crud.data_product.set_file_size(db, data_product.id)
+
     # update job to indicate process finished
     job.update(status=Status.SUCCESS)
 
@@ -944,6 +959,9 @@ def upload_raw_data(
                 filepath=str(destination_filepath), is_initial_processing_completed=True
             ),
         )
+
+        # record on-disk size so per-user data usage stays a fast SQL SUM
+        crud.raw_data.set_file_size(db, raw_data.id)
     except Exception:
         logger.exception("Failed to process uploaded raw data")
         # clean up any files

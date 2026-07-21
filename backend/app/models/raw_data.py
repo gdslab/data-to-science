@@ -1,8 +1,8 @@
 import uuid
 from datetime import datetime
-from typing import List, TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -24,6 +24,9 @@ class RawData(Base):
     filepath: Mapped[str] = mapped_column(String, nullable=False)
     original_filename: Mapped[str] = mapped_column(String, nullable=False)
     s3_url: Mapped[str] = mapped_column(String, nullable=True)
+    # On-disk size in bytes, captured at upload finalization so per-user data
+    # usage can be a fast SQL SUM.
+    file_size: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
     flight_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("flights.id"), nullable=False
     )

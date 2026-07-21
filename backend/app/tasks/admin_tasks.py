@@ -24,6 +24,11 @@ celery_app.conf.beat_schedule = {
         "schedule": crontab(hour=3, minute=0),
         "args": (),
     },
+    "snapshot-activity-metrics": {
+        "task": "snapshot_activity_metrics_task",
+        "schedule": crontab(hour=0, minute=15),
+        "args": (),
+    },
 }
 
 
@@ -55,6 +60,23 @@ def calculate_disk_usage() -> None:
         return None
 
     # Update job status
+    job.update(status=Status.SUCCESS)
+
+
+@celery_app.task(name="snapshot_activity_metrics_task")
+def snapshot_activity_metrics() -> None:
+    """Record today's active-user counts so DAU/WAU/MAU trends can be charted."""
+    job = JobManager(job_name="snapshot-activity-metrics")
+    job.start()
+
+    db = next(get_db())
+    try:
+        crud.metrics.create_activity_snapshot(db)
+    except Exception:
+        logger.exception("Unable to create activity snapshot")
+        job.update(status=Status.FAILED)
+        return None
+
     job.update(status=Status.SUCCESS)
 
 

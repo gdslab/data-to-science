@@ -1,3 +1,4 @@
+from .activity_snapshot import ActivitySnapshot
 from .annotation import Annotation
 from .annotation_attachment import AnnotationAttachment
 from .annotation_tag import AnnotationTag

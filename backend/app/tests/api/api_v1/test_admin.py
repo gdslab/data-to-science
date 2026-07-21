@@ -9,7 +9,10 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
+from app.schemas.data_product import DataProductUpdate
 from app.schemas.user import UserUpdate
+from app.tests.utils.data_product import SampleDataProduct
+from app.tests.utils.data_product_view import create_data_product_view
 from app.tests.utils.extension import (
     create_extension,
     create_team_extension,
@@ -116,6 +119,99 @@ def test_get_project_statistics_with_non_superuser(
     current_user = get_current_user(db, normal_user_access_token)
     response = client.get(f"{settings.API_V1_STR}/admin/project_statistics")
     assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_activity_endpoints_with_non_superuser(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Verify activity endpoints are forbidden for non-superusers."""
+    for path in (
+        "/admin/activity/summary",
+        "/admin/activity/trends",
+        "/admin/activity/leaderboard",
+    ):
+        response = client.get(f"{settings.API_V1_STR}{path}")
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_get_activity_summary_as_superuser(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    owner = create_user(db)
+    SampleDataProduct(db, user=owner)
+
+    current_user = get_current_user(db, normal_user_access_token)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
+
+    response = client.get(f"{settings.API_V1_STR}/admin/activity/summary")
+    assert response.status_code == status.HTTP_200_OK
+    body = response.json()
+    assert {"active_24h", "active_7d", "active_30d", "total_users", "funnel"} <= set(
+        body.keys()
+    )
+    assert set(body["funnel"].keys()) == {
+        "signed_up",
+        "email_confirmed",
+        "approved",
+        "created_project",
+    }
+    assert body["funnel"]["created_project"] >= 1
+
+
+def test_get_activity_leaderboard_as_superuser(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    owner = create_user(db)
+    sample = SampleDataProduct(db, user=owner)
+    create_data_product_view(db, data_product_id=sample.obj.id)
+
+    current_user = get_current_user(db, normal_user_access_token)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
+
+    response = client.get(
+        f"{settings.API_V1_STR}/admin/activity/leaderboard?metric=views&limit=5"
+    )
+    assert response.status_code == status.HTTP_200_OK
+    leaderboard = response.json()
+    assert isinstance(leaderboard, List)
+    owner_rows = [row for row in leaderboard if row["user_id"] == str(owner.id)]
+    assert len(owner_rows) == 1
+    assert owner_rows[0]["data_product_count"] == 1
+    assert owner_rows[0]["total_views"] == 1
+
+
+def test_get_activity_leaderboard_storage_metric_as_superuser(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    owner = create_user(db)
+    sample = SampleDataProduct(db, user=owner)
+    crud.data_product.update(
+        db, db_obj=sample.obj, obj_in=DataProductUpdate(file_size=2048)
+    )
+
+    current_user = get_current_user(db, normal_user_access_token)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
+
+    response = client.get(
+        f"{settings.API_V1_STR}/admin/activity/leaderboard?metric=storage&limit=5"
+    )
+    assert response.status_code == status.HTTP_200_OK
+    leaderboard = response.json()
+    owner_rows = [row for row in leaderboard if row["user_id"] == str(owner.id)]
+    assert len(owner_rows) == 1
+    assert owner_rows[0]["total_storage"] == 2048
+
+
+def test_get_activity_leaderboard_rejects_invalid_metric(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
+
+    response = client.get(
+        f"{settings.API_V1_STR}/admin/activity/leaderboard?metric=bogus"
+    )
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 def test_get_extensions(

@@ -7,7 +7,7 @@ from sqlalchemy import and_, ColumnElement, desc, func, select
 from sqlalchemy.orm import InstrumentedAttribute, Session
 
 from app import crud
-from app.models import DataProduct, FilePermission, Flight, Project, User
+from app.models import DataProduct, FilePermission, Flight, Project, RawData, User
 from app.schemas import SiteStatistics
 
 
@@ -67,6 +67,79 @@ def get_disk_usage(static_dir: str) -> Tuple[int, int, int]:
     used_in_static_dir = get_static_directory_size(static_dir)
 
     return total, used_in_static_dir, free
+
+
+def get_project_data_usage(db: Session) -> list[dict]:
+    """Per-user project counts and data usage, computed via SQL.
+
+    Data usage sums the stored ``file_size`` of data products + raw data (NULL
+    treated as 0) instead of walking the filesystem per project. "Active" totals
+    are restricted to active projects, matching the previous behavior. Only users
+    who own at least one project are included.
+
+    Returns:
+        list[dict]: Rows matching the ``UserProjectStatistics`` schema.
+    """
+    project_rows = db.execute(
+        select(
+            Project.owner_id,
+            User.first_name,
+            User.last_name,
+            User.email,
+            func.count(Project.id),
+            func.count(Project.id).filter(Project.is_active),
+        )
+        .join(User, User.id == Project.owner_id)
+        .group_by(Project.owner_id, User.first_name, User.last_name, User.email)
+    ).all()
+
+    def storage_by_owner(model: Union[Type[DataProduct], Type[RawData]]) -> dict:
+        # Total = every record still on disk (active + deactivated-pending-purge).
+        # Active = fully live data only, matching the engagement leaderboard
+        # (record, flight, and project all active).
+        rows = db.execute(
+            select(
+                Project.owner_id,
+                func.coalesce(func.sum(model.file_size), 0),
+                func.coalesce(
+                    func.sum(model.file_size).filter(
+                        and_(model.is_active, Flight.is_active, Project.is_active)
+                    ),
+                    0,
+                ),
+            )
+            .select_from(model)
+            .join(Flight, Flight.id == model.flight_id)
+            .join(Project, Project.id == Flight.project_id)
+            .group_by(Project.owner_id)
+        ).all()
+        return {row[0]: (row[1], row[2]) for row in rows}
+
+    dp_storage = storage_by_owner(DataProduct)
+    raw_storage = storage_by_owner(RawData)
+
+    result = []
+    for (
+        owner_id,
+        first_name,
+        last_name,
+        email,
+        total_projects,
+        total_active_projects,
+    ) in project_rows:
+        dp_all, dp_active = dp_storage.get(owner_id, (0, 0))
+        raw_all, raw_active = raw_storage.get(owner_id, (0, 0))
+        result.append(
+            {
+                "id": owner_id,
+                "user": f"{first_name} {last_name} <{email}>",
+                "total_projects": total_projects,
+                "total_active_projects": total_active_projects,
+                "total_storage": dp_all + raw_all,
+                "total_active_storage": dp_active + raw_active,
+            }
+        )
+    return result
 
 
 def get_site_statistics(db: Session) -> SiteStatistics:

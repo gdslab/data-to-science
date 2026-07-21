@@ -1,4 +1,4 @@
-"""Tests for zonal statistics toolbox tasks."""
+"""Tests for the toolbox Celery tasks (zonal statistics and tool runs)."""
 
 from pathlib import Path
 from unittest.mock import patch
@@ -15,10 +15,12 @@ from rasterstats import zonal_stats
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
+from app.api.utils import get_data_product_dir
 from app.schemas.job import Status
 from app.tasks.toolbox_tasks import (
     calculate_bulk_zonal_statistics,
     compute_zonal_statistics,
+    run_toolbox,
 )
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.data_product_metadata import get_zonal_feature_collection
@@ -75,9 +77,7 @@ def test_calculate_bulk_zonal_statistics(db: Session) -> None:
         db=db,
     )
 
-    with patch(
-        "app.tasks.toolbox_tasks.get_db", side_effect=lambda: iter([db])
-    ):
+    with patch("app.tasks.toolbox_tasks.get_db", side_effect=lambda: iter([db])):
         stats = calculate_bulk_zonal_statistics(
             data_product.obj.filepath, data_product.obj.id, fc_dict, job.job_id
         )
@@ -118,9 +118,7 @@ def test_calculate_bulk_zonal_statistics_updates_existing_metadata(
 
     for _ in range(2):
         job = JobManager(data_product_id=data_product.obj.id, job_name="zonal", db=db)
-        with patch(
-            "app.tasks.toolbox_tasks.get_db", side_effect=lambda: iter([db])
-        ):
+        with patch("app.tasks.toolbox_tasks.get_db", side_effect=lambda: iter([db])):
             stats = calculate_bulk_zonal_statistics(
                 data_product.obj.filepath, data_product.obj.id, fc_dict, job.job_id
             )
@@ -153,9 +151,7 @@ def test_calculate_bulk_zonal_statistics_failure_marks_job_failed(
         db=db,
     )
 
-    with patch(
-        "app.tasks.toolbox_tasks.get_db", side_effect=lambda: iter([db])
-    ):
+    with patch("app.tasks.toolbox_tasks.get_db", side_effect=lambda: iter([db])):
         stats = calculate_bulk_zonal_statistics(
             "/nonexistent/raster.tif", data_product.obj.id, fc_dict, job.job_id
         )
@@ -401,3 +397,44 @@ def test_calculate_bulk_zonal_statistics_removes_stale_empty_metadata(
         vector_layer_feature_id=feature_id,
     )
     assert len(stale_metadata) == 0
+
+
+def test_run_toolbox_records_file_size_on_output(db: Session) -> None:
+    """Tool outputs must persist file_size for per-user data usage reporting."""
+    source = SampleDataProduct(db, data_type="ortho", multispectral=True)
+    # Output record is created the same way the toolbox endpoint creates it.
+    exg_data_product = crud.data_product.create_with_flight(
+        db,
+        obj_in=schemas.DataProductCreate(
+            data_type="ExG",
+            filepath="null",
+            original_filename=source.obj.original_filename,
+        ),
+        flight_id=source.flight.id,
+    )
+    out_raster = (
+        get_data_product_dir(
+            str(source.project.id), str(source.flight.id), str(exg_data_product.id)
+        )
+        / "exg.tif"
+    )
+
+    # The task builds its own JobManager session, so point that at the test db too.
+    with (
+        patch("app.tasks.toolbox_tasks.get_db", side_effect=lambda: iter([db])),
+        patch("app.utils.job_manager.get_db", side_effect=lambda: iter([db])),
+    ):
+        run_toolbox(
+            "exg",
+            source.obj.filepath,
+            str(out_raster),
+            {"red_band_idx": 3, "green_band_idx": 2, "blue_band_idx": 1},
+            exg_data_product.id,
+            source.user.id,
+        )
+
+    updated = crud.data_product.get(db, id=exg_data_product.id)
+    assert updated is not None
+    assert updated.is_initial_processing_completed
+    assert updated.file_size is not None
+    assert updated.file_size > 0

@@ -2,6 +2,9 @@ import { createBrowserRouter } from 'react-router';
 
 // pages and data loaders
 import Dashboard from './components/pages/admin/Dashboard';
+import DashboardActivity, {
+  loader as dashboardActivityLoader,
+} from './components/pages/admin/DashboardActivity';
 import DashboardCharts, {
   loader as dashboardChartsLoader,
 } from './components/pages/admin/DashboardCharts';
@@ -79,263 +82,264 @@ import { RootPublic, RootProtected } from './components/layout/Root';
 import RootExplore from './components/layout/RootExplore';
 import { RequireAdmin, RequireAuth } from './AuthContext';
 
-export const router = createBrowserRouter(
-  [
-    {
-      // public pages
-      element: <RootPublic />,
-      errorElement: <ErrorPage />,
-      children: [
-        {
-          path: '/',
-          element: <Landing />,
-        },
-        {
-          path: '/auth/login',
-          element: <LoginForm />,
-        },
-        {
-          path: '/auth/register',
-          element: <RegistrationForm />,
-        },
-        {
-          path: '/auth/logout',
-          element: <Logout />,
-        },
-        {
-          path: '/auth/recoverpassword',
-          element: <PasswordRecovery />,
-        },
-        {
-          path: '/auth/resetpassword',
-          element: <PasswordResetForm />,
-        },
-        {
-          path: '/sharemap',
-          element: <RootProtected />,
-          children: [
-            {
-              path: '/sharemap',
-              element: (
-                <RasterSymbologyProvider>
-                  <ShareMap />
-                </RasterSymbologyProvider>
-              ),
-            },
-          ],
-        },
-        {
-          path: '/share3dgs',
-          element: <RootProtected />,
-          children: [
-            { path: '/share3dgs', element: <SharePlayCanvasglTFViewer /> },
-          ],
-        },
-        {
-          path: '/sharepano',
-          element: <RootProtected />,
-          children: [{ path: '/sharepano', element: <SharePanoViewer /> }],
-        },
-        {
-          path: '/sharepotree',
-          element: <RootProtected />,
-          children: [{ path: '/sharepotree', element: <SharePotreeViewer /> }],
-        },
-        {
-          path: '/sharelcc',
-          element: <RootProtected />,
-          children: [{ path: '/sharelcc', element: <ShareLCCViewer /> }],
-        },
-        {
-          path: '/sharecopcmap',
-          element: <RootProtected />,
-          children: [
-            { path: '/sharecopcmap', element: <ShareCopcMapViewer /> },
-          ],
-        },
-        {
-          path: '/explore',
-          element: <RootExplore />,
-          children: [{ path: '/explore', element: <MapLayout /> }],
-        },
-      ],
-    },
-    {
-      // protected pages (require authentication)
-      element: (
-        <RequireAuth>
-          <RootProtected />
-        </RequireAuth>
-      ),
-      errorElement: <ErrorPage />,
-      children: [
-        {
-          path: '/home',
-          element: <MapLayout />,
-        },
-        {
-          path: '/auth/profile',
-          element: <Profile />,
-        },
-        {
-          path: '/teams',
-          element: <Teams />,
-          loader: teamsLoader,
-          children: [
-            {
-              path: '/teams/:teamId',
-              element: <TeamDetail />,
-              loader: teamDetailLoader,
-            },
-            {
-              path: '/teams/create',
-              element: <TeamCreate />,
-              loader: teamCreateLoader,
-            },
-          ],
-        },
-        {
-          path: '/projects',
-          element: <ProjectLayout />,
-          children: [
-            {
-              path: '/projects',
-              element: <Workspace />,
-              loader: workspaceLoader,
-            },
-            {
-              // Nested route group for project-specific routes with shared loader
-              path: '/projects/:projectId',
-              id: 'projectLayout',
-              element: <ProjectOutlet />,
-              loader: projectLayoutLoader,
-              children: [
-                {
-                  path: '/projects/:projectId/access',
-                  element: <ProjectAccess />,
-                },
-                {
-                  path: '/projects/:projectId/modules',
-                  element: <ProjectModules />,
-                },
-                // Conditionally include STAC route based on environment variable
-                ...(import.meta.env.VITE_STAC_ENABLED === 'true'
-                  ? [
-                      {
-                        path: '/projects/:projectId/stac',
-                        element: <ProjectSTACPublishing />,
-                        loader: stacPublishingLoader,
-                      },
-                    ]
-                  : [
-                      {
-                        path: '/projects/:projectId/stac',
-                        element: <STACDisabled />,
-                      },
-                    ]),
-                {
-                  path: '/projects/:projectId/campaigns/create',
-                  element: <FieldCampaignCreate />,
-                },
-                {
-                  path: '/projects/:projectId/campaigns/:campaignId',
-                  element: <FieldCampaignForm />,
-                  loader: fieldCampaignLoader,
-                },
-                {
-                  path: '/projects/:projectId/flights/:flightId/data',
-                  element: <FlightData />,
-                  loader: flightDataLoader,
-                },
-                {
-                  path: '/projects/:projectId/flights/:flightId/edit',
-                  element: <FlightForm editMode={true} />,
-                  loader: flightFormLoader,
-                },
-                {
-                  path: '/projects/:projectId/iforester',
-                  element: <IForesterLayout />,
-                },
-                {
-                  index: true,
-                  element: <ProjectDetail />,
-                },
-              ],
-            },
-          ],
-        },
-        {
-          path: '/indoor_projects',
-          element: <IndoorProjectLayout />,
-          children: [
-            {
-              path: '/indoor_projects',
-              element: <Workspace />,
-              loader: workspaceLoader,
-            },
-            {
-              path: '/indoor_projects/:indoorProjectId',
-              element: <IndoorProjectDetail />,
-              loader: indoorProjectDetailLoader,
-            },
-            {
-              path: '/indoor_projects/:indoorProjectId/access',
-              element: <IndoorProjectAccess />,
-            },
-            {
-              path: '/indoor_projects/:indoorProjectId/uploaded/:indoorProjectDataId/plants/:indoorProjectPlantId',
-              element: <IndoorProjectPlantDetail />,
-              loader: indoorProjectPlantDetailLoader,
-            },
-          ],
-        },
-      ],
-    },
-    {
-      // admin pages
-      element: (
-        <RequireAdmin>
-          <RootProtected />
-        </RequireAdmin>
-      ),
-      errorElement: <ErrorPage />,
-      children: [
-        {
-          path: '/admin/dashboard',
-          element: <Dashboard />,
-          children: [
-            {
-              path: '/admin/dashboard',
-              element: <DashboardSiteStatistics />,
-              loader: dashboardSiteStatisticsLoader,
-            },
-            {
-              path: '/admin/dashboard/extensions',
-              element: <DashboardExtensions />,
-              loader: dashboardExtensionsLoader,
-            },
-            {
-              path: '/admin/dashboard/map',
-              element: <DashboardMap />,
-            },
-            {
-              path: '/admin/dashboard/storage',
-              element: <DashboardProjectStorage />,
-              loader: dashboardProjectStorageLoader,
-            },
-            {
-              path: '/admin/dashboard/users',
-              element: <DashboardUsers />,
-              loader: dashboardUsersLoader,
-            },
-            {
-              path: '/admin/dashboard/charts',
-              element: <DashboardCharts />,
-              loader: dashboardChartsLoader,
-            },
-          ],
-        },
-      ],
-    },
-  ]
-);
+export const router = createBrowserRouter([
+  {
+    // public pages
+    element: <RootPublic />,
+    errorElement: <ErrorPage />,
+    children: [
+      {
+        path: '/',
+        element: <Landing />,
+      },
+      {
+        path: '/auth/login',
+        element: <LoginForm />,
+      },
+      {
+        path: '/auth/register',
+        element: <RegistrationForm />,
+      },
+      {
+        path: '/auth/logout',
+        element: <Logout />,
+      },
+      {
+        path: '/auth/recoverpassword',
+        element: <PasswordRecovery />,
+      },
+      {
+        path: '/auth/resetpassword',
+        element: <PasswordResetForm />,
+      },
+      {
+        path: '/sharemap',
+        element: <RootProtected />,
+        children: [
+          {
+            path: '/sharemap',
+            element: (
+              <RasterSymbologyProvider>
+                <ShareMap />
+              </RasterSymbologyProvider>
+            ),
+          },
+        ],
+      },
+      {
+        path: '/share3dgs',
+        element: <RootProtected />,
+        children: [
+          { path: '/share3dgs', element: <SharePlayCanvasglTFViewer /> },
+        ],
+      },
+      {
+        path: '/sharepano',
+        element: <RootProtected />,
+        children: [{ path: '/sharepano', element: <SharePanoViewer /> }],
+      },
+      {
+        path: '/sharepotree',
+        element: <RootProtected />,
+        children: [{ path: '/sharepotree', element: <SharePotreeViewer /> }],
+      },
+      {
+        path: '/sharelcc',
+        element: <RootProtected />,
+        children: [{ path: '/sharelcc', element: <ShareLCCViewer /> }],
+      },
+      {
+        path: '/sharecopcmap',
+        element: <RootProtected />,
+        children: [{ path: '/sharecopcmap', element: <ShareCopcMapViewer /> }],
+      },
+      {
+        path: '/explore',
+        element: <RootExplore />,
+        children: [{ path: '/explore', element: <MapLayout /> }],
+      },
+    ],
+  },
+  {
+    // protected pages (require authentication)
+    element: (
+      <RequireAuth>
+        <RootProtected />
+      </RequireAuth>
+    ),
+    errorElement: <ErrorPage />,
+    children: [
+      {
+        path: '/home',
+        element: <MapLayout />,
+      },
+      {
+        path: '/auth/profile',
+        element: <Profile />,
+      },
+      {
+        path: '/teams',
+        element: <Teams />,
+        loader: teamsLoader,
+        children: [
+          {
+            path: '/teams/:teamId',
+            element: <TeamDetail />,
+            loader: teamDetailLoader,
+          },
+          {
+            path: '/teams/create',
+            element: <TeamCreate />,
+            loader: teamCreateLoader,
+          },
+        ],
+      },
+      {
+        path: '/projects',
+        element: <ProjectLayout />,
+        children: [
+          {
+            path: '/projects',
+            element: <Workspace />,
+            loader: workspaceLoader,
+          },
+          {
+            // Nested route group for project-specific routes with shared loader
+            path: '/projects/:projectId',
+            id: 'projectLayout',
+            element: <ProjectOutlet />,
+            loader: projectLayoutLoader,
+            children: [
+              {
+                path: '/projects/:projectId/access',
+                element: <ProjectAccess />,
+              },
+              {
+                path: '/projects/:projectId/modules',
+                element: <ProjectModules />,
+              },
+              // Conditionally include STAC route based on environment variable
+              ...(import.meta.env.VITE_STAC_ENABLED === 'true'
+                ? [
+                    {
+                      path: '/projects/:projectId/stac',
+                      element: <ProjectSTACPublishing />,
+                      loader: stacPublishingLoader,
+                    },
+                  ]
+                : [
+                    {
+                      path: '/projects/:projectId/stac',
+                      element: <STACDisabled />,
+                    },
+                  ]),
+              {
+                path: '/projects/:projectId/campaigns/create',
+                element: <FieldCampaignCreate />,
+              },
+              {
+                path: '/projects/:projectId/campaigns/:campaignId',
+                element: <FieldCampaignForm />,
+                loader: fieldCampaignLoader,
+              },
+              {
+                path: '/projects/:projectId/flights/:flightId/data',
+                element: <FlightData />,
+                loader: flightDataLoader,
+              },
+              {
+                path: '/projects/:projectId/flights/:flightId/edit',
+                element: <FlightForm editMode={true} />,
+                loader: flightFormLoader,
+              },
+              {
+                path: '/projects/:projectId/iforester',
+                element: <IForesterLayout />,
+              },
+              {
+                index: true,
+                element: <ProjectDetail />,
+              },
+            ],
+          },
+        ],
+      },
+      {
+        path: '/indoor_projects',
+        element: <IndoorProjectLayout />,
+        children: [
+          {
+            path: '/indoor_projects',
+            element: <Workspace />,
+            loader: workspaceLoader,
+          },
+          {
+            path: '/indoor_projects/:indoorProjectId',
+            element: <IndoorProjectDetail />,
+            loader: indoorProjectDetailLoader,
+          },
+          {
+            path: '/indoor_projects/:indoorProjectId/access',
+            element: <IndoorProjectAccess />,
+          },
+          {
+            path: '/indoor_projects/:indoorProjectId/uploaded/:indoorProjectDataId/plants/:indoorProjectPlantId',
+            element: <IndoorProjectPlantDetail />,
+            loader: indoorProjectPlantDetailLoader,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    // admin pages
+    element: (
+      <RequireAdmin>
+        <RootProtected />
+      </RequireAdmin>
+    ),
+    errorElement: <ErrorPage />,
+    children: [
+      {
+        path: '/admin/dashboard',
+        element: <Dashboard />,
+        children: [
+          {
+            path: '/admin/dashboard',
+            element: <DashboardSiteStatistics />,
+            loader: dashboardSiteStatisticsLoader,
+          },
+          {
+            path: '/admin/dashboard/extensions',
+            element: <DashboardExtensions />,
+            loader: dashboardExtensionsLoader,
+          },
+          {
+            path: '/admin/dashboard/map',
+            element: <DashboardMap />,
+          },
+          {
+            path: '/admin/dashboard/storage',
+            element: <DashboardProjectStorage />,
+            loader: dashboardProjectStorageLoader,
+          },
+          {
+            path: '/admin/dashboard/users',
+            element: <DashboardUsers />,
+            loader: dashboardUsersLoader,
+          },
+          {
+            path: '/admin/dashboard/charts',
+            element: <DashboardCharts />,
+            loader: dashboardChartsLoader,
+          },
+          {
+            path: '/admin/dashboard/activity',
+            element: <DashboardActivity />,
+            loader: dashboardActivityLoader,
+          },
+        ],
+      },
+    ],
+  },
+]);

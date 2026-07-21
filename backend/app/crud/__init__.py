@@ -17,6 +17,7 @@ from .crud_indoor_project import indoor_project
 from .crud_indoor_project_data import indoor_project_data
 from .crud_job import job
 from .crud_location import location
+from . import crud_metrics as metrics
 from .crud_project import project
 from .crud_project_like import project_like
 from .crud_project_member import project_member
