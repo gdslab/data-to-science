@@ -213,7 +213,7 @@ def test_get_activity_leaderboard_rejects_invalid_metric(
     response = client.get(
         f"{settings.API_V1_STR}/admin/activity/leaderboard?metric=bogus"
     )
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_get_extensions(
