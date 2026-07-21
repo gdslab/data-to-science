@@ -1,13 +1,10 @@
-import { createBrowserRouter } from 'react-router';
+import { createBrowserRouter, Navigate } from 'react-router';
 
 // pages and data loaders
 import Dashboard from './components/pages/admin/Dashboard';
 import DashboardActivity, {
   loader as dashboardActivityLoader,
 } from './components/pages/admin/DashboardActivity';
-import DashboardCharts, {
-  loader as dashboardChartsLoader,
-} from './components/pages/admin/DashboardCharts';
 import DashboardExtensions, {
   loader as dashboardExtensionsLoader,
 } from './components/pages/admin/DashboardExtensions';
@@ -329,9 +326,9 @@ export const router = createBrowserRouter([
             loader: dashboardUsersLoader,
           },
           {
+            // signup charts now live on the User Activity page
             path: '/admin/dashboard/charts',
-            element: <DashboardCharts />,
-            loader: dashboardChartsLoader,
+            element: <Navigate to="/admin/dashboard/activity" replace />,
           },
           {
             path: '/admin/dashboard/activity',

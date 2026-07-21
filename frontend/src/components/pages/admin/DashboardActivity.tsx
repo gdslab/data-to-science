@@ -9,9 +9,11 @@ import {
   EngagementLeaderRow,
   LeaderboardMetric,
 } from './DashboardTypes';
+import SignupCharts from './SignupCharts';
 import StatCard from './StatCard';
 import Modal from '../../Modal';
 import Pagination from '../../Pagination';
+import { User } from '../../../AuthContext';
 
 import api from '../../../api';
 
@@ -42,7 +44,7 @@ function bytesToGB(bytes: number): string {
   return (bytes / 1024 ** 3).toFixed(2);
 }
 
-type InfoKey = 'active' | 'trend' | 'funnel' | 'leaderboard';
+type InfoKey = 'active' | 'trend' | 'funnel' | 'signups' | 'leaderboard';
 
 // Per-section explanations surfaced through the info icon next to each heading.
 const SECTION_INFO: Record<InfoKey, { title: string; body: React.ReactNode }> =
@@ -93,6 +95,23 @@ const SECTION_INFO: Record<InfoKey, { title: string; body: React.ReactNode }> =
           <p>
             Each stage is a subset of the one before it, so the drop-off between
             bars highlights where users stall.
+          </p>
+        </>
+      ),
+    },
+    signups: {
+      title: 'Signups',
+      body: (
+        <>
+          <p>
+            The calendar shows how many accounts were created on each day, and
+            the growth chart shows the cumulative number of accounts over each
+            year.
+          </p>
+          <p>
+            Both charts count every registered account by its creation date,
+            regardless of whether the user later confirmed their email or was
+            approved.
           </p>
         </>
       ),
@@ -186,21 +205,24 @@ type ActivityLoaderData = {
   summary: ActivitySummary;
   trends: ActivityTrendPoint[];
   leaderboard: EngagementLeaderRow[];
+  users: User[];
 };
 
 export async function loader(): Promise<ActivityLoaderData> {
-  const [summaryRes, trendsRes, leaderboardRes] = await Promise.all([
+  const [summaryRes, trendsRes, leaderboardRes, usersRes] = await Promise.all([
     api.get('/admin/activity/summary'),
     api.get('/admin/activity/trends?days=90'),
     api.get(
       `/admin/activity/leaderboard?metric=data_products&limit=${LEADERBOARD_LIMIT}`,
     ),
+    api.get('/admin/users'),
   ]);
 
   return {
     summary: summaryRes.data,
     trends: trendsRes.data,
     leaderboard: leaderboardRes.data,
+    users: usersRes.data,
   };
 }
 
@@ -470,6 +492,7 @@ export default function DashboardActivity() {
     summary,
     trends,
     leaderboard: initialLeaderboard,
+    users,
   } = useLoaderData() as ActivityLoaderData;
 
   const [metric, setMetric] = useState<LeaderboardMetric>('data_products');
@@ -539,6 +562,11 @@ export default function DashboardActivity() {
         <div>
           <SectionHeading infoKey="funnel" onInfo={setActiveInfo} />
           <ActivationFunnel summary={summary} />
+        </div>
+
+        <div>
+          <SectionHeading infoKey="signups" onInfo={setActiveInfo} />
+          <SignupCharts users={users} />
         </div>
 
         <div>
