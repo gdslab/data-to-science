@@ -242,7 +242,7 @@ export async function loader(): Promise<ActivityLoaderData> {
 
 function ActiveUserCards({ summary }: { summary: ActivitySummary }) {
   return (
-    <div className="flex flex-row flex-wrap gap-4">
+    <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <StatCard
         title="Active (24h)"
         value={summary.active_24h}
@@ -259,7 +259,7 @@ function ActiveUserCards({ summary }: { summary: ActivitySummary }) {
         value={summary.total_users}
         subtitle="Approved & confirmed"
       />
-    </div>
+    </dl>
   );
 }
 
@@ -422,8 +422,12 @@ function EngagementLeaderboard({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm font-medium text-gray-600">Rank by:</span>
+      {/* Chips scroll sideways as a single row on phones rather than wrapping
+          into a stack; they wrap normally once there is room. */}
+      <div className="flex items-center gap-2 overflow-x-auto sm:flex-wrap sm:overflow-x-visible">
+        <span className="shrink-0 text-sm font-medium text-gray-600">
+          Rank by:
+        </span>
         {METRIC_OPTIONS.map((option) => (
           <button
             key={option.value}
@@ -431,8 +435,8 @@ function EngagementLeaderboard({
             onClick={() => onMetricChange(option.value)}
             className={
               option.value === metric
-                ? 'rounded-sm bg-blue-600 px-3 py-1 text-sm font-medium text-white'
-                : 'rounded-sm bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-200'
+                ? 'shrink-0 whitespace-nowrap rounded-sm bg-blue-600 px-3 py-1 text-sm font-medium text-white'
+                : 'shrink-0 whitespace-nowrap rounded-sm bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-200'
             }
           >
             {option.label}
@@ -448,7 +452,7 @@ function EngagementLeaderboard({
         <section className="w-full bg-white">No activity yet</section>
       ) : (
         <>
-          <table className="w-full border-separate border-spacing-y-1 border-spacing-x-1">
+          <table className="hidden w-full border-separate border-spacing-y-1 border-spacing-x-1 md:table">
             <thead>
               <tr className="h-12 text-slate-700 bg-slate-300">
                 <th className="p-2 text-left">User</th>
@@ -491,6 +495,54 @@ function EngagementLeaderboard({
               ))}
             </tbody>
           </table>
+
+          {/* The table's seven columns cannot fit a phone without horizontal
+              scrolling, so the same rows render as cards below `md`. */}
+          <div className="flex flex-col gap-3 md:hidden">
+            {pageRows.map((row, idx) => (
+              <div key={row.user_id} className="rounded-sm bg-slate-100 p-3">
+                <div className="flex items-baseline gap-2">
+                  <span className="shrink-0 text-sm font-semibold text-gray-500">
+                    #{currentPage * MAX_ITEMS + idx + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="truncate font-medium">{row.name}</div>
+                    <div className="truncate text-sm text-gray-500">
+                      {row.email}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-1">
+                  {columns.map((column) => (
+                    <div
+                      key={column.field}
+                      className={
+                        column.field === activeField
+                          ? 'rounded-sm bg-blue-50 p-2 text-blue-700'
+                          : 'rounded-sm bg-slate-50 p-2'
+                      }
+                    >
+                      <div className="text-xs text-gray-500">
+                        {column.label}
+                      </div>
+                      <div
+                        className={
+                          column.field === activeField
+                            ? 'font-semibold'
+                            : undefined
+                        }
+                      >
+                        {column.format
+                          ? column.format(row[column.field] as number)
+                          : row[column.field]}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
           <Pagination
             currentPage={currentPage}
             updateCurrentPage={updateCurrentPage}
