@@ -14,7 +14,9 @@ export default function SidePanel() {
   const currentPage = pathname.split('/').slice(-1)[0];
 
   return (
-    <div className="flex h-full w-12 md:w-16 flex-col justify-between border-e z-1000">
+    // `relative` is required for z-1000 to apply: the hover tooltips overflow
+    // into the content column and would otherwise paint under the charts.
+    <div className="relative flex h-full w-12 md:w-16 flex-col justify-between border-e z-1000">
       <div>
         <div className="border-t border-gray-100">
           <div className="px-1 md:px-2">

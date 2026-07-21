@@ -112,14 +112,20 @@ const SECTION_INFO: Record<InfoKey, { title: string; body: React.ReactNode }> =
       body: (
         <>
           <p>
-            The calendar shows how many accounts were created on each day, and
-            the growth chart shows the cumulative number of accounts over each
-            year.
+            The calendar shows how many accounts were created on each day of the
+            selected year — use the year dropdown to look back at earlier years.
           </p>
           <p>
-            Both charts count every registered account by its creation date,
-            regardless of whether the user later confirmed their email or was
-            approved.
+            <strong>Total accounts</strong> is the running total of every account
+            ever created, month by month, so the slope shows whether growth is
+            speeding up or flattening.{' '}
+            <strong>New signups per month</strong> shows the same data
+            unaccumulated, making individual busy and quiet months obvious.
+          </p>
+          <p>
+            All three charts count every registered account by its creation
+            date, regardless of whether the user later confirmed their email or
+            was approved.
           </p>
         </>
       ),
