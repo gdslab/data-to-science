@@ -6,7 +6,6 @@ import {
   HomeIcon,
   MapIcon,
   PuzzlePieceIcon,
-  PresentationChartBarIcon,
   UsersIcon,
 } from '@heroicons/react/24/outline';
 
@@ -15,7 +14,9 @@ export default function SidePanel() {
   const currentPage = pathname.split('/').slice(-1)[0];
 
   return (
-    <div className="flex h-full w-12 md:w-16 flex-col justify-between border-e z-1000">
+    // `relative` is required for z-1000 to apply: the hover tooltips overflow
+    // into the content column and would otherwise paint under the charts.
+    <div className="relative flex h-full w-12 md:w-16 flex-col justify-between border-e z-1000">
       <div>
         <div className="border-t border-gray-100">
           <div className="px-1 md:px-2">
@@ -122,29 +123,6 @@ export default function SidePanel() {
 
                   <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded-sm bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
                     Project Storage
-                  </span>
-                </Link>
-              </li>
-
-              <li>
-                <Link
-                  to="/admin/dashboard/charts"
-                  className={clsx(
-                    'group relative flex justify-center rounded-sm px-1 py-1.5 md:px-2',
-                    {
-                      'bg-blue-50 text-blue-700': currentPage === 'charts',
-                      'text-gray-500 hover:bg-gray-50 hover:text-gray-700':
-                        currentPage !== 'charts',
-                    },
-                  )}
-                >
-                  <PresentationChartBarIcon
-                    className="h-5 w-5 opacity-75"
-                    strokeWidth={2}
-                  />
-
-                  <span className="invisible absolute start-full top-1/2 ms-4 -translate-y-1/2 rounded-sm bg-gray-900 px-2 py-1.5 text-xs font-medium text-white group-hover:visible">
-                    Charts
                   </span>
                 </Link>
               </li>

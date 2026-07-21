@@ -9,9 +9,11 @@ import {
   EngagementLeaderRow,
   LeaderboardMetric,
 } from './DashboardTypes';
+import SignupCharts from './SignupCharts';
 import StatCard from './StatCard';
 import Modal from '../../Modal';
 import Pagination from '../../Pagination';
+import { User } from '../../../AuthContext';
 
 import api from '../../../api';
 
@@ -42,7 +44,7 @@ function bytesToGB(bytes: number): string {
   return (bytes / 1024 ** 3).toFixed(2);
 }
 
-type InfoKey = 'active' | 'trend' | 'funnel' | 'leaderboard';
+type InfoKey = 'active' | 'trend' | 'funnel' | 'signups' | 'leaderboard';
 
 // Per-section explanations surfaced through the info icon next to each heading.
 const SECTION_INFO: Record<InfoKey, { title: string; body: React.ReactNode }> =
@@ -88,11 +90,42 @@ const SECTION_INFO: Record<InfoKey, { title: string; body: React.ReactNode }> =
         <>
           <p>
             Shows how far new users progress: signed up → confirmed email →
-            approved by an admin → created their first project.
+            approved by an admin → joined an active project → created a project
+            of their own.
+          </p>
+          <p>
+            <strong>On a project</strong> counts users who reached an active
+            project by any route — creating it, being added directly, or being
+            added through a team. <strong>Created a project</strong> is the
+            subset who own at least one active project, so the gap between the
+            two bars is the share of users who only ever join.
           </p>
           <p>
             Each stage is a subset of the one before it, so the drop-off between
             bars highlights where users stall.
+          </p>
+        </>
+      ),
+    },
+    signups: {
+      title: 'Signups',
+      body: (
+        <>
+          <p>
+            The calendar shows how many accounts were created on each day of the
+            selected year — use the year dropdown to look back at earlier years.
+          </p>
+          <p>
+            <strong>Total accounts</strong> is the running total of every account
+            ever created, month by month, so the slope shows whether growth is
+            speeding up or flattening.{' '}
+            <strong>New signups per month</strong> shows the same data
+            unaccumulated, making individual busy and quiet months obvious.
+          </p>
+          <p>
+            All three charts count every registered account by its creation
+            date, regardless of whether the user later confirmed their email or
+            was approved.
           </p>
         </>
       ),
@@ -186,27 +219,30 @@ type ActivityLoaderData = {
   summary: ActivitySummary;
   trends: ActivityTrendPoint[];
   leaderboard: EngagementLeaderRow[];
+  users: User[];
 };
 
 export async function loader(): Promise<ActivityLoaderData> {
-  const [summaryRes, trendsRes, leaderboardRes] = await Promise.all([
+  const [summaryRes, trendsRes, leaderboardRes, usersRes] = await Promise.all([
     api.get('/admin/activity/summary'),
     api.get('/admin/activity/trends?days=90'),
     api.get(
       `/admin/activity/leaderboard?metric=data_products&limit=${LEADERBOARD_LIMIT}`,
     ),
+    api.get('/admin/users'),
   ]);
 
   return {
     summary: summaryRes.data,
     trends: trendsRes.data,
     leaderboard: leaderboardRes.data,
+    users: usersRes.data,
   };
 }
 
 function ActiveUserCards({ summary }: { summary: ActivitySummary }) {
   return (
-    <div className="flex flex-row flex-wrap gap-4">
+    <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <StatCard
         title="Active (24h)"
         value={summary.active_24h}
@@ -223,7 +259,7 @@ function ActiveUserCards({ summary }: { summary: ActivitySummary }) {
         value={summary.total_users}
         subtitle="Approved & confirmed"
       />
-    </div>
+    </dl>
   );
 }
 
@@ -233,6 +269,7 @@ function ActivationFunnel({ summary }: { summary: ActivitySummary }) {
     { label: 'Signed up', value: funnel.signed_up },
     { label: 'Email confirmed', value: funnel.email_confirmed },
     { label: 'Approved', value: funnel.approved },
+    { label: 'On a project', value: funnel.joined_project },
     { label: 'Created a project', value: funnel.created_project },
   ];
   const maxValue = funnel.signed_up || 1;
@@ -385,8 +422,12 @@ function EngagementLeaderboard({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm font-medium text-gray-600">Rank by:</span>
+      {/* Chips scroll sideways as a single row on phones rather than wrapping
+          into a stack; they wrap normally once there is room. */}
+      <div className="flex items-center gap-2 overflow-x-auto sm:flex-wrap sm:overflow-x-visible">
+        <span className="shrink-0 text-sm font-medium text-gray-600">
+          Rank by:
+        </span>
         {METRIC_OPTIONS.map((option) => (
           <button
             key={option.value}
@@ -394,8 +435,8 @@ function EngagementLeaderboard({
             onClick={() => onMetricChange(option.value)}
             className={
               option.value === metric
-                ? 'rounded-sm bg-blue-600 px-3 py-1 text-sm font-medium text-white'
-                : 'rounded-sm bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-200'
+                ? 'shrink-0 whitespace-nowrap rounded-sm bg-blue-600 px-3 py-1 text-sm font-medium text-white'
+                : 'shrink-0 whitespace-nowrap rounded-sm bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-200'
             }
           >
             {option.label}
@@ -411,7 +452,7 @@ function EngagementLeaderboard({
         <section className="w-full bg-white">No activity yet</section>
       ) : (
         <>
-          <table className="w-full border-separate border-spacing-y-1 border-spacing-x-1">
+          <table className="hidden w-full border-separate border-spacing-y-1 border-spacing-x-1 md:table">
             <thead>
               <tr className="h-12 text-slate-700 bg-slate-300">
                 <th className="p-2 text-left">User</th>
@@ -454,6 +495,54 @@ function EngagementLeaderboard({
               ))}
             </tbody>
           </table>
+
+          {/* The table's seven columns cannot fit a phone without horizontal
+              scrolling, so the same rows render as cards below `md`. */}
+          <div className="flex flex-col gap-3 md:hidden">
+            {pageRows.map((row, idx) => (
+              <div key={row.user_id} className="rounded-sm bg-slate-100 p-3">
+                <div className="flex items-baseline gap-2">
+                  <span className="shrink-0 text-sm font-semibold text-gray-500">
+                    #{currentPage * MAX_ITEMS + idx + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="truncate font-medium">{row.name}</div>
+                    <div className="truncate text-sm text-gray-500">
+                      {row.email}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-1">
+                  {columns.map((column) => (
+                    <div
+                      key={column.field}
+                      className={
+                        column.field === activeField
+                          ? 'rounded-sm bg-blue-50 p-2 text-blue-700'
+                          : 'rounded-sm bg-slate-50 p-2'
+                      }
+                    >
+                      <div className="text-xs text-gray-500">
+                        {column.label}
+                      </div>
+                      <div
+                        className={
+                          column.field === activeField
+                            ? 'font-semibold'
+                            : undefined
+                        }
+                      >
+                        {column.format
+                          ? column.format(row[column.field] as number)
+                          : row[column.field]}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
           <Pagination
             currentPage={currentPage}
             updateCurrentPage={updateCurrentPage}
@@ -470,6 +559,7 @@ export default function DashboardActivity() {
     summary,
     trends,
     leaderboard: initialLeaderboard,
+    users,
   } = useLoaderData() as ActivityLoaderData;
 
   const [metric, setMetric] = useState<LeaderboardMetric>('data_products');
@@ -539,6 +629,11 @@ export default function DashboardActivity() {
         <div>
           <SectionHeading infoKey="funnel" onInfo={setActiveInfo} />
           <ActivationFunnel summary={summary} />
+        </div>
+
+        <div>
+          <SectionHeading infoKey="signups" onInfo={setActiveInfo} />
+          <SignupCharts users={users} />
         </div>
 
         <div>

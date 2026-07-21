@@ -37,6 +37,7 @@ export type ActivationFunnel = {
   signed_up: number;
   email_confirmed: number;
   approved: number;
+  joined_project: number;
   created_project: number;
 };
 
