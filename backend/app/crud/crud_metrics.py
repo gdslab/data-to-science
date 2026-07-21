@@ -11,9 +11,11 @@ from app.models import (
     DataProductView,
     Flight,
     Project,
+    ProjectMember,
     RawData,
     User,
 )
+from app.models.enums.project_type import ProjectType
 from app.schemas.activity import (
     ActivationFunnel,
     ActivitySummary,
@@ -42,7 +44,9 @@ def get_activity_summary(db: Session) -> ActivitySummary:
     Active counts are derived from ``users.last_activity_at`` (maintained by the
     request middleware). The funnel stages are nested subsets so the bars are
     strictly decreasing: every email-confirmed user signed up, every approved
-    user is confirmed, and every "created project" user is approved + confirmed.
+    user is confirmed, every user on a project is approved + confirmed, and
+    every project creator is also a project member (owners receive a member row
+    when the project is created).
     """
     now = datetime.now(timezone.utc)
 
@@ -69,10 +73,24 @@ def get_activity_summary(db: Session) -> ActivitySummary:
         .where(and_(User.is_email_confirmed, User.is_approved))
         .scalar_subquery()
         .label("approved"),
+        select(func.count(func.distinct(ProjectMember.member_id)))
+        .select_from(ProjectMember)
+        .join(User, User.id == ProjectMember.member_id)
+        .join(Project, Project.id == ProjectMember.project_uuid)
+        .where(
+            and_(
+                ProjectMember.project_type == ProjectType.PROJECT,
+                Project.is_active,
+                User.is_email_confirmed,
+                User.is_approved,
+            )
+        )
+        .scalar_subquery()
+        .label("joined_project"),
         select(func.count(func.distinct(Project.owner_id)))
         .select_from(Project)
         .join(User, User.id == Project.owner_id)
-        .where(and_(User.is_email_confirmed, User.is_approved))
+        .where(and_(Project.is_active, User.is_email_confirmed, User.is_approved))
         .scalar_subquery()
         .label("created_project"),
     )
@@ -88,6 +106,7 @@ def get_activity_summary(db: Session) -> ActivitySummary:
             signed_up=result.signed_up,
             email_confirmed=result.email_confirmed,
             approved=result.approved,
+            joined_project=result.joined_project,
             created_project=result.created_project,
         ),
     )

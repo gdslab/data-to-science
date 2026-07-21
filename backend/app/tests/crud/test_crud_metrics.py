@@ -5,11 +5,13 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.schemas.data_product import DataProductUpdate
 from app.schemas.raw_data import RawDataUpdate
+from app.schemas.role import Role
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.data_product_like import create_data_product_like
 from app.tests.utils.data_product_view import create_data_product_view
 from app.tests.utils.flight import create_flight
 from app.tests.utils.project import create_project
+from app.tests.utils.project_member import create_project_member
 from app.tests.utils.raw_data import SampleRawData
 from app.tests.utils.user import create_user
 
@@ -35,10 +37,40 @@ def test_get_activity_summary_active_counts_and_monotonic_funnel(db: Session) ->
         funnel.signed_up
         >= funnel.email_confirmed
         >= funnel.approved
+        >= funnel.joined_project
         >= funnel.created_project
     )
     # Headline active-user total matches the approved + confirmed funnel stage.
     assert summary.total_users == funnel.approved
+
+
+def test_get_activity_summary_counts_project_members_as_joined(db: Session) -> None:
+    """A user added to someone else's project advances only the joined stage."""
+    owner = create_user(db)
+    project = create_project(db, owner_id=owner.id)
+    member = create_user(db)
+
+    before = crud.metrics.get_activity_summary(db).funnel
+    create_project_member(
+        db, member_id=member.id, project_uuid=project.id, role=Role.VIEWER
+    )
+    after = crud.metrics.get_activity_summary(db).funnel
+
+    assert after.joined_project == before.joined_project + 1
+    assert after.created_project == before.created_project
+
+
+def test_get_activity_summary_ignores_deactivated_projects(db: Session) -> None:
+    """Deactivating a project removes its owner from both project stages."""
+    owner = create_user(db)
+    project = create_project(db, owner_id=owner.id)
+
+    before = crud.metrics.get_activity_summary(db).funnel
+    crud.project.deactivate(db, project_id=project.id, user_id=owner.id)
+    after = crud.metrics.get_activity_summary(db).funnel
+
+    assert after.created_project == before.created_project - 1
+    assert after.joined_project == before.joined_project - 1
 
 
 def test_get_engagement_leaderboard_attributes_to_creator(db: Session) -> None:

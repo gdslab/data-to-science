@@ -153,9 +153,11 @@ def test_get_activity_summary_as_superuser(
         "signed_up",
         "email_confirmed",
         "approved",
+        "joined_project",
         "created_project",
     }
     assert body["funnel"]["created_project"] >= 1
+    assert body["funnel"]["joined_project"] >= body["funnel"]["created_project"]
 
 
 def test_get_activity_leaderboard_as_superuser(

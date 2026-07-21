@@ -4,11 +4,18 @@ from pydantic import BaseModel, UUID4
 
 
 class ActivationFunnel(BaseModel):
-    """Monotonic funnel from registration to first project."""
+    """Monotonic funnel from registration to first project.
+
+    ``joined_project`` counts users on at least one active project by any route
+    (created it, added directly, or added through a team). Project owners are
+    given a member row when the project is created, so ``created_project`` is a
+    strict subset of ``joined_project``.
+    """
 
     signed_up: int
     email_confirmed: int
     approved: int
+    joined_project: int
     created_project: int
 
 

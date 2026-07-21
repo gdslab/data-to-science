@@ -90,7 +90,15 @@ const SECTION_INFO: Record<InfoKey, { title: string; body: React.ReactNode }> =
         <>
           <p>
             Shows how far new users progress: signed up → confirmed email →
-            approved by an admin → created their first project.
+            approved by an admin → joined an active project → created a project
+            of their own.
+          </p>
+          <p>
+            <strong>On a project</strong> counts users who reached an active
+            project by any route — creating it, being added directly, or being
+            added through a team. <strong>Created a project</strong> is the
+            subset who own at least one active project, so the gap between the
+            two bars is the share of users who only ever join.
           </p>
           <p>
             Each stage is a subset of the one before it, so the drop-off between
@@ -255,6 +263,7 @@ function ActivationFunnel({ summary }: { summary: ActivitySummary }) {
     { label: 'Signed up', value: funnel.signed_up },
     { label: 'Email confirmed', value: funnel.email_confirmed },
     { label: 'Approved', value: funnel.approved },
+    { label: 'On a project', value: funnel.joined_project },
     { label: 'Created a project', value: funnel.created_project },
   ];
   const maxValue = funnel.signed_up || 1;
