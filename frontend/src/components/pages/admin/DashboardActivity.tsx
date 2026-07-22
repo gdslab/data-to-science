@@ -603,7 +603,7 @@ export default function DashboardActivity() {
   }, [trends]);
 
   return (
-    <section className="h-full w-full overflow-y-auto bg-white p-4">
+    <section className="w-full bg-white p-4">
       <div className="flex flex-col gap-10">
         <div>
           <SectionHeading infoKey="active" onInfo={setActiveInfo} />
