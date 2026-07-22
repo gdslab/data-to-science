@@ -82,7 +82,7 @@ export default function ExtensionList({
   }
 
   return (
-    <div className="flex justify-center gap-4">
+    <div className="flex flex-wrap justify-center gap-x-4 gap-y-2">
       {extensions.map((extension) => (
         <div key={extension.id} className="flex items-center">
           <Checkbox

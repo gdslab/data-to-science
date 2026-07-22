@@ -34,3 +34,13 @@ export function sorter(a: Date | string, b: Date | string, order: string = 'asc'
 export function getUnique<T>(arr: T[], key: string): string[] {
   return [...new Set(arr.map((elem) => elem[key]))];
 }
+
+/**
+ * Formats a byte count as binary gigabytes (GiB) for the admin storage tables.
+ * Shared so the project storage page and the engagement leaderboard, which sum
+ * the same bytes server-side, cannot drift apart on precision.
+ * Note: StatStorageCard reports filesystem capacity in decimal GB instead.
+ */
+export function bytesToGB(bytes: number): string {
+  return (bytes / 1024 ** 3).toFixed(3);
+}

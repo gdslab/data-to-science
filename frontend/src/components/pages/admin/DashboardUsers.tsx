@@ -98,7 +98,7 @@ export default function DashboardUsers() {
         (user) =>
           user.first_name.toLowerCase().includes(lowerSearchTerm) ||
           user.last_name.toLowerCase().includes(lowerSearchTerm) ||
-          user.email.toLowerCase().includes(searchTerm)
+          user.email.toLowerCase().includes(lowerSearchTerm)
       )
       .sort((a, b) =>
         sorter(a.last_name.trim().toLowerCase(), b.last_name.trim().toLowerCase())

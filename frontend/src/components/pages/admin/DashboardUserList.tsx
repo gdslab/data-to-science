@@ -4,11 +4,13 @@ import { useContext, useMemo, useState } from 'react';
 import { generateRandomProfileColor } from '../auth/Profile';
 import { Button } from '../../Buttons';
 import Checkbox from '../../Checkbox';
+import { DataCard, MetricTile, MetricTileGrid } from './DataCards';
 import Pagination from '../../Pagination';
 import AuthContext, { User } from '../../../AuthContext';
 import { confirm } from '../../ConfirmationDialog';
 import api from '../../../api';
 
+import { usePaginatedList } from '../../hooks';
 import { downloadFile as downloadCSV } from '../workspace/projects/fieldCampaigns/utils';
 
 const UserProfilePicture = ({ user }: { user: User }) =>
@@ -44,6 +46,56 @@ type SortColumn =
   | 'is_approved';
 type SortDirection = 'asc' | 'desc';
 
+const MAX_ITEMS = 10; // max number of users per page
+
+// Column labels reused by the mobile sort control so it stays in step with the
+// desktop table headers.
+const SORT_OPTIONS: { value: SortColumn; label: string }[] = [
+  { value: 'name', label: 'Name' },
+  { value: 'email', label: 'Email' },
+  { value: 'created_at', label: 'Date Joined' },
+  { value: 'last_login_at', label: 'Last Login' },
+  { value: 'last_activity_at', label: 'Last Activity' },
+];
+
+/**
+ * Approval switch shared by the desktop table cell and the mobile card.
+ */
+function ApprovalToggle({
+  user,
+  loading,
+  onToggle,
+}: {
+  user: User;
+  loading: boolean;
+  onToggle: (user: User) => void;
+}) {
+  return (
+    <div className="flex items-center justify-center gap-2">
+      <span
+        className={`text-lg ${
+          user.is_approved ? 'text-green-600' : 'text-red-600'
+        }`}
+      >
+        {user.is_approved ? '✓' : '✗'}
+      </span>
+      <label
+        htmlFor={`${user.id}-approval-checkbox`}
+        className="relative inline-flex items-center cursor-pointer"
+      >
+        <Checkbox
+          id={`${user.id}-approval-checkbox`}
+          checked={user.is_approved}
+          onChange={() => onToggle(user)}
+          className="sr-only peer"
+        />
+        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-hidden peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+      </label>
+      {loading && <span className="text-sm text-gray-500">...</span>}
+    </div>
+  );
+}
+
 export default function DashboardUserList({
   users,
   setUsers,
@@ -52,7 +104,6 @@ export default function DashboardUserList({
   setUsers: (users: User[] | ((prevUsers: User[]) => User[])) => void;
 }) {
   const { user: currentUser } = useContext(AuthContext);
-  const [currentPage, setCurrentPage] = useState(0);
   const [sortColumn, setSortColumn] = useState<SortColumn>('created_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [loadingUserId, setLoadingUserId] = useState<string | null>(null);
@@ -68,25 +119,6 @@ export default function DashboardUserList({
     'last_login_at',
     'last_activity_at',
   ];
-
-  const MAX_ITEMS = 10; // max number of users per page
-  const TOTAL_PAGES = Math.ceil(users.length / MAX_ITEMS);
-
-  /**
-   * Updates the current selected pagination page.
-   * @param newPage Index of new page.
-   */
-  function updateCurrentPage(newPage: number): void {
-    const total_pages = Math.ceil(users ? users.length : 0 / MAX_ITEMS);
-
-    if (newPage + 1 > total_pages) {
-      setCurrentPage(total_pages - 1);
-    } else if (newPage < 0) {
-      setCurrentPage(0);
-    } else {
-      setCurrentPage(newPage);
-    }
-  }
 
   /**
    * Handle column header click to toggle sorting
@@ -133,9 +165,9 @@ export default function DashboardUserList({
   }
 
   /**
-   * Sort and paginate users
+   * Sort users
    */
-  const sortedAndPaginatedUsers = useMemo(() => {
+  const sortedUsers = useMemo(() => {
     const sorted = [...users].sort((a, b) => {
       let comparison = 0;
 
@@ -196,11 +228,11 @@ export default function DashboardUserList({
       return sortDirection === 'asc' ? comparison : -comparison;
     });
 
-    return sorted.slice(
-      currentPage * MAX_ITEMS,
-      MAX_ITEMS + currentPage * MAX_ITEMS
-    );
-  }, [users, sortColumn, sortDirection, currentPage]);
+    return sorted;
+  }, [users, sortColumn, sortDirection]);
+
+  const { pageItems, currentPage, totalPages, updateCurrentPage } =
+    usePaginatedList(sortedUsers, MAX_ITEMS);
 
   /**
    * Render sort indicator
@@ -213,8 +245,94 @@ export default function DashboardUserList({
   }
 
   return (
-    <div className="max-h-[40vh] w-full flex flex-col gap-4">
-      <div className="md:max-h-96 max-h-60 overflow-y-auto overflow-x-auto">
+    <div className="w-full flex flex-col gap-4">
+      {/* The table needs 1200px to fit its six columns, so phones get a sort
+          control and cards instead of a horizontally scrolling table. */}
+      <div className="flex items-center gap-2 md:hidden">
+        <label
+          htmlFor="user-sort"
+          className="shrink-0 text-sm font-medium text-gray-600"
+        >
+          Sort by:
+        </label>
+        <select
+          id="user-sort"
+          value={sortColumn}
+          onChange={(e) => {
+            setSortColumn(e.target.value as SortColumn);
+            setSortDirection('asc');
+          }}
+          className="w-full rounded-md border-gray-200 py-1.5 text-sm shadow-sm"
+        >
+          {SORT_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+          {currentUser?.is_superuser && (
+            <option value="is_approved">Approval</option>
+          )}
+        </select>
+        <button
+          type="button"
+          aria-label="Toggle sort direction"
+          onClick={() =>
+            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+          }
+          className="shrink-0 rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200"
+        >
+          {sortDirection === 'asc' ? '↑' : '↓'}
+        </button>
+      </div>
+
+      <div className="flex flex-col gap-3 md:hidden">
+        {pageItems.map((user) => (
+          <DataCard
+            key={user.id}
+            leading={
+              <div className="shrink-0">
+                <UserProfilePicture user={user} />
+              </div>
+            }
+            title={`${user.first_name} ${user.last_name}`}
+            subtitle={user.email}
+            trailing={
+              currentUser?.is_superuser ? (
+                <ApprovalToggle
+                  user={user}
+                  loading={loadingUserId === user.id}
+                  onToggle={handleApprovalToggle}
+                />
+              ) : undefined
+            }
+          >
+            <MetricTileGrid>
+              <MetricTile
+                label="Date Joined"
+                value={new Date(user.created_at).toLocaleDateString()}
+              />
+              <MetricTile
+                label="Last Login"
+                value={
+                  user.last_login_at
+                    ? new Date(user.last_login_at).toLocaleString()
+                    : '-'
+                }
+              />
+              <MetricTile
+                label="Last Activity"
+                value={
+                  user.last_activity_at
+                    ? new Date(user.last_activity_at).toLocaleString()
+                    : '-'
+                }
+              />
+            </MetricTileGrid>
+          </DataCard>
+        ))}
+      </div>
+
+      <div className="hidden md:block md:max-h-96 overflow-y-auto overflow-x-auto">
         <table className="relative w-full min-w-[1200px] border-collapse">
           <thead>
             <tr className="h-12 sticky top-0 text-slate-700 bg-slate-300 z-10">
@@ -271,7 +389,7 @@ export default function DashboardUserList({
             </tr>
           </thead>
           <tbody>
-            {sortedAndPaginatedUsers.map((user) => (
+            {pageItems.map((user) => (
               <tr
                 key={user.id}
                 className="text-center border-b border-gray-200"
@@ -316,30 +434,11 @@ export default function DashboardUserList({
                 </td>
                 {currentUser?.is_superuser && (
                   <td className="p-1.5 bg-white" style={{ width: '140px' }}>
-                    <div className="flex items-center justify-center gap-2">
-                      <span
-                        className={`text-lg ${
-                          user.is_approved ? 'text-green-600' : 'text-red-600'
-                        }`}
-                      >
-                        {user.is_approved ? '✓' : '✗'}
-                      </span>
-                      <label
-                        htmlFor={`${user.id}-approval-checkbox`}
-                        className="relative inline-flex items-center cursor-pointer"
-                      >
-                        <Checkbox
-                          id={`${user.id}-approval-checkbox`}
-                          checked={user.is_approved}
-                          onChange={() => handleApprovalToggle(user)}
-                          className="sr-only peer"
-                        />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-hidden peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                      </label>
-                      {loadingUserId === user.id && (
-                        <span className="text-sm text-gray-500">...</span>
-                      )}
-                    </div>
+                    <ApprovalToggle
+                      user={user}
+                      loading={loadingUserId === user.id}
+                      onToggle={handleApprovalToggle}
+                    />
                   </td>
                 )}
               </tr>
@@ -347,12 +446,11 @@ export default function DashboardUserList({
           </tbody>
         </table>
       </div>
-      <div className="flex flex-cols justify-between gap-4">
-        <div></div>
+      <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
         <Pagination
           currentPage={currentPage}
           updateCurrentPage={updateCurrentPage}
-          totalPages={TOTAL_PAGES}
+          totalPages={totalPages}
         />
 
         <Button

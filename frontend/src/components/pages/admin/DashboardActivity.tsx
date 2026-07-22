@@ -16,6 +16,7 @@ import Pagination from '../../Pagination';
 import { User } from '../../../AuthContext';
 
 import api from '../../../api';
+import { bytesToGB } from '../../utils';
 
 const MAX_ITEMS = 10; // leaderboard rows per page
 const LEADERBOARD_LIMIT = 50;
@@ -39,10 +40,6 @@ const METRIC_TO_FIELD: Record<LeaderboardMetric, keyof EngagementLeaderRow> = {
   likes: 'total_likes',
   storage: 'total_storage',
 };
-
-function bytesToGB(bytes: number): string {
-  return (bytes / 1024 ** 3).toFixed(2);
-}
 
 type InfoKey = 'active' | 'trend' | 'funnel' | 'signups' | 'leaderboard';
 
@@ -402,10 +399,11 @@ function EngagementLeaderboard({
     }
   }
 
-  const pageRows = rows.slice(
-    currentPage * MAX_ITEMS,
-    MAX_ITEMS + currentPage * MAX_ITEMS,
-  );
+  // Rank reflects standing across the whole ranked list, so it carries the
+  // page offset rather than restarting at 1 on each page.
+  const pageRows = rows
+    .slice(currentPage * MAX_ITEMS, MAX_ITEMS + currentPage * MAX_ITEMS)
+    .map((row, idx) => ({ ...row, rank: currentPage * MAX_ITEMS + idx + 1 }));
 
   const columns: {
     label: string;
@@ -455,6 +453,7 @@ function EngagementLeaderboard({
           <table className="hidden w-full border-separate border-spacing-y-1 border-spacing-x-1 md:table">
             <thead>
               <tr className="h-12 text-slate-700 bg-slate-300">
+                <th className="w-16 p-2">#</th>
                 <th className="p-2 text-left">User</th>
                 {columns.map((column) => (
                   <th
@@ -471,6 +470,9 @@ function EngagementLeaderboard({
             <tbody>
               {pageRows.map((row) => (
                 <tr key={row.user_id} className="text-center">
+                  <td className="w-16 bg-slate-100 p-2 font-semibold text-gray-500">
+                    {row.rank}
+                  </td>
                   <td className="max-w-96 truncate bg-slate-100 p-2 text-left">
                     <span className="font-medium">{row.name}</span>
                     <span className="ml-2 text-sm text-gray-500">
@@ -499,11 +501,11 @@ function EngagementLeaderboard({
           {/* The table's seven columns cannot fit a phone without horizontal
               scrolling, so the same rows render as cards below `md`. */}
           <div className="flex flex-col gap-3 md:hidden">
-            {pageRows.map((row, idx) => (
+            {pageRows.map((row) => (
               <div key={row.user_id} className="rounded-sm bg-slate-100 p-3">
                 <div className="flex items-baseline gap-2">
                   <span className="shrink-0 text-sm font-semibold text-gray-500">
-                    #{currentPage * MAX_ITEMS + idx + 1}
+                    #{row.rank}
                   </span>
                   <div className="min-w-0">
                     <div className="truncate font-medium">{row.name}</div>
