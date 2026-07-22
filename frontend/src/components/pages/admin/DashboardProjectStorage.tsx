@@ -40,8 +40,10 @@ export default function DashboardProjectStorage() {
             User Project Storage
           </h2>
           <p className="mt-4 text-gray-500 sm:text-xl">
-            Summary of total disk usage by user based on project ownership.
+            Summary of disk usage by user based on active project ownership.
           </p>
+        </div>
+        <div className="mx-auto max-w-3xl">
           <Suspense fallback={<DashboardProjectStorageTableSkeleton />}>
             <Await
               resolve={projectStatisticsApiResponse.response}
