@@ -5,7 +5,7 @@ import { useParams, useRevalidator } from 'react-router';
 import { AlertBar, Status } from '../../../../../Alert';
 import { Button } from '../../../../../Buttons';
 import LoadingBars from '../../../../../LoadingBars';
-import RawDataTable from './RawDataTable';
+import RawDataCard from './RawDataCard';
 import RawDataUploadModal from './RawDataUploadModal';
 
 import { useInterval } from '../../../../../hooks';
@@ -181,13 +181,24 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
       <h2>Raw Data</h2>
 
       <div className="overflow-auto">
-        <RawDataTable
-          rawData={rawData}
-          imageProcessingExts={imageProcessingExts}
-          imageProcessingJobStatus={imageProcessingJobStatus}
-          onDismissFailedJob={onDismissFailedJob}
-          onImageProcessingClick={onImageProcessingClick}
-        />
+        {rawData.length === 0 ? (
+          <p className="text-gray-600">No raw data uploaded yet.</p>
+        ) : (
+          <div className="flex flex-wrap gap-4">
+            {rawData.map((dataset) => (
+              <RawDataCard
+                key={dataset.id}
+                rawData={dataset}
+                imageProcessingExts={imageProcessingExts}
+                activeJob={imageProcessingJobStatus.find(
+                  (job) => job.rawDataId === dataset.id
+                )}
+                onDismissFailedJob={onDismissFailedJob}
+                onImageProcessingClick={onImageProcessingClick}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* display alert bar when status is not null */}

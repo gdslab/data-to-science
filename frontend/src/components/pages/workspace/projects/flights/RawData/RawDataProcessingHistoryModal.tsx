@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router';
-import { ClockIcon } from '@heroicons/react/24/outline';
+import { FaClockRotateLeft } from 'react-icons/fa6';
 
 import { AlertBar } from '../../../../../Alert';
+import { OutlineButton } from '../../../../../Buttons';
 import LoadingBars from '../../../../../LoadingBars';
 import Modal from '../../../../../Modal';
 import StripedTable from '../../../../../StripedTable';
@@ -16,7 +17,7 @@ import {
   formatSettingValue,
 } from './utils';
 
-function ProcessingJobStatusPill({ job }: { job: ProcessingJob }) {
+export function ProcessingJobStatusPill({ job }: { job: ProcessingJob }) {
   if (job.status === 'WAITING' || job.status === 'INPROGRESS') {
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
@@ -113,15 +114,17 @@ export default function RawDataProcessingHistoryModal({
 
   return (
     <div>
-      <button
-        className="flex items-center gap-1 text-sky-600 cursor-pointer"
+      <OutlineButton
+        size="sm"
         type="button"
         title="View processing history for this raw data"
         onClick={() => setOpen(true)}
       >
-        <ClockIcon className="w-4 h-4" />
-        <span className="text-sm">History</span>
-      </button>
+        <span className="flex items-center justify-center gap-1.5">
+          <FaClockRotateLeft className="w-3.5 h-3.5" />
+          History
+        </span>
+      </OutlineButton>
       <Modal open={open} setOpen={setOpen}>
         <div className="p-6">
           <h3 className="mb-1">Processing History</h3>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import { TrashIcon } from '@heroicons/react/24/outline';
+import { FaRegTrashCan } from 'react-icons/fa6';
 
 import { AlertBar, Status } from '../../../../../Alert';
 import { Button } from '../../../../../Buttons';
@@ -34,7 +34,7 @@ export default function RawDataDeleteModal({
             onClick={() => setOpenConfirmationPopup(true)}
           >
             <div className="relative rounded-full accent3 p-1 focus:outline-hidden">
-              <TrashIcon className="w-4 h-4" />
+              <FaRegTrashCan className="w-4 h-4" />
             </div>
             <span>Delete</span>
           </div>
@@ -44,7 +44,7 @@ export default function RawDataDeleteModal({
             onClick={() => setOpenConfirmationPopup(true)}
           >
             <span className="sr-only">Delete</span>
-            <TrashIcon className="w-5 h-5 cursor-pointer hover:scale-110" />
+            <FaRegTrashCan className="w-5 h-5 cursor-pointer hover:scale-110" />
           </div>
         ) : (
           <Button

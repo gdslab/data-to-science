@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FaGears } from 'react-icons/fa6';
 import Modal from '../../../../../Modal';
 import MetashapeForm from './RawDataImageProcessingForm/MetashapeForm';
 import ODMForm from './RawDataImageProcessingForm/ODMForm';
@@ -29,15 +30,19 @@ export default function RawDataImageProcessingModal({
 
   return (
     <div>
+      {/* box metrics match OutlineButton size="sm" so the pair aligns */}
       <button
-        className="w-32 bg-accent2/90 text-white font-semibold py-1 rounded-sm enabled:hover:bg-accent2 disabled:opacity-75 disabled:cursor-not-allowed"
+        className="w-full text-sm font-bold py-2 px-4 border-2 border-accent2/90 rounded-md bg-accent2/90 text-white enabled:hover:bg-accent2 enabled:hover:border-accent2 disabled:opacity-75 disabled:cursor-not-allowed ease-in-out duration-300"
         type="button"
         name="processRawDataBtn"
         disabled={isProcessing}
         title="Generate DEM, orthomosaic, and point cloud data products from zipped raw data"
         onClick={() => setOpen(true)}
       >
-        {isProcessing ? 'Processing' : 'Process'}
+        <span className="flex items-center justify-center gap-1.5">
+          <FaGears className="w-3.5 h-3.5" />
+          {isProcessing ? 'Processing' : 'Process'}
+        </span>
       </button>
       <Modal open={open} setOpen={setOpen}>
         {imageProcessingExts.length > 1 && (
