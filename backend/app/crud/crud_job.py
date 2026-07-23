@@ -37,6 +37,19 @@ class CRUDJob(CRUDBase[Job, JobCreate, JobUpdate]):
         with db as session:
             return session.scalars(select_statement).all()
 
+    def get_multi_by_raw_data(
+        self,
+        db: Session,
+        raw_data_id: UUID,
+        job_name: Optional[str] = None,
+    ) -> Sequence[Job]:
+        select_statement = select(Job).where(Job.raw_data_id == raw_data_id)
+        if job_name:
+            select_statement = select_statement.where(Job.name == job_name)
+        select_statement = select_statement.order_by(Job.start_time.desc())
+        with db as session:
+            return session.scalars(select_statement).all()
+
     def get_multi_by_flight(
         self, db: Session, flight_id: UUID, incomplete: bool = False
     ) -> Sequence[Job]:

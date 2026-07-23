@@ -46,6 +46,12 @@ class RpcClient:
             self.response = body
 
     def call(self, message: str, rpc_timeout_sec: int = 900) -> Optional[str]:
+        """Publish message and wait for the RPC reply.
+
+        Returns None if no reply arrives within rpc_timeout_sec. Otherwise
+        returns the decoded reply text as-is; callers are responsible for
+        interpreting empty replies or "Error:"-prefixed replies.
+        """
         self.response = None
         self.corr_id = str(uuid.uuid4())
 
@@ -73,7 +79,4 @@ class RpcClient:
             if self.connection.is_closed:
                 raise AMQPError("Connection closed while waiting for RPC reply")
 
-        text = self.response.decode("utf-8", errors="replace")
-        if text.startswith("Error:"):
-            return None
-        return text
+        return self.response.decode("utf-8", errors="replace")

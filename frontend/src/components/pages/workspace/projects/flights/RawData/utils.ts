@@ -2,7 +2,13 @@ import { AxiosResponse, isAxiosError } from 'axios';
 
 import { Job } from '../../Project';
 
-import { MetashapeSettings, ODMSettings } from './RawData.types';
+import {
+  ImageProcessingBackend,
+  JobStatus,
+  MetashapeSettings,
+  ODMSettings,
+  ProcessingJob,
+} from './RawData.types';
 
 import api from '../../../../../../api';
 
@@ -33,13 +39,17 @@ const checkImageProcessingJobProgress = async (
   jobId: string,
   projectId: string,
   rawDataId: string
-): Promise<number | null> => {
+): Promise<{ progress: number; status: JobStatus } | null> => {
   try {
-    const response: AxiosResponse<{ progress: string }> = await api.get(
-      `/projects/${projectId}/flights/${flightId}/raw_data/${rawDataId}/check_progress/${jobId}`
-    );
+    const response: AxiosResponse<{ progress: string; status: JobStatus }> =
+      await api.get(
+        `/projects/${projectId}/flights/${flightId}/raw_data/${rawDataId}/check_progress/${jobId}`
+      );
     if (response.status === 200) {
-      return parseFloat(response.data.progress);
+      return {
+        progress: parseFloat(response.data.progress) || 0,
+        status: response.data.status,
+      };
     } else {
       return null;
     }
@@ -52,22 +62,43 @@ const checkImageProcessingJobProgress = async (
   }
 };
 
-const fetchUserExtensions = async (): Promise<'metashape' | 'odm' | null> => {
+const fetchRawDataProcessingJobs = async (
+  projectId: string,
+  flightId: string,
+  rawDataId: string
+): Promise<ProcessingJob[]> => {
+  try {
+    const response: AxiosResponse<ProcessingJob[]> = await api.get(
+      `/projects/${projectId}/flights/${flightId}/raw_data/${rawDataId}/jobs`,
+      { params: { name: 'processing-raw-data' } }
+    );
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      return [];
+    }
+  } catch (err) {
+    if (isAxiosError(err) && err.response && err.response.data.detail) {
+      throw new Error(err.response.data.detail);
+    } else {
+      throw new Error('Unable to fetch processing history');
+    }
+  }
+};
+
+const fetchUserExtensions = async (): Promise<ImageProcessingBackend[]> => {
   try {
     const response: AxiosResponse<string[]> = await api.get(
       '/users/extensions'
     );
     if (response.status === 200 && Array.isArray(response.data)) {
-      if (response.data.includes('metashape')) {
-        return 'metashape';
-      } else if (response.data.includes('odm')) {
-        return 'odm';
-      } else {
-        return null;
-      }
+      // metashape listed first so it remains the default backend
+      return (['metashape', 'odm'] as ImageProcessingBackend[]).filter((ext) =>
+        response.data.includes(ext)
+      );
     } else {
       console.error('Invalid response format from extensions endpoint');
-      return null;
+      return [];
     }
   } catch (err) {
     if (isAxiosError(err)) {
@@ -133,9 +164,49 @@ const startImageProcessingJob = async (
   }
 };
 
+const formatSettingKey = (key: string): string =>
+  key
+    .replace(/([A-Z]+)(?=[A-Z][a-z])/g, '$1 ')
+    .replace(/([a-z\d])([A-Z])/g, '$1 $2')
+    .replace(/^./, (c) => c.toUpperCase())
+    .replace(/\bDem\b/g, 'DEM')
+    .replace(/\bOrtho\b/g, 'Ortho')
+    .replace(/\bPc\b/g, 'Point Cloud');
+
+const formatSettingValue = (value: string | number | boolean): string => {
+  if (typeof value === 'boolean') {
+    return value ? 'Yes' : 'No';
+  }
+  if (typeof value === 'string') {
+    return value.replace(/_/g, ' ');
+  }
+  return String(value);
+};
+
+const formatDuration = (start: string, end: string): string => {
+  const totalSeconds = Math.max(
+    0,
+    Math.round((new Date(end).getTime() - new Date(start).getTime()) / 1000)
+  );
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  if (minutes > 0) {
+    return `${minutes}m ${seconds}s`;
+  }
+  return `${seconds}s`;
+};
+
 export {
   checkForExistingJobs,
   checkImageProcessingJobProgress,
+  fetchRawDataProcessingJobs,
   fetchUserExtensions,
+  formatDuration,
+  formatSettingKey,
+  formatSettingValue,
   startImageProcessingJob,
 };

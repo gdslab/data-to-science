@@ -39,15 +39,42 @@ export interface ODMSettings {
 }
 
 export type ImageProcessingJobProps = {
+  failed?: boolean;
   initialCheck: boolean;
   jobId: string;
   progress: number;
   rawDataId: string;
 };
 
+export type JobStatus = 'WAITING' | 'INPROGRESS' | 'SUCCESS' | 'FAILED';
+export type JobState = 'PENDING' | 'STARTED' | 'COMPLETED';
+
+export type ImageProcessingBackend = 'metashape' | 'odm';
+
+export type ProcessingJobExtra = {
+  backend?: ImageProcessingBackend;
+  settings?: Record<string, string | number | boolean>;
+  batch_id?: string;
+  detail?: string;
+  progress?: number;
+  report?: string;
+};
+
+export type ProcessingJob = {
+  id: string;
+  data_product_id: string | null;
+  raw_data_id: string;
+  name: string;
+  state: JobState;
+  status: JobStatus;
+  start_time: string;
+  end_time: string | null;
+  extra: ProcessingJobExtra | null;
+};
+
 export type RawDataProps = {
   id: string;
-  status: string;
+  status: JobStatus | null;
   original_filename: string;
   report?: string;
   url: string;

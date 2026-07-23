@@ -64,6 +64,18 @@ def cleanup_on_external(destination_dir: str, raw_data_identifier: str) -> None:
             )
 
 
+def fail_job(job: JobManager, detail: str) -> None:
+    """Mark job as failed with a user-facing reason, preserving existing extra.
+
+    Args:
+        job (JobManager): Job manager for the job to mark as failed.
+        detail (str): Reason for the failure shown in the processing history.
+    """
+    extra = dict(job.job.extra) if job.job and job.job.extra else {}
+    extra["detail"] = detail
+    job.update(status=Status.FAILED, extra=extra)
+
+
 async def async_transfer(
     source_path: str,
     destination_path: str,
@@ -140,10 +152,18 @@ def transfer_raw_data(
 
     # Construct destination directory and path
     destination_dir = os.path.join(external_storage_dir, "raw_data")
-    if not os.path.exists(destination_dir):
-        os.makedirs(destination_dir)
-    raw_data_identifier = generate_unique_id()
-    destination_path = os.path.join(destination_dir, f"{raw_data_identifier}.zip")
+    try:
+        if not os.path.exists(destination_dir):
+            os.makedirs(destination_dir)
+        raw_data_identifier = generate_unique_id()
+        destination_path = os.path.join(destination_dir, f"{raw_data_identifier}.zip")
+    except Exception:
+        logger.exception(f"Unable to access external storage for job {job_id}")
+        fail_job(
+            job,
+            "The processing service is currently unavailable. Please try again later.",
+        )
+        raise
 
     # Attempt to transfer raw data with up to 3 retries
     try:
@@ -153,25 +173,27 @@ def transfer_raw_data(
         # Check if we've reached max retries
         if self.request.retries >= self.max_retries:
             logger.error(f"Max retries reached for job {job_id}")
-            job.update(status=Status.FAILED)
+            fail_job(
+                job,
+                "Data could not be sent to the processing service. Please try again later.",
+            )
             cleanup_on_external(destination_dir, raw_data_identifier)
             raise exc
         else:
             logger.info(f"Retrying transfer for job {job_id}")
             raise self.retry(exc=exc)
 
-    # Create one time token
-    token = secrets.token_urlsafe()
-    crud.user.create_single_use_token(
-        db,
-        obj_in=schemas.SingleUseTokenCreate(
-            token=get_token_hash(token, salt="rawdata")
-        ),
-        user_id=user_id,
-    )
-
-    # Write metadata to info file on remote server
+    # Create one time token and write metadata to info file on remote server
     try:
+        token = secrets.token_urlsafe()
+        crud.user.create_single_use_token(
+            db,
+            obj_in=schemas.SingleUseTokenCreate(
+                token=get_token_hash(token, salt="rawdata")
+            ),
+            user_id=user_id,
+        )
+
         info_path = os.path.join(destination_dir, raw_data_identifier + ".info")
         with open(info_path, "w") as info_file:
             raw_data_meta = {
@@ -203,8 +225,12 @@ def transfer_raw_data(
             info_file.write(json.dumps(raw_data_meta))
     except Exception:
         logger.exception("Error while writing metadata to info file")
-        job.update(status=Status.FAILED)
+        fail_job(
+            job, "Processing could not be started. Please try again later."
+        )
         cleanup_on_external(destination_dir, raw_data_identifier)
+        # re-raise so the chain stops and the job is not resumed
+        raise
 
     logger.info(f"Transfer successful for job {job_id}")
 
@@ -224,22 +250,51 @@ def start_raw_data_processing(task_data: Tuple[UUID, str]) -> None:
     """
     job_id, raw_data_identifier = task_data
 
-    try:
-        # Get job manager for current job
-        job = JobManager(job_id=job_id)
+    # Get job manager for current job; if the job cannot be found there is
+    # nothing to mark as failed
+    job = JobManager(job_id=job_id)
 
+    try:
         # publish message to external server
         with RpcClient(routing_key="raw-data-start-process-queue") as rpc_client:
-            batch_id = rpc_client.call(raw_data_identifier)
-
-        # if no batch id returned, update job state as failed
-        if not batch_id:
-            raise ValueError("Missing batch ID")
-
-        logger.info(f"Batch_ID: {batch_id}")
-
-        job.update(status=Status.INPROGRESS, extra={"batch_id": batch_id})
+            reply = rpc_client.call(raw_data_identifier)
     except Exception:
         logger.exception("Error while publishing to RabbitMQ channel")
-        # update job
-        job.update(status=Status.FAILED)
+        fail_job(
+            job,
+            "The processing service did not respond. Please try again later.",
+        )
+        return
+
+    if reply and reply.startswith("Error:"):
+        # remote reported a hard error while accepting the request
+        logger.error(f"Processing service rejected job {job_id}: {reply}")
+        fail_job(
+            job,
+            "The processing service reported an error. Please try again later.",
+        )
+        return
+
+    if reply is None:
+        # RpcClient.call returns None only when no reply arrived before its
+        # timeout - the remote is unreachable, unlike an empty ack below
+        logger.error(f"RPC reply timed out for job {job_id}")
+        fail_job(
+            job,
+            "The processing service did not respond. Please try again later.",
+        )
+        return
+
+    if not reply:
+        # A batch id is assigned by the remote only once its backend (e.g.
+        # Metashape) creates a project, which may be after this ack. The job
+        # is already INPROGRESS; progress arrives via progress_update pushes.
+        logger.info(f"Batch ID not yet available for job {job_id}; continuing")
+        return
+
+    logger.info(f"Batch_ID: {reply}")
+
+    # merge batch id into existing extra to preserve stored settings
+    existing_extra = dict(job.job.extra) if job.job and job.job.extra else {}
+    existing_extra["batch_id"] = reply
+    job.update(status=Status.INPROGRESS, extra=existing_extra)

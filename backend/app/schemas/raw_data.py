@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Literal, Optional
 
-from pydantic import AnyHttpUrl, BaseModel, UUID4
+from pydantic import AnyHttpUrl, BaseModel, Field, UUID4
 
 
 # shared properties
@@ -107,3 +107,4 @@ class ODMQueryParams(BaseModel):
 class ProgressUpdate(BaseModel):
     job_id: UUID4
     progress: float
+    batch_id: Optional[str] = Field(default=None, max_length=128)

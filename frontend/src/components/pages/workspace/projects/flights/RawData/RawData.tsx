@@ -5,18 +5,13 @@ import { useParams, useRevalidator } from 'react-router';
 import { AlertBar, Status } from '../../../../../Alert';
 import { Button } from '../../../../../Buttons';
 import LoadingBars from '../../../../../LoadingBars';
-import RawDataDeleteModal from './RawDataDeleteModal';
-import RawDataDownloadLink, {
-  RawDataReportDownloadLink,
-} from './RawDataDownloadLink';
+import RawDataCard from './RawDataCard';
 import RawDataUploadModal from './RawDataUploadModal';
-import { ErrorIcon, PendingIcon, ProgressIcon } from './RawDataStatusIcons';
-import ProgressBar from '../../../../../ProgressBar';
-import RawDataImageProcessingModal from './RawDataImageProcessingModal';
 
 import { useInterval } from '../../../../../hooks';
 import { useProjectContext } from '../../ProjectContext';
 import {
+  ImageProcessingBackend,
   ImageProcessingJobProps,
   MetashapeSettings,
   ODMSettings,
@@ -31,9 +26,9 @@ import {
 } from './utils';
 
 export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
-  const [imageProcessingExt, setImageProcessingExt] = useState<
-    'metashape' | 'odm' | null
-  >(null);
+  const [imageProcessingExts, setImageProcessingExts] = useState<
+    ImageProcessingBackend[]
+  >([]);
   const [imageProcessingJobStatus, setImageProcessingJobStatus] = useState<
     ImageProcessingJobProps[]
   >([]);
@@ -49,7 +44,7 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
   useEffect(() => {
     // check if user has image processing extension
     fetchUserExtensions()
-      .then((extension) => setImageProcessingExt(extension))
+      .then((extensions) => setImageProcessingExts(extensions))
       .catch((err) => setStatus({ type: 'error', msg: err.message }));
   }, []);
 
@@ -88,52 +83,65 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
       : 30000 // check every 30 seconds for new raw data
   );
 
+  const markJobFailed = (jobId: string) =>
+    setImageProcessingJobStatus((prev) =>
+      prev.map((job) => (job.jobId === jobId ? { ...job, failed: true } : job))
+    );
+
   // check for image processing job progress on regular interval once job begins
   useInterval(
     () => {
       if (flightId && projectId) {
-        imageProcessingJobStatus.forEach((status) => {
-          checkImageProcessingJobProgress(
-            flightId,
-            status.jobId,
-            projectId,
-            status.rawDataId
-          )
-            .then((progress) => {
-              const updatedJobProgress = [...imageProcessingJobStatus];
-              const jobIndex = updatedJobProgress.findIndex(
-                (job) => job.rawDataId === status.rawDataId
-              );
-              if (jobIndex > -1) {
-                if (progress === -9999) {
-                  // job aborted or failed, remove job
-                  updatedJobProgress.splice(jobIndex, 1);
+        imageProcessingJobStatus
+          .filter((job) => !job.failed)
+          .forEach((jobStatus) => {
+            checkImageProcessingJobProgress(
+              flightId,
+              jobStatus.jobId,
+              projectId,
+              jobStatus.rawDataId
+            )
+              .then((result) => {
+                if (!result) return;
+                if (result.status === 'FAILED') {
+                  markJobFailed(jobStatus.jobId);
+                } else if (result.status === 'SUCCESS') {
+                  // run finished; drop the entry so polling stops and the
+                  // card switches to the refreshed latest-run summary
+                  setImageProcessingJobStatus((prev) =>
+                    prev.filter((job) => job.jobId !== jobStatus.jobId)
+                  );
+                  revalidator.revalidate();
                 } else {
-                  updatedJobProgress[jobIndex] = {
-                    initialCheck: false,
-                    jobId: status.jobId,
-                    progress: progress || 0,
-                    rawDataId: status.rawDataId,
-                  };
+                  setImageProcessingJobStatus((prev) =>
+                    prev.map((job) =>
+                      job.jobId === jobStatus.jobId
+                        ? {
+                            ...job,
+                            initialCheck: false,
+                            progress: result.progress,
+                          }
+                        : job
+                    )
+                  );
                 }
-                setImageProcessingJobStatus(updatedJobProgress);
-              }
-            })
-            .catch((err) => {
-              if (isAxiosError(err) && err.response?.status === 404) {
-                // check progress starts return 404 once batch id no longer exists
-                // filter out any objects with job id for completed job (no batch id)
-                setImageProcessingJobStatus(
-                  imageProcessingJobStatus.filter(
-                    (job) => job.jobId !== status.jobId
-                  )
-                );
-              }
-            });
-        });
+              })
+              .catch((err) => {
+                if (isAxiosError(err) && err.response?.status === 404) {
+                  // job no longer exists; remove entry and refresh list
+                  setImageProcessingJobStatus((prev) =>
+                    prev.filter((job) => job.jobId !== jobStatus.jobId)
+                  );
+                  revalidator.revalidate();
+                }
+                // transient errors: skip this tick and retry on the next
+              });
+          });
       }
     },
-    imageProcessingJobStatus.length > 0 ? 15000 : null
+    imageProcessingJobStatus.filter((job) => !job.failed).length > 0
+      ? 15000
+      : null
   );
 
   useEffect(() => {
@@ -150,8 +158,9 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
       startImageProcessingJob(flightId, projectId, rawDataId, settings)
         .then((job_id) => {
           if (job_id) {
-            setImageProcessingJobStatus([
-              ...imageProcessingJobStatus,
+            setImageProcessingJobStatus((prev) => [
+              // replace any dismissed/failed entry for this raw data
+              ...prev.filter((job) => job.rawDataId !== rawDataId),
               {
                 initialCheck: false,
                 jobId: job_id,
@@ -165,23 +174,11 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
     }
   }
 
-  const isProcessing = (rawDataId: string): boolean =>
-    imageProcessingJobStatus.findIndex((job) => job.rawDataId === rawDataId) >
-    -1;
-
-  const getProgressBarProps = (
-    rawDataId: string
-  ): { progress: number; initialCheck: boolean } => {
-    const jobIndex = imageProcessingJobStatus.findIndex(
-      (job) => job.rawDataId === rawDataId
+  function onDismissFailedJob(rawDataId: string) {
+    setImageProcessingJobStatus((prev) =>
+      prev.filter((job) => !(job.rawDataId === rawDataId && job.failed))
     );
-    if (jobIndex > -1) {
-      const job = imageProcessingJobStatus[jobIndex];
-      return { progress: job.progress, initialCheck: job.initialCheck };
-    } else {
-      return { progress: 0, initialCheck: false };
-    }
-  };
+  }
 
   if (isLoading) {
     return <LoadingBars />;
@@ -191,51 +188,25 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
     <div className="h-full flex flex-col">
       <h2>Raw Data</h2>
 
-      <div className="flex flex-col gap-2 overflow-auto">
-        {rawData.length > 0 &&
-          rawData.map((dataset) => (
-            <div key={dataset.id} className="flex flex-row items-center gap-4">
-              <div className="w-56 truncate">
-                <span>Filename: {dataset.original_filename}</span>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                {/* display icon for in progress or failed status */}
-                {dataset.status === 'INPROGRESS' && <ProgressIcon />}
-                {dataset.status === 'WAITING' && <PendingIcon />}
-                {dataset.status === 'FAILED' && <ErrorIcon />}
-                {/* display button for image processing if user has extension */}
-                {imageProcessingExt && projectRole !== 'viewer' && (
-                  <RawDataImageProcessingModal
-                    imageProcessingExt={imageProcessingExt}
-                    isProcessing={isProcessing(dataset.id)}
-                    onSubmitJob={(settings: MetashapeSettings | ODMSettings) =>
-                      onImageProcessingClick(dataset.id, settings)
-                    }
-                  />
+      <div className="overflow-auto">
+        {rawData.length === 0 ? (
+          <p className="text-gray-600">No raw data uploaded yet.</p>
+        ) : (
+          <div className="flex flex-wrap gap-4">
+            {rawData.map((dataset) => (
+              <RawDataCard
+                key={dataset.id}
+                rawData={dataset}
+                imageProcessingExts={imageProcessingExts}
+                activeJob={imageProcessingJobStatus.find(
+                  (job) => job.rawDataId === dataset.id
                 )}
-                {/* display button for downloading processed raw data zip file */}
-                {dataset.status === 'SUCCESS' && (
-                  <RawDataDownloadLink rawDataId={dataset.id} />
-                )}
-                {dataset.report && (
-                  <RawDataReportDownloadLink url={dataset.report} />
-                )}
-                {/* display button for removing processed raw data zip file */}
-                {projectRole === 'owner' &&
-                  (dataset.status === 'SUCCESS' ||
-                    dataset.status === 'FAILED') && (
-                    <RawDataDeleteModal rawData={dataset} iconOnly={true} />
-                  )}
-                {/* display progress for ongoing image processing jobs */}
-                {isProcessing(dataset.id) && (
-                  <ProgressBar
-                    {...getProgressBarProps(dataset.id)}
-                    completedMsg="Check Data Products tab for results"
-                  />
-                )}
-              </div>
-            </div>
-          ))}
+                onDismissFailedJob={onDismissFailedJob}
+                onImageProcessingClick={onImageProcessingClick}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* display alert bar when status is not null */}
