@@ -607,12 +607,12 @@ def process_data_product_from_external_storage(
                     detail="Unable to locate data product on disk",
                 )
 
-        # copy report
+        # copy report using a per-job filename so reports from earlier runs
+        # are preserved for the processing history
+        success_extra = None
         try:
-            if (
-                payload.report
-                and os.path.exists(payload.report.storage_path)
-                and os.path.join(
+            if payload.report and os.path.exists(payload.report.storage_path):
+                raw_data_dir = os.path.join(
                     get_static_dir(),
                     "projects",
                     str(project_id),
@@ -621,29 +621,24 @@ def process_data_product_from_external_storage(
                     "raw_data",
                     str(payload.report.raw_data_id),
                 )
-            ):
-                shutil.copyfile(
-                    payload.report.storage_path,
-                    os.path.join(
-                        get_static_dir(),
-                        "projects",
-                        str(project_id),
-                        "flights",
-                        str(flight_id),
-                        "raw_data",
-                        str(payload.report.raw_data_id),
-                        os.path.basename(payload.report.storage_path),
-                    ),
-                )
+                if os.path.isdir(raw_data_dir):
+                    report_path = os.path.join(
+                        raw_data_dir, f"report_{payload.job_id}.pdf"
+                    )
+                    shutil.copyfile(payload.report.storage_path, report_path)
+                    success_extra = (
+                        dict(job.job.extra) if job.job and job.job.extra else {}
+                    )
+                    success_extra["report"] = f"{settings.API_DOMAIN}{report_path}"
+                else:
+                    logger.error("Raw data directory does not exist")
             else:
-                logger.error(
-                    "Report does not exist on network storage or raw data directory does not exist"
-                )
+                logger.error("Report does not exist on network storage")
         except Exception as e:
             logger.exception(f"Unable to copy report to raw data directory: {e}")
 
         # data products successfully derived from raw data
-        job.update(status=Status.SUCCESS)
+        job.update(status=Status.SUCCESS, extra=success_extra)
 
         # new jobs will be spawned for each data product as its processed further
         for data_product in payload.products:

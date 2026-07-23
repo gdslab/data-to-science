@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from random import randint
 
 from fastapi import status
@@ -18,6 +18,7 @@ from app.schemas.project_member import ProjectMemberCreate
 from app.schemas.role import Role
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.flight import create_flight, create_acquisition_date
+from app.tests.utils.job import create_job
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
 from app.tests.utils.raw_data import SampleRawData
@@ -781,3 +782,30 @@ def test_deactivate_flight_deactivates_data_products(
         data_product_in_db = crud.data_product.get(db, id=data_product.obj.id)
         assert data_product_in_db is not None
         assert data_product_in_db.is_active is False
+
+
+def test_check_progress_excludes_stale_processing_jobs(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    raw_data = SampleRawData(db, user=current_user)
+    recent_job = create_job(
+        db,
+        name="processing-raw-data",
+        raw_data_id=raw_data.obj.id,
+        start_time=datetime.now(tz=timezone.utc) - timedelta(hours=1),
+    )
+    create_job(
+        db,
+        name="processing-raw-data",
+        raw_data_id=raw_data.obj.id,
+        start_time=datetime.now(tz=timezone.utc) - timedelta(hours=25),
+    )
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
+        f"/flights/{raw_data.flight.id}/check_progress"
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_jobs = response.json()
+    assert len(response_jobs) == 1
+    assert response_jobs[0]["id"] == str(recent_job.id)

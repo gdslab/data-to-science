@@ -107,3 +107,4 @@ class ODMQueryParams(BaseModel):
 class ProgressUpdate(BaseModel):
     job_id: UUID4
     progress: float
+    batch_id: Optional[str] = None

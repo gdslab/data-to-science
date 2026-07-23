@@ -1,8 +1,9 @@
 import logging
 import os
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 from uuid import UUID
 
 from celery import chain
@@ -18,6 +19,7 @@ from app.schemas.job import JobUpdate, State, Status
 from app.schemas.raw_data import MetashapeQueryParams, ODMQueryParams
 from app.schemas.role import Role
 from app.tasks.raw_image_processing_tasks import (
+    fail_job,
     start_raw_data_processing,
     transfer_raw_data,
 )
@@ -128,6 +130,28 @@ def read_all_raw_data(
     return all_raw_data
 
 
+@router.get("/{raw_data_id}/jobs", response_model=Sequence[schemas.Job])
+def read_raw_data_jobs(
+    raw_data_id: UUID,
+    name: Optional[str] = None,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    flight: models.Flight = Depends(deps.can_read_flight),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Retrieve jobs associated with raw data, optionally filtered by job name
+    (e.g., "processing-raw-data"). Newest jobs are returned first."""
+    if not flight:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Flight not found"
+        )
+    raw_data = crud.raw_data.get(db, id=raw_data_id)
+    if not raw_data or raw_data.flight_id != flight.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Raw data not found"
+        )
+    return crud.job.get_multi_by_raw_data(db, raw_data_id=raw_data_id, job_name=name)
+
+
 @router.delete("/{raw_data_id}", response_model=schemas.RawData)
 def deactivate_raw_data(
     raw_data_id: UUID,
@@ -145,6 +169,44 @@ def deactivate_raw_data(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to deactivate"
         )
     return deactivated_raw_data
+
+
+def processing_job_stale_cutoff() -> datetime:
+    """Returns the time before which an unfinished processing job is stale."""
+    return datetime.now(tz=timezone.utc) - timedelta(
+        hours=settings.RAW_DATA_PROCESSING_TIMEOUT_HOURS
+    )
+
+
+def has_active_processing_job(db: Session, raw_data_id: UUID) -> bool:
+    """Checks for an unfinished processing job for the raw data. Unfinished
+    jobs older than the stale cutoff are marked failed and not counted as
+    active, so they cannot block re-processing indefinitely.
+
+    Args:
+        db (Session): Database session.
+        raw_data_id (UUID): ID of raw data associated with processing jobs.
+
+    Returns:
+        bool: True if an unfinished, non-stale processing job exists.
+    """
+    stale_cutoff = processing_job_stale_cutoff()
+    existing_jobs = crud.job.get_by_raw_data_id(
+        db, job_name="processing-raw-data", raw_data_id=raw_data_id
+    )
+    active_job_found = False
+    for job in existing_jobs:
+        if job.state == State.COMPLETED:
+            continue
+        if job.start_time and job.start_time < stale_cutoff:
+            logger.warning(f"Marking stale processing job {job.id} as failed")
+            fail_job(
+                JobManager(job_id=job.id),
+                "Processing timed out. Please try again.",
+            )
+        else:
+            active_job_found = True
+    return active_job_found
 
 
 @router.get("/{raw_data_id}/process")
@@ -206,14 +268,7 @@ def process_raw_data(
         )
 
     # Check if a job processing raw data is currently ongoing
-    existing_jobs = crud.job.get_by_raw_data_id(
-        db, job_name="processing-raw-data", raw_data_id=raw_data_id
-    )
-    existing_job_still_working = False
-    for job in existing_jobs:
-        if job.state != State.COMPLETED:
-            existing_job_still_working = True
-    if existing_job_still_working:
+    if has_active_processing_job(db, raw_data_id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Raw data already being processed",
@@ -228,8 +283,15 @@ def process_raw_data(
             status_code=status.HTTP_404_NOT_FOUND, detail="Raw data not found"
         )
 
-    # create job
-    processing_job = JobManager(job_name="processing-raw-data", raw_data_id=raw_data.id)
+    # create job with user-selected settings stored for processing history
+    processing_job = JobManager(
+        job_name="processing-raw-data",
+        raw_data_id=raw_data.id,
+        extra={
+            "backend": ip_settings.backend,
+            "settings": ip_settings.model_dump(exclude={"backend", "disclaimer"}),
+        },
+    )
 
     # get required paths from raw data object and environment variables
     storage_path = raw_data.filepath
@@ -347,6 +409,9 @@ def update_progress_from_remote(
     # update progress in job extra without changing state/status
     existing_extra = dict(job_db_obj.extra) if job_db_obj.extra else {}
     existing_extra["progress"] = payload.progress
+    # record the remote batch id if the remote includes it in its push
+    if payload.batch_id:
+        existing_extra["batch_id"] = payload.batch_id
     crud.job.update(db, db_obj=job_db_obj, obj_in=JobUpdate(extra=existing_extra))
 
     return {"detail": "Progress updated"}

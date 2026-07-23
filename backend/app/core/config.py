@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_REUSE_GRACE_SECONDS: int = 10
     # Activity tracking throttle in minutes (only update last_activity_at if older than this)
     ACTIVITY_TRACKING_THROTTLE_MINUTES: int = 15
+    # Raw data processing jobs with no word from the external service for this
+    # long are considered stale and marked failed on the next processing request
+    RAW_DATA_PROCESSING_TIMEOUT_HOURS: int = 24
 
     API_PROJECT_NAME: str = ""
     API_DOMAIN: str = ""

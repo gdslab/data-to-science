@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
+from app.api.api_v1.endpoints.raw_data import processing_job_stale_cutoff
 from app.api.utils import normalize_sensor_value
 from app.core.config import settings
 from app.schemas.role import Role
@@ -206,6 +207,10 @@ def check_for_raw_data_jobs_in_progress(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     jobs = crud.job.get_raw_data_jobs_by_flight_id(
-        db, job_name="processing-raw-data", flight_id=flight_id, processing=True
+        db,
+        job_name="processing-raw-data",
+        flight_id=flight_id,
+        processing=True,
+        cutoff_time=processing_job_stale_cutoff(),
     )
     return jobs

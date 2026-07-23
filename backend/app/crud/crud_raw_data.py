@@ -201,9 +201,15 @@ def set_report_attr(raw_data_obj: RawData) -> None:
         raw_data_obj (RawData): RawData object.
     """
     if os.path.exists(raw_data_obj.filepath):
-        report_path = os.path.join(Path(raw_data_obj.filepath).parents[0], "report.pdf")
-        if os.path.exists(report_path):
-            static_url = f"{settings.API_DOMAIN}{report_path}"
+        # newest report wins; matches per-job "report_<job_id>.pdf" files and
+        # the legacy single "report.pdf"
+        reports = sorted(
+            Path(raw_data_obj.filepath).parents[0].glob("report*.pdf"),
+            key=lambda report: report.stat().st_mtime,
+            reverse=True,
+        )
+        if reports:
+            static_url = f"{settings.API_DOMAIN}{reports[0]}"
             setattr(raw_data_obj, "report", static_url)
 
 

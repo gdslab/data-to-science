@@ -1,5 +1,7 @@
 import os
+import secrets
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 from unittest.mock import patch, MagicMock
 from uuid import UUID
@@ -9,7 +11,8 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app import crud
+from app import crud, schemas
+from app.core import security
 from app.api.deps import get_current_user
 from app.core.config import settings
 from app.schemas.file_permission import FilePermissionUpdate
@@ -23,6 +26,7 @@ from app.tests.utils.data_product_metadata import (
     get_zonal_feature_collection,
 )
 from app.tests.utils.job import create_job
+from app.tests.utils.raw_data import SampleRawData
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
 from app.tests.utils.flight import create_flight
@@ -1320,3 +1324,63 @@ def test_get_zonal_statistics_ignores_feature_id_not_in_project(
         vector_layer_feature_id=other_metadata[0].vector_layer_feature_id,
     )
     assert len(metadata) == 0
+
+
+def test_create_from_ext_storage_stores_per_job_report(
+    client: TestClient, db: Session, tmp_path
+) -> None:
+    raw_data = SampleRawData(db)
+    job = create_job(
+        db,
+        name="processing-raw-data",
+        raw_data_id=raw_data.obj.id,
+        status=JobStatus.INPROGRESS,
+        extra={"backend": "odm", "settings": {"orthoResolution": 4.0}},
+    )
+    # single-use token for the raw data owner
+    token = secrets.token_urlsafe()
+    crud.user.create_single_use_token(
+        db,
+        obj_in=schemas.SingleUseTokenCreate(
+            token=security.get_token_hash(token, salt="rawdata")
+        ),
+        user_id=raw_data.user.id,
+    )
+    # report produced by the external processing service
+    remote_report = tmp_path / "report.pdf"
+    remote_report.write_bytes(b"%PDF-1.4 test report")
+
+    payload = {
+        "token": token,
+        "job_id": str(job.id),
+        "status": {"code": 1, "message": "completed"},
+        "products": [],
+        "report": {
+            "filename": "report.pdf",
+            "storage_path": str(remote_report),
+            "raw_data_id": str(raw_data.obj.id),
+        },
+    }
+    with patch(
+        "app.utils.job_manager.get_db", side_effect=lambda: iter([db])
+    ):
+        response = client.post(
+            f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
+            f"/flights/{raw_data.flight.id}/data_products/create_from_ext_storage",
+            json=payload,
+        )
+    assert response.status_code == status.HTTP_202_ACCEPTED
+
+    # report copied with per-job filename
+    expected_report = (
+        Path(raw_data.obj.filepath).parent / f"report_{job.id}.pdf"
+    )
+    assert expected_report.exists()
+    assert expected_report.read_bytes() == b"%PDF-1.4 test report"
+
+    # job marked successful with report URL merged into existing extra
+    updated_job = crud.job.get(db, id=job.id)
+    assert updated_job
+    assert updated_job.status == JobStatus.SUCCESS
+    assert updated_job.extra["report"].endswith(f"report_{job.id}.pdf")
+    assert updated_job.extra["settings"] == {"orthoResolution": 4.0}
