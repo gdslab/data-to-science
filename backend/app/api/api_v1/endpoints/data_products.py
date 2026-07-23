@@ -36,6 +36,7 @@ from app.models.vector_layer import VectorLayer
 from app.schemas.data_product_metadata import ZonalStatisticsProps
 from app.schemas.job import Status
 from app.schemas.role import Role
+from app.tasks.raw_image_processing_tasks import fail_job
 from app.tasks.toolbox_tasks import (
     calculate_zonal_statistics,
     calculate_bulk_zonal_statistics,
@@ -596,7 +597,7 @@ def process_data_product_from_external_storage(
     # check if job failed
     if not payload.status.code:
         # update job table to show it failed
-        job.update(status=Status.FAILED)
+        fail_job(job, "Processing failed on the processing service.")
     else:
         # iterate over each new data product and start post processing celery task
         for data_product in payload.products:
@@ -629,7 +630,9 @@ def process_data_product_from_external_storage(
                     success_extra = (
                         dict(job.job.extra) if job.job and job.job.extra else {}
                     )
-                    success_extra["report"] = f"{settings.API_DOMAIN}{report_path}"
+                    # store the static path only; the jobs endpoint composes
+                    # the absolute URL at read time
+                    success_extra["report"] = report_path
                 else:
                     logger.error("Raw data directory does not exist")
             else:

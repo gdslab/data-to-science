@@ -1327,9 +1327,10 @@ def test_get_zonal_statistics_ignores_feature_id_not_in_project(
 
 
 def test_create_from_ext_storage_stores_per_job_report(
-    client: TestClient, db: Session, tmp_path
+    client: TestClient, db: Session, tmp_path, normal_user_access_token: str
 ) -> None:
-    raw_data = SampleRawData(db)
+    current_user = get_current_user(db, normal_user_access_token)
+    raw_data = SampleRawData(db, user=current_user)
     job = create_job(
         db,
         name="processing-raw-data",
@@ -1378,9 +1379,22 @@ def test_create_from_ext_storage_stores_per_job_report(
     assert expected_report.exists()
     assert expected_report.read_bytes() == b"%PDF-1.4 test report"
 
-    # job marked successful with report URL merged into existing extra
+    # job marked successful with report path merged into existing extra
     updated_job = crud.job.get(db, id=job.id)
     assert updated_job
     assert updated_job.status == JobStatus.SUCCESS
-    assert updated_job.extra["report"].endswith(f"report_{job.id}.pdf")
+    assert updated_job.extra["report"] == str(expected_report)
     assert updated_job.extra["settings"] == {"orthoResolution": 4.0}
+
+    # jobs endpoint composes the absolute report URL at read time
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
+        f"/flights/{raw_data.flight.id}/raw_data/{raw_data.obj.id}/jobs"
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_job = next(
+        j for j in response.json() if j["id"] == str(job.id)
+    )
+    assert response_job["extra"]["report"] == (
+        f"{settings.API_DOMAIN}{expected_report}"
+    )

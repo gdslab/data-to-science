@@ -275,6 +275,16 @@ def start_raw_data_processing(task_data: Tuple[UUID, str]) -> None:
         )
         return
 
+    if reply is None:
+        # RpcClient.call returns None only when no reply arrived before its
+        # timeout - the remote is unreachable, unlike an empty ack below
+        logger.error(f"RPC reply timed out for job {job_id}")
+        fail_job(
+            job,
+            "The processing service did not respond. Please try again later.",
+        )
+        return
+
     if not reply:
         # A batch id is assigned by the remote only once its backend (e.g.
         # Metashape) creates a project, which may be after this ack. The job

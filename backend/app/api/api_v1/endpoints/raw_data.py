@@ -149,7 +149,23 @@ def read_raw_data_jobs(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Raw data not found"
         )
-    return crud.job.get_multi_by_raw_data(db, raw_data_id=raw_data_id, job_name=name)
+    # mark timed-out runs failed so history does not show them as running
+    has_active_processing_job(db, raw_data_id)
+    jobs = crud.job.get_multi_by_raw_data(db, raw_data_id=raw_data_id, job_name=name)
+    # extra stores the report as a static path; compose the absolute URL at
+    # read time so stored history survives an API_DOMAIN change (legacy rows
+    # holding absolute URLs pass through unchanged)
+    response_jobs = []
+    for job in jobs:
+        job_schema = schemas.Job.model_validate(job)
+        report = job_schema.extra.get("report") if job_schema.extra else None
+        if isinstance(report, str) and not report.startswith("http"):
+            job_schema.extra = {
+                **job_schema.extra,
+                "report": f"{settings.API_DOMAIN}{report}",
+            }
+        response_jobs.append(job_schema)
+    return response_jobs
 
 
 @router.delete("/{raw_data_id}", response_model=schemas.RawData)
@@ -367,20 +383,14 @@ def check_raw_data_processing_progress(
             detail="Job not found",
         )
 
-    # check if job has failed
-    if job_db_obj.status == Status.FAILED:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error occurred while running job",
-        )
-
-    # read progress from DB (pushed by remote server)
+    # read progress from DB (pushed by remote server); status lets the
+    # client detect completion or failure and stop polling
     extra = job_db_obj.extra
     progress = 0
     if extra and isinstance(extra, Dict):
         progress = extra.get("progress", 0)
 
-    return {"progress": str(progress)}
+    return {"progress": str(progress), "status": job_db_obj.status.value}
 
 
 @router.post(
@@ -402,8 +412,10 @@ def update_progress_from_remote(
 
     # if progress indicates failure, mark job as failed
     if payload.progress == -9999:
-        job = JobManager(job_id=payload.job_id)
-        job.update(status=Status.FAILED)
+        fail_job(
+            JobManager(job_id=payload.job_id),
+            "The processing service reported a failure during processing.",
+        )
         return {"detail": "Job marked as failed"}
 
     # update progress in job extra without changing state/status

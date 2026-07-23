@@ -334,6 +334,7 @@ def test_progress_update_failure_signal_marks_job_failed(
     updated_job = crud.job.get(db, id=job.id)
     assert updated_job
     assert updated_job.status == Status.FAILED
+    assert "detail" in updated_job.extra
 
 
 def test_progress_update_with_invalid_job_id(client: TestClient, db: Session) -> None:
@@ -365,6 +366,7 @@ def test_check_progress_returns_stored_progress(
         )
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["progress"] == "75.0"
+    assert response.json()["status"] == "WAITING"
 
 
 def test_check_progress_returns_zero_when_no_progress(
@@ -381,9 +383,10 @@ def test_check_progress_returns_zero_when_no_progress(
         )
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["progress"] == "0"
+    assert response.json()["status"] == "WAITING"
 
 
-def test_check_progress_returns_error_when_job_failed(
+def test_check_progress_returns_failed_status_when_job_failed(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
@@ -400,7 +403,8 @@ def test_check_progress_returns_error_when_job_failed(
             f"/flights/{raw_data.flight.id}/raw_data/{raw_data.obj.id}"
             f"/check_progress/{job.id}"
         )
-    assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["status"] == "FAILED"
 
 
 def test_check_progress_with_invalid_job_id(
@@ -760,3 +764,51 @@ def test_set_report_attr_prefers_newest_report(
     per_job_report.unlink()
     set_report_attr(raw_data.obj)
     assert raw_data.obj.report.endswith("report.pdf")
+
+
+def test_start_raw_data_processing_fails_on_rpc_timeout(
+    client: TestClient, db: Session
+) -> None:
+    raw_data = SampleRawData(db)
+    job = create_job(
+        db,
+        name="processing-raw-data",
+        raw_data_id=raw_data.obj.id,
+        extra=dict(ODM_EXTRA),
+    )
+    mock_rpc_client = MagicMock()
+    mock_rpc_client.return_value.__enter__.return_value.call.return_value = None
+    with _patch_job_manager_db(db), patch(
+        "app.tasks.raw_image_processing_tasks.RpcClient", mock_rpc_client
+    ):
+        start_raw_data_processing((job.id, "raw-data-identifier"))
+    updated_job = crud.job.get(db, id=job.id)
+    assert updated_job
+    assert updated_job.status == Status.FAILED
+    assert updated_job.extra["settings"] == ODM_EXTRA["settings"]
+    assert "detail" in updated_job.extra
+
+
+def test_read_raw_data_jobs_marks_stale_runs_failed(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    raw_data = SampleRawData(db, user=current_user)
+    stale_job = create_job(
+        db,
+        name="processing-raw-data",
+        raw_data_id=raw_data.obj.id,
+        status=Status.INPROGRESS,
+        start_time=datetime.now(tz=timezone.utc) - timedelta(hours=25),
+    )
+    with _patch_job_manager_db(db):
+        response = client.get(
+            f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
+            f"/flights/{raw_data.flight.id}/raw_data/{raw_data.obj.id}/jobs"
+        )
+    assert response.status_code == status.HTTP_200_OK
+    response_jobs = response.json()
+    assert len(response_jobs) == 1
+    assert response_jobs[0]["id"] == str(stale_job.id)
+    assert response_jobs[0]["status"] == "FAILED"
+    assert "detail" in response_jobs[0]["extra"]
