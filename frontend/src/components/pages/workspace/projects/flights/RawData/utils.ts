@@ -4,6 +4,7 @@ import { Job } from '../../Project';
 
 import {
   ImageProcessingBackend,
+  JobStatus,
   MetashapeSettings,
   ODMSettings,
   ProcessingJob,
@@ -38,13 +39,17 @@ const checkImageProcessingJobProgress = async (
   jobId: string,
   projectId: string,
   rawDataId: string
-): Promise<number | null> => {
+): Promise<{ progress: number; status: JobStatus } | null> => {
   try {
-    const response: AxiosResponse<{ progress: string }> = await api.get(
-      `/projects/${projectId}/flights/${flightId}/raw_data/${rawDataId}/check_progress/${jobId}`
-    );
+    const response: AxiosResponse<{ progress: string; status: JobStatus }> =
+      await api.get(
+        `/projects/${projectId}/flights/${flightId}/raw_data/${rawDataId}/check_progress/${jobId}`
+      );
     if (response.status === 200) {
-      return parseFloat(response.data.progress);
+      return {
+        progress: parseFloat(response.data.progress) || 0,
+        status: response.data.status,
+      };
     } else {
       return null;
     }
@@ -161,6 +166,7 @@ const startImageProcessingJob = async (
 
 const formatSettingKey = (key: string): string =>
   key
+    .replace(/([A-Z]+)(?=[A-Z][a-z])/g, '$1 ')
     .replace(/([a-z\d])([A-Z])/g, '$1 $2')
     .replace(/^./, (c) => c.toUpperCase())
     .replace(/\bDem\b/g, 'DEM')

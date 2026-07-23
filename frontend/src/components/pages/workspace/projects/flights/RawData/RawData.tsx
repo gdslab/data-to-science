@@ -101,15 +101,26 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
               projectId,
               jobStatus.rawDataId
             )
-              .then((progress) => {
-                if (progress === -9999) {
-                  // job aborted or failed
+              .then((result) => {
+                if (!result) return;
+                if (result.status === 'FAILED') {
                   markJobFailed(jobStatus.jobId);
+                } else if (result.status === 'SUCCESS') {
+                  // run finished; drop the entry so polling stops and the
+                  // card switches to the refreshed latest-run summary
+                  setImageProcessingJobStatus((prev) =>
+                    prev.filter((job) => job.jobId !== jobStatus.jobId)
+                  );
+                  revalidator.revalidate();
                 } else {
                   setImageProcessingJobStatus((prev) =>
                     prev.map((job) =>
                       job.jobId === jobStatus.jobId
-                        ? { ...job, initialCheck: false, progress: progress || 0 }
+                        ? {
+                            ...job,
+                            initialCheck: false,
+                            progress: result.progress,
+                          }
                         : job
                     )
                   );
@@ -117,16 +128,13 @@ export default function RawData({ rawData }: { rawData: RawDataProps[] }) {
               })
               .catch((err) => {
                 if (isAxiosError(err) && err.response?.status === 404) {
-                  // check progress returns 404 once batch id no longer exists
-                  // remove entry for completed job and refresh raw data list
+                  // job no longer exists; remove entry and refresh list
                   setImageProcessingJobStatus((prev) =>
                     prev.filter((job) => job.jobId !== jobStatus.jobId)
                   );
                   revalidator.revalidate();
-                } else if (isAxiosError(err) && err.response?.status === 500) {
-                  // check progress returns 500 when the job status is FAILED
-                  markJobFailed(jobStatus.jobId);
                 }
+                // transient errors: skip this tick and retry on the next
               });
           });
       }
