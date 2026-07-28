@@ -15,6 +15,7 @@ import { formatCount } from '../../../../../../utils/formatCount';
 import { Status } from '../../../../../Alert';
 import Card from '../../../../../Card';
 import { isGeoTIFF } from './DataProductsTable';
+import { resolveRawDataSource } from './rawDataSource';
 import DataProductDeleteModal from './DataProductDeleteModal';
 import DataProductMetadataModal from './DataProductMetadataModal';
 import EditableDataType from './EditableDataType';
@@ -38,12 +39,15 @@ function ProgressBar() {
 export default function DataProductCard({
   dataProduct,
   otherDataProducts,
+  rawDataFilenames,
   setStatus,
 }: {
   dataProduct: DataProduct;
   otherDataProducts: DataProduct[];
+  rawDataFilenames: Map<string, string>;
   setStatus: React.Dispatch<React.SetStateAction<Status | null>>;
 }) {
+  const rawDataSource = resolveRawDataSource(dataProduct, rawDataFilenames);
   const [invalidPreviews, setInvalidPreviews] = useState<string[]>([]);
   const [isCopied, setIsCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -221,6 +225,23 @@ export default function DataProductCard({
                   )}
                 </div>
               )}
+            </div>
+            {/* raw data source: always render the row (empty when absent) so
+                cards with and without a source stay the same height; min-w-0 lets
+                truncate clip long filenames instead of overflowing the card */}
+            <div className="h-4 min-w-0 truncate text-xs leading-4 text-slate-500">
+              {rawDataSource.kind === 'named' ? (
+                <span title={`Generated from ${rawDataSource.filename}`}>
+                  Generated from {rawDataSource.filename}
+                </span>
+              ) : rawDataSource.kind === 'unavailable' ? (
+                <span
+                  className="italic"
+                  title="Generated from raw data (no longer available)"
+                >
+                  Generated from raw data (no longer available)
+                </span>
+              ) : null}
             </div>
             {/* action buttons */}
             <div className="flex items-center justify-around gap-4 relative">

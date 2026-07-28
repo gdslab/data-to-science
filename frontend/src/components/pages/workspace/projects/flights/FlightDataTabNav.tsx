@@ -57,7 +57,7 @@ export default function FlightDataTabNav({
       <hr className="my-4 border-gray-700" />
       <TabPanels>
         <TabPanel>
-          <DataProducts data={dataProducts} />
+          <DataProducts data={dataProducts} rawData={rawData} />
         </TabPanel>
         <TabPanel>
           <RawData rawData={rawData} />

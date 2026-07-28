@@ -58,6 +58,7 @@ export type ProcessingJobExtra = {
   detail?: string;
   progress?: number;
   report?: string;
+  data_products?: { id: string; data_type: string }[];
 };
 
 export type ProcessingJob = {

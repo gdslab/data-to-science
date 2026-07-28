@@ -38,6 +38,7 @@ export interface DataProduct {
   liked?: boolean;
   original_filename: string;
   public: boolean;
+  raw_data_id?: string | null;
   resolution?: {
     unit: string;
     x: number;
