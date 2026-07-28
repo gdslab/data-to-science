@@ -10,6 +10,7 @@ from app.db.base_class import Base
 from app.models.utils.utcnow import utcnow
 
 if TYPE_CHECKING:
+    from .data_product import DataProduct
     from .flight import Flight
     from .job import Job
     from .file_permission import FilePermission
@@ -48,6 +49,9 @@ class RawData(Base):
     )
 
     flight: Mapped["Flight"] = relationship(back_populates="raw_data")
+    # Products derived from this raw data by the external processing service. No
+    # cascade: deleting raw data must never delete the products it produced.
+    data_products: Mapped[List["DataProduct"]] = relationship(back_populates="raw_data")
     jobs: Mapped[List["Job"]] = relationship(
         back_populates="raw_data", cascade="all, delete"
     )

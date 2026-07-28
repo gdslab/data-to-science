@@ -608,9 +608,47 @@ def process_data_product_from_external_storage(
                     detail="Unable to locate data product on disk",
                 )
 
+        # source raw data these products were derived from; the processing job
+        # row always carries raw_data_id (report is optional), so prefer it
+        source_raw_data_id = job.job.raw_data_id if job.job else None
+        if source_raw_data_id is None and payload.report:
+            source_raw_data_id = payload.report.raw_data_id
+
+        # create each data product and spawn its own post-processing job; done
+        # before marking this job SUCCESS so the created ids can be recorded and
+        # so a failure here fails this job instead of stranding it INPROGRESS
+        created_products = []
+        try:
+            for data_product in payload.products:
+                result = process_data_product_uploaded_to_tusd(
+                    db=db,
+                    user_id=user.id,
+                    storage_path=Path(data_product.storage_path),
+                    original_filename=Path(data_product.filename),
+                    dtype=data_product.data_type,
+                    project_id=project_id,
+                    flight_id=flight_id,
+                    project_to_utm=True,
+                    raw_data_id=source_raw_data_id,
+                )
+                created_products.append(
+                    {
+                        "id": result["data_product_id"],
+                        "data_type": result["data_type"],
+                    }
+                )
+        except Exception as e:
+            logger.exception(f"Unable to create data product from raw data: {e}")
+            fail_job(job, "Processing failed on the processing service.")
+            crud.user.remove_single_use_token(db, db_obj=token_db_obj)
+            raise
+
+        # merge into existing extra; JobManager.update replaces extra wholesale
+        # and skips falsy values, so always build a full dict
+        success_extra = dict(job.job.extra) if job.job and job.job.extra else {}
+
         # copy report using a per-job filename so reports from earlier runs
         # are preserved for the processing history
-        success_extra = None
         try:
             if payload.report and os.path.exists(payload.report.storage_path):
                 raw_data_dir = os.path.join(
@@ -627,9 +665,6 @@ def process_data_product_from_external_storage(
                         raw_data_dir, f"report_{payload.job_id}.pdf"
                     )
                     shutil.copyfile(payload.report.storage_path, report_path)
-                    success_extra = (
-                        dict(job.job.extra) if job.job and job.job.extra else {}
-                    )
                     # store the static path only; the jobs endpoint composes
                     # the absolute URL at read time
                     success_extra["report"] = report_path
@@ -640,21 +675,13 @@ def process_data_product_from_external_storage(
         except Exception as e:
             logger.exception(f"Unable to copy report to raw data directory: {e}")
 
-        # data products successfully derived from raw data
-        job.update(status=Status.SUCCESS, extra=success_extra)
+        # record the products this run produced so the processing history can
+        # show which data products came from this raw data upload
+        if created_products:
+            success_extra["data_products"] = created_products
 
-        # new jobs will be spawned for each data product as its processed further
-        for data_product in payload.products:
-            process_data_product_uploaded_to_tusd(
-                db=db,
-                user_id=user.id,
-                storage_path=Path(data_product.storage_path),
-                original_filename=Path(data_product.filename),
-                dtype=data_product.data_type,
-                project_id=project_id,
-                flight_id=flight_id,
-                project_to_utm=True,
-            )
+        # data products successfully derived from raw data
+        job.update(status=Status.SUCCESS, extra=success_extra or None)
 
     # remove token from database
     crud.user.remove_single_use_token(db, db_obj=token_db_obj)
@@ -1052,10 +1079,7 @@ def create_zonal_statistics(
             )
         )
         with db as session:
-            if (
-                session.execute(feature_in_project_query).scalar_one_or_none()
-                is None
-            ):
+            if session.execute(feature_in_project_query).scalar_one_or_none() is None:
                 vector_layer_feature_id = None
     else:
         vector_layer_feature_id = None

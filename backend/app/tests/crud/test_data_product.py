@@ -8,11 +8,13 @@ from app import crud
 from app.core.config import settings
 from app.models.data_product import DataProduct
 from app.models.job import Job
+from app.schemas.data_product import DataProductCreate
 from app.schemas.file_permission import FilePermissionUpdate
 from app.schemas.job import State, Status
 from app.tests.utils.flight import create_flight
 from app.tests.utils.data_product import SampleDataProduct, test_stac_props_dsm
 from app.tests.utils.job import create_job
+from app.tests.utils.raw_data import SampleRawData
 from app.tests.utils.user import create_user
 
 
@@ -28,6 +30,26 @@ def test_create_data_product(db: Session) -> None:
     assert data_product.obj.created_at is not None
     assert data_product.obj.updated_at is not None
     assert data_product.obj.updated_at >= data_product.obj.created_at
+
+
+def test_create_data_product_with_raw_data_id(db: Session) -> None:
+    raw_data = SampleRawData(db)
+    data_product = crud.data_product.create_with_flight(
+        db,
+        obj_in=DataProductCreate(
+            data_type="ortho",
+            filepath="null",
+            original_filename="ortho.tif",
+            raw_data_id=raw_data.obj.id,
+        ),
+        flight_id=raw_data.flight.id,
+    )
+    assert data_product.raw_data_id == raw_data.obj.id
+
+
+def test_create_data_product_defaults_raw_data_id_to_null(db: Session) -> None:
+    data_product = SampleDataProduct(db, data_type="ortho")
+    assert data_product.obj.raw_data_id is None
 
 
 def test_read_data_product(db: Session) -> None:
@@ -473,18 +495,14 @@ def test_clear_s3_urls_for_project_only_clears_matching_project(db: Session) -> 
 
 def test_clear_s3_urls_for_project_zero_when_nothing_to_clear(db: Session) -> None:
     dp = SampleDataProduct(db)
-    rowcount = crud.data_product.clear_s3_urls_for_project(
-        db, project_id=dp.project.id
-    )
+    rowcount = crud.data_product.clear_s3_urls_for_project(db, project_id=dp.project.id)
     assert rowcount == 0
 
 
 def test_get_data_products_with_s3_urls_for_project(db: Session) -> None:
     dp_uploaded = SampleDataProduct(db)
     flight = create_flight(db, project_id=dp_uploaded.project.id)
-    dp_not_uploaded = SampleDataProduct(
-        db, project=dp_uploaded.project, flight=flight
-    )
+    dp_not_uploaded = SampleDataProduct(db, project=dp_uploaded.project, flight=flight)
 
     crud.data_product.update_s3_url(
         db,
@@ -503,9 +521,7 @@ def test_get_data_products_with_s3_urls_for_project(db: Session) -> None:
 
 def test_get_data_products_with_s3_urls_excludes_inactive(db: Session) -> None:
     dp = SampleDataProduct(db)
-    crud.data_product.update_s3_url(
-        db, data_product_id=dp.obj.id, s3_url="https://x"
-    )
+    crud.data_product.update_s3_url(db, data_product_id=dp.obj.id, s3_url="https://x")
     crud.data_product.deactivate(db, data_product_id=dp.obj.id)
 
     results = crud.data_product.get_data_products_with_s3_urls_for_project(
