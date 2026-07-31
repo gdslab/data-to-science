@@ -21,7 +21,6 @@ from app.utils.tusd.post_processing import (
     process_raw_data_uploaded_to_tusd,
 )
 
-
 router = APIRouter()
 
 
@@ -86,6 +85,57 @@ def _get_approved_user_from_token(db: Session, token: str) -> models.User:
     user = security.get_user_from_token_payload(db, token_payload)
     approved_user = deps.verify_user_account(user)
     return approved_user
+
+
+def _get_or_create_upload_for_post_finish(
+    payload: TUSDHook,
+    db: Session,
+    upload_id: str,
+    existing_upload: models.Upload | None,
+) -> tuple[models.Upload, bool]:
+    """Return the upload record for a post-finish hook, creating it if missing.
+
+    The upload record is normally created by the post-create hook, but it can
+    be missing at post-finish time: post-create and post-finish are both
+    non-blocking tusd notifications that can race for small files, post-create
+    skips record creation when its token validation fails, and a resumed
+    upload never triggers post-create at all. In those cases the user is
+    resolved from the access token cookie forwarded with the final PATCH
+    request and a record is created with the upload marked as finished.
+
+    Args:
+        payload (TUSDHook): TUSD hook payload.
+        db (Session): Database session.
+        upload_id (str): Upload event ID from tusd.
+        existing_upload (models.Upload | None): Existing upload record if any.
+
+    Returns:
+        tuple[models.Upload, bool]: Upload record and whether it was created
+            just now because post-create never recorded this upload.
+
+    Raises:
+        HTTPException: If no record exists and the access token is missing,
+            invalid, or expired, or the user account is not approved.
+    """
+    if existing_upload:
+        return existing_upload, False
+
+    cookies_list = payload.Event.HTTPRequest.Header.Cookie or []
+    access_token_value = _extract_access_token_from_cookie_headers(cookies_list)
+    if not access_token_value:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Upload record not found and access token missing",
+        )
+
+    approved_user = _get_approved_user_from_token(db, access_token_value)
+    created_upload = crud.upload.create_with_user(
+        db,
+        upload_id=upload_id,
+        user_id=approved_user.id,
+        is_uploading=False,
+    )
+    return created_upload, True
 
 
 def _handle_pre_create_authorization(
@@ -275,28 +325,19 @@ def _handle_post_create_indoor(
 
 
 def _update_upload_record_to_finished(
-    db: Session, existing_upload: models.Upload | None
+    db: Session, existing_upload: models.Upload
 ) -> None:
     """Update upload record to indicate upload has finished.
 
     Args:
         db: Database session
         existing_upload: Existing upload record
-
-    Raises:
-        HTTPException: If upload record not found
     """
-    if existing_upload:
-        # update record to indicate upload has finished
-        upload_update_in = UploadUpdate(
-            is_uploading=False, last_updated_at=datetime.now(timezone.utc)
-        )
-        crud.upload.update(db, db_obj=existing_upload, obj_in=upload_update_in)
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Upload record not found",
-        )
+    # update record to indicate upload has finished
+    upload_update_in = UploadUpdate(
+        is_uploading=False, last_updated_at=datetime.now(timezone.utc)
+    )
+    crud.upload.update(db, db_obj=existing_upload, obj_in=upload_update_in)
 
 
 @router.post("", status_code=status.HTTP_202_ACCEPTED)
@@ -420,9 +461,7 @@ def _handle_uas_project_hooks(
                     detail="Uploaded file not found",
                 )
             x_annotation_id = payload.Event.HTTPRequest.Header.X_Annotation_ID
-            x_data_product_id = (
-                payload.Event.HTTPRequest.Header.X_Data_Product_ID
-            )
+            x_data_product_id = payload.Event.HTTPRequest.Header.X_Data_Product_ID
             if not x_annotation_id or len(x_annotation_id) != 1:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -436,9 +475,7 @@ def _handle_uas_project_hooks(
             process_annotation_attachment_uploaded_to_tusd(
                 db,
                 storage_path=Path(storage.Path),
-                original_filename=Path(
-                    payload.Event.Upload.MetaData.filename
-                ),
+                original_filename=Path(payload.Event.Upload.MetaData.filename),
                 project_id=project.id,
                 flight_id=flight.id,
                 data_product_id=x_data_product_id[0],
@@ -449,19 +486,32 @@ def _handle_uas_project_hooks(
                 _update_upload_record_to_finished(db, existing_upload)
             return {"status": "ok"}
 
-        _update_upload_record_to_finished(db, existing_upload)
-        # After _update_upload_record_to_finished, existing_upload is guaranteed not None
-        assert existing_upload is not None
+        upload_record, created_now = _get_or_create_upload_for_post_finish(
+            payload, db, upload_id, existing_upload
+        )
+        if created_now:
+            # record was created outside post-create, so re-check project access
+            project_response = crud.project.get_user_project(
+                db,
+                user_id=upload_record.user_id,
+                project_id=project_id,
+                permission="rw",
+            )
+            if project_response.get("response_code") != status.HTTP_200_OK:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+                )
+        _update_upload_record_to_finished(db, upload_record)
 
         # only run post processing if upload was in progress
-        if is_uploading == True or not existing_upload:
+        if is_uploading == True or created_now:
             storage = payload.Event.Upload.Storage
             if storage and os.path.exists(storage.Path):
                 if data_type != "raw":
                     # post-processing for geotiffs and point clouds
                     process_data_product_uploaded_to_tusd(
                         db,
-                        user_id=existing_upload.user_id,
+                        user_id=upload_record.user_id,
                         storage_path=Path(storage.Path),
                         original_filename=Path(payload.Event.Upload.MetaData.filename),
                         dtype=data_type,
@@ -471,7 +521,7 @@ def _handle_uas_project_hooks(
                 else:
                     process_raw_data_uploaded_to_tusd(
                         db,
-                        user_id=existing_upload.user_id,
+                        user_id=upload_record.user_id,
                         storage_path=Path(storage.Path),
                         original_filename=Path(payload.Event.Upload.MetaData.filename),
                         project_id=project.id,
@@ -495,31 +545,6 @@ def _handle_indoor_project_hooks(
     indoor_project_id: UUID,
 ) -> Any:
     """Handle TUSD hooks for indoor projects."""
-    # For pre-create and post-create, we may not have existing_upload yet
-    # For post-finish, we need existing_upload for user_id
-    if payload.Type in ["post-finish"] and not existing_upload:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Upload record not found",
-        )
-
-    # For post-finish, check if user has permission to read/write to indoor project
-    if payload.Type == "post-finish":
-        # Type narrowing: existing_upload is guaranteed not None by guard above
-        assert existing_upload is not None
-        try:
-            crud.indoor_project.get_with_permission(
-                db,
-                indoor_project_id=indoor_project_id,
-                user_id=existing_upload.user_id,
-                required_permission=Role.MANAGER,
-            )
-        except (PermissionDenied, ResourceNotFound):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Permission denied",
-            )
-
     # Handle hook types
     if payload.Type == "pre-create":
         return _handle_pre_create_authorization_indoor(payload, db, indoor_project_id)
@@ -539,12 +564,28 @@ def _handle_indoor_project_hooks(
         return {"status": "ok"}
 
     if payload.Type == "post-finish":
-        # Type narrowing: existing_upload is guaranteed not None by guard above
-        assert existing_upload is not None
-        _update_upload_record_to_finished(db, existing_upload)
+        upload_record, created_now = _get_or_create_upload_for_post_finish(
+            payload, db, upload_id, existing_upload
+        )
+
+        # check if user has permission to read/write to indoor project
+        try:
+            crud.indoor_project.get_with_permission(
+                db,
+                indoor_project_id=indoor_project_id,
+                user_id=upload_record.user_id,
+                required_permission=Role.MANAGER,
+            )
+        except (PermissionDenied, ResourceNotFound):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Permission denied",
+            )
+
+        _update_upload_record_to_finished(db, upload_record)
 
         # only run post processing if upload was in progress
-        if is_uploading == True or not existing_upload:
+        if is_uploading == True or created_now:
             storage = payload.Event.Upload.Storage
             if storage and os.path.exists(storage.Path):
                 # extract treatment from custom header
@@ -555,7 +596,7 @@ def _handle_indoor_project_hooks(
 
                 process_indoor_data_uploaded_to_tusd(
                     db,
-                    user_id=existing_upload.user_id,
+                    user_id=upload_record.user_id,
                     storage_path=Path(storage.Path),
                     original_filename=Path(payload.Event.Upload.MetaData.filename),
                     indoor_project_id=indoor_project_id,
