@@ -32,7 +32,6 @@ from app.schemas.job import Status
 from app.tasks.utils import validate_3dgs_image, validate_panoramic_image
 from app.utils.lcc_validator import unpack_lcc_zip
 
-
 logger = get_task_logger(__name__)
 
 # 32 MB buffer size for copying files
@@ -751,6 +750,40 @@ def upload_panoramic(
     return None
 
 
+def run_untwine(input_las: Path, output_copc: Path, a_srs: str | None = None) -> bool:
+    """Run untwine to convert a las/laz point cloud to COPC format.
+
+    Args:
+        input_las (Path): Filepath for input las/laz point cloud.
+        output_copc (Path): Filepath for output COPC.
+        a_srs (str | None): Optional EPSG code to assign to the output.
+
+    Returns:
+        bool: True if untwine succeeded and wrote a non-empty COPC.
+    """
+    untwine_cmd: list[str] = ["untwine", "-i", str(input_las), "-o", str(output_copc)]
+    if a_srs:
+        untwine_cmd.extend(["--a_srs", a_srs])
+
+    result = subprocess.run(untwine_cmd, capture_output=True, text=True)
+
+    # clean up temp directory created by untwine
+    if os.path.exists(f"{output_copc}_tmp"):
+        shutil.rmtree(f"{output_copc}_tmp")
+
+    if result.returncode != 0:
+        logger.error(
+            f"untwine exited with code {result.returncode}: {result.stderr.strip()}"
+        )
+        return False
+
+    if not os.path.exists(output_copc) or os.path.getsize(output_copc) == 0:
+        logger.error("untwine exited cleanly but produced an empty or missing COPC")
+        return False
+
+    return True
+
+
 @celery_app.task(name="upload_point_cloud_task")
 def upload_point_cloud(
     storage_path: str,
@@ -768,8 +801,8 @@ def upload_point_cloud(
         job_id (UUID): Job ID for job associated with upload process.
         data_product_id (UUID): Data product ID for uploaded point cloud.
 
-    Raises:
-        Exception: Raise if EPT or COPG subprocesses fail.
+    Returns:
+        str | None: Filepath for original point cloud, or None if the task failed.
     """
     in_las = Path(las_filepath)
 
@@ -784,7 +817,7 @@ def upload_point_cloud(
 
     # retrieve job associated with this task
     try:
-        job = JobManager(job_id=job_id)
+        job = JobManager(job_id=job_id, db=db)
     except ValueError:
         # remove uploaded file and raise exception
         if os.path.exists(in_las):
@@ -820,6 +853,7 @@ def upload_point_cloud(
             copc_laz_filepath = in_las.parents[1] / in_las.name
         else:
             copc_laz_filepath = in_las.parents[1] / in_las.with_suffix(".copc.laz").name
+            epsg_code: str | None = None
             # get UTM EPSG code if needed
             if project_to_utm:
                 # read the point cloud metadata
@@ -854,25 +888,46 @@ def upload_point_cloud(
                 else:
                     epsg_code = get_utm_epsg_from_latlon(mean_y, mean_x)
 
-            # use pdal info to find the EPSG code of the point cloud
-            untwine_cmd: list[str] = [
-                "untwine",
-                "-i",
-                str(in_las),
-                "-o",
-                str(copc_laz_filepath),
-            ]
-
-            # project to UTM if flag set and UTM EPSG code found
-            if project_to_utm and epsg_code:
-                untwine_cmd.extend(["--a_srs", epsg_code])
-
             # run untwine command
-            subprocess.run(untwine_cmd)
+            if not run_untwine(in_las, copc_laz_filepath, a_srs=epsg_code):
+                # untwine crashes on files with corrupt headers (e.g. an unset
+                # bounding box); rewrite the file with pdal to rebuild the
+                # header from the actual points, then retry once
+                logger.info("Retrying COPC build with repaired point cloud")
+                repaired_las = in_las.parent / f"repaired_{in_las.name}"
+                try:
+                    repair_result = subprocess.run(
+                        [
+                            "pdal",
+                            "translate",
+                            str(in_las),
+                            str(repaired_las),
+                            "--writers.las.forward=all",
+                        ],
+                        capture_output=True,
+                        text=True,
+                    )
+                    if repair_result.returncode != 0:
+                        logger.error(
+                            f"pdal translate exited with code "
+                            f"{repair_result.returncode}: "
+                            f"{repair_result.stderr.strip()}"
+                        )
+                        raise RuntimeError("Failed to repair uploaded point cloud")
+                    if not run_untwine(
+                        repaired_las, copc_laz_filepath, a_srs=epsg_code
+                    ):
+                        raise RuntimeError("Failed to convert point cloud to COPC")
+                finally:
+                    if repaired_las.exists():
+                        repaired_las.unlink()
 
-            # clean up temp directory created by untwine
-            if os.path.exists(f"{copc_laz_filepath}_tmp"):
-                shutil.rmtree(f"{copc_laz_filepath}_tmp")
+        # never publish a missing or empty COPC
+        if (
+            not os.path.exists(copc_laz_filepath)
+            or os.path.getsize(copc_laz_filepath) == 0
+        ):
+            raise RuntimeError("COPC output is missing or empty")
     except Exception:
         logger.exception("Failed to build COPC from uploaded point cloud")
         shutil.rmtree(in_las.parents[1])
