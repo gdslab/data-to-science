@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useParams, useRevalidator } from 'react-router';
 
 import { DataProduct } from '../../Project';
+import { RawDataProps } from '../RawData/RawData.types';
 import { Button } from '../../../../../Buttons';
 import TableCardRadioInput from '../../../../../TableCardRadioInput';
 import DataProductUploadModal from './DataProductUploadModal';
@@ -28,7 +29,13 @@ function getDataProductsDisplayModeFromLS(): 'table' | 'carousel' {
   }
 }
 
-export default function DataProducts({ data }: { data: DataProduct[] }) {
+export default function DataProducts({
+  data,
+  rawData,
+}: {
+  data: DataProduct[];
+  rawData: RawDataProps[];
+}) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
   const [tableView, toggleTableView] = useState<'table' | 'carousel'>(
@@ -70,6 +77,13 @@ export default function DataProducts({ data }: { data: DataProduct[] }) {
     [data]
   );
 
+  // Resolve a product's source raw_data_id to the upload's original filename so
+  // the card and table can show which raw data it was generated from.
+  const rawDataFilenames = useMemo(
+    () => new Map(rawData.map((rd) => [rd.id, rd.original_filename])),
+    [rawData]
+  );
+
   return (
     <div className="h-full flex flex-col">
       <div className="h-24">
@@ -81,7 +95,11 @@ export default function DataProducts({ data }: { data: DataProduct[] }) {
       </div>
 
       {tableView === 'table' && (
-        <DataProductsTable data={sortedDataProducts} setStatus={setStatus} />
+        <DataProductsTable
+          data={sortedDataProducts}
+          rawDataFilenames={rawDataFilenames}
+          setStatus={setStatus}
+        />
       )}
 
       {tableView === 'carousel' && (
@@ -93,6 +111,7 @@ export default function DataProducts({ data }: { data: DataProduct[] }) {
               otherDataProducts={sortedDataProducts.filter(
                 (dp) => dp.id !== dataProduct.id
               )}
+              rawDataFilenames={rawDataFilenames}
               setStatus={setStatus}
             />
           ))}

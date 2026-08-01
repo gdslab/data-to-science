@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from .file_permission import FilePermission
     from .flight import Flight
     from .job import Job
+    from .raw_data import RawData
     from .user_style import UserStyle
     from .vector_layer import VectorLayer
 
@@ -62,6 +63,12 @@ class DataProduct(Base):
     flight_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("flights.id"), nullable=False
     )
+    # Source raw data upload this product was derived from by the external image
+    # processing service. Null for directly uploaded products. SET NULL on delete
+    # so cleanup jobs can hard-delete deactivated raw data without FK violations.
+    raw_data_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("raw_data.id", ondelete="SET NULL"), nullable=True
+    )
     # relationships
     annotations: Mapped[List["Annotation"]] = relationship(
         back_populates="data_product",
@@ -75,6 +82,7 @@ class DataProduct(Base):
         back_populates="file", cascade="all, delete"
     )
     flight: Mapped["Flight"] = relationship(back_populates="data_products")
+    raw_data: Mapped[Optional["RawData"]] = relationship(back_populates="data_products")
     jobs: Mapped[List["Job"]] = relationship(
         back_populates="data_product", cascade="all, delete"
     )

@@ -87,6 +87,39 @@ function ProcessingJobSettings({ job }: { job: ProcessingJob }) {
   );
 }
 
+const OUTPUT_DATA_TYPE_LABELS: Record<string, string> = {
+  point_cloud: 'Point Cloud',
+  dem: 'DEM',
+  ortho: 'Ortho',
+};
+
+function formatOutputDataType(dataType: string): string {
+  return OUTPUT_DATA_TYPE_LABELS[dataType] ?? dataType;
+}
+
+function ProcessingJobOutputs({ job }: { job: ProcessingJob }) {
+  const outputs = job.extra?.data_products;
+  if (!outputs || outputs.length === 0) {
+    // Runs from before output tracking, or that produced nothing recorded.
+    return (
+      <span className="text-sm italic text-gray-400">Outputs not recorded</span>
+    );
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span className="text-sm text-gray-600">Outputs:</span>
+      {outputs.map((output) => (
+        <span
+          key={output.id}
+          className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700"
+        >
+          {formatOutputDataType(output.data_type)}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export default function RawDataProcessingHistoryModal({
   rawData,
 }: {
@@ -180,6 +213,7 @@ export default function RawDataProcessingHistoryModal({
                     </span>
                   )}
                   <ProcessingJobSettings job={job} />
+                  {job.status === 'SUCCESS' && <ProcessingJobOutputs job={job} />}
                 </li>
               ))}
             </ul>

@@ -1170,9 +1170,7 @@ def test_running_tool_with_no_product_selected(
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
     data_product = SampleDataProduct(db, data_type="dsm", user=current_user)
-    response = client.post(
-        get_tools_url(data_product), json=get_processing_request()
-    )
+    response = client.post(get_tools_url(data_product), json=get_processing_request())
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
@@ -1362,9 +1360,7 @@ def test_create_from_ext_storage_stores_per_job_report(
             "raw_data_id": str(raw_data.obj.id),
         },
     }
-    with patch(
-        "app.utils.job_manager.get_db", side_effect=lambda: iter([db])
-    ):
+    with patch("app.utils.job_manager.get_db", side_effect=lambda: iter([db])):
         response = client.post(
             f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
             f"/flights/{raw_data.flight.id}/data_products/create_from_ext_storage",
@@ -1373,9 +1369,7 @@ def test_create_from_ext_storage_stores_per_job_report(
     assert response.status_code == status.HTTP_202_ACCEPTED
 
     # report copied with per-job filename
-    expected_report = (
-        Path(raw_data.obj.filepath).parent / f"report_{job.id}.pdf"
-    )
+    expected_report = Path(raw_data.obj.filepath).parent / f"report_{job.id}.pdf"
     assert expected_report.exists()
     assert expected_report.read_bytes() == b"%PDF-1.4 test report"
 
@@ -1392,9 +1386,89 @@ def test_create_from_ext_storage_stores_per_job_report(
         f"/flights/{raw_data.flight.id}/raw_data/{raw_data.obj.id}/jobs"
     )
     assert response.status_code == status.HTTP_200_OK
-    response_job = next(
-        j for j in response.json() if j["id"] == str(job.id)
-    )
+    response_job = next(j for j in response.json() if j["id"] == str(job.id))
     assert response_job["extra"]["report"] == (
         f"{settings.API_DOMAIN}{expected_report}"
     )
+
+
+def test_create_from_ext_storage_links_products_to_raw_data(
+    client: TestClient, db: Session, tmp_path, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    raw_data = SampleRawData(db, user=current_user)
+    job = create_job(
+        db,
+        name="processing-raw-data",
+        raw_data_id=raw_data.obj.id,
+        status=JobStatus.INPROGRESS,
+        extra={"backend": "odm", "settings": {"orthoResolution": 4.0}},
+    )
+    token = secrets.token_urlsafe()
+    crud.user.create_single_use_token(
+        db,
+        obj_in=schemas.SingleUseTokenCreate(
+            token=security.get_token_hash(token, salt="rawdata")
+        ),
+        user_id=raw_data.user.id,
+    )
+    # data product produced by the external processing service
+    product_file = tmp_path / "ortho.tif"
+    product_file.write_bytes(b"fake tif")
+
+    payload = {
+        "token": token,
+        "job_id": str(job.id),
+        "status": {"code": 1, "message": "completed"},
+        "products": [
+            {
+                "data_type": "ortho",
+                "filename": "ortho.tif",
+                "storage_path": str(product_file),
+            }
+        ],
+        "report": None,
+    }
+    with patch(
+        "app.utils.tusd.post_processing.upload_geotiff.apply_async"
+    ) as mock_apply, patch(
+        "app.utils.job_manager.get_db", side_effect=lambda: iter([db])
+    ):
+        response = client.post(
+            f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
+            f"/flights/{raw_data.flight.id}/data_products/create_from_ext_storage",
+            json=payload,
+        )
+    assert response.status_code == status.HTTP_202_ACCEPTED
+    # the post-processing celery task was dispatched for the product
+    mock_apply.assert_called_once()
+
+    # job marked successful with outputs recorded and existing extra preserved
+    updated_job = crud.job.get(db, id=job.id)
+    assert updated_job
+    assert updated_job.status == JobStatus.SUCCESS
+    assert updated_job.extra["settings"] == {"orthoResolution": 4.0}
+    outputs = updated_job.extra["data_products"]
+    assert len(outputs) == 1
+    assert outputs[0]["data_type"] == "ortho"
+
+    # the created data product links back to the source raw data
+    created = crud.data_product.get(db, id=UUID(outputs[0]["id"]))
+    assert created is not None
+    assert created.raw_data_id == raw_data.obj.id
+
+
+def test_read_data_products_includes_raw_data_id(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user, data_type="ortho")
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{data_product.project.id}"
+        f"/flights/{data_product.flight.id}/data_products"
+    )
+    assert response.status_code == status.HTTP_200_OK
+    products = response.json()
+    match = next(p for p in products if p["id"] == str(data_product.obj.id))
+    # directly uploaded products carry no raw data source
+    assert match["raw_data_id"] is None

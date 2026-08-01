@@ -34,6 +34,7 @@ class DataProductCreate(DataProductBase):
     filepath: str
     original_filename: str
     stac_properties: Optional[STACProperties] = None
+    raw_data_id: Optional[UUID4] = None
 
 
 # properties to receive via API on update
@@ -51,6 +52,7 @@ class DataProductInDBBase(DataProductBase, from_attributes=True):
     data_type: str
     filepath: str
     flight_id: UUID4
+    raw_data_id: Optional[UUID4] = None
     original_filename: str
     stac_properties: Optional[STACProperties] = None
     user_style: Optional[dict] = None

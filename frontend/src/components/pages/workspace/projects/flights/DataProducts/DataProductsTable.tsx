@@ -21,6 +21,7 @@ import ToolboxModal from './ToolboxModal';
 import XmlMetadataAttachment from './XmlMetadata/XmlMetadataAttachment';
 import DataProductShareModal from './DataProductShareModal';
 import DataProductEngagement from '../../../../../engagement/DataProductEngagement';
+import { resolveRawDataSource } from './rawDataSource';
 import { DataProduct, ProjectDetail } from '../../Project';
 
 export function isGeoTIFF(dataType: string): boolean {
@@ -200,9 +201,11 @@ function DataTypeSelect({
 
 export default function DataProductsTable({
   data,
+  rawDataFilenames,
   setStatus,
 }: {
   data: DataProduct[];
+  rawDataFilenames: Map<string, string>;
   setStatus: React.Dispatch<React.SetStateAction<Status | null>>;
 }) {
   const navigate = useNavigate();
@@ -213,6 +216,7 @@ export default function DataProductsTable({
     'Preview',
     'Likes & Views',
     'File',
+    'Source',
     'Action',
   ];
 
@@ -343,6 +347,30 @@ export default function DataProductsTable({
                         )}
                       </div>
                     ),
+                    (() => {
+                      const source = resolveRawDataSource(
+                        dataset,
+                        rawDataFilenames
+                      );
+                      return (
+                        <div
+                          key={`row-${dataset.id}-source`}
+                          className="h-full flex items-center justify-center text-sm text-slate-600"
+                        >
+                          {source.kind === 'named' ? (
+                            <span className="truncate" title={source.filename}>
+                              {source.filename}
+                            </span>
+                          ) : source.kind === 'unavailable' ? (
+                            <span className="italic text-slate-400">
+                              No longer available
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">&mdash;</span>
+                          )}
+                        </div>
+                      );
+                    })(),
                   ],
                 }))}
                 actions={getDataProductActions(
