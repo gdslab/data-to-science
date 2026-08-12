@@ -17,7 +17,7 @@ export default function PotreeViewer({ copcPath }: { copcPath: string }) {
       <iframe
         className="h-full w-full touch-none"
         src={potreeViewerUrl}
-        sandbox="allow-same-origin allow-scripts allow-popups allow-pointer-lock allow-modals allow-forms"
+        sandbox="allow-same-origin allow-scripts allow-popups allow-pointer-lock allow-modals allow-forms allow-downloads"
       ></iframe>
     </Fragment>
   );
