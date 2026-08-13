@@ -27,7 +27,14 @@
 set -euo pipefail
 
 CLI_ONLY=false
-[[ "${1:-}" == "--cli-only" ]] && CLI_ONLY=true
+case "${1:-}" in
+    --cli-only) CLI_ONLY=true ;;
+    "") ;;
+    # Silently ignoring an unrecognised flag would run the full suite while the
+    # caller believed they had asked for something narrower.
+    *) printf '  FAIL  unknown argument: %s (only --cli-only is accepted)\n' "$1" >&2
+       exit 1 ;;
+esac
 
 # Which tree to inspect. The geo base ships two: /opt/geo, unstripped and carrying
 # headers for the application's build stage, and /opt/geo-runtime, the stripped and
@@ -50,7 +57,12 @@ PDAL_EXPECTED="${PDAL_EXPECTED:-${PDAL:-2.10.0}}"
 GEOS_EXPECTED="${GEOS_EXPECTED:-${GEOS:-3.14.1}}"
 PROJ_EXPECTED="${PROJ_EXPECTED:-${PROJ:-9.7}}"
 
-WORK="$(mktemp -d)"
+# Not a bare mktemp -d: that lands in /tmp, and the production backend runs with a
+# read-only root filesystem and a tmpfs on /var/tmp only, so the documented command
+# would die here before running a single check -- on the one image where verifying
+# the shipped stack matters most. /var/tmp is writable in the dev and geo base
+# images too, so this works everywhere the script is meant to run.
+WORK="$(mktemp -d -p "${TMPDIR:-/var/tmp}")"
 trap 'rm -rf "$WORK"' EXIT
 
 pass() { printf '  ok    %s\n' "$1"; }
@@ -78,17 +90,22 @@ pdal --version | grep -qF "$PDAL_EXPECTED" \
     || fail "pdal reports $(pdal --version | tr -d '\n'), expected $PDAL_EXPECTED"
 pass "pdal $PDAL_EXPECTED"
 
+# Both loops anchor on the short-name column -- "  <name> -raster-" / "  <name>
+# -vector-" -- rather than searching the line. The descriptions repeat driver names,
+# so a loose match reports a driver present when only a relative of it is: GeoJSON
+# matches GeoJSONSeq's "GeoJSON Sequence", and JPEG matches JP2OpenJPEG's "JPEG
+# 2000". Word boundaries do not help, since both are standalone words there.
 section "gdal raster drivers"
 formats="$(gdalinfo --formats)"
 for driver in GTiff COG VRT MEM JPEG PNG JP2OpenJPEG; do
-    grep -qw "$driver" <<<"$formats" || fail "raster driver missing: $driver"
+    grep -q "^ *${driver} -" <<<"$formats" || fail "raster driver missing: $driver"
     pass "$driver"
 done
 
 section "ogr vector drivers"
 vformats="$(ogrinfo --formats)"
 for driver in "ESRI Shapefile" FlatGeobuf GPKG GeoJSON SQLite CSV; do
-    grep -q "$driver" <<<"$vformats" || fail "vector driver missing: $driver"
+    grep -q "^ *${driver} -" <<<"$vformats" || fail "vector driver missing: $driver"
     pass "$driver"
 done
 
@@ -139,21 +156,23 @@ pass "gdaldem hillshade"
 # it ships optional GPU and arrow-flight libraries that are never loaded and
 # always report as missing, which says nothing about the geospatial stack.
 section "shared library resolution"
-objects="$(
-    {
-        for dir in "$GEO_PREFIX/lib" "$GEO_PREFIX/bin"; do
-            [[ -d "$dir" ]] && find "$dir" -type f
-        done
-        [[ -d /opt/venv ]] && find /opt/venv -name '*.so*' -type f
-    } 2>/dev/null || true
+geo_objects="$(
+    for dir in "$GEO_PREFIX/lib" "$GEO_PREFIX/bin"; do
+        [[ -d "$dir" ]] && find "$dir" -type f
+    done 2>/dev/null || true
 )"
-# Every directory above is optional, so a wrong GEO_PREFIX would sweep nothing and
-# report success. The count in the pass line makes it visible that it did not.
-[[ -n "$objects" ]] || fail "no objects under $GEO_PREFIX; GEO_PREFIX is wrong"
+venv_objects="$([[ -d /opt/venv ]] && find /opt/venv -name '*.so*' -type f 2>/dev/null || true)"
+# Both directories are optional, so a wrong GEO_PREFIX would sweep nothing and report
+# success. Counting the two separately keeps that visible: in the application image
+# the venv contributes most of the objects, so a single total would stay large and
+# healthy-looking even with the geo tree missing entirely.
+[[ -n "$geo_objects" ]] || fail "no objects under $GEO_PREFIX; GEO_PREFIX is wrong"
+objects="$(printf '%s\n' "$geo_objects" "$venv_objects" | grep -v '^$' || true)"
 missing="$(xargs -r -n 50 ldd <<<"$objects" 2>/dev/null | grep 'not found' || true)"
 [[ -z "$missing" ]] || fail "unresolved shared libraries:
 $missing"
-pass "no unresolved shared libraries in $(wc -l <<<"$objects") objects under $GEO_PREFIX"
+pass "no unresolved shared libraries in $(grep -c . <<<"$geo_objects") objects under \
+$GEO_PREFIX and $([[ -n "$venv_objects" ]] && grep -c . <<<"$venv_objects" || echo 0) under /opt/venv"
 
 if [[ "$CLI_ONLY" == true ]]; then
     printf '\nCLI CHECKS PASSED\n'
