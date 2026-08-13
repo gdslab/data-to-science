@@ -88,7 +88,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     else \
         uv sync --frozen --no-install-project --no-dev; \
     fi \
-    && uv pip check \
+    && uv pip check --python /opt/venv/bin/python \
     && find /opt/venv -name '*.so*' -type f \
         -exec sh -c 'strip --strip-unneeded "$1" 2>/dev/null || true' _ {} \; \
     && find /opt/venv -follow -type f -name '*.pyc' -delete
@@ -126,9 +126,10 @@ RUN userdel -r ubuntu 2>/dev/null || true \
     && useradd -u 1000 -g 1000 d2s
 
 # The stripped tree lands at /opt/geo so the rpaths and data paths baked into the
-# libraries stay correct.
-COPY --from=geo-base --chown=d2s:d2s /opt/geo-runtime /opt/geo
-COPY --from=python-builder --chown=d2s:d2s /opt/venv /opt/venv
+# libraries stay correct. Both stay root-owned: nothing at runtime writes to the
+# interpreter, its packages or the native libraries.
+COPY --from=geo-base /opt/geo-runtime /opt/geo
+COPY --from=python-builder /opt/venv /opt/venv
 
 # The virtualenv comes first on PATH so the start scripts and the AgTC endpoint,
 # which all spawn a bare python/alembic/celery/uvicorn, get this interpreter.

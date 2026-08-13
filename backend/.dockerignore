@@ -3,6 +3,7 @@
 .git
 .gitignore
 .dockerignore
+backend.dockerfile
 geobase.dockerfile
 .mypy_cache
 **/.mypy_cache
@@ -15,5 +16,3 @@ geobase.dockerfile
 .coverage
 htmlcov
 logs
-environment.yml
-linux-64.conda.lock

@@ -42,11 +42,17 @@ fail() { printf '  FAIL  %s\n' "$1" >&2; exit 1; }
 section() { printf '\n== %s\n' "$1"; }
 
 # Locate the raster the CLI checks operate on. /app is the image layout; the
-# repo-relative path covers running this from a checkout.
+# repo-relative path covers running this from a checkout. A missing fixture is a
+# failure rather than a skip: the application image ships it and CI mounts it, so
+# its absence means the checks below are not running where someone thinks they are.
 TEST_TIF=""
 for candidate in /app/app/tests/data/test.tif ./app/tests/data/test.tif; do
     [[ -f "$candidate" ]] && TEST_TIF="$candidate" && break
 done
+[[ -n "$TEST_TIF" ]] || {
+    printf '  FAIL  test.tif not found; mount app/tests/data to run the gdal checks\n' >&2
+    exit 1
+}
 
 section "versions"
 gdalinfo --version | grep -qF "GDAL $GDAL_EXPECTED" \
@@ -85,28 +91,25 @@ for tool in gdalinfo gdal_translate gdaldem ogrinfo pdal untwine; do
     pass "$tool"
 done
 
-if [[ -n "$TEST_TIF" ]]; then
-    section "gdal cli paths used by ImageProcessor and the hillshade tool"
-    gdal_translate -q -of COG -co COMPRESS=DEFLATE -co BIGTIFF=YES \
-        -co STATISTICS=YES "$TEST_TIF" "$WORK/cog.tif"
-    # a COG reads back through the GTiff driver; the tell is the layout metadata
-    gdalinfo -json "$WORK/cog.tif" \
-        | python -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["metadata"]["IMAGE_STRUCTURE"].get("LAYOUT") == "COG" else 1)' \
-        || fail "COG output does not report LAYOUT=COG"
-    pass "gdal_translate -of COG"
-    gdalinfo -json -stats "$WORK/cog.tif" >/dev/null
-    pass "gdalinfo -json -stats"
-    gdal_translate -q -of JPEG -ot Byte -co QUALITY=75 -outsize 320 0 \
-        "$TEST_TIF" "$WORK/preview.jpg"
-    test -s "$WORK/preview.jpg" || fail "JPEG preview is empty"
-    pass "gdal_translate -of JPEG"
-    gdaldem hillshade -q -z 1 -compute_edges -multidirectional -of GTIFF \
-        "$TEST_TIF" "$WORK/hillshade.tif"
-    test -s "$WORK/hillshade.tif" || fail "hillshade output is empty"
-    pass "gdaldem hillshade"
-else
-    printf '\n== skipping gdal cli paths (test.tif not found)\n'
-fi
+section "gdal cli paths used by ImageProcessor and the hillshade tool"
+gdal_translate -q -of COG -co COMPRESS=DEFLATE -co BIGTIFF=YES \
+    -co STATISTICS=YES "$TEST_TIF" "$WORK/cog.tif"
+# A COG reads back through the GTiff driver; the tell is the layout metadata.
+# Read it from the plain text report rather than the json one, so this section
+# also runs in the geo base image, which ships no Python.
+gdalinfo "$WORK/cog.tif" | grep -q 'LAYOUT=COG' \
+    || fail "COG output does not report LAYOUT=COG"
+pass "gdal_translate -of COG"
+gdalinfo -json -stats "$WORK/cog.tif" >/dev/null
+pass "gdalinfo -json -stats"
+gdal_translate -q -of JPEG -ot Byte -co QUALITY=75 -outsize 320 0 \
+    "$TEST_TIF" "$WORK/preview.jpg"
+test -s "$WORK/preview.jpg" || fail "JPEG preview is empty"
+pass "gdal_translate -of JPEG"
+gdaldem hillshade -q -z 1 -compute_edges -multidirectional -of GTIFF \
+    "$TEST_TIF" "$WORK/hillshade.tif"
+test -s "$WORK/hillshade.tif" || fail "hillshade output is empty"
+pass "gdaldem hillshade"
 
 if [[ "$CLI_ONLY" == true ]]; then
     printf '\nCLI CHECKS PASSED\n'
@@ -115,7 +118,7 @@ fi
 
 section "python imports and native versions"
 GDAL_EXPECTED="$GDAL_EXPECTED" GEOS_EXPECTED="$GEOS_EXPECTED" \
-PROJ_EXPECTED="$PROJ_EXPECTED" python - <<'PY'
+PROJ_EXPECTED="$PROJ_EXPECTED" PDAL_EXPECTED="$PDAL_EXPECTED" python - <<'PY'
 import os
 
 from osgeo import gdal, ogr, osr  # noqa: F401
@@ -125,7 +128,7 @@ import laspy
 import numpy
 import openpyxl  # noqa: F401
 import pandas
-import pdal  # noqa: F401
+import pdal
 import pyarrow  # noqa: F401
 import pyogrio  # noqa: F401
 import pyproj
@@ -139,18 +142,23 @@ from rasterio.warp import transform_bounds  # noqa: F401
 gdal_expected = os.environ["GDAL_EXPECTED"]
 geos_expected = tuple(int(p) for p in os.environ["GEOS_EXPECTED"].split("."))
 proj_expected = os.environ["PROJ_EXPECTED"]
+pdal_expected = os.environ["PDAL_EXPECTED"]
 
 assert gdal.__version__ == gdal_expected, f"osgeo.gdal {gdal.__version__}"
 assert rasterio.__gdal_version__ == gdal_expected, f"rasterio {rasterio.__gdal_version__}"
 assert shapely.geos_version == geos_expected, f"shapely geos {shapely.geos_version}"
 assert pyproj.proj_version_str.startswith(proj_expected), pyproj.proj_version_str
 assert laspy.LazBackend.Lazrs.is_available(), "laspy lazrs backend unavailable"
+# The bindings carry their own version (3.x) but report the libpdal they linked,
+# which is the number that has to match this image.
+assert pdal.info.version == pdal_expected, f"pdal bindings linked {pdal.info.version}"
 
 print(f"  ok    osgeo.gdal {gdal.__version__}")
 print(f"  ok    rasterio {rasterio.__version__} on GDAL {rasterio.__gdal_version__}")
 print(f"  ok    fiona {fiona.__version__} on GDAL {fiona.__gdal_version__}")
 print(f"  ok    shapely {shapely.__version__} on GEOS {'.'.join(map(str, shapely.geos_version))}")
 print(f"  ok    pyproj {pyproj.__version__} on PROJ {pyproj.proj_version_str}")
+print(f"  ok    pdal {pdal.__version__} on libpdal {pdal.info.version}")
 print(f"  ok    laspy {laspy.__version__} with lazrs")
 print(f"  ok    numpy {numpy.__version__}, pandas {pandas.__version__}")
 PY

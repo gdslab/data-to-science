@@ -1,9 +1,13 @@
 name: Build geo base image
 
-# Builds and publishes the native geospatial stack (GDAL, PDAL, PROJ, GEOS,
-# Untwine) that backend.dockerfile builds on top of. This takes upwards of an
-# hour, so it runs only when geobase.dockerfile changes or when triggered by
-# hand -- the application image build does not compile any of it.
+# Builds the native geospatial stack (GDAL, PDAL, PROJ, GEOS, Untwine) that
+# backend.dockerfile builds on top of. This takes upwards of an hour, so it runs
+# only when geobase.dockerfile changes or when triggered by hand -- the
+# application image build does not compile any of it.
+#
+# Pushing to main only builds and smoke-tests; it does not publish. Publishing is
+# a deliberate act: run this workflow from the Actions tab with push set to true,
+# which matches how the other images ship through helpers/build_and_deploy.sh.
 #
 # The geospatial pins in backend/pyproject.toml describe the same libraries this
 # image provides, so republishing after a version change and updating those pins
@@ -44,9 +48,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # The raster fixture has to be mounted for the COG, JPEG and hillshade
+      # checks to run; without it the script fails rather than skipping past them.
       - name: Smoke test
         run: |
-          docker run --rm -v "$PWD/backend/scripts:/scripts:ro" \
+          docker run --rm \
+            -v "$PWD/backend/scripts:/scripts:ro" \
+            -v "$PWD/backend/app/tests/data:/app/app/tests/data:ro" \
             ${{ env.IMAGE }} bash /scripts/verify_geo_stack.sh --cli-only
 
       - name: Log in to Docker Hub

@@ -31,11 +31,26 @@ For details on each variable, see the [Configuration](../reference/configuration
 
 ## Build Docker images
 
+The backend image builds on top of `gdslab/d2s-geo-base`, a published image holding
+GDAL, PDAL, PROJ, GEOS and Untwine compiled from source. Pull it first — its tag is
+mutable, so an old local copy would be used silently:
+
+```bash
+docker pull gdslab/d2s-geo-base:latest
+```
+
 Copy the example Docker Compose file and build the images:
 
 ```bash
 cp docker-compose.example.yml docker-compose.yml
 docker compose build
+```
+
+If you need to build the base image yourself, for instance to change the GDAL
+driver set, expect it to take 20-35 minutes:
+
+```bash
+docker build -f backend/geobase.dockerfile -t gdslab/d2s-geo-base:latest backend/
 ```
 
 ## Start the containers
@@ -60,3 +75,43 @@ After starting the containers, interactive API documentation is available at:
 ```bash
 docker compose stop
 ```
+
+## Backend dependencies
+
+Backend dependencies are declared in `backend/pyproject.toml` and locked in
+`backend/uv.lock` by [uv](https://docs.astral.sh/uv/). To add or change one, edit
+`pyproject.toml`, then regenerate the lock file and commit both:
+
+```bash
+cd backend
+uv lock
+```
+
+Runtime dependencies go in `[project.dependencies]`. Test and lint tooling goes in
+the `dev` dependency group, which is installed only when the image is built with
+`INSTALL_DEV=true` — the development Compose files pass it, so production images
+carry no test tooling.
+
+### Geospatial packages
+
+`gdal`, `pdal`, `rasterio`, `fiona`, `pyogrio`, `shapely` and `pyproj` are pinned
+exactly and compiled from source against the libraries in `gdslab/d2s-geo-base`,
+rather than installed as prebuilt wheels. That keeps one copy of each native
+library in the image and keeps the command line tools and the Python bindings on
+the same GDAL.
+
+Because of that coupling, changing the GDAL or PDAL version means rebuilding and
+republishing the base image (`backend/geobase.dockerfile`, whose source versions
+are pinned by checksum) and updating the matching `gdal==`/`pdal==` pins in
+`pyproject.toml`, in the same pull request. The backend build compares the two and
+fails if they disagree.
+
+To check the whole stack in a running container:
+
+```bash
+docker compose exec backend bash /app/scripts/verify_geo_stack.sh
+```
+
+It asserts the GDAL drivers and PDAL stages the application uses, checks that the
+Python bindings and the command line tools report the same versions, and exercises
+paths the test suite does not cover, such as CSF pipelines and COG conversion.
