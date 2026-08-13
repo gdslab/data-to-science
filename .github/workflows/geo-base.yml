@@ -35,6 +35,12 @@ on:
       - backend/geobase.dockerfile.dockerignore
       - backend/scripts/fetch-source.sh
       - backend/scripts/verify_geo_stack.sh
+      - backend/scripts/check_geo_pins.sh
+      # pyproject.toml is not a build input; it is what the declaration check below
+      # compares the built image against, so a pin-only change has to run this too.
+      # Nothing builds the application image in CI, so without this entry a pin moved
+      # on its own reaches main with nothing having checked it.
+      - backend/pyproject.toml
       - .github/workflows/geo-base.yml
 
 env:
@@ -76,6 +82,22 @@ jobs:
           load: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # The application build refuses to compile bindings against a geo base whose
+      # versions disagree with pyproject.toml -- but nothing builds the application
+      # image in CI, so that guard never runs here. Without this step, bumping
+      # GDAL_VERSION and forgetting the pin passes every check above, publishes the
+      # mutable tag, and breaks every backend build from then on.
+      #
+      # Same script the application build runs, so the two cannot disagree about what
+      # the invariant is. It takes seconds; it runs before the smoke tests so a
+      # mismatch is reported without waiting for them.
+      - name: Check pyproject declarations against the built image
+        run: |
+          docker run --rm \
+            -v "$PWD/backend/scripts/check_geo_pins.sh:/check-geo-pins:ro" \
+            -v "$PWD/backend/pyproject.toml:/pyproject.toml:ro" \
+            ${{ env.IMAGE }} sh /check-geo-pins /opt/geo/VERSIONS /pyproject.toml
 
       # The raster fixture has to be mounted for the COG, JPEG and hillshade
       # checks to run; without it the script fails rather than skipping past them.

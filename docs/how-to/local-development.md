@@ -105,6 +105,10 @@ the `dev` dependency group, which is installed only when the image is built with
 `INSTALL_DEV=true` — the development Compose files pass it, so production images
 carry no test tooling.
 
+Committing both matters: the image is built with `uv sync --locked`, which fails when
+`uv.lock` no longer describes `pyproject.toml`. Forgetting to regenerate it breaks the
+build rather than producing an image quietly missing the dependency you just added.
+
 Expect `uv lock` to change only the packages you touched. The resolver is pinned
 to a fixed point in time by `exclude-newer` in `[tool.uv]`, so adding one dependency
 resolves everything else to the versions already in the lock file rather than to
@@ -136,8 +140,10 @@ with its Python package:
   leaves it untouched. The library version is declared in the `# libpdal:` comment
   beside that pin, and that is what moves with `PDAL_VERSION`.
 
-The backend build reads both declarations and fails if either disagrees with the base
-image, naming the versions it found.
+Both declarations are checked by `backend/scripts/check_geo_pins.sh`, which fails naming
+the versions it found. The backend build runs it against the base image it is compiling
+against, and the geo base workflow runs it against the image it is about to publish — so
+moving either side without the other is caught before it reaches anyone else.
 
 To check the whole stack in a running container:
 

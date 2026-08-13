@@ -74,38 +74,23 @@ COPY pyproject.toml uv.lock ./
 # the other direction -- a geo-base rebuilt past the pin -- which would otherwise
 # link bindings and library at different versions without complaint.
 #
-# pdal needs the same guard for a different reason: pdal==3.5.3 is the bindings
-# version, so nothing in pyproject.toml pins libpdal on its own. The bindings
-# compile happily against a newer libpdal, and only verify_geo_stack.sh would
-# notice. The declaration read here is the "# libpdal:" comment beside that pin.
-#
-# Both are checked before either exits, because a version bump usually moves both
-# and failing on the first would hide the second. A declaration that cannot be
-# parsed compares unequal and fails as <unparsed>, so deleting one of these
-# comments breaks the build rather than quietly turning its check off.
-RUN . /opt/geo/VERSIONS \
-    && pinned_gdal="$(sed -n 's/.*"gdal==\([0-9][^"]*\)".*/\1/p' pyproject.toml)" \
-    && pinned_pdal="$(sed -n 's/.*"pdal==[^"]*".*# libpdal: *\([0-9][0-9.]*\).*/\1/p' pyproject.toml)" \
-    && agree=true \
-    && if [ "$pinned_gdal" != "$GDAL" ]; then \
-        echo "geo base provides GDAL ${GDAL} but pyproject.toml pins gdal==${pinned_gdal:-<unparsed>}." >&2; \
-        agree=false; \
-    fi \
-    && if [ "$pinned_pdal" != "$PDAL" ]; then \
-        echo "geo base provides libpdal ${PDAL} but pyproject.toml declares libpdal ${pinned_pdal:-<unparsed>}." >&2; \
-        agree=false; \
-    fi \
-    && if [ "$agree" != true ]; then \
-        echo "Rebuild gdslab/d2s-geo-base or change the declarations so the two agree." >&2; \
-        exit 1; \
-    fi
+# The comparison lives in scripts/check_geo_pins.sh rather than inline here, because
+# .github/workflows/geo-base.yml runs the same check against the image it is about to
+# publish. Two copies would drift, and this is the one invariant the whole split
+# between the two images rests on.
+COPY --chmod=0755 scripts/check_geo_pins.sh /usr/local/bin/check-geo-pins
+RUN check-geo-pins /opt/geo/VERSIONS pyproject.toml
 
 ARG INSTALL_DEV=false
+# --locked, not --frozen. --frozen installs whatever the lock says without checking it
+# still describes pyproject.toml, so adding a dependency and forgetting `uv lock` would
+# produce an image quietly missing it. --locked fails the build instead, and is the
+# check the geospatial pins above cannot make on their own.
 RUN --mount=type=cache,target=/root/.cache/uv \
     if [ "$INSTALL_DEV" = "true" ]; then \
-        uv sync --frozen --no-install-project; \
+        uv sync --locked --no-install-project; \
     else \
-        uv sync --frozen --no-install-project --no-dev; \
+        uv sync --locked --no-install-project --no-dev; \
     fi \
     && uv pip check --python /opt/venv/bin/python \
     && find /opt/venv -name '*.so*' -type f \
