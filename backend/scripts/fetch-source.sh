@@ -23,11 +23,19 @@ shift 2
 rounds=5
 for round in $(seq 1 "$rounds"); do
     for url in "$@"; do
+        # --connect-timeout bounds setup only, so a mirror that accepts the
+        # connection and then stalls would hang until the CI job's own timeout,
+        # an hour or more later. --speed-limit/--speed-time abort a transfer that
+        # stays under 1 KB/s for a minute; --max-time would instead punish a slow
+        # but progressing download of the 200 MB GDAL tarball. curl exits 28,
+        # which --retry-all-errors already treats as retryable.
         if ! curl -fsSL \
             --retry 3 \
             --retry-delay 5 \
             --retry-all-errors \
             --connect-timeout 30 \
+            --speed-limit 1024 \
+            --speed-time 60 \
             "$url" -o "$output"; then
             echo "fetch-source: round ${round} could not download ${url}" >&2
             continue

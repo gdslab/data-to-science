@@ -74,14 +74,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxml2-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY scripts/fetch-source.sh /usr/local/bin/fetch-source
-RUN chmod +x /usr/local/bin/fetch-source
+# --chmod rather than a separate chmod layer, and rather than relying on the mode in
+# the build context: the script is 100755 in git, but a checkout on a filesystem that
+# drops the exec bit would otherwise produce an image where every fetch below fails.
+COPY --chmod=0755 scripts/fetch-source.sh /usr/local/bin/fetch-source
 
 WORKDIR /src
+
+# Where a second URL appears below it is a mirror, tried only after the first host
+# fails, and accepted only if its bytes match the pinned checksum. PDAL and Untwine
+# publish nowhere but GitHub, so they list one URL and the retry rounds in
+# fetch-source.sh are their only cover -- that asymmetry is a fact about upstream,
+# not an omission here.
 
 # PROJ
 RUN fetch-source proj.tar.gz "${PROJ_SHA256}" \
         "https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz" \
+        "https://github.com/OSGeo/PROJ/releases/download/${PROJ_VERSION}/proj-${PROJ_VERSION}.tar.gz" \
     && tar -xzf proj.tar.gz \
     && cmake -S "proj-${PROJ_VERSION}" -B proj-build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
@@ -96,6 +105,7 @@ RUN fetch-source proj.tar.gz "${PROJ_SHA256}" \
 # GEOS
 RUN fetch-source geos.tar.bz2 "${GEOS_SHA256}" \
         "https://download.osgeo.org/geos/geos-${GEOS_VERSION}.tar.bz2" \
+        "https://github.com/libgeos/geos/releases/download/${GEOS_VERSION}/geos-${GEOS_VERSION}.tar.bz2" \
     && tar -xjf geos.tar.bz2 \
     && cmake -S "geos-${GEOS_VERSION}" -B geos-build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
