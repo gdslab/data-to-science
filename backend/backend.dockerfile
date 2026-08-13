@@ -118,6 +118,11 @@ ARG INSTALL_DEV=false
 ARG NUM_OF_WORKERS=1
 ARG LIMIT_MAX_REQUESTS=10000
 
+# The lib* entries below carry the geo stack, and match what geobase.dockerfile
+# installs in its own runtime stage. libcurl4t64 is one of them, not a companion to
+# the curl CLI: libgdal and 83 other shipped objects link libcurl.so.4, and curl is
+# here only for the compose healthcheck. Listing it explicitly means replacing that
+# healthcheck cannot take GDAL down with it.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3.12 \
     ca-certificates \
@@ -135,6 +140,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsqlite3-0 \
     libexpat1 \
     libxml2 \
+    libcurl4t64 \
     libpq5 \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /usr/bin/python3.12 /usr/bin/python
