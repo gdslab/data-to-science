@@ -103,6 +103,19 @@ dev = [
 package = false
 environments = ["sys_platform == 'linux'"]
 
+# Freezes the resolver to the package index as it stood at this moment, which is
+# what makes `uv lock` reproducible: without it uv drops the exclude-newer recorded
+# in uv.lock's [options], re-resolves all 166 packages against today's PyPI, and
+# writes a diff too large to read for what was meant to be one added dependency.
+# The value has to match uv.lock's [options] exactly or the re-resolve happens
+# anyway, and it has to be a full RFC 3339 timestamp: uv reads a bare date in the
+# local timezone, which would resolve differently on different machines.
+#
+# The tradeoff is deliberate. Nothing published after this instant can enter the
+# tree, security releases included, until someone moves the date. Do that as its
+# own change, so taking newer versions is a visible act rather than a side effect.
+exclude-newer = "2026-07-16T04:00:00Z"
+
 # Built from source so every package links the single GDAL/GEOS/PROJ in /opt/geo.
 # Wheels would each vendor their own copy, putting three GDAL builds in the image
 # and letting the CLI tools and the Python bindings drift apart.

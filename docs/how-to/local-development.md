@@ -11,6 +11,14 @@ docker --version
 docker compose --version
 ```
 
+[uv](https://docs.astral.sh/uv/getting-started/installation/) is required only if you
+change backend Python dependencies, which are locked with it. See
+[Backend dependencies](#backend-dependencies).
+
+```bash
+uv --version
+```
+
 !!! note "Platform support"
     D2S containers target the `linux/x86_64` architecture. If you are running Docker Desktop on Apple Silicon (ARM), emulation is handled automatically, but you may notice slower build times and startup.
 
@@ -96,6 +104,14 @@ Runtime dependencies go in `[project.dependencies]`. Test and lint tooling goes 
 the `dev` dependency group, which is installed only when the image is built with
 `INSTALL_DEV=true` — the development Compose files pass it, so production images
 carry no test tooling.
+
+Expect `uv lock` to change only the packages you touched. The resolver is pinned
+to a fixed point in time by `exclude-newer` in `[tool.uv]`, so adding one dependency
+resolves everything else to the versions already in the lock file rather than to
+whatever is newest on PyPI today. Nothing published after that timestamp can enter
+the tree, security releases included, until the timestamp moves. Bumping it is how
+you deliberately take newer versions — do it as its own change, since it re-resolves
+every package at once and the diff needs reading rather than skimming.
 
 ### Geospatial packages
 
