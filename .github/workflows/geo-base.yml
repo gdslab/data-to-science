@@ -5,11 +5,11 @@ name: Build geo base image
 # only when geobase.dockerfile changes or when triggered by hand -- the
 # application image build does not compile any of it.
 #
-# Pushing to main only builds and smoke-tests; it does not publish. Publishing is
-# a deliberate act: run this workflow from the Actions tab against main with push
-# set to true, which matches how the other images ship through
-# helpers/build_and_deploy.sh. Dispatching from any other ref refuses to publish --
-# the tag is mutable and every backend build consumes it.
+# Pushing to main only builds and smoke-tests; it does not publish. Publishing is a
+# deliberate act: run this workflow from the Actions tab against main with push set
+# to true. Dispatching from any other ref refuses to publish -- the tag is mutable
+# and every backend build consumes it, so anything published here reaches production
+# images immediately.
 #
 # The geospatial declarations in backend/pyproject.toml describe the same libraries
 # this image provides, so republishing after a version change and updating those
