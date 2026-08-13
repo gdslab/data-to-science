@@ -15,6 +15,11 @@
 #     -v "$PWD/backend/app/tests/data:/app/app/tests/data:ro" \
 #     gdslab/d2s-geo-base:<tag> bash /scripts/verify_geo_stack.sh --cli-only
 #
+# That checks /opt/geo, which is the tree the base image puts on PATH. The tree the
+# application image actually receives is /opt/geo-runtime, stripped and pruned; to
+# check that one, point PATH and GEO_PREFIX at it. See .github/workflows/geo-base.yml,
+# which runs both.
+#
 # Several of the paths checked here have no pytest coverage: filters.csf,
 # writers.gdal, the COG and JPEG conversions in ImageProcessor, and the pdal
 # Python bindings. This script is where those regressions get caught.
@@ -24,13 +29,20 @@ set -euo pipefail
 CLI_ONLY=false
 [[ "${1:-}" == "--cli-only" ]] && CLI_ONLY=true
 
+# Which tree to inspect. The geo base ships two: /opt/geo, unstripped and carrying
+# headers for the application's build stage, and /opt/geo-runtime, the stripped and
+# pruned copy that is what actually reaches the application image. Overriding this
+# alongside PATH is how the runtime tree gets checked; on its own PATH would move
+# the CLI checks but leave the linkage sweep reading the wrong tree.
+GEO_PREFIX="${GEO_PREFIX:-/opt/geo}"
+
 # The geo base records what it was built from. Reading it means the Python
 # version assertions below compare the pinned bindings against the libraries
 # actually present, rather than against numbers copied into this script. The
 # fallbacks cover the conda image, which has no such manifest.
-if [[ -r /opt/geo/VERSIONS ]]; then
+if [[ -r "$GEO_PREFIX/VERSIONS" ]]; then
     # shellcheck disable=SC1091
-    . /opt/geo/VERSIONS
+    . "$GEO_PREFIX/VERSIONS"
 fi
 
 GDAL_EXPECTED="${GDAL_EXPECTED:-${GDAL:-3.12.3}}"
@@ -100,8 +112,11 @@ gdal_translate -q -of COG -co COMPRESS=DEFLATE -co BIGTIFF=YES \
     -co STATISTICS=YES "$TEST_TIF" "$WORK/cog.tif"
 # A COG reads back through the GTiff driver; the tell is the layout metadata.
 # Read it from the plain text report rather than the json one, so this section
-# also runs in the geo base image, which ships no Python.
-gdalinfo "$WORK/cog.tif" | grep -q 'LAYOUT=COG' \
+# also runs in the geo base image, which ships no Python. Fed by herestring rather
+# than a pipe because grep -q closes the read end at the first match: with pipefail
+# set, a report long enough to outlive the pipe buffer would leave gdalinfo on
+# SIGPIPE and fail an assertion that had already passed.
+grep -q 'LAYOUT=COG' <<<"$(gdalinfo "$WORK/cog.tif")" \
     || fail "COG output does not report LAYOUT=COG"
 pass "gdal_translate -of COG"
 gdalinfo -json -stats "$WORK/cog.tif" >/dev/null
@@ -114,6 +129,31 @@ gdaldem hillshade -q -z 1 -compute_edges -multidirectional -of GTIFF \
     "$TEST_TIF" "$WORK/hillshade.tif"
 test -s "$WORK/hillshade.tif" || fail "hillshade output is empty"
 pass "gdaldem hillshade"
+
+# Ahead of the --cli-only exit on purpose: an unresolved libgomp or libcurl shows
+# up first in the geo base image, and a bad strip or an over-broad prune in the
+# runtime tree shows up nowhere else at all. The venv branch is skipped when there
+# is no Python environment yet, which is why this can run in both images.
+#
+# Scoped to the stack this image builds. A conda environment is not checked here:
+# it ships optional GPU and arrow-flight libraries that are never loaded and
+# always report as missing, which says nothing about the geospatial stack.
+section "shared library resolution"
+objects="$(
+    {
+        for dir in "$GEO_PREFIX/lib" "$GEO_PREFIX/bin"; do
+            [[ -d "$dir" ]] && find "$dir" -type f
+        done
+        [[ -d /opt/venv ]] && find /opt/venv -name '*.so*' -type f
+    } 2>/dev/null || true
+)"
+# Every directory above is optional, so a wrong GEO_PREFIX would sweep nothing and
+# report success. The count in the pass line makes it visible that it did not.
+[[ -n "$objects" ]] || fail "no objects under $GEO_PREFIX; GEO_PREFIX is wrong"
+missing="$(xargs -r -n 50 ldd <<<"$objects" 2>/dev/null | grep 'not found' || true)"
+[[ -z "$missing" ]] || fail "unresolved shared libraries:
+$missing"
+pass "no unresolved shared libraries in $(wc -l <<<"$objects") objects under $GEO_PREFIX"
 
 if [[ "$CLI_ONLY" == true ]]; then
     printf '\nCLI CHECKS PASSED\n'
@@ -265,22 +305,6 @@ frame.to_excel(f"{work}/x.xlsx", index=False)
 assert len(pd.read_excel(f"{work}/x.xlsx")) == 1
 print("  ok    shapefile, flatgeobuf, geoparquet, xlsx")
 PY
-
-# Scoped to the stack this image builds. A conda environment is not checked here:
-# it ships optional GPU and arrow-flight libraries that are never loaded and
-# always report as missing, which says nothing about the geospatial stack.
-section "shared library resolution"
-missing="$(
-    {
-        for dir in /opt/geo/lib /opt/geo/bin; do
-            [[ -d "$dir" ]] && find "$dir" -type f
-        done
-        [[ -d /opt/venv ]] && find /opt/venv -name '*.so*' -type f
-    } 2>/dev/null | xargs -r -n 50 ldd 2>/dev/null | grep 'not found' || true
-)"
-[[ -z "$missing" ]] || fail "unresolved shared libraries:
-$missing"
-pass "no unresolved shared libraries"
 
 section "application entry points"
 for tool in python alembic celery uvicorn rsync curl; do
