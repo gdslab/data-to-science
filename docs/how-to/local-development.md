@@ -123,9 +123,21 @@ the same GDAL.
 
 Because of that coupling, changing the GDAL or PDAL version means rebuilding and
 republishing the base image (`backend/geobase.dockerfile`, whose source versions
-are pinned by checksum) and updating the matching `gdal==`/`pdal==` pins in
-`pyproject.toml`, in the same pull request. The backend build compares the two and
-fails if they disagree.
+are pinned by checksum) and updating the matching declarations in `pyproject.toml`,
+in the same pull request.
+
+The two are declared differently, because only one of them shares a version number
+with its Python package:
+
+- **GDAL** — the `gdal==` pin *is* the library version, and moves with
+  `GDAL_VERSION`.
+- **PDAL** — the `pdal==` pin is the **bindings** version, which follows its own
+  release series (3.x bindings against 2.x libpdal), so bumping the library usually
+  leaves it untouched. The library version is declared in the `# libpdal:` comment
+  beside that pin, and that is what moves with `PDAL_VERSION`.
+
+The backend build reads both declarations and fails if either disagrees with the base
+image, naming the versions it found.
 
 To check the whole stack in a running container:
 

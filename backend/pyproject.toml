@@ -8,7 +8,11 @@ dependencies = [
     # /opt/geo stack in gdslab/d2s-geo-base. Changing a version here means
     # rebuilding that image; see geobase.dockerfile.
     "gdal==3.12.3",
-    "pdal==3.5.3",
+    # pdal== is the bindings version and tracks its own release series; the trailing
+    # comment is the libpdal the bindings compile against, which is what the geo base
+    # provides. They are unrelated numbers, so backend.dockerfile asserts both against
+    # /opt/geo/VERSIONS -- deleting the comment fails the build rather than skipping.
+    "pdal==3.5.3",  # libpdal: 2.10.0
     "rasterio==1.5.0",
     "fiona==1.10.1",
     "pyogrio==0.12.1",
