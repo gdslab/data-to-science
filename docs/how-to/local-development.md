@@ -39,6 +39,11 @@ mutable, so an old local copy would be used silently:
 docker pull gdslab/d2s-geo-base:latest
 ```
 
+Building with `docker compose build --pull` folds that pull into the build, and
+also refreshes the other base images the build uses. That is the form the
+[deployment guide](deployment.md) uses; pulling the one image explicitly here
+keeps the rest of your local base images as they are.
+
 Copy the example Docker Compose file and build the images:
 
 ```bash

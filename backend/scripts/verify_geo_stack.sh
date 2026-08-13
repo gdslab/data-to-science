@@ -7,9 +7,13 @@
 #   docker compose exec backend bash /app/scripts/verify_geo_stack.sh
 #
 # Pass --cli-only to skip the Python checks, for smoke-testing the geo-base image
-# before any Python environment exists:
+# before any Python environment exists. Both mounts are needed: one supplies this
+# script, the other the raster the gdal checks operate on.
 #
-#   docker run --rm gdslab/d2s-geo-base:<tag> bash -s -- --cli-only < scripts/verify_geo_stack.sh
+#   docker run --rm \
+#     -v "$PWD/backend/scripts:/scripts:ro" \
+#     -v "$PWD/backend/app/tests/data:/app/app/tests/data:ro" \
+#     gdslab/d2s-geo-base:<tag> bash /scripts/verify_geo_stack.sh --cli-only
 #
 # Several of the paths checked here have no pytest coverage: filters.csf,
 # writers.gdal, the COG and JPEG conversions in ImageProcessor, and the pdal
