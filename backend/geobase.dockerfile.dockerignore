@@ -1,0 +1,13 @@
+# Build context for geobase.dockerfile only. BuildKit reads <dockerfile>.dockerignore
+# in place of .dockerignore when one exists, so this replaces the shared file rather
+# than adding to it.
+#
+# Both dockerfiles build from the same context, and the application image serves
+# potree/ (69 MB) and pc-gltf-viewer/ (118 MB) as static files at runtime, so the
+# shared .dockerignore cannot drop them. The geo base reads one 1.5 KB script and
+# would otherwise ship all 187 MB to the daemon on every build.
+#
+# Adding a COPY to geobase.dockerfile means re-including its source here, or the
+# build fails on a missing file.
+*
+!scripts

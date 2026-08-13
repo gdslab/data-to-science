@@ -240,7 +240,7 @@ ARG UNTWINE_VERSION
 
 LABEL org.opencontainers.image.title="d2s-geo-base" \
       org.opencontainers.image.description="GDAL, PDAL and Untwine built from source for the d2s backend" \
-      org.opencontainers.image.source="https://github.com/hancocb/data-to-science" \
+      org.opencontainers.image.source="https://github.com/gdslab/data-to-science" \
       io.d2s.gdal.version="${GDAL_VERSION}" \
       io.d2s.pdal.version="${PDAL_VERSION}" \
       io.d2s.proj.version="${PROJ_VERSION}" \

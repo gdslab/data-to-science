@@ -5,6 +5,7 @@
 .dockerignore
 backend.dockerfile
 geobase.dockerfile
+geobase.dockerfile.dockerignore
 .mypy_cache
 **/.mypy_cache
 .pytest_cache

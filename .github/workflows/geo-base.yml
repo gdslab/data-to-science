@@ -6,12 +6,14 @@ name: Build geo base image
 # application image build does not compile any of it.
 #
 # Pushing to main only builds and smoke-tests; it does not publish. Publishing is
-# a deliberate act: run this workflow from the Actions tab with push set to true,
-# which matches how the other images ship through helpers/build_and_deploy.sh.
+# a deliberate act: run this workflow from the Actions tab against main with push
+# set to true, which matches how the other images ship through
+# helpers/build_and_deploy.sh. Dispatching from any other ref refuses to publish --
+# the tag is mutable and every backend build consumes it.
 #
-# The geospatial pins in backend/pyproject.toml describe the same libraries this
-# image provides, so republishing after a version change and updating those pins
-# belong in the same pull request.
+# The geospatial declarations in backend/pyproject.toml describe the same libraries
+# this image provides, so republishing after a version change and updating those
+# declarations belong in the same pull request.
 
 on:
   workflow_dispatch:
@@ -24,6 +26,15 @@ on:
     branches: [main]
     paths:
       - backend/geobase.dockerfile
+      # geobase.dockerfile.dockerignore decides what the build can see,
+      # fetch-source.sh is copied into it, and verify_geo_stack.sh is the smoke test
+      # below -- each one changes what this workflow produces or what it proves.
+      # Without them a change that quietly defeated the checksum guard would reach
+      # main unbuilt and unverified. These are literal paths rather than prefixes:
+      # geobase.dockerfile does not match geobase.dockerfile.dockerignore.
+      - backend/geobase.dockerfile.dockerignore
+      - backend/scripts/fetch-source.sh
+      - backend/scripts/verify_geo_stack.sh
       - .github/workflows/geo-base.yml
 
 env:
@@ -34,10 +45,28 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
+      # workflow_dispatch can be run from any ref, and the tag this publishes is
+      # mutable and consumed by every backend build. Dispatching from a feature
+      # branch with push set would ship unmerged GDAL/PDAL libraries into production
+      # images. This fails rather than skipping the push, so a run that cannot
+      # publish says so instead of finishing green and looking like it did.
+      - name: Refuse to publish from a non-main ref
+        if: inputs.push && github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Refusing to publish ${{ env.IMAGE }} from ${{ github.ref }}." \
+               "Merge to main and dispatch from there."
+          exit 1
+
       - uses: actions/checkout@v4
 
       - uses: docker/setup-buildx-action@v3
 
+      # mode=max is deliberate. Publishing is two steps -- a push to main builds and
+      # verifies, then a dispatch from main publishes -- and only a full layer cache
+      # makes that second run anything other than another hour of compiling. mode=min
+      # would export just the final stage, which is a COPY on top of ubuntu, so the
+      # expensive build stage would not be cached at all. Nothing else in this repo
+      # uses the Actions cache, so the 10 GB budget is not contended.
       - name: Build
         uses: docker/build-push-action@v6
         with:
@@ -50,20 +79,40 @@ jobs:
 
       # The raster fixture has to be mounted for the COG, JPEG and hillshade
       # checks to run; without it the script fails rather than skipping past them.
-      - name: Smoke test
+      - name: Smoke test (build tree)
         run: |
           docker run --rm \
             -v "$PWD/backend/scripts:/scripts:ro" \
             -v "$PWD/backend/app/tests/data:/app/app/tests/data:ro" \
             ${{ env.IMAGE }} bash /scripts/verify_geo_stack.sh --cli-only
 
+      # The step above checks /opt/geo, the unstripped tree this image puts on PATH
+      # and the application's build stage compiles against. It is not what ships:
+      # backend.dockerfile copies /opt/geo-runtime, stripped and pruned, into the
+      # final image. Checking only the first would let a bad strip or an over-broad
+      # rm -rf in the prune step reach production undetected. GEO_PREFIX has to move
+      # with PATH, or the linkage sweep would read the tree that was already checked.
+      - name: Smoke test (runtime tree)
+        run: |
+          docker run --rm \
+            -e PATH=/opt/geo-runtime/bin:/usr/local/bin:/usr/bin:/bin \
+            -e LD_LIBRARY_PATH=/opt/geo-runtime/lib \
+            -e GDAL_DATA=/opt/geo-runtime/share/gdal \
+            -e PROJ_DATA=/opt/geo-runtime/share/proj \
+            -e PROJ_LIB=/opt/geo-runtime/share/proj \
+            -e PDAL_DRIVER_PATH=/opt/geo-runtime/lib \
+            -e GEO_PREFIX=/opt/geo-runtime \
+            -v "$PWD/backend/scripts:/scripts:ro" \
+            -v "$PWD/backend/app/tests/data:/app/app/tests/data:ro" \
+            ${{ env.IMAGE }} bash /scripts/verify_geo_stack.sh --cli-only
+
       - name: Log in to Docker Hub
-        if: inputs.push
+        if: inputs.push && github.ref == 'refs/heads/main'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Push
-        if: inputs.push
+        if: inputs.push && github.ref == 'refs/heads/main'
         run: docker push ${{ env.IMAGE }}
