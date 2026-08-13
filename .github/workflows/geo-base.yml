@@ -1,0 +1,61 @@
+name: Build geo base image
+
+# Builds and publishes the native geospatial stack (GDAL, PDAL, PROJ, GEOS,
+# Untwine) that backend.dockerfile builds on top of. This takes upwards of an
+# hour, so it runs only when geobase.dockerfile changes or when triggered by
+# hand -- the application image build does not compile any of it.
+#
+# The geospatial pins in backend/pyproject.toml describe the same libraries this
+# image provides, so republishing after a version change and updating those pins
+# belong in the same pull request.
+
+on:
+  workflow_dispatch:
+    inputs:
+      push:
+        description: Push to Docker Hub after the smoke test passes
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths:
+      - backend/geobase.dockerfile
+      - .github/workflows/geo-base.yml
+
+env:
+  IMAGE: gdslab/d2s-geo-base:latest
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          file: backend/geobase.dockerfile
+          tags: ${{ env.IMAGE }}
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test
+        run: |
+          docker run --rm -v "$PWD/backend/scripts:/scripts:ro" \
+            ${{ env.IMAGE }} bash /scripts/verify_geo_stack.sh --cli-only
+
+      - name: Log in to Docker Hub
+        if: inputs.push
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push
+        if: inputs.push
+        run: docker push ${{ env.IMAGE }}
