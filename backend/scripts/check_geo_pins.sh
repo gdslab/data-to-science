@@ -28,6 +28,14 @@ if [ -z "$versions" ] || [ -z "$pyproject" ]; then
     exit 1
 fi
 
+# POSIX `.` searches $PATH when its operand contains no slash, so a caller passing a bare
+# filename would source whatever $PATH turned up first rather than the file they named.
+# Both callers pass absolute paths today; this keeps that from being load-bearing.
+case "$versions" in
+    */*) ;;
+    *) versions="./$versions" ;;
+esac
+
 # An unreadable input is a failure, not a skip. Silently passing because a path was
 # wrong is the failure mode this check exists to prevent in the first place.
 [ -r "$versions" ] || { echo "check-geo-pins: cannot read $versions" >&2; exit 1; }

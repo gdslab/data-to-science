@@ -83,11 +83,18 @@ done
 }
 
 section "versions"
-gdalinfo --version | grep -qF "GDAL $GDAL_EXPECTED" \
-    || fail "gdalinfo reports $(gdalinfo --version), expected GDAL $GDAL_EXPECTED"
+# Whole-string comparison rather than a substring match: "GDAL 3.12.3" is a substring of
+# "GDAL 3.12.30", so grep -F would pass a patch bump it should have caught. The seds pull
+# the version field out of gdalinfo's codename-and-date line, and out of the dashed banner
+# pdal wraps its own version in. A version that cannot be parsed fails as <unparsed>
+# rather than comparing empty against empty and turning its own check off.
+gdal_reported="$(gdalinfo --version | sed -n 's/^GDAL \([0-9][0-9.]*\).*/\1/p')"
+[[ "$gdal_reported" == "$GDAL_EXPECTED" ]] \
+    || fail "gdalinfo reports GDAL ${gdal_reported:-<unparsed>}, expected GDAL $GDAL_EXPECTED"
 pass "gdal $GDAL_EXPECTED"
-pdal --version | grep -qF "$PDAL_EXPECTED" \
-    || fail "pdal reports $(pdal --version | tr -d '\n'), expected $PDAL_EXPECTED"
+pdal_reported="$(pdal --version | sed -n 's/^pdal \([0-9][0-9.]*\).*/\1/p')"
+[[ "$pdal_reported" == "$PDAL_EXPECTED" ]] \
+    || fail "pdal reports ${pdal_reported:-<unparsed>}, expected $PDAL_EXPECTED"
 pass "pdal $PDAL_EXPECTED"
 
 # Both loops anchor on the short-name column -- "  <name> -raster-" / "  <name>
