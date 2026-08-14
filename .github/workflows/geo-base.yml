@@ -1,36 +1,32 @@
-name: Build geo base image
+name: Verify geo base image
 
 # Builds the native geospatial stack (GDAL, PDAL, PROJ, GEOS, Untwine) that
-# backend.dockerfile builds on top of. This takes upwards of an hour, so it runs
-# only when geobase.dockerfile changes or when triggered by hand -- the
-# application image build does not compile any of it.
+# backend.dockerfile builds on top of, then checks the built image against the
+# declarations in backend/pyproject.toml and smoke-tests both trees it ships.
+# This takes upwards of an hour, so it runs only when one of the inputs below
+# changes -- the application image build does not compile any of it.
 #
-# Pushing to main only builds and smoke-tests; it does not publish. Publishing is a
-# deliberate act: run this workflow from the Actions tab against main with push set
-# to true. Dispatching from any other ref refuses to publish -- the tag is mutable
-# and every backend build consumes it, so anything published here reaches production
-# images immediately.
+# This workflow does not publish. gdslab/d2s-geo-base:latest is pushed by hand by
+# a maintainer: the tag is mutable and every backend build consumes it, so
+# anything published reaches production images immediately, and that is not a
+# decision to automate for one image ahead of a strategy for the rest.
 #
-# The geospatial declarations in backend/pyproject.toml describe the same libraries
-# this image provides, so republishing after a version change and updating those
-# declarations belong in the same pull request.
+# It runs on pull requests because that is where the answer is worth having. The
+# geospatial declarations in backend/pyproject.toml describe the same libraries
+# this image provides, since the Python bindings are compiled against them, and a
+# mismatch breaks every backend build. Nothing else checks that: no workflow here
+# builds the application image, where the equivalent guard lives. Learning about a
+# bad pin after the merge is learning too late.
 
 on:
-  workflow_dispatch:
-    inputs:
-      push:
-        description: Push to Docker Hub after the smoke test passes
-        type: boolean
-        default: false
-  push:
-    branches: [main]
+  pull_request:
     paths:
       - backend/geobase.dockerfile
       # geobase.dockerfile.dockerignore decides what the build can see,
       # fetch-source.sh is copied into it, and verify_geo_stack.sh is the smoke test
       # below -- each one changes what this workflow produces or what it proves.
-      # Without them a change that quietly defeated the checksum guard would reach
-      # main unbuilt and unverified. These are literal paths rather than prefixes:
+      # Without them a change that quietly defeated the checksum guard would merge
+      # unbuilt and unverified. These are literal paths rather than prefixes:
       # geobase.dockerfile does not match geobase.dockerfile.dockerignore.
       - backend/geobase.dockerfile.dockerignore
       - backend/scripts/fetch-source.sh
@@ -38,41 +34,44 @@ on:
       - backend/scripts/check_geo_pins.sh
       # pyproject.toml is not a build input; it is what the declaration check below
       # compares the built image against, so a pin-only change has to run this too.
-      # Nothing builds the application image in CI, so without this entry a pin moved
-      # on its own reaches main with nothing having checked it.
       - backend/pyproject.toml
       - .github/workflows/geo-base.yml
+  # For verifying the stack outside a pull request -- checking a rebuild of a
+  # published image, or confirming main is sound before pushing the tag by hand.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# An hour of compiling per push to a pull request branch is worth spending once.
+# A new commit makes the run in flight answer a question nobody is asking any more.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
+  # Local to the runner. Nothing here pushes it; the name matches what
+  # backend.dockerfile expects so the smoke tests exercise the real thing.
   IMAGE: gdslab/d2s-geo-base:latest
 
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
-      # workflow_dispatch can be run from any ref, and the tag this publishes is
-      # mutable and consumed by every backend build. Dispatching from a feature
-      # branch with push set would ship unmerged GDAL/PDAL libraries into production
-      # images. This fails rather than skipping the push, so a run that cannot
-      # publish says so instead of finishing green and looking like it did.
-      - name: Refuse to publish from a non-main ref
-        if: inputs.push && github.ref != 'refs/heads/main'
-        run: |
-          echo "::error::Refusing to publish ${{ env.IMAGE }} from ${{ github.ref }}." \
-               "Merge to main and dispatch from there."
-          exit 1
-
       - uses: actions/checkout@v4
 
       - uses: docker/setup-buildx-action@v3
 
-      # mode=max is deliberate. Publishing is two steps -- a push to main builds and
-      # verifies, then a dispatch from main publishes -- and only a full layer cache
-      # makes that second run anything other than another hour of compiling. mode=min
-      # would export just the final stage, which is a COPY on top of ubuntu, so the
-      # expensive build stage would not be cached at all. Nothing else in this repo
-      # uses the Actions cache, so the 10 GB budget is not contended.
+      # Cache scope on a pull request is the pull request, so the first run here
+      # compiles everything and later pushes to the same branch reuse it. That is
+      # the case worth optimising: reviewing a geo change usually means several
+      # commits, and only the first should cost an hour.
+      #
+      # mode=max is what makes that true. mode=min exports only the final stage,
+      # which is a COPY on top of ubuntu, so the expensive build stage would not be
+      # cached at all. Nothing else in this repo uses the Actions cache, so the
+      # 10 GB budget is not contended.
       - name: Build
         uses: docker/build-push-action@v6
         with:
@@ -86,8 +85,8 @@ jobs:
       # The application build refuses to compile bindings against a geo base whose
       # versions disagree with pyproject.toml -- but nothing builds the application
       # image in CI, so that guard never runs here. Without this step, bumping
-      # GDAL_VERSION and forgetting the pin passes every check above, publishes the
-      # mutable tag, and breaks every backend build from then on.
+      # GDAL_VERSION and forgetting the pin passes every check above and breaks
+      # every backend build from the merge onwards.
       #
       # Same script the application build runs, so the two cannot disagree about what
       # the invariant is. It takes seconds; it runs before the smoke tests so a
@@ -112,8 +111,8 @@ jobs:
       # and the application's build stage compiles against. It is not what ships:
       # backend.dockerfile copies /opt/geo-runtime, stripped and pruned, into the
       # final image. Checking only the first would let a bad strip or an over-broad
-      # rm -rf in the prune step reach production undetected. GEO_PREFIX has to move
-      # with PATH, or the linkage sweep would read the tree that was already checked.
+      # rm -rf in the prune step through undetected. GEO_PREFIX has to move with
+      # PATH, or the linkage sweep would read the tree that was already checked.
       - name: Smoke test (runtime tree)
         run: |
           docker run --rm \
@@ -127,14 +126,3 @@ jobs:
             -v "$PWD/backend/scripts:/scripts:ro" \
             -v "$PWD/backend/app/tests/data:/app/app/tests/data:ro" \
             ${{ env.IMAGE }} bash /scripts/verify_geo_stack.sh --cli-only
-
-      - name: Log in to Docker Hub
-        if: inputs.push && github.ref == 'refs/heads/main'
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Push
-        if: inputs.push && github.ref == 'refs/heads/main'
-        run: docker push ${{ env.IMAGE }}

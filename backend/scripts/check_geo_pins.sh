@@ -6,12 +6,12 @@
 #   check_geo_pins.sh <VERSIONS-file> <pyproject.toml>
 #
 # Two callers, one copy. backend.dockerfile runs it against the image it is about to
-# compile bindings against; .github/workflows/geo-base.yml runs it against the image it
-# is about to publish. Those are the two directions the coupling can break:
+# compile bindings against; .github/workflows/geo-base.yml runs it against a geo base
+# built from the pull request. Those are the two directions the coupling can break:
 #
 #   - a pin moves without the image  -- caught at application build time
-#   - the image moves without a pin  -- caught in CI, before a mutable tag is published
-#     and every later backend build starts failing
+#   - the image moves without a pin  -- caught on the pull request, before the change
+#     merges and every later backend build starts failing
 #
 # Keeping the comparison in one file is the point. Two copies of it would drift, and the
 # drift would stay invisible until a build broke somewhere unrelated to the change.

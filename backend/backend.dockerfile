@@ -75,9 +75,9 @@ COPY pyproject.toml uv.lock ./
 # link bindings and library at different versions without complaint.
 #
 # The comparison lives in scripts/check_geo_pins.sh rather than inline here, because
-# .github/workflows/geo-base.yml runs the same check against the image it is about to
-# publish. Two copies would drift, and this is the one invariant the whole split
-# between the two images rests on.
+# .github/workflows/geo-base.yml runs the same check against the geo base it builds.
+# Two copies would drift, and this is the one invariant the whole split between the
+# two images rests on.
 COPY --chmod=0755 scripts/check_geo_pins.sh /usr/local/bin/check-geo-pins
 RUN check-geo-pins /opt/geo/VERSIONS pyproject.toml
 
