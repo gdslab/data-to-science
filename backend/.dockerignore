@@ -1,2 +1,19 @@
-**./.pytest_cache
+# potree/ and pc-gltf-viewer/ are served as static files at runtime, and app/tests
+# runs inside the dev image, so all three stay in the build context.
+.git
+.gitignore
+.dockerignore
+backend.dockerfile
+geobase.dockerfile
+geobase.dockerfile.dockerignore
+.mypy_cache
+**/.mypy_cache
+.pytest_cache
+**/.pytest_cache
+**/__pycache__
+**/*.pyc
+.venv
 **/.venv
+.coverage
+htmlcov
+logs

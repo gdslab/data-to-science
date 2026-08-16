@@ -14,6 +14,11 @@ A production deployment of D2S involves:
 3. Running the containers behind a reverse proxy with TLS.
 4. Setting up persistent storage volumes for uploaded data.
 
+When building from source, build with `docker compose build --pull`. The backend
+image builds on `gdslab/d2s-geo-base:latest`, whose tag is mutable, so without
+`--pull` a stale local copy of the geospatial stack is used silently. See
+[Backend dependencies](local-development.md#backend-dependencies).
+
 ## Key configuration changes for production
 
 - Set `HTTP_COOKIE_SECURE=1` in `backend.env` to enforce HTTPS-only cookies.

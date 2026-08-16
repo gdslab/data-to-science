@@ -1,0 +1,128 @@
+name: Verify geo base image
+
+# Builds the native geospatial stack (GDAL, PDAL, PROJ, GEOS, Untwine) that
+# backend.dockerfile builds on top of, then checks the built image against the
+# declarations in backend/pyproject.toml and smoke-tests both trees it ships.
+# This takes upwards of an hour, so it runs only when one of the inputs below
+# changes -- the application image build does not compile any of it.
+#
+# This workflow does not publish. gdslab/d2s-geo-base:latest is pushed by hand by
+# a maintainer: the tag is mutable and every backend build consumes it, so
+# anything published reaches production images immediately, and that is not a
+# decision to automate for one image ahead of a strategy for the rest.
+#
+# It runs on pull requests because that is where the answer is worth having. The
+# geospatial declarations in backend/pyproject.toml describe the same libraries
+# this image provides, since the Python bindings are compiled against them, and a
+# mismatch breaks every backend build. Nothing else checks that: no workflow here
+# builds the application image, where the equivalent guard lives. Learning about a
+# bad pin after the merge is learning too late.
+
+on:
+  pull_request:
+    paths:
+      - backend/geobase.dockerfile
+      # geobase.dockerfile.dockerignore decides what the build can see,
+      # fetch-source.sh is copied into it, and verify_geo_stack.sh is the smoke test
+      # below -- each one changes what this workflow produces or what it proves.
+      # Without them a change that quietly defeated the checksum guard would merge
+      # unbuilt and unverified. These are literal paths rather than prefixes:
+      # geobase.dockerfile does not match geobase.dockerfile.dockerignore.
+      - backend/geobase.dockerfile.dockerignore
+      - backend/scripts/fetch-source.sh
+      - backend/scripts/verify_geo_stack.sh
+      - backend/scripts/check_geo_pins.sh
+      # pyproject.toml is not a build input; it is what the declaration check below
+      # compares the built image against, so a pin-only change has to run this too.
+      - backend/pyproject.toml
+      - .github/workflows/geo-base.yml
+  # For verifying the stack outside a pull request -- checking a rebuild of a
+  # published image, or confirming main is sound before pushing the tag by hand.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# An hour of compiling per push to a pull request branch is worth spending once.
+# A new commit makes the run in flight answer a question nobody is asking any more.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Local to the runner. Nothing here pushes it; the name matches what
+  # backend.dockerfile expects so the smoke tests exercise the real thing.
+  IMAGE: gdslab/d2s-geo-base:latest
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Cache scope on a pull request is the pull request, so the first run here
+      # compiles everything and later pushes to the same branch reuse it. That is
+      # the case worth optimising: reviewing a geo change usually means several
+      # commits, and only the first should cost an hour.
+      #
+      # mode=max is what makes that true. mode=min exports only the final stage,
+      # which is a COPY on top of ubuntu, so the expensive build stage would not be
+      # cached at all. Nothing else in this repo uses the Actions cache, so the
+      # 10 GB budget is not contended.
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          file: backend/geobase.dockerfile
+          tags: ${{ env.IMAGE }}
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # The application build refuses to compile bindings against a geo base whose
+      # versions disagree with pyproject.toml -- but nothing builds the application
+      # image in CI, so that guard never runs here. Without this step, bumping
+      # GDAL_VERSION and forgetting the pin passes every check above and breaks
+      # every backend build from the merge onwards.
+      #
+      # Same script the application build runs, so the two cannot disagree about what
+      # the invariant is. It takes seconds; it runs before the smoke tests so a
+      # mismatch is reported without waiting for them.
+      - name: Check pyproject declarations against the built image
+        run: |
+          docker run --rm \
+            -v "$PWD/backend/scripts/check_geo_pins.sh:/check-geo-pins:ro" \
+            -v "$PWD/backend/pyproject.toml:/pyproject.toml:ro" \
+            ${{ env.IMAGE }} sh /check-geo-pins /opt/geo/VERSIONS /pyproject.toml
+
+      # The raster fixture has to be mounted for the COG, JPEG and hillshade
+      # checks to run; without it the script fails rather than skipping past them.
+      - name: Smoke test (build tree)
+        run: |
+          docker run --rm \
+            -v "$PWD/backend/scripts:/scripts:ro" \
+            -v "$PWD/backend/app/tests/data:/app/app/tests/data:ro" \
+            ${{ env.IMAGE }} bash /scripts/verify_geo_stack.sh --cli-only
+
+      # The step above checks /opt/geo, the unstripped tree this image puts on PATH
+      # and the application's build stage compiles against. It is not what ships:
+      # backend.dockerfile copies /opt/geo-runtime, stripped and pruned, into the
+      # final image. Checking only the first would let a bad strip or an over-broad
+      # rm -rf in the prune step through undetected. GEO_PREFIX has to move with
+      # PATH, or the linkage sweep would read the tree that was already checked.
+      - name: Smoke test (runtime tree)
+        run: |
+          docker run --rm \
+            -e PATH=/opt/geo-runtime/bin:/usr/local/bin:/usr/bin:/bin \
+            -e LD_LIBRARY_PATH=/opt/geo-runtime/lib \
+            -e GDAL_DATA=/opt/geo-runtime/share/gdal \
+            -e PROJ_DATA=/opt/geo-runtime/share/proj \
+            -e PROJ_LIB=/opt/geo-runtime/share/proj \
+            -e PDAL_DRIVER_PATH=/opt/geo-runtime/lib \
+            -e GEO_PREFIX=/opt/geo-runtime \
+            -v "$PWD/backend/scripts:/scripts:ro" \
+            -v "$PWD/backend/app/tests/data:/app/app/tests/data:ro" \
+            ${{ env.IMAGE }} bash /scripts/verify_geo_stack.sh --cli-only

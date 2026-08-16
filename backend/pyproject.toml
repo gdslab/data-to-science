@@ -1,0 +1,154 @@
+[project]
+name = "d2s-backend"
+version = "0.1.0"
+description = "Data to Science API backend"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    # Geospatial packages are pinned exactly and built from source against the
+    # /opt/geo stack in gdslab/d2s-geo-base. Changing a version here means
+    # rebuilding that image; see geobase.dockerfile.
+    "gdal==3.12.3",
+    # pdal== is the bindings version and tracks its own release series; the trailing
+    # comment is the libpdal the bindings compile against, which is what the geo base
+    # provides. They are unrelated numbers, so backend.dockerfile asserts both against
+    # /opt/geo/VERSIONS -- deleting the comment fails the build rather than skipping.
+    "pdal==3.5.3",  # libpdal: 2.10.0
+    "rasterio==1.5.0",
+    "fiona==1.10.1",
+    "pyogrio==0.12.1",
+    "shapely==2.1.2",
+    "pyproj==3.7.2",
+    "geopandas==1.1.4",
+    "rasterstats==0.21.0",
+    "laspy[lazrs]==2.7.0",
+    "lazrs==0.8.1",
+    "numpy==2.5.1",
+    "pandas==3.0.3",
+    "pyarrow==23.0.1",
+    "psycopg2==2.9.12",
+    # web framework and server
+    "fastapi~=0.139.0",
+    "starlette~=1.3.1",
+    "uvicorn[standard]~=0.51.0",
+    "python-multipart~=0.0.32",
+    "email-validator~=2.3.0",
+    "pydantic~=2.13.4",
+    "pydantic-settings~=2.14.2",
+    "geojson-pydantic~=2.1.1",
+    "slowapi~=0.1.9",
+    "typing-extensions~=4.15",
+    # database and migrations
+    "sqlalchemy~=2.0.51",
+    "alembic~=1.18.5",
+    "geoalchemy2~=0.20.0",
+    # task queue and messaging
+    "celery~=5.5.3",
+    "redis>=5.0",
+    "flower~=2.0.1",
+    "pika~=1.3.1",
+    # authentication
+    "python-jose[cryptography]~=3.5.0",
+    "passlib==1.7.4",
+    "bcrypt~=4.3.0",
+    # http clients
+    "httpx~=0.28.1",
+    "requests~=2.34.2",
+    # mail
+    "fastapi-mail~=1.6.4",
+    "aiosmtplib~=5.1.2",
+    # file and data handling
+    "aiofiles~=25.1.0",
+    "python-dotenv~=1.2.2",
+    "pyyaml~=6.0.3",
+    "openpyxl~=3.1.5",
+    "boto3~=1.43.47",
+    "botocore~=1.43.47",
+    # imaging
+    "matplotlib~=3.11.0",
+    "pillow~=12.3.0",
+    "staticmap>=0.5.4",
+    "segno~=1.6.6",
+    "tqdm~=4.68.4",
+    # STAC
+    "pystac~=1.14.3",
+    "pystac-client~=0.9.0",
+    "rio-stac~=0.12.0",
+    # observability
+    "opentelemetry-api>=1.30",
+    "opentelemetry-sdk>=1.30",
+    "opentelemetry-exporter-otlp>=1.30",
+    "opentelemetry-instrumentation-asgi>=0.51b0",
+    "opentelemetry-instrumentation-fastapi>=0.51b0",
+]
+
+[dependency-groups]
+# Installed only when the image is built with INSTALL_DEV=true. faker also backs
+# the app/scripts/seed_demo_*.py development helpers.
+dev = [
+    "pytest~=8.4.2",
+    "pytest-cov~=7.1.0",
+    "pytest-xdist~=3.8.0",
+    "coverage~=7.15",
+    "faker~=40.31",
+    # starlette 1.3.x TestClient prefers httpx2 and warns when falling back
+    "httpx2~=2.7.0",
+    "black~=26.5",
+    "mypy~=2.3",
+    "flake8~=7.3",
+    "isort~=8.0",
+    "types-aiofiles",
+    "types-psycopg2",
+    "types-pyyaml",
+    "types-python-jose",
+    "types-passlib",
+]
+
+[tool.uv]
+package = false
+environments = ["sys_platform == 'linux'"]
+
+# Freezes the resolver to the package index as it stood at this moment, which is
+# what makes `uv lock` reproducible: without it uv drops the exclude-newer recorded
+# in uv.lock's [options], re-resolves all 166 packages against today's PyPI, and
+# writes a diff too large to read for what was meant to be one added dependency.
+# The value has to match uv.lock's [options] exactly or the re-resolve happens
+# anyway, and it has to be a full RFC 3339 timestamp: uv reads a bare date in the
+# local timezone, which would resolve differently on different machines.
+#
+# The tradeoff is deliberate. Nothing published after this instant can enter the
+# tree, security releases included, until someone moves the date. Do that as its
+# own change, so taking newer versions is a visible act rather than a side effect.
+exclude-newer = "2026-07-16T04:00:00Z"
+
+# Built from source so every package links the single GDAL/GEOS/PROJ in /opt/geo.
+# Wheels would each vendor their own copy, putting three GDAL builds in the image
+# and letting the CLI tools and the Python bindings drift apart.
+no-binary-package = [
+    "gdal",
+    "pdal",
+    "psycopg2",
+    "rasterio",
+    "fiona",
+    "pyogrio",
+    "shapely",
+    "pyproj",
+]
+build-constraint-dependencies = ["numpy==2.5.1"]
+
+# gdal, pdal and psycopg2 ship no wheels, and their setup scripts need
+# gdal-config/pdal-config/pg_config to report metadata. Declaring it statically
+# lets `uv lock` run on a machine without the native stack installed.
+[[tool.uv.dependency-metadata]]
+name = "gdal"
+version = "3.12.3"
+requires-dist = []
+
+[[tool.uv.dependency-metadata]]
+name = "pdal"
+version = "3.5.3"
+requires-dist = ["numpy>=1.22"]
+
+[[tool.uv.dependency-metadata]]
+name = "psycopg2"
+version = "2.9.12"
+requires-dist = []

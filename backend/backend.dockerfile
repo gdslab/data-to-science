@@ -1,119 +1,170 @@
-# base image
-FROM ubuntu:24.04 AS python-base
+# Application image for the backend, celery worker, celery beat and flower.
+#
+# The native geospatial stack (GDAL, PDAL, PROJ, GEOS, Untwine) comes from
+# gdslab/d2s-geo-base, built by geobase.dockerfile. The geospatial packages in
+# pyproject.toml are compiled against it, so their pins and the versions that
+# image was built from have to move together. The tag is mutable: pull it before
+# building rather than trusting a local copy, or build it yourself if it has
+# never been published here.
 
-# build args
+ARG GEO_BASE_IMAGE=gdslab/d2s-geo-base:latest
+ARG UV_VERSION=0.12.3
+
+FROM ${GEO_BASE_IMAGE} AS geo-base
+
+FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
+
+# Builds the Python environment. The geospatial packages have no usable wheels, or
+# would vendor a second copy of GDAL, so they compile against /opt/geo here and the
+# resulting virtualenv is copied into the final stage.
+FROM ubuntu:24.04 AS python-builder
+
+# The geo stack's own dependencies are needed here too: the sdists link against
+# libgdal and friends, and pyproj's setup.py runs /opt/geo/bin/proj to read the
+# PROJ version, which fails if those libraries cannot be resolved.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.12 \
+    python3.12-dev \
+    build-essential \
+    cmake \
+    ninja-build \
+    pkg-config \
+    libpq-dev \
+    curl \
+    ca-certificates \
+    libtiff6 \
+    libjpeg-turbo8 \
+    libpng16-16t64 \
+    libopenjp2-7 \
+    libdeflate0 \
+    libzstd1 \
+    liblzma5 \
+    zlib1g \
+    libsqlite3-0 \
+    libexpat1 \
+    libxml2 \
+    libcurl4t64 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=uv /uv /uvx /usr/local/bin/
+COPY --from=geo-base /opt/geo /opt/geo
+
+# gdal-config, pdal-config, geos-config and pg_config are what the sdists read to
+# find their libraries. The rpath means the extensions resolve /opt/geo without
+# depending on LD_LIBRARY_PATH being set in whatever process loads them.
+ENV PATH="/opt/geo/bin:${PATH}" \
+    LD_LIBRARY_PATH=/opt/geo/lib \
+    GDAL_CONFIG=/opt/geo/bin/gdal-config \
+    PDAL_CONFIG=/opt/geo/bin/pdal-config \
+    GEOS_CONFIG=/opt/geo/bin/geos-config \
+    PROJ_DIR=/opt/geo \
+    CMAKE_PREFIX_PATH=/opt/geo \
+    LDFLAGS="-Wl,-rpath,/opt/geo/lib" \
+    UV_PROJECT_ENVIRONMENT=/opt/venv \
+    UV_PYTHON=/usr/bin/python3.12 \
+    UV_PYTHON_DOWNLOADS=never \
+    UV_LINK_MODE=copy
+
+WORKDIR /build
+
+COPY pyproject.toml uv.lock ./
+
+# The gdal bindings are compiled against this image's libgdal and GDAL refuses to
+# build them against an older one, so a stale geo-base already fails. This catches
+# the other direction -- a geo-base rebuilt past the pin -- which would otherwise
+# link bindings and library at different versions without complaint.
+#
+# The comparison lives in scripts/check_geo_pins.sh rather than inline here, because
+# .github/workflows/geo-base.yml runs the same check against the geo base it builds.
+# Two copies would drift, and this is the one invariant the whole split between the
+# two images rests on.
+COPY --chmod=0755 scripts/check_geo_pins.sh /usr/local/bin/check-geo-pins
+RUN check-geo-pins /opt/geo/VERSIONS pyproject.toml
+
+ARG INSTALL_DEV=false
+# --locked, not --frozen. --frozen installs whatever the lock says without checking it
+# still describes pyproject.toml, so adding a dependency and forgetting `uv lock` would
+# produce an image quietly missing it. --locked fails the build instead, and is the
+# check the geospatial pins above cannot make on their own.
+RUN --mount=type=cache,target=/root/.cache/uv \
+    if [ "$INSTALL_DEV" = "true" ]; then \
+        uv sync --locked --no-install-project; \
+    else \
+        uv sync --locked --no-install-project --no-dev; \
+    fi \
+    && uv pip check --python /opt/venv/bin/python \
+    && find /opt/venv -name '*.so*' -type f \
+        -exec sh -c 'strip --strip-unneeded "$1" 2>/dev/null || true' _ {} \; \
+    && find /opt/venv -follow -type f -name '*.pyc' -delete
+
+FROM ubuntu:24.04
+
 ARG INSTALL_DEV=false
 ARG NUM_OF_WORKERS=1
 ARG LIMIT_MAX_REQUESTS=10000
 
-# do not buffer log messages and do not write byte code .pyc
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONPATH=/app \
-    PYTHONUNBUFFERED=1
-
-# set dev mode
-ENV DEV_MODE=$INSTALL_DEV
-
-# set path to conda environment
-ENV CONDA_ENV_PATH=/opt/conda/envs/d2s
-
-# set number of workers for uvicorn process
-ENV UVICORN_WORKERS=$NUM_OF_WORKERS
-
-# limit max requests per process
-ENV LIMIT_MAX_REQUESTS=$LIMIT_MAX_REQUESTS
-
-# set path for celery beats schedule
-ENV CELERY_BEAT_SCHEDULE=/var/run/celery/celerybeat-schedule
-
-# matplotlib tmp dir
-ENV MPLCONFIGDIR=/var/tmp/d2s
-
-# Install Python and other system dependencies
-RUN apt-get update && apt-get install -y \
+# The lib* entries below carry the geo stack, and match what geobase.dockerfile
+# installs in its own runtime stage. libcurl4t64 is one of them, not a companion to
+# the curl CLI: libgdal and 83 other shipped objects link libcurl.so.4, and curl is
+# here only for the compose healthcheck. Listing it explicitly means replacing that
+# healthcheck cannot take GDAL down with it.
+RUN apt-get update && apt-get install -y --no-install-recommends \
     python3.12 \
-    python3.12-dev \
+    ca-certificates \
+    tzdata \
     curl \
-    build-essential \
-    cmake \
     rsync \
-    && rm -rf /var/lib/apt/lists/*
+    libtiff6 \
+    libjpeg-turbo8 \
+    libpng16-16t64 \
+    libopenjp2-7 \
+    libdeflate0 \
+    libzstd1 \
+    liblzma5 \
+    zlib1g \
+    libsqlite3-0 \
+    libexpat1 \
+    libxml2 \
+    libcurl4t64 \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -s /usr/bin/python3.12 /usr/bin/python
 
-# Create symbolic links for Python
-RUN ln -s /usr/bin/python3.12 /usr/bin/python
-
-# image for building python environment
-FROM condaforge/miniforge3:latest AS conda-env-base
-
-# do not write byte code .pyc
-ENV PYTHONDONTWRITEBYTECODE=1
-
-# set path to conda environment
-ENV CONDA_ENV_PATH=/opt/conda/envs/d2s
-
-# add conda lock file
-ENV CONDA_LOCK_FILE=linux-64.conda.lock
-ADD $CONDA_LOCK_FILE /locks/$CONDA_LOCK_FILE
-
-# install system dependencies
-RUN apt-get update \
-    && apt-get install -y curl build-essential cmake \
-    && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /opt
-
-# allow installing dev dependencies to run tests
-ARG INSTALL_DEV=false
-RUN conda create -p $CONDA_ENV_PATH --copy --file /locks/$CONDA_LOCK_FILE \
-    && conda run -n d2s pip install staticmap redis types-python-jose types-passlib \
-       opentelemetry-api \
-       opentelemetry-sdk \
-       opentelemetry-exporter-otlp \
-       opentelemetry-instrumentation-asgi \
-       opentelemetry-instrumentation-fastapi \
-    && conda clean -afy \
-    && find /opt/conda/ -follow -type f -name '*.pyc' -delete
-
-# final stage
-FROM python-base
-
-WORKDIR /app/
-
-# create d2s user
+# ubuntu:24.04 ships a user at uid 1000, which d2s needs.
 RUN userdel -r ubuntu 2>/dev/null || true \
     && groupadd -g 1000 d2s \
     && useradd -u 1000 -g 1000 d2s
 
-# copy over virtual environment
-COPY --from=conda-env-base --chown=d2s:d2s $CONDA_ENV_PATH $CONDA_ENV_PATH
+# The stripped tree lands at /opt/geo so the rpaths and data paths baked into the
+# libraries stay correct. Both stay root-owned: nothing at runtime writes to the
+# interpreter, its packages or the native libraries.
+COPY --from=geo-base /opt/geo-runtime /opt/geo
+COPY --from=python-builder /opt/venv /opt/venv
 
-# set environment variables
-ENV GDAL_DATA="${CONDA_ENV_PATH}/share/gdal"
-ENV LD_LIBRARY_PATH="${CONDA_ENV_PATH}/lib"
-ENV PATH="${CONDA_ENV_PATH}/bin:${PATH}"
-ENV PROJ_LIB="${CONDA_ENV_PATH}/share/proj"
+# The virtualenv comes first on PATH so the start scripts and the AgTC endpoint,
+# which all spawn a bare python/alembic/celery/uvicorn, get this interpreter.
+ENV PATH="/opt/venv/bin:/opt/geo/bin:${PATH}" \
+    VIRTUAL_ENV=/opt/venv \
+    LD_LIBRARY_PATH=/opt/geo/lib \
+    GDAL_DATA=/opt/geo/share/gdal \
+    PROJ_LIB=/opt/geo/share/proj \
+    PROJ_DATA=/opt/geo/share/proj \
+    PDAL_DRIVER_PATH=/opt/geo/lib \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/app \
+    PYTHONUNBUFFERED=1 \
+    LANG=C.UTF-8 \
+    DEV_MODE=$INSTALL_DEV \
+    UVICORN_WORKERS=$NUM_OF_WORKERS \
+    LIMIT_MAX_REQUESTS=$LIMIT_MAX_REQUESTS \
+    CELERY_BEAT_SCHEDULE=/var/run/celery/celerybeat-schedule \
+    MPLCONFIGDIR=/var/tmp/d2s
 
-# install untwine v1.5.0 from source
-RUN mkdir -p /opt/untwine \
-    && cd /opt/untwine \
-    && curl -L https://github.com/hobuinc/untwine/releases/download/1.5.0/Untwine-1.5.0-src.tar.gz -o untwine-1.5.0.tar.gz \
-    && tar -xzf untwine-1.5.0.tar.gz \
-    && cd Untwine-1.5.0-src \
-    && mkdir build \
-    && cd build \
-    && cmake .. \
-    && make \
-    && make install \
-    && cd /opt \
-    && rm -rf /opt/untwine/untwine-1.5.0.tar.gz /opt/untwine/Untwine-1.5.0-src
+WORKDIR /app/
 
-# update LD_LIBRARY_PATH to include untwine library
-ENV LD_LIBRARY_PATH="/opt/untwine/lib:${LD_LIBRARY_PATH}"
-
-# copy over application code
 COPY --chown=d2s:d2s . /app
 
-# create directory for logs, temp files, and user uploads, and update permissions
+# directories for logs, temp files, and user uploads
 RUN mkdir -p /app/logs \
     && mkdir /var/tmp/d2s \
     && mkdir /static \
@@ -123,7 +174,6 @@ RUN mkdir -p /app/logs \
     && chown -R d2s:d2s /var/run/celery \
     && chown -R d2s:d2s /var/tmp/d2s
 
-# change to non-root user
 USER d2s
 
 CMD /bin/bash /app/backend-start.sh
