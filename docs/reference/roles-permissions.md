@@ -116,6 +116,7 @@ Data products are derived outputs (GeoTIFFs, point clouds, etc.) associated with
 |--------|:-----:|:-------:|:------:|
 | View data product | Yes | Yes | Yes |
 | List data products | Yes | Yes | Yes |
+| Export data product as JPEG | Yes | Yes | Yes |
 | Update data product bands | Yes | Yes | No |
 | Update data product type | Yes | Yes | No |
 | Deactivate (delete) data product | Yes | No | No |
@@ -127,6 +128,7 @@ Data products are derived outputs (GeoTIFFs, point clouds, etc.) associated with
 
 - Data products cannot be deactivated when the project is published to a STAC catalog
 - Point cloud and panoramic data types cannot be changed
+- Point cloud, panoramic, and 3DGS data types cannot be exported as a JPEG
 
 ---
 
