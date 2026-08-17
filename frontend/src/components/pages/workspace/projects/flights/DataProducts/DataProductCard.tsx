@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  ArrowDownTrayIcon,
   CubeIcon,
   ExclamationCircleIcon,
   EyeIcon,
@@ -17,6 +16,7 @@ import Card from '../../../../../Card';
 import { isGeoTIFF } from './DataProductsTable';
 import { resolveRawDataSource } from './rawDataSource';
 import DataProductDeleteModal from './DataProductDeleteModal';
+import DataProductDownloadMenu from './DataProductDownloadMenu';
 import DataProductMetadataModal from './DataProductMetadataModal';
 import EditableDataType from './EditableDataType';
 import ToolboxModal from './ToolboxModal';
@@ -196,7 +196,7 @@ export default function DataProductCard({
               )}
             </div>
             {/* data product details */}
-            <div className="h-10 flex items-center justify-between text-lg">
+            <div className="h-10 flex items-center justify-between gap-2 text-lg">
               <EditableDataType
                 dataProduct={dataProduct}
                 isEditing={isEditing}
@@ -205,18 +205,17 @@ export default function DataProductCard({
                 setStatus={setStatus}
               />
               {!isEditing && (
-                <div className="flex flex-row gap-4">
+                <div className="flex shrink-0 flex-row gap-3">
                   <DataProductMetadataModal dataProduct={dataProduct} />
                   <XmlMetadataAttachment
                     dataProduct={dataProduct}
                     variant="icon"
                   />
-                  <a href={dataProduct.url} target="_blank" download>
-                    <ArrowDownTrayIcon
-                      className="w-5 h-5 hover:scale-110"
-                      title="Download data product"
-                    />
-                  </a>
+                  <DataProductDownloadMenu
+                    dataProduct={dataProduct}
+                    projectId={project?.id}
+                    setStatus={setStatus}
+                  />
                   {projectRole === 'owner' && (
                     <>
                       <DataProductShareModal dataProduct={dataProduct} />

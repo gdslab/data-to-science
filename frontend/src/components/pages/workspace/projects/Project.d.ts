@@ -32,6 +32,10 @@ export interface DataProduct {
     unit: string;
   };
   data_type: string;
+  // Safe name for downloads, built server-side from the project, flight date,
+  // and data type. Use this rather than original_filename, which is untrusted
+  // user input and must not be handed back to downloaders.
+  download_filename?: string | null;
   filepath: string;
   flight_id: string;
   like_count?: number;

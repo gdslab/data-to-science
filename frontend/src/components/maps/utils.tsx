@@ -21,6 +21,8 @@ import {
   MultibandSymbology,
 } from './RasterSymbologyContext';
 
+import api from '../../api';
+
 type Bounds = [number, number, number, number];
 
 /**
@@ -778,12 +780,106 @@ function buildLabel(
     .join('  ');
 }
 
+/**
+ * Reads the file name a response's Content-Disposition header asks for.
+ * Returns an empty string when the header is absent or carries no name. That
+ * includes the cross-origin case, where the browser hides the header from
+ * JavaScript unless the server lists it in Access-Control-Expose-Headers.
+ * @param contentDisposition Raw Content-Disposition header value.
+ */
+function getFilenameFromContentDisposition(contentDisposition: unknown): string {
+  if (typeof contentDisposition !== 'string') return '';
+
+  // The RFC 5987 form is checked first because it is the one the server uses
+  // whenever the name needs escaping
+  const encoded = contentDisposition.match(/filename\*=\s*utf-8''([^;]+)/i);
+  let filename = '';
+  if (encoded) {
+    try {
+      filename = decodeURIComponent(encoded[1].trim());
+    } catch {
+      // malformed encoding, fall through to the plain form
+    }
+  }
+
+  if (!filename) {
+    const plain = contentDisposition.match(/filename="?([^";]+)"?/i);
+    filename = plain ? plain[1].trim() : '';
+  }
+
+  // The server already sanitizes this name, but it arrives as a header, so any
+  // path separator is neutralized before it becomes a download name
+  return filename.replace(/[\\/]/g, '_');
+}
+
+/**
+ * Removes symbology fields the export does not use.
+ * The map hangs a whole background data product off single band symbology. The
+ * export ignores it and the backend drops it, so it is not worth uploading with
+ * every request.
+ * @param symbology Current symbology settings.
+ */
+function toExportSettings(
+  symbology: SingleBandSymbology | MultibandSymbology
+): Record<string, unknown> {
+  const { background: _background, ...settings } =
+    symbology as SingleBandSymbology;
+  return settings;
+}
+
+/**
+ * Requests a JPG export of a raster data product and saves it to the user's device.
+ * When symbology settings are provided, the color ramp, band rescaling, and band
+ * composition applied on the map are included in the exported image. Without them,
+ * the raster is converted as-is.
+ * @param dataProduct Data product to export.
+ * @param projectId Project the data product belongs to.
+ * @param symbology Current symbology settings, if any.
+ */
+async function exportDataProductToJpeg(
+  dataProduct: DataProduct,
+  projectId: string,
+  symbology?: SingleBandSymbology | MultibandSymbology
+): Promise<void> {
+  const response = await api.post(
+    `/projects/${projectId}/flights/${dataProduct.flight_id}` +
+      `/data_products/${dataProduct.id}/export/jpeg`,
+    { settings: symbology ? toExportSettings(symbology) : null },
+    { responseType: 'blob' }
+  );
+
+  // The server names the file it just built, so its name is preferred over
+  // anything reassembled here. download_filename is the fallback, and the data
+  // product id after that, which is what the raw download link uses. Neither
+  // fallback is ever derived from original_filename: the uploaded name is
+  // untrusted and must not be handed to whoever downloads the export.
+  const filename =
+    getFilenameFromContentDisposition(
+      response.headers['content-disposition']
+    ) ||
+    (dataProduct.download_filename
+      ? `${dataProduct.download_filename.replace(/\.[^/.]+$/, '')}.jpg`
+      : `${dataProduct.id}.jpg`);
+
+  const url = URL.createObjectURL(response.data);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  // Released on a later tick: Safari has cancelled downloads when the object URL
+  // is revoked in the same tick as the click that started them
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 export {
   areProjectsEqual,
   buildLabel,
   calculateBoundsFromGeoJSON,
   createDefaultSingleBandSymbology,
   createDefaultMultibandSymbology,
+  exportDataProductToJpeg,
   filterValidGeoJSONFeatures,
   filterValidProjects,
   fitMapToGeoJSON,
