@@ -12,7 +12,7 @@ from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
 from app.models.flight import Flight, SENSORS, PLATFORMS
-from app.schemas.data_product import DataProductCreate
+from app.schemas.data_product import DataProductCreate, DataProductUpdate
 from app.schemas.flight import FlightUpdate
 from app.schemas.project_member import ProjectMemberCreate
 from app.schemas.role import Role
@@ -809,3 +809,38 @@ def test_check_progress_excludes_stale_processing_jobs(
     response_jobs = response.json()
     assert len(response_jobs) == 1
     assert response_jobs[0]["id"] == str(recent_job.id)
+
+
+def test_get_flights_includes_a_safe_download_filename(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Data products nested in a flight carry the download name too.
+
+    This is the payload the map reads, so it is where the JPG export gets the
+    name it saves under.
+    """
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id, title="Corn Trial 2024")
+    flight = create_flight(db, project_id=project.id, pilot_id=current_user.id)
+    data_product = SampleDataProduct(
+        db, data_type="dsm", project=project, flight=flight
+    )
+    # the uploaded name is untrusted and must not reach the downloader
+    crud.data_product.update(
+        db,
+        db_obj=data_product.obj,
+        obj_in=DataProductUpdate(original_filename="../../evil name.tif"),
+    )
+
+    response = client.get(f"{settings.API_V1_STR}/projects/{project.id}/flights")
+    assert response.status_code == status.HTTP_200_OK
+
+    match = next(
+        product
+        for returned_flight in response.json()
+        for product in returned_flight["data_products"]
+        if product["id"] == str(data_product.obj.id)
+    )
+    acquisition_date = flight.acquisition_date.strftime("%Y%m%d")
+    assert match["download_filename"] == f"Corn_Trial_2024_{acquisition_date}_dsm.tif"
+    assert "evil" not in match["download_filename"]

@@ -1,6 +1,8 @@
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, UUID4
+from pydantic import BaseModel, Field, UUID4, field_validator
+
+from app.utils.text_utils import truncate_to_bytes
 
 
 class Storage(BaseModel):
@@ -8,12 +10,44 @@ class Storage(BaseModel):
     Type: str
 
 
+# Matches the file name limit common to most filesystems, counted in bytes
+# because the name arrives from a browser and can hold multi-byte characters.
+MAX_ORIGINAL_FILENAME_BYTES = 255
+
+
 class MetaData(BaseModel):
+    # Stored verbatim as a data product's original_filename to preserve
+    # provenance, so it is bounded and stripped of control characters here
+    # rather than sanitized at rest. It never names a download, and the only
+    # part of it that reaches a path is its extension, which is checked against
+    # SUPPORTED_EXTENSIONS before use.
     filename: str
     filetype: str
     name: str
     relativePath: str
     type: str
+
+    @field_validator("filename", mode="before")
+    @classmethod
+    def bound_filename(cls, value: Any) -> Any:
+        """Strips control characters and caps the length.
+
+        Deliberately truncates rather than rejects. This model validates the
+        whole tusd hook payload, so raising here fails the hook itself: at
+        pre-create the upload is refused with an opaque error, and at post-finish
+        the bytes are already on the tus server while no data product record is
+        ever created. Bounding what gets stored is the goal, not gatekeeping.
+
+        Runs in "before" mode so the trimming happens ahead of the length cap
+        instead of after it, where it could no longer bring an oversized name
+        back under the limit.
+        """
+        if not isinstance(value, str):
+            return value
+
+        stripped = "".join(char for char in value if char.isprintable()).strip()
+
+        return truncate_to_bytes(stripped, MAX_ORIGINAL_FILENAME_BYTES)
 
 
 class Upload(BaseModel):

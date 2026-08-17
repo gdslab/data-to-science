@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import shutil
 import tempfile
 import zipfile
 from pathlib import Path
@@ -24,6 +23,7 @@ from sqlalchemy.orm import Session
 from app import crud, models, schemas
 from app.api import deps
 from app.api.utils import (
+    cleanup_temp,
     sanitize_file_name,
     get_tile_url_with_signed_payload,
     save_vector_layer_parquet,
@@ -37,18 +37,6 @@ router = APIRouter()
 
 
 logger = logging.getLogger("__name__")
-
-
-def cleanup_temp(temp_path: str) -> None:
-    """Delete temp file or temp dir once no longer in use.
-
-    Args:
-        temp_path (str): Path to temporary file or directory.
-    """
-    if os.path.isfile(temp_path):
-        os.remove(temp_path)
-    elif os.path.isdir(temp_path):
-        shutil.rmtree(temp_path)
 
 
 def get_static_dir() -> str:

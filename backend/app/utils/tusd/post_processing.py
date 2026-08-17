@@ -12,7 +12,11 @@ from sqlalchemy.orm import Session
 
 from app import crud, schemas
 from app.api.api_v1.endpoints.raw_data import get_raw_data_dir
-from app.api.utils import get_data_product_dir, get_indoor_project_data_dir
+from app.api.utils import (
+    get_data_product_dir,
+    get_file_extension,
+    get_indoor_project_data_dir,
+)
 from app.core.config import settings
 from app.schemas.job import State, Status
 from app.tasks.post_upload_tasks import generate_point_cloud_preview
@@ -41,27 +45,6 @@ SUPPORTED_EXTENSIONS = {
     ".ply",
     ".zip",
 }
-
-
-def get_file_extension(filename: Path) -> str:
-    """Get the file extension, handling compound extensions like .copc.laz.
-
-    Args:
-        filename (Path): The filename to check
-
-    Returns:
-        str: The full extension including compound extensions
-    """
-    name = filename.name.lower()
-    if name.endswith(".copc.laz"):
-        return ".copc.laz"
-    elif name.endswith(".laz"):
-        return ".laz"
-    elif name.endswith(".las"):
-        return ".las"
-    elif name.endswith(".tif"):
-        return ".tif"
-    return filename.suffix.lower()
 
 
 def process_data_product_uploaded_to_tusd(

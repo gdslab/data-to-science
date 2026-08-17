@@ -1,11 +1,13 @@
 import os
 import secrets
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch, MagicMock
 from uuid import UUID
 
+import pytest
 from geojson_pydantic import Feature, FeatureCollection
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -36,6 +38,8 @@ from app.tests.utils.vector_layers import (
     create_vector_layer_with_provided_feature_collection,
 )
 from app.utils.ColorBar import create_outfilename
+from app.utils import raster_export
+from app.utils.ImageProcessor import get_info, get_stac_properties
 
 
 def test_read_data_product_with_project_owner_role(
@@ -1472,3 +1476,445 @@ def test_read_data_products_includes_raw_data_id(
     match = next(p for p in products if p["id"] == str(data_product.obj.id))
     # directly uploaded products carry no raw data source
     assert match["raw_data_id"] is None
+
+
+def get_export_url(data_product: SampleDataProduct) -> str:
+    return (
+        f"{settings.API_V1_STR}/projects/{data_product.project.id}"
+        f"/flights/{data_product.flight.id}"
+        f"/data_products/{data_product.obj.id}/export/jpeg"
+    )
+
+
+def test_export_data_product_to_jpeg_with_project_owner_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+    response = client.post(get_export_url(data_product), json={})
+    assert response.status_code == status.HTTP_200_OK
+    assert response.headers["content-type"] == "image/jpeg"
+    assert len(response.content) > 0
+
+
+def test_export_data_product_to_jpeg_with_project_viewer_role(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db)
+    create_project_member(
+        db, role=Role.VIEWER, member_id=current_user.id, project_uuid=project.id
+    )
+    data_product = SampleDataProduct(db, project=project)
+    response = client.post(get_export_url(data_product), json={})
+    assert response.status_code == status.HTTP_200_OK
+    assert response.headers["content-type"] == "image/jpeg"
+    assert len(response.content) > 0
+
+
+def test_export_data_product_to_jpeg_with_symbology_settings(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+    stats = data_product.obj.stac_properties["raster"][0]["stats"]
+    settings_in = {
+        "colorRamp": "viridis",
+        "meanStdDev": 2,
+        "mode": "minMax",
+        "opacity": 100,
+        "min": stats["minimum"],
+        "max": stats["maximum"],
+        "userMin": stats["minimum"],
+        "userMax": stats["maximum"],
+    }
+    styled_response = client.post(
+        get_export_url(data_product), json={"settings": settings_in}
+    )
+    assert styled_response.status_code == status.HTTP_200_OK
+    assert styled_response.headers["content-type"] == "image/jpeg"
+
+    # the styled export applies a color ramp, so it differs from the raw export
+    raw_response = client.post(get_export_url(data_product), json={})
+    assert raw_response.status_code == status.HTTP_200_OK
+    assert styled_response.content != raw_response.content
+
+
+def test_export_data_product_to_jpeg_with_unknown_color_ramp(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+    response = client.post(
+        get_export_url(data_product),
+        json={"settings": {"colorRamp": "notARealColorRamp", "mode": "minMax"}},
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_export_data_product_to_jpeg_with_point_cloud_data_type(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id)
+    data_product = SampleDataProduct(db, data_type="point_cloud", project=project)
+    response = client.post(get_export_url(data_product), json={})
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_export_data_product_to_jpeg_without_project_access(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db)
+    response = client.post(get_export_url(data_product), json={})
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_export_data_product_to_jpeg_names_file_without_original_filename(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id, title="Corn Trial 2024")
+    data_product = SampleDataProduct(db, data_type="dsm", project=project)
+
+    # the uploaded name is untrusted and must not reach the downloader
+    crud.data_product.update(
+        db,
+        db_obj=data_product.obj,
+        obj_in=schemas.DataProductUpdate(original_filename="../../evil name.tif"),
+    )
+
+    response = client.post(get_export_url(data_product), json={})
+    assert response.status_code == status.HTTP_200_OK
+
+    content_disposition = response.headers["content-disposition"]
+    acquisition_date = data_product.flight.acquisition_date.strftime("%Y%m%d")
+    assert f"Corn_Trial_2024_{acquisition_date}_dsm.jpg" in content_disposition
+    assert "evil" not in content_disposition
+    assert ".." not in content_disposition
+
+
+def test_read_data_product_returns_a_safe_download_filename(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id, title="Corn Trial 2024")
+    data_product = SampleDataProduct(db, data_type="dsm", project=project)
+    crud.data_product.update(
+        db,
+        db_obj=data_product.obj,
+        obj_in=schemas.DataProductUpdate(original_filename="../../evil name.tif"),
+    )
+
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}"
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+    acquisition_date = data_product.flight.acquisition_date.strftime("%Y%m%d")
+    download_filename = response.json()["download_filename"]
+    assert download_filename == f"Corn_Trial_2024_{acquisition_date}_dsm.tif"
+    assert "evil" not in download_filename
+
+
+@contextmanager
+def capture_export_work_dir():
+    """Records the temp directory an export creates so cleanup can be asserted.
+
+    Listing the temp directory instead would be unreliable: the suite runs under
+    xdist, so other tests create their own export directories alongside this one.
+    """
+    created: list = []
+    make_work_dir = raster_export.create_export_work_dir
+
+    def record() -> Path:
+        work_dir = make_work_dir()
+        created.append(work_dir)
+        return work_dir
+
+    with patch(
+        "app.api.api_v1.endpoints.data_products.create_export_work_dir",
+        side_effect=record,
+    ):
+        yield created
+
+
+def test_export_data_product_to_jpeg_cleans_up_after_a_successful_export(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """A finished export leaves nothing behind in the temp directory.
+
+    Production mounts a tmpfs on /var/tmp, so anything left there is memory held
+    until the container restarts.
+    """
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+
+    with capture_export_work_dir() as work_dirs:
+        response = client.post(get_export_url(data_product), json={})
+    assert response.status_code == status.HTTP_200_OK
+
+    assert len(work_dirs) == 1
+    assert not work_dirs[0].exists()
+
+
+def test_export_data_product_to_jpeg_cleans_up_after_a_failed_export(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """A rejected export leaves nothing behind either.
+
+    FastAPI only attaches background tasks to a returned Response, so cleanup
+    registered before a raised HTTPException would never run.
+    """
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+
+    with capture_export_work_dir() as work_dirs:
+        response = client.post(
+            get_export_url(data_product),
+            json={"settings": {"colorRamp": "notARealColorRamp", "mode": "minMax"}},
+        )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    assert len(work_dirs) == 1
+    assert not work_dirs[0].exists()
+
+
+def test_export_data_product_to_jpeg_cleans_up_after_a_server_error(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """An unexpected failure still cleans up the temp directory."""
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+
+    with capture_export_work_dir() as work_dirs:
+        with patch(
+            "app.api.api_v1.endpoints.data_products.export_raster_to_jpeg",
+            side_effect=RuntimeError("boom"),
+        ):
+            response = client.post(get_export_url(data_product), json={})
+    assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    assert len(work_dirs) == 1
+    assert not work_dirs[0].exists()
+
+
+@pytest.mark.parametrize(
+    "settings_in",
+    [
+        pytest.param({"colorRamp": 5, "mode": "minMax"}, id="non-string color ramp"),
+        pytest.param(
+            {"colorRamp": "viridis", "mode": "minMax", "min": {}}, id="dict min"
+        ),
+        pytest.param(
+            {"colorRamp": "viridis", "mode": "minMax", "min": "inf"},
+            id="infinite min",
+        ),
+        pytest.param(
+            {"colorRamp": "viridis", "mode": "minMax", "max": "nan"}, id="nan max"
+        ),
+        pytest.param(
+            {"colorRamp": "viridis", "mode": "meanStdDev", "meanStdDev": []},
+            id="list mean std dev",
+        ),
+        pytest.param(
+            {"colorRamp": "viridis", "nodata": "--config CPL_DEBUG ON"},
+            id="non-numeric nodata",
+        ),
+        pytest.param({"mode": "minMax"}, id="neither color ramp nor bands"),
+    ],
+)
+def test_export_data_product_to_jpeg_rejects_malformed_settings(
+    client: TestClient,
+    db: Session,
+    normal_user_access_token: str,
+    settings_in: dict,
+) -> None:
+    """Bad symbology values are refused up front rather than reaching GDAL.
+
+    Every one of these used to raise deep inside the export and surface as a 500.
+    """
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+
+    response = client.post(get_export_url(data_product), json={"settings": settings_in})
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+
+
+def test_export_data_product_to_jpeg_accepts_settings_with_unknown_keys(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Keys the export does not use are ignored, not rejected.
+
+    The map sends a whole background data product inside single band symbology.
+    """
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+    stats = data_product.obj.stac_properties["raster"][0]["stats"]
+
+    response = client.post(
+        get_export_url(data_product),
+        json={
+            "settings": {
+                "colorRamp": "viridis",
+                "mode": "minMax",
+                "min": stats["minimum"],
+                "max": stats["maximum"],
+                "background": {"id": str(data_product.obj.id), "data_type": "dsm"},
+            }
+        },
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.headers["content-type"] == "image/jpeg"
+
+
+def test_export_data_product_to_jpeg_with_multiband_symbology(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """The multiband payload the map sends round-trips through the endpoint."""
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user, multispectral=True)
+    stac_properties = get_stac_properties(get_info(Path(data_product.obj.filepath)))
+    crud.data_product.update_bands(db, data_product.obj.id, stac_properties)
+
+    def band(idx: int) -> dict:
+        stats = stac_properties["raster"][idx - 1]["stats"]
+        return {
+            "idx": idx,
+            "min": stats["minimum"],
+            "max": stats["maximum"],
+            "userMin": stats["minimum"],
+            "userMax": stats["maximum"],
+        }
+
+    response = client.post(
+        get_export_url(data_product),
+        json={
+            "settings": {
+                "mode": "minMax",
+                "meanStdDev": 2,
+                "opacity": 100,
+                "red": band(1),
+                "green": band(2),
+                "blue": band(3),
+            }
+        },
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.headers["content-type"] == "image/jpeg"
+    assert len(response.content) > 0
+
+
+def test_export_data_product_to_jpeg_rejects_an_out_of_range_band_index(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """A band index past the raster's band count is refused."""
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user, multispectral=True)
+    stac_properties = get_stac_properties(get_info(Path(data_product.obj.filepath)))
+    crud.data_product.update_bands(db, data_product.obj.id, stac_properties)
+
+    band = {"idx": 1, "min": 0, "max": 255, "userMin": 0, "userMax": 255}
+    response = client.post(
+        get_export_url(data_product),
+        json={
+            "settings": {
+                "mode": "minMax",
+                "red": {**band, "idx": 99},
+                "green": band,
+                "blue": band,
+            }
+        },
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_export_data_product_to_jpeg_without_stac_properties(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """A data product with no band metadata is refused instead of raising a 500."""
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, user=current_user)
+    crud.data_product.update_bands(db, data_product.obj.id, None)
+
+    response = client.post(get_export_url(data_product), json={})
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_read_data_products_includes_a_safe_download_filename(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """The list endpoint carries the download name too.
+
+    This is the endpoint the data products table and card views actually read.
+    """
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id, title="Corn Trial 2024")
+    data_product = SampleDataProduct(db, data_type="dsm", project=project)
+    crud.data_product.update(
+        db,
+        db_obj=data_product.obj,
+        obj_in=schemas.DataProductUpdate(original_filename="../../evil name.tif"),
+    )
+
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{project.id}"
+        f"/flights/{data_product.flight.id}/data_products"
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+    acquisition_date = data_product.flight.acquisition_date.strftime("%Y%m%d")
+    match = next(
+        product
+        for product in response.json()
+        if product["id"] == str(data_product.obj.id)
+    )
+    assert match["download_filename"] == f"Corn_Trial_2024_{acquisition_date}_dsm.tif"
+    assert "evil" not in match["download_filename"]
+
+
+def test_read_data_products_is_unaffected_by_raw_data_on_the_flight(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """A flight's raw data does not duplicate or drop rows in the list.
+
+    Eager loading the flight to build the download name pulls Flight.raw_data
+    along with it, because that relationship is lazy="joined". This is the shape
+    that would surface it.
+    """
+    current_user = get_current_user(db, normal_user_access_token)
+    project = create_project(db, owner_id=current_user.id, title="Corn Trial 2024")
+    flight = create_flight(db, project_id=project.id, pilot_id=current_user.id)
+    data_products = [
+        SampleDataProduct(db, data_type="dsm", project=project, flight=flight),
+        SampleDataProduct(db, data_type="ortho", project=project, flight=flight),
+    ]
+    SampleRawData(db, project=project, flight=flight)
+    SampleRawData(db, project=project, flight=flight)
+
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{project.id}"
+        f"/flights/{flight.id}/data_products"
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+    returned = response.json()
+    returned_ids = [product["id"] for product in returned]
+    assert sorted(returned_ids) == sorted(
+        str(data_product.obj.id) for data_product in data_products
+    )
+    # one row per data product, not one per data product per raw data record
+    assert len(returned_ids) == len(set(returned_ids))
+
+    acquisition_date = flight.acquisition_date.strftime("%Y%m%d")
+    assert {product["download_filename"] for product in returned} == {
+        f"Corn_Trial_2024_{acquisition_date}_dsm.tif",
+        f"Corn_Trial_2024_{acquisition_date}_ortho.tif",
+    }
