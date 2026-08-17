@@ -27,6 +27,7 @@ from .data_product import (
     DataProductUpdate,
     DataProductUpdateDataType,
     ProcessingRequest,
+    RasterExportRequest,
 )
 from .data_product_like import DataProductLike, DataProductLikeCreate, DataProductLikeUpdate
 from .data_product_metadata import (

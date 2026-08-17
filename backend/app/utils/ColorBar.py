@@ -86,9 +86,7 @@ def get_cmap(cmap: str) -> mpl.colors.LinearSegmentedColormap:
     mpl_colormaps_lower = [mpl_cm.lower() for mpl_cm in list(mpl.colormaps)]
     try:
         mpl_colormap_name = list(mpl.colormaps)[mpl_colormaps_lower.index(cmap.lower())]
-        mpl_colormap = mpl.colormaps[mpl_colormap_name]
+        return mpl.colormaps[mpl_colormap_name]
     except ValueError:
         logger.warning("unrecognized color map name provided")
         raise ValueError("unrecognized color map name provided")
-    finally:
-        return mpl_colormap

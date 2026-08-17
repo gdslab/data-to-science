@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
+from app.schemas.tusd import MAX_ORIGINAL_FILENAME_BYTES, MetaData
 from app.tests.utils.flight import create_flight
 from app.tests.utils.indoor_project import create_indoor_project
 from app.tests.utils.project import create_project
@@ -406,3 +407,86 @@ def test_post_finish_indoor_created_record_requires_project_permission(
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
     assert len(process_indoor_data_calls) == 0
+
+
+def test_metadata_strips_control_characters_from_the_filename() -> None:
+    """Non-printable characters are removed before the name is stored."""
+    metadata = MetaData(
+        filename="  ortho\n\t\x00.tif  ",
+        filetype="image/tiff",
+        name="ortho.tif",
+        relativePath="null",
+        type="image/tiff",
+    )
+
+    assert metadata.filename == "ortho.tif"
+
+
+def test_metadata_truncates_a_long_filename_instead_of_rejecting_it() -> None:
+    """An over-long name is bounded, not refused.
+
+    This model validates the whole tusd hook payload, so rejecting would fail the
+    hook itself: at pre-create the upload is refused with an opaque error, and at
+    post-finish the bytes are already on the tus server while no data product
+    record is ever created.
+    """
+    metadata = MetaData(
+        filename=f"{'a' * 400}.tif",
+        filetype="image/tiff",
+        name="ortho.tif",
+        relativePath="null",
+        type="image/tiff",
+    )
+
+    assert len(metadata.filename.encode("utf-8")) == MAX_ORIGINAL_FILENAME_BYTES
+
+
+def test_metadata_trims_before_applying_the_length_cap() -> None:
+    """Trimming runs first, so padding cannot push a valid name over the cap.
+
+    Running the cap first would reject a name that fits once its control
+    characters are gone.
+    """
+    padded = f"{'a' * 250}.tif" + "\x00" * 100
+
+    metadata = MetaData(
+        filename=padded,
+        filetype="image/tiff",
+        name="ortho.tif",
+        relativePath="null",
+        type="image/tiff",
+    )
+
+    assert metadata.filename == f"{'a' * 250}.tif"
+
+
+def test_post_finish_accepts_an_upload_with_a_long_filename(
+    client: TestClient, db: Session
+) -> None:
+    """A long file name does not fail the hook.
+
+    The name is only provenance, so bounding what gets stored is the goal rather
+    than gatekeeping the upload.
+    """
+    password = "SecurePassword123"
+    user = create_user(db, password=password)
+    token = login_and_get_access_token(
+        client=client, email=user.email, password=password
+    )
+    project = create_project(db, owner_id=user.id)
+    flight = create_flight(db, project_id=project.id, pilot_id=user.id)
+
+    payload = _build_tusd_post_finish_payload(
+        upload_id=uuid4().hex,
+        storage_path="/does/not/exist.tif",
+        cookie=[f"access_token={token}"],
+        project_id=str(project.id),
+        flight_id=str(flight.id),
+        data_type="dsm",
+    )
+    payload["Event"]["Upload"]["MetaData"]["filename"] = f"{'a' * 400}.tif"
+
+    response = client.post(f"{settings.API_V1_STR}/tusd", json=payload)
+
+    # anything other than 422 shows the payload itself validated
+    assert response.status_code != status.HTTP_422_UNPROCESSABLE_CONTENT

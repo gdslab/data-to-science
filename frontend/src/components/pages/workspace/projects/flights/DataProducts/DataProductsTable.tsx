@@ -22,6 +22,7 @@ import XmlMetadataAttachment from './XmlMetadata/XmlMetadataAttachment';
 import DataProductShareModal from './DataProductShareModal';
 import DataProductEngagement from '../../../../../engagement/DataProductEngagement';
 import { resolveRawDataSource } from './rawDataSource';
+import { exportDataProductToJpeg } from '../../../../../maps/utils';
 import { DataProduct, ProjectDetail } from '../../Project';
 
 export function isGeoTIFF(dataType: string): boolean {
@@ -66,11 +67,58 @@ export function getDataProductTitle(dataType: string): string {
   }
 }
 
+function DataProductExportAction({
+  dataProduct,
+  projectId,
+  setStatus,
+}: {
+  dataProduct: DataProduct;
+  projectId: string;
+  setStatus: React.Dispatch<React.SetStateAction<Status | null>>;
+}) {
+  const [isExporting, setIsExporting] = useState(false);
+
+  const exportToJpeg = async () => {
+    setIsExporting(true);
+    setStatus(null);
+
+    try {
+      await exportDataProductToJpeg(dataProduct, projectId);
+    } catch (err) {
+      console.error(err);
+      setStatus({
+        type: 'error',
+        msg: 'Unable to export image. Please try again.',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      className="flex items-center gap-1 text-sky-600 disabled:opacity-50"
+      onClick={exportToJpeg}
+      disabled={isExporting}
+      // Transparency has no equivalent in a JPG, so it is worth saying before
+      // the download rather than leaving the black areas to be discovered after
+      title="Export a JPG of this data product. Areas with no data appear black."
+    >
+      <PhotoIcon className="w-4 h-4" />
+      <span className="text-sm">
+        {isExporting ? 'Exporting...' : 'Export JPG'}
+      </span>
+    </button>
+  );
+}
+
 function getDataProductActions(
   role: string | undefined,
   data: DataProduct[],
   navigate: NavigateFunction,
-  project: ProjectDetail | null
+  project: ProjectDetail | null,
+  setStatus: React.Dispatch<React.SetStateAction<Status | null>>
 ) {
   const getDeleteAction = (dataProduct: DataProduct) => ({
     key: `action-delete-${dataProduct.id}`,
@@ -102,13 +150,26 @@ function getDataProductActions(
         className="flex items-center gap-1 text-sky-600"
         href={dataProduct.url}
         target="_blank"
-        download
+        download={dataProduct.download_filename ?? ''}
       >
         <ArrowDownTrayIcon className="w-4 h-4" title="Download data product" />
         <span className="text-sm">Download</span>
       </a>
     ),
     label: 'Download',
+  });
+
+  const getExportAction = (dataProduct: DataProduct) => ({
+    key: `action-export-${dataProduct.id}`,
+    type: 'component',
+    component: (
+      <DataProductExportAction
+        dataProduct={dataProduct}
+        projectId={project ? project.id : ''}
+        setStatus={setStatus}
+      />
+    ),
+    label: 'Export JPG',
   });
 
   const getShareAction = (dataProduct: DataProduct) => ({
@@ -156,12 +217,19 @@ function getDataProductActions(
       return actions;
     }
 
+    // Exporting a JPG is available to every role, down to viewer
+    const exportActions =
+      project && isGeoTIFF(dataProduct.data_type)
+        ? [getExportAction(dataProduct)]
+        : [];
+
     // For all other data products, use the original role-based logic
     if (role === 'owner') {
       return [
         getViewAction(dataProduct),
         getToolboxAction(dataProduct),
         getDownloadAction(dataProduct),
+        ...exportActions,
         getShareAction(dataProduct),
         getDeleteAction(dataProduct),
       ];
@@ -169,10 +237,11 @@ function getDataProductActions(
       return [
         getViewAction(dataProduct),
         getDownloadAction(dataProduct),
+        ...exportActions,
         getToolboxAction(dataProduct),
       ];
     } else {
-      return [getViewAction(dataProduct)];
+      return [getViewAction(dataProduct), ...exportActions];
     }
   });
 }
@@ -225,13 +294,8 @@ export default function DataProductsTable({
       <div className="overflow-x-auto">
         <div className="min-w-[1000px]">
           <Table>
-            <TableHead
-              columns={
-                projectRole === 'viewer'
-                  ? dataProductColumns.slice(0, dataProductColumns.length - 1)
-                  : dataProductColumns
-              }
-            />
+            {/* viewers can export a JPG, so they keep the action column too */}
+            <TableHead columns={dataProductColumns} />
             <div className="overflow-y-auto min-h-96 max-h-96 xl:max-h-[420px] 2xl:max-h-[512px]">
               <TableBody
                 rows={data.map((dataset, index) => ({
@@ -377,7 +441,8 @@ export default function DataProductsTable({
                   projectRole,
                   data,
                   navigate,
-                  project
+                  project,
+                  setStatus
                 )}
               />
             </div>

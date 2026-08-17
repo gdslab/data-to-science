@@ -65,14 +65,21 @@ export default function EditableDataType({
   }
 
   if (!isEditing) {
+    // Data types are user-editable free text, so the label is capped and
+    // truncated to keep it from pushing the card's action icons out of view.
+    // The cap is a maximum, not a fixed width: min-w-0 lets it shrink further
+    // when the icons beside it need the room.
+    const label = dataProduct.data_type.split('_').join(' ').toUpperCase();
     return (
-      <div className="flex items-center justify-center gap-2">
-        <span>{dataProduct.data_type.split('_').join(' ').toUpperCase()}</span>
+      <div className="flex min-w-0 items-center justify-center gap-2">
+        <span className="min-w-0 max-w-24 truncate" title={label}>
+          {label}
+        </span>
         {(projectRole === 'owner' || projectRole === 'manager') &&
           dataProduct.data_type.toLowerCase() !== 'point_cloud' &&
           dataProduct.data_type.toLowerCase() !== 'panoramic' &&
           dataProduct.data_type.toLowerCase() !== '3dgs' && (
-            <button onClick={toggleIsEditing}>
+            <button className="shrink-0" onClick={toggleIsEditing}>
               <PencilIcon className="h-3 w-3" />
             </button>
           )}

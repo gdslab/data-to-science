@@ -1,6 +1,7 @@
 import { AxiosResponse } from 'axios';
 import { useEffect, useState } from 'react';
 
+import Alert, { Status } from '../../Alert';
 import { Button } from '../../Buttons';
 import {
   DataProduct,
@@ -15,7 +16,7 @@ import {
   SingleBandSymbology,
   useRasterSymbologyContext,
 } from '../RasterSymbologyContext';
-import { isPublicOnly } from '../utils';
+import { exportDataProductToJpeg, isPublicOnly } from '../utils';
 
 import api from '../../../api';
 
@@ -30,7 +31,7 @@ function RasterSymbologyShare({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="w-36 max-md:w-full">
+    <div className="flex-1 min-w-32 max-md:w-full">
       <Button
         type="button"
         size="sm"
@@ -46,6 +47,57 @@ function RasterSymbologyShare({
           symbology={symbology}
         />
       </Modal>
+    </div>
+  );
+}
+
+type RasterSymbologyExportProps = {
+  dataProduct: DataProduct;
+  projectId: string;
+  symbology: SingleBandSymbology | MultibandSymbology;
+  setStatus: React.Dispatch<React.SetStateAction<Status | null>>;
+};
+
+function RasterSymbologyExport({
+  dataProduct,
+  projectId,
+  symbology,
+  setStatus,
+}: RasterSymbologyExportProps) {
+  const [isExporting, setIsExporting] = useState(false);
+
+  const exportImage = async () => {
+    setIsExporting(true);
+    setStatus(null);
+
+    try {
+      // Uses the symbology in context, not the saved style, so unsaved changes
+      // are included in the exported image
+      await exportDataProductToJpeg(dataProduct, projectId, symbology);
+    } catch (err) {
+      console.error(err);
+      setStatus({
+        type: 'error',
+        msg: 'Unable to export image. Please try again.',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  return (
+    <div className="flex-1 min-w-32 max-md:w-full">
+      <Button
+        type="button"
+        size="sm"
+        onClick={exportImage}
+        disabled={isExporting}
+        // The export matches the map's colors but not its transparency, which a
+        // JPG cannot carry, so say so before the download rather than after
+        title="Export a JPG using the current map settings. Areas with no data appear black."
+      >
+        {isExporting ? 'Exporting...' : 'Export JPG'}
+      </Button>
     </div>
   );
 }
@@ -101,7 +153,7 @@ function RasterSymbologySave({
   };
 
   return (
-    <div className="w-36 max-md:w-full">
+    <div className="flex-1 min-w-32 max-md:w-full">
       <Button
         type="button"
         size="sm"
@@ -122,6 +174,7 @@ export default function RasterSymbologySaveAndShare({
   const { activeProject } = useMapContext();
   const { state } = useRasterSymbologyContext();
   const [stacBrowserUrl, setStacBrowserUrl] = useState<string>('');
+  const [status, setStatus] = useState<Status | null>(null);
 
   useEffect(() => {
     fetch('/config.json')
@@ -135,35 +188,46 @@ export default function RasterSymbologySaveAndShare({
   if (!activeProject || !symbology) return null;
 
   return (
-    <div className="mt-4 w-full flex items-center justify-between max-md:flex-col max-md:items-stretch max-md:gap-2">
-      {isPublicOnly(activeProject)
-        ? stacBrowserUrl && (
-            <div className="w-full">
-              <a
-                href={`${stacBrowserUrl}/collections/${activeProject.id}/items/${dataProduct.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Open in STAC Browser (opens in a new tab)"
-                className="inline-flex items-center justify-center w-full text-sm font-bold py-1.5 px-4 border-2 rounded-md bg-accent3 hover:bg-accent3-dark border-accent3 hover:border-accent3-dark text-white ease-in-out duration-300"
-              >
-                Open in STAC Browser
-              </a>
-            </div>
-          )
-        : (
-          <RasterSymbologyShare
+    <div className="mt-4 w-full flex flex-col gap-2">
+      <div className="w-full flex flex-wrap items-center justify-between gap-2 max-md:flex-col max-md:items-stretch">
+        {isPublicOnly(activeProject)
+          ? stacBrowserUrl && (
+              <div className="w-full">
+                <a
+                  href={`${stacBrowserUrl}/collections/${activeProject.id}/items/${dataProduct.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Open in STAC Browser (opens in a new tab)"
+                  className="inline-flex items-center justify-center w-full text-sm font-bold py-1.5 px-4 border-2 rounded-md bg-accent3 hover:bg-accent3-dark border-accent3 hover:border-accent3-dark text-white ease-in-out duration-300"
+                >
+                  Open in STAC Browser
+                </a>
+              </div>
+            )
+          : (
+            <RasterSymbologyShare
+              dataProduct={dataProduct}
+              project={activeProject}
+              symbology={symbology}
+            />
+          )}
+        {activeProject.role && (
+          <RasterSymbologyExport
             dataProduct={dataProduct}
-            project={activeProject}
+            projectId={activeProject.id}
+            symbology={symbology}
+            setStatus={setStatus}
+          />
+        )}
+        {activeProject.role && (
+          <RasterSymbologySave
+            dataProduct={dataProduct}
+            projectId={activeProject.id}
             symbology={symbology}
           />
         )}
-      {activeProject.role && (
-        <RasterSymbologySave
-          dataProduct={dataProduct}
-          projectId={activeProject.id}
-          symbology={symbology}
-        />
-      )}
+      </div>
+      {status && <Alert alertType={status.type}>{status.msg}</Alert>}
     </div>
   );
 }

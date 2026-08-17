@@ -1,7 +1,9 @@
 import base64
 import os
 import re
+import shutil
 import uuid
+from datetime import date
 from pathlib import Path
 from typing import List, Optional, Tuple
 from urllib.parse import urlencode, quote_plus
@@ -15,6 +17,19 @@ from app import crud
 from app.core.config import settings
 from app.core.security import sign_map_tile_payload
 from app.utils.MapMaker import MapMaker
+from app.utils.text_utils import truncate_to_bytes
+
+
+def cleanup_temp(temp_path: str) -> None:
+    """Delete temp file or temp dir once no longer in use.
+
+    Args:
+        temp_path (str): Path to temporary file or directory.
+    """
+    if os.path.isfile(temp_path):
+        os.remove(temp_path)
+    elif os.path.isdir(temp_path):
+        shutil.rmtree(temp_path)
 
 
 def create_project_field_preview(project_id: uuid.UUID, features: List[Feature]) -> str:
@@ -309,6 +324,107 @@ def sanitize_file_name(file_name: str) -> str:
 
     # Return the cleansed file name
     return f"{sanitized_base_name}{sanitized_extension}"
+
+
+# Keep each part short enough that the joined name stays well inside the 255
+# byte file name limit common to most filesystems. Project titles and flight
+# names are both String(255) on their own. The budget is counted in bytes rather
+# than characters because \w is Unicode aware: a single character can encode to
+# four bytes in UTF-8, so a character based cap would let a title of such
+# characters push the joined name past the limit, and the export writes that name
+# to disk.
+MAX_FILENAME_PART_BYTES = 48
+
+
+def sanitize_file_name_part(part: str) -> str:
+    """Strips unsafe characters from a single component of a file name.
+
+    Uses the same whitelist as sanitize_file_name but without its extension
+    handling, so a dot inside the value (for example a project titled
+    "Trial v1.2") cannot survive and be read as a file extension.
+
+    Args:
+        part (str): One component of a file name.
+
+    Returns:
+        str: Sanitized component, which may be an empty string.
+    """
+    # \w already covers the underscore
+    sanitized = re.sub(r"[^\w\-]", "_", part)
+    # Collapse the runs left behind by stripped characters
+    sanitized = re.sub(r"_{2,}", "_", sanitized)
+
+    truncated = truncate_to_bytes(sanitized.strip("_"), MAX_FILENAME_PART_BYTES)
+
+    return truncated.strip("_")
+
+
+def get_file_extension(filename: Path) -> str:
+    """Get the file extension, handling compound extensions like .copc.laz.
+
+    Args:
+        filename (Path): The filename to check
+
+    Returns:
+        str: The full extension including compound extensions
+    """
+    name = filename.name.lower()
+    if name.endswith(".copc.laz"):
+        return ".copc.laz"
+    elif name.endswith(".laz"):
+        return ".laz"
+    elif name.endswith(".las"):
+        return ".las"
+    elif name.endswith(".tif"):
+        return ".tif"
+    return filename.suffix.lower()
+
+
+def get_data_product_download_name(
+    project_title: str,
+    acquisition_date: date,
+    data_type: str,
+    extension: str,
+) -> str:
+    """Builds the file name used when a data product is downloaded.
+
+    The name is composed from the project, flight date, and data type rather than
+    from the uploaded file's name, so nothing a user chose at upload time is
+    handed back to whoever downloads the file. Every component is sanitized,
+    because project titles and data types are both user-editable free text.
+
+    Args:
+        project_title (str): Title of the project the data product belongs to.
+        acquisition_date (date): Acquisition date of the data product's flight.
+        data_type (str): Data type of the data product.
+        extension (str): File extension, with or without a leading dot.
+
+    Returns:
+        str: Sanitized file name.
+    """
+    parts = [
+        sanitize_file_name_part(project_title),
+        acquisition_date.strftime("%Y%m%d"),
+        sanitize_file_name_part(data_type),
+    ]
+
+    stem = "_".join(part for part in parts if part)
+
+    # Only possible if the project title and data type both sanitize away and
+    # somehow leave no date, but a name is still owed to the caller
+    if not stem:
+        stem = str(uuid.uuid4())
+
+    # Sanitized per segment so compound extensions such as .copc.laz keep their
+    # separating dot instead of being flattened into one token
+    extension_parts = [
+        sanitize_file_name_part(part).lower()
+        for part in extension.lstrip(".").split(".")
+    ]
+    extension_parts = [part for part in extension_parts if part]
+    sanitized_extension = f".{'.'.join(extension_parts)}" if extension_parts else ""
+
+    return f"{stem}{sanitized_extension}"
 
 
 def is_geometry_match(expected_geometry: str, actual_geometry: str) -> bool:

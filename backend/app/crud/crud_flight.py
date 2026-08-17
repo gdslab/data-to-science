@@ -11,6 +11,7 @@ from sqlalchemy.orm import joinedload, Session
 from app import crud
 from app.crud.base import CRUDBase
 from app.crud.crud_data_product import (
+    set_download_filename_attr,
     set_like_attrs,
     set_spatial_metadata_attrs,
     set_public_attr,
@@ -196,6 +197,13 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                 session, all_data_product_ids, user_id=user_id
             )
 
+            # Every flight here belongs to the same project, so the title the
+            # download filename needs is read once instead of walked from each
+            # data product's flight
+            project_title = session.execute(
+                select(Project.title).where(Project.id == project_id)
+            ).scalar_one_or_none()
+
             # flights returned by crud
             final_flights = []
             for flight in flights_with_data:
@@ -227,6 +235,9 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                             )
                             set_signature_attr(data_product)
                             set_url_attr(data_product, upload_dir)
+                            set_download_filename_attr(
+                                data_product, project_title, flight.acquisition_date
+                            )
                             set_like_attrs(
                                 data_product,
                                 like_counts.get(data_product.id, 0),
@@ -295,6 +306,13 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                 session, all_data_product_ids
             )
 
+            # Every flight here belongs to the same project, so the title the
+            # download filename needs is read once instead of walked from each
+            # data product's flight
+            project_title = session.execute(
+                select(Project.title).where(Project.id == project_id)
+            ).scalar_one_or_none()
+
             final_flights = []
             for flight in flights_with_data:
                 keep_data_products: List[DataProduct] = []
@@ -316,6 +334,9 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                         set_public_attr(data_product, True)
                         set_signature_attr(data_product)
                         set_url_attr(data_product, upload_dir)
+                        set_download_filename_attr(
+                            data_product, project_title, flight.acquisition_date
+                        )
                         set_like_attrs(
                             data_product,
                             like_counts.get(data_product.id, 0),

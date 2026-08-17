@@ -1,6 +1,6 @@
 import logging
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Literal, Optional, Sequence
 from uuid import UUID
@@ -10,10 +10,15 @@ from fastapi.encoders import jsonable_encoder
 from rasterio.errors import CRSError
 from rasterio.warp import transform_bounds
 from sqlalchemy import and_, func, select, update
-from sqlalchemy.orm import joinedload, Session
+from sqlalchemy.orm import joinedload, noload, Session
 
 from app import crud
-from app.api.utils import get_signature_for_data_product, get_static_dir
+from app.api.utils import (
+    get_data_product_download_name,
+    get_file_extension,
+    get_signature_for_data_product,
+    get_static_dir,
+)
 from app.core.config import settings
 from app.crud.base import CRUDBase
 from app.crud.crud_admin import get_static_directory_size
@@ -40,6 +45,24 @@ from app.schemas.job import Status
 from app.models.user_style import UserStyle
 
 logger = logging.getLogger("__name__")
+
+
+def flight_and_project_load_options() -> tuple:
+    """Loader options that eager load a data product's flight and project.
+
+    Flight.data_products and Flight.raw_data are both lazy="joined", so eager
+    loading the flight would join them too and multiply every row of the outer
+    query. The download filename only needs the flight's own columns and the
+    project's title, so both collections are suppressed.
+
+    Returns:
+        tuple: Loader options to pass to Select.options.
+    """
+    return (
+        joinedload(DataProduct.flight).joinedload(Flight.project),
+        joinedload(DataProduct.flight).noload(Flight.data_products),
+        joinedload(DataProduct.flight).noload(Flight.raw_data),
+    )
 
 
 class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate]):
@@ -90,8 +113,11 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             .scalar_subquery()
             .label("view_count")
         )
-        data_product_query = select(DataProduct, liked_exists, like_count_sq, view_count_sq).where(
-            and_(DataProduct.id == data_product_id, DataProduct.is_active)
+        data_product_query = (
+            select(DataProduct, liked_exists, like_count_sq, view_count_sq)
+            .where(and_(DataProduct.id == data_product_id, DataProduct.is_active))
+            # set_download_filename_attr reads the flight and project below
+            .options(*flight_and_project_load_options())
         )
         user_style_query = select(UserStyle).where(
             and_(
@@ -115,6 +141,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                 set_spatial_metadata_attrs(data_product)
                 set_signature_attr(data_product)
                 set_url_attr(data_product, upload_dir)
+                set_download_filename_attr(data_product)
                 is_status_set = set_status_attr(data_product, data_product.jobs)
                 if user_style:
                     set_user_style_attr(data_product, user_style.settings)
@@ -166,7 +193,10 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             .join(DataProduct.file_permission)
             .join(DataProduct.flight)
             .options(joinedload(DataProduct.file_permission))
-            .options(joinedload(DataProduct.flight))
+            # the project is eager loaded because set_download_filename_attr
+            # needs it, and a nested `with db` elsewhere in this function can
+            # close the session before a lazy load would get the chance
+            .options(joinedload(DataProduct.flight).joinedload(Flight.project))
             .where(
                 and_(
                     DataProduct.is_active,
@@ -189,6 +219,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                 set_spatial_metadata_attrs(data_product)
                 set_signature_attr(data_product)
                 set_url_attr(data_product, upload_dir)
+                set_download_filename_attr(data_product)
                 return data_product
             elif user_id:
                 project_id = data_product.flight.project_id
@@ -199,6 +230,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                     set_spatial_metadata_attrs(data_product)
                     set_signature_attr(data_product)
                     set_url_attr(data_product, upload_dir)
+                    set_download_filename_attr(data_product)
                     return data_product
                 else:
                     return None
@@ -237,8 +269,20 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             .join(DataProduct.jobs)
             .where(and_(DataProduct.flight_id == flight_id, DataProduct.is_active))
         )
+        # Every row above belongs to the same flight, so the two values the
+        # download filename needs are read once here rather than eager loaded
+        # onto each row. Joining them in would also pull Flight.raw_data, which
+        # is lazy="joined", and multiply the rows by the flight's raw data count.
+        flight_query = (
+            select(Project.title, Flight.acquisition_date)
+            .join(Flight.project)
+            .where(Flight.id == flight_id)
+        )
         with db as session:
             rows = session.execute(data_products_query).unique().all()
+
+            flight_row = session.execute(flight_query).one_or_none()
+            project_title, acquisition_date = flight_row or (None, None)
 
             # Batch load all user styles to avoid N+1 queries
             data_product_ids = [row[0].id for row in rows]
@@ -287,6 +331,9 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                 set_public_attr(data_product, data_product.file_permission.is_public)
                 set_signature_attr(data_product)
                 set_url_attr(data_product, upload_dir)
+                set_download_filename_attr(
+                    data_product, project_title, acquisition_date
+                )
                 is_status_set = set_status_attr(data_product, data_product.jobs)
                 xml_metadata = xml_metadata_by_data_product_id.get(data_product.id)
                 if xml_metadata:
@@ -782,6 +829,51 @@ def set_url_attr(data_product_obj: DataProduct, upload_dir: str) -> None:
         setattr(data_product_obj, "url", url)
     except ValueError:
         setattr(data_product_obj, "url", None)
+
+
+def set_download_filename_attr(
+    data_product_obj: DataProduct,
+    project_title: Optional[str] = None,
+    acquisition_date: Optional[date] = None,
+) -> None:
+    """Set the file name to use when this data product is downloaded.
+
+    Built from the project, flight date, and data type rather than from
+    original_filename, so a name chosen by whoever uploaded the file is never
+    handed to whoever downloads it.
+
+    Callers that already hold the project title and acquisition date should pass
+    them in. Every data product under a flight shares both, so reading them from
+    the relationship instead walks DataProduct.flight -> Flight.project once per
+    record, and Flight.data_products and Flight.raw_data are both lazy="joined":
+    that walk drags the flight's whole collections along with it.
+
+    Args:
+        data_product_obj (DataProduct): Data product to set the attribute on.
+        project_title (Optional[str]): Title of the owning project. Read from the
+            relationship when omitted.
+        acquisition_date (Optional[date]): Acquisition date of the owning flight.
+            Read from the relationship when omitted.
+    """
+    try:
+        if project_title is None or acquisition_date is None:
+            flight = data_product_obj.flight
+            if project_title is None:
+                project_title = flight.project.title
+            if acquisition_date is None:
+                acquisition_date = flight.acquisition_date
+
+        download_filename = get_data_product_download_name(
+            project_title=project_title,
+            acquisition_date=acquisition_date,
+            data_type=data_product_obj.data_type,
+            extension=get_file_extension(Path(data_product_obj.filepath)),
+        )
+        setattr(data_product_obj, "download_filename", download_filename)
+    except Exception:
+        # A missing download name must never break reading a data product
+        logger.exception(f"Unable to build download filename for {data_product_obj.id}")
+        setattr(data_product_obj, "download_filename", None)
 
 
 def set_user_style_attr(data_product_obj: DataProduct, user_style: Dict) -> None:

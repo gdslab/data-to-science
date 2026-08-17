@@ -5,22 +5,24 @@ import shutil
 import xml.etree.ElementTree as ET
 from io import BytesIO
 from pathlib import Path
-from typing import Annotated, Any, Optional, Sequence, Union
+from typing import Annotated, Any, Optional, Sequence, Union, cast
 from urllib.parse import urlparse, parse_qs
 from uuid import UUID, uuid4
 
 import segno
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Depends,
     HTTPException,
     Query,
+    Request,
     Response,
     UploadFile,
     status,
 )
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from geojson_pydantic import Feature, FeatureCollection, Polygon, MultiPolygon
 from pydantic import BaseModel, UUID4
 from sqlalchemy import and_, func, select
@@ -31,7 +33,8 @@ from app import crud, models, schemas
 from app.api import deps, utils
 from app.core import security
 from app.core.config import settings
-from app.models.constants import XML_METADATA_EXCLUDED_TYPES
+from app.core.limiter import limiter
+from app.models.constants import NON_RASTER_TYPES, XML_METADATA_EXCLUDED_TYPES
 from app.models.vector_layer import VectorLayer
 from app.schemas.data_product_metadata import ZonalStatisticsProps
 from app.schemas.job import Status
@@ -44,6 +47,13 @@ from app.tasks.toolbox_tasks import (
 )
 from app.schemas.shortened_url import ShortenedUrlApiResponse, UrlPayload
 from app.utils.job_manager import JobManager
+from app.utils.raster_export import (
+    RasterInputError,
+    SymbologyError,
+    create_export_work_dir,
+    export_raster_to_jpeg,
+)
+from app.utils.stac.STACProperties import STACProperties
 from app.utils.tusd.post_processing import process_data_product_uploaded_to_tusd
 
 router = APIRouter()
@@ -279,6 +289,110 @@ def read_all_data_product(
         db, flight_id=flight.id, upload_dir=upload_dir, user_id=current_user.id
     )
     return all_data_product
+
+
+@router.post(
+    "/{data_product_id}/export/jpeg",
+    # Declared so the generated docs advertise an image rather than the JSON they
+    # would assume from the return annotation
+    response_class=FileResponse,
+    responses={
+        status.HTTP_200_OK: {
+            "content": {"image/jpeg": {}},
+            "description": "Exported image.",
+        }
+    },
+)
+# Each export runs GDAL on the request path and writes its intermediates to a
+# tmpfs, so the work is bounded per caller as well as per request
+@limiter.limit("10/minute")
+def export_data_product_to_jpeg(
+    request: Request,
+    export_in: schemas.RasterExportRequest,
+    background_tasks: BackgroundTasks,
+    project: models.Project = Depends(deps.can_read_project),
+    flight: models.Flight = Depends(deps.can_read_flight),
+    data_product: models.DataProduct = Depends(deps.can_read_data_product),
+) -> Any:
+    """Export a raster data product as a JPEG image.
+
+    Symbology settings are optional. When provided, the color ramp, rescaling, and
+    band composition chosen on the map are applied to the exported image. Access is
+    limited to project members by the can_read_data_product dependency.
+    """
+    if data_product.data_type in NON_RASTER_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This data product cannot be exported as an image",
+        )
+
+    work_dir = create_export_work_dir()
+
+    # Named from the project, flight date, and data type rather than from
+    # original_filename, so an uploader's file name is never handed to whoever
+    # downloads the export
+    out_jpeg = work_dir / utils.get_data_product_download_name(
+        project_title=project.title,
+        acquisition_date=flight.acquisition_date,
+        data_type=data_product.data_type,
+        extension=".jpg",
+    )
+
+    # None keys are dropped so the export sees the same shape the map sent, where
+    # an absent value means "fall back" rather than "use None"
+    symbology = (
+        export_in.settings.model_dump(exclude_none=True) if export_in.settings else None
+    )
+
+    # The outer handler is what guarantees the work directory is removed on every
+    # failure. FastAPI attaches background tasks to the returned Response, so a
+    # cleanup task registered before a raised HTTPException never runs at all and
+    # the directory would survive in a tmpfs that only a container restart
+    # reclaims. Keeping it here rather than in each branch below means a new
+    # branch cannot forget it.
+    try:
+        try:
+            export_raster_to_jpeg(
+                Path(data_product.filepath),
+                out_jpeg,
+                cast(STACProperties, data_product.stac_properties),
+                symbology=symbology,
+                work_dir=work_dir,
+            )
+        except SymbologyError as e:
+            logger.warning(f"Invalid symbology for data product {data_product.id}: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="These display settings cannot be applied to this image",
+            )
+        except RasterInputError as e:
+            # The stored file is missing, empty, or unreadable. Nothing the user
+            # can fix, so log where operators will see it rather than as a warning.
+            logger.error(f"Unable to export data product {data_product.id}: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This data product cannot be exported as an image",
+            )
+        except ValueError as e:
+            logger.warning(f"Unable to export data product {data_product.id}: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This data product cannot be exported as an image",
+            )
+        except Exception:
+            logger.exception(f"Unable to export data product {data_product.id}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Unable to create image export",
+            )
+    except Exception:
+        utils.cleanup_temp(str(work_dir))
+        raise
+
+    # Safe to defer now that the response is on its way out
+    background_tasks.add_task(utils.cleanup_temp, str(work_dir))
+
+    return FileResponse(out_jpeg, media_type="image/jpeg", filename=out_jpeg.name)
 
 
 @router.put("/{data_product_id}/bands", response_model=schemas.DataProduct)
