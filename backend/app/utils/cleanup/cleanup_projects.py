@@ -1,5 +1,6 @@
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Set
+from uuid import UUID
 
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
@@ -19,7 +20,11 @@ from app.utils.cleanup.common import (
 logger = logging.getLogger(__name__)
 
 
-def cleanup_projects(db: Session, check_only: bool = False) -> Dict[str, Any]:
+def cleanup_projects(
+    db: Session,
+    check_only: bool = False,
+    s3_project_ids: Optional[Set[UUID]] = None,
+) -> Dict[str, Any]:
     """Remove projects deactivated longer ago than the retention window.
 
     Removing a project removes its static directory and, through database
@@ -30,6 +35,9 @@ def cleanup_projects(db: Session, check_only: bool = False) -> Dict[str, Any]:
         db (Session): Database session.
         check_only (bool): If True, report what would be removed without
             removing static files or database records.
+        s3_project_ids (Optional[Set[UUID]]): Projects held back because they
+            still have data in S3, from common.get_project_ids_with_s3_objects.
+            Looked up here when the caller has not already done so.
 
     Returns:
         Dict[str, Any]: Result record described by common.new_stats.
@@ -43,7 +51,11 @@ def cleanup_projects(db: Session, check_only: bool = False) -> Dict[str, Any]:
     )
     with db as session:
         project_ids = list(session.scalars(deactivated_projects_query).all())
-        project_ids_with_s3_objects = get_project_ids_with_s3_objects(session)
+        project_ids_with_s3_objects = (
+            get_project_ids_with_s3_objects(session)
+            if s3_project_ids is None
+            else s3_project_ids
+        )
 
     for project_id in project_ids:
         if project_id in project_ids_with_s3_objects:

@@ -13,7 +13,7 @@ from app.utils.cleanup.cleanup_data_products_and_raw_data import (
 from app.utils.cleanup.cleanup_flights import cleanup_flights
 from app.utils.cleanup.cleanup_projects import cleanup_projects
 from app.utils.cleanup.cleanup_stale_jobs import cleanup_stale_jobs
-from app.utils.cleanup.common import RETENTION_WEEKS
+from app.utils.cleanup.common import RETENTION_WEEKS, get_project_ids_with_s3_objects
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +66,10 @@ def run(db: Session, args: argparse.Namespace) -> Dict[str, Dict[str, Any]]:
     follow it, so a project and the flights and data it contains are only
     counted once.
 
+    The projects held back for their S3 objects are looked up once and shared
+    with every category, so each category holds back the same projects and the
+    lookup is not repeated per category.
+
     Args:
         db (Session): Database session.
         args (argparse.Namespace): Parsed command line arguments.
@@ -77,13 +81,21 @@ def run(db: Session, args: argparse.Namespace) -> Dict[str, Dict[str, Any]]:
     removed_project_ids: Set[UUID] = set()
     removed_flight_ids: Set[UUID] = set()
 
+    with db as session:
+        s3_project_ids = get_project_ids_with_s3_objects(session)
+
     if not args.skip_projects:
-        results["Projects"] = cleanup_projects(db, args.check_only)
+        results["Projects"] = cleanup_projects(
+            db, args.check_only, s3_project_ids=s3_project_ids
+        )
         removed_project_ids = results["Projects"]["removed_ids"]
 
     if not args.skip_flights:
         results["Flights"] = cleanup_flights(
-            db, args.check_only, skip_project_ids=removed_project_ids
+            db,
+            args.check_only,
+            skip_project_ids=removed_project_ids,
+            s3_project_ids=s3_project_ids,
         )
         removed_flight_ids = results["Flights"]["removed_ids"]
 
@@ -93,10 +105,13 @@ def run(db: Session, args: argparse.Namespace) -> Dict[str, Dict[str, Any]]:
             args.check_only,
             skip_project_ids=removed_project_ids,
             skip_flight_ids=removed_flight_ids,
+            s3_project_ids=s3_project_ids,
         )
 
     if not args.skip_stale_jobs:
-        results["Stale jobs"] = cleanup_stale_jobs(db, args.check_only)
+        results["Stale jobs"] = cleanup_stale_jobs(
+            db, args.check_only, s3_project_ids=s3_project_ids
+        )
 
     print_report(results, args.check_only)
 

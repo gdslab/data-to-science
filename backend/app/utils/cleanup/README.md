@@ -80,20 +80,32 @@ Deactivating a project cascades to its flights and data products, so the same
 files can be visible to more than one category. Each record is only counted and
 removed once per run.
 
+That deduplication is `cleanup_main.run`'s job: it passes what each category
+removed to the categories after it. The category functions do not do it for
+themselves, so calling one directly (as the tests do) and adding up the results
+by hand counts a flight's files again under its project. Go through `run` for
+any total that has to be accurate.
+
 ## What it refuses to remove
 
 Cleanup is destructive and cannot be undone, so it leaves anything that still
 looks in use. Skipped records are counted in the report and logged with the
 reason.
 
-- **Anything with a copy in S3** (a non-null `s3_url`). The database row is the
+- **Every project that still has a copy of anything in S3** (a non-null
+  `s3_url` on any of its data products or raw data). The database row is the
   only record of the S3 object, so removing it would leave the object behind
-  with nothing pointing at it. This normally cannot happen — deactivating a
-  project, flight, data product, or raw data is blocked while the project is
-  published in a STAC catalog, and unpublishing deletes the S3 objects and
-  clears `s3_url` — but an unpublish that fails part way through deliberately
-  keeps `s3_url` set so it can be retried. Unpublish the project first, then run
-  cleanup.
+  with nothing pointing at it. This normally cannot happen — the `deactivate`
+  methods in `app/crud` refuse a project, flight, data product, or raw data
+  while its project is published in a STAC catalog, and unpublishing deletes
+  the S3 objects and clears `s3_url` — but an unpublish that fails part way
+  through deliberately keeps `s3_url` set so it can be retried. Unpublish the
+  project first, then run cleanup.
+
+  The hold covers the whole project, not only the records holding an `s3_url`.
+  The point of keeping the project is that the deletion can still be reversed
+  once the unpublish succeeds, and that is only true while the flights and data
+  inside it are still there.
 - **Data that finished processing** (`is_initial_processing_completed`) or that
   has a successful job, when a stale upload job points at it. A stale upload job
   is not on its own evidence that the data is unusable.

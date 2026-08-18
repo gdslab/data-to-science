@@ -147,7 +147,12 @@ def get_project_ids_with_s3_objects(session: Session) -> Set[UUID]:
     A non-null s3_url means the record is published in a STAC catalog, or that
     an unpublish failed part way through and left objects behind. Either way the
     database row is the only record of the S3 object, so removing it would
-    orphan that object. Callers skip these projects.
+    orphan that object.
+
+    The hold is applied to the whole project rather than to the individual
+    records holding an s3_url. A project is retained so a failed unpublish can
+    be retried and the deletion reversed, and that is only possible while the
+    flights and data inside it are still there.
 
     Args:
         session (Session): Database session.
@@ -170,35 +175,15 @@ def get_project_ids_with_s3_objects(session: Session) -> Set[UUID]:
     )
 
 
-def get_flight_ids_with_s3_objects(session: Session) -> Set[UUID]:
-    """Find flights that still have data products or raw data copied to S3.
-
-    See get_project_ids_with_s3_objects for why these are skipped.
-
-    Args:
-        session (Session): Database session.
-
-    Returns:
-        Set[UUID]: IDs of flights with data still in S3.
-    """
-    data_product_flights = select(DataProduct.flight_id).where(
-        DataProduct.s3_url.isnot(None)
-    )
-    raw_data_flights = select(RawData.flight_id).where(RawData.s3_url.isnot(None))
-    return set(session.scalars(data_product_flights).all()) | set(
-        session.scalars(raw_data_flights).all()
-    )
-
-
 def log_s3_skip(item_type: str, item_id: UUID) -> None:
-    """Record that a record was left in place because it still has S3 objects.
+    """Record that a record was left in place because of the project's S3 hold.
 
     Args:
         item_type (str): Type of record skipped (e.g., "project").
         item_id (UUID): ID of the record skipped.
     """
     logger.warning(
-        "Skipping %s %s: it still has data copied to S3. Unpublish the project "
+        "Skipping %s %s: the project still has data copied to S3. Unpublish it "
         "from its STAC catalog so the S3 objects are removed first.",
         item_type,
         item_id,

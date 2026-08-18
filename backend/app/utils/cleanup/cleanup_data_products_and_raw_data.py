@@ -10,6 +10,7 @@ from app import crud
 from app.models import DataProduct, Flight, RawData
 from app.utils.cleanup.common import (
     get_data_dir,
+    get_project_ids_with_s3_objects,
     get_retention_cutoff,
     log_removal,
     log_s3_skip,
@@ -30,10 +31,10 @@ def get_deactivated_data_query(model: Any) -> Select:
         model (Any): DataProduct or RawData model.
 
     Returns:
-        Select: Query returning (id, s3_url, flight id, project id) rows.
+        Select: Query returning (id, flight id, project id) rows.
     """
     return (
-        select(model.id, model.s3_url, Flight.id, Flight.project_id)
+        select(model.id, Flight.id, Flight.project_id)
         .join(Flight, Flight.id == model.flight_id)
         .where(
             and_(
@@ -54,13 +55,14 @@ def remove_deactivated_data(
     check_only: bool,
     skip_project_ids: Set[UUID],
     skip_flight_ids: Set[UUID],
+    s3_project_ids: Set[UUID],
 ) -> None:
     """Remove static directories and database records for deactivated data.
 
     Args:
         db (Session): Database session.
-        deactivated_data (Sequence[Any]): Rows of (id, s3_url, flight id,
-            project id) from get_deactivated_data_query.
+        deactivated_data (Sequence[Any]): Rows of (id, flight id, project id)
+            from get_deactivated_data_query.
         crud_obj (Any): CRUD object used to remove the database records.
         item_type (str): Type of record being removed, used in log messages.
         data_dir (str): Folder containing data (e.g., "data_products").
@@ -68,11 +70,15 @@ def remove_deactivated_data(
         check_only (bool): If True, nothing is removed.
         skip_project_ids (Set[UUID]): Projects already covered by this run.
         skip_flight_ids (Set[UUID]): Flights already covered by this run.
+        s3_project_ids (Set[UUID]): Projects held back because they still have
+            data in S3.
     """
-    for data_id, s3_url, flight_id, project_id in deactivated_data:
+    for data_id, flight_id, project_id in deactivated_data:
         if project_id in skip_project_ids or flight_id in skip_flight_ids:
             continue
-        if s3_url is not None:
+        # the hold covers every record in the project, not only the records
+        # holding an s3_url, so the project stays recoverable as a whole
+        if project_id in s3_project_ids:
             log_s3_skip(item_type, data_id)
             stats["items_skipped"] += 1
             continue
@@ -95,11 +101,15 @@ def cleanup_data_products_and_raw_data(
     check_only: bool = False,
     skip_project_ids: Optional[Set[UUID]] = None,
     skip_flight_ids: Optional[Set[UUID]] = None,
+    s3_project_ids: Optional[Set[UUID]] = None,
 ) -> Dict[str, Any]:
     """Remove data products and raw data deactivated longer ago than the
     retention window.
 
-    Records that still have a copy in S3 are skipped.
+    Every record in a project that still has data copied to S3 is skipped,
+    including the records holding no S3 objects themselves. See
+    common.get_project_ids_with_s3_objects for why the hold covers the whole
+    project.
 
     Args:
         db (Session): Database session.
@@ -109,6 +119,9 @@ def cleanup_data_products_and_raw_data(
             cleanup_projects in this run.
         skip_flight_ids (Optional[Set[UUID]]): Flights already covered by
             cleanup_flights in this run.
+        s3_project_ids (Optional[Set[UUID]]): Projects held back because they
+            still have data in S3, from common.get_project_ids_with_s3_objects.
+            Looked up here when the caller has not already done so.
 
     Returns:
         Dict[str, Any]: Result record described by common.new_stats.
@@ -124,6 +137,11 @@ def cleanup_data_products_and_raw_data(
         deactivated_raw_data = session.execute(
             get_deactivated_data_query(RawData)
         ).all()
+        project_ids_with_s3_objects = (
+            get_project_ids_with_s3_objects(session)
+            if s3_project_ids is None
+            else s3_project_ids
+        )
 
     remove_deactivated_data(
         db,
@@ -135,6 +153,7 @@ def cleanup_data_products_and_raw_data(
         check_only,
         skip_project_ids,
         skip_flight_ids,
+        project_ids_with_s3_objects,
     )
     remove_deactivated_data(
         db,
@@ -146,6 +165,7 @@ def cleanup_data_products_and_raw_data(
         check_only,
         skip_project_ids,
         skip_flight_ids,
+        project_ids_with_s3_objects,
     )
 
     return stats

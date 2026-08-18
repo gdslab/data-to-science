@@ -10,6 +10,7 @@ from app.models import DataProduct, Flight, Job, RawData
 from app.schemas.job import State, Status
 from app.utils.cleanup.common import (
     get_data_dir,
+    get_project_ids_with_s3_objects,
     get_retention_cutoff,
     log_removal,
     log_s3_skip,
@@ -81,20 +82,28 @@ def has_successful_job(
     return session.execute(successful_job_query).first() is not None
 
 
-def plan_removal(session: Session, stale_job: Any) -> Dict[str, Any]:
+def plan_removal(
+    session: Session, stale_job: Any, s3_project_ids: Set[UUID]
+) -> Dict[str, Any]:
     """Decide what to remove for a stale upload job.
 
     The job's data product or raw data is removed with the job, unless it looks
     like it is still in use. In that case only the job is left in place and
     reported as skipped, because removing usable data is not recoverable.
 
+    Deciding is kept separate from acting so the caller can report the record a
+    plan protects once, even when several stale jobs point at the same upload.
+
     Args:
         session (Session): Database session.
         stale_job (Any): Row of (job id, name, data product id, raw data id).
+        s3_project_ids (Set[UUID]): Projects held back because they still have
+            data in S3.
 
     Returns:
         Dict[str, Any]: Plan with an "action" of "remove_data", "remove_job",
-            or "skip", plus the details needed to carry it out.
+            or "skip", plus the details needed to carry it out. A "skip" plan
+            carries the "reason" the record is being kept.
     """
     job_id, job_name, data_product_id, raw_data_id = stale_job
     item_type, data_dir = UPLOAD_JOB_NAMES[job_name]
@@ -108,7 +117,6 @@ def plan_removal(session: Session, stale_job: Any) -> Dict[str, Any]:
     model = DataProduct if is_data_product else RawData
     data_query = (
         select(
-            model.s3_url,
             model.is_initial_processing_completed,
             Flight.id,
             Flight.project_id,
@@ -121,23 +129,21 @@ def plan_removal(session: Session, stale_job: Any) -> Dict[str, Any]:
         # the upload record is already gone, so only the job remains
         return {"action": "remove_job", "job_id": job_id}
 
-    s3_url, is_initial_processing_completed, flight_id, project_id = data
-    if s3_url is not None:
-        log_s3_skip(item_type, data_id)
-        return {"action": "skip", "job_id": job_id}
+    is_initial_processing_completed, flight_id, project_id = data
+    skip_plan = {
+        "action": "skip",
+        "job_id": job_id,
+        "data_id": data_id,
+        "item_type": item_type,
+    }
+    if project_id in s3_project_ids:
+        return {**skip_plan, "reason": "s3"}
 
     owner = (
         {"data_product_id": data_id} if is_data_product else {"raw_data_id": data_id}
     )
     if is_initial_processing_completed or has_successful_job(session, **owner):
-        logger.warning(
-            "Skipping %s %s for stale job %s: it finished processing or has a "
-            "successful job, so the upload it belongs to is still in use.",
-            item_type,
-            data_id,
-            job_id,
-        )
-        return {"action": "skip", "job_id": job_id}
+        return {**skip_plan, "reason": "in_use"}
 
     return {
         "action": "remove_data",
@@ -149,7 +155,29 @@ def plan_removal(session: Session, stale_job: Any) -> Dict[str, Any]:
     }
 
 
-def cleanup_stale_jobs(db: Session, check_only: bool = False) -> Dict[str, Any]:
+def log_skip(plan: Dict[str, Any]) -> None:
+    """Record why a stale job's upload record was left in place.
+
+    Args:
+        plan (Dict[str, Any]): A "skip" plan from plan_removal.
+    """
+    if plan["reason"] == "s3":
+        log_s3_skip(plan["item_type"], plan["data_id"])
+        return
+    logger.warning(
+        "Skipping %s %s for stale job %s: it finished processing or has a "
+        "successful job, so the upload it belongs to is still in use.",
+        plan["item_type"],
+        plan["data_id"],
+        plan["job_id"],
+    )
+
+
+def cleanup_stale_jobs(
+    db: Session,
+    check_only: bool = False,
+    s3_project_ids: Optional[Set[UUID]] = None,
+) -> Dict[str, Any]:
     """Remove upload jobs that never succeeded, and the data they left behind.
 
     Removing the data product or raw data also removes the job, because jobs
@@ -159,24 +187,40 @@ def cleanup_stale_jobs(db: Session, check_only: bool = False) -> Dict[str, Any]:
         db (Session): Database session.
         check_only (bool): If True, report what would be removed without
             removing static files or database records.
+        s3_project_ids (Optional[Set[UUID]]): Projects held back because they
+            still have data in S3, from common.get_project_ids_with_s3_objects.
+            Looked up here when the caller has not already done so.
 
     Returns:
         Dict[str, Any]: Result record described by common.new_stats.
     """
     stats = new_stats()
     with db as session:
+        project_ids_with_s3_objects = (
+            get_project_ids_with_s3_objects(session)
+            if s3_project_ids is None
+            else s3_project_ids
+        )
         plans = [
-            plan_removal(session, stale_job) for stale_job in get_stale_jobs(session)
+            plan_removal(session, stale_job, project_ids_with_s3_objects)
+            for stale_job in get_stale_jobs(session)
         ]
 
-    removed_data_ids: Set[UUID] = set()
+    # more than one stale job can point at the same upload. The first plan
+    # settles what happens to it, so the rest are neither acted on nor counted.
+    # "removed_ids" holds the uploads removed, matching the other categories;
+    # the jobs removed on their own are not recorded there, because no other
+    # category can see a job.
+    skipped_data_ids: Set[UUID] = set()
     for plan in plans:
         if plan["action"] == "skip":
+            if plan["data_id"] in skipped_data_ids:
+                continue
+            skipped_data_ids.add(plan["data_id"])
+            log_skip(plan)
             stats["items_skipped"] += 1
             continue
-        # more than one stale job can point at the same upload, and the first
-        # one removes it for all of them
-        if plan.get("data_id") in removed_data_ids:
+        if plan.get("data_id") in stats["removed_ids"]:
             continue
         try:
             if plan["action"] == "remove_job":
@@ -188,7 +232,6 @@ def cleanup_stale_jobs(db: Session, check_only: bool = False) -> Dict[str, Any]:
                     plan["job_id"],
                 )
                 stats["items_removed"] += 1
-                stats["removed_ids"].add(plan["job_id"])
                 continue
 
             dir_size = remove_static_dir(plan["static_dir"], check_only)
@@ -204,7 +247,6 @@ def cleanup_stale_jobs(db: Session, check_only: bool = False) -> Dict[str, Any]:
             stats["items_removed"] += 1
             stats["space_freed_up"] += dir_size
             stats["removed_ids"].add(plan["data_id"])
-            removed_data_ids.add(plan["data_id"])
         except Exception:
             logger.exception("Failed to clean up stale job %s", plan["job_id"])
             stats["failures"] += 1

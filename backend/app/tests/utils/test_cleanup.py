@@ -1,7 +1,7 @@
 import argparse
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict
+from typing import Any, Dict, Type
 from uuid import UUID
 
 from sqlalchemy import select, update
@@ -17,6 +17,7 @@ from app.models.raw_data import RawData
 from app.schemas.data_product import DataProductUpdate
 from app.schemas.job import JobUpdate, State, Status
 from app.tests.utils.data_product import SampleDataProduct
+from app.tests.utils.flight import create_flight
 from app.tests.utils.job import create_job
 from app.tests.utils.raw_data import SampleRawData
 from app.tests.utils.user import create_user
@@ -47,7 +48,7 @@ def get_data_dir(
     return os.path.join(get_flight_dir(project_id, flight_id), data_dir, str(data_id))
 
 
-def backdate(db: Session, model, record_id: UUID, weeks: int = 3) -> None:
+def backdate(db: Session, model: Type[Any], record_id: UUID, weeks: int = 3) -> None:
     """Move a record's deactivated_at date far enough back to be cleaned up."""
     with db as session:
         session.execute(
@@ -93,7 +94,7 @@ def total(results: Dict[str, Dict[str, Any]], key: str) -> int:
     return sum(stats[key] for stats in results.values())
 
 
-def record_exists(db: Session, model, record_id: UUID) -> bool:
+def record_exists(db: Session, model: Type[Any], record_id: UUID) -> bool:
     """Check whether a record is still in the database."""
     with db as session:
         return session.scalar(select(model.id).where(model.id == record_id)) is not None
@@ -281,6 +282,43 @@ def test_records_published_to_s3_are_skipped(db: Session) -> None:
     assert record_exists(db, DataProduct, published.obj.id)
 
 
+def test_project_held_for_s3_keeps_the_rest_of_the_project(db: Session) -> None:
+    """A project kept back for its S3 objects keeps the flights and data that
+    hold no S3 objects themselves, so the whole project is still there to
+    recover once the unpublish has been retried."""
+    user = create_user(db)
+    published = SampleDataProduct(db, user=user)
+    project = published.project
+    # a second flight in the same project, with nothing of its own in S3
+    other_flight = create_flight(db, project_id=project.id, pilot_id=user.id)
+    other = SampleDataProduct(db, project=project, flight=other_flight, user=user)
+    crud.data_product.update_s3_url(
+        db,
+        data_product_id=published.obj.id,
+        s3_url="https://bucket.s3.amazonaws.com/published.tif",
+    )
+    crud.project.deactivate(db, project_id=project.id, user_id=user.id)
+    backdate(db, Project, project.id)
+    for flight_id in (published.flight.id, other_flight.id):
+        backdate(db, Flight, flight_id)
+    for data_product_id in (published.obj.id, other.obj.id):
+        backdate(db, DataProduct, data_product_id)
+
+    results = run(db, get_args())
+
+    assert total(results, "items_removed") == 0
+    assert total(results, "failures") == 0
+    assert record_exists(db, Project, project.id)
+    # the flight and data product holding no S3 objects are kept with the
+    # project, not removed out from under it
+    assert record_exists(db, Flight, other_flight.id)
+    assert record_exists(db, DataProduct, other.obj.id)
+    assert os.path.isdir(get_flight_dir(project.id, other_flight.id))
+    assert os.path.isdir(
+        get_data_dir(project.id, other_flight.id, "data_products", other.obj.id)
+    )
+
+
 def test_stale_upload_job_cleanup(db: Session) -> None:
     """Upload jobs that never succeeded are removed with the partial data they
     left behind."""
@@ -460,3 +498,33 @@ def test_data_product_with_two_stale_jobs_is_only_removed_once(db: Session) -> N
     assert stats["failures"] == 0
     assert not record_exists(db, DataProduct, data_product.obj.id)
     assert not record_exists(db, Job, retry.id)
+
+
+def test_data_product_with_two_stale_jobs_is_only_skipped_once(db: Session) -> None:
+    """A data product kept because it is still in use is counted once, however
+    many stale jobs point at it."""
+    user = create_user(db)
+    data_product = SampleDataProduct(db, user=user)
+    # the data product finished its initial processing, so it is kept
+    crud.job.update(
+        db,
+        db_obj=data_product.job,
+        obj_in=JobUpdate(
+            name="upload-data-product", state=State.COMPLETED, status=Status.FAILED
+        ),
+    )
+    backdate_job(db, data_product.job.id)
+    retry = create_job(
+        db,
+        name="upload-data-product",
+        state=State.STARTED,
+        status=Status.INPROGRESS,
+        data_product_id=data_product.obj.id,
+    )
+    backdate_job(db, retry.id)
+
+    stats = cleanup_stale_jobs(db)
+
+    assert stats["items_skipped"] == 1
+    assert stats["items_removed"] == 0
+    assert record_exists(db, DataProduct, data_product.obj.id)

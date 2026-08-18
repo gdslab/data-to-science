@@ -9,7 +9,7 @@ from app import crud
 from app.models import Flight
 from app.utils.cleanup.common import (
     get_flight_dir,
-    get_flight_ids_with_s3_objects,
+    get_project_ids_with_s3_objects,
     get_retention_cutoff,
     log_removal,
     log_s3_skip,
@@ -24,12 +24,15 @@ def cleanup_flights(
     db: Session,
     check_only: bool = False,
     skip_project_ids: Optional[Set[UUID]] = None,
+    s3_project_ids: Optional[Set[UUID]] = None,
 ) -> Dict[str, Any]:
     """Remove flights deactivated longer ago than the retention window.
 
     Removing a flight removes its static directory and, through database
-    cascades, its data products and raw data. Flights that still have data
-    copied to S3 are skipped.
+    cascades, its data products and raw data. Every flight in a project that
+    still has data copied to S3 is skipped, including the flights that hold no
+    S3 objects themselves: the project is being kept so a failed unpublish can
+    be retried, and removing the rest of it would leave nothing to recover.
 
     Args:
         db (Session): Database session.
@@ -38,6 +41,9 @@ def cleanup_flights(
         skip_project_ids (Optional[Set[UUID]]): Projects already covered by
             cleanup_projects in this run. Their flights are skipped so a
             check-only run does not count the same files twice.
+        s3_project_ids (Optional[Set[UUID]]): Projects held back because they
+            still have data in S3, from common.get_project_ids_with_s3_objects.
+            Looked up here when the caller has not already done so.
 
     Returns:
         Dict[str, Any]: Result record described by common.new_stats.
@@ -52,12 +58,16 @@ def cleanup_flights(
     )
     with db as session:
         deactivated_flights = session.execute(deactivated_flights_query).all()
-        flight_ids_with_s3_objects = get_flight_ids_with_s3_objects(session)
+        project_ids_with_s3_objects = (
+            get_project_ids_with_s3_objects(session)
+            if s3_project_ids is None
+            else s3_project_ids
+        )
 
     for flight_id, project_id in deactivated_flights:
         if project_id in skip_project_ids:
             continue
-        if flight_id in flight_ids_with_s3_objects:
+        if project_id in project_ids_with_s3_objects:
             log_s3_skip("flight", flight_id)
             stats["items_skipped"] += 1
             continue
