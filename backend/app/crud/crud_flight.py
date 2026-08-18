@@ -20,6 +20,7 @@ from app.crud.crud_data_product import (
     set_user_style_attr,
     set_view_count_attr,
 )
+from app.crud.utils import raise_if_owning_project_published
 from app.models.constants import NON_RASTER_TYPES, PROCESSING_JOB_NAMES
 from app.models.data_product import DataProduct
 from app.models.data_product_like import DataProductLike
@@ -427,6 +428,13 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
             return updated_flight
 
     def deactivate(self, db: Session, flight_id: UUID) -> Flight | None:
+        """Deactivate flight and associated data products.
+
+        Raises:
+            PermissionDenied: If the project is published in a STAC catalog.
+        """
+        raise_if_owning_project_published(db, Flight, flight_id, "flight")
+
         update_flight_sql = (
             update(Flight)
             .where(Flight.id == flight_id)

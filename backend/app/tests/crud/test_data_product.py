@@ -1,11 +1,13 @@
 import os
 from datetime import datetime, timezone
 
+import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import crud
 from app.core.config import settings
+from app.core.exceptions import PermissionDenied
 from app.models.data_product import DataProduct
 from app.models.job import Job
 from app.schemas.data_product import DataProductCreate
@@ -225,6 +227,22 @@ def test_deactivate_data_product(db: Session) -> None:
     assert data_product3.deactivated_at.replace(tzinfo=timezone.utc) < datetime.now(
         timezone.utc
     )
+
+
+def test_deactivate_data_product_in_published_project_is_refused(db: Session) -> None:
+    """A data product in a published project cannot be deactivated, whatever
+    calls the CRUD method."""
+    user = create_user(db)
+    data_product = SampleDataProduct(db, user=user)
+    crud.project.update_project_visibility(
+        db, project_id=data_product.project.id, is_public=True
+    )
+
+    with pytest.raises(PermissionDenied):
+        crud.data_product.deactivate(db, data_product_id=data_product.obj.id)
+
+    data_product_in_db = crud.data_product.get(db, id=data_product.obj.id)
+    assert data_product_in_db and data_product_in_db.is_active is True
 
 
 def test_lazy_migration_persists_to_database_on_get_single(db: Session) -> None:

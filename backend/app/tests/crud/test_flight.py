@@ -2,12 +2,14 @@ import os
 from datetime import date, datetime, timezone
 
 import geopandas as gpd
+import pytest
 from geojson_pydantic import FeatureCollection
 from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app import crud
 from app.core.config import settings
+from app.core.exceptions import PermissionDenied
 from app.models.flight import PLATFORMS, SENSORS
 from app.models.vector_layer import VectorLayer
 from app.schemas.data_product import DataProductCreate
@@ -257,6 +259,20 @@ def test_deactivate_flight(db: Session) -> None:
     assert flight3.deactivated_at.replace(tzinfo=timezone.utc) < datetime.now(
         timezone.utc
     )
+
+
+def test_deactivate_flight_in_published_project_is_refused(db: Session) -> None:
+    """A flight in a published project cannot be deactivated, whatever calls
+    the CRUD method."""
+    project = create_project(db)
+    flight = create_flight(db, project_id=project.id)
+    crud.project.update_project_visibility(db, project_id=project.id, is_public=True)
+
+    with pytest.raises(PermissionDenied):
+        crud.flight.deactivate(db, flight_id=flight.id)
+
+    flight_in_db = crud.flight.get(db, id=flight.id)
+    assert flight_in_db and flight_in_db.is_active is True
 
 
 def test_deactivate_flight_deactivates_data_products(db: Session) -> None:

@@ -1,10 +1,12 @@
 import os
 from datetime import datetime, timezone
 
+import pytest
 from sqlalchemy.orm import Session
 
 from app import crud
 from app.core.config import settings
+from app.core.exceptions import PermissionDenied
 from app.tests.utils.flight import create_flight
 from app.tests.utils.raw_data import SampleRawData
 from app.tests.utils.user import create_user
@@ -69,6 +71,23 @@ def test_deactivate_raw_data(db: Session) -> None:
     assert raw_data3.deactivated_at.replace(tzinfo=timezone.utc) < datetime.now(
         timezone.utc
     )
+
+
+def test_deactivate_raw_data_in_published_project_is_refused(db: Session) -> None:
+    """Raw data in a published project cannot be deactivated, whatever calls
+    the CRUD method. Published raw data often has no s3_url of its own, so the
+    cleanup utilities cannot be relied on to hold it back."""
+    user = create_user(db)
+    raw_data = SampleRawData(db, user=user)
+    crud.project.update_project_visibility(
+        db, project_id=raw_data.project.id, is_public=True
+    )
+
+    with pytest.raises(PermissionDenied):
+        crud.raw_data.deactivate(db, raw_data_id=raw_data.obj.id)
+
+    raw_data_in_db = crud.raw_data.get(db, id=raw_data.obj.id)
+    assert raw_data_in_db and raw_data_in_db.is_active is True
 
 
 def test_read_raw_data_url_attribute(db: Session) -> None:

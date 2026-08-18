@@ -22,6 +22,7 @@ from app.api.utils import (
 from app.core.config import settings
 from app.crud.base import CRUDBase
 from app.crud.crud_admin import get_static_directory_size
+from app.crud.utils import raise_if_owning_project_published
 from app.db.session import SessionLocal
 from app.models.constants import NON_RASTER_TYPES, PROCESSING_JOB_NAMES
 from app.models.data_product import DataProduct
@@ -382,6 +383,15 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
         return crud.data_product.get(db, id=data_product_id)
 
     def deactivate(self, db: Session, data_product_id: UUID) -> Optional[DataProduct]:
+        """Deactivate data product.
+
+        Raises:
+            PermissionDenied: If the project is published in a STAC catalog.
+        """
+        raise_if_owning_project_published(
+            db, DataProduct, data_product_id, "data product"
+        )
+
         update_data_product_sql = (
             update(DataProduct)
             .values(is_active=False, deactivated_at=utcnow())

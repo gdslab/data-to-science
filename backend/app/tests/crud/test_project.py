@@ -5,6 +5,7 @@ from fastapi import status
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
+from app.core.exceptions import PermissionDenied
 from app.schemas.project import ProjectUpdate
 from app.schemas.team_member import TeamMemberUpdate, Role
 from app.tests.utils.data_product import SampleDataProduct
@@ -488,6 +489,20 @@ def test_deactivate_project(db: Session) -> None:
     assert project3.deactivated_at.replace(tzinfo=timezone.utc) < datetime.now(
         timezone.utc
     )
+
+
+def test_deactivate_published_project_is_refused(db: Session) -> None:
+    """A published project cannot be deactivated, whatever calls the CRUD
+    method, because the cleanup utilities would later remove data the STAC
+    catalog still points at."""
+    project = create_project(db)
+    crud.project.update_project_visibility(db, project_id=project.id, is_public=True)
+
+    with pytest.raises(PermissionDenied):
+        crud.project.deactivate(db, project_id=project.id, user_id=project.owner_id)
+
+    project_in_db = crud.project.get(db, id=project.id)
+    assert project_in_db and project_in_db.is_active is True
 
 
 def test_deactivate_project_deactivates_flights_and_data_products(db: Session) -> None:
