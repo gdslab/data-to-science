@@ -1,93 +1,151 @@
 import logging
-import os
-import shutil
-from typing import Dict, Union
+from typing import Any, Dict, Optional, Sequence, Set
+from uuid import UUID
 
-from sqlalchemy import and_, select, text
+from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
+from sqlalchemy.sql import Select
 
 from app import crud
-from app.core.config import settings
-from app.models import DataProduct, RawData
-from app.crud.crud_admin import get_static_directory_size
+from app.models import DataProduct, Flight, RawData
+from app.utils.cleanup.common import (
+    get_data_dir,
+    get_retention_cutoff,
+    log_removal,
+    log_s3_skip,
+    new_stats,
+    remove_static_dir,
+)
+
+logger = logging.getLogger(__name__)
 
 
-logger = logging.getLogger("__name__")
+def get_deactivated_data_query(model: Any) -> Select:
+    """Build query for deactivated data products or raw data.
 
-
-def remove_static_data_dir(
-    data: Union[DataProduct, RawData], data_dir: str, check_only: bool = False
-) -> int:
-    """Remove static directory for data product or raw data.
+    The flight is joined so the static directory can be constructed without
+    loading the records themselves.
 
     Args:
-        data (Union[DataProduct, RawData]): Data Product or Raw Data to be removed.
-        data_dir (str): Folder containing data (e.g., "data_products" or "raw_data").
+        model (Any): DataProduct or RawData model.
 
     Returns:
-        int: Size of folder removed in bytes.
+        Select: Query returning (id, s3_url, flight id, project id) rows.
     """
-    if os.environ.get("RUNNING_TESTS") == "1":
-        root_static_dir = settings.TEST_STATIC_DIR
-    else:
-        root_static_dir = settings.STATIC_DIR
-    # construct path to data product or raw data
-    project_id = str(data.flight.project_id)
-    flight_id = str(data.flight.id)
-    data_id = str(data.id)
-    static_dir = os.path.join(
-        root_static_dir, "projects", project_id, "flights", flight_id, data_dir, data_id
-    )
-    # remove data product or raw data from static files
-    if os.path.isdir(static_dir):
-        dir_size = get_static_directory_size(static_dir)
-        if not check_only:
-            shutil.rmtree(static_dir)
-        return dir_size
-    else:
-        return 0
-
-
-def cleanup_data_products_and_raw_data(db: Session, check_only: bool = False) -> Dict:
-    # track data products and raw data items removed and space freed up
-    stats = {"items_removed": 0, "space_freed_up": 0}
-    # queries for deactivated data products and deactivated raw data
-    two_weeks_ago = text("now() - interval '2 week'")
-    deactivated_data_products_query = select(DataProduct).where(
-        and_(
-            DataProduct.is_active.is_(False), DataProduct.deactivated_at < two_weeks_ago
+    return (
+        select(model.id, model.s3_url, Flight.id, Flight.project_id)
+        .join(Flight, Flight.id == model.flight_id)
+        .where(
+            and_(
+                model.is_active.is_(False),
+                model.deactivated_at < get_retention_cutoff(),
+            )
         )
     )
-    deactivated_raw_data_query = select(RawData).where(
-        and_(RawData.is_active.is_(False), RawData.deactivated_at < two_weeks_ago)
-    )
-    # remove deactivated data products
+
+
+def remove_deactivated_data(
+    db: Session,
+    deactivated_data: Sequence[Any],
+    crud_obj: Any,
+    item_type: str,
+    data_dir: str,
+    stats: Dict[str, Any],
+    check_only: bool,
+    skip_project_ids: Set[UUID],
+    skip_flight_ids: Set[UUID],
+) -> None:
+    """Remove static directories and database records for deactivated data.
+
+    Args:
+        db (Session): Database session.
+        deactivated_data (Sequence[Any]): Rows of (id, s3_url, flight id,
+            project id) from get_deactivated_data_query.
+        crud_obj (Any): CRUD object used to remove the database records.
+        item_type (str): Type of record being removed, used in log messages.
+        data_dir (str): Folder containing data (e.g., "data_products").
+        stats (Dict[str, Any]): Result record updated in place.
+        check_only (bool): If True, nothing is removed.
+        skip_project_ids (Set[UUID]): Projects already covered by this run.
+        skip_flight_ids (Set[UUID]): Flights already covered by this run.
+    """
+    for data_id, s3_url, flight_id, project_id in deactivated_data:
+        if project_id in skip_project_ids or flight_id in skip_flight_ids:
+            continue
+        if s3_url is not None:
+            log_s3_skip(item_type, data_id)
+            stats["items_skipped"] += 1
+            continue
+        try:
+            static_dir = get_data_dir(project_id, flight_id, data_dir, data_id)
+            dir_size = remove_static_dir(static_dir, check_only)
+            if not check_only:
+                crud_obj.remove(db, id=data_id)
+            log_removal(item_type, data_id, static_dir, dir_size, check_only)
+            stats["items_removed"] += 1
+            stats["space_freed_up"] += dir_size
+            stats["removed_ids"].add(data_id)
+        except Exception:
+            logger.exception("Failed to remove %s %s", item_type, data_id)
+            stats["failures"] += 1
+
+
+def cleanup_data_products_and_raw_data(
+    db: Session,
+    check_only: bool = False,
+    skip_project_ids: Optional[Set[UUID]] = None,
+    skip_flight_ids: Optional[Set[UUID]] = None,
+) -> Dict[str, Any]:
+    """Remove data products and raw data deactivated longer ago than the
+    retention window.
+
+    Records that still have a copy in S3 are skipped.
+
+    Args:
+        db (Session): Database session.
+        check_only (bool): If True, report what would be removed without
+            removing static files or database records.
+        skip_project_ids (Optional[Set[UUID]]): Projects already covered by
+            cleanup_projects in this run.
+        skip_flight_ids (Optional[Set[UUID]]): Flights already covered by
+            cleanup_flights in this run.
+
+    Returns:
+        Dict[str, Any]: Result record described by common.new_stats.
+    """
+    stats = new_stats()
+    skip_project_ids = skip_project_ids or set()
+    skip_flight_ids = skip_flight_ids or set()
+
     with db as session:
-        # execute query
-        deactivated_data_products = session.scalars(
-            deactivated_data_products_query
+        deactivated_data_products = session.execute(
+            get_deactivated_data_query(DataProduct)
         ).all()
-        # remove data product directory from static files for each data product
-        for deactivated_data_product in deactivated_data_products:
-            dir_size = remove_static_data_dir(
-                deactivated_data_product, "data_products", check_only
-            )
-            stats["items_removed"] += 1
-            stats["space_freed_up"] += dir_size
-            # delete database records for deactivated data product
-            if not check_only:
-                crud.data_product.remove(db, id=deactivated_data_product.id)
-    # remove deactivated raw data
-    with db as session:
-        # execute query
-        deactivated_raw_data = session.scalars(deactivated_raw_data_query).all()
-        # remove raw data directory from static files for each raw data
-        for deactivated_raw in deactivated_raw_data:
-            dir_size = remove_static_data_dir(deactivated_raw, "raw_data", check_only)
-            stats["items_removed"] += 1
-            stats["space_freed_up"] += dir_size
-            # delete database records for deactivated raw data
-            if not check_only:
-                crud.raw_data.remove(db, id=deactivated_raw.id)
+        deactivated_raw_data = session.execute(
+            get_deactivated_data_query(RawData)
+        ).all()
+
+    remove_deactivated_data(
+        db,
+        deactivated_data_products,
+        crud.data_product,
+        "data product",
+        "data_products",
+        stats,
+        check_only,
+        skip_project_ids,
+        skip_flight_ids,
+    )
+    remove_deactivated_data(
+        db,
+        deactivated_raw_data,
+        crud.raw_data,
+        "raw data",
+        "raw_data",
+        stats,
+        check_only,
+        skip_project_ids,
+        skip_flight_ids,
+    )
 
     return stats
