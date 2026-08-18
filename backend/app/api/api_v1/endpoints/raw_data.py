@@ -179,6 +179,14 @@ def deactivate_raw_data(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Access forbidden"
         )
+
+    # Check if project is published
+    if project.is_published:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot deactivate raw data when project is published in a STAC catalog",
+        )
+
     deactivated_raw_data = crud.raw_data.deactivate(db, raw_data_id=raw_data_id)
     if not deactivated_raw_data:
         raise HTTPException(
