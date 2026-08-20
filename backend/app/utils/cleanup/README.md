@@ -40,7 +40,9 @@ Space freed up: 259.60 MB
 ```
 
 A dry run and the real run that follows it report the same totals, so the
-`--check-only` output is a reliable preview.
+`--check-only` output is a reliable preview. A record more than one category
+can see — a deactivated data product that also has a stale upload job, say — is
+counted by the first category that covers it and by no other, in both modes.
 
 Individual categories can be skipped:
 

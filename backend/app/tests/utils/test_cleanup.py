@@ -8,7 +8,6 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app import crud
-from app.core.config import settings
 from app.models.data_product import DataProduct
 from app.models.flight import Flight
 from app.models.job import Job
@@ -25,30 +24,25 @@ from app.utils.cleanup.cleanup_data_products_and_raw_data import (
     cleanup_data_products_and_raw_data,
 )
 from app.utils.cleanup.cleanup_flights import cleanup_flights
-from app.utils.cleanup.cleanup_main import run
+from app.utils.cleanup.cleanup_main import get_parser, run
 from app.utils.cleanup.cleanup_projects import cleanup_projects
 from app.utils.cleanup.cleanup_stale_jobs import cleanup_stale_jobs
+from app.utils.cleanup.common import (
+    RETENTION_WEEKS,
+    get_data_dir,
+    get_flight_dir,
+    get_project_dir,
+)
+
+# the cleanup utilities build their paths from get_static_dir(), which resolves
+# to the test static directory while the tests run, so these are the paths the
+# code under test acts on rather than a second copy of the directory layout.
+STALE_WEEKS = RETENTION_WEEKS + 1
 
 
-def get_project_dir(project_id: UUID) -> str:
-    """Return path to a project's directory in the test static directory."""
-    return os.path.join(settings.TEST_STATIC_DIR, "projects", str(project_id))
-
-
-def get_flight_dir(project_id: UUID, flight_id: UUID) -> str:
-    """Return path to a flight's directory in the test static directory."""
-    return os.path.join(get_project_dir(project_id), "flights", str(flight_id))
-
-
-def get_data_dir(
-    project_id: UUID, flight_id: UUID, data_dir: str, data_id: UUID
-) -> str:
-    """Return path to a data product or raw data directory in the test static
-    directory."""
-    return os.path.join(get_flight_dir(project_id, flight_id), data_dir, str(data_id))
-
-
-def backdate(db: Session, model: Type[Any], record_id: UUID, weeks: int = 3) -> None:
+def backdate(
+    db: Session, model: Type[Any], record_id: UUID, weeks: int = STALE_WEEKS
+) -> None:
     """Move a record's deactivated_at date far enough back to be cleaned up."""
     with db as session:
         session.execute(
@@ -61,7 +55,7 @@ def backdate(db: Session, model: Type[Any], record_id: UUID, weeks: int = 3) -> 
         session.commit()
 
 
-def backdate_job(db: Session, job_id: UUID, weeks: int = 3) -> None:
+def backdate_job(db: Session, job_id: UUID, weeks: int = STALE_WEEKS) -> None:
     """Move a job's start time far enough back to be considered stale."""
     with db as session:
         session.execute(
@@ -79,14 +73,19 @@ def get_args(
     skip_data_products_and_raw_data: bool = False,
     skip_stale_jobs: bool = False,
 ) -> argparse.Namespace:
-    """Build the arguments cleanup_main.run expects."""
-    return argparse.Namespace(
-        check_only=check_only,
-        skip_projects=skip_projects,
-        skip_flights=skip_flights,
-        skip_data_products_and_raw_data=skip_data_products_and_raw_data,
-        skip_stale_jobs=skip_stale_jobs,
-    )
+    """Build the arguments cleanup_main.run expects.
+
+    Built by the real parser so the flags and their defaults cannot drift from
+    the ones the script actually accepts.
+    """
+    flags = {
+        "--check-only": check_only,
+        "--skip-projects": skip_projects,
+        "--skip-flights": skip_flights,
+        "--skip-data-products-and-raw-data": skip_data_products_and_raw_data,
+        "--skip-stale-jobs": skip_stale_jobs,
+    }
+    return get_parser().parse_args([flag for flag, on in flags.items() if on])
 
 
 def total(results: Dict[str, Dict[str, Any]], key: str) -> int:
@@ -528,3 +527,78 @@ def test_data_product_with_two_stale_jobs_is_only_skipped_once(db: Session) -> N
     assert stats["items_skipped"] == 1
     assert stats["items_removed"] == 0
     assert record_exists(db, DataProduct, data_product.obj.id)
+
+
+def test_dry_run_and_real_run_agree_for_deactivated_data_with_stale_job(
+    db: Session,
+) -> None:
+    """A record the deactivated data category removes is not counted a second
+    time as a stale job, so a dry run reports what the real run does."""
+    user = create_user(db)
+    data_product = SampleDataProduct(db, user=user)
+    # the upload never finished, so the record is stale as well as deactivated
+    crud.job.update(
+        db,
+        db_obj=data_product.job,
+        obj_in=JobUpdate(
+            name="upload-data-product", state=State.COMPLETED, status=Status.FAILED
+        ),
+    )
+    backdate_job(db, data_product.job.id)
+    crud.data_product.deactivate(db, data_product_id=data_product.obj.id)
+    backdate(db, DataProduct, data_product.obj.id)
+
+    dry_run = run(db, get_args(check_only=True))
+    real_run = run(db, get_args())
+
+    assert total(dry_run, "items_removed") == total(real_run, "items_removed")
+    assert total(dry_run, "items_skipped") == total(real_run, "items_skipped")
+    assert total(dry_run, "space_freed_up") == total(real_run, "space_freed_up")
+    assert total(real_run, "failures") == 0
+    assert not record_exists(db, DataProduct, data_product.obj.id)
+
+
+def test_dry_run_and_real_run_agree_for_deactivated_project_with_stale_job(
+    db: Session,
+) -> None:
+    """The same holds for a stale job inside a project the project category
+    removes, whose job the database drops along with the project."""
+    user = create_user(db)
+    data_product = SampleDataProduct(db, user=user)
+    crud.job.update(
+        db,
+        db_obj=data_product.job,
+        obj_in=JobUpdate(
+            name="upload-data-product", state=State.COMPLETED, status=Status.FAILED
+        ),
+    )
+    backdate_job(db, data_product.job.id)
+    project = data_product.project
+    crud.project.deactivate(db, project_id=project.id, user_id=user.id)
+    backdate(db, Project, project.id)
+
+    dry_run = run(db, get_args(check_only=True))
+    real_run = run(db, get_args())
+
+    assert total(dry_run, "items_removed") == total(real_run, "items_removed")
+    assert total(dry_run, "items_skipped") == total(real_run, "items_skipped")
+    assert total(dry_run, "space_freed_up") == total(real_run, "space_freed_up")
+    assert total(real_run, "failures") == 0
+    assert not record_exists(db, Project, project.id)
+
+
+def test_removing_an_already_removed_record_is_not_a_failure(db: Session) -> None:
+    """A record removed between a category's query and its removal loop leaves
+    the run reporting success, because the record being gone is the outcome the
+    run wanted."""
+    user = create_user(db)
+    data_product = SampleDataProduct(db, user=user)
+    crud.data_product.deactivate(db, data_product_id=data_product.obj.id)
+    backdate(db, DataProduct, data_product.obj.id)
+
+    assert crud.data_product.remove(db, id=data_product.obj.id) is not None
+    assert crud.data_product.remove(db, id=data_product.obj.id) is None
+
+    stats = cleanup_data_products_and_raw_data(db)
+
+    assert stats["failures"] == 0

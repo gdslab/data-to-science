@@ -64,7 +64,9 @@ def run(db: Session, args: argparse.Namespace) -> Dict[str, Dict[str, Any]]:
 
     Records removed by an earlier category are passed to the categories that
     follow it, so a project and the flights and data it contains are only
-    counted once.
+    counted once. Stale jobs are told about them too: a real run has already
+    dropped their jobs by cascade, so without that a dry run would report more
+    than the run that follows it.
 
     The projects held back for their S3 objects are looked up once and shared
     with every category, so each category holds back the same projects and the
@@ -80,6 +82,7 @@ def run(db: Session, args: argparse.Namespace) -> Dict[str, Dict[str, Any]]:
     results: Dict[str, Dict[str, Any]] = {}
     removed_project_ids: Set[UUID] = set()
     removed_flight_ids: Set[UUID] = set()
+    removed_data_ids: Set[UUID] = set()
 
     with db as session:
         s3_project_ids = get_project_ids_with_s3_objects(session)
@@ -107,10 +110,16 @@ def run(db: Session, args: argparse.Namespace) -> Dict[str, Dict[str, Any]]:
             skip_flight_ids=removed_flight_ids,
             s3_project_ids=s3_project_ids,
         )
+        removed_data_ids = results["Data products and raw data"]["removed_ids"]
 
     if not args.skip_stale_jobs:
         results["Stale jobs"] = cleanup_stale_jobs(
-            db, args.check_only, s3_project_ids=s3_project_ids
+            db,
+            args.check_only,
+            skip_project_ids=removed_project_ids,
+            skip_flight_ids=removed_flight_ids,
+            skip_data_ids=removed_data_ids,
+            s3_project_ids=s3_project_ids,
         )
 
     print_report(results, args.check_only)
