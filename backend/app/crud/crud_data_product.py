@@ -392,9 +392,11 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             db, DataProduct, data_product_id, "data product"
         )
 
-        return self._deactivate(db, data_product_id=data_product_id)
+        return self.deactivate_unguarded(db, data_product_id=data_product_id)
 
-    def _deactivate(self, db: Session, data_product_id: UUID) -> Optional[DataProduct]:
+    def deactivate_unguarded(
+        self, db: Session, data_product_id: UUID
+    ) -> Optional[DataProduct]:
         """Deactivate data product without checking the owning project.
 
         Called by the flight and project cascades, whose entry point already

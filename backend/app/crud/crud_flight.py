@@ -435,9 +435,9 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
         """
         raise_if_owning_project_published(db, Flight, flight_id, "flight")
 
-        return self._deactivate(db, flight_id=flight_id)
+        return self.deactivate_unguarded(db, flight_id=flight_id)
 
-    def _deactivate(self, db: Session, flight_id: UUID) -> Flight | None:
+    def deactivate_unguarded(self, db: Session, flight_id: UUID) -> Flight | None:
         """Deactivate flight and associated data products without checking the
         owning project.
 
@@ -469,7 +469,9 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
         if deactivated_flight and len(deactivated_flight.data_products) > 0:
             for data_product in deactivated_flight.data_products:
                 with db as session:
-                    crud.data_product._deactivate(db, data_product_id=data_product.id)
+                    crud.data_product.deactivate_unguarded(
+                        db, data_product_id=data_product.id
+                    )
 
         return deactivated_flight
 

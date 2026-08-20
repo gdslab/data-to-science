@@ -86,9 +86,9 @@ class CRUDRawData(CRUDBase[RawData, RawDataCreate, RawDataUpdate]):
         """
         raise_if_owning_project_published(db, RawData, raw_data_id, "raw data")
 
-        return self._deactivate(db, raw_data_id=raw_data_id)
+        return self.deactivate_unguarded(db, raw_data_id=raw_data_id)
 
-    def _deactivate(self, db: Session, raw_data_id: UUID) -> RawData | None:
+    def deactivate_unguarded(self, db: Session, raw_data_id: UUID) -> RawData | None:
         """Deactivate raw data without checking the owning project.
 
         Called by the flight and project cascades, whose entry point already

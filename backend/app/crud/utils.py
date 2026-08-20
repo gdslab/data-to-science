@@ -55,7 +55,7 @@ def raise_if_owning_project_published(
     record is protected no matter what reaches it: an endpoint, a background
     task, or a script. A record with no project left to check is allowed
     through, and the deactivate method reports it missing as it would have
-    anyway. Cascades call the internal _deactivate methods, which skip this
+    anyway. Cascades call the deactivate_unguarded methods, which skip this
     check because the operation's entry point already made it.
 
     Only a live project blocks deactivation, for the reason given in

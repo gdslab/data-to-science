@@ -739,7 +739,7 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         if deactivated_project:
             if len(deactivated_project.flights) > 0:
                 for flight in deactivated_project.flights:
-                    crud.flight._deactivate(db, flight_id=flight.id)
+                    crud.flight.deactivate_unguarded(db, flight_id=flight.id)
 
             # Add owner role to deactivated project (necessary for validation)
             setattr(deactivated_project, "role", "owner")
