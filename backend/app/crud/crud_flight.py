@@ -435,9 +435,23 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
         """
         raise_if_owning_project_published(db, Flight, flight_id, "flight")
 
+        return self._deactivate(db, flight_id=flight_id)
+
+    def _deactivate(self, db: Session, flight_id: UUID) -> Flight | None:
+        """Deactivate flight and associated data products without checking the
+        owning project.
+
+        Called by the project cascade, whose entry point already ran the
+        published project check for everything it deactivates.
+
+        Deactivating an already inactive flight leaves it untouched, so deleting
+        the project around it does not restart the retention window the cleanup
+        utilities measure from deactivated_at.
+        """
         update_flight_sql = (
             update(Flight)
             .where(Flight.id == flight_id)
+            .where(Flight.is_active)
             .values(is_active=False, deactivated_at=utcnow())
         )
         with db as session:
@@ -455,7 +469,7 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
         if deactivated_flight and len(deactivated_flight.data_products) > 0:
             for data_product in deactivated_flight.data_products:
                 with db as session:
-                    crud.data_product.deactivate(db, data_product_id=data_product.id)
+                    crud.data_product._deactivate(db, data_product_id=data_product.id)
 
         return deactivated_flight
 

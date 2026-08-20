@@ -392,10 +392,23 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             db, DataProduct, data_product_id, "data product"
         )
 
+        return self._deactivate(db, data_product_id=data_product_id)
+
+    def _deactivate(self, db: Session, data_product_id: UUID) -> Optional[DataProduct]:
+        """Deactivate data product without checking the owning project.
+
+        Called by the flight and project cascades, whose entry point already
+        ran the published project check for everything it deactivates.
+
+        Deactivating an already inactive data product leaves it untouched, so
+        deleting the flight or project around it does not restart the retention
+        window the cleanup utilities measure from deactivated_at.
+        """
         update_data_product_sql = (
             update(DataProduct)
             .values(is_active=False, deactivated_at=utcnow())
             .where(DataProduct.id == data_product_id)
+            .where(DataProduct.is_active)
         )
         with db as session:
             session.execute(update_data_product_sql)

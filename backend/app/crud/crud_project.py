@@ -714,10 +714,14 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         raise_if_project_published(db, project_id)
 
         with db as session:
-            # Update project to be inactive
+            # Update project to be inactive. Deactivating an already inactive
+            # project leaves it untouched, so a repeated delete does not restart
+            # the retention window the cleanup utilities measure from
+            # deactivated_at.
             update_project_sql = (
                 update(Project)
                 .where(and_(Project.id == project_id, Project.owner_id == user_id))
+                .where(Project.is_active)
                 .values(is_active=False, deactivated_at=utcnow())
             )
             session.execute(update_project_sql)
@@ -735,10 +739,10 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
         if deactivated_project:
             if len(deactivated_project.flights) > 0:
                 for flight in deactivated_project.flights:
-                    crud.flight.deactivate(db, flight_id=flight.id)
+                    crud.flight._deactivate(db, flight_id=flight.id)
 
-        # Add owner role to deactivated project (necessary for validation)
-        setattr(deactivated_project, "role", "owner")
+            # Add owner role to deactivated project (necessary for validation)
+            setattr(deactivated_project, "role", "owner")
 
         return deactivated_project
 
