@@ -22,6 +22,7 @@ from app.api.utils import (
 from app.core.config import settings
 from app.crud.base import CRUDBase
 from app.crud.crud_admin import get_static_directory_size
+from app.crud.utils import raise_if_owning_project_published
 from app.db.session import SessionLocal
 from app.models.constants import NON_RASTER_TYPES, PROCESSING_JOB_NAMES
 from app.models.data_product import DataProduct
@@ -382,10 +383,34 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
         return crud.data_product.get(db, id=data_product_id)
 
     def deactivate(self, db: Session, data_product_id: UUID) -> Optional[DataProduct]:
+        """Deactivate data product.
+
+        Raises:
+            PermissionDenied: If the project is published in a STAC catalog.
+        """
+        raise_if_owning_project_published(
+            db, DataProduct, data_product_id, "data product"
+        )
+
+        return self.deactivate_unguarded(db, data_product_id=data_product_id)
+
+    def deactivate_unguarded(
+        self, db: Session, data_product_id: UUID
+    ) -> Optional[DataProduct]:
+        """Deactivate data product without checking the owning project.
+
+        Called by the flight and project cascades, whose entry point already
+        ran the published project check for everything it deactivates.
+
+        Deactivating an already inactive data product leaves it untouched, so
+        deleting the flight or project around it does not restart the retention
+        window the cleanup utilities measure from deactivated_at.
+        """
         update_data_product_sql = (
             update(DataProduct)
             .values(is_active=False, deactivated_at=utcnow())
             .where(DataProduct.id == data_product_id)
+            .where(DataProduct.is_active)
         )
         with db as session:
             session.execute(update_data_product_sql)

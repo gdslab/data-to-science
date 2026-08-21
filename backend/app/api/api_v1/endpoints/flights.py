@@ -187,13 +187,7 @@ def deactivate_flight(
     project: schemas.Project = Depends(deps.can_read_write_delete_project),
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    # Check if project is published
-    if project.is_published:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot deactivate flight when project is published in a STAC catalog",
-        )
-
+    # crud.flight.deactivate refuses a project published in a STAC catalog
     deactivated_flight = crud.flight.deactivate(db, flight_id=flight.id)
     if not deactivated_flight:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)

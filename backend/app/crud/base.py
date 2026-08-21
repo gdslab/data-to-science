@@ -71,6 +71,11 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     def remove(self, db: Session, *, id: UUID) -> ModelType | None:
         with db as session:
             db_obj = session.get(self.model, id)
+            # a record that is already gone is the outcome the caller wanted.
+            # The cleanup utilities remove records in bulk and would otherwise
+            # report a failure for one another run had removed in between.
+            if db_obj is None:
+                return None
             session.delete(db_obj)
             session.commit()
             return db_obj

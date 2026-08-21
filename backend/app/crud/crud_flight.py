@@ -20,6 +20,7 @@ from app.crud.crud_data_product import (
     set_user_style_attr,
     set_view_count_attr,
 )
+from app.crud.utils import raise_if_owning_project_published
 from app.models.constants import NON_RASTER_TYPES, PROCESSING_JOB_NAMES
 from app.models.data_product import DataProduct
 from app.models.data_product_like import DataProductLike
@@ -427,9 +428,30 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
             return updated_flight
 
     def deactivate(self, db: Session, flight_id: UUID) -> Flight | None:
+        """Deactivate flight and associated data products.
+
+        Raises:
+            PermissionDenied: If the project is published in a STAC catalog.
+        """
+        raise_if_owning_project_published(db, Flight, flight_id, "flight")
+
+        return self.deactivate_unguarded(db, flight_id=flight_id)
+
+    def deactivate_unguarded(self, db: Session, flight_id: UUID) -> Flight | None:
+        """Deactivate flight and associated data products without checking the
+        owning project.
+
+        Called by the project cascade, whose entry point already ran the
+        published project check for everything it deactivates.
+
+        Deactivating an already inactive flight leaves it untouched, so deleting
+        the project around it does not restart the retention window the cleanup
+        utilities measure from deactivated_at.
+        """
         update_flight_sql = (
             update(Flight)
             .where(Flight.id == flight_id)
+            .where(Flight.is_active)
             .values(is_active=False, deactivated_at=utcnow())
         )
         with db as session:
@@ -447,7 +469,9 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
         if deactivated_flight and len(deactivated_flight.data_products) > 0:
             for data_product in deactivated_flight.data_products:
                 with db as session:
-                    crud.data_product.deactivate(db, data_product_id=data_product.id)
+                    crud.data_product.deactivate_unguarded(
+                        db, data_product_id=data_product.id
+                    )
 
         return deactivated_flight
 

@@ -2,9 +2,12 @@ from datetime import datetime, timezone
 
 import pytest
 from fastapi import status
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
+from app.core.exceptions import PermissionDenied
+from app.models.project import Project
 from app.schemas.project import ProjectUpdate
 from app.schemas.team_member import TeamMemberUpdate, Role
 from app.tests.utils.data_product import SampleDataProduct
@@ -490,6 +493,20 @@ def test_deactivate_project(db: Session) -> None:
     )
 
 
+def test_deactivate_published_project_is_refused(db: Session) -> None:
+    """A published project cannot be deactivated, whatever calls the CRUD
+    method, because the cleanup utilities would later remove data the STAC
+    catalog still points at."""
+    project = create_project(db)
+    crud.project.update_project_visibility(db, project_id=project.id, is_public=True)
+
+    with pytest.raises(PermissionDenied):
+        crud.project.deactivate(db, project_id=project.id, user_id=project.owner_id)
+
+    project_in_db = crud.project.get(db, id=project.id)
+    assert project_in_db and project_in_db.is_active is True
+
+
 def test_deactivate_project_deactivates_flights_and_data_products(db: Session) -> None:
     project = create_project(db)
     flight = create_flight(db, project_id=project.id)
@@ -505,6 +522,69 @@ def test_deactivate_project_deactivates_flights_and_data_products(db: Session) -
     assert flight2 and flight2.is_active is False
     data_product2 = crud.data_product.get(db, id=data_product.obj.id)
     assert data_product2 and data_product2.is_active is False
+
+
+def test_deactivate_project_by_non_creator_returns_none(db: Session) -> None:
+    """A user who is not the project creator cannot deactivate it, and the CRUD
+    method reports it as not deactivated rather than raising."""
+    project = create_project(db)
+    other_user = create_user(db)
+
+    result = crud.project.deactivate(db, project_id=project.id, user_id=other_user.id)
+
+    assert result is None
+    project_in_db = crud.project.get(db, id=project.id)
+    assert project_in_db and project_in_db.is_active is True
+
+
+def test_deactivate_project_keeps_earlier_deactivated_at(db: Session) -> None:
+    """Deleting a project does not restart the retention window for a flight and
+    data product that were already deactivated on their own."""
+    project = create_project(db)
+    flight = create_flight(db, project_id=project.id)
+    data_product = SampleDataProduct(db, project=project, flight=flight)
+
+    crud.flight.deactivate(db, flight_id=flight.id)
+    flight_first = crud.flight.get(db, id=flight.id)
+    data_product_first = crud.data_product.get(db, id=data_product.obj.id)
+    assert flight_first and flight_first.deactivated_at
+    assert data_product_first and data_product_first.deactivated_at
+    flight_deactivated_at = flight_first.deactivated_at
+    data_product_deactivated_at = data_product_first.deactivated_at
+
+    crud.project.deactivate(db, project_id=project.id, user_id=project.owner_id)
+
+    flight_again = crud.flight.get(db, id=flight.id)
+    data_product_again = crud.data_product.get(db, id=data_product.obj.id)
+    assert flight_again and flight_again.deactivated_at == flight_deactivated_at
+    assert data_product_again
+    assert data_product_again.deactivated_at == data_product_deactivated_at
+
+
+def test_deactivate_flight_in_inactive_published_project_is_allowed(
+    db: Session,
+) -> None:
+    """An inactive project that still carries the published flag does not block
+    its leftover flights from being deactivated.
+
+    update_project_visibility only unpublishes active projects, so a project
+    left in this state by a publish racing a deactivation could otherwise never
+    be unpublished and never finish being deactivated.
+    """
+    project = create_project(db)
+    flight = create_flight(db, project_id=project.id)
+    with db as session:
+        session.execute(
+            update(Project)
+            .where(Project.id == project.id)
+            .values(is_active=False, is_published=True)
+        )
+        session.commit()
+
+    crud.flight.deactivate(db, flight_id=flight.id)
+
+    flight_in_db = crud.flight.get(db, id=flight.id)
+    assert flight_in_db and flight_in_db.is_active is False
 
 
 def test_get_deactivated_project_returns_none(db: Session) -> None:

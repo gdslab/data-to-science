@@ -2,12 +2,14 @@ import os
 from datetime import date, datetime, timezone
 
 import geopandas as gpd
+import pytest
 from geojson_pydantic import FeatureCollection
 from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app import crud
 from app.core.config import settings
+from app.core.exceptions import PermissionDenied
 from app.models.flight import PLATFORMS, SENSORS
 from app.models.vector_layer import VectorLayer
 from app.schemas.data_product import DataProductCreate
@@ -259,6 +261,20 @@ def test_deactivate_flight(db: Session) -> None:
     )
 
 
+def test_deactivate_flight_in_published_project_is_refused(db: Session) -> None:
+    """A flight in a published project cannot be deactivated, whatever calls
+    the CRUD method."""
+    project = create_project(db)
+    flight = create_flight(db, project_id=project.id)
+    crud.project.update_project_visibility(db, project_id=project.id, is_public=True)
+
+    with pytest.raises(PermissionDenied):
+        crud.flight.deactivate(db, flight_id=flight.id)
+
+    flight_in_db = crud.flight.get(db, id=flight.id)
+    assert flight_in_db and flight_in_db.is_active is True
+
+
 def test_deactivate_flight_deactivates_data_products(db: Session) -> None:
     user = create_user(db)
     project = create_project(db, owner_id=user.id)
@@ -270,6 +286,43 @@ def test_deactivate_flight_deactivates_data_products(db: Session) -> None:
     upload_dir = settings.TEST_STATIC_DIR
     data_product = crud.data_product.get(db, id=data_product.obj.id)
     assert data_product and data_product.is_active is False
+
+
+def test_deactivate_flight_keeps_earlier_data_product_deactivated_at(
+    db: Session,
+) -> None:
+    """Deleting a flight does not restart the retention window for a data
+    product that was already deactivated on its own."""
+    project = create_project(db)
+    flight = create_flight(db, project_id=project.id)
+    data_product = SampleDataProduct(db, project=project, flight=flight)
+
+    crud.data_product.deactivate(db, data_product_id=data_product.obj.id)
+    deactivated_first = crud.data_product.get(db, id=data_product.obj.id)
+    assert deactivated_first and deactivated_first.deactivated_at
+    original_deactivated_at = deactivated_first.deactivated_at
+
+    crud.flight.deactivate(db, flight_id=flight.id)
+
+    deactivated_again = crud.data_product.get(db, id=data_product.obj.id)
+    assert deactivated_again and deactivated_again.is_active is False
+    assert deactivated_again.deactivated_at == original_deactivated_at
+
+
+def test_deactivate_flight_twice_keeps_original_deactivated_at(db: Session) -> None:
+    """A repeated delete leaves the first deletion's timestamp in place."""
+    flight = create_flight(db)
+
+    crud.flight.deactivate(db, flight_id=flight.id)
+    deactivated_first = crud.flight.get(db, id=flight.id)
+    assert deactivated_first and deactivated_first.deactivated_at
+    original_deactivated_at = deactivated_first.deactivated_at
+
+    crud.flight.deactivate(db, flight_id=flight.id)
+
+    deactivated_again = crud.flight.get(db, id=flight.id)
+    assert deactivated_again and deactivated_again.is_active is False
+    assert deactivated_again.deactivated_at == original_deactivated_at
 
 
 def test_get_deactivated_flight_returns_none(db: Session) -> None:

@@ -13,6 +13,7 @@ from app.api.utils import get_static_dir
 from app.core.config import settings
 from app.crud.base import CRUDBase
 from app.crud.crud_admin import get_static_directory_size
+from app.crud.utils import raise_if_owning_project_published
 from app.models.flight import Flight
 from app.models.job import Job
 from app.models.raw_data import RawData
@@ -78,9 +79,29 @@ class CRUDRawData(CRUDBase[RawData, RawDataCreate, RawDataUpdate]):
         return all_raw_data_with_status
 
     def deactivate(self, db: Session, raw_data_id: UUID) -> RawData | None:
+        """Deactivate raw data.
+
+        Raises:
+            PermissionDenied: If the project is published in a STAC catalog.
+        """
+        raise_if_owning_project_published(db, RawData, raw_data_id, "raw data")
+
+        return self.deactivate_unguarded(db, raw_data_id=raw_data_id)
+
+    def deactivate_unguarded(self, db: Session, raw_data_id: UUID) -> RawData | None:
+        """Deactivate raw data without checking the owning project.
+
+        Called by the flight and project cascades, whose entry point already
+        ran the published project check for everything it deactivates.
+
+        Deactivating already inactive raw data leaves it untouched, so deleting
+        the flight or project around it does not restart the retention window
+        the cleanup utilities measure from deactivated_at.
+        """
         update_raw_data_sql = (
             update(RawData)
             .where(RawData.id == raw_data_id)
+            .where(RawData.is_active)
             .values(is_active=False, deactivated_at=utcnow())
         )
         with db as session:
