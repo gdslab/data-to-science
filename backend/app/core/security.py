@@ -11,7 +11,6 @@ from uuid import UUID
 
 import httpx
 from fastapi import HTTPException, Request, Response, status
-from fastapi.exceptions import HTTPException
 from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
 from fastapi.security import OAuth2
 from fastapi.security.utils import get_authorization_scheme_param

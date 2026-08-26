@@ -6,17 +6,6 @@ from typing import Dict, List, Optional
 from urllib.parse import urljoin
 from uuid import UUID
 
-
-# Custom JSON encoder to handle UUIDs and datetimes
-class UUIDEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, UUID):
-            return str(obj)
-        elif isinstance(obj, datetime):
-            return obj.isoformat()
-        return super().default(obj)
-
-
 from celery.utils.log import get_task_logger
 from pystac import Item
 from sqlalchemy.orm import Session
@@ -47,6 +36,16 @@ except ImportError:
     STACCollectionManager = None
 
 logger = get_task_logger(__name__)
+
+
+# Custom JSON encoder to handle UUIDs and datetimes
+class UUIDEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, UUID):
+            return str(obj)
+        elif isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
 
 
 def get_stac_cache_path(project_id: UUID) -> Path:

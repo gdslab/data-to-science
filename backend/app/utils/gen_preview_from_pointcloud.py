@@ -34,14 +34,14 @@ def create_preview_image(
             first_chunk = input_las.read_points(min(1000, total_points))
             try:
                 exist_color = len(np.unique(first_chunk.red)) > 1
-            except:
+            except Exception:
                 exist_color = False
         else:
             ratio = 1
             first_chunk = input_las.read_points(total_points)
             try:
                 exist_color = len(np.unique(first_chunk.red)) > 1
-            except:
+            except Exception:
                 exist_color = False
 
         # Initialize arrays to store sampled points

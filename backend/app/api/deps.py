@@ -1,6 +1,6 @@
 import logging
 from collections.abc import Generator
-from typing import Any, Generator, Optional, Union
+from typing import Any, Optional, Union
 from uuid import UUID
 
 from fastapi import BackgroundTasks, Depends, HTTPException, Request, status

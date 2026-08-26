@@ -720,12 +720,12 @@ def generate_potree_viewer_html(
         elToolbar.html(`
           <span>
             <div class="potree_toolbar_label">
-				      Attribute
-			      </div>
-			      <div>
-				      <img name="action_elevation" src="/potree/resources/icons/profile.svg" class="annotation-action-icon" style="width: 2em; height: auto;"/>
-				      <img name="action_rgb" src="/potree/resources/icons/rgb.svg" class="annotation-action-icon" style="width: 2em; height: auto;"/>
-			      </div>
+              Attribute
+            </div>
+            <div>
+              <img name="action_elevation" src="/potree/resources/icons/profile.svg" class="annotation-action-icon" style="width: 2em; height: auto;"/>
+              <img name="action_rgb" src="/potree/resources/icons/rgb.svg" class="annotation-action-icon" style="width: 2em; height: auto;"/>
+            </div>
           </span>
 
           <span class="potree_toolbar_separator" />
@@ -734,23 +734,23 @@ def generate_potree_viewer_html(
             <div class="potree_toolbar_label">
               Gradient
             </div>
-			      <div>
-				      <span name="gradient_schemes"></span>
-			      </div>
-		      </span>
+            <div>
+              <span name="gradient_schemes"></span>
+            </div>
+          </span>
 
           <span class="potree_toolbar_separator" />
 
-		      <span>
-			      <div class="potree_toolbar_label">
-				      Measure
-			      </div>
-			      <div>
-				      <img name="action_measure_point" src="/potree/resources/icons/point.svg" class="annotation-action-icon" style="width: 2em; height: auto;"/>
-				      <img name="action_measure_distance" src="/potree/resources/icons/distance.svg" class="annotation-action-icon" style="width: 2em; height: auto;"/>
-				      <img name="action_measure_circle" src="/potree/resources/icons/circle.svg" class="annotation-action-icon" style="width: 2em; height: auto;"/>
-			      </div>
-		      </span>
+          <span>
+            <div class="potree_toolbar_label">
+              Measure
+            </div>
+            <div>
+              <img name="action_measure_point" src="/potree/resources/icons/point.svg" class="annotation-action-icon" style="width: 2em; height: auto;"/>
+              <img name="action_measure_distance" src="/potree/resources/icons/distance.svg" class="annotation-action-icon" style="width: 2em; height: auto;"/>
+              <img name="action_measure_circle" src="/potree/resources/icons/circle.svg" class="annotation-action-icon" style="width: 2em; height: auto;"/>
+            </div>
+          </span>
 
           <span class="potree_toolbar_separator" />
 
