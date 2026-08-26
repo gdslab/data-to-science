@@ -1,7 +1,7 @@
-from celery import Celery  # type: ignore
 from celery.signals import after_setup_logger  # type: ignore
 
 from app.core.logging import suppress_noisy_loggers
+from celery import Celery  # type: ignore
 
 celery_app = Celery("worker")  # Check backend.env for broker env settings
 celery_app.conf.update(

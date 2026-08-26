@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from fastapi.encoders import jsonable_encoder
 from pydantic import UUID4
-from sqlalchemy import and_, select, update
+from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
 from app import crud

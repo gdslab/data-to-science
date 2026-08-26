@@ -13,7 +13,6 @@ from app.core.config import settings
 from app.core.logging import get_http_info
 from app.core.security import decode_token
 
-
 logger = logging.getLogger(__name__)
 
 # In-memory cache of user_id -> last time a DB activity update was scheduled.

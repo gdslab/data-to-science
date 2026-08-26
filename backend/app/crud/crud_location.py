@@ -3,13 +3,11 @@ from typing import Any, Dict
 from uuid import UUID
 
 from geojson_pydantic import Feature, Polygon
-from fastapi.encoders import jsonable_encoder
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
 from app.models.location import Location
-from app.models.project import Project
 from app.schemas.location import LocationCreate, LocationUpdate
 
 

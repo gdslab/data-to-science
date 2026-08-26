@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app import crud, models
 from app.schemas.team import TeamCreate
 from app.tests.utils.user import create_user
-from app.tests.utils.utils import random_team_name, random_team_description
+from app.tests.utils.utils import random_team_description, random_team_name
 
 
 def create_team(

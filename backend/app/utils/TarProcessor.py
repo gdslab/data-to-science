@@ -1,10 +1,9 @@
 import logging
-import tarfile
 import os
 import shutil
+import tarfile
 
 from PIL import Image
-
 
 logger = logging.getLogger(__name__)
 

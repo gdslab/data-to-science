@@ -5,11 +5,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import crud
-from app.core.config import settings
 from app.schemas.campaign import CampaignUpdate
+from app.tests.conftest import pytest_requires_campaigns
 from app.tests.utils.campaign import create_campaign
 from app.tests.utils.project import create_project
-from app.tests.conftest import pytest_requires_campaigns
 from app.tests.utils.user import create_user
 
 
@@ -29,10 +28,10 @@ def test_create_campaign(db: Session) -> None:
 def test_create_multiple_campaigns_in_same_project(db: Session) -> None:
     user = create_user(db)
     project = create_project(db, owner_id=user.id)
-    campaign = create_campaign(db, project_id=project.id, lead_id=user.id)
+    create_campaign(db, project_id=project.id, lead_id=user.id)
     # unique contraint limits project to single campaign obj
     with pytest.raises(IntegrityError):
-        campaign2 = create_campaign(db, project_id=project.id, lead_id=user.id)
+        create_campaign(db, project_id=project.id, lead_id=user.id)
 
 
 @pytest_requires_campaigns

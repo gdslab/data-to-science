@@ -3,7 +3,7 @@ import logging
 import os
 from pathlib import Path
 
-from sqlalchemy import select, and_
+from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 from tqdm import tqdm
 

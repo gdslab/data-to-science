@@ -2,9 +2,8 @@ import os
 from typing import List
 
 import geopandas as gpd
-import numpy as np
 from geojson_pydantic import Feature
-from shapely.geometry import MultiLineString, MultiPolygon, MultiPoint
+from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
 from staticmap import CircleMarker, Line, Polygon, StaticMap
 
 from app.core.config import settings
@@ -115,7 +114,9 @@ def standardize_geometry(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
                 else (
                     MultiLineString([geom])
                     if geom.geom_type == "LineString"
-                    else MultiPolygon([geom]) if geom.geom_type == "Polygon" else geom
+                    else MultiPolygon([geom])
+                    if geom.geom_type == "Polygon"
+                    else geom
                 )
             )
             for geom in gdf.geometry

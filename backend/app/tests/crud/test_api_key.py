@@ -58,7 +58,7 @@ def test_update_api_key(db: Session) -> None:
 
 def test_deactivate_api_key(db: Session) -> None:
     user = create_user(db)
-    api_key = crud.api_key.create_with_user(db, user_id=user.id)
+    crud.api_key.create_with_user(db, user_id=user.id)
     api_key_in_db = crud.api_key.get_by_user(db, user_id=user.id)
     api_key_removed = crud.api_key.deactivate(db, user_id=user.id)
     api_key_in_db_after_deactivation = crud.api_key.get_by_user(db, user_id=user.id)

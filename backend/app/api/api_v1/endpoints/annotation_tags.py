@@ -1,15 +1,14 @@
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.api import deps
 from app import crud
+from app.api import deps
 from app.schemas.annotation_tag import (
     AnnotationTag,
     AnnotationTagCreate,
-    AnnotationTagUpdate,
 )
 
 router = APIRouter()

@@ -118,7 +118,7 @@ def test_access_authorized_deactivated_data_product_with_api_key(
     assert deactivated_data_product
 
     # current user has access to the data product project, but data product deactivated
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(HTTPException):
         verify_api_key_static_file_access(
             data_product=deactivated_data_product,
             api_key=current_user_api_key.api_key,
@@ -168,7 +168,7 @@ def test_access_unauthorized_data_product_with_api_key(
     data_product = SampleDataProduct(db, user=project_owner)
 
     # current user does not have access to the data product project
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(HTTPException):
         verify_api_key_static_file_access(
             data_product=data_product.obj,
             api_key=current_user_api_key.api_key,
@@ -227,7 +227,7 @@ def test_access_authorized_deactivated_raw_data_with_api_key(
     assert deactivated_raw_data
 
     # current user has access to the raw data project, but raw data deactivated
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(HTTPException):
         verify_api_key_raw_data_access(
             raw_data=deactivated_raw_data,
             api_key=current_user_api_key.api_key,
@@ -249,7 +249,7 @@ def test_access_unauthorized_raw_data_with_api_key(
     raw_data = SampleRawData(db, user=project_owner)
 
     # current user does not have access to the raw data project
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(HTTPException):
         verify_api_key_raw_data_access(
             raw_data=raw_data.obj, api_key=current_user_api_key.api_key, db=db
         )

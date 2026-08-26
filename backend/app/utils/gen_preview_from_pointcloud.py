@@ -3,8 +3,8 @@ from pathlib import Path
 from typing import List, Optional
 
 import laspy as lp
-import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
 import numpy as np
 
 

@@ -4,8 +4,8 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app import crud, models
-from app.schemas.team_member import TeamMemberCreate
 from app.schemas.role import Role
+from app.schemas.team_member import TeamMemberCreate
 from app.tests.utils.team import create_team
 from app.tests.utils.user import create_user
 

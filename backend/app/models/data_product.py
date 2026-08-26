@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID

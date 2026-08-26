@@ -27,20 +27,16 @@ def backfill_metadata():
 
     try:
         # Get all raster data products without cached metadata
-        query = (
-            select(DataProduct)
-            .where(
-                DataProduct.is_active == True,
-                DataProduct.bbox.is_(None),
-            )
+        query = select(DataProduct).where(
+            DataProduct.is_active,
+            DataProduct.bbox.is_(None),
         )
 
         data_products = db.execute(query).scalars().all()
 
         # Filter out non-raster types
         raster_products = [
-            dp for dp in data_products
-            if dp.data_type not in NON_RASTER_TYPES
+            dp for dp in data_products if dp.data_type not in NON_RASTER_TYPES
         ]
 
         print(f"Found {len(raster_products)} raster data products to process")
@@ -67,7 +63,7 @@ def backfill_metadata():
                 print(f"✗ Failed {dp.id}: {e}")
                 db.rollback()
 
-        print(f"\nBackfill complete:")
+        print("\nBackfill complete:")
         print(f"  Success: {success_count}")
         print(f"  Skipped: {skip_count}")
         print(f"  Errors: {error_count}")

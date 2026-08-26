@@ -1,9 +1,9 @@
-from typing import Dict, TypedDict
+from typing import Dict
 
 from geojson_pydantic import Feature, Polygon
 from sqlalchemy.orm import Session
 
-from app import crud, models
+from app import crud
 from app.schemas.location import LocationCreate
 from app.tests.utils.utils import get_geojson_feature_collection
 

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, UUID4
+from pydantic import UUID4, BaseModel
 
 
 # properties in POST requests

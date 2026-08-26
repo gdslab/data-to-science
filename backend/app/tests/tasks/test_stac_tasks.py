@@ -1,24 +1,23 @@
 import json
-import pytest
 import tempfile
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 from uuid import uuid4
-from unittest.mock import patch, MagicMock
 
+import pytest
 from sqlalchemy.orm import Session
 
-from app.tasks.stac_tasks import (
-    generate_stac_preview_task,
-    publish_stac_catalog_task,
-    get_stac_cache_path,
-    UUIDEncoder,
-)
-from app.tests.utils.data_product import SampleDataProduct
-from app.tests.utils.project import create_project
-from app.tests.utils.flight import create_flight
-
 from app.core.config import settings
+from app.tasks.stac_tasks import (
+    UUIDEncoder,
+    generate_stac_preview_task,
+    get_stac_cache_path,
+    publish_stac_catalog_task,
+)
 from app.tests.conftest import pytest_requires_stac
+from app.tests.utils.data_product import SampleDataProduct
+from app.tests.utils.flight import create_flight
+from app.tests.utils.project import create_project
 
 
 @pytest_requires_stac
@@ -90,7 +89,7 @@ def test_generate_stac_preview_task_success(mock_get_db, db: Session):
     # Create project with data
     project = create_project(db)
     flight = create_flight(db, project_id=project.id)
-    data_product = SampleDataProduct(db, project=project, flight=flight)
+    SampleDataProduct(db, project=project, flight=flight)
 
     with tempfile.TemporaryDirectory() as temp_dir:
         # Mock settings to use temp directory
@@ -196,7 +195,7 @@ def test_generate_stac_preview_task_exception_handling(mock_get_db, db: Session)
     # Create project with flight and data product so STACGenerator validation passes
     project = create_project(db)
     flight = create_flight(db, project_id=project.id)
-    data_product = SampleDataProduct(db, project=project, flight=flight)
+    SampleDataProduct(db, project=project, flight=flight)
 
     # Mock STACGenerator to raise an exception after validation
     with patch("app.utils.stac.STACGenerator.STACGenerator") as mock_stac_gen:
@@ -220,7 +219,7 @@ def test_publish_stac_catalog_task_success(mock_get_db, db: Session):
     # Create project with data
     project = create_project(db)
     flight = create_flight(db, project_id=project.id)
-    data_product = SampleDataProduct(db, project=project, flight=flight)
+    SampleDataProduct(db, project=project, flight=flight)
 
     with tempfile.TemporaryDirectory() as temp_dir:
         # Mock settings to use temp directory
@@ -273,10 +272,10 @@ def test_publish_stac_catalog_task_with_parameters(mock_get_db, db: Session):
         # Mock settings to use temp directory
         with patch.object(settings, "STATIC_DIR", temp_dir):
             # Mock the STAC collection manager and project update
-            with patch("app.tasks.stac_tasks.STACCollectionManager") as mock_scm, patch(
-                "app.crud.project.update_project_visibility"
-            ) as mock_update:
-
+            with (
+                patch("app.tasks.stac_tasks.STACCollectionManager") as mock_scm,
+                patch("app.crud.project.update_project_visibility") as mock_update,
+            ):
                 mock_report = MagicMock()
                 mock_report.is_published = True
                 mock_report.collection_id = project.id
@@ -332,7 +331,7 @@ def test_publish_stac_catalog_task_exception_handling(mock_get_db, db: Session):
     # Create project with flight and data product so STACGenerator validation passes
     project = create_project(db)
     flight = create_flight(db, project_id=project.id)
-    data_product = SampleDataProduct(db, project=project, flight=flight)
+    SampleDataProduct(db, project=project, flight=flight)
 
     # Mock STACGenerator to raise an exception after validation
     with patch("app.utils.stac.STACGenerator.STACGenerator") as mock_stac_gen:
@@ -379,9 +378,7 @@ def test_task_with_failed_items(mock_get_db, db: Session, monkeypatch):
     # Create project with data that will fail
     project = create_project(db)
     flight = create_flight(db, project_id=project.id)
-    data_product = SampleDataProduct(
-        db, project=project, flight=flight, data_type="point_cloud"
-    )
+    SampleDataProduct(db, project=project, flight=flight, data_type="point_cloud")
 
     # Mock pdal_to_stac.create_item to raise a ValueError for point cloud processing
     def mock_create_item(*args, **kwargs):
@@ -430,7 +427,7 @@ def test_generate_stac_preview_task_with_license(mock_get_db, db: Session):
     # Create project with data
     project = create_project(db)
     flight = create_flight(db, project_id=project.id)
-    data_product = SampleDataProduct(db, project=project, flight=flight)
+    SampleDataProduct(db, project=project, flight=flight)
 
     # License parameter
     custom_license = "MIT"
@@ -468,7 +465,7 @@ def test_publish_stac_catalog_task_with_license(mock_get_db, db: Session):
     # Create project with data
     project = create_project(db)
     flight = create_flight(db, project_id=project.id)
-    data_product = SampleDataProduct(db, project=project, flight=flight)
+    SampleDataProduct(db, project=project, flight=flight)
 
     # License parameter
     custom_license = "ISC"
@@ -477,10 +474,10 @@ def test_publish_stac_catalog_task_with_license(mock_get_db, db: Session):
         # Mock settings to use temp directory
         with patch.object(settings, "STATIC_DIR", temp_dir):
             # Mock the STAC collection manager and project update
-            with patch("app.tasks.stac_tasks.STACCollectionManager") as mock_scm, patch(
-                "app.crud.project.update_project_visibility"
-            ) as mock_update:
-
+            with (
+                patch("app.tasks.stac_tasks.STACCollectionManager") as mock_scm,
+                patch("app.crud.project.update_project_visibility") as mock_update,
+            ):
                 mock_report = MagicMock()
                 mock_report.is_published = True
                 mock_report.collection_id = project.id
@@ -514,7 +511,7 @@ def test_generate_stac_preview_task_with_default_license(mock_get_db, db: Sessio
     # Create project with data
     project = create_project(db)
     flight = create_flight(db, project_id=project.id)
-    data_product = SampleDataProduct(db, project=project, flight=flight)
+    SampleDataProduct(db, project=project, flight=flight)
 
     with tempfile.TemporaryDirectory() as temp_dir:
         # Mock settings to use temp directory

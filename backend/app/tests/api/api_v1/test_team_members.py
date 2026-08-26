@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app import crud
-from app.api.deps import get_current_user, get_current_approved_user
+from app.api.deps import get_current_approved_user, get_current_user
 from app.core.config import settings
 from app.schemas.team_member import Role, TeamMemberUpdate
 from app.tests.utils.project import create_project

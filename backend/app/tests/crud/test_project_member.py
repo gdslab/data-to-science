@@ -6,8 +6,8 @@ from app import crud, models
 from app.models.enums.project_type import ProjectType
 from app.schemas.project_member import ProjectMemberCreate, ProjectMemberUpdate
 from app.schemas.role import Role
-from app.tests.utils.project import create_project
 from app.tests.utils.indoor_project import create_indoor_project
+from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
 from app.tests.utils.team import create_team
 from app.tests.utils.team_member import create_team_member
@@ -121,7 +121,7 @@ def test_get_list_of_project_members_with_specific_role(db: Session) -> None:
     crud.project_member.update_project_member(
         db, member2, ProjectMemberUpdate(role=Role.MANAGER)
     )
-    member3 = create_project_member(db, project_uuid=project.id)
+    create_project_member(db, project_uuid=project.id)
     project_members = crud.project_member.get_list_of_project_members(
         db, project_uuid=project.id, role=Role.MANAGER
     )

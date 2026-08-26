@@ -8,7 +8,6 @@ from sqlalchemy.schema import UniqueConstraint
 
 from app.db.base_class import Base
 
-
 if TYPE_CHECKING:
     from .data_product import DataProduct
     from .vector_layer import VectorLayer

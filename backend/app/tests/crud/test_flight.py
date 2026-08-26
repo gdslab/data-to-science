@@ -104,17 +104,15 @@ def test_get_flights_with_raster_data_products(db: Session) -> None:
     project = create_project(db, owner_id=user.id)
     flight1 = create_flight(db, project_id=project.id)
     flight2 = create_flight(db, project_id=project.id)
-    flight3 = create_flight(db, project_id=project.id)
+    create_flight(db, project_id=project.id)
     # Add raster data product to flight1
-    raster_data_product1 = SampleDataProduct(
-        db, data_type="ortho", flight=flight1, project=project
-    )
+    SampleDataProduct(db, data_type="ortho", flight=flight1, project=project)
     # Add point cloud data product to flight2
-    point_cloud_data_product = crud.data_product.create_with_flight(
+    crud.data_product.create_with_flight(
         db,
         obj_in=DataProductCreate(
             data_type="point_cloud",
-            filepath=f"/some/path/to/test.las",
+            filepath="/some/path/to/test.las",
             original_filename="test.las",
         ),
         flight_id=flight2.id,
@@ -143,9 +141,7 @@ def test_get_flights_populates_like_view_counts(db: Session) -> None:
     )
     # One like by the requesting user and two views from distinct sessions
     create_data_product_like(db, data_product_id=data_product.obj.id, user_id=user.id)
-    create_data_product_view(
-        db, data_product_id=data_product.obj.id, user_id=user.id
-    )
+    create_data_product_view(db, data_product_id=data_product.obj.id, user_id=user.id)
     create_data_product_view(
         db, data_product_id=data_product.obj.id, session_id="anon-session"
     )
@@ -280,10 +276,9 @@ def test_deactivate_flight_deactivates_data_products(db: Session) -> None:
     project = create_project(db, owner_id=user.id)
     flight = create_flight(db, project_id=project.id)
     data_product = SampleDataProduct(db, project=project, flight=flight)
-    flight2 = crud.flight.deactivate(db, flight_id=flight.id)
+    crud.flight.deactivate(db, flight_id=flight.id)
     flight3 = crud.flight.get(db, id=flight.id)
     assert flight3 and flight3.is_active is False
-    upload_dir = settings.TEST_STATIC_DIR
     data_product = crud.data_product.get(db, id=data_product.obj.id)
     assert data_product and data_product.is_active is False
 
@@ -382,10 +377,9 @@ def test_get_flight_ignores_deactivated_data_products(db: Session) -> None:
     project = create_project(db, owner_id=user.id)
     flight = create_flight(db, project_id=project.id)
     data_product1 = SampleDataProduct(db, project=project, flight=flight)
-    data_product2 = SampleDataProduct(db, project=project, flight=flight)
-    data_product3 = SampleDataProduct(db, project=project, flight=flight)
+    SampleDataProduct(db, project=project, flight=flight)
+    SampleDataProduct(db, project=project, flight=flight)
     crud.data_product.deactivate(db, data_product_id=data_product1.obj.id)
-    upload_dir = settings.TEST_STATIC_DIR
     flight = crud.flight.get_flight_by_id(
         db, project_id=project.id, flight_id=flight.id
     )
@@ -402,8 +396,8 @@ def test_get_flights_ignores_deactivated_data_products(db: Session) -> None:
 
     data_f1d1 = SampleDataProduct(db, project=project, flight=flight1)
     data_f2d1 = SampleDataProduct(db, project=project, flight=flight2)
-    data_f1d2 = SampleDataProduct(db, project=project, flight=flight1)
-    data_f2d2 = SampleDataProduct(db, project=project, flight=flight2)
+    SampleDataProduct(db, project=project, flight=flight1)
+    SampleDataProduct(db, project=project, flight=flight2)
 
     upload_dir = settings.TEST_STATIC_DIR
     flights = crud.flight.get_multi_by_project(
@@ -437,8 +431,8 @@ def test_update_flight_project(db: Session) -> None:
     dst_project = create_project(db, owner_id=user.id)
     # create flight associated with source project
     flight = create_flight(db, project_id=src_project.id)
-    flight2 = create_flight(db, project_id=src_project.id)
-    flight3 = create_flight(db, project_id=src_project.id)
+    create_flight(db, project_id=src_project.id)
+    create_flight(db, project_id=src_project.id)
     # add data product to flight
     data_product = SampleDataProduct(db, flight=flight)
 

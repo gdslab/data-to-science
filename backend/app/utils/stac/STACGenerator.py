@@ -1,6 +1,6 @@
 import logging
 from datetime import date, datetime, timezone
-from typing import List, Tuple, Optional, Set
+from typing import List, Optional, Set, Tuple
 
 import geopandas as gpd
 import rasterio
@@ -16,25 +16,24 @@ from pystac import (
     TemporalExtent,
 )
 from rio_stac.stac import (
+    EO_EXT_VERSION,
+    PROJECTION_EXT_VERSION,
+    RASTER_EXT_VERSION,
     bbox_to_geom,
     get_dataset_geom,
     get_eobands_info,
     get_projection_info,
     get_raster_info,
 )
-from rio_stac.stac import EO_EXT_VERSION, RASTER_EXT_VERSION, PROJECTION_EXT_VERSION
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
 from app import crud, models
 from app.api.api_v1.endpoints.data_products import get_static_dir
-from app.crud.crud_data_product import get_url
-from app.schemas import STACError, ItemStatus
-
-from app.utils.stac import pdal_to_stac
-from app.utils.stac import CachedSTACMetadata
 from app.core.config import settings
-
+from app.crud.crud_data_product import get_url
+from app.schemas import ItemStatus, STACError
+from app.utils.stac import CachedSTACMetadata, pdal_to_stac
 
 logger = logging.getLogger("__name__")
 
@@ -317,7 +316,7 @@ class STACGenerator:
             select(models.Flight)
             .where(
                 models.Flight.project_id == self.project_id,
-                models.Flight.is_active == True,
+                models.Flight.is_active,
             )
             .options(
                 joinedload(

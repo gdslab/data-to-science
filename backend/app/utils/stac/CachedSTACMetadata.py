@@ -4,7 +4,7 @@ This module provides helper classes for managing cached STAC metadata to avoid
 expensive recomputation of geometry, assets, and properties.
 """
 
-from typing import Optional, Tuple, List
+from typing import List, Optional, Tuple
 
 
 class CachedSTACMetadata:

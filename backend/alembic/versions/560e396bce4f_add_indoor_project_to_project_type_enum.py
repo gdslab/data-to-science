@@ -6,9 +6,9 @@ Create Date: 2025-07-25 18:25:12.477297
 
 """
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "560e396bce4f"
@@ -44,8 +44,8 @@ def downgrade() -> None:
     # 3) Make project_id NOT NULL for PROJECT type records only
     op.execute(
         """
-        ALTER TABLE project_members 
-        ADD CONSTRAINT check_project_id_not_null_for_projects 
+        ALTER TABLE project_members
+        ADD CONSTRAINT check_project_id_not_null_for_projects
         CHECK (project_type != 'PROJECT' OR project_id IS NOT NULL);
         """
     )

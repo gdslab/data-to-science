@@ -308,7 +308,7 @@ def test_update_team_member_role_of_project_creator_does_not_update_project_memb
     team_owner = create_user(db)
     team = create_team(db, owner_id=team_owner.id)
     team_member_and_project_owner = create_user(db)
-    team_member = create_team_member(
+    create_team_member(
         db,
         email=team_member_and_project_owner.email,
         team_id=team.id,

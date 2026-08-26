@@ -14,26 +14,30 @@ XML_METADATA_EXCLUDED_TYPES = frozenset({"panoramic", "3dgs"})
 # properties with these names are dropped so they cannot shadow the real
 # table columns when ST_AsMVT flattens the properties JSONB into map tiles
 # (e.g., a re-uploaded D2S export carrying a stale feature_id).
-RESERVED_VECTOR_PROPERTY_KEYS = frozenset({
-    "id",
-    "feature_id",
-    "layer_name",
-    "layer_id",
-    "is_active",
-    "project_id",
-    "flight_id",
-    "data_product_id",
-})
+RESERVED_VECTOR_PROPERTY_KEYS = frozenset(
+    {
+        "id",
+        "feature_id",
+        "layer_name",
+        "layer_id",
+        "is_active",
+        "project_id",
+        "flight_id",
+        "data_product_id",
+    }
+)
 
 # Job names used for filtering processing jobs
-PROCESSING_JOB_NAMES = frozenset({
-    "upload-data-product",
-    "exg",
-    "exg-process",
-    "ndvi",
-    "ndvi-process",
-    "vari",
-    "chm",
-    "hillshade",
-    "dtm",
-})
+PROCESSING_JOB_NAMES = frozenset(
+    {
+        "upload-data-product",
+        "exg",
+        "exg-process",
+        "ndvi",
+        "ndvi-process",
+        "vari",
+        "chm",
+        "hillshade",
+        "dtm",
+    }
+)

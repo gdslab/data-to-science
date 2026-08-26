@@ -2,14 +2,13 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from faker import Faker
 from sqlalchemy.orm import Session
 
 from app import crud
 from app.models.indoor_project import IndoorProject
 from app.schemas.indoor_project import IndoorProjectCreate
 from app.tests.utils.user import create_user
-from app.tests.utils.utils import random_team_name, random_team_description
+from app.tests.utils.utils import random_team_description, random_team_name
 
 
 def create_indoor_project(

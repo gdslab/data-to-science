@@ -9,10 +9,9 @@ from app.db.base_class import Base
 from app.models.enums.project_type import ProjectType
 from app.schemas.project_member import Role
 
-
 if TYPE_CHECKING:
-    from .project import Project
     from .indoor_project import IndoorProject
+    from .project import Project
     from .user import User
 
 

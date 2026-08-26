@@ -4,18 +4,18 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 from uuid import UUID
 
 import pytest
-from geojson_pydantic import Feature, FeatureCollection
 from fastapi import status
 from fastapi.testclient import TestClient
+from geojson_pydantic import Feature, FeatureCollection
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
-from app.core import security
 from app.api.deps import get_current_user
+from app.core import security
 from app.core.config import settings
 from app.schemas.file_permission import FilePermissionUpdate
 from app.schemas.job import Status as JobStatus
@@ -27,18 +27,18 @@ from app.tests.utils.data_product_metadata import (
     get_sample_xml_filepath,
     get_zonal_feature_collection,
 )
+from app.tests.utils.flight import create_flight
 from app.tests.utils.job import create_job
-from app.tests.utils.raw_data import SampleRawData
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
-from app.tests.utils.flight import create_flight
+from app.tests.utils.raw_data import SampleRawData
 from app.tests.utils.user import create_user
 from app.tests.utils.vector_layers import (
     create_feature_collection,
     create_vector_layer_with_provided_feature_collection,
 )
-from app.utils.ColorBar import create_outfilename
 from app.utils import raster_export
+from app.utils.ColorBar import create_outfilename
 from app.utils.ImageProcessor import get_info, get_stac_properties
 
 
@@ -121,7 +121,7 @@ def test_read_data_product_with_project_viewer_role(
 def test_read_data_product_without_project_access(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
-    current_user = get_current_user(db, normal_user_access_token)
+    get_current_user(db, normal_user_access_token)
     data_product = SampleDataProduct(db, create_style=True)
     response = client.get(
         f"{settings.API_V1_STR}/projects/{data_product.project.id}"
@@ -236,8 +236,7 @@ def test_read_data_products_with_owner_role(
         )
     SampleDataProduct(db)
     response = client.get(
-        f"{settings.API_V1_STR}/projects/{project.id}"
-        f"/flights/{flight.id}/data_products"
+        f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}/data_products"
     )
     assert response.status_code == status.HTTP_200_OK
     response_data_products = response.json()
@@ -276,8 +275,7 @@ def test_read_data_products_with_manager_role(
         role=Role.MANAGER,
     )
     response = client.get(
-        f"{settings.API_V1_STR}/projects/{project.id}"
-        f"/flights/{flight.id}/data_products"
+        f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}/data_products"
     )
     assert response.status_code == status.HTTP_200_OK
     response_data_products = response.json()
@@ -316,8 +314,7 @@ def test_read_data_products_with_viewer_role(
         role=Role.VIEWER,
     )
     response = client.get(
-        f"{settings.API_V1_STR}/projects/{project.id}"
-        f"/flights/{flight.id}/data_products"
+        f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}/data_products"
     )
     assert response.status_code == status.HTTP_200_OK
     response_data_products = response.json()
@@ -336,7 +333,7 @@ def test_read_data_products_with_viewer_role(
 def test_read_data_products_without_project_access(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
-    current_user = get_current_user(db, normal_user_access_token)
+    get_current_user(db, normal_user_access_token)
     project_owner = create_user(db)
     project = create_project(db, owner_id=project_owner.id)
     flight = create_flight(db, project_id=project.id)
@@ -349,8 +346,7 @@ def test_read_data_products_without_project_access(
             user=project_owner,
         )
     response = client.get(
-        f"{settings.API_V1_STR}/projects/{project.id}"
-        f"/flights/{flight.id}/data_products"
+        f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}/data_products"
     )
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -848,8 +844,7 @@ def test_read_data_products_includes_xml_metadata(
     SampleDataProduct(db, flight=flight, project=project, user=current_user)
     create_xml_metadata(db, data_product_id=data_product.obj.id)
     response = client.get(
-        f"{settings.API_V1_STR}/projects/{project.id}"
-        f"/flights/{flight.id}/data_products"
+        f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}/data_products"
     )
     assert response.status_code == status.HTTP_200_OK
     response_data_products = response.json()
@@ -1433,10 +1428,11 @@ def test_create_from_ext_storage_links_products_to_raw_data(
         ],
         "report": None,
     }
-    with patch(
-        "app.utils.tusd.post_processing.upload_geotiff.apply_async"
-    ) as mock_apply, patch(
-        "app.utils.job_manager.get_db", side_effect=lambda: iter([db])
+    with (
+        patch(
+            "app.utils.tusd.post_processing.upload_geotiff.apply_async"
+        ) as mock_apply,
+        patch("app.utils.job_manager.get_db", side_effect=lambda: iter([db])),
     ):
         response = client.post(
             f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
@@ -1900,8 +1896,7 @@ def test_read_data_products_is_unaffected_by_raw_data_on_the_flight(
     SampleRawData(db, project=project, flight=flight)
 
     response = client.get(
-        f"{settings.API_V1_STR}/projects/{project.id}"
-        f"/flights/{flight.id}/data_products"
+        f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}/data_products"
     )
     assert response.status_code == status.HTTP_200_OK
 

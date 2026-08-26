@@ -1,16 +1,16 @@
 import uuid
 from datetime import datetime
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
-from geoalchemy2 import Geometry, functions as geofunc
-from sqlalchemy import cast, DateTime, ForeignKey, func, Text
+from geoalchemy2 import Geometry
+from geoalchemy2 import functions as geofunc
+from sqlalchemy import DateTime, ForeignKey, Text, cast, func
 from sqlalchemy.dialects.postgresql import ENUM, JSONB, UUID
-from sqlalchemy.orm import column_property, Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
 
 from app.db.base_class import Base
 from app.models.enums.visibility import Visibility
 from app.models.utils.utcnow import utcnow
-
 
 if TYPE_CHECKING:
     from .annotation_attachment import AnnotationAttachment

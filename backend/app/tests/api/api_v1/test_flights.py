@@ -11,13 +11,13 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
-from app.models.flight import Flight, SENSORS, PLATFORMS
+from app.models.flight import PLATFORMS, SENSORS, Flight
 from app.schemas.data_product import DataProductCreate, DataProductUpdate
 from app.schemas.flight import FlightUpdate
 from app.schemas.project_member import ProjectMemberCreate
 from app.schemas.role import Role
 from app.tests.utils.data_product import SampleDataProduct
-from app.tests.utils.flight import create_flight, create_acquisition_date
+from app.tests.utils.flight import create_acquisition_date, create_flight
 from app.tests.utils.job import create_job
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
@@ -358,18 +358,16 @@ def test_get_flights_with_raster_data(
     project = create_project(db)
     flight1 = create_flight(db, project_id=project.id)
     flight2 = create_flight(db, project_id=project.id)
-    flight3 = create_flight(db, project_id=project.id)
+    create_flight(db, project_id=project.id)
     current_user = get_current_user(db, normal_user_access_token)
     project_member_in = ProjectMemberCreate(member_id=current_user.id, role=Role.VIEWER)
     crud.project_member.create_with_project(
         db, obj_in=project_member_in, project_uuid=project.id
     )
     # add raster data product to first flight
-    raster_data_product = SampleDataProduct(
-        db, data_type="ortho", flight=flight1, project=project
-    )
+    SampleDataProduct(db, data_type="ortho", flight=flight1, project=project)
     # add point cloud data product to second flight
-    point_cloud_data_product = crud.data_product.create_with_flight(
+    crud.data_product.create_with_flight(
         db,
         obj_in=DataProductCreate(
             data_type="point_cloud",
@@ -550,9 +548,7 @@ def test_update_flight_project_with_manager_role_for_both_projects(
         project_uuid=src_project.id,
     )
     # add data product to flight
-    data_product = SampleDataProduct(
-        db, project=src_project, flight=flight, skip_job=True
-    )
+    SampleDataProduct(db, project=src_project, flight=flight, skip_job=True)
     # create destination project add current user as manager (read/write)
     dst_project = create_project(db)
     project_member_in = ProjectMemberCreate(
@@ -658,7 +654,7 @@ def test_update_flight_project_with_read_only_set_on_flight(
     src_project = create_project(db, owner_id=current_user.id)
     flight = create_flight(db, altitude=50, project_id=src_project.id)
     # add data product to flight
-    data_product = SampleDataProduct(db, project=src_project, flight=flight)
+    SampleDataProduct(db, project=src_project, flight=flight)
     # create destination project add current user as manager (read/write)
     dst_project = create_project(db, owner_id=current_user.id)
     # set flight to "read_only"
@@ -731,7 +727,7 @@ def test_deactivate_flight_by_non_project_member(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     project_owner = create_user(db)
-    current_user = get_current_user(db, normal_user_access_token)
+    get_current_user(db, normal_user_access_token)
     project = create_project(db, owner_id=project_owner.id)
     flight = create_flight(db, project_id=project.id)
     response = client.delete(

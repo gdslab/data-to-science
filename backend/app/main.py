@@ -13,7 +13,6 @@ from app.core.logging import setup_logger
 from app.middleware import log_and_track_middleware
 from app.utils.ProtectedStaticFiles import ProtectedStaticFiles
 
-
 app = FastAPI(
     docs_url="/developer/api",
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
@@ -108,7 +107,7 @@ def pc_gltf_viewer_index_redirect():
 
 @app.exception_handler(HTTPException)
 def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
-    logger.error(f"HTTPException", exc_info=exc)
+    logger.error("HTTPException", exc_info=exc)
 
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 

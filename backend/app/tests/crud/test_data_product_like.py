@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 from app import crud, schemas
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.data_product_like import create_data_product_like
-from app.tests.utils.user import create_user
 
 
 def test_create_and_get_by_data_product_id_and_user_id(db: Session) -> None:
@@ -13,7 +12,9 @@ def test_create_and_get_by_data_product_id_and_user_id(db: Session) -> None:
     user_id = sample.user.id
     data_product_id = sample.obj.id
 
-    like = create_data_product_like(db, data_product_id=data_product_id, user_id=user_id)
+    like = create_data_product_like(
+        db, data_product_id=data_product_id, user_id=user_id
+    )
 
     like_in_db = crud.data_product_like.get_by_data_product_id_and_user_id(
         db, data_product_id=data_product_id, user_id=user_id

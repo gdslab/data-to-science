@@ -2,7 +2,7 @@ from datetime import date, datetime
 from typing import Dict, Optional
 
 from geojson_pydantic import Feature, Polygon
-from pydantic import BaseModel, Field, field_validator, ValidationInfo, UUID4
+from pydantic import UUID4, BaseModel, Field, ValidationInfo, field_validator
 
 from app.schemas.location import LocationCreate
 from app.schemas.role import Role

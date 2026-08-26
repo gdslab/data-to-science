@@ -141,7 +141,7 @@ def send_account_approved(
     background_tasks: BackgroundTasks, first_name: str, email: EmailStr, confirmed: bool
 ) -> None:
     content = (
-        f"<p>Hi {first_name},</p>" "<p>Your Data to Science account has been approved. "
+        f"<p>Hi {first_name},</p><p>Your Data to Science account has been approved. "
     )
     if confirmed:
         content += "You may now log in and start using Data to Science. "

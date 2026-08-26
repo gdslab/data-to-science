@@ -18,9 +18,7 @@ class LocationCreate(Feature[Polygon, Dict]):
         # Short-circuit Pydantic's union resolution against Feature[Polygon, Dict]
         # so non-Polygon geometries return one clear domain message instead of
         # an 11-item Position2D/Position3D coordinate-coercion dump.
-        geom_type = (
-            v.get("type") if isinstance(v, dict) else getattr(v, "type", None)
-        )
+        geom_type = v.get("type") if isinstance(v, dict) else getattr(v, "type", None)
         if geom_type is None or geom_type == "Polygon":
             return v
         if geom_type == "MultiPolygon":
@@ -30,8 +28,7 @@ class LocationCreate(Feature[Polygon, Dict]):
                 "uploading."
             )
         raise ValueError(
-            f"Field boundary must be a Polygon. Received geometry type: "
-            f"{geom_type}."
+            f"Field boundary must be a Polygon. Received geometry type: {geom_type}."
         )
 
 

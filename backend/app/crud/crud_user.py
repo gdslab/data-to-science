@@ -194,7 +194,9 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             should_update = True
         else:
             time_since_last_activity = now - user.last_activity_at
-            should_update = time_since_last_activity.total_seconds() > (throttle_minutes * 60)
+            should_update = time_since_last_activity.total_seconds() > (
+                throttle_minutes * 60
+            )
 
         if should_update:
             user.last_activity_at = now

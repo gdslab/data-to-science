@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta, timezone
-import uuid
 
 import pytest
 from sqlalchemy.exc import IntegrityError
@@ -8,8 +7,8 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.core.config import settings
 from app.schemas.shortened_url import ShortenedUrlCreate, ShortenedUrlUpdate
-from app.utils.unique_id import generate_unique_id
 from app.tests.utils.user import create_user
+from app.utils.unique_id import generate_unique_id
 
 ORIGINAL_URL = f"{settings.API_DOMAIN}/full/share/url"
 

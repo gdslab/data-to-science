@@ -96,11 +96,11 @@ def test_email_contact_message_with_too_many_characters(
 ) -> None:
     subject = "Lorem ipsum odor amet, consectetuer adipiscing elit." * 2
     message = (
-        """Lorem ipsum odor amet, consectetuer adipiscing elit. Ultrices quis 
-    facilisis pulvinar nunc taciti senectus dictumst arcu sapien. Porttitor mauris 
-    posuere enim tempor aptent a eu id. Neque justo varius neque penatibus vulputate. 
-    Facilisi nulla blandit ut maecenas ligula feugiat nibh. Nisi molestie class montes, 
-    urna neque finibus. Interdum urna fermentum et nascetur eros sed. Convallis proin 
+        """Lorem ipsum odor amet, consectetuer adipiscing elit. Ultrices quis
+    facilisis pulvinar nunc taciti senectus dictumst arcu sapien. Porttitor mauris
+    posuere enim tempor aptent a eu id. Neque justo varius neque penatibus vulputate.
+    Facilisi nulla blandit ut maecenas ligula feugiat nibh. Nisi molestie class montes,
+    urna neque finibus. Interdum urna fermentum et nascetur eros sed. Convallis proin
     porta convallis eleifend; quisque sociosqu."""
         * 3
     )

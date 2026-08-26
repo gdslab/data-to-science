@@ -6,7 +6,7 @@ from faker import Faker
 from sqlalchemy.orm import Session
 
 from app import crud
-from app.schemas.campaign import CampaignCreate, CampaignTemplateCreate
+from app.schemas.campaign import CampaignCreate
 from app.tests.utils.project import create_project
 from app.tests.utils.user import create_user
 
@@ -18,7 +18,7 @@ def create_campaign(
     project_id: UUID | None,
     lead_id: UUID | None = None,
     include_form_data: bool | None = None,
-    **kwargs
+    **kwargs,
 ):
     """Create a campaign record in the database.
 

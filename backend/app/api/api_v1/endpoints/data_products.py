@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 from io import BytesIO
 from pathlib import Path
 from typing import Annotated, Any, Optional, Sequence, Union, cast
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import parse_qs, urlparse
 from uuid import UUID, uuid4
 
 import segno
@@ -23,8 +23,8 @@ from fastapi import (
 )
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import FileResponse, StreamingResponse
-from geojson_pydantic import Feature, FeatureCollection, Polygon, MultiPolygon
-from pydantic import BaseModel, UUID4
+from geojson_pydantic import Feature, FeatureCollection, MultiPolygon, Polygon
+from pydantic import UUID4
 from sqlalchemy import and_, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -39,13 +39,13 @@ from app.models.vector_layer import VectorLayer
 from app.schemas.data_product_metadata import ZonalStatisticsProps
 from app.schemas.job import Status
 from app.schemas.role import Role
+from app.schemas.shortened_url import ShortenedUrlApiResponse, UrlPayload
 from app.tasks.raw_image_processing_tasks import fail_job
 from app.tasks.toolbox_tasks import (
-    calculate_zonal_statistics,
     calculate_bulk_zonal_statistics,
+    calculate_zonal_statistics,
     run_toolbox,
 )
-from app.schemas.shortened_url import ShortenedUrlApiResponse, UrlPayload
 from app.utils.job_manager import JobManager
 from app.utils.raster_export import (
     RasterInputError,

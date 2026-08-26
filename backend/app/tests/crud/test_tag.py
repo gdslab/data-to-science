@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app import crud
 from app.schemas.tag import TagCreate, TagUpdate
-from app.tests.utils.tag import create_tag, create_tag_in
+from app.tests.utils.tag import create_tag
 
 
 def test_create_tag(db: Session) -> None:
@@ -23,7 +23,7 @@ def test_create_duplicate_tag(db: Session) -> None:
     """Verify cannot create new tag with an existing (non-unique) name."""
     tag_name = "duplicate-tag"
     tag_in = TagCreate(name=tag_name)
-    tag = crud.tag.create(db, obj_in=tag_in)
+    crud.tag.create(db, obj_in=tag_in)
     # Unique constraint should cause creation of duplicate tag to fail
     with pytest.raises(IntegrityError):
         crud.tag.create(db, obj_in=tag_in)

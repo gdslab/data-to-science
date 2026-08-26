@@ -13,8 +13,6 @@ from app.schemas.file_permission import FilePermissionUpdate
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.data_product_view import create_data_product_view
 from app.tests.utils.flight import create_flight
-from app.tests.utils.project import create_project
-from app.tests.utils.user import create_user
 
 
 def _view_url(data_product: SampleDataProduct) -> str:
@@ -223,12 +221,8 @@ def test_public_view_different_sessions_both_count(
     data_product = SampleDataProduct(db)
     _make_published(db, data_product)
 
-    client.post(
-        _public_view_url(data_product), headers={"X-Session-Id": "session-A"}
-    )
-    client.post(
-        _public_view_url(data_product), headers={"X-Session-Id": "session-B"}
-    )
+    client.post(_public_view_url(data_product), headers={"X-Session-Id": "session-A"})
+    client.post(_public_view_url(data_product), headers={"X-Session-Id": "session-B"})
 
     count = crud.data_product_view.get_count_by_data_product_id(
         db, data_product_id=data_product.obj.id

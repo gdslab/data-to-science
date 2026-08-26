@@ -14,7 +14,7 @@ from app.tests.utils.annotation import (
 )
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.project_member import create_project_member
-from app.tests.utils.user import create_user, login_and_get_access_token
+from app.tests.utils.user import create_user
 
 
 def test_create_annotation_with_project_owner_role(
@@ -949,7 +949,11 @@ def test_create_annotation_with_style(
 
     assert response.status_code == status.HTTP_201_CREATED
     response_data = response.json()
-    assert response_data["style"] == {"color": "#ff0000", "fill": "#ff9999", "opacity": 80}
+    assert response_data["style"] == {
+        "color": "#ff0000",
+        "fill": "#ff9999",
+        "opacity": 80,
+    }
 
 
 def test_create_annotation_without_style_returns_null(
@@ -992,7 +996,11 @@ def test_update_annotation_style(
 
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
-    assert response_data["style"] == {"color": "#00ff00", "fill": "#99ff99", "opacity": 50}
+    assert response_data["style"] == {
+        "color": "#00ff00",
+        "fill": "#99ff99",
+        "opacity": 50,
+    }
 
 
 def test_get_annotations_returns_persisted_styles(
@@ -1022,7 +1030,11 @@ def test_get_annotations_returns_persisted_styles(
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     assert len(response_data) == 1
-    assert response_data[0]["style"] == {"color": "#0000ff", "fill": "#9999ff", "opacity": 60}
+    assert response_data[0]["style"] == {
+        "color": "#0000ff",
+        "fill": "#9999ff",
+        "opacity": 60,
+    }
 
 
 def test_delete_own_owner_annotation_with_manager_role(

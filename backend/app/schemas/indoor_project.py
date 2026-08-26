@@ -1,8 +1,8 @@
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Literal, Optional, Union
+from typing import Optional, Union
 
-from pydantic import BaseModel, Field, field_validator, ValidationInfo, UUID4
+from pydantic import UUID4, BaseModel, Field, ValidationInfo, field_validator
 
 
 class Role(Enum):
@@ -24,7 +24,9 @@ class IndoorProjectBase(BaseModel):
 
     @field_validator("start_date", "end_date", mode="before")
     @classmethod
-    def empty_string_to_none(cls, v: Union[str, datetime, None]) -> Union[datetime, None]:
+    def empty_string_to_none(
+        cls, v: Union[str, datetime, None]
+    ) -> Union[datetime, None]:
         """Convert empty strings to None to handle form inputs."""
         if v == "" or v is None:
             return None

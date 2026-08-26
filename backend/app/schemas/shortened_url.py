@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import AnyHttpUrl, BaseModel, ConfigDict, UUID4
+from pydantic import UUID4, AnyHttpUrl, BaseModel, ConfigDict
 
 
 # Shared properties

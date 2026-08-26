@@ -1,7 +1,6 @@
-from typing_extensions import NotRequired, TypedDict, Union
-
 import numpy as np
 from pydantic import BaseModel, TypeAdapter
+from typing_extensions import NotRequired, TypedDict, Union
 
 
 class ImageStructureProps(BaseModel):

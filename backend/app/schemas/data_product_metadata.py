@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List
 from uuid import UUID
 
 from geojson_pydantic import Feature, FeatureCollection, Polygon

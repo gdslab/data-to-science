@@ -2,9 +2,7 @@ import logging
 from typing import List, Optional, Sequence, Union
 from uuid import UUID
 
-from fastapi.encoders import jsonable_encoder
-from sqlalchemy import update, select
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import select, update
 from sqlalchemy.orm import Bundle, Session
 from sqlalchemy.sql.selectable import Select
 
@@ -20,7 +18,6 @@ from app.models.user import User
 from app.schemas.project_member import ProjectMemberCreate
 from app.schemas.role import Role
 from app.schemas.team_member import TeamMemberCreate, TeamMemberUpdate
-
 
 logger = logging.getLogger("__name__")
 
@@ -50,7 +47,7 @@ class CRUDTeamMember(CRUDBase[TeamMember, TeamMemberCreate, TeamMemberUpdate]):
         with db as session:
             user_select_statement = select(User).where(
                 User.email == obj_in.email,
-                User.is_approved == True,
+                User.is_approved,
                 User.is_email_confirmed,
             )
             user_obj = session.scalar(user_select_statement)

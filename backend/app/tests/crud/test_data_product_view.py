@@ -70,9 +70,7 @@ def test_missing_both_identities_raises_value_error(db: Session) -> None:
     sample = SampleDataProduct(db)
 
     with pytest.raises(ValueError):
-        crud.data_product_view.create_if_not_recent(
-            db, data_product_id=sample.obj.id
-        )
+        crud.data_product_view.create_if_not_recent(db, data_product_id=sample.obj.id)
 
 
 def test_get_count_by_data_product_id(db: Session) -> None:

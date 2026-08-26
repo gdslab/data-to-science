@@ -1,5 +1,5 @@
 """Tests for admin CRUD operations."""
-import pytest
+
 from sqlalchemy.orm import Session
 
 from app import crud
@@ -24,8 +24,8 @@ def test_get_site_statistics_basic(db: Session) -> None:
     flight1 = create_flight(db, project_id=project1.id)
     flight2 = create_flight(db, project_id=project2.id)
 
-    data_product1 = SampleDataProduct(db, flight=flight1, user=user1, project=project1)
-    data_product2 = SampleDataProduct(db, flight=flight2, user=user2, project=project2)
+    SampleDataProduct(db, flight=flight1, user=user1, project=project1)
+    SampleDataProduct(db, flight=flight2, user=user2, project=project2)
 
     # Get site statistics
     stats = get_site_statistics(db)
@@ -46,9 +46,15 @@ def test_get_site_statistics_public_data_products(db: Session) -> None:
     flight = create_flight(db, project_id=project.id)
 
     # Create 3 data products
-    dp1 = SampleDataProduct(db, flight=flight, user=user, project=project)  # Will be made public and active
-    dp2 = SampleDataProduct(db, flight=flight, user=user, project=project)  # Will be made public but deactivated
-    dp3 = SampleDataProduct(db, flight=flight, user=user, project=project)  # Will remain private
+    dp1 = SampleDataProduct(
+        db, flight=flight, user=user, project=project
+    )  # Will be made public and active
+    dp2 = SampleDataProduct(
+        db, flight=flight, user=user, project=project
+    )  # Will be made public but deactivated
+    SampleDataProduct(
+        db, flight=flight, user=user, project=project
+    )  # Will remain private
 
     # Get initial count
     stats_before = get_site_statistics(db)

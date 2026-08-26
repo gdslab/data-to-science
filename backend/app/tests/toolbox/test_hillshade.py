@@ -7,7 +7,6 @@ import rasterio
 
 from app.utils.toolbox.hillshade import run
 
-
 dsm_dataset = Path("/app/app/tests/data/test.tif")
 hillshade_validation = Path("/app/app/tests/data/hillshade_validation.tif")
 

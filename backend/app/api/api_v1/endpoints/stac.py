@@ -13,12 +13,11 @@ from app.api import deps
 from app.core.config import settings
 from app.tasks.stac_tasks import (
     generate_stac_preview,
-    publish_stac_catalog,
     get_stac_cache_path,
+    publish_stac_catalog,
 )
 from app.utils.s3 import delete_s3_objects, is_s3_configured, parse_s3_key_from_url
 from app.utils.stac.STACCollectionManager import STACCollectionManager
-
 
 logger = logging.getLogger(__name__)
 
@@ -281,9 +280,7 @@ def remove_project_from_stac_catalog(
         try:
             _cleanup_s3_for_project(db, project_id)
         except Exception:
-            logger.exception(
-                f"Failed to clean up S3 for project {project_id}"
-            )
+            logger.exception(f"Failed to clean up S3 for project {project_id}")
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=(

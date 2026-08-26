@@ -149,8 +149,9 @@ def test_upload_point_cloud_untwine_failure_marks_job_failed(
     crashed = subprocess.CompletedProcess(
         args=["untwine"], returncode=134, stdout="", stderr="assertion failed"
     )
-    with patch("app.tasks.upload_tasks.get_db", side_effect=lambda: iter([db])), patch(
-        "app.tasks.upload_tasks.subprocess.run", return_value=crashed
+    with (
+        patch("app.tasks.upload_tasks.get_db", side_effect=lambda: iter([db])),
+        patch("app.tasks.upload_tasks.subprocess.run", return_value=crashed),
     ):
         result = upload_point_cloud(
             str(storage_path),
@@ -187,8 +188,9 @@ def test_upload_point_cloud_empty_output_marks_job_failed(
             Path(cmd[cmd.index("-o") + 1]).touch()
         return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="", stderr="")
 
-    with patch("app.tasks.upload_tasks.get_db", side_effect=lambda: iter([db])), patch(
-        "app.tasks.upload_tasks.subprocess.run", side_effect=fake_run
+    with (
+        patch("app.tasks.upload_tasks.get_db", side_effect=lambda: iter([db])),
+        patch("app.tasks.upload_tasks.subprocess.run", side_effect=fake_run),
     ):
         result = upload_point_cloud(
             str(storage_path),

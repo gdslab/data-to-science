@@ -5,10 +5,10 @@ from fastapi_mail.config import ConnectionConfig
 from pydantic import (
     AnyHttpUrl,
     EmailStr,
-    field_validator,
-    ValidationInfo,
     PostgresDsn,
     SecretStr,
+    ValidationInfo,
+    field_validator,
 )
 from pydantic_settings import BaseSettings
 

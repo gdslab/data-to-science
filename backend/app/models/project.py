@@ -1,6 +1,6 @@
 import uuid
 from datetime import date, datetime
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
@@ -9,13 +9,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base_class import Base
 from app.models.utils.utcnow import utcnow
 
-
 if TYPE_CHECKING:
     from .campaign import Campaign
     from .flight import Flight
     from .iforester import IForester
-    from .project_like import ProjectLike
     from .location import Location
+    from .project_like import ProjectLike
     from .project_member import ProjectMember
     from .project_module import ProjectModule
     from .team import Team

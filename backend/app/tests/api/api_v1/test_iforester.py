@@ -7,18 +7,18 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.api.deps import (
-    get_current_user,
     get_current_approved_user_by_jwt_or_api_key,
+    get_current_user,
 )
 from app.core.config import settings
-from app.tests.conftest import pytest_requires_iforester
 from app.schemas.iforester import IForesterUpdate
 from app.schemas.role import Role
+from app.tests.conftest import pytest_requires_iforester
 from app.tests.utils.iforester import (
-    create_iforester,
     EXAMPLE_DATA,
     EXAMPLE_IMAGE,
     EXAMPLE_PNG,
+    create_iforester,
 )
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
@@ -282,9 +282,9 @@ def test_read_multi_iforester_records_without_project_role(
 ) -> None:
     owner = create_user(db)
     project = create_project(db, owner_id=owner.id)
-    iforester1 = create_iforester(db, project_id=project.id)
-    iforester2 = create_iforester(db, project_id=project.id)
-    iforester3 = create_iforester(db, project_id=project.id)
+    create_iforester(db, project_id=project.id)
+    create_iforester(db, project_id=project.id)
+    create_iforester(db, project_id=project.id)
     response = client.get(f"{settings.API_V1_STR}/projects/{project.id}/iforester")
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -321,7 +321,6 @@ def test_update_iforester_record_with_project_manager_role(
         db, role=Role.MANAGER, member_id=current_user.id, project_uuid=project.id
     )
     iforester = create_iforester(db, project_id=project.id)
-    old_species = iforester.species
     new_species = "Oak"
     iforester_update_in = IForesterUpdate(species=new_species)
     response = client.put(
@@ -344,7 +343,6 @@ def test_update_iforester_record_with_project_viewer_role(
         db, role=Role.VIEWER, member_id=current_user.id, project_uuid=project.id
     )
     iforester = create_iforester(db, project_id=project.id)
-    old_species = iforester.species
     new_species = "Oak"
     iforester_update_in = IForesterUpdate(species=new_species)
     response = client.put(
@@ -361,7 +359,6 @@ def test_update_iforester_record_without_project_role(
     owner = create_user(db)
     project = create_project(db, owner_id=owner.id)
     iforester = create_iforester(db, project_id=project.id)
-    old_species = iforester.species
     new_species = "Oak"
     iforester_update_in = IForesterUpdate(species=new_species)
     response = client.put(

@@ -15,7 +15,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def create_superuser(email: str, password: str, first_name: str, last_name: str) -> None:
+def create_superuser(
+    email: str, password: str, first_name: str, last_name: str
+) -> None:
     with SessionLocal() as session:
         try:
             with session.begin():

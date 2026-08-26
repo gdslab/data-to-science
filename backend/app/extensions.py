@@ -30,7 +30,7 @@ def load() -> None:
                     session.add(extension_obj)
                     session.commit()
                     session.refresh(extension_obj)
-            except IntegrityError as e:
+            except IntegrityError:
                 # ignore - extension already in db
                 logger.warning(f"Extension '{extension}' already in db")
             except Exception as e:

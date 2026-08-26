@@ -1,11 +1,9 @@
 import pytest
-from datetime import datetime
-
-from sqlalchemy.exc import DataError, IntegrityError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import crud
-from app.schemas.file_permission import FilePermissionCreate, FilePermissionUpdate
+from app.schemas.file_permission import FilePermissionUpdate
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.raw_data import SampleRawData
 
@@ -156,19 +154,25 @@ def test_update_project_visibility_updates_raw_data_permissions(db: Session) -> 
     raw_data = SampleRawData(db, project=project, flight=flight).obj
 
     # Verify both FilePermissions start as private
-    dp_file_permission = crud.file_permission.get_by_data_product(db, file_id=data_product.id)
-    raw_file_permission = crud.file_permission.get_by_raw_data(db, raw_data_id=raw_data.id)
+    dp_file_permission = crud.file_permission.get_by_data_product(
+        db, file_id=data_product.id
+    )
+    raw_file_permission = crud.file_permission.get_by_raw_data(
+        db, raw_data_id=raw_data.id
+    )
     assert dp_file_permission.is_public is False
     assert raw_file_permission.is_public is False
 
     # Publish the project (make public)
-    crud.project.update_project_visibility(
-        db, project_id=project.id, is_public=True
-    )
+    crud.project.update_project_visibility(db, project_id=project.id, is_public=True)
 
     # Verify both FilePermissions are now public
-    dp_file_permission = crud.file_permission.get_by_data_product(db, file_id=data_product.id)
-    raw_file_permission = crud.file_permission.get_by_raw_data(db, raw_data_id=raw_data.id)
+    dp_file_permission = crud.file_permission.get_by_data_product(
+        db, file_id=data_product.id
+    )
+    raw_file_permission = crud.file_permission.get_by_raw_data(
+        db, raw_data_id=raw_data.id
+    )
     assert dp_file_permission.is_public is True
     assert raw_file_permission.is_public is True
 
@@ -177,13 +181,15 @@ def test_update_project_visibility_updates_raw_data_permissions(db: Session) -> 
     assert project.is_published is True
 
     # Unpublish the project (make private)
-    crud.project.update_project_visibility(
-        db, project_id=project.id, is_public=False
-    )
+    crud.project.update_project_visibility(db, project_id=project.id, is_public=False)
 
     # Verify both FilePermissions are now private again
-    dp_file_permission = crud.file_permission.get_by_data_product(db, file_id=data_product.id)
-    raw_file_permission = crud.file_permission.get_by_raw_data(db, raw_data_id=raw_data.id)
+    dp_file_permission = crud.file_permission.get_by_data_product(
+        db, file_id=data_product.id
+    )
+    raw_file_permission = crud.file_permission.get_by_raw_data(
+        db, raw_data_id=raw_data.id
+    )
     assert dp_file_permission.is_public is False
     assert raw_file_permission.is_public is False
 

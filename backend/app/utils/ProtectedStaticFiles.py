@@ -1,31 +1,30 @@
-from datetime import datetime, timezone
+import logging
 import os
+import re
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional, Tuple
 from uuid import UUID
-import re
-import logging
 
 import geopandas as gpd
 from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
-from starlette.types import Scope, Receive, Send
 from sqlalchemy.orm import Session
-
-from app.utils.staticfiles import RangedStaticFiles
+from starlette.types import Receive, Scope, Send
 
 from app import crud
 from app.api.deps import can_read_project
 from app.api.utils import (
-    save_vector_layer_parquet,
-    save_vector_layer_flatgeobuf,
     get_static_dir,
+    save_vector_layer_flatgeobuf,
+    save_vector_layer_parquet,
 )
 from app.core import security
 from app.db.session import SessionLocal
 from app.models.data_product import DataProduct
 from app.models.raw_data import RawData
 from app.schemas.api_key import APIKeyUpdate
+from app.utils.staticfiles import RangedStaticFiles
 
 logger = logging.getLogger(__name__)
 
@@ -420,7 +419,11 @@ async def verify_static_file_access(request: Request) -> None:
             db_preview = SessionLocal()
             try:
                 preview_project = crud.project.get(db_preview, id=project_id_uuid)
-                if preview_project and preview_project.is_active and preview_project.is_published:
+                if (
+                    preview_project
+                    and preview_project.is_active
+                    and preview_project.is_published
+                ):
                     return
             finally:
                 db_preview.close()
@@ -545,7 +548,7 @@ async def verify_static_file_access(request: Request) -> None:
         db_indoor = SessionLocal()
         try:
             try:
-                indoor_project = crud.indoor_project.get_with_permission(
+                crud.indoor_project.get_with_permission(
                     db_indoor,
                     indoor_project_id=indoor_project_id_uuid,
                     user_id=user.id,

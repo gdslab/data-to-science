@@ -2,10 +2,9 @@ import os
 from typing import Any, Dict
 
 import geopandas as gpd
-from geojson_pydantic import FeatureCollection
 from sqlalchemy.orm import Session
 
-from app import crud, schemas
+from app import crud
 from app.core.config import settings
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.data_product_metadata import (
@@ -283,7 +282,7 @@ def test_remove_vector_layer_removes_metadata_associated_with_layer(
     # create metadata for a different vector layer and data product
     metadata_other = create_zonal_metadata(db, project_id=project.id)[0]
     # get metadata associated with vector layer id and data product id
-    metadata_other_in_db = crud.data_product_metadata.get_by_data_product(
+    crud.data_product_metadata.get_by_data_product(
         db,
         category="zonal",
         data_product_id=metadata_other[0].data_product_id,

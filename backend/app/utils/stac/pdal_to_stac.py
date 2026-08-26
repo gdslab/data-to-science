@@ -1,17 +1,16 @@
 import json
+import logging
 import subprocess
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-import logging
 
+import pdal
 from osgeo import ogr, osr
 from pystac import Asset, Item
-import pdal
 
 from app.api.api_v1.endpoints.data_products import get_static_dir
 from app.crud.crud_data_product import get_url
-
 
 osr.DontUseExceptions()
 
@@ -52,7 +51,7 @@ def validate_coordinate_system(path_to_copc: str) -> bool:
 
         return has_valid_srs
 
-    except (subprocess.CalledProcessError, json.JSONDecodeError, KeyError) as e:
+    except (subprocess.CalledProcessError, json.JSONDecodeError, KeyError):
         # If pdal info fails or output is malformed, assume no valid SRS
         return False
 
@@ -107,7 +106,7 @@ def create_item(
         # First, validate that the point cloud has a coordinate system
         if not validate_coordinate_system(path_to_copc):
             raise ValueError(
-                f"Point cloud does not have a valid coordinate system and cannot be published to STAC"
+                "Point cloud does not have a valid coordinate system and cannot be published to STAC"
             )
 
         # pdal info --all call references hexbin, stats, and info filters

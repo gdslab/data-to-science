@@ -27,16 +27,16 @@ def test_read_admin_users(
 ) -> None:
     """Verify admin can retrieve all users with admin fields."""
     # Create test users (approved and confirmed by default)
-    user1 = create_user(db)
-    user2 = create_user(db)
+    create_user(db)
+    create_user(db)
     # Create unapproved user
-    user3 = create_user(db, is_approved=False)
+    create_user(db, is_approved=False)
     # Create unconfirmed user
-    user4 = create_user(db, is_email_confirmed=False)
+    create_user(db, is_email_confirmed=False)
 
     # Update to superuser
     current_user = get_current_user(db, normal_user_access_token)
-    superuser = update_regular_user_to_superuser(db, user_id=current_user.id)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
 
     response = client.get(f"{settings.API_V1_STR}/admin/users")
     assert response.status_code == status.HTTP_200_OK
@@ -74,9 +74,9 @@ def test_read_admin_users_with_query(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     """Verify admin can search users with query parameter."""
-    user1 = create_user(db, first_name="Alice", last_name="Admin")
-    user2 = create_user(db, first_name="Bob", last_name="Builder")
-    user3 = create_user(db, first_name="Charlie", last_name="Admin")
+    create_user(db, first_name="Alice", last_name="Admin")
+    create_user(db, first_name="Bob", last_name="Builder")
+    create_user(db, first_name="Charlie", last_name="Admin")
 
     # Update to superuser
     current_user = get_current_user(db, normal_user_access_token)
@@ -108,7 +108,7 @@ def test_read_admin_users_non_superuser_forbidden(
 def test_get_site_statistics_with_non_superuser(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
-    current_user = get_current_user(db, normal_user_access_token)
+    get_current_user(db, normal_user_access_token)
     response = client.get(f"{settings.API_V1_STR}/admin/site_statistics")
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -116,7 +116,7 @@ def test_get_site_statistics_with_non_superuser(
 def test_get_project_statistics_with_non_superuser(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
-    current_user = get_current_user(db, normal_user_access_token)
+    get_current_user(db, normal_user_access_token)
     response = client.get(f"{settings.API_V1_STR}/admin/project_statistics")
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -225,7 +225,7 @@ def test_get_extensions(
     extension3 = create_extension(db, name="ext3", description="Extension 3")
     # update to superuser
     current_user = get_current_user(db, normal_user_access_token)
-    superuser = update_regular_user_to_superuser(db, user_id=current_user.id)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
     response = client.get(f"{settings.API_V1_STR}/admin/extensions")
     assert response.status_code == status.HTTP_200_OK
     extensions = response.json()
@@ -243,10 +243,10 @@ def test_get_extensions_by_non_superuser(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     # create extensions
-    extension1 = create_extension(db, name="ext1", description="Extension 1")
-    extension2 = create_extension(db, name="ext2", description="Extension 2")
-    extension3 = create_extension(db, name="ext3", description="Extension 3")
-    current_user = get_current_user(db, normal_user_access_token)
+    create_extension(db, name="ext1", description="Extension 1")
+    create_extension(db, name="ext2", description="Extension 2")
+    create_extension(db, name="ext3", description="Extension 3")
+    get_current_user(db, normal_user_access_token)
     response = client.get(f"{settings.API_V1_STR}/admin/extensions")
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -258,7 +258,7 @@ def test_update_team_extension(
     team = create_team(db)
     # update to superuser
     current_user = get_current_user(db, normal_user_access_token)
-    superuser = update_regular_user_to_superuser(db, user_id=current_user.id)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
     payload = {
         "team_id": str(team.id),
         "extension_id": str(extension.id),
@@ -297,7 +297,7 @@ def test_update_user_extension(
     user = create_user(db)
     # update to superuser
     current_user = get_current_user(db, normal_user_access_token)
-    superuser = update_regular_user_to_superuser(db, user_id=current_user.id)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
     payload = {
         "user_id": str(user.id),
         "extension_id": str(extension.id),
@@ -337,7 +337,7 @@ def test_deactivate_team_extension(
     create_team_extension(db, extension_id=extension.id, team_id=team.id)
     # update to superuser
     current_user = get_current_user(db, normal_user_access_token)
-    superuser = update_regular_user_to_superuser(db, user_id=current_user.id)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
     payload = {
         "team_id": str(team.id),
         "extension_id": str(extension.id),
@@ -366,7 +366,7 @@ def test_deactivate_user_extension(
     create_user_extension(db, extension_id=extension.id, user_id=user.id)
     # update to superuser
     current_user = get_current_user(db, normal_user_access_token)
-    superuser = update_regular_user_to_superuser(db, user_id=current_user.id)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
     payload = {
         "user_id": str(user.id),
         "extension_id": str(extension.id),
@@ -397,7 +397,7 @@ def test_update_user_approval_as_superuser(
 
     # Update to superuser
     current_user = get_current_user(db, normal_user_access_token)
-    superuser = update_regular_user_to_superuser(db, user_id=current_user.id)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
 
     # Approve the user
     payload = {"is_approved": True}
@@ -425,7 +425,7 @@ def test_revoke_user_approval_as_superuser(
 
     # Update to superuser
     current_user = get_current_user(db, normal_user_access_token)
-    superuser = update_regular_user_to_superuser(db, user_id=current_user.id)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
 
     # Revoke approval
     payload = {"is_approved": False}
@@ -469,7 +469,7 @@ def test_update_user_approval_nonexistent_user(
     """Verify 404 error when updating approval for nonexistent user."""
     # Update to superuser
     current_user = get_current_user(db, normal_user_access_token)
-    superuser = update_regular_user_to_superuser(db, user_id=current_user.id)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
 
     # Try to update nonexistent user
     fake_uuid = "00000000-0000-0000-0000-000000000000"

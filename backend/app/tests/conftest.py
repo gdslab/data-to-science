@@ -42,7 +42,6 @@ from app.tests.utils.user import (
 from app.tests.utils.utils import build_sqlalchemy_uri, create_test_db
 from app.utils.stac.STACCollectionManager import STACCollectionManager
 
-
 logger = logging.getLogger(__name__)
 
 TEST_DB_PATH = f"{settings.POSTGRES_DB or ''}_test_{worker_id}"
@@ -115,9 +114,7 @@ def reset_database(session: Session) -> None:
 @pytest.fixture(name="db")
 def db_fixture(db_engine: Engine) -> Generator[Session, None, None]:
     """Provide a clean, seeded database session for each test."""
-    SessionLocal = sessionmaker(
-        autoflush=False, expire_on_commit=False, bind=db_engine
-    )
+    SessionLocal = sessionmaker(autoflush=False, expire_on_commit=False, bind=db_engine)
     session = SessionLocal()
     reset_database(session)
     try:

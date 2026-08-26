@@ -10,7 +10,7 @@ from pystac_client import Client
 from pystac_client.exceptions import APIError
 
 from app.core.config import settings
-from app.schemas import STACReport, ItemStatus, STACError
+from app.schemas import ItemStatus, STACError, STACReport
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +121,9 @@ class STACCollectionManager:
         api_key = os.getenv(self.STAC_API_KEY_ENV)
         if not api_key:
             logger.error(f"{self.STAC_API_KEY_ENV} environment variable is not set")
-            raise STACConfigurationError(f"{self.STAC_API_KEY_ENV} environment variable is not set")
+            raise STACConfigurationError(
+                f"{self.STAC_API_KEY_ENV} environment variable is not set"
+            )
         return api_key
 
     def _build_headers(self, include_content_type: bool = False) -> dict:
@@ -285,7 +287,9 @@ class STACCollectionManager:
 
             if not self.collection:
                 logger.error("No local collection provided for comparison")
-                raise STACConfigurationError("No local collection provided for comparison")
+                raise STACConfigurationError(
+                    "No local collection provided for comparison"
+                )
 
             local_collection_dict = self.collection.to_dict()
 
@@ -356,9 +360,7 @@ class STACCollectionManager:
 
         # Determine endpoint and method based on whether collection exists
         if existing_collection:
-            logger.info(
-                f"Collection {self.collection_id} exists, updating with PUT"
-            )
+            logger.info(f"Collection {self.collection_id} exists, updating with PUT")
             endpoint = f"{self.api_url}/collections/{self.collection_id}"
             response = requests.put(endpoint, headers=headers, json=collection_data)
         else:
@@ -420,7 +422,9 @@ class STACCollectionManager:
             response = requests.post(endpoint, headers=headers, json=jsonable_item)
         else:
             logger.info(f"Updating item {item['id']} in catalog")
-            endpoint = f"{self.api_url}/collections/{self.collection_id}/items/{item['id']}"
+            endpoint = (
+                f"{self.api_url}/collections/{self.collection_id}/items/{item['id']}"
+            )
             response = requests.put(endpoint, headers=headers, json=jsonable_item)
 
         # Check response

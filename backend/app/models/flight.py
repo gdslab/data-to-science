@@ -1,7 +1,6 @@
 import uuid
-from typing import List, TYPE_CHECKING
-
 from datetime import date, datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, String
 from sqlalchemy.dialects.postgresql import ENUM, UUID

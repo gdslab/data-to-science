@@ -1,6 +1,6 @@
 """Date parsing utilities for handling various date formats."""
 
-from datetime import datetime, date
+from datetime import date, datetime
 from typing import Union
 
 

@@ -10,6 +10,7 @@ from .data_product_like import DataProductLike
 from .data_product_metadata import DataProductMetadata
 from .data_product_view import DataProductView
 from .disk_usage_stats import DiskUsageStats
+from .enums.project_type import ProjectType
 from .extension import Extension
 from .file_permission import FilePermission
 from .flight import Flight
@@ -17,13 +18,12 @@ from .iforester import IForester
 from .indoor_project import IndoorProject
 from .indoor_project_data import IndoorProjectData
 from .job import Job
-from .project_like import ProjectLike
 from .location import Location
 from .module_type import ModuleType
 from .project import Project
+from .project_like import ProjectLike
 from .project_member import ProjectMember
 from .project_module import ProjectModule
-from .enums.project_type import ProjectType
 from .raw_data import RawData
 from .refresh_token import RefreshToken
 from .shortened_url import ShortenedUrl

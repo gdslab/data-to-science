@@ -6,7 +6,7 @@ import uuid
 from datetime import date
 from pathlib import Path
 from typing import List, Optional, Tuple
-from urllib.parse import urlencode, quote_plus
+from urllib.parse import quote_plus, urlencode
 
 import geopandas as gpd
 from geojson_pydantic import Feature
@@ -136,9 +136,7 @@ def save_vector_layer_flatgeobuf(
         str: Path to generated FlatGeobuf file.
     """
     # Set output path for FlatGeobuf file
-    fgb_dir = os.path.join(
-        static_dir, "projects", str(project_id), "vector", layer_id
-    )
+    fgb_dir = os.path.join(static_dir, "projects", str(project_id), "vector", layer_id)
     # Create vector directory if needed
     if not os.path.exists(fgb_dir):
         os.makedirs(fgb_dir)

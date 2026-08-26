@@ -5,12 +5,12 @@ Revises: 4834cb625e90
 Create Date: 2025-01-06 22:17:53.405366
 
 """
+
 from alembic import op
 
-
 # revision identifiers, used by Alembic.
-revision = '9ef9b06ed105'
-down_revision: str | None = '4834cb625e90'
+revision = "9ef9b06ed105"
+down_revision: str | None = "4834cb625e90"
 branch_labels: str | None = None
 depends_on: str | None = None
 

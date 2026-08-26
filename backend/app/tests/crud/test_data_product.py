@@ -13,8 +13,8 @@ from app.models.job import Job
 from app.schemas.data_product import DataProductCreate
 from app.schemas.file_permission import FilePermissionUpdate
 from app.schemas.job import State, Status
-from app.tests.utils.flight import create_flight
 from app.tests.utils.data_product import SampleDataProduct, test_stac_props_dsm
+from app.tests.utils.flight import create_flight
 from app.tests.utils.job import create_job
 from app.tests.utils.raw_data import SampleRawData
 from app.tests.utils.user import create_user

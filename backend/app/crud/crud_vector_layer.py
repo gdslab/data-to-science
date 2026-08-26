@@ -1,11 +1,11 @@
 import json
 from collections import defaultdict
-from uuid import UUID
 from typing import List, Tuple
+from uuid import UUID
 
 import geopandas as gpd
-from geojson_pydantic import Feature
 from fastapi.encoders import jsonable_encoder
+from geojson_pydantic import Feature
 from sqlalchemy import and_, delete, func, select, text, update
 from sqlalchemy.orm import Session
 
@@ -239,7 +239,7 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
                 vector_layers[feature.properties["layer_id"]].append(feature)
         for layer_id in vector_layers.keys():
             # Create preview image (if one does not exist)
-            preview_img = create_vector_layer_preview(
+            create_vector_layer_preview(
                 project_id=project_id,
                 layer_id=layer_id,
                 features=vector_layers[layer_id],
@@ -307,7 +307,7 @@ class CRUDVectorLayer(CRUDBase[VectorLayer, VectorLayerCreate, VectorLayerUpdate
 
             # Step 3: Delete feature records that are inactive
             delete_statement = delete(VectorLayer).where(
-                and_(VectorLayer.layer_id == layer_id, VectorLayer.is_active == False)
+                and_(VectorLayer.layer_id == layer_id, not VectorLayer.is_active)
             )
             db.execute(delete_statement)
 

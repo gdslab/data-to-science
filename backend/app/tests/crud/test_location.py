@@ -1,8 +1,5 @@
-import json
 from typing import Dict
 
-from geoalchemy2 import Geometry
-from geoalchemy2.shape import to_shape
 from geojson_pydantic import Feature, Polygon
 from sqlalchemy.orm import Session
 

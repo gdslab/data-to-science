@@ -1,6 +1,7 @@
+from uuid import UUID
+
 from geojson_pydantic import Feature
 from sqlalchemy.orm import Session
-from uuid import UUID
 
 from app import crud
 from app.models.annotation import Annotation

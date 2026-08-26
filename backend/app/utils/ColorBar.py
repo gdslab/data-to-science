@@ -1,11 +1,10 @@
 import base64
 import logging
-import math
 import os
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 
 logger = logging.getLogger("__name__")
 
@@ -71,7 +70,7 @@ class ColorBar:
             cax=ax,
             orientation=self.orientation,
         )
-        ax.tick_params(labelsize=mpl.rcParams['font.size'] + 2)
+        ax.tick_params(labelsize=mpl.rcParams["font.size"] + 2)
         plt.savefig(out_fullpath, format="png", transparent=True)
 
         return out_fullpath

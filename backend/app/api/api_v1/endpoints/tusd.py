@@ -2,11 +2,11 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import unquote
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from urllib.parse import unquote
 
 from app import crud, models
 from app.api import deps
@@ -504,7 +504,7 @@ def _handle_uas_project_hooks(
         _update_upload_record_to_finished(db, upload_record)
 
         # only run post processing if upload was in progress
-        if is_uploading == True or created_now:
+        if is_uploading or created_now:
             storage = payload.Event.Upload.Storage
             if storage and os.path.exists(storage.Path):
                 if data_type != "raw":
@@ -585,7 +585,7 @@ def _handle_indoor_project_hooks(
         _update_upload_record_to_finished(db, upload_record)
 
         # only run post processing if upload was in progress
-        if is_uploading == True or created_now:
+        if is_uploading or created_now:
             storage = payload.Event.Upload.Storage
             if storage and os.path.exists(storage.Path):
                 # extract treatment from custom header

@@ -32,7 +32,7 @@ def test_read_annotation_tag(db: Session) -> None:
 
 def test_update_annotation_tag(db: Session) -> None:
     annotation = create_annotation(db)
-    tag_a = create_tag(db, name="tag-a")
+    create_tag(db, name="tag-a")
     tag_b = create_tag(db, name="tag-b")
     created = crud.annotation_tag.create_with_annotation(
         db=db,

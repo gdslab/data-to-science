@@ -238,8 +238,7 @@ def seed(count: int, years: int, snapshot_days: int, seed_value: int | None) -> 
                     )
                     if already_recorded:
                         logger.warning(
-                            "Skipping %d snapshot date(s) that are already "
-                            "recorded.",
+                            "Skipping %d snapshot date(s) that are already recorded.",
                             len(already_recorded),
                         )
                     session.add_all(

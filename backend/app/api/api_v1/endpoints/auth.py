@@ -1,13 +1,14 @@
 import logging
 import secrets
 from datetime import datetime, timezone
-from typing import Any, Annotated
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import (
     APIRouter,
     BackgroundTasks,
     Body,
+    Cookie,
     Depends,
     Form,
     HTTPException,
@@ -15,7 +16,6 @@ from fastapi import (
     Response,
     status,
 )
-from fastapi import Cookie
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import EmailStr

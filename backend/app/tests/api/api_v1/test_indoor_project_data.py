@@ -8,8 +8,6 @@ from app.api.deps import get_current_user
 from app.core.config import settings
 from app.tests.utils.indoor_project import create_indoor_project
 from app.tests.utils.indoor_project_data import create_indoor_project_data
-from app.tests.utils.user import create_user
-
 
 BASE_API_URL = f"{settings.API_V1_STR}/indoor_projects"
 

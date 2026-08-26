@@ -20,7 +20,6 @@ def run(in_raster: str, out_raster: str, params: dict) -> str:
     validate_params(params)
 
     # input file name
-    in_fn = in_raster
 
     with rasterio.open(in_raster) as src:
         assert src.count >= 2  # assert at least 2 bands available
