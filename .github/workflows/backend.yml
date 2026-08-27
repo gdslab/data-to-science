@@ -1,0 +1,160 @@
+name: Backend
+
+# Lints and tests the backend. These two jobs are the checks the ruleset on main
+# requires before a pull request can merge, so their job ids are load-bearing:
+# renaming one leaves the ruleset waiting for a check that no longer reports.
+#
+# There is no paths filter, deliberately. A required check that a filter skips is
+# never reported at all, and the pull request waits on it forever -- so a
+# frontend-only change would need an admin bypass to merge. Lint takes seconds,
+# and the image build below is served from the layer cache when nothing under
+# backend/ changed, which is cheaper than the workaround for that problem.
+#
+# The push trigger exists for the cache rather than the signal. A pull request run
+# can read caches written by its base branch but not by other pull requests, so
+# without a populated main the first push to every branch would recompile the
+# geospatial bindings from source.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Pushing again to a branch supersedes the run already going on it, which is now
+# testing a commit nobody will merge. Cancel it rather than pay for both.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      # ruff-action can read the version itself, but it falls back to the latest
+      # release when parsing fails rather than stopping. That fallback is the worst
+      # case here: the formatter's output changes between releases, so CI would
+      # start failing `format --check` on files that are correctly formatted for
+      # the pinned version, and the run would look like a code problem. Reading the
+      # pin here instead fails loudly and keeps pyproject.toml the only place the
+      # version is written.
+      - name: Read the pinned ruff version
+        id: ruff
+        run: |
+          version="$(grep -oPm1 '"ruff==\K[^"]+' backend/pyproject.toml)"
+          if [ -z "$version" ]; then
+            echo "::error::No exact ruff pin found in backend/pyproject.toml"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Using ruff $version"
+
+      # Two steps rather than one, so a failure names which check failed.
+      - name: ruff check
+        uses: astral-sh/ruff-action@v4
+        with:
+          version: ${{ steps.ruff.outputs.version }}
+          src: backend
+          args: check
+
+      - name: ruff format
+        uses: astral-sh/ruff-action@v4
+        with:
+          version: ${{ steps.ruff.outputs.version }}
+          src: backend
+          args: format --check
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    # Mirrors backend.example.env and db.example.env, so a local run and this one
+    # see the same configuration. The two keys are literals, not secrets: they are
+    # only ever used by this job, and fork pull requests cannot read repository
+    # secrets, which would leave this check unable to run on outside contributions.
+    # Both have to clear the 32 character minimum the settings validator enforces.
+    #
+    # Every feature flag is left at its default of off. That skips the suites
+    # needing a STAC catalog or an SMTP server, which is what keeps this job from
+    # depending on a service outside the runner.
+    env:
+      API_PROJECT_NAME: Data To Science
+      API_DOMAIN: http://localhost:8000
+      SECRET_KEY: github-actions-backend-tests-secret-key
+      TILE_SIGNING_SECRET_KEY: github-actions-backend-tests-tile-key
+      POSTGRES_HOST: localhost
+      POSTGRES_USER: d2s
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: d2s
+
+    services:
+      # Same image as the development stack. conftest.py creates one
+      # <POSTGRES_DB>_test_<worker> database per pytest-xdist worker and adds the
+      # postgis extension to each, so nothing extra is set up here. The port cannot
+      # move: the test database URI is built without one, so 5432 is implied.
+      db:
+        image: postgis/postgis:15-3.3
+        env:
+          POSTGRES_USER: d2s
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: d2s
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready --username=d2s --dbname=d2s"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # The suite runs inside the application image because that is the only place
+      # the GDAL, PDAL and rasterio bindings exist -- they are compiled against
+      # /opt/geo in the base image, not installed as wheels. INSTALL_DEV=true is
+      # what puts pytest and ruff in it.
+      #
+      # mode=max for the same reason as geo-base.yml: the expense is the builder
+      # stage compiling those bindings from source, and mode=min exports only the
+      # final stage, which is a COPY over ubuntu. That stage is keyed on
+      # pyproject.toml, uv.lock and check_geo_pins.sh alone, so a pull request that
+      # leaves dependencies alone reuses it whole.
+      #
+      # No pull: true. The buildx container driver has no local image store, so the
+      # mutable gdslab/d2s-geo-base:latest tag is resolved against the registry on
+      # every build anyway.
+      - name: Build the backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          file: backend/backend.dockerfile
+          build-args: INSTALL_DEV=true
+          tags: d2s-api:ci
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # --network host so localhost:5432 in the container reaches the published
+      # service port above. The image already runs as d2s with WORKDIR /app and
+      # PYTHONPATH=/app, so pytest.ini is picked up with no arguments and the
+      # per-worker scratch directories land in /tmp; nothing needs mounting.
+      # -n auto in pytest.ini gives one worker per runner core.
+      #
+      # The pytest cache is disabled because /app itself is root-owned in the
+      # image, so writing it warns on every run, and a cache in a container that is
+      # discarded at the end of the step has nothing to offer anyway.
+      - name: Run the test suite
+        run: |
+          docker run --rm --network host \
+            -e API_PROJECT_NAME -e API_DOMAIN \
+            -e SECRET_KEY -e TILE_SIGNING_SECRET_KEY \
+            -e POSTGRES_HOST -e POSTGRES_USER -e POSTGRES_PASSWORD -e POSTGRES_DB \
+            d2s-api:ci pytest -p no:cacheprovider

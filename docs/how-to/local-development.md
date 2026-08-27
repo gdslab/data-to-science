@@ -101,7 +101,8 @@ docker compose exec backend ruff format .       # format in place
 docker compose exec backend ruff check --fix .  # apply the fixable lint findings
 ```
 
-Run both in their reporting form before opening a pull request:
+Run both in their reporting form before opening a pull request. These are the two
+commands CI runs, and a pull request cannot merge until they pass:
 
 ```bash
 docker compose exec backend ruff check .

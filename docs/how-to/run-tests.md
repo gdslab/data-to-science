@@ -10,6 +10,11 @@ With the containers running, execute the full pytest suite:
 docker compose exec backend pytest
 ```
 
+CI runs this same suite on every pull request and it must pass before the pull
+request can merge. CI leaves every optional feature flag off, so the tests gated
+behind `ENABLE_STAC`, `ENABLE_CAMPAIGNS`, `ENABLE_IFORESTER`, `ENABLE_BREEDBASE`
+and `MAIL_ENABLED` are skipped there. Enable them locally to run those.
+
 ## Run a specific test file
 
 ```bash

@@ -70,8 +70,9 @@ jobs:
       #
       # mode=max is what makes that true. mode=min exports only the final stage,
       # which is a COPY on top of ubuntu, so the expensive build stage would not be
-      # cached at all. Nothing else in this repo uses the Actions cache, so the
-      # 10 GB budget is not contended.
+      # cached at all. backend.yml shares the repository's 10 GB cache budget; the
+      # entries written here are large but refreshed rarely, and eviction costs a
+      # rebuild rather than a wrong answer.
       - name: Build
         uses: docker/build-push-action@v6
         with:

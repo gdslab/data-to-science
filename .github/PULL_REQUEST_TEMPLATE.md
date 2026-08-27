@@ -43,6 +43,7 @@ Sections marked (optional) may be deleted when not applicable.
 ## Checklist
 
 - [ ] Backend tests pass: `docker compose exec backend pytest`
+- [ ] Backend lint passes: `docker compose exec backend ruff check . && docker compose exec backend ruff format --check .`
 - [ ] TypeScript check passes: `docker compose exec frontend npx tsc --noEmit`
 - [ ] I have self-reviewed the diff
 - [ ] Documentation (docs/, README) is updated, or no updates are needed
