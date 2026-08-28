@@ -56,15 +56,19 @@ jobs:
           echo "Using ruff $version"
 
       # Two steps rather than one, so a failure names which check failed.
+      #
+      # Pinned to an exact tag because ruff-action publishes no floating major
+      # tag on this line: v4.0.0 and v4.1.0 exist, v4 does not, and referring to
+      # it fails the run before any step executes.
       - name: ruff check
-        uses: astral-sh/ruff-action@v4
+        uses: astral-sh/ruff-action@v4.1.0
         with:
           version: ${{ steps.ruff.outputs.version }}
           src: backend
           args: check
 
       - name: ruff format
-        uses: astral-sh/ruff-action@v4
+        uses: astral-sh/ruff-action@v4.1.0
         with:
           version: ${{ steps.ruff.outputs.version }}
           src: backend
