@@ -14,7 +14,6 @@ from app.schemas.breedbase_connection import (
     BreedbaseConnectionUpdate,
 )
 
-
 logger = logging.getLogger(__name__)
 
 

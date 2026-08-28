@@ -13,10 +13,10 @@ from sqlalchemy.exc import IntegrityError
 from app import crud, schemas
 from app.api.deps import get_db
 from app.core.celery_app import celery_app
-from app.utils.job_manager import JobManager
 from app.schemas.data_product import DataProductUpdate
 from app.schemas.data_product_metadata import ZonalStatisticsProps
 from app.schemas.job import Status
+from app.utils.job_manager import JobManager
 from app.utils.Toolbox import Toolbox
 
 logger = get_task_logger(__name__)

@@ -20,7 +20,6 @@ def run(in_raster: str, out_raster: str, params: dict) -> str:
     validate_params(params)
 
     # input file name
-    in_fn = in_raster
 
     with rasterio.open(in_raster) as src:
         assert src.count >= 2  # assert at least 2 bands available
@@ -91,11 +90,11 @@ def validate_params(params: dict) -> None:
     """
     if "red_band_idx" not in params:
         raise ValueError("Red band index param (red_band_idx) missing")
-    if type(params.get("red_band_idx")) != int:
+    if type(params.get("red_band_idx")) is not int:
         raise TypeError("Red band index must be an integer")
     if "nir_band_idx" not in params:
         raise ValueError("NIR band index param (nir_band_idx) missing")
-    if type(params.get("nir_band_idx")) != int:
+    if type(params.get("nir_band_idx")) is not int:
         raise TypeError("NIR band index must be an integer")
 
 

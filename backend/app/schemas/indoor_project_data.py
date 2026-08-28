@@ -2,7 +2,7 @@ from datetime import date, datetime
 from enum import Enum
 from typing import Dict, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, RootModel, UUID4
+from pydantic import UUID4, BaseModel, ConfigDict, Field, RootModel
 
 
 class IndoorProjectDataBase(BaseModel):

@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Union
 from uuid import UUID
 
-from celery import chain
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
@@ -25,6 +24,7 @@ from app.tasks.raw_image_processing_tasks import (
 )
 from app.tasks.utils import is_valid_filename
 from app.utils.job_manager import JobManager
+from celery import chain
 
 router = APIRouter()
 
@@ -289,7 +289,7 @@ def process_raw_data(
     if has_active_processing_job(db, raw_data_id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Raw data already being processed",
+            detail="Raw data already being processed",
         )
 
     # get raw data from db
@@ -395,9 +395,7 @@ def check_raw_data_processing_progress(
     return {"progress": str(progress), "status": job_db_obj.status.value}
 
 
-@router.post(
-    "/{raw_data_id}/progress_update", status_code=status.HTTP_202_ACCEPTED
-)
+@router.post("/{raw_data_id}/progress_update", status_code=status.HTTP_202_ACCEPTED)
 def update_progress_from_remote(
     raw_data_id: UUID,
     payload: schemas.ProgressUpdate,

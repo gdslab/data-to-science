@@ -1,6 +1,6 @@
 from typing import List, Optional, Union
 
-from pydantic import BaseModel, UUID4
+from pydantic import UUID4, BaseModel
 
 
 # shared properties

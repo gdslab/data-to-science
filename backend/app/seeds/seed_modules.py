@@ -1,6 +1,7 @@
+from sqlalchemy.orm import Session
+
 from app.db.session import SessionLocal
 from app.models.module_type import ModuleType
-from sqlalchemy.orm import Session
 
 
 def seed_module_types(session: Session | None = None) -> None:

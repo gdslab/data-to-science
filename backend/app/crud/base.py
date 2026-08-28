@@ -1,4 +1,4 @@
-from typing import Sequence, Any, Generic, Type, TypeVar
+from typing import Any, Generic, Sequence, Type, TypeVar
 from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder

@@ -1,6 +1,5 @@
 import base64
 import os
-import shutil
 from typing import Optional
 
 from pydantic import UUID4

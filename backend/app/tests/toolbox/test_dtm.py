@@ -1,12 +1,7 @@
-import shutil
 from pathlib import Path
-from tempfile import TemporaryDirectory
 
 import numpy as np
 import rasterio
-
-from app.utils.toolbox.exg import run
-
 
 point_cloud_dataset = Path("/app/app/tests/data/test_point_cloud.copc.laz")
 validation_dataset = Path("/app/app/tests/data/dtm_validation.tif")

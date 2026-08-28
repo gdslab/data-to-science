@@ -1,6 +1,7 @@
-from typing import List, Optional, Dict, Any, Union
 from datetime import datetime
-from pydantic import BaseModel, UUID4
+from typing import Any, Dict, List, Optional, Union
+
+from pydantic import UUID4, BaseModel
 
 
 class STACError(BaseModel):

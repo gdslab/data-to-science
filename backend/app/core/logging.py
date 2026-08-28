@@ -2,7 +2,6 @@ import json
 import logging
 import os
 import sys
-from functools import lru_cache
 from http import HTTPStatus
 from io import TextIOBase
 from logging.handlers import TimedRotatingFileHandler
@@ -13,7 +12,6 @@ from fastapi import Request, Response
 from pydantic import BaseModel
 
 from app.core.config import settings
-
 
 API_LOGDIR = Path(settings.API_LOGDIR)
 API_LOGFILE = API_LOGDIR / "backend.log"

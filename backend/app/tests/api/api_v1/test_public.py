@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app import crud
-from app.api.deps import get_current_user, get_current_approved_user
+from app.api.deps import get_current_approved_user, get_current_user
 from app.core.config import settings
 from app.schemas.file_permission import FilePermissionUpdate
 from app.tests.utils.data_product import SampleDataProduct
@@ -34,7 +34,7 @@ def test_read_public_data_product_bounds(client: TestClient, db: Session):
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     assert "bounds" in response_data
-    response_bounds = response_data["bounds"] == [
+    response_data["bounds"] == [
         -86.94452647774037,
         41.44399199810876,
         -86.94442522789655,
@@ -68,7 +68,7 @@ def test_read_projected_data_product_bounds_with_authorized_user(
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     assert "bounds" in response_data
-    response_bounds = response_data["bounds"] == [
+    response_data["bounds"] == [
         -86.94452647774037,
         41.44399199810876,
         -86.94442522789655,

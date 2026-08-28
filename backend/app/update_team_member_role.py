@@ -1,5 +1,7 @@
 import logging
+
 from sqlalchemy import select, update
+
 from app.db.session import SessionLocal
 from app.models.team import Team
 from app.models.team_member import TeamMember

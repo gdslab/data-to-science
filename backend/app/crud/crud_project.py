@@ -1,5 +1,5 @@
-import logging
 import json
+import logging
 from typing import List, Optional, Sequence, TypedDict
 from uuid import UUID
 
@@ -7,12 +7,14 @@ from fastapi import status
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import and_, func, select, update
 from sqlalchemy.exc import MultipleResultsFound
-from sqlalchemy.orm import joinedload, selectinload, Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app import crud
 from app.crud.base import CRUDBase
 from app.crud.utils import raise_if_project_published
+from app.models.constants import NON_RASTER_TYPES
 from app.models.data_product import DataProduct
+from app.models.enums.project_type import ProjectType
 from app.models.file_permission import FilePermission
 from app.models.flight import Flight
 from app.models.location import Location
@@ -21,8 +23,6 @@ from app.models.project import Project
 from app.models.project_like import ProjectLike
 from app.models.project_member import ProjectMember
 from app.models.project_module import ProjectModule
-from app.models.constants import NON_RASTER_TYPES
-from app.models.enums.project_type import ProjectType
 from app.models.raw_data import RawData
 from app.models.team_member import TeamMember
 from app.models.user import User
@@ -30,13 +30,14 @@ from app.models.utils.utcnow import utcnow
 from app.schemas.project import (
     Centroid,
     ProjectCreate,
-    ProjectUpdate,
-    Project as ProjectSchema,
     Projects,
+    ProjectUpdate,
     PublishedProjects,
 )
+from app.schemas.project import (
+    Project as ProjectSchema,
+)
 from app.schemas.team_member import Role
-
 
 logger = logging.getLogger("__name__")
 
@@ -550,7 +551,9 @@ class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
             ) = row
             field_dict = json.loads(geojson_str)
             field_dict["properties"] = field_dict.get("properties") or {}
-            field_dict["properties"].update({"center_x": center_x, "center_y": center_y})
+            field_dict["properties"].update(
+                {"center_x": center_x, "center_y": center_y}
+            )
             setattr(project_obj, "field", field_dict)
             setattr(project_obj, "centroid", Centroid(x=center_x, y=center_y))
             setattr(project_obj, "data_product_count", data_product_count)

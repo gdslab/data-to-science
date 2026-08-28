@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
@@ -11,9 +11,9 @@ from app.models.utils.utcnow import utcnow
 
 if TYPE_CHECKING:
     from .data_product import DataProduct
+    from .file_permission import FilePermission
     from .flight import Flight
     from .job import Job
-    from .file_permission import FilePermission
 
 
 class RawData(Base):

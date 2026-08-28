@@ -9,22 +9,22 @@ from app import crud, schemas
 from app.core.exceptions import PermissionDenied
 from app.models.project import Project
 from app.schemas.project import ProjectUpdate
-from app.schemas.team_member import TeamMemberUpdate, Role
+from app.schemas.team_member import Role, TeamMemberUpdate
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.flight import create_flight
-from app.tests.utils.team import create_team
-from app.tests.utils.team_member import create_team_member
 from app.tests.utils.project import (
     create_project,
     random_harvest_date,
     random_planting_date,
 )
 from app.tests.utils.project_member import create_project_member
+from app.tests.utils.team import create_team
+from app.tests.utils.team_member import create_team_member
 from app.tests.utils.user import create_user
 from app.tests.utils.utils import (
+    get_geojson_feature_collection,
     random_team_description,
     random_team_name,
-    get_geojson_feature_collection,
 )
 
 
@@ -262,7 +262,7 @@ def test_get_all_projects(db: Session) -> None:
 def test_get_user_projects_includes_team(db: Session) -> None:
     user = create_user(db)
     team = create_team(db, owner_id=user.id)
-    project = create_project(db, owner_id=user.id, team_id=team.id)
+    create_project(db, owner_id=user.id, team_id=team.id)
     projects = crud.project.get_user_projects(db, user=user)
     assert len(projects) == 1
     assert hasattr(projects[0], "team")
@@ -446,8 +446,8 @@ def test_get_project_flight_count_with_deactivated_flight(db: Session) -> None:
     user = create_user(db)
     project = create_project(db, owner_id=user.id)
     flight1 = create_flight(db, project_id=project.id)
-    flight2 = create_flight(db, project_id=project.id)
-    flight3 = create_flight(db, project_id=project.id)
+    create_flight(db, project_id=project.id)
+    create_flight(db, project_id=project.id)
     crud.flight.deactivate(db, flight_id=flight1.id)
     stored_project = crud.project.get_user_project(
         db, project_id=project.id, user_id=user.id

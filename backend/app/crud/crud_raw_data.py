@@ -146,11 +146,7 @@ class CRUDRawData(CRUDBase[RawData, RawDataCreate, RawDataUpdate]):
 
     def update_s3_url(self, db: Session, raw_data_id: UUID, s3_url: str) -> None:
         """Set the s3_url for a single raw data record."""
-        stmt = (
-            update(RawData)
-            .where(RawData.id == raw_data_id)
-            .values(s3_url=s3_url)
-        )
+        stmt = update(RawData).where(RawData.id == raw_data_id).values(s3_url=s3_url)
         with db as session:
             session.execute(stmt)
             session.commit()

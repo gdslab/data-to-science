@@ -1,6 +1,6 @@
 import logging
 from collections.abc import Generator
-from typing import Any, Generator, Optional, Union
+from typing import Any, Optional, Union
 from uuid import UUID
 
 from fastapi import BackgroundTasks, Depends, HTTPException, Request, status
@@ -11,13 +11,13 @@ from pydantic import EmailStr
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
+from app.api.utils import is_valid_api_key
 from app.core import security
 from app.core.config import settings
 from app.core.mail import fm
 from app.crud.crud_flight import ReadFlight
 from app.crud.crud_project import ReadProject
 from app.db.session import SessionLocal
-from app.api.utils import is_valid_api_key
 from app.schemas.raw_data import MetashapeQueryParams, ODMQueryParams
 from app.schemas.role import Role
 

@@ -1,6 +1,6 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
-from pydantic import BaseModel, Field, UUID4, field_validator
+from pydantic import UUID4, BaseModel, Field, field_validator
 
 from app.utils.text_utils import truncate_to_bytes
 
@@ -76,8 +76,12 @@ class Header(BaseModel):
     Referer: Optional[List[str]] = None
     # Chrome Client Hints headers (added in newer browser versions)
     Sec_Ch_Ua: Optional[List[str]] = Field(alias="Sec-Ch-Ua", default=None)
-    Sec_Ch_Ua_Mobile: Optional[List[str]] = Field(alias="Sec-Ch-Ua-Mobile", default=None)
-    Sec_Ch_Ua_Platform: Optional[List[str]] = Field(alias="Sec-Ch-Ua-Platform", default=None)
+    Sec_Ch_Ua_Mobile: Optional[List[str]] = Field(
+        alias="Sec-Ch-Ua-Mobile", default=None
+    )
+    Sec_Ch_Ua_Platform: Optional[List[str]] = Field(
+        alias="Sec-Ch-Ua-Platform", default=None
+    )
     Sec_Fetch_Dest: Optional[List[str]] = Field(alias="Sec-Fetch-Dest", default=None)
     Sec_Fetch_Mode: Optional[List[str]] = Field(alias="Sec-Fetch-Mode", default=None)
     Sec_Fetch_Site: Optional[List[str]] = Field(alias="Sec-Fetch-Site", default=None)

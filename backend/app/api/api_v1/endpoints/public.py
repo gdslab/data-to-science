@@ -6,7 +6,16 @@ from uuid import UUID
 
 import httpx
 import rasterio
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    status,
+)
 from fastapi.responses import RedirectResponse, StreamingResponse
 from geojson_pydantic import FeatureCollection
 from pydantic import UUID4
@@ -19,7 +28,6 @@ from app.api.utils import get_signature_for_data_product
 from app.core.config import settings
 from app.core.limiter import limiter
 from app.models.constants import NON_RASTER_TYPES
-
 
 router = APIRouter()
 
@@ -76,9 +84,9 @@ async def get_vector_tiles_for_vector_layer(
     db: Session = Depends(deps.get_db),
 ) -> StreamingResponse:
     if os.environ.get("RUNNING_TESTS") == "1":
-        upload_dir = settings.TEST_STATIC_DIR
+        pass
     else:
-        upload_dir = settings.STATIC_DIR
+        pass
 
     # check if user has access through project member role
     can_access = crud.vector_layer.verify_user_access_to_vector_layer_by_id(
@@ -434,9 +442,7 @@ def record_public_data_product_view(
             detail="X-Session-Id is required for anonymous views",
         )
 
-    response.status_code = (
-        status.HTTP_201_CREATED if view else status.HTTP_200_OK
-    )
+    response.status_code = status.HTTP_201_CREATED if view else status.HTTP_200_OK
     view_count = crud.data_product_view.get_count_by_data_product_id(
         db, data_product_id=data_product_id
     )

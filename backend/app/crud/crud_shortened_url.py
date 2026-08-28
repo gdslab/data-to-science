@@ -7,8 +7,8 @@ from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
 from app.models.shortened_url import ShortenedUrl
-from app.schemas.shortened_url import ShortenedUrlCreate, ShortenedUrlUpdate
 from app.models.utils.utcnow import utcnow
+from app.schemas.shortened_url import ShortenedUrlCreate, ShortenedUrlUpdate
 from app.utils.unique_id import generate_unique_id
 
 

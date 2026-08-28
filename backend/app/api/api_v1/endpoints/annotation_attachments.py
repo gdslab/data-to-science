@@ -53,7 +53,9 @@ def download_annotation_attachment(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Download an annotation attachment by ID."""
-    attachment = _get_verified_attachment(db, annotation_id, attachment_id, data_product)
+    attachment = _get_verified_attachment(
+        db, annotation_id, attachment_id, data_product
+    )
 
     abs_path = get_absolute_filepath(attachment.filepath)
     if not os.path.exists(abs_path):
@@ -82,7 +84,9 @@ def delete_annotation_attachment(
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """Delete an annotation attachment by ID."""
-    attachment = _get_verified_attachment(db, annotation_id, attachment_id, data_product)
+    attachment = _get_verified_attachment(
+        db, annotation_id, attachment_id, data_product
+    )
 
     # Delete file from disk
     if attachment.filepath:

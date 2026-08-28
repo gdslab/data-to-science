@@ -2,7 +2,7 @@ from secrets import token_urlsafe
 from uuid import UUID
 
 from sqlalchemy import and_, select, update
-from sqlalchemy.orm import joinedload, Session
+from sqlalchemy.orm import Session, joinedload
 
 from app import crud
 from app.crud.base import CRUDBase

@@ -16,21 +16,21 @@ from fastapi.encoders import jsonable_encoder
 
 from app import crud, schemas
 from app.api.deps import get_db
-from app.utils.date_utils import parse_date
 from app.api.utils import (
-    is_geometry_match,
-    save_vector_layer_parquet,
-    save_vector_layer_flatgeobuf,
     get_static_dir,
+    is_geometry_match,
+    save_vector_layer_flatgeobuf,
+    save_vector_layer_parquet,
 )
 from app.core.celery_app import celery_app
-from app.utils.ImageProcessor import ImageProcessor, get_utm_epsg_from_latlon
-from app.utils.job_manager import JobManager
-from app.utils.TarProcessor import TarProcessor
 from app.schemas.data_product import DataProductUpdate
 from app.schemas.job import Status
 from app.tasks.utils import validate_3dgs_image, validate_panoramic_image
+from app.utils.date_utils import parse_date
+from app.utils.ImageProcessor import ImageProcessor, get_utm_epsg_from_latlon
+from app.utils.job_manager import JobManager
 from app.utils.lcc_validator import unpack_lcc_zip
+from app.utils.TarProcessor import TarProcessor
 
 logger = get_task_logger(__name__)
 
@@ -845,9 +845,10 @@ def upload_point_cloud(
         # construct path for compressed COPC
         if in_las.name.endswith(".copc.laz"):
             # copy the file to parent directory using buffered copy
-            with open(in_las, "rb") as src, open(
-                in_las.parents[1] / in_las.name, "wb"
-            ) as dst:
+            with (
+                open(in_las, "rb") as src,
+                open(in_las.parents[1] / in_las.name, "wb") as dst,
+            ):
                 shutil.copyfileobj(src, dst, length=BUFFER_SIZE)
 
             copc_laz_filepath = in_las.parents[1] / in_las.name
@@ -1054,7 +1055,7 @@ def upload_vector_layer(
         try:
             if os.path.exists(file_path):
                 os.remove(file_path)
-        except Exception as e:
+        except Exception:
             logger.exception("Unable to cleanup uploaded file")
             job.update(status=Status.FAILED)
 

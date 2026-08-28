@@ -3,6 +3,7 @@ Author:         Kevin Stone
 Source:         https://gist.github.com/kevinastone/a6a62db57577b3f24e8a6865ed311463
 Description:    Add support for range requests in Starlette.
 """
+
 import os
 import re
 import stat
@@ -16,7 +17,6 @@ from starlette.exceptions import HTTPException
 from starlette.responses import Response, guess_type
 from starlette.staticfiles import StaticFiles
 from starlette.types import Receive, Scope, Send
-
 
 RANGE_REGEX = re.compile(r"^bytes=(?P<start>\d+)-(?P<end>\d*)$")
 
@@ -86,9 +86,9 @@ class RangedFileResponse(Response):
         assert self.stat_result
         total_length = self.stat_result.st_size
         content_length = len(range)
-        self.headers[
-            "content-range"
-        ] = f"bytes {range.start}-{range.end}/{total_length}"
+        self.headers["content-range"] = (
+            f"bytes {range.start}-{range.end}/{total_length}"
+        )
         self.headers["content-length"] = str(content_length)
         pass
 

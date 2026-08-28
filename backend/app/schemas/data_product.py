@@ -2,12 +2,12 @@ from datetime import datetime
 from typing import Annotated, Dict, List, Optional, Union
 
 from pydantic import (
+    UUID4,
     AnyHttpUrl,
     BaseModel,
     Field,
-    field_validator,
     ValidationInfo,
-    UUID4,
+    field_validator,
 )
 
 from app.utils.stac import STACProperties

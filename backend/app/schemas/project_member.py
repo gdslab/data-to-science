@@ -1,11 +1,11 @@
 from typing import Optional
-from typing_extensions import Self
 from uuid import UUID
 
 from pydantic import AnyHttpUrl, BaseModel, EmailStr, model_validator
+from typing_extensions import Self
 
-from app.schemas.role import Role
 from app.models.enums.project_type import ProjectType
+from app.schemas.role import Role
 
 
 # shared properties

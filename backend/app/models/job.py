@@ -10,7 +10,6 @@ from app.db.base_class import Base
 from app.models.utils.utcnow import utcnow
 from app.schemas.job import State, Status
 
-
 if TYPE_CHECKING:
     from .data_product import DataProduct
     from .raw_data import RawData

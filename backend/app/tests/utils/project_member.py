@@ -6,8 +6,8 @@ from app import crud, models
 from app.models.enums.project_type import ProjectType
 from app.schemas.project_member import ProjectMemberCreate
 from app.schemas.role import Role
-from app.tests.utils.project import create_project
 from app.tests.utils.indoor_project import create_indoor_project
+from app.tests.utils.project import create_project
 from app.tests.utils.user import create_user
 
 

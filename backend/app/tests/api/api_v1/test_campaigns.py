@@ -1,6 +1,5 @@
 import os
 from datetime import datetime
-from uuid import UUID
 
 from fastapi import status
 from fastapi.encoders import jsonable_encoder
@@ -10,9 +9,9 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
-from app.tests.conftest import pytest_requires_campaigns
 from app.models.utils.campaign import is_uuid
 from app.schemas.role import Role
+from app.tests.conftest import pytest_requires_campaigns
 from app.tests.utils.campaign import (
     create_campaign,
     get_filename_from_content_disposition_header,
@@ -20,7 +19,6 @@ from app.tests.utils.campaign import (
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
 from app.tests.utils.user import create_user
-
 
 PROJECTS_API_URL = f"{settings.API_V1_STR}/projects"
 
@@ -132,10 +130,10 @@ def test_read_campaign_by_project_id_with_project_viewer_role(
 def test_read_campaign_by_project_id_without_project_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
-    current_user = get_current_user(db, normal_user_access_token)
+    get_current_user(db, normal_user_access_token)
     project_owner = create_user(db)
     project = create_project(db, owner_id=project_owner.id)
-    campaign = create_campaign(db, project_id=project.id, lead_id=project_owner.id)
+    create_campaign(db, project_id=project.id, lead_id=project_owner.id)
     response = client.get(f"{PROJECTS_API_URL}/{project.id}/campaigns")
     assert response.status_code == status.HTTP_404_NOT_FOUND
 

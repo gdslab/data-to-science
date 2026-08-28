@@ -33,9 +33,9 @@ def create_annotation(
     Viewers can only create personal (OWNER) annotations.
     PROJECT-level annotations require manager or owner role.
     """
-    if (
-        annotation_in.visibility == Visibility.PROJECT
-        and project.role not in (Role.OWNER, Role.MANAGER)
+    if annotation_in.visibility == Visibility.PROJECT and project.role not in (
+        Role.OWNER,
+        Role.MANAGER,
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

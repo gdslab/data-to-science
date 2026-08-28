@@ -1,15 +1,14 @@
 import logging
 import os
 import shutil
-from typing import Optional, Tuple, Type, Union
+from typing import Tuple, Type, Union
 
-from sqlalchemy import and_, ColumnElement, desc, func, select
-from sqlalchemy.orm import InstrumentedAttribute, Session
+from sqlalchemy import and_, desc, func, select
+from sqlalchemy.orm import Session
 
 from app import crud
 from app.models import DataProduct, FilePermission, Flight, Project, RawData, User
 from app.schemas import SiteStatistics
-
 
 logger = logging.getLogger("__name__")
 
@@ -220,7 +219,7 @@ def get_site_statistics(db: Session) -> SiteStatistics:
             .limit(3)
         )
         top_three_data_types = db.execute(top_three_data_types_query).all()
-    except Exception as e:
+    except Exception:
         # Log the error appropriately (ensure a logger is configured)
         logger.exception("Error retrieving site statistics")
         raise

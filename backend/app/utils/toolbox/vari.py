@@ -95,15 +95,15 @@ def validate_params(params: dict) -> None:
     """
     if "red_band_idx" not in params:
         raise ValueError("Red band index param (red_band_idx) missing")
-    if type(params.get("red_band_idx")) != int:
+    if type(params.get("red_band_idx")) is not int:
         raise TypeError("Red band index must be an integer")
     if "green_band_idx" not in params:
         raise ValueError("Green band index param (green_band_idx) missing")
-    if type(params.get("green_band_idx")) != int:
+    if type(params.get("green_band_idx")) is not int:
         raise TypeError("Green band index must be an integer")
     if "blue_band_idx" not in params:
         raise ValueError("Blue band index param (blue_band_idx) missing")
-    if type(params.get("blue_band_idx")) != int:
+    if type(params.get("blue_band_idx")) is not int:
         raise TypeError("Blue band index must be an integer")
 
 

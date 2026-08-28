@@ -1,6 +1,5 @@
-import os
-from uuid import uuid4
 from unittest.mock import patch
+from uuid import uuid4
 
 from sqlalchemy.orm import Session
 
@@ -108,9 +107,7 @@ def test_upload_to_s3_rewrites_external_viewer_link(db: Session, monkeypatch):
 
     fake_url = "https://my-bucket.s3.us-east-1.amazonaws.com/d2s/host/file.tif"
     with patch("app.tasks.stac_tasks.upload_file_to_s3", return_value=fake_url):
-        _upload_to_s3_and_rewrite_hrefs(
-            db, items, flights, include_raw_data_links=None
-        )
+        _upload_to_s3_and_rewrite_hrefs(db, items, flights, include_raw_data_links=None)
 
     rewritten = [link for link in item.links if link.rel == "external"][0]
     assert rewritten.target == f"https://viewer.example.com?url={fake_url}"
@@ -164,8 +161,9 @@ def test_upload_to_s3_skips_items_with_no_matching_data_product(
     db: Session, monkeypatch, caplog
 ):
     """Synthetic items whose id does not match any data product are skipped, not crashed."""
-    from pystac import Item
     from datetime import datetime, timezone
+
+    from pystac import Item
 
     project = create_project(db)
     flight = create_flight(db, project_id=project.id)
@@ -242,9 +240,12 @@ def test_rollback_with_empty_key_list_skips_s3_call_but_clears_db(db: Session):
 
 def test_rollback_swallows_exceptions(db: Session):
     """Rollback must never raise — failures only log."""
-    with patch(
-        "app.tasks.stac_tasks.crud.data_product.clear_s3_urls_for_project",
-        side_effect=RuntimeError("boom"),
-    ), patch("app.tasks.stac_tasks.delete_s3_objects"):
+    with (
+        patch(
+            "app.tasks.stac_tasks.crud.data_product.clear_s3_urls_for_project",
+            side_effect=RuntimeError("boom"),
+        ),
+        patch("app.tasks.stac_tasks.delete_s3_objects"),
+    ):
         # Should not raise even though clear_s3_urls_for_project blew up
         _rollback_s3_uploads(db, uuid4(), ["k1"])

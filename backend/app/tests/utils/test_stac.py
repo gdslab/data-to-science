@@ -7,12 +7,11 @@ from pystac.validation import validate
 from sqlalchemy.orm import Session
 
 from app import crud
-from app.tests.utils.data_product import SampleDataProduct
-from app.tests.utils.project import create_project
-from app.tests.utils.flight import create_flight
-from app.tests.utils.STACCollectionHelper import STACCollectionHelper
 from app.tests.conftest import pytest_requires_stac
-
+from app.tests.utils.data_product import SampleDataProduct
+from app.tests.utils.flight import create_flight
+from app.tests.utils.project import create_project
+from app.tests.utils.STACCollectionHelper import STACCollectionHelper
 from app.utils.stac.STACCollectionManager import (
     STACCollectionManager,
     STACConfigurationError,
@@ -338,7 +337,9 @@ def test_compare_and_update_no_collection() -> None:
     scm = STACCollectionManager(collection_id=collection_id)
 
     # Compare and update should raise STACConfigurationError
-    with pytest.raises(STACConfigurationError, match="No local collection provided for comparison"):
+    with pytest.raises(
+        STACConfigurationError, match="No local collection provided for comparison"
+    ):
         scm.compare_and_update()
 
 
@@ -350,7 +351,9 @@ def test_publish_to_catalog_no_collection() -> None:
     scm = STACCollectionManager(collection_id=collection_id)
 
     # Publish should raise STACConfigurationError
-    with pytest.raises(STACConfigurationError, match="No collection provided for publishing"):
+    with pytest.raises(
+        STACConfigurationError, match="No collection provided for publishing"
+    ):
         scm.publish_to_catalog()
 
 
@@ -551,7 +554,7 @@ def test_stac_generator_with_only_doi(db: Session) -> None:
     project = create_project(db)
 
     # Add sample data product to project
-    data_product = SampleDataProduct(db, project=project)
+    SampleDataProduct(db, project=project)
 
     # Only DOI, no citation
     test_doi = "10.1000/stac456"
@@ -583,7 +586,7 @@ def test_stac_generator_with_only_citation(db: Session) -> None:
     project = create_project(db)
 
     # Add sample data product to project
-    data_product = SampleDataProduct(db, project=project)
+    SampleDataProduct(db, project=project)
 
     # Only citation, no DOI
     test_citation = "Citation, Only, et al. (2023). Citation Only Dataset. Citation Journal, 2(1), 5-15."
@@ -773,7 +776,7 @@ def test_publish_to_catalog_with_scientific_metadata(db: Session) -> None:
     project = create_project(db)
 
     # Add sample data product to project
-    data_product = SampleDataProduct(db, project=project)
+    SampleDataProduct(db, project=project)
 
     # Scientific metadata
     test_doi = "10.1000/publish123"
@@ -865,7 +868,7 @@ def test_stac_generator_with_default_license(db: Session) -> None:
     project = create_project(db)
 
     # Add sample data product to project
-    data_product = SampleDataProduct(db, project=project)
+    SampleDataProduct(db, project=project)
 
     # Generate STAC without specifying license (should use default)
     sg = STACGenerator(db, project_id=project.id)
@@ -888,7 +891,7 @@ def test_publish_to_catalog_with_custom_license(db: Session) -> None:
     project = create_project(db)
 
     # Add sample data product to project
-    data_product = SampleDataProduct(db, project=project)
+    SampleDataProduct(db, project=project)
 
     # Test with ISC license
     test_license = "ISC"
@@ -933,11 +936,7 @@ def test_stac_generator_raw_data_links_cache_resolution(db: Session) -> None:
     dp2_id = str(data_product2.obj.id)
 
     # Test 1: Explicit non-empty list should use provided values
-    sg1 = STACGenerator(
-        db,
-        project_id=project.id,
-        include_raw_data_links=[dp1_id]
-    )
+    sg1 = STACGenerator(db, project_id=project.id, include_raw_data_links=[dp1_id])
     assert sg1.include_raw_data_links == {dp1_id}
 
     # Test 2: Explicit empty list should clear all selections (not fall back to cache)
@@ -947,16 +946,16 @@ def test_stac_generator_raw_data_links_cache_resolution(db: Session) -> None:
         "items": [
             {
                 "id": dp1_id,
-                "links": [{"rel": "derived_from", "href": "http://example.com/raw"}]
+                "links": [{"rel": "derived_from", "href": "http://example.com/raw"}],
             }
-        ]
+        ],
     }
 
     sg2 = STACGenerator(
         db,
         project_id=project.id,
         cached_stac_metadata=cached_stac_metadata,
-        include_raw_data_links=[]  # Explicit empty list should override cache
+        include_raw_data_links=[],  # Explicit empty list should override cache
     )
     assert sg2.include_raw_data_links == set()  # Should be empty, not use cache
 
@@ -965,15 +964,13 @@ def test_stac_generator_raw_data_links_cache_resolution(db: Session) -> None:
         db,
         project_id=project.id,
         cached_stac_metadata=cached_stac_metadata,
-        include_raw_data_links=None  # None should use cache
+        include_raw_data_links=None,  # None should use cache
     )
     assert sg3.include_raw_data_links == {dp1_id}  # Should use cached value
 
     # Test 4: Multiple selections
     sg4 = STACGenerator(
-        db,
-        project_id=project.id,
-        include_raw_data_links=[dp1_id, dp2_id]
+        db, project_id=project.id, include_raw_data_links=[dp1_id, dp2_id]
     )
     assert sg4.include_raw_data_links == {dp1_id, dp2_id}
 
@@ -995,9 +992,7 @@ def test_stac_generator_raw_data_links_validation(db: Session) -> None:
 
     # Test 1: Valid IDs only - should keep all
     sg1 = STACGenerator(
-        db,
-        project_id=project.id,
-        include_raw_data_links=[dp1_id, dp2_id]
+        db, project_id=project.id, include_raw_data_links=[dp1_id, dp2_id]
     )
     assert sg1.include_raw_data_links == {dp1_id, dp2_id}
 
@@ -1006,23 +1001,17 @@ def test_stac_generator_raw_data_links_validation(db: Session) -> None:
     sg2 = STACGenerator(
         db,
         project_id=project.id,
-        include_raw_data_links=[dp1_id, invalid_uuid, other_dp_id]
+        include_raw_data_links=[dp1_id, invalid_uuid, other_dp_id],
     )
     # Should only keep dp1_id (valid), exclude invalid_uuid and other_dp_id (belongs to different project)
     assert sg2.include_raw_data_links == {dp1_id}
 
     # Test 3: All invalid IDs - should result in empty set
     sg3 = STACGenerator(
-        db,
-        project_id=project.id,
-        include_raw_data_links=[invalid_uuid, other_dp_id]
+        db, project_id=project.id, include_raw_data_links=[invalid_uuid, other_dp_id]
     )
     assert sg3.include_raw_data_links == set()
 
     # Test 4: Empty list - should remain empty
-    sg4 = STACGenerator(
-        db,
-        project_id=project.id,
-        include_raw_data_links=[]
-    )
+    sg4 = STACGenerator(db, project_id=project.id, include_raw_data_links=[])
     assert sg4.include_raw_data_links == set()

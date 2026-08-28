@@ -21,18 +21,14 @@ from pathlib import Path
 from uuid import UUID
 
 from sqlalchemy import select
-from sqlalchemy.orm import joinedload
 
 # Add parent directory to path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from app import crud
-from app.core.config import settings
 from app.db.session import SessionLocal
 from app.models.data_product import DataProduct
 from app.models.flight import Flight
 from app.models.project import Project
-from app.models.raw_data import RawData
 from app.tasks.stac_tasks import (
     UUIDEncoder,
     _upload_to_s3_and_rewrite_hrefs,
@@ -68,31 +64,27 @@ def backfill_project(db, project: Project, dry_run: bool = False) -> bool:
     print(f"\nProcessing project {project_id} ({project.title})...")
 
     # Check how many data products need uploading
-    query = (
-        select(DataProduct)
-        .where(
-            DataProduct.flight_id.in_(
-                select(Flight.id).where(Flight.project_id == project_id)
-            ),
-            DataProduct.is_active == True,
-            DataProduct.s3_url.is_(None),
-        )
+    query = select(DataProduct).where(
+        DataProduct.flight_id.in_(
+            select(Flight.id).where(Flight.project_id == project_id)
+        ),
+        DataProduct.is_active,
+        DataProduct.s3_url.is_(None),
     )
     pending_dps = db.execute(query).scalars().all()
 
-    query_done = (
-        select(DataProduct)
-        .where(
-            DataProduct.flight_id.in_(
-                select(Flight.id).where(Flight.project_id == project_id)
-            ),
-            DataProduct.is_active == True,
-            DataProduct.s3_url.isnot(None),
-        )
+    query_done = select(DataProduct).where(
+        DataProduct.flight_id.in_(
+            select(Flight.id).where(Flight.project_id == project_id)
+        ),
+        DataProduct.is_active,
+        DataProduct.s3_url.isnot(None),
     )
     done_dps = db.execute(query_done).scalars().all()
 
-    print(f"  Data products: {len(pending_dps)} to upload, {len(done_dps)} already in S3")
+    print(
+        f"  Data products: {len(pending_dps)} to upload, {len(done_dps)} already in S3"
+    )
 
     # Detect raw data links from cache
     include_raw_data_links = get_cached_raw_data_link_ids(project_id)
@@ -133,7 +125,10 @@ def backfill_project(db, project: Project, dry_run: bool = False) -> bool:
 
     # Upload to S3 and rewrite hrefs (skips files where s3_url is already set)
     uploaded_keys = _upload_to_s3_and_rewrite_hrefs(
-        db, items, sg.flights, include_raw_data_links,
+        db,
+        items,
+        sg.flights,
+        include_raw_data_links,
     )
     print(f"  Uploaded {len(uploaded_keys)} files to S3")
 
@@ -157,9 +152,7 @@ def backfill_project(db, project: Project, dry_run: bool = False) -> bool:
             "is_published": True,
         }
         if failed_items:
-            response_data["failed_items"] = [
-                item.model_dump() for item in failed_items
-            ]
+            response_data["failed_items"] = [item.model_dump() for item in failed_items]
         with open(cache_path, "w") as f:
             json.dump(response_data, f, indent=2, cls=UUIDEncoder)
     except Exception as e:
@@ -194,8 +187,8 @@ def main():
     try:
         # Query published projects
         query = select(Project).where(
-            Project.is_published == True,
-            Project.is_active == True,
+            Project.is_published,
+            Project.is_active,
         )
         if args.project_id:
             query = query.where(Project.id == UUID(args.project_id))
@@ -225,7 +218,7 @@ def main():
                 print(f"  Error: {e}")
                 db.rollback()
 
-        print(f"\nBackfill complete:")
+        print("\nBackfill complete:")
         print(f"  Success: {success_count}")
         print(f"  Errors: {error_count}")
 

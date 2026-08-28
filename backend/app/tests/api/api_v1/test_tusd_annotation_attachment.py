@@ -11,7 +11,7 @@ from app.schemas.role import Role
 from app.tests.utils.annotation import create_annotation
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.project_member import create_project_member
-from app.tests.utils.user import create_user, login_and_get_access_token
+from app.tests.utils.user import create_user
 
 
 def _build_tusd_pre_create_payload(
@@ -63,11 +63,7 @@ def _build_tusd_pre_create_payload(
                     "X-Project-Id": [project_id],
                     "X-Flight-Id": [flight_id],
                     "X-Data-Type": [data_type],
-                    **(
-                        {"X-Annotation-Id": [annotation_id]}
-                        if annotation_id
-                        else {}
-                    ),
+                    **({"X-Annotation-Id": [annotation_id]} if annotation_id else {}),
                     **(
                         {"X-Data-Product-Id": [data_product_id]}
                         if data_product_id

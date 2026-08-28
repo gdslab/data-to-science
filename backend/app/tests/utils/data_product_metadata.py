@@ -1,10 +1,9 @@
 import json
 import os
 import shutil
-from typing import Dict, List, Tuple, TypedDict, Union
+from typing import Dict, List, Tuple, Union
 from uuid import UUID, uuid4
 
-from fastapi.encoders import jsonable_encoder
 from geojson_pydantic import Feature, FeatureCollection
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session

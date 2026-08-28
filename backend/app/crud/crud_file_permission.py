@@ -1,15 +1,13 @@
 from datetime import datetime
 from uuid import UUID
 
-from fastapi.encoders import jsonable_encoder
 from sqlalchemy import func, select
-from sqlalchemy.orm import joinedload, Session
+from sqlalchemy.orm import Session, joinedload
 
 from app import crud
 from app.crud.base import CRUDBase
 from app.models.data_product import DataProduct
 from app.models.file_permission import FilePermission
-from app.models.raw_data import RawData
 from app.schemas.file_permission import FilePermissionCreate, FilePermissionUpdate
 
 

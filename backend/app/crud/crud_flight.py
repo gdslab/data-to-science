@@ -5,17 +5,17 @@ from uuid import UUID
 
 from fastapi import status
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import and_, func, or_, select, true, update
-from sqlalchemy.orm import joinedload, Session
+from sqlalchemy import and_, func, select, update
+from sqlalchemy.orm import Session, joinedload
 
 from app import crud
 from app.crud.base import CRUDBase
 from app.crud.crud_data_product import (
     set_download_filename_attr,
     set_like_attrs,
-    set_spatial_metadata_attrs,
     set_public_attr,
     set_signature_attr,
+    set_spatial_metadata_attrs,
     set_url_attr,
     set_user_style_attr,
     set_view_count_attr,
@@ -162,9 +162,7 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
 
             # Batch load all relevant jobs for all data products to avoid N+1 queries
             all_data_product_ids = [
-                dp.id
-                for flight in flights_with_data
-                for dp in flight.data_products
+                dp.id for flight in flights_with_data for dp in flight.data_products
             ]
 
             jobs_by_data_product_id = {}
@@ -191,7 +189,9 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                 )
                 user_styles = session.execute(user_styles_query).scalars().all()
                 for user_style in user_styles:
-                    user_styles_by_data_product_id[user_style.data_product_id] = user_style
+                    user_styles_by_data_product_id[user_style.data_product_id] = (
+                        user_style
+                    )
 
             # Batch load like/view counts and the caller's liked state
             like_counts, view_counts, liked_ids = _load_like_view_counts(
@@ -221,12 +221,9 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                 has_required_data_type = False
                 for data_product in flight.data_products:
                     if data_product.filepath != "null":
-                        if (
-                            data_product.data_type in NON_RASTER_TYPES
-                            or (
-                                data_product.data_type not in NON_RASTER_TYPES
-                                and data_product.stac_properties
-                            )
+                        if data_product.data_type in NON_RASTER_TYPES or (
+                            data_product.data_type not in NON_RASTER_TYPES
+                            and data_product.stac_properties
                         ):
                             # do not include geotiffs without stac props
                             available_data_products.append(data_product)
@@ -248,11 +245,16 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                                 data_product, view_counts.get(data_product.id, 0)
                             )
                             # check for saved user style
-                            user_style = user_styles_by_data_product_id.get(data_product.id)
+                            user_style = user_styles_by_data_product_id.get(
+                                data_product.id
+                            )
                             if user_style:
                                 set_user_style_attr(data_product, user_style.settings)
                             # Track if this flight has raster data when filtering by raster
-                            if has_raster and data_product.data_type not in NON_RASTER_TYPES:
+                            if (
+                                has_raster
+                                and data_product.data_type not in NON_RASTER_TYPES
+                            ):
                                 has_required_data_type = True
                 flight.data_products = available_data_products
 
@@ -283,9 +285,7 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
 
             # Batch load completed jobs for all data products
             all_data_product_ids = [
-                dp.id
-                for flight in flights_with_data
-                for dp in flight.data_products
+                dp.id for flight in flights_with_data for dp in flight.data_products
             ]
 
             jobs_by_data_product_id = {}
@@ -349,8 +349,7 @@ class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
                 flight.data_products = keep_data_products
 
                 has_required_data_type = any(
-                    dp.data_type not in NON_RASTER_TYPES
-                    for dp in flight.data_products
+                    dp.data_type not in NON_RASTER_TYPES for dp in flight.data_products
                 )
                 if not has_raster or has_required_data_type:
                     final_flights.append(flight)

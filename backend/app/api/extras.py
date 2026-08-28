@@ -1,17 +1,17 @@
 # extras.py
-from typing import Any, Optional, Tuple
-import logging
 import json
+import logging
 import os
+from typing import Any, Optional, Tuple
 
+import laspy
+import numpy as np
+import pdal
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import UUID4
 from pyproj import CRS, Transformer
 from sqlalchemy.orm import Session
-import laspy
-import pdal
-import numpy as np
 
 # Your app imports
 from app import crud
@@ -19,7 +19,6 @@ from app.api import deps
 from app.api.utils import get_copc_z_unit
 from app.core.config import settings
 from app.core.limiter import limiter
-
 
 extra_router = APIRouter()
 
@@ -413,7 +412,7 @@ def generate_potree_viewer_html(
           else         {{ sqm = raw;  sqft = raw * 10.7639; }}
           if (sqm >= 10000)
             return (sqm / 10000).toFixed(2) + ' ha (' + (sqft / 43560).toFixed(2) + ' ac)';
-          return sqm.toFixed(1) + ' m\u00B2 (' + sqft.toFixed(1) + ' ft\u00B2)';
+          return sqm.toFixed(1) + ' m\u00b2 (' + sqft.toFixed(1) + ' ft\u00b2)';
         }}
         function patchLabel(label, fmt) {{
           if (!label || !label.text) return;
@@ -544,7 +543,7 @@ def generate_potree_viewer_html(
       if (PC_HAS_CRS && PC_PROJ4) {{
         // Add class to indicate Cesium is enabled
         document.body.classList.add('cesium-enabled');
-        
+
         // Reveal Cesium container
         document.getElementById('cesiumContainer').style.display = 'block';
 
@@ -715,43 +714,43 @@ def generate_potree_viewer_html(
         import * as THREE from "/potree/libs/three.js/build/three.module.js";
 
         // source: https://github.com/potree/potree/blob/develop/examples/toolbar.html
-        
+
         // HTML
         const elToolbar = $("#potree_toolbar");
         elToolbar.html(`
           <span>
             <div class="potree_toolbar_label">
-				      Attribute
-			      </div>
-			      <div>
-				      <img name="action_elevation" src="/potree/resources/icons/profile.svg" class="annotation-action-icon" style="width: 2em; height: auto;"/>
-				      <img name="action_rgb" src="/potree/resources/icons/rgb.svg" class="annotation-action-icon" style="width: 2em; height: auto;"/>
-			      </div>
+              Attribute
+            </div>
+            <div>
+              <img name="action_elevation" src="/potree/resources/icons/profile.svg" class="annotation-action-icon" style="width: 2em; height: auto;"/>
+              <img name="action_rgb" src="/potree/resources/icons/rgb.svg" class="annotation-action-icon" style="width: 2em; height: auto;"/>
+            </div>
           </span>
-          
+
           <span class="potree_toolbar_separator" />
-        
+
           <span>
             <div class="potree_toolbar_label">
               Gradient
             </div>
-			      <div>
-				      <span name="gradient_schemes"></span>
-			      </div>
-		      </span>
+            <div>
+              <span name="gradient_schemes"></span>
+            </div>
+          </span>
 
           <span class="potree_toolbar_separator" />
 
-		      <span>
-			      <div class="potree_toolbar_label">
-				      Measure
-			      </div>
-			      <div>
-				      <img name="action_measure_point" src="/potree/resources/icons/point.svg" class="annotation-action-icon" style="width: 2em; height: auto;"/>
-				      <img name="action_measure_distance" src="/potree/resources/icons/distance.svg" class="annotation-action-icon" style="width: 2em; height: auto;"/>
-				      <img name="action_measure_circle" src="/potree/resources/icons/circle.svg" class="annotation-action-icon" style="width: 2em; height: auto;"/>
-			      </div>
-		      </span>
+          <span>
+            <div class="potree_toolbar_label">
+              Measure
+            </div>
+            <div>
+              <img name="action_measure_point" src="/potree/resources/icons/point.svg" class="annotation-action-icon" style="width: 2em; height: auto;"/>
+              <img name="action_measure_distance" src="/potree/resources/icons/distance.svg" class="annotation-action-icon" style="width: 2em; height: auto;"/>
+              <img name="action_measure_circle" src="/potree/resources/icons/circle.svg" class="annotation-action-icon" style="width: 2em; height: auto;"/>
+            </div>
+          </span>
 
           <span class="potree_toolbar_separator" />
 
@@ -768,7 +767,7 @@ def generate_potree_viewer_html(
 
           <span>
             <div class="potree_toolbar_label">
-              <span data-i18n="appearance.nb_max_pts">Point Budget</span>: 
+              <span data-i18n="appearance.nb_max_pts">Point Budget</span>:
               <span name="lblPointBudget" style="display: inline-block; width: 4em;"></span>
             </div>
             <div>
@@ -783,7 +782,7 @@ def generate_potree_viewer_html(
           elToolbar.find("img[name=action_elevation]").click( () => {{
             viewer.scene.pointclouds.forEach( pc => pc.material.activeAttributeName = "elevation" );
           }});
-      
+
           elToolbar.find("img[name=action_rgb]").click( () => {{
             viewer.scene.pointclouds.forEach( pc => pc.material.activeAttributeName = "rgba" );
           }});
@@ -792,30 +791,30 @@ def generate_potree_viewer_html(
         {{// GRADIENT
           const schemes = Object.keys(Potree.Gradients).map(name => ({{name: name, values: Potree.Gradients[name]}}));
           const elGradientSchemes = elToolbar.find("span[name=gradient_schemes]");
-      
+
           for(const scheme of schemes){{
             const elButton = $(`
               <span style=""></span>
             `);
-      
+
             const svg = Potree.Utils.createSvgGradient(scheme.values);
             svg.setAttributeNS(null, "class", `button-icon`);
             svg.style.height = "2em";
             svg.style.width = "1.3em";
-      
+
             elButton.append($(svg));
-      
+
             elButton.click( () => {{
               for(const pointcloud of viewer.scene.pointclouds){{
                 pointcloud.material.activeAttributeName = "elevation";
                 pointcloud.material.gradient = Potree.Gradients[scheme.name];
               }}
             }});
-      
+
             elGradientSchemes.append(elButton);
           }}
         }}
-      
+
         {{// MEASURE
           elToolbar.find("img[name=action_measure_point]").click( () => {{
             const measurement = viewer.measuringTool.startInsertion({{
@@ -828,7 +827,7 @@ def generate_potree_viewer_html(
               name: 'Point'
             }});
           }});
-      
+
           elToolbar.find("img[name=action_measure_distance]").click( () => {{
             const measurement = viewer.measuringTool.startInsertion({{
               showDistances: true,
@@ -837,7 +836,7 @@ def generate_potree_viewer_html(
               name: 'Distance'
             }});
           }});
-      
+
           elToolbar.find("img[name=action_measure_circle]").click( () => {{
             const measurement = viewer.measuringTool.startInsertion({{
               showDistances: false,
@@ -849,12 +848,12 @@ def generate_potree_viewer_html(
               maxMarkers: 3,
               name: 'Circle'
             }});
-          }}); 
+          }});
         }}
-      
+
         {{// MATERIAL
           let options = [
-            "rgba", 
+            "rgba",
             "elevation",
             "level of detail",
             "indices",
@@ -862,29 +861,29 @@ def generate_potree_viewer_html(
             "classification",
             // "source id",
           ];
-      
+
           let attributeSelection = elToolbar.find('#optMaterial');
           for(let option of options){{
             let elOption = $(`<option>${{option}}</option>`);
             attributeSelection.append(elOption);
           }}
-      
+
           const updateMaterialSelection = (event, ui) => {{
             let selectedValue = attributeSelection.selectmenu().val();
-      
+
             for(const pointcloud of viewer.scene.pointclouds){{
               pointcloud.material.activeAttributeName = selectedValue;
             }}
           }};
-      
+
           attributeSelection.selectmenu({{change: updateMaterialSelection}});
         }}
-      
+
         {{// POINT BUDGET
           const minBudget = PC_IS_MOBILE ? 50_000 : 100_000;
           const maxBudget = PC_IS_MOBILE ? 1_000_000 : 10_000_000;
           const stepBudget = PC_IS_MOBILE ? 50_000 : 100_000;
-          
+
           elToolbar.find('#sldPointBudget').slider({{
             value: viewer.getPointBudget(),
             min: minBudget,
@@ -892,13 +891,13 @@ def generate_potree_viewer_html(
             step: stepBudget,
             slide: (event, ui) => {{ viewer.setPointBudget(ui.value); }}
           }});
-      
+
           const onBudgetChange = () => {{
             let budget = viewer.getPointBudget();
             elToolbar.find('span[name=lblPointBudget]').html((budget / 1000_000).toFixed(1) + "M");
             elToolbar.find('#sldPointBudget').slider('value', budget);
           }};
-      
+
           onBudgetChange();
           viewer.addEventListener("point_budget_changed", onBudgetChange);
         }}
@@ -1054,14 +1053,14 @@ async def get_share_potree_viewer(
     # The URL attribute is dynamically added by set_url_attr in CRUD
     copc_path = getattr(data_product, "url", None)
     if not copc_path:
-        error_html = f"""<!DOCTYPE html>
+        error_html = """<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Error</title>
     <style>
-      body {{
+      body {
         margin: 0;
         padding: 0;
         font-family: system-ui, -apple-system, sans-serif;
@@ -1070,40 +1069,40 @@ async def get_share_potree_viewer(
         align-items: center;
         justify-content: center;
         min-height: 100vh;
-      }}
-      .alert-container {{
+      }
+      .alert-container {
         border-left: 4px solid #ef4444;
         background-color: #fef2f2;
         border-radius: 6px;
         padding: 1rem;
         max-width: 400px;
         margin: 1rem;
-      }}
-      .alert-content {{
+      }
+      .alert-content {
         display: flex;
         align-items: center;
         gap: 1rem;
-      }}
-      .alert-icon {{
+      }
+      .alert-icon {
         height: 1.5rem;
         width: 1.5rem;
         color: #ef4444;
         flex-shrink: 0;
-      }}
-      .alert-text {{
+      }
+      .alert-text {
         flex: 1;
-      }}
-      .alert-title {{
+      }
+      .alert-title {
         display: block;
         font-weight: 500;
         color: #dc2626;
         margin-bottom: 0.25rem;
-      }}
-      .alert-message {{
+      }
+      .alert-message {
         font-size: 0.875rem;
         color: #b91c1c;
         line-height: 1.5;
-      }}
+      }
     </style>
   </head>
   <body>

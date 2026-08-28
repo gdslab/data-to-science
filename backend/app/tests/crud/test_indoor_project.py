@@ -138,10 +138,6 @@ def test_update_indoor_project(db: Session) -> None:
     existing_indoor_project = create_indoor_project(db)
 
     # get old title, description, start_date, and end_date
-    old_title = existing_indoor_project.title
-    old_description = existing_indoor_project.description
-    old_start_date = existing_indoor_project.start_date
-    old_end_date = existing_indoor_project.end_date
 
     # new values
     new_title = "Update Title"
@@ -186,9 +182,9 @@ def test_deactivate_indoor_project(db: Session) -> None:
     assert deactivated_indoor_project.id == existing_indoor_project.id
     assert deactivated_indoor_project.is_active is False
     assert deactivated_indoor_project.deactivated_at
-    assert deactivated_indoor_project.deactivated_at < datetime.now(timezone.utc).replace(
-        tzinfo=None
-    )
+    assert deactivated_indoor_project.deactivated_at < datetime.now(
+        timezone.utc
+    ).replace(tzinfo=None)
 
 
 def test_get_with_permission_owner_can_access_with_viewer_permission(
@@ -564,8 +560,8 @@ def test_update_indoor_project_team(db: Session) -> None:
 
 def test_read_multi_by_user_id_includes_member_projects(db: Session) -> None:
     """Test that non-owner members can see indoor projects."""
-    from app.tests.utils.user import create_user
     from app.schemas.project_member import ProjectMemberCreate
+    from app.tests.utils.user import create_user
 
     # Create project owned by user1
     user1 = create_user(db)

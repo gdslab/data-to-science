@@ -1,7 +1,7 @@
 import logging
 import os
-from datetime import datetime, timedelta, date
-from typing import Any, Dict, List, Optional, Union, Sequence, Tuple
+from datetime import date, datetime, timedelta
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -109,9 +109,7 @@ def validate_plotted_by_according_to_combination(plotted_by, according_to):
 )
 def read_indoor_project_data(
     indoor_project_id: UUID4,
-    indoor_project: models.IndoorProject = Depends(
-        deps.can_read_indoor_project
-    ),
+    indoor_project: models.IndoorProject = Depends(deps.can_read_indoor_project),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """
@@ -131,9 +129,7 @@ def read_indoor_project_data(
 def read_indoor_project_data_spreadsheet(
     indoor_project_id: UUID4,
     indoor_project_data_id: UUID4,
-    indoor_project: models.IndoorProject = Depends(
-        deps.can_read_indoor_project
-    ),
+    indoor_project: models.IndoorProject = Depends(deps.can_read_indoor_project),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     spreadsheet_file = crud.indoor_project_data.read_by_id(
@@ -296,9 +292,7 @@ def read_indoor_project_data_plant(
     indoor_project_id: UUID4,
     indoor_project_data_id: UUID4,
     plant_id: str,
-    indoor_project: models.IndoorProject = Depends(
-        deps.can_read_indoor_project
-    ),
+    indoor_project: models.IndoorProject = Depends(deps.can_read_indoor_project),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     spreadsheet_file = crud.indoor_project_data.read_by_id(
@@ -560,9 +554,7 @@ def read_indoor_project_data_plant_for_viz(
     according_to: schemas.indoor_project_data.AccordingTo,
     plotted_by: schemas.indoor_project_data.PlottedBy,
     pot_barcode: Optional[int] = None,
-    indoor_project: models.IndoorProject = Depends(
-        deps.can_read_indoor_project
-    ),
+    indoor_project: models.IndoorProject = Depends(deps.can_read_indoor_project),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     # Lookup spreadsheet in database
@@ -646,9 +638,7 @@ def read_indoor_project_data_plant_for_viz2(
     plotted_by: schemas.indoor_project_data.PlottedBy,
     trait: str,
     pot_barcode: Optional[int] = None,
-    indoor_project: models.IndoorProject = Depends(
-        deps.can_read_indoor_project
-    ),
+    indoor_project: models.IndoorProject = Depends(deps.can_read_indoor_project),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     # Lookup spreadsheet in database
@@ -673,7 +663,7 @@ def read_indoor_project_data_plant_for_viz2(
     img_df = format_columns(img_df)
 
     # Confirm "trait" column exists
-    if not trait.lower() in img_df.columns:
+    if trait.lower() not in img_df.columns:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"{trait} is not present in worksheet",
@@ -741,9 +731,7 @@ def read_indoor_project_data_plant_for_scatter(
     trait_x: str,
     trait_y: str,
     pot_barcode: Optional[int] = None,
-    indoor_project: models.IndoorProject = Depends(
-        deps.can_read_indoor_project
-    ),
+    indoor_project: models.IndoorProject = Depends(deps.can_read_indoor_project),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     # Lookup spreadsheet in database
@@ -768,13 +756,13 @@ def read_indoor_project_data_plant_for_scatter(
     img_df = format_columns(img_df)
 
     # Confirm both trait columns exist
-    if not trait_x.lower() in img_df.columns:
+    if trait_x.lower() not in img_df.columns:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"{trait_x} is not present in worksheet",
         )
 
-    if not trait_y.lower() in img_df.columns:
+    if trait_y.lower() not in img_df.columns:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"{trait_y} is not present in worksheet",

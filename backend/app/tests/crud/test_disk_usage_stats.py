@@ -207,11 +207,11 @@ def test_delete_disk_usage_stats(db: Session) -> None:
 
     # Assert that the deleted record matches the created record
     assert deleted is not None, "Expected to receive the deleted record"
-    assert (
-        deleted.id == created.id
-    ), "Deleted record should have the same ID as the created record"
+    assert deleted.id == created.id, (
+        "Deleted record should have the same ID as the created record"
+    )
 
     # Ensure that the record is no longer retrievable from the database
-    assert (
-        crud.disk_usage_stats.get(db, id=created.id) is None
-    ), "Expected record to be None after deletion"
+    assert crud.disk_usage_stats.get(db, id=created.id) is None, (
+        "Expected record to be None after deletion"
+    )

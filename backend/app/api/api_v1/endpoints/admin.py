@@ -5,7 +5,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-
 from app import crud, models, schemas
 from app.api import deps
 from app.crud.crud_admin import get_project_data_usage, get_site_statistics

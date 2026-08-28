@@ -10,9 +10,9 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.core.exceptions import PermissionDenied, ResourceNotFound
 from app.crud.base import CRUDBase
+from app.models.enums.project_type import ProjectType
 from app.models.indoor_project import IndoorProject
 from app.models.project_member import ProjectMember
-from app.models.enums.project_type import ProjectType
 from app.models.team_member import TeamMember
 from app.models.utils.utcnow import utcnow
 from app.schemas.indoor_project import (
@@ -21,7 +21,6 @@ from app.schemas.indoor_project import (
 )
 from app.schemas.role import Role
 from app.utils.team_utils import is_team_owner
-
 
 logger = logging.getLogger("__name__")
 

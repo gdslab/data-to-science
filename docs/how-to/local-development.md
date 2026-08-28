@@ -89,6 +89,29 @@ After starting the containers, interactive API documentation is available at:
 docker compose stop
 ```
 
+## Backend code style
+
+The backend is linted and formatted by [Ruff](https://docs.astral.sh/ruff/),
+configured under `[tool.ruff]` in `backend/pyproject.toml`. It replaces black,
+flake8 and isort, which the repository no longer uses.
+
+```bash
+docker compose exec backend ruff check .        # lint
+docker compose exec backend ruff format .       # format in place
+docker compose exec backend ruff check --fix .  # apply the fixable lint findings
+```
+
+Run both in their reporting form before opening a pull request:
+
+```bash
+docker compose exec backend ruff check .
+docker compose exec backend ruff format --check .
+```
+
+The version is pinned exactly in the `dev` dependency group, because the
+formatter's output changes between releases. Editors configured to run a
+different Ruff will disagree with these commands.
+
 ## Backend dependencies
 
 Backend dependencies are declared in `backend/pyproject.toml` and locked in
@@ -100,10 +123,10 @@ cd backend
 uv lock
 ```
 
-Runtime dependencies go in `[project.dependencies]`. Test and lint tooling goes in
-the `dev` dependency group, which is installed only when the image is built with
-`INSTALL_DEV=true` — the development Compose files pass it, so production images
-carry no test tooling.
+Runtime dependencies go in `[project.dependencies]`. Test and lint tooling — pytest,
+ruff and mypy — goes in the `dev` dependency group, which is installed only when the
+image is built with `INSTALL_DEV=true` — the development Compose files pass it, so
+production images carry no test tooling.
 
 Committing both matters: the image is built with `uv sync --locked`, which fails when
 `uv.lock` no longer describes `pyproject.toml`. Forgetting to regenerate it breaks the

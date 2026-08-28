@@ -9,10 +9,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base_class import Base
 
 if TYPE_CHECKING:
-    from .project import Project
-    from .flight import Flight
     from .data_product import DataProduct
     from .data_product_metadata import DataProductMetadata
+    from .flight import Flight
+    from .project import Project
 
 
 class VectorLayer(Base):

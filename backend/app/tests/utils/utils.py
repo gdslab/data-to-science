@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict, TypedDict, Union
+from typing import Any, Dict, TypedDict
 
 from faker import Faker
 from geojson_pydantic import Feature, FeatureCollection, LineString, Point, Polygon

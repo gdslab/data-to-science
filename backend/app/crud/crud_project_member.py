@@ -1,20 +1,19 @@
-from typing import List, Optional, Sequence, Tuple, TypedDict, Union
+from typing import List, Optional, Sequence, Tuple, TypedDict
 from uuid import UUID
 
 from fastapi import status
-from sqlalchemy import select, true
+from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import Bundle, Session, joinedload
+from sqlalchemy.orm import Bundle, Session
 from sqlalchemy.sql.selectable import Select
 
 from app import crud
 from app.crud.base import CRUDBase
 from app.crud.crud_team_member import set_name_and_email_attr, set_url_attr
+from app.models.enums.project_type import ProjectType
 from app.models.indoor_project import IndoorProject
 from app.models.project import Project
 from app.models.project_member import ProjectMember
-from app.models.enums.project_type import ProjectType
-from app.models.team import Team
 from app.models.user import User
 from app.schemas.project_member import ProjectMemberCreate, ProjectMemberUpdate
 from app.schemas.team_member import Role
@@ -183,7 +182,7 @@ class CRUDProjectMember(
             statement = statement.where(ProjectMember.role == role)
         project_members: list[ProjectMember] = []
         with db as session:
-            results = session.execute(statement).all()
+            session.execute(statement).all()
             for project_member in session.execute(statement).all():
                 set_name_and_email_attr(project_member[0], project_member[1])
                 set_url_attr(project_member[0], project_member[1])

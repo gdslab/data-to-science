@@ -4,7 +4,6 @@ from uuid import UUID
 from geojson_pydantic import FeatureCollection
 from pydantic import AnyHttpUrl, BaseModel
 
-
 Props = TypeVar("Props", bound=dict[str, Any] | BaseModel)
 
 

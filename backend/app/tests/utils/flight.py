@@ -11,7 +11,6 @@ from app.schemas.flight import FlightCreate
 from app.tests.utils.project import create_project
 from app.tests.utils.user import create_user
 
-
 faker = Faker()
 
 

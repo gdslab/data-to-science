@@ -1,10 +1,8 @@
 import json
 import os
 
-import geopandas as gpd
 import pytest
-from fastapi.encoders import jsonable_encoder
-from geojson_pydantic import Feature, FeatureCollection
+from geojson_pydantic import FeatureCollection
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -96,7 +94,7 @@ def test_create_duplicate_zonal_metadata(db: Session) -> None:
     ]
     # unique constraint should cause integrity error
     with pytest.raises(IntegrityError):
-        metadata_duplicate = create_zonal_metadata(
+        create_zonal_metadata(
             db,
             project_id=project.id,
             data_product_id=metadata.data_product_id,

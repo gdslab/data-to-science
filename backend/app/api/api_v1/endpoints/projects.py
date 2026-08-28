@@ -3,15 +3,13 @@ import os
 from typing import Any, List, Union
 from uuid import UUID
 
-from geojson_pydantic import Feature, FeatureCollection
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from geojson_pydantic import Feature, FeatureCollection
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
 from app.api.utils import create_project_field_preview
-from app.core.config import settings
-
 
 logger = logging.getLogger("__name__")
 

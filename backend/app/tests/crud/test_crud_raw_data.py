@@ -176,9 +176,7 @@ def test_clear_s3_urls_for_project_only_clears_matching_project(db: Session) -> 
     crud.raw_data.update_s3_url(db, raw_data_id=raw_a.obj.id, s3_url="https://a")
     crud.raw_data.update_s3_url(db, raw_data_id=raw_b.obj.id, s3_url="https://b")
 
-    rowcount = crud.raw_data.clear_s3_urls_for_project(
-        db, project_id=raw_a.project.id
-    )
+    rowcount = crud.raw_data.clear_s3_urls_for_project(db, project_id=raw_a.project.id)
 
     assert rowcount == 1
     assert crud.raw_data.get(db, id=raw_a.obj.id).s3_url is None

@@ -34,11 +34,11 @@ from sqlalchemy import delete, func, select
 warnings.filterwarnings("ignore", message="relationship .* will copy column")
 
 from app.db.session import SessionLocal
+from app.models.enums.project_type import ProjectType
 from app.models.location import Location
 from app.models.project import Project
 from app.models.project_member import ProjectMember
 from app.models.user import User
-from app.models.enums.project_type import ProjectType
 from app.schemas.role import Role
 
 logging.basicConfig(level=logging.INFO)
@@ -142,9 +142,7 @@ def seed(min_projects: int, max_projects: int, seed_value: int | None) -> None:
                                 location_id=location_id,
                                 owner_id=user.id,
                                 is_active=True,
-                                created_at=_project_created_at(
-                                    faker, user.created_at
-                                ),
+                                created_at=_project_created_at(faker, user.created_at),
                             )
                         )
                         session.add(
@@ -205,9 +203,7 @@ def purge() -> None:
                     )
                 )
                 session.execute(delete(Project).where(Project.id.in_(project_ids)))
-                session.execute(
-                    delete(Location).where(Location.id.in_(location_ids))
-                )
+                session.execute(delete(Location).where(Location.id.in_(location_ids)))
         except Exception as e:
             logger.error(f"Failed to purge demo projects: {e}")
             sys.exit(1)

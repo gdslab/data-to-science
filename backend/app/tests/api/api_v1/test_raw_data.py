@@ -12,18 +12,18 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api.api_v1.endpoints.raw_data import has_active_processing_job
 from app.api.deps import get_current_user
-from app.crud.crud_raw_data import set_report_attr
 from app.core.config import settings
-from app.schemas.job import JobUpdate, State, Status
+from app.crud.crud_raw_data import set_report_attr
+from app.schemas.job import State, Status
+from app.schemas.role import Role
 from app.tasks.raw_image_processing_tasks import (
     start_raw_data_processing,
     transfer_raw_data,
 )
-from app.schemas.role import Role
+from app.tests.utils.flight import create_flight
 from app.tests.utils.job import create_job
 from app.tests.utils.project import create_project
 from app.tests.utils.project_member import create_project_member
-from app.tests.utils.flight import create_flight
 from app.tests.utils.raw_data import SampleRawData
 from app.tests.utils.user import create_user
 
@@ -88,7 +88,7 @@ def test_read_raw_data_with_project_viewer_role(
 def test_read_raw_data_without_project_access(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
-    current_user = get_current_user(db, normal_user_access_token)
+    get_current_user(db, normal_user_access_token)
     raw_data = SampleRawData(db)
     response = client.get(
         f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
@@ -142,7 +142,7 @@ def test_read_multi_raw_data_with_owner_role(
         SampleRawData(db, flight=flight, project=project, user=current_user)
     SampleRawData(db)
     response = client.get(
-        f"{settings.API_V1_STR}/projects/{project.id}" f"/flights/{flight.id}/raw_data"
+        f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}/raw_data"
     )
     assert response.status_code == status.HTTP_200_OK
     response_raw_data = response.json()
@@ -170,7 +170,7 @@ def test_read_multi_raw_data_with_manager_role(
         role=Role.MANAGER,
     )
     response = client.get(
-        f"{settings.API_V1_STR}/projects/{project.id}" f"/flights/{flight.id}/raw_data"
+        f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}/raw_data"
     )
     assert response.status_code == status.HTTP_200_OK
     response_raw_data = response.json()
@@ -198,7 +198,7 @@ def test_read_multi_raw_data_with_viewer_role(
         role=Role.VIEWER,
     )
     response = client.get(
-        f"{settings.API_V1_STR}/projects/{project.id}" f"/flights/{flight.id}/raw_data"
+        f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}/raw_data"
     )
     assert response.status_code == status.HTTP_200_OK
     response_raw_data = response.json()
@@ -212,7 +212,7 @@ def test_read_multi_raw_data_with_viewer_role(
 def test_read_multi_raw_data_without_project_access(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
-    current_user = get_current_user(db, normal_user_access_token)
+    get_current_user(db, normal_user_access_token)
     project_owner = create_user(db)
     project = create_project(db, owner_id=project_owner.id)
     flight = create_flight(db, project_id=project.id)
@@ -224,7 +224,7 @@ def test_read_multi_raw_data_without_project_access(
             user=project_owner,
         )
     response = client.get(
-        f"{settings.API_V1_STR}/projects/{project.id}" f"/flights/{flight.id}/raw_data"
+        f"{settings.API_V1_STR}/projects/{project.id}/flights/{flight.id}/raw_data"
     )
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -289,7 +289,7 @@ def test_deactivate_raw_data_with_viewer_role(
 def test_deactivate_raw_data_without_project_access(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
-    current_user = get_current_user(db, normal_user_access_token)
+    get_current_user(db, normal_user_access_token)
     raw_data = SampleRawData(db)
     response = client.delete(
         f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
@@ -483,9 +483,7 @@ def test_read_raw_data_jobs_with_raw_data_from_other_flight(
     current_user = get_current_user(db, normal_user_access_token)
     raw_data = SampleRawData(db, user=current_user)
     other_raw_data = SampleRawData(db, user=current_user)
-    create_job(
-        db, name="processing-raw-data", raw_data_id=other_raw_data.obj.id
-    )
+    create_job(db, name="processing-raw-data", raw_data_id=other_raw_data.obj.id)
     response = client.get(
         f"{settings.API_V1_STR}/projects/{raw_data.project.id}"
         f"/flights/{raw_data.flight.id}/raw_data/{other_raw_data.obj.id}/jobs"
@@ -508,8 +506,9 @@ def test_start_raw_data_processing_preserves_settings_in_extra(
     )
     mock_rpc_client = MagicMock()
     mock_rpc_client.return_value.__enter__.return_value.call.return_value = "batch123"
-    with _patch_job_manager_db(db), patch(
-        "app.tasks.raw_image_processing_tasks.RpcClient", mock_rpc_client
+    with (
+        _patch_job_manager_db(db),
+        patch("app.tasks.raw_image_processing_tasks.RpcClient", mock_rpc_client),
     ):
         start_raw_data_processing((job.id, "raw-data-identifier"))
     updated_job = crud.job.get(db, id=job.id)
@@ -562,9 +561,13 @@ def test_transfer_raw_data_marks_job_failed_when_storage_inaccessible(
         raw_data_id=raw_data.obj.id,
         extra=dict(ODM_EXTRA),
     )
-    with _patch_job_manager_db(db), _patch_task_db(db), patch(
-        "app.tasks.raw_image_processing_tasks.os.makedirs",
-        side_effect=PermissionError(13, "Permission denied"),
+    with (
+        _patch_job_manager_db(db),
+        _patch_task_db(db),
+        patch(
+            "app.tasks.raw_image_processing_tasks.os.makedirs",
+            side_effect=PermissionError(13, "Permission denied"),
+        ),
     ):
         result = transfer_raw_data.apply(
             args=_transfer_task_args(raw_data, job.id, str(tmp_path))
@@ -589,15 +592,16 @@ def test_transfer_raw_data_metadata_failure_aborts_chain(
         extra=dict(ODM_EXTRA),
     )
     mock_cleanup = MagicMock()
-    with _patch_job_manager_db(db), _patch_task_db(db), patch(
-        "app.tasks.raw_image_processing_tasks.async_transfer", new=MagicMock()
-    ), patch(
-        "app.tasks.raw_image_processing_tasks.asyncio.run", new=MagicMock()
-    ), patch(
-        "app.tasks.raw_image_processing_tasks.get_token_hash",
-        side_effect=Exception("token error"),
-    ), patch(
-        "app.tasks.raw_image_processing_tasks.cleanup_on_external", mock_cleanup
+    with (
+        _patch_job_manager_db(db),
+        _patch_task_db(db),
+        patch("app.tasks.raw_image_processing_tasks.async_transfer", new=MagicMock()),
+        patch("app.tasks.raw_image_processing_tasks.asyncio.run", new=MagicMock()),
+        patch(
+            "app.tasks.raw_image_processing_tasks.get_token_hash",
+            side_effect=Exception("token error"),
+        ),
+        patch("app.tasks.raw_image_processing_tasks.cleanup_on_external", mock_cleanup),
     ):
         result = transfer_raw_data.apply(
             args=_transfer_task_args(raw_data, job.id, str(tmp_path))
@@ -625,8 +629,9 @@ def test_start_raw_data_processing_marks_job_failed_on_rpc_error(
     mock_rpc_client.return_value.__enter__.return_value.call.side_effect = Exception(
         "rpc unavailable"
     )
-    with _patch_job_manager_db(db), patch(
-        "app.tasks.raw_image_processing_tasks.RpcClient", mock_rpc_client
+    with (
+        _patch_job_manager_db(db),
+        patch("app.tasks.raw_image_processing_tasks.RpcClient", mock_rpc_client),
     ):
         start_raw_data_processing((job.id, "raw-data-identifier"))
     updated_job = crud.job.get(db, id=job.id)
@@ -649,8 +654,9 @@ def test_start_raw_data_processing_continues_without_batch_id(
     )
     mock_rpc_client = MagicMock()
     mock_rpc_client.return_value.__enter__.return_value.call.return_value = ""
-    with _patch_job_manager_db(db), patch(
-        "app.tasks.raw_image_processing_tasks.RpcClient", mock_rpc_client
+    with (
+        _patch_job_manager_db(db),
+        patch("app.tasks.raw_image_processing_tasks.RpcClient", mock_rpc_client),
     ):
         start_raw_data_processing((job.id, "raw-data-identifier"))
     updated_job = crud.job.get(db, id=job.id)
@@ -673,8 +679,9 @@ def test_start_raw_data_processing_fails_on_error_reply(
     mock_rpc_client.return_value.__enter__.return_value.call.return_value = (
         "Error: unable to create project"
     )
-    with _patch_job_manager_db(db), patch(
-        "app.tasks.raw_image_processing_tasks.RpcClient", mock_rpc_client
+    with (
+        _patch_job_manager_db(db),
+        patch("app.tasks.raw_image_processing_tasks.RpcClient", mock_rpc_client),
     ):
         start_raw_data_processing((job.id, "raw-data-identifier"))
     updated_job = crud.job.get(db, id=job.id)
@@ -742,9 +749,7 @@ def test_progress_update_stores_batch_id_when_provided(
     assert updated_job.extra["settings"] == ODM_EXTRA["settings"]
 
 
-def test_set_report_attr_prefers_newest_report(
-    client: TestClient, db: Session
-) -> None:
+def test_set_report_attr_prefers_newest_report(client: TestClient, db: Session) -> None:
     raw_data = SampleRawData(db)
     raw_data_dir = Path(raw_data.obj.filepath).parent
     now = time.time()
@@ -778,8 +783,9 @@ def test_start_raw_data_processing_fails_on_rpc_timeout(
     )
     mock_rpc_client = MagicMock()
     mock_rpc_client.return_value.__enter__.return_value.call.return_value = None
-    with _patch_job_manager_db(db), patch(
-        "app.tasks.raw_image_processing_tasks.RpcClient", mock_rpc_client
+    with (
+        _patch_job_manager_db(db),
+        patch("app.tasks.raw_image_processing_tasks.RpcClient", mock_rpc_client),
     ):
         start_raw_data_processing((job.id, "raw-data-identifier"))
     updated_job = crud.job.get(db, id=job.id)

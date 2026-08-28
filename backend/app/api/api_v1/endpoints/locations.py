@@ -1,24 +1,23 @@
-import logging
 import json
+import logging
 import os
 import tempfile
 from pathlib import Path
-from uuid import UUID
 from typing import Any, BinaryIO, Dict
+from uuid import UUID
 from zipfile import ZipFile
 
 import fiona
 import geopandas as gpd
-from fastapi import APIRouter, Depends, HTTPException, Request, status, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, status
 from fiona.errors import DriverError
 from fiona.io import ZipMemoryFile
-from geojson_pydantic import Feature, FeatureCollection, Polygon, MultiPolygon
+from geojson_pydantic import Feature, FeatureCollection, MultiPolygon, Polygon
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
 from app.api.utils import create_project_field_preview
-
 
 router = APIRouter()
 

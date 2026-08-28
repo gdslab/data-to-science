@@ -7,7 +7,6 @@ import rasterio
 
 from app.utils.toolbox.ndvi import run
 
-
 multispectral_dataset = Path("/app/app/tests/data/test_multispectral.tif")
 validation_dataset = Path("/app/app/tests/data/ndvi_validation.tif")
 

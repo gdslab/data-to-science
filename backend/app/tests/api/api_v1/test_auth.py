@@ -8,16 +8,15 @@ from uuid import UUID, uuid4
 
 from fastapi import Response, status
 from fastapi.testclient import TestClient
+from jose import jwt
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from jose import jwt
-
 from app import crud
-from app.models.single_use_token import SingleUseToken
 from app.api.deps import get_current_user
 from app.core import security
 from app.core.config import settings
+from app.models.single_use_token import SingleUseToken
 from app.schemas.refresh_token import RefreshTokenCreate, RefreshTokenUpdate
 from app.schemas.single_use_token import SingleUseTokenCreate
 from app.schemas.user import UserUpdate
@@ -371,7 +370,7 @@ def test_refresh_token_expired_in_db(client: TestClient, db: Session) -> None:
         issued_at=expired_time - timedelta(days=30),  # Issued 31 days ago
         expires_at=expired_time,  # Expired yesterday
     )
-    db_token = crud.refresh_token.create(db, obj_in=refresh_token_create)
+    crud.refresh_token.create(db, obj_in=refresh_token_create)
 
     # Create JWT with matching JTI
     payload = {
@@ -626,9 +625,9 @@ def test_activity_tracking_updates_last_activity_on_authenticated_request(
     time.sleep(1)
 
     # Make authenticated request (test token endpoint)
-    before_request = datetime.now(timezone.utc)
+    datetime.now(timezone.utc)
     r = client.post(f"{settings.API_V1_STR}/auth/test-token")
-    after_request = datetime.now(timezone.utc)
+    datetime.now(timezone.utc)
     assert r.status_code == 200
 
     # Refresh user from database

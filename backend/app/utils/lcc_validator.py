@@ -62,7 +62,7 @@ def _extract_with_prefix(zf: zipfile.ZipFile, output_dir: Path, prefix: str) -> 
             continue
 
         # Strip prefix to get target path
-        target_name = member[len(prefix):] if prefix else member
+        target_name = member[len(prefix) :] if prefix else member
         target_path = output_dir / target_name
 
         # Create parent directories if needed
@@ -137,7 +137,7 @@ def _check_location(names: list[str], prefix: str) -> tuple[list[str], list[str]
         # Strip prefix and check it's directly at this level (no further slashes)
         if prefix:
             if name.startswith(prefix):
-                remainder = name[len(prefix):]
+                remainder = name[len(prefix) :]
                 if "/" not in remainder:
                     lcc_files.append(remainder)
         else:

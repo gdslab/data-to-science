@@ -1,9 +1,9 @@
 """Tests for upload tasks, specifically date extraction from indoor project spreadsheets."""
 
-import pytest
 from datetime import datetime
-from uuid import uuid4
 from unittest.mock import patch
+from uuid import uuid4
+
 import pandas as pd
 
 from app.tasks.upload_tasks import extract_dates_from_indoor_spreadsheet
@@ -15,17 +15,21 @@ def test_extract_dates_happy_path(mock_read_excel):
     test_id = uuid4()
 
     # Mock PPEW DataFrame with planting date
-    mock_ppew_df = pd.DataFrame({
-        "VARIETY": ["Test Variety"],
-        "PI": ["12345"],
-        "PLANTING DATE": ["2024-01-15"],
-    })
+    mock_ppew_df = pd.DataFrame(
+        {
+            "VARIETY": ["Test Variety"],
+            "PI": ["12345"],
+            "PLANTING DATE": ["2024-01-15"],
+        }
+    )
 
     # Mock Top DataFrame with scan dates
-    mock_top_df = pd.DataFrame({
-        "VARIETY": ["Test Variety", "Test Variety", "Test Variety"],
-        "SCAN DATE": ["2024-02-01", "2024-02-15", "2024-03-01"],
-    })
+    mock_top_df = pd.DataFrame(
+        {
+            "VARIETY": ["Test Variety", "Test Variety", "Test Variety"],
+            "SCAN DATE": ["2024-02-01", "2024-02-15", "2024-03-01"],
+        }
+    )
 
     # Set up the mock to return different DataFrames based on sheet_name
     def read_excel_side_effect(file_path, sheet_name, **kwargs):
@@ -59,10 +63,12 @@ def test_extract_dates_missing_ppew_uses_scan_date_fallback(mock_read_excel):
     test_id = uuid4()
 
     # Mock Top DataFrame with scan dates
-    mock_top_df = pd.DataFrame({
-        "VARIETY": ["Test Variety", "Test Variety", "Test Variety"],
-        "SCAN DATE": ["2024-02-10", "2024-02-20", "2024-03-05"],
-    })
+    mock_top_df = pd.DataFrame(
+        {
+            "VARIETY": ["Test Variety", "Test Variety", "Test Variety"],
+            "SCAN DATE": ["2024-02-10", "2024-02-20", "2024-03-05"],
+        }
+    )
 
     def read_excel_side_effect(file_path, sheet_name, **kwargs):
         if sheet_name == "PPEW":
@@ -91,11 +97,13 @@ def test_extract_dates_missing_top_only_returns_planting_date(mock_read_excel):
     test_id = uuid4()
 
     # Mock PPEW DataFrame with planting date
-    mock_ppew_df = pd.DataFrame({
-        "VARIETY": ["Test Variety"],
-        "PI": ["12345"],
-        "PLANTING DATE": ["2024-01-20"],
-    })
+    mock_ppew_df = pd.DataFrame(
+        {
+            "VARIETY": ["Test Variety"],
+            "PI": ["12345"],
+            "PLANTING DATE": ["2024-01-20"],
+        }
+    )
 
     def read_excel_side_effect(file_path, sheet_name, **kwargs):
         if sheet_name == "PPEW":
@@ -142,10 +150,12 @@ def test_extract_dates_empty_dataframes(mock_read_excel):
     mock_ppew_df = pd.DataFrame({"VARIETY": [], "PI": [], "PLANTING DATE": []})
 
     # Mock Top DataFrame with scan dates
-    mock_top_df = pd.DataFrame({
-        "VARIETY": ["Test Variety", "Test Variety"],
-        "SCAN DATE": ["2024-02-15", "2024-03-01"],
-    })
+    mock_top_df = pd.DataFrame(
+        {
+            "VARIETY": ["Test Variety", "Test Variety"],
+            "SCAN DATE": ["2024-02-15", "2024-03-01"],
+        }
+    )
 
     def read_excel_side_effect(file_path, sheet_name, **kwargs):
         if sheet_name == "PPEW":
@@ -204,17 +214,21 @@ def test_extract_dates_null_values_in_columns(mock_read_excel):
     test_id = uuid4()
 
     # Mock PPEW DataFrame with some null planting dates
-    mock_ppew_df = pd.DataFrame({
-        "VARIETY": ["Var1", "Var2", "Var3"],
-        "PI": ["111", "222", "333"],
-        "PLANTING DATE": [None, "2024-01-18", None],
-    })
+    mock_ppew_df = pd.DataFrame(
+        {
+            "VARIETY": ["Var1", "Var2", "Var3"],
+            "PI": ["111", "222", "333"],
+            "PLANTING DATE": [None, "2024-01-18", None],
+        }
+    )
 
     # Mock Top DataFrame with some null scan dates
-    mock_top_df = pd.DataFrame({
-        "VARIETY": ["Var1", "Var2", "Var3"],
-        "SCAN DATE": [None, "2024-02-25", "2024-03-15"],
-    })
+    mock_top_df = pd.DataFrame(
+        {
+            "VARIETY": ["Var1", "Var2", "Var3"],
+            "SCAN DATE": [None, "2024-02-25", "2024-03-15"],
+        }
+    )
 
     def read_excel_side_effect(file_path, sheet_name, **kwargs):
         if sheet_name == "PPEW":
@@ -243,17 +257,21 @@ def test_extract_dates_column_name_normalization(mock_read_excel):
     test_id = uuid4()
 
     # Mock PPEW DataFrame with irregular column names
-    mock_ppew_df = pd.DataFrame({
-        "VARIETY": ["Test Variety"],
-        "PI": ["12345"],
-        "Planting Date": ["2024-01-22"],  # Mixed case with space
-    })
+    mock_ppew_df = pd.DataFrame(
+        {
+            "VARIETY": ["Test Variety"],
+            "PI": ["12345"],
+            "Planting Date": ["2024-01-22"],  # Mixed case with space
+        }
+    )
 
     # Mock Top DataFrame with irregular column names
-    mock_top_df = pd.DataFrame({
-        "Variety": ["Test Variety", "Test Variety"],
-        "Scan Date": ["2024-02-28", "2024-03-20"],  # Mixed case with space
-    })
+    mock_top_df = pd.DataFrame(
+        {
+            "Variety": ["Test Variety", "Test Variety"],
+            "Scan Date": ["2024-02-28", "2024-03-20"],  # Mixed case with space
+        }
+    )
 
     def read_excel_side_effect(file_path, sheet_name, **kwargs):
         if sheet_name == "PPEW":
@@ -300,17 +318,21 @@ def test_extract_dates_datetime_objects(mock_read_excel):
     test_id = uuid4()
 
     # Mock PPEW DataFrame with datetime objects
-    mock_ppew_df = pd.DataFrame({
-        "VARIETY": ["Test Variety"],
-        "PI": ["12345"],
-        "PLANTING DATE": [datetime(2024, 1, 30)],
-    })
+    mock_ppew_df = pd.DataFrame(
+        {
+            "VARIETY": ["Test Variety"],
+            "PI": ["12345"],
+            "PLANTING DATE": [datetime(2024, 1, 30)],
+        }
+    )
 
     # Mock Top DataFrame with datetime objects
-    mock_top_df = pd.DataFrame({
-        "VARIETY": ["Test Variety", "Test Variety"],
-        "SCAN DATE": [datetime(2024, 2, 14), datetime(2024, 3, 8)],
-    })
+    mock_top_df = pd.DataFrame(
+        {
+            "VARIETY": ["Test Variety", "Test Variety"],
+            "SCAN DATE": [datetime(2024, 2, 14), datetime(2024, 3, 8)],
+        }
+    )
 
     def read_excel_side_effect(file_path, sheet_name, **kwargs):
         if sheet_name == "PPEW":
@@ -339,17 +361,21 @@ def test_extract_dates_single_scan_date(mock_read_excel):
     test_id = uuid4()
 
     # Mock PPEW DataFrame
-    mock_ppew_df = pd.DataFrame({
-        "VARIETY": ["Test Variety"],
-        "PI": ["12345"],
-        "PLANTING DATE": ["2024-01-10"],
-    })
+    mock_ppew_df = pd.DataFrame(
+        {
+            "VARIETY": ["Test Variety"],
+            "PI": ["12345"],
+            "PLANTING DATE": ["2024-01-10"],
+        }
+    )
 
     # Mock Top DataFrame with single scan date
-    mock_top_df = pd.DataFrame({
-        "VARIETY": ["Test Variety"],
-        "SCAN DATE": ["2024-02-12"],
-    })
+    mock_top_df = pd.DataFrame(
+        {
+            "VARIETY": ["Test Variety"],
+            "SCAN DATE": ["2024-02-12"],
+        }
+    )
 
     def read_excel_side_effect(file_path, sheet_name, **kwargs):
         if sheet_name == "PPEW":
@@ -382,17 +408,21 @@ def test_extract_dates_end_before_start(mock_read_excel):
     test_id = uuid4()
 
     # Mock PPEW DataFrame with later planting date
-    mock_ppew_df = pd.DataFrame({
-        "VARIETY": ["Test Variety"],
-        "PI": ["12345"],
-        "PLANTING DATE": ["2024-03-15"],  # Later date
-    })
+    mock_ppew_df = pd.DataFrame(
+        {
+            "VARIETY": ["Test Variety"],
+            "PI": ["12345"],
+            "PLANTING DATE": ["2024-03-15"],  # Later date
+        }
+    )
 
     # Mock Top DataFrame with earlier scan dates
-    mock_top_df = pd.DataFrame({
-        "VARIETY": ["Test Variety", "Test Variety"],
-        "SCAN DATE": ["2024-01-10", "2024-02-20"],  # Earlier dates
-    })
+    mock_top_df = pd.DataFrame(
+        {
+            "VARIETY": ["Test Variety", "Test Variety"],
+            "SCAN DATE": ["2024-01-10", "2024-02-20"],  # Earlier dates
+        }
+    )
 
     def read_excel_side_effect(file_path, sheet_name, **kwargs):
         if sheet_name == "PPEW":
@@ -427,17 +457,21 @@ def test_extract_dates_start_after_end(mock_read_excel):
     test_id = uuid4()
 
     # Mock PPEW DataFrame with later planting date
-    mock_ppew_df = pd.DataFrame({
-        "VARIETY": ["Test Variety"],
-        "PI": ["12345"],
-        "PLANTING DATE": ["2024-03-15"],  # Later date
-    })
+    mock_ppew_df = pd.DataFrame(
+        {
+            "VARIETY": ["Test Variety"],
+            "PI": ["12345"],
+            "PLANTING DATE": ["2024-03-15"],  # Later date
+        }
+    )
 
     # Mock Top DataFrame with earlier scan dates
-    mock_top_df = pd.DataFrame({
-        "VARIETY": ["Test Variety", "Test Variety"],
-        "SCAN DATE": ["2024-01-10", "2024-02-20"],  # Earlier dates
-    })
+    mock_top_df = pd.DataFrame(
+        {
+            "VARIETY": ["Test Variety", "Test Variety"],
+            "SCAN DATE": ["2024-01-10", "2024-02-20"],  # Earlier dates
+        }
+    )
 
     def read_excel_side_effect(file_path, sheet_name, **kwargs):
         if sheet_name == "PPEW":

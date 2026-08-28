@@ -42,11 +42,18 @@ To contribute code, fork the repository, create a feature branch, and open a pul
 
 **Description:** GitHub pre-fills new pull requests with our template. Please complete the relevant sections and the checklist; sections marked optional may be deleted when they do not apply.
 
-**Before opening a PR**, run both checks locally — they are not yet enforced by CI:
+**Before opening a PR**, run these checks locally — they are not yet enforced by CI:
 
 ```bash
 docker compose exec backend pytest
+docker compose exec backend ruff check .
+docker compose exec backend ruff format --check .
 docker compose exec frontend npx tsc --noEmit
 ```
+
+Ruff replaces black, flake8 and isort; `ruff check --fix .` and `ruff format .`
+apply what the first two report. See
+[Local Development Setup](https://gdslab.github.io/data-to-science/how-to/local-development/)
+for details.
 
 Please also mention any schema or migration changes in the PR description so reviewers can rebuild their local containers, and include screenshots for UI changes.

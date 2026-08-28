@@ -14,8 +14,8 @@ from fastapi import (
     Depends,
     HTTPException,
     Query,
-    status,
     UploadFile,
+    status,
 )
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.orm import Session
@@ -24,10 +24,10 @@ from app import crud, models, schemas
 from app.api import deps
 from app.api.utils import (
     cleanup_temp,
-    sanitize_file_name,
     get_tile_url_with_signed_payload,
-    save_vector_layer_parquet,
+    sanitize_file_name,
     save_vector_layer_flatgeobuf,
+    save_vector_layer_parquet,
 )
 from app.core.config import settings
 from app.tasks.upload_tasks import upload_vector_layer
@@ -344,7 +344,10 @@ def create_vector_layer_from_geojson(
     validate_geojson_coordinates(vector_layer_in.geojson)
 
     # Check that FeatureCollection has at least one feature
-    if not vector_layer_in.geojson.features or len(vector_layer_in.geojson.features) == 0:
+    if (
+        not vector_layer_in.geojson.features
+        or len(vector_layer_in.geojson.features) == 0
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="FeatureCollection must contain at least one feature",
@@ -385,15 +388,21 @@ def create_vector_layer_from_geojson(
 
             # Generate GeoParquet file
             try:
-                save_vector_layer_parquet(project.id, layer_id, gdf_for_formats, static_dir)
+                save_vector_layer_parquet(
+                    project.id, layer_id, gdf_for_formats, static_dir
+                )
                 logger.info(f"Successfully generated parquet file for layer {layer_id}")
             except Exception:
                 logger.exception(f"Failed to generate parquet for layer {layer_id}")
 
             # Generate FlatGeobuf file
             try:
-                save_vector_layer_flatgeobuf(project.id, layer_id, gdf_for_formats, static_dir)
-                logger.info(f"Successfully generated FlatGeobuf file for layer {layer_id}")
+                save_vector_layer_flatgeobuf(
+                    project.id, layer_id, gdf_for_formats, static_dir
+                )
+                logger.info(
+                    f"Successfully generated FlatGeobuf file for layer {layer_id}"
+                )
             except Exception:
                 logger.exception(f"Failed to generate FlatGeobuf for layer {layer_id}")
 
@@ -513,7 +522,9 @@ def feature_collection_to_geodataframe(
     return gpd.GeoDataFrame.from_features(geojson.features, crs="EPSG:4326")
 
 
-def validate_geojson_coordinates(geojson: schemas.vector_layer.FeatureCollection) -> None:
+def validate_geojson_coordinates(
+    geojson: schemas.vector_layer.FeatureCollection,
+) -> None:
     """
     Validates that all coordinates in a GeoJSON FeatureCollection are within valid geographic ranges.
     Raises HTTPException if invalid coordinates are found.
@@ -590,7 +601,9 @@ def get_parquet_url(project_id: str, layer_id: str) -> str:
     static_dir = get_static_dir()
     base_static_url = f"{settings.API_DOMAIN}{static_dir}"
 
-    return f"{base_static_url}/projects/{project_id}/vector/{layer_id}/{layer_id}.parquet"
+    return (
+        f"{base_static_url}/projects/{project_id}/vector/{layer_id}/{layer_id}.parquet"
+    )
 
 
 def get_fgb_url(project_id: str, layer_id: str) -> str:

@@ -6,21 +6,9 @@ from typing import Dict, List, Optional
 from urllib.parse import urljoin
 from uuid import UUID
 
-
-# Custom JSON encoder to handle UUIDs and datetimes
-class UUIDEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, UUID):
-            return str(obj)
-        elif isinstance(obj, datetime):
-            return obj.isoformat()
-        return super().default(obj)
-
-
 from celery.utils.log import get_task_logger
-from sqlalchemy.orm import Session
-
 from pystac import Item
+from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api.deps import get_db
@@ -31,24 +19,33 @@ from app.models.job import Job as JobModel
 from app.schemas.job import Status
 from app.utils.job_manager import JobManager
 from app.utils.s3 import (
-    is_s3_configured,
     build_s3_key,
-    upload_file_to_s3,
     delete_s3_objects,
-    parse_s3_key_from_url,
+    is_s3_configured,
+    upload_file_to_s3,
 )
 
 # Import these at module level for testing/mocking purposes
 # They will be imported again inside functions to avoid circular imports during normal operation
 try:
-    from app.utils.stac.STACGenerator import STACGenerator
     from app.utils.stac.STACCollectionManager import STACCollectionManager
+    from app.utils.stac.STACGenerator import STACGenerator
 except ImportError:
     # Handle circular import gracefully
     STACGenerator = None
     STACCollectionManager = None
 
 logger = get_task_logger(__name__)
+
+
+# Custom JSON encoder to handle UUIDs and datetimes
+class UUIDEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, UUID):
+            return str(obj)
+        elif isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
 
 
 def get_stac_cache_path(project_id: UUID) -> Path:
@@ -96,14 +93,18 @@ def _upload_to_s3_and_rewrite_hrefs(
             dp_lookup[str(dp.id)] = dp
 
     # Collect flight IDs that have items with derived_from links (for raw data upload)
-    include_raw_data_set = set(include_raw_data_links) if include_raw_data_links else set()
+    include_raw_data_set = (
+        set(include_raw_data_links) if include_raw_data_links else set()
+    )
     flights_needing_raw_data: set = set()
 
     # Upload data product files and rewrite asset hrefs
     for item in items:
         dp = dp_lookup.get(item.id)
         if not dp:
-            logger.warning(f"Data product not found for item {item.id}, skipping S3 upload")
+            logger.warning(
+                f"Data product not found for item {item.id}, skipping S3 upload"
+            )
             continue
 
         # Skip if already uploaded (idempotent for backfill)
@@ -138,7 +139,9 @@ def _upload_to_s3_and_rewrite_hrefs(
         for flight_id in flights_needing_raw_data:
             # Query raw data for this flight
             raw_data_list = crud.raw_data.get_multi_by_flight(
-                db=db, flight_id=flight_id, upload_dir=upload_dir,
+                db=db,
+                flight_id=flight_id,
+                upload_dir=upload_dir,
             )
 
             for rd in raw_data_list:
@@ -169,7 +172,9 @@ def _upload_to_s3_and_rewrite_hrefs(
     return uploaded_s3_keys
 
 
-def _rollback_s3_uploads(db: Session, project_id: UUID, uploaded_s3_keys: List[str]) -> None:
+def _rollback_s3_uploads(
+    db: Session, project_id: UUID, uploaded_s3_keys: List[str]
+) -> None:
     """Clean up S3 uploads and DB records on publish failure.
 
     Preserves s3_url columns when the S3 delete does not fully succeed so the
@@ -330,7 +335,10 @@ def publish_stac_catalog(
         uploaded_s3_keys: List[str] = []
         if is_s3_configured() and len(items) > 0:
             uploaded_s3_keys = _upload_to_s3_and_rewrite_hrefs(
-                db, items, sg.flights, include_raw_data_links,
+                db,
+                items,
+                sg.flights,
+                include_raw_data_links,
             )
 
         # Publish to catalog if we have successful items
@@ -410,7 +418,8 @@ def publish_stac_catalog(
         # Rollback S3 uploads if any were made
         if is_s3_configured():
             _rollback_s3_uploads(
-                db, project_uuid,
+                db,
+                project_uuid,
                 uploaded_s3_keys if "uploaded_s3_keys" in locals() else [],
             )
 
@@ -548,12 +557,12 @@ def publish_stac_catalog_task(
     db: Optional[Session] = None,
 ) -> Dict:
     """Non-Celery function for testing STAC catalog publication."""
+    from app import crud, schemas
     from app.api.deps import get_db
     from app.schemas.job import Status
     from app.utils.job_manager import JobManager
-    from app.utils.stac.STACGenerator import STACGenerator
     from app.utils.stac.STACCollectionManager import STACCollectionManager
-    from app import crud, schemas
+    from app.utils.stac.STACGenerator import STACGenerator
 
     if db is None:
         db = next(get_db())
@@ -585,7 +594,10 @@ def publish_stac_catalog_task(
         uploaded_s3_keys: List[str] = []
         if is_s3_configured() and len(items) > 0:
             uploaded_s3_keys = _upload_to_s3_and_rewrite_hrefs(
-                db, items, sg.flights, include_raw_data_links,
+                db,
+                items,
+                sg.flights,
+                include_raw_data_links,
             )
 
         # Publish to catalog if we have successful items
@@ -665,7 +677,8 @@ def publish_stac_catalog_task(
         # Rollback S3 uploads if any were made
         if is_s3_configured():
             _rollback_s3_uploads(
-                db, project_uuid,
+                db,
+                project_uuid,
                 uploaded_s3_keys if "uploaded_s3_keys" in locals() else [],
             )
 

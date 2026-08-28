@@ -3,18 +3,16 @@ import os
 from io import BytesIO
 from typing import Dict
 
+import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 from geojson_pydantic import Feature, Polygon
-import pytest
 from sqlalchemy.orm import Session
 
 from app import crud
 from app.api.deps import get_current_user
 from app.core.config import settings
-from app.tests.utils.location import create_location
 from app.tests.utils.project import create_project
-from app.tests.utils.utils import get_geojson_feature_collection
 
 
 def test_read_location(
@@ -279,8 +277,9 @@ def test_upload_single_feature_with_invalid_coordinates(
 
 def test_handle_geojson_point_invalid_coordinates() -> None:
     """Test coordinate validation for Point geometry by calling handle_geojson directly."""
-    from app.api.api_v1.endpoints.locations import handle_geojson
     from fastapi import HTTPException
+
+    from app.api.api_v1.endpoints.locations import handle_geojson
 
     # Test Point with invalid longitude
     invalid_point = {

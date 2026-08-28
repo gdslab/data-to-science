@@ -168,9 +168,7 @@ def test_get_owner_views_trend_buckets_by_week(db: Session) -> None:
     points_by_week = {point["week_start"]: point["views"] for point in points}
 
     assert points_by_week[current_week_start.isoformat()] == 1
-    assert (
-        points_by_week[(current_week_start - timedelta(weeks=1)).isoformat()] == 1
-    )
+    assert points_by_week[(current_week_start - timedelta(weeks=1)).isoformat()] == 1
 
 
 def test_get_owner_top_orders_by_requested_metric(db: Session) -> None:
@@ -179,12 +177,8 @@ def test_get_owner_top_orders_by_requested_metric(db: Session) -> None:
     more_viewed = SampleDataProduct(db, user=owner, project=project.project)
     more_liked = SampleDataProduct(db, user=owner, project=project.project)
 
-    create_data_product_view(
-        db, data_product_id=more_viewed.obj.id, session_id="s1"
-    )
-    create_data_product_view(
-        db, data_product_id=more_viewed.obj.id, session_id="s2"
-    )
+    create_data_product_view(db, data_product_id=more_viewed.obj.id, session_id="s1")
+    create_data_product_view(db, data_product_id=more_viewed.obj.id, session_id="s2")
     create_data_product_like(db, data_product_id=more_liked.obj.id)
     create_data_product_like(
         db, data_product_id=more_liked.obj.id, user_id=create_user(db).id

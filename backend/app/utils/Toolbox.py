@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Optional
 
 from celery.utils.log import get_task_logger
+
 from app.utils.ImageProcessor import ImageProcessor
 from app.utils.toolbox.chm import run as chm_run
 from app.utils.toolbox.dtm import run as dtm_run

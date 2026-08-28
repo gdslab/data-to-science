@@ -152,9 +152,9 @@ def test_read_vector_layers_with_project_owner_role(
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db, owner_id=current_user.id)
-    fc1 = create_feature_collection(db, "point", project.id)
-    fc2 = create_feature_collection(db, "linestring", project_id=project.id)
-    fc3 = create_feature_collection(db, "polygon", project_id=project.id)
+    create_feature_collection(db, "point", project.id)
+    create_feature_collection(db, "linestring", project_id=project.id)
+    create_feature_collection(db, "polygon", project_id=project.id)
 
     response = client.get(f"{settings.API_V1_STR}/projects/{project.id}/vector_layers")
     assert response.status_code == status.HTTP_200_OK
@@ -177,9 +177,9 @@ def test_read_vector_layers_with_project_manager_role(
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
-    fc1 = create_feature_collection(db, "point", project.id)
-    fc2 = create_feature_collection(db, "linestring", project_id=project.id)
-    fc3 = create_feature_collection(db, "polygon", project_id=project.id)
+    create_feature_collection(db, "point", project.id)
+    create_feature_collection(db, "linestring", project_id=project.id)
+    create_feature_collection(db, "polygon", project_id=project.id)
     create_project_member(
         db, role=Role.MANAGER, member_id=current_user.id, project_uuid=project.id
     )
@@ -205,9 +205,9 @@ def test_read_vector_layers_with_project_viewer_role(
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db)
-    fc1 = create_feature_collection(db, "point", project.id)
-    fc2 = create_feature_collection(db, "linestring", project_id=project.id)
-    fc3 = create_feature_collection(db, "polygon", project_id=project.id)
+    create_feature_collection(db, "point", project.id)
+    create_feature_collection(db, "linestring", project_id=project.id)
+    create_feature_collection(db, "polygon", project_id=project.id)
     create_project_member(
         db, role=Role.VIEWER, member_id=current_user.id, project_uuid=project.id
     )

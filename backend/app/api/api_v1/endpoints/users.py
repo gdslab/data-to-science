@@ -3,7 +3,7 @@ import os
 import shutil
 from secrets import token_urlsafe
 from typing import Annotated, Any
-from uuid import uuid4, UUID
+from uuid import UUID, uuid4
 
 from fastapi import (
     APIRouter,
@@ -11,18 +11,18 @@ from fastapi import (
     Body,
     Depends,
     HTTPException,
-    Request,
-    status,
-    UploadFile,
     Query,
+    Request,
+    UploadFile,
+    status,
 )
 from pydantic.networks import EmailStr
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps, mail
-from app.core.config import settings
 from app.core import security
+from app.core.config import settings
 from app.core.limiter import limiter
 from app.models.utils.user import validate_password
 
@@ -274,9 +274,7 @@ def get_current_user_stats(
         db, user_id=current_user.id, metric="likes"
     )
 
-    activity_counts = crud.data_product.get_activity_counts(
-        db, user_id=current_user.id
-    )
+    activity_counts = crud.data_product.get_activity_counts(db, user_id=current_user.id)
     activity_counts["recently_viewed"] = crud.data_product.get_recent_activity(
         db, user_id=current_user.id, action="viewed"
     )

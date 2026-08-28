@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app import crud
-from app.api.deps import get_current_user, get_current_approved_user
+from app.api.deps import get_current_approved_user, get_current_user
 from app.core.config import settings
 from app.tests.conftest import pytest_requires_breedbase
 from app.tests.utils.breedbase_connection import create_breedbase_connection
@@ -367,9 +367,7 @@ def test_brapi_proxy_post_with_token(
 
 
 @pytest_requires_breedbase
-def test_brapi_proxy_unauthorized(
-    client: TestClient, db: Session
-) -> None:
+def test_brapi_proxy_unauthorized(client: TestClient, db: Session) -> None:
     # Remove auth token to simulate unauthenticated request
     client.headers.pop("Authorization", None)
     payload = {
@@ -474,7 +472,9 @@ def test_brapi_proxy_connect_timeout(
     normal_user_access_token: str,
 ) -> None:
     mock_client = AsyncMock()
-    mock_client.get = AsyncMock(side_effect=httpx.ConnectTimeout("Connection timed out"))
+    mock_client.get = AsyncMock(
+        side_effect=httpx.ConnectTimeout("Connection timed out")
+    )
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = AsyncMock(return_value=False)
     mock_async_client_cls.return_value = mock_client

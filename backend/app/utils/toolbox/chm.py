@@ -98,7 +98,7 @@ def run(in_point_cloud: str, out_raster: str, params: dict) -> str:
         num_pts = len(z)
         while n_p < num_pts:
             tmp_key = (int(img_x_chm[n_p]), int(img_y_chm[n_p]))
-            if not tmp_key in dict_pts_chm.keys():
+            if tmp_key not in dict_pts_chm.keys():
                 dict_pts_chm[tmp_key] = [z[n_p]]
             else:
                 dict_pts_chm[tmp_key].append(z[n_p])

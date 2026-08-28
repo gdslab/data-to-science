@@ -1,11 +1,10 @@
 from datetime import datetime
-from typing import Any, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, List, Optional
 
 from geojson_pydantic import Feature
-from pydantic import BaseModel, ConfigDict, Field, UUID4, field_validator
+from pydantic import UUID4, BaseModel, ConfigDict, Field, field_validator
 
 from app.models.enums.visibility import Visibility
-
 
 if TYPE_CHECKING:
     from app.schemas.annotation_attachment import AnnotationAttachment

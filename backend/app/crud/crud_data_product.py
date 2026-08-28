@@ -10,7 +10,7 @@ from fastapi.encoders import jsonable_encoder
 from rasterio.errors import CRSError
 from rasterio.warp import transform_bounds
 from sqlalchemy import and_, func, select, update
-from sqlalchemy.orm import joinedload, noload, Session
+from sqlalchemy.orm import Session, joinedload
 
 from app import crud
 from app.api.utils import (
@@ -32,18 +32,18 @@ from app.models.data_product_view import DataProductView
 from app.models.enums.project_type import ProjectType
 from app.models.file_permission import FilePermission
 from app.models.flight import Flight
+from app.models.job import Job
 from app.models.project import Project
 from app.models.project_member import ProjectMember
-from app.models.job import Job
 from app.models.user import User
+from app.models.user_style import UserStyle
 from app.models.utils.utcnow import utcnow
 from app.schemas.data_product import (
     DataProductCreate,
     DataProductUpdate,
 )
-from app.schemas.project_member import Role
 from app.schemas.job import Status
-from app.models.user_style import UserStyle
+from app.schemas.project_member import Role
 
 logger = logging.getLogger("__name__")
 
@@ -372,7 +372,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                     ~func.lower(DataProduct.data_type).in_(
                         [dtype.lower() for dtype in NON_RASTER_TYPES]
                     ),
-                    DataProduct.is_active == True,
+                    DataProduct.is_active,
                 )
             )
         )
@@ -578,9 +578,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
         with db as session:
             rows = session.execute(
                 select(week_start_col, func.count(DataProductView.id).label("views"))
-                .where(
-                    DataProductView.data_product_id.in_(select(owned_subq.c.id))
-                )
+                .where(DataProductView.data_product_id.in_(select(owned_subq.c.id)))
                 .group_by(week_start_col)
             ).all()
 
@@ -716,9 +714,11 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             owner_ids = {row.owner_id for row in rows}
             owners_by_id = {}
             if owner_ids:
-                owners = session.execute(
-                    select(User).where(User.id.in_(owner_ids))
-                ).scalars().all()
+                owners = (
+                    session.execute(select(User).where(User.id.in_(owner_ids)))
+                    .scalars()
+                    .all()
+                )
                 owners_by_id = {
                     owner.id: f"{owner.first_name} {owner.last_name}"
                     for owner in owners
@@ -905,9 +905,7 @@ def set_user_style_attr(data_product_obj: DataProduct, user_style: Dict) -> None
     setattr(data_product_obj, "user_style", user_style)
 
 
-def set_like_attrs(
-    data_product_obj: DataProduct, like_count: int, liked: bool
-) -> None:
+def set_like_attrs(data_product_obj: DataProduct, like_count: int, liked: bool) -> None:
     setattr(data_product_obj, "like_count", like_count)
     setattr(data_product_obj, "liked", liked)
 

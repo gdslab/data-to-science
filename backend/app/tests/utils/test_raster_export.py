@@ -10,9 +10,9 @@ import pytest
 import rasterio
 
 from app.tests.utils.data_product import test_stac_props_dsm
+from app.utils import raster_export
 from app.utils.ColorBar import get_cmap
 from app.utils.ImageProcessor import get_info, get_stac_properties
-from app.utils import raster_export
 from app.utils.raster_export import (
     DEFAULT_MIN_MAX,
     RasterInputError,
@@ -542,7 +542,9 @@ def test_export_rejects_missing_stac_properties() -> None:
     with TemporaryDirectory() as tmpdir:
         with pytest.raises(RasterInputError):
             export_raster_to_jpeg(
-                single_band_dataset, Path(tmpdir) / "export.jpg", None  # type: ignore[arg-type]
+                single_band_dataset,
+                Path(tmpdir) / "export.jpg",
+                None,  # type: ignore[arg-type]
             )
 
 

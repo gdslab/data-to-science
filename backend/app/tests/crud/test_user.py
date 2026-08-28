@@ -111,9 +111,9 @@ def test_get_users(db: Session) -> None:
 
 def test_get_users_by_query(db: Session) -> None:
     """Verify retrieving multiple users by a query term."""
-    user1 = create_user(db, first_name="Ellie", last_name="Sattler")
-    user2 = create_user(db, first_name="Alan", last_name="Grant")
-    user3 = create_user(db, first_name="Ian", last_name="Malcolm")
+    create_user(db, first_name="Ellie", last_name="Sattler")
+    create_user(db, first_name="Alan", last_name="Grant")
+    create_user(db, first_name="Ian", last_name="Malcolm")
     users = crud.user.get_multi_by_query(db, q="Grant")
     assert users
     assert isinstance(users, List)

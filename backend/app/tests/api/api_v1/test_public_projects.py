@@ -89,7 +89,9 @@ def test_read_published_projects_geojson_format(
     assert data["type"] == "FeatureCollection"
     assert isinstance(data["features"], list)
     assert len(data["features"]) >= 1
-    feature = next(f for f in data["features"] if f["properties"]["id"] == str(project.id))
+    feature = next(
+        f for f in data["features"] if f["properties"]["id"] == str(project.id)
+    )
     assert feature["geometry"]["type"] == "Point"
     assert len(feature["geometry"]["coordinates"]) == 2
     assert feature["properties"]["title"] == project.title
@@ -100,9 +102,7 @@ def test_read_published_projects_geojson_format(
 # ---------------------------------------------------------------------------
 
 
-def test_read_published_project_returns_200(
-    client: TestClient, db: Session
-) -> None:
+def test_read_published_project_returns_200(client: TestClient, db: Session) -> None:
     project = create_project(db)
     _publish(db, project)
 
@@ -115,9 +115,7 @@ def test_read_published_project_returns_200(
     assert "field" in data
 
 
-def test_read_published_project_geojson_format(
-    client: TestClient, db: Session
-) -> None:
+def test_read_published_project_geojson_format(client: TestClient, db: Session) -> None:
     project = create_project(db)
     _publish(db, project)
 
@@ -159,9 +157,7 @@ def test_read_published_project_nonexistent_returns_404(
 # ---------------------------------------------------------------------------
 
 
-def test_read_published_project_flights_empty(
-    client: TestClient, db: Session
-) -> None:
+def test_read_published_project_flights_empty(client: TestClient, db: Session) -> None:
     project = create_project(db)
     _publish(db, project)
 

@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
-from pydantic import BaseModel, Field, UUID4, field_validator
+from pydantic import UUID4, BaseModel, Field, field_validator
 
 if TYPE_CHECKING:
     from app.schemas.tag import Tag

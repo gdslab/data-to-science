@@ -8,27 +8,27 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app import crud
-from app.api.deps import get_current_user, get_current_approved_user
+from app.api.deps import get_current_approved_user, get_current_user
 from app.core.config import settings
-from app.tasks.stac_tasks import publish_stac_catalog_task
-from app.tests.conftest import pytest_requires_stac
 from app.schemas.data_product import DataProductCreate
 from app.schemas.project import ProjectUpdate
 from app.schemas.project_member import ProjectMemberCreate
 from app.schemas.role import Role
 from app.schemas.team_member import TeamMemberUpdate
 from app.schemas.user import UserUpdate
+from app.tasks.stac_tasks import publish_stac_catalog_task
+from app.tests.conftest import pytest_requires_stac
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.flight import create_flight
 from app.tests.utils.location import create_location
 from app.tests.utils.project import (
     create_project,
-    random_planting_date,
     random_harvest_date,
+    random_planting_date,
 )
 from app.tests.utils.project_member import create_project_member
 from app.tests.utils.raw_data import SampleRawData
-from app.tests.utils.team import create_team, random_team_name, random_team_description
+from app.tests.utils.team import create_team, random_team_description, random_team_name
 from app.tests.utils.team_member import create_team_member
 from app.tests.utils.user import create_user, update_regular_user_to_superuser
 from app.tests.utils.utils import get_geojson_feature_collection
@@ -156,9 +156,9 @@ def test_create_project_rejects_multipolygon(
     client: TestClient, normal_user_access_token: str, db: Session
 ) -> None:
     create_location(db)
-    polygon_coords = get_geojson_feature_collection("polygon")["geojson"][
-        "features"
-    ][0]["geometry"]["coordinates"]
+    polygon_coords = get_geojson_feature_collection("polygon")["geojson"]["features"][
+        0
+    ]["geometry"]["coordinates"]
     multipolygon_feature = {
         "type": "Feature",
         "properties": {},
@@ -214,7 +214,7 @@ def test_create_project_date_validation(
     client: TestClient, normal_user_access_token: str, db: Session
 ) -> None:
     current_year = datetime.now().year
-    location = create_location(db)
+    create_location(db)
     # invalid - harvest_date before planting_date
     data = jsonable_encoder(
         {
@@ -435,7 +435,7 @@ def test_get_projects_by_superuser(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
-    updated_user = update_regular_user_to_superuser(db, user_id=current_user.id)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
 
     # create three projects with only two owned by current user
     project1 = create_project(db, owner_id=current_user.id)
@@ -458,7 +458,7 @@ def test_get_projects_with_include_all_by_non_superuser(
     # create three projects with only two owned by current user
     project1 = create_project(db, owner_id=current_user.id)
     project2 = create_project(db, owner_id=current_user.id)
-    project3 = create_project(db)
+    create_project(db)
     # request projects
     response = client.get(API_URL, params={"include_all": True})
     assert response.status_code == status.HTTP_200_OK
@@ -487,12 +487,10 @@ def test_get_projects_with_specific_data_type(
         flight = create_flight(db, project_id=project.id)
         # add raster data product to first project
         if project_idx == 0:
-            raster_data_product = SampleDataProduct(
-                db, data_type="ortho", flight=flight, project=project
-            )
+            SampleDataProduct(db, data_type="ortho", flight=flight, project=project)
         # add point cloud data product to second project
         if project_idx == 1:
-            point_cloud_data_product = crud.data_product.create_with_flight(
+            crud.data_product.create_with_flight(
                 db,
                 obj_in=DataProductCreate(
                     data_type="point_cloud",
@@ -970,12 +968,12 @@ def test_publish_project_to_stac_using_task(
     db: Session, normal_user_access_token: str
 ) -> None:
     """Test publishing project to STAC using the task function."""
+    from app import crud
     from app.api.deps import get_current_approved_user, get_current_user
     from app.tasks.stac_tasks import publish_stac_catalog_task
     from app.tests.utils.data_product import SampleDataProduct
     from app.tests.utils.flight import create_flight
     from app.tests.utils.project import create_project
-    from app import crud
 
     # Create project owned by current user with two flights and two data products
     current_user = get_current_approved_user(
@@ -1020,12 +1018,12 @@ def test_publish_project_to_stac_excludes_deactivated_data_products_using_task(
     db: Session, normal_user_access_token: str
 ) -> None:
     """Test that deactivated data products are not included when publishing to STAC using task."""
+    from app import crud
     from app.api.deps import get_current_approved_user, get_current_user
     from app.tasks.stac_tasks import publish_stac_catalog_task
     from app.tests.utils.data_product import SampleDataProduct
     from app.tests.utils.flight import create_flight
     from app.tests.utils.project import create_project
-    from app import crud
 
     # Create project owned by current user with one flight and two data products
     current_user = get_current_approved_user(
@@ -1071,12 +1069,12 @@ def test_generate_stac_preview_using_task(
     db: Session, normal_user_access_token: str
 ) -> None:
     """Test generating STAC preview using the task function."""
+    from app import crud
     from app.api.deps import get_current_approved_user, get_current_user
     from app.tasks.stac_tasks import generate_stac_preview_task
     from app.tests.utils.data_product import SampleDataProduct
     from app.tests.utils.flight import create_flight
     from app.tests.utils.project import create_project
-    from app import crud
 
     # Create project owned by current user with two flights and two data products
     current_user = get_current_approved_user(
@@ -1149,7 +1147,7 @@ def test_publish_stac_with_scientific_metadata_using_task(
     )
     project = create_project(db, owner_id=current_user.id)
     flight = create_flight(db, project_id=project.id)
-    data_product = SampleDataProduct(db, project=project, flight=flight)
+    SampleDataProduct(db, project=project, flight=flight)
 
     # Scientific metadata
     test_doi = "10.1000/test123"
@@ -1376,7 +1374,7 @@ def test_generate_stac_preview_async(
     )
     project = create_project(db, owner_id=current_user.id)
     flight = create_flight(db, project_id=project.id)
-    data_product = SampleDataProduct(db, project=project, flight=flight)
+    SampleDataProduct(db, project=project, flight=flight)
 
     # Trigger async STAC preview generation with empty payload
     payload: Dict[str, Any] = {}
@@ -1403,7 +1401,7 @@ def test_generate_stac_preview_async_with_scientific_metadata(
     )
     project = create_project(db, owner_id=current_user.id)
     flight = create_flight(db, project_id=project.id)
-    data_product = SampleDataProduct(db, project=project, flight=flight)
+    SampleDataProduct(db, project=project, flight=flight)
 
     # Scientific metadata
     doi = "10.1000/async123"
@@ -1480,7 +1478,7 @@ def test_generate_stac_preview_async_with_empty_payload(
     )
     project = create_project(db, owner_id=current_user.id)
     flight = create_flight(db, project_id=project.id)
-    data_product = SampleDataProduct(db, project=project, flight=flight)
+    SampleDataProduct(db, project=project, flight=flight)
 
     # Empty payload (should work with defaults)
     payload: Dict[str, Any] = {}
@@ -1506,7 +1504,7 @@ def test_publish_stac_async(
     )
     project = create_project(db, owner_id=current_user.id)
     flight = create_flight(db, project_id=project.id)
-    data_product = SampleDataProduct(db, project=project, flight=flight)
+    SampleDataProduct(db, project=project, flight=flight)
 
     # Trigger async STAC catalog publication with empty payload
     payload: Dict[str, Any] = {}
@@ -1531,7 +1529,7 @@ def test_publish_stac_async_with_scientific_metadata(
     )
     project = create_project(db, owner_id=current_user.id)
     flight = create_flight(db, project_id=project.id)
-    data_product = SampleDataProduct(db, project=project, flight=flight)
+    SampleDataProduct(db, project=project, flight=flight)
 
     # Scientific metadata
     doi = "10.1000/asyncpub456"
@@ -1602,7 +1600,7 @@ def test_publish_stac_async_with_empty_payload(
     )
     project = create_project(db, owner_id=current_user.id)
     flight = create_flight(db, project_id=project.id)
-    data_product = SampleDataProduct(db, project=project, flight=flight)
+    SampleDataProduct(db, project=project, flight=flight)
 
     # Empty payload (should work with defaults)
     payload: Dict[str, Any] = {}
@@ -1672,9 +1670,10 @@ def test_stac_cache_with_failed_items_preview(
 @pytest_requires_stac
 def test_stac_cache_path_helper():
     """Test the get_stac_cache_path helper function."""
-    from app.tasks.stac_tasks import get_stac_cache_path
-    from uuid import uuid4
     import os
+    from uuid import uuid4
+
+    from app.tasks.stac_tasks import get_stac_cache_path
 
     project_id = uuid4()
     cache_path = get_stac_cache_path(project_id)
@@ -1763,7 +1762,7 @@ def test_generate_stac_preview_async_with_license(
     )
     project = create_project(db, owner_id=current_user.id)
     flight = create_flight(db, project_id=project.id)
-    data_product = SampleDataProduct(db, project=project, flight=flight)
+    SampleDataProduct(db, project=project, flight=flight)
 
     # License parameter
     license_param = "MIT"
@@ -1793,7 +1792,7 @@ def test_publish_stac_async_with_license(
     )
     project = create_project(db, owner_id=current_user.id)
     flight = create_flight(db, project_id=project.id)
-    data_product = SampleDataProduct(db, project=project, flight=flight)
+    SampleDataProduct(db, project=project, flight=flight)
 
     # License parameter
     license_param = "ISC"
@@ -1826,7 +1825,7 @@ def test_stac_with_license_using_task(
     )
     project = create_project(db, owner_id=current_user.id)
     flight = create_flight(db, project_id=project.id)
-    data_product = SampleDataProduct(db, project=project, flight=flight)
+    SampleDataProduct(db, project=project, flight=flight)
 
     # Test license
     test_license = "GPL-3.0"
@@ -1882,6 +1881,7 @@ def test_unpublish_stac_cleans_up_s3_when_configured(
 ) -> None:
     """When S3 is configured, unpublishing should delete uploaded objects and clear s3_url columns."""
     from unittest.mock import patch
+
     from app.tasks.stac_tasks import publish_stac_catalog_task
     from app.tests.utils.raw_data import SampleRawData
 
@@ -1896,11 +1896,12 @@ def test_unpublish_stac_cleans_up_s3_when_configured(
     publish_stac_catalog_task(str(project.id), db=db)
     _seed_s3_urls_after_publish(db, project, dp, raw)
 
-    with patch(
-        "app.api.api_v1.endpoints.stac.is_s3_configured", return_value=True
-    ), patch(
-        "app.api.api_v1.endpoints.stac.delete_s3_objects", return_value=True
-    ) as mock_delete:
+    with (
+        patch("app.api.api_v1.endpoints.stac.is_s3_configured", return_value=True),
+        patch(
+            "app.api.api_v1.endpoints.stac.delete_s3_objects", return_value=True
+        ) as mock_delete,
+    ):
         response = client.delete(f"{API_URL}/{project.id}/delete-stac")
 
     assert response.status_code == status.HTTP_200_OK
@@ -1934,13 +1935,15 @@ def test_unpublish_stac_aborts_when_s3_delete_fails(
     seeded_dp_url = crud.data_product.get(db, id=dp.obj.id).s3_url
     seeded_raw_url = crud.raw_data.get(db, id=raw.obj.id).s3_url
 
-    with patch(
-        "app.api.api_v1.endpoints.stac.is_s3_configured", return_value=True
-    ), patch(
-        "app.api.api_v1.endpoints.stac.delete_s3_objects", return_value=False
-    ) as mock_delete, patch(
-        "app.api.api_v1.endpoints.stac.STACCollectionManager.remove_from_catalog"
-    ) as mock_remove:
+    with (
+        patch("app.api.api_v1.endpoints.stac.is_s3_configured", return_value=True),
+        patch(
+            "app.api.api_v1.endpoints.stac.delete_s3_objects", return_value=False
+        ) as mock_delete,
+        patch(
+            "app.api.api_v1.endpoints.stac.STACCollectionManager.remove_from_catalog"
+        ) as mock_remove,
+    ):
         response = client.delete(f"{API_URL}/{project.id}/delete-stac")
 
     assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
@@ -1979,20 +1982,18 @@ def test_unpublish_stac_post_cleanup_state_unchanged_when_s3_fails(
     _seed_s3_urls_after_publish(db, project, dp)
 
     # First attempt: S3 broken — abort, leave state intact
-    with patch(
-        "app.api.api_v1.endpoints.stac.is_s3_configured", return_value=True
-    ), patch(
-        "app.api.api_v1.endpoints.stac.delete_s3_objects", return_value=False
+    with (
+        patch("app.api.api_v1.endpoints.stac.is_s3_configured", return_value=True),
+        patch("app.api.api_v1.endpoints.stac.delete_s3_objects", return_value=False),
     ):
         first = client.delete(f"{API_URL}/{project.id}/delete-stac")
     assert first.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
     assert crud.project.get(db, id=project.id).is_published is True
 
     # Second attempt: S3 fixed — full unpublish succeeds
-    with patch(
-        "app.api.api_v1.endpoints.stac.is_s3_configured", return_value=True
-    ), patch(
-        "app.api.api_v1.endpoints.stac.delete_s3_objects", return_value=True
+    with (
+        patch("app.api.api_v1.endpoints.stac.is_s3_configured", return_value=True),
+        patch("app.api.api_v1.endpoints.stac.delete_s3_objects", return_value=True),
     ):
         second = client.delete(f"{API_URL}/{project.id}/delete-stac")
     assert second.status_code == status.HTTP_200_OK
@@ -2007,6 +2008,7 @@ def test_unpublish_stac_skips_s3_cleanup_when_not_configured(
     """When S3 is not configured, unpublish must not attempt S3 deletion
     and must leave any persisted s3_url values untouched."""
     from unittest.mock import patch
+
     from app.tasks.stac_tasks import publish_stac_catalog_task
     from app.tests.utils.raw_data import SampleRawData
 
@@ -2026,11 +2028,10 @@ def test_unpublish_stac_skips_s3_cleanup_when_not_configured(
     assert seeded_dp_url is not None
     assert seeded_raw_url is not None
 
-    with patch(
-        "app.api.api_v1.endpoints.stac.is_s3_configured", return_value=False
-    ), patch(
-        "app.api.api_v1.endpoints.stac.delete_s3_objects"
-    ) as mock_delete:
+    with (
+        patch("app.api.api_v1.endpoints.stac.is_s3_configured", return_value=False),
+        patch("app.api.api_v1.endpoints.stac.delete_s3_objects") as mock_delete,
+    ):
         response = client.delete(f"{API_URL}/{project.id}/delete-stac")
 
     assert response.status_code == status.HTTP_200_OK
@@ -2045,6 +2046,7 @@ def test_unpublish_stac_deletes_local_stac_cache(
 ) -> None:
     """The local stac.json cache should be removed so re-publish doesn't see stale URLs."""
     from unittest.mock import patch
+
     from app.tasks.stac_tasks import get_stac_cache_path, publish_stac_catalog_task
 
     current_user = get_current_approved_user(
@@ -2080,14 +2082,16 @@ def test_unpublish_stac_aborts_when_s3_cleanup_raises(
     publish_stac_catalog_task(str(project.id), db=db)
     _seed_s3_urls_after_publish(db, project, dp)
 
-    with patch(
-        "app.api.api_v1.endpoints.stac.is_s3_configured", return_value=True
-    ), patch(
-        "app.api.api_v1.endpoints.stac._cleanup_s3_for_project",
-        side_effect=RuntimeError("s3 down"),
-    ), patch(
-        "app.api.api_v1.endpoints.stac.STACCollectionManager.remove_from_catalog"
-    ) as mock_remove:
+    with (
+        patch("app.api.api_v1.endpoints.stac.is_s3_configured", return_value=True),
+        patch(
+            "app.api.api_v1.endpoints.stac._cleanup_s3_for_project",
+            side_effect=RuntimeError("s3 down"),
+        ),
+        patch(
+            "app.api.api_v1.endpoints.stac.STACCollectionManager.remove_from_catalog"
+        ) as mock_remove,
+    ):
         response = client.delete(f"{API_URL}/{project.id}/delete-stac")
 
     assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
@@ -2102,6 +2106,7 @@ def test_publish_does_not_call_s3_when_not_configured(
 ) -> None:
     """Publish must skip the S3 upload helper when S3 is not configured."""
     from unittest.mock import patch
+
     from app.tasks.stac_tasks import publish_stac_catalog_task
 
     current_user = get_current_approved_user(
@@ -2111,11 +2116,10 @@ def test_publish_does_not_call_s3_when_not_configured(
     flight = create_flight(db, project_id=project.id)
     SampleDataProduct(db, project=project, flight=flight)
 
-    with patch(
-        "app.tasks.stac_tasks.is_s3_configured", return_value=False
-    ), patch(
-        "app.tasks.stac_tasks._upload_to_s3_and_rewrite_hrefs"
-    ) as mock_upload:
+    with (
+        patch("app.tasks.stac_tasks.is_s3_configured", return_value=False),
+        patch("app.tasks.stac_tasks._upload_to_s3_and_rewrite_hrefs") as mock_upload,
+    ):
         publish_stac_catalog_task(str(project.id), db=db)
 
     mock_upload.assert_not_called()
@@ -2133,6 +2137,7 @@ def test_publish_calls_s3_upload_helper_when_configured(
 ) -> None:
     """Publish must invoke the S3 upload helper when S3 is configured."""
     from unittest.mock import patch
+
     from app.tasks.stac_tasks import publish_stac_catalog_task
 
     current_user = get_current_approved_user(
@@ -2142,11 +2147,12 @@ def test_publish_calls_s3_upload_helper_when_configured(
     flight = create_flight(db, project_id=project.id)
     SampleDataProduct(db, project=project, flight=flight)
 
-    with patch(
-        "app.tasks.stac_tasks.is_s3_configured", return_value=True
-    ), patch(
-        "app.tasks.stac_tasks._upload_to_s3_and_rewrite_hrefs", return_value=[]
-    ) as mock_upload:
+    with (
+        patch("app.tasks.stac_tasks.is_s3_configured", return_value=True),
+        patch(
+            "app.tasks.stac_tasks._upload_to_s3_and_rewrite_hrefs", return_value=[]
+        ) as mock_upload,
+    ):
         publish_stac_catalog_task(str(project.id), db=db)
 
     mock_upload.assert_called_once()
@@ -2176,10 +2182,9 @@ def test_publish_writes_s3_hrefs_into_stac_cache(
     monkeypatch.setattr(settings, "AWS_S3_REGION", "us-east-1")
 
     fake_url = "https://my-bucket.s3.us-east-1.amazonaws.com/d2s/host/file.tif"
-    with patch(
-        "app.tasks.stac_tasks.is_s3_configured", return_value=True
-    ), patch(
-        "app.tasks.stac_tasks.upload_file_to_s3", return_value=fake_url
+    with (
+        patch("app.tasks.stac_tasks.is_s3_configured", return_value=True),
+        patch("app.tasks.stac_tasks.upload_file_to_s3", return_value=fake_url),
     ):
         publish_stac_catalog_task(str(project.id), db=db)
 

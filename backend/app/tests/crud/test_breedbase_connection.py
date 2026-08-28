@@ -1,9 +1,9 @@
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
+from app.tests.conftest import pytest_requires_breedbase
 from app.tests.utils.breedbase_connection import create_breedbase_connection
 from app.tests.utils.project import create_project
-from app.tests.conftest import pytest_requires_breedbase
 from app.tests.utils.user import create_user
 
 

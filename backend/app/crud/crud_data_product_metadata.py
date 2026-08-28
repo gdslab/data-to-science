@@ -5,7 +5,6 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
-from app import crud
 from app.crud.base import CRUDBase
 from app.models.data_product_metadata import DataProductMetadata
 from app.models.vector_layer import VectorLayer

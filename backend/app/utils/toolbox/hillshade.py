@@ -78,9 +78,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if not os.path.exists(args.in_raster):
-        raise FileNotFoundError(f"Input raster not found")
+        raise FileNotFoundError("Input raster not found")
 
     if os.path.exists(args.out_raster):
-        raise FileExistsError(f"Output raster already exists")
+        raise FileExistsError("Output raster already exists")
 
     run(args.in_raster, args.out_raster)

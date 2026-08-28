@@ -2,6 +2,7 @@ import re
 import secrets
 from pathlib import Path
 from typing import Dict, Tuple, Union
+
 from PIL import Image
 
 

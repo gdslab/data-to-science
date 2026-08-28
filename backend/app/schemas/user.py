@@ -1,8 +1,7 @@
 from datetime import datetime
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
-from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, UUID4, field_validator
-
+from pydantic import UUID4, AnyHttpUrl, BaseModel, ConfigDict, Field, field_validator
 
 if TYPE_CHECKING:
     EmailStr = str

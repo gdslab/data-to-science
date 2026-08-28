@@ -4,11 +4,10 @@ from pathlib import Path
 
 from celery.utils.log import get_task_logger
 
-from app.core.config import settings
 from app.core.celery_app import celery_app
-from app.utils.job_manager import JobManager, Status
+from app.core.config import settings
 from app.utils import gen_preview_from_pointcloud
-
+from app.utils.job_manager import JobManager, Status
 
 logger = get_task_logger(__name__)
 

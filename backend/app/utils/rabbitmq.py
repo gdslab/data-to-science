@@ -42,17 +42,17 @@ def get_pika_connection() -> pika.connection.Connection:
                 retry_delay=5,
             )
         )
-    except AMQPConnectionError as e:
+    except AMQPConnectionError:
         print(
             "Failed to connect to RabbitMQ consumer - check if service running on host"
         )
         raise
-    except ProbableAuthenticationError as e:
+    except ProbableAuthenticationError:
         print(
             "Failed to connect to RabbitMQ consumer - check username and password credentials"
         )
         raise
-    except Exception as e:
+    except Exception:
         logger.exception("Failed to connect to RabbitMQ consumer")
         raise
 

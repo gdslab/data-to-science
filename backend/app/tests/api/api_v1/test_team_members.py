@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app import crud
-from app.api.deps import get_current_user, get_current_approved_user
+from app.api.deps import get_current_approved_user, get_current_user
 from app.core.config import settings
 from app.schemas.team_member import Role, TeamMemberUpdate
 from app.tests.utils.project import create_project
@@ -119,7 +119,7 @@ def test_get_team_members(
     response = client.get(f"{settings.API_V1_STR}/teams/{team.id}/members")
     assert response.status_code == status.HTTP_200_OK
     fetched_team_members = response.json()
-    assert type(fetched_team_members) == list
+    assert isinstance(fetched_team_members, list)
     assert len(fetched_team_members) == 4  # 3 added members + owner (current user)
     for tm in fetched_team_members:
         assert tm["id"] in team_member_ids

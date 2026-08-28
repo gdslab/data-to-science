@@ -2,10 +2,9 @@ import logging
 from typing import Optional, Sequence
 from uuid import UUID
 
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
-from app import crud
 from app.crud.base import CRUDBase
 from app.models.indoor_project_data import IndoorProjectData
 from app.models.utils.utcnow import utcnow
@@ -13,7 +12,6 @@ from app.schemas.indoor_project_data import (
     IndoorProjectDataCreate,
     IndoorProjectDataUpdate,
 )
-
 
 logger = logging.getLogger("__name__")
 
@@ -42,7 +40,7 @@ class CRUDIndoorProjectData(
         indoor_project_data = self.model(
             **obj_in.model_dump(),
             indoor_project_id=indoor_project_id,
-            uploader_id=uploader_id
+            uploader_id=uploader_id,
         )
 
         with db as session:

@@ -2,13 +2,11 @@ import argparse
 import json
 import logging
 import os
-import sys
 from contextlib import redirect_stdout
 from glob import glob
 from pathlib import Path
 
 import functions
-
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +30,7 @@ def run(config_filepath: str) -> None:
         output_dir = str(Path(config_filepath).parent / "output")
         output_dir_contents = glob(f"{output_dir}/*.csv")
         output_filepath = str(Path(output_dir_contents[0]).resolve())
-    except Exception as e:
+    except Exception:
         print(
             json.dumps(
                 {"status": 0, "message": "AgTC task failed", "output_filepath": ""}

@@ -1,7 +1,6 @@
 import os
 import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from botocore.exceptions import ClientError, EndpointConnectionError
@@ -201,4 +200,6 @@ def test_delete_s3_objects_returns_false_on_per_key_errors(monkeypatch, caplog):
     with caplog.at_level("WARNING", logger="app.utils.s3"):
         assert s3_utils.delete_s3_objects(["k1", "k2"]) is False
 
-    assert any("k1" in rec.message and "AccessDenied" in rec.message for rec in caplog.records)
+    assert any(
+        "k1" in rec.message and "AccessDenied" in rec.message for rec in caplog.records
+    )

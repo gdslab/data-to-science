@@ -1,5 +1,5 @@
-from datetime import datetime, timedelta, timezone
 import uuid
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from jose import jwt
@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app import crud
 from app.core.config import settings
-from app.core.security import create_refresh_token, decode_token, ALGORITHM
+from app.core.security import ALGORITHM, create_refresh_token, decode_token
 from app.tests.utils.user import create_user
 
 

@@ -35,14 +35,10 @@ def test_create_extension(db: Session) -> None:
 def test_create_duplicate_extension(db: Session) -> None:
     extension_name = "ext1"
     extension_description = "Extension 1"
-    extension = create_extension(
-        db, name=extension_name, description=extension_description
-    )
+    create_extension(db, name=extension_name, description=extension_description)
     # unique contraint should cause creation duplicate extension to fail
     with pytest.raises(IntegrityError):
-        extension_duplicate = create_extension(
-            db, name=extension_name, description=extension_description
-        )
+        create_extension(db, name=extension_name, description=extension_description)
 
 
 def test_read_extension_by_name(db: Session) -> None:
@@ -169,7 +165,7 @@ def test_read_team_extension_by_user(db: Session) -> None:
     extension = create_extension(db, name="ext1")
     user = create_user(db)
     team = create_team(db)
-    team_member = create_team_member(db, email=user.email, team_id=team.id)
+    create_team_member(db, email=user.email, team_id=team.id)
     team_extension = create_team_extension(
         db, extension_id=extension.id, team_id=team.id
     )
@@ -189,7 +185,7 @@ def test_read_team_extension_does_not_return_inactive_extension(db: Session) -> 
     team_extension_in = TeamExtensionUpdate(
         is_active=False, extension_id=extension.id, team_id=team.id
     )
-    team_extension = crud.extension.create_or_update_team_extension(
+    crud.extension.create_or_update_team_extension(
         db, team_extension_in=team_extension_in
     )
     team_extension_in_db = crud.extension.get_team_extension(
@@ -205,7 +201,7 @@ def test_read_user_extension_does_not_return_inactive_extension(db: Session) -> 
     user_extension_in = UserExtensionUpdate(
         is_active=False, extension_id=extension.id, user_id=user.id
     )
-    user_extension = crud.extension.create_or_update_user_extension(
+    crud.extension.create_or_update_user_extension(
         db, user_extension_in=user_extension_in
     )
     user_extension_in_db = crud.extension.get_user_extension(
@@ -226,7 +222,7 @@ def test_removing_extension_removes_related_team_and_user_extensions(
     user_extension = create_user_extension(
         db, extension_id=extension.id, user_id=user.id
     )
-    extension_removed = crud.extension.remove(db, id=extension.id)
+    crud.extension.remove(db, id=extension.id)
     team_extension_after_remove = crud.extension.get_team_extension(
         db, extension_id=extension.id, team_id=team.id
     )

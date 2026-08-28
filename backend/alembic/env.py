@@ -2,11 +2,11 @@ import os
 from logging.config import fileConfig
 from typing import Literal, Optional
 
-from alembic import context
 from geoalchemy2 import alembic_helpers  # type: ignore
 from sqlalchemy import engine_from_config, pool
 from sqlalchemy.schema import SchemaItem
 
+from alembic import context
 from app.db.base import Base
 
 # this is the Alembic Config object, which provides

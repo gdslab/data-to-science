@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, UUID4
+from pydantic import UUID4, BaseModel
 
 
 class State(Enum):

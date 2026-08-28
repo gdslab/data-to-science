@@ -1,15 +1,15 @@
 # Import all the models, so that Base has them before being
 # imported by Alembic
 from app.db.base_class import Base
-from app.models.api_key import APIKey
 from app.models.annotation import Annotation
 from app.models.annotation_attachment import AnnotationAttachment
 from app.models.annotation_tag import AnnotationTag
+from app.models.api_key import APIKey
 from app.models.breedbase_connection import BreedbaseConnection
 from app.models.campaign import Campaign
+from app.models.data_product import DataProduct
 from app.models.data_product_like import DataProductLike
 from app.models.data_product_metadata import DataProductMetadata
-from app.models.data_product import DataProduct
 from app.models.data_product_view import DataProductView
 from app.models.disk_usage_stats import DiskUsageStats
 from app.models.extension import Extension

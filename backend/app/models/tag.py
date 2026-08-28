@@ -1,14 +1,13 @@
 import uuid
 from datetime import datetime
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
-from sqlalchemy import DateTime, func, Index, String
+from sqlalchemy import DateTime, Index, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base
 from app.models.utils.utcnow import utcnow
-
 
 if TYPE_CHECKING:
     from .annotation_tag import AnnotationTag

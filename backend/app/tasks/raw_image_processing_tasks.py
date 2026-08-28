@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 from typing import Literal, Tuple, Union
 from uuid import UUID
 
-from celery import Task
 from celery.utils.log import get_task_logger
 
 from app import crud, schemas
@@ -15,13 +14,12 @@ from app.api.deps import get_db
 from app.core.celery_app import celery_app
 from app.core.config import settings
 from app.core.security import get_token_hash
-from app.schemas.image_processing_backend import ImageProcessingBackend
 from app.schemas.job import Status
 from app.schemas.raw_data import MetashapeQueryParams, ODMQueryParams
 from app.utils.job_manager import JobManager
 from app.utils.RpcClient import RpcClient
 from app.utils.unique_id import generate_unique_id
-
+from celery import Task
 
 logger = get_task_logger(__name__)
 
@@ -225,9 +223,7 @@ def transfer_raw_data(
             info_file.write(json.dumps(raw_data_meta))
     except Exception:
         logger.exception("Error while writing metadata to info file")
-        fail_job(
-            job, "Processing could not be started. Please try again later."
-        )
+        fail_job(job, "Processing could not be started. Please try again later.")
         cleanup_on_external(destination_dir, raw_data_identifier)
         # re-raise so the chain stops and the job is not resumed
         raise

@@ -9,7 +9,6 @@ from sqlalchemy.schema import UniqueConstraint
 from app.db.base_class import Base
 from app.schemas.role import Role
 
-
 if TYPE_CHECKING:
     from .team import Team
     from .user import User

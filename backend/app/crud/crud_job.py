@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from typing import Optional, Sequence
 from uuid import UUID
 
@@ -81,9 +81,9 @@ class CRUDJob(CRUDBase[Job, JobCreate, JobUpdate]):
             )
         with db as session:
             jobs = session.scalars(select_statement).all()
-            jobs2 = session.scalars(select(Job)).all()
-            dp = session.scalars(select(DataProduct)).all()
-            rd = session.scalars(select(RawData)).all()
+            session.scalars(select(Job)).all()
+            session.scalars(select(DataProduct)).all()
+            session.scalars(select(RawData)).all()
             return jobs
 
     def get_by_raw_data_id(

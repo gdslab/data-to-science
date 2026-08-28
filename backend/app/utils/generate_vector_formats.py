@@ -31,16 +31,16 @@ from pathlib import Path
 from uuid import UUID
 
 import geopandas as gpd
-from sqlalchemy import select, distinct
+from sqlalchemy import distinct, select
 
 # Add parent directory to path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from app import crud
 from app.api.utils import (
-    save_vector_layer_parquet,
-    save_vector_layer_flatgeobuf,
     get_static_dir,
+    save_vector_layer_flatgeobuf,
+    save_vector_layer_parquet,
 )
 from app.db.session import SessionLocal
 from app.models.vector_layer import VectorLayer
@@ -110,7 +110,12 @@ def generate_formats_for_layer(
 
     if "flatgeobuf" in formats:
         fgb_path = os.path.join(
-            static_dir, "projects", str(project_id), "vector", layer_id, f"{layer_id}.fgb"
+            static_dir,
+            "projects",
+            str(project_id),
+            "vector",
+            layer_id,
+            f"{layer_id}.fgb",
         )
 
         # Check if FlatGeobuf file already exists
@@ -151,7 +156,7 @@ def backfill_formats(
             distinct(VectorLayer.layer_id),
             VectorLayer.project_id,
             VectorLayer.layer_name,
-        ).where(VectorLayer.is_active == True)
+        ).where(VectorLayer.is_active)
 
         # Filter by project if specified
         if project_id:
@@ -171,7 +176,9 @@ def backfill_formats(
         print()
 
         # Track counts per format
-        format_stats = {fmt: {"generated": 0, "skipped": 0, "errors": 0} for fmt in formats}
+        format_stats = {
+            fmt: {"generated": 0, "skipped": 0, "errors": 0} for fmt in formats
+        }
 
         for layer_id, proj_id, layer_name in results:
             format_results = generate_formats_for_layer(
@@ -197,7 +204,7 @@ def backfill_formats(
             status_str = " ".join(status_parts)
             print(f"[{status_str}] {layer_id} ({layer_name}) in project {proj_id}")
 
-        print(f"\nBackfill complete:")
+        print("\nBackfill complete:")
         for fmt in formats:
             print(f"  {fmt.capitalize()}:")
             print(f"    Generated: {format_stats[fmt]['generated']}")
@@ -244,7 +251,9 @@ def main():
         try:
             project_id = UUID(args.project_id)
         except ValueError:
-            print(f"Error: Invalid project ID '{args.project_id}'. Must be a valid UUID.")
+            print(
+                f"Error: Invalid project ID '{args.project_id}'. Must be a valid UUID."
+            )
             sys.exit(1)
 
     # Determine formats to generate
@@ -254,7 +263,9 @@ def main():
         formats = [args.format]
 
     # Run backfill
-    backfill_formats(project_id=project_id, formats=formats, force=args.force, sync=args.sync)
+    backfill_formats(
+        project_id=project_id, formats=formats, force=args.force, sync=args.sync
+    )
 
 
 if __name__ == "__main__":

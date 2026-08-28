@@ -10,7 +10,6 @@ from slowapi.util import get_remote_address
 
 from app.core.limiter import _key_func
 
-
 # -- Fixtures ------------------------------------------------------------------
 
 
@@ -81,9 +80,7 @@ def test_key_func_falls_back_to_cf_connecting_ip() -> None:
 
 
 def test_key_func_falls_back_to_x_forwarded_for_first_entry() -> None:
-    request = _make_mock_request(
-        headers={"X-Forwarded-For": "9.10.11.12, 172.16.0.1"}
-    )
+    request = _make_mock_request(headers={"X-Forwarded-For": "9.10.11.12, 172.16.0.1"})
     assert _key_func(request) == "9.10.11.12"
 
 

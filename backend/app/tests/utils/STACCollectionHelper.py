@@ -1,6 +1,6 @@
+import logging
 from typing import List, Optional
 
-import logging
 from pystac import Collection, Item
 from sqlalchemy.orm import Session
 
@@ -10,7 +10,6 @@ from app.tests.utils.flight import create_flight
 from app.tests.utils.project import create_project
 from app.utils.stac.STACCollectionManager import STACCollectionManager
 from app.utils.stac.STACGenerator import STACGenerator
-
 
 logger = logging.getLogger(__name__)
 
