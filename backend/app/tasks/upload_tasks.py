@@ -295,7 +295,7 @@ def upload_geotiff(
     # update job status to indicate process has started
     job.start()
 
-    # create get STAC properties and convert to COG (if needed)
+    # get STAC properties and convert to COG (if needed)
     try:
         ip = ImageProcessor(str(in_raster), project_to_utm=project_to_utm)
         out_raster = ip.run()
