@@ -1,8 +1,11 @@
+import { useEffect, useState } from 'react';
+
 import { DataProduct } from '../../../pages/workspace/projects/Project';
 import {
   SingleBandSymbology,
   useRasterSymbologyContext,
 } from '../../RasterSymbologyContext';
+import { toSymbologyInputValue } from '../../utils';
 
 export default function SingleBandNumberInput({
   name,
@@ -17,35 +20,37 @@ export default function SingleBandNumberInput({
 
   const symbology = state[dataProduct.id].symbology as SingleBandSymbology;
 
-  const rasterMin = dataProduct.stac_properties.raster[0].stats.minimum;
-  const rasterMax = dataProduct.stac_properties.raster[0].stats.maximum;
+  const isMeanStdDev = name === 'meanStdDev';
+  const value = symbology[name];
 
-  // Default to 0 unless minimum raster value is negative
-  const min = rasterMin && rasterMin > 0 ? 0 : rasterMin;
+  const [inputValue, setInputValue] = useState(() =>
+    toSymbologyInputValue(value)
+  );
 
-  // Default to maximum raster value, fallback to max value for uint8 (255)
-  // Default to 100 if mean std. dev. selected as the mode
-  const max = name === 'meanStdDev' ? 100 : rasterMax ? rasterMax : 255;
+  // Sync when the symbology changes outside this input (mode switch, saved
+  // style loaded) without disturbing partial input such as "-" or "5."
+  useEffect(() => {
+    setInputValue((prev) =>
+      parseFloat(prev) === value ? prev : toSymbologyInputValue(value)
+    );
+  }, [value]);
 
-  const step: number =
-    name === 'meanStdDev'
-      ? 0.1
-      : dataProduct.stac_properties.raster[0].data_type === 'uint8'
-      ? 1
-      : 0.001;
+  const step: number = isMeanStdDev
+    ? 0.1
+    : dataProduct.stac_properties.raster[0].data_type === 'uint8'
+    ? 1
+    : 0.001;
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const name = event.target.name as keyof SingleBandSymbology;
-    const value = event.target
-      .value as SingleBandSymbology[keyof SingleBandSymbology];
-    const valueAsNumber = typeof value === 'string' ? parseFloat(value) : value;
+    setInputValue(event.target.value);
 
-    const updatedSymbology = { ...symbology, [name]: valueAsNumber };
+    const parsed = parseFloat(event.target.value);
+    if (Number.isNaN(parsed)) return;
 
     dispatch({
       type: 'SET_SYMBOLOGY',
       rasterId: dataProduct.id,
-      payload: updatedSymbology,
+      payload: { ...symbology, [name]: parsed },
     });
   };
 
@@ -65,10 +70,10 @@ export default function SingleBandNumberInput({
         type="number"
         id={name}
         name={name}
-        min={min}
-        max={max}
+        min={isMeanStdDev ? 0 : undefined}
+        max={isMeanStdDev ? 100 : undefined}
         step={step}
-        value={symbology[name]}
+        value={inputValue}
         onChange={handleInputChange}
         disabled={disabled}
       />

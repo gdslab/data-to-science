@@ -342,6 +342,16 @@ const createDefaultMultibandSymbology = (
 };
 
 /**
+ * Converts a symbology value into a string for a controlled number input.
+ * Non-finite values, including a null persisted by an older saved style,
+ * become an empty string.
+ * @param value Current symbology value.
+ * @returns String representation of the value.
+ */
+const toSymbologyInputValue = (value: number): string =>
+  Number.isFinite(value) ? String(value) : '';
+
+/**
  * Returns default min/max values for single band raster.
  * @param stacProps STAC metadata for raster band.
  * @param symbology Current symbology settings.
@@ -355,18 +365,21 @@ const getSingleBandMinMax = (
 
   switch (symbology.mode) {
     case 'minMax':
-      if (symbology.min === undefined || symbology.max === undefined) {
+      if (!Number.isFinite(symbology.min) || !Number.isFinite(symbology.max)) {
         console.warn(
-          'Min and max raster props missing, falling back to default min/max.'
+          'Min and max raster props missing or invalid, falling back to default min/max.'
         );
         return defaultMinMax;
       }
       return [symbology.min, symbology.max];
 
     case 'userDefined':
-      if (symbology.userMin === undefined || symbology.userMax === undefined) {
+      if (
+        !Number.isFinite(symbology.userMin) ||
+        !Number.isFinite(symbology.userMax)
+      ) {
         console.warn(
-          'User defined min and max props missing, falling back to default min/max.'
+          'User defined min and max props missing or invalid, falling back to default min/max.'
         );
         return defaultMinMax;
       }
@@ -405,8 +418,8 @@ const getMultibandMinMax = (
     ];
 
   const validateBands = (key: 'min' | 'max' | 'userMin' | 'userMax') =>
-    ['red', 'green', 'blue'].every(
-      (band) => symbology[band]?.[key] !== undefined
+    ['red', 'green', 'blue'].every((band) =>
+      Number.isFinite(symbology[band]?.[key])
     );
 
   const getStats = (index: number) => stacProps.raster?.[index - 1]?.stats;
@@ -898,4 +911,5 @@ export {
   mapApiResponseToLayers,
   setLocalStorageProjects,
   setLocalStoragePublicProjects,
+  toSymbologyInputValue,
 };

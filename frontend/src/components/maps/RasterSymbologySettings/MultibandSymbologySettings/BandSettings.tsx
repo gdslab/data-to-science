@@ -2,12 +2,11 @@ import clsx from 'clsx';
 
 import BandSelect from './BandSelect';
 import {
-  ColorBand,
   MultibandSymbology,
   useRasterSymbologyContext,
 } from '../../RasterSymbologyContext';
 import { DataProduct } from '../../../pages/workspace/projects/Project';
-import BandNumberInput from './BandNumberInput';
+import BandNumberInput, { BandValueName } from './BandNumberInput';
 
 export interface BandOption {
   readonly value: number;
@@ -34,23 +33,9 @@ export default function BandSettings({
   );
 
   const step: number =
-    dataProduct.stac_properties.raster[0].data_type == 'unit8' ? 1 : 0.001;
+    dataProduct.stac_properties.raster[0].data_type === 'uint8' ? 1 : 0.001;
 
-  const getBandStatistic = (
-    bandIdx: number,
-    stat: 'minimum' | 'maximum'
-  ): number => {
-    if (dataProduct.stac_properties.raster.length > bandIdx - 1) {
-      return dataProduct.stac_properties.raster[bandIdx - 1][stat];
-    } else {
-      console.warn(
-        'Unable to find band statistic, falling back to default value.'
-      );
-      return stat === 'minimum' ? 0 : 255;
-    }
-  };
-
-  const inputNames: Array<keyof ColorBand> =
+  const inputNames: BandValueName[] =
     symbology.mode === 'userDefined' ? ['userMin', 'userMax'] : ['min', 'max'];
 
   return (
@@ -76,11 +61,6 @@ export default function BandSettings({
           bandColor={bandColor}
           dataProduct={dataProduct}
           name={name}
-          min={0}
-          max={getBandStatistic(
-            symbology[bandColor].idx,
-            name === 'min' || name === 'userMin' ? 'minimum' : 'maximum'
-          )}
           step={step}
         />
       ))}
