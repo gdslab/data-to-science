@@ -1,24 +1,24 @@
+import { useEffect, useState } from 'react';
+
 import { DataProduct } from '../../../pages/workspace/projects/Project';
 import {
-  ColorBand,
   MultibandSymbology,
   useRasterSymbologyContext,
 } from '../../RasterSymbologyContext';
+import { toSymbologyInputValue } from '../../utils';
+
+export type BandValueName = 'min' | 'max' | 'userMin' | 'userMax';
 
 type BandNumberProps = {
   bandColor: 'red' | 'green' | 'blue';
   dataProduct: DataProduct;
-  name: keyof ColorBand;
-  min: number;
-  max: number;
+  name: BandValueName;
   step: number;
 };
 
 export default function BandNumberInput({
   bandColor,
   dataProduct,
-  min,
-  max,
   name,
   step,
 }: BandNumberProps) {
@@ -26,33 +26,33 @@ export default function BandNumberInput({
   const symbology = state[dataProduct.id].symbology as MultibandSymbology;
 
   const label = name === 'min' || name === 'userMin' ? 'Min' : 'Max';
+  const value = symbology[bandColor][name];
 
-  const getValue = (): number => {
-    if (name === 'min' || name === 'userMin') {
-      return symbology.mode === 'userDefined'
-        ? symbology[bandColor].userMin
-        : symbology[bandColor].min;
-    } else {
-      return symbology.mode === 'userDefined'
-        ? symbology[bandColor].userMax
-        : symbology[bandColor].max;
-    }
-  };
+  const [inputValue, setInputValue] = useState(() =>
+    toSymbologyInputValue(value)
+  );
+
+  // Sync when the symbology changes outside this input (mode switch, saved
+  // style loaded) without disturbing partial input such as "-" or "5."
+  useEffect(() => {
+    setInputValue((prev) =>
+      parseFloat(prev) === value ? prev : toSymbologyInputValue(value)
+    );
+  }, [value]);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target
-      .value as MultibandSymbology[keyof MultibandSymbology];
-    const valueAsNumber = typeof value === 'string' ? parseFloat(value) : value;
+    setInputValue(event.target.value);
 
-    const updatedSymbology = {
-      ...symbology,
-      [bandColor]: { ...symbology[bandColor], [name]: valueAsNumber },
-    };
+    const parsed = parseFloat(event.target.value);
+    if (Number.isNaN(parsed)) return;
 
     dispatch({
       type: 'SET_SYMBOLOGY',
       rasterId: dataProduct.id,
-      payload: updatedSymbology,
+      payload: {
+        ...symbology,
+        [bandColor]: { ...symbology[bandColor], [name]: parsed },
+      },
     });
   };
 
@@ -67,10 +67,8 @@ export default function BandNumberInput({
         type="number"
         id={`${bandColor}${label}`}
         name={`${bandColor}${label}`}
-        min={min}
-        max={max}
         step={step}
-        value={getValue()}
+        value={inputValue}
         disabled={symbology.mode !== 'userDefined'}
         onChange={handleInputChange}
       />
