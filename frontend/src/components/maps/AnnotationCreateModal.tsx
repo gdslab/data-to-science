@@ -2,6 +2,8 @@ import { isAxiosError } from 'axios';
 import { useState } from 'react';
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import * as Yup from 'yup';
+import { DialogTitle } from '@headlessui/react';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Feature } from 'geojson';
 
@@ -118,10 +120,22 @@ export default function AnnotationCreateModal({
   };
 
   return (
-    <Modal open={open} setOpen={() => handleCancel()}>
+    <Modal open={open} setOpen={() => handleCancel()} dismissible={false}>
       <div className="my-8 mx-4">
         <div className="mx-4 my-2">
-          <h2 className="text-lg font-bold mb-4">New Annotation</h2>
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <DialogTitle as="h2" className="text-lg font-bold">
+              New Annotation
+            </DialogTitle>
+            <button
+              type="button"
+              aria-label="Close"
+              className="shrink-0 rounded-lg border border-slate-300 p-1.5 text-slate-500 hover:text-slate-700"
+              onClick={handleCancel}
+            >
+              <XMarkIcon className="w-4 h-4" />
+            </button>
+          </div>
           <FormProvider {...methods}>
             <form
               className="flex flex-col gap-4"

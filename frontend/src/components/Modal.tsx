@@ -10,14 +10,18 @@ import { Button, OutlineButton } from './Buttons';
 interface Props {
   actions?: boolean;
   children: React.ReactNode;
+  dismissible?: boolean;
   open: boolean;
   overflow?: 'hidden' | 'visible';
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+const noop = () => {};
+
 export default function Modal({
   actions = false,
   children,
+  dismissible = true,
   open,
   overflow = 'hidden',
   setOpen,
@@ -29,7 +33,7 @@ export default function Modal({
         as="div"
         className="relative z-[60]"
         initialFocus={cancelButtonRef}
-        onClose={setOpen}
+        onClose={dismissible ? setOpen : noop}
       >
         <TransitionChild
           as={Fragment}
