@@ -27,3 +27,15 @@
     color: #ffffff;
     background-color: rgba(255, 255, 255, 0.15);
 }
+
+/* Feature popup: the body caps its own height inline, so only padding moves here */
+.feature-popup .maplibregl-popup-content {
+    padding: 0;
+    border-radius: 6px;
+}
+
+.feature-popup .maplibregl-popup-close-button {
+    font-size: 18px;
+    line-height: 1;
+    padding: 4px 8px;
+}

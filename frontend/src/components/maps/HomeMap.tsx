@@ -51,9 +51,10 @@ const NON_RASTER_TYPES = ['panoramic', 'point_cloud', '3dgs'];
 
 export type PopupInfoProps = {
   feature: Feature;
-  feature_type: string;
   latitude: number;
   longitude: number;
+  /** Vector layer the feature came from; unset for project marker popups */
+  layerId?: string;
 };
 
 export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
@@ -132,6 +133,19 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
     setIdentifyPoint(null);
   }, [activeDataProduct?.id]);
 
+  // Close any open popup when the active project changes
+  useEffect(() => {
+    setPopupInfo(null);
+  }, [activeProject?.id]);
+
+  // Close the feature popup when its layer is unchecked or removed
+  const popupLayerId = popupInfo?.layerId;
+  useEffect(() => {
+    if (!popupLayerId) return;
+    const layer = layers.find(({ id }) => id === popupLayerId);
+    if (!layer?.checked) setPopupInfo(null);
+  }, [layers, popupLayerId]);
+
   const handleMapClick = (event: MapLayerMouseEvent) => {
     // Identify tool takes over map clicks while active
     if (identifyActive) {
@@ -154,7 +168,6 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
 
           setPopupInfo({
             feature: clickedFeature,
-            feature_type: 'point',
             latitude: coordinates[1],
             longitude: coordinates[0],
           });
@@ -172,12 +185,10 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
           if (features.length > 0) {
             const clickedFeature = features[0];
             const clickCoordinates = event.lngLat;
-            const clickedFeatureType =
-              clickedFeature.geometry.type.toLowerCase();
 
             setPopupInfo({
               feature: clickedFeature,
-              feature_type: clickedFeatureType,
+              layerId: layer.id,
               latitude: clickCoordinates.lat,
               longitude: clickCoordinates.lng,
             });
