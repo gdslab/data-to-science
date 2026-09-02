@@ -51,7 +51,6 @@ const NON_RASTER_TYPES = ['panoramic', 'point_cloud', '3dgs'];
 
 export type PopupInfoProps = {
   feature: Feature;
-  feature_type: string;
   latitude: number;
   longitude: number;
 };
@@ -154,7 +153,6 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
 
           setPopupInfo({
             feature: clickedFeature,
-            feature_type: 'point',
             latitude: coordinates[1],
             longitude: coordinates[0],
           });
@@ -172,12 +170,9 @@ export default function HomeMap({ layers }: { layers: MapLayerProps[] }) {
           if (features.length > 0) {
             const clickedFeature = features[0];
             const clickCoordinates = event.lngLat;
-            const clickedFeatureType =
-              clickedFeature.geometry.type.toLowerCase();
 
             setPopupInfo({
               feature: clickedFeature,
-              feature_type: clickedFeatureType,
               latitude: clickCoordinates.lat,
               longitude: clickCoordinates.lng,
             });
