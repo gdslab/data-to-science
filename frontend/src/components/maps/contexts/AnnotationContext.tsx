@@ -244,6 +244,16 @@ export function AnnotationProvider({
     setVisible(false);
   }, [activeDataProduct]);
 
+  // Close the annotation popup when its layer is hidden or unchecked
+  useEffect(() => {
+    if (
+      selectedAnnotationId &&
+      (!visible || !state.checkedIds.has(selectedAnnotationId))
+    ) {
+      setSelectedAnnotationId(null);
+    }
+  }, [visible, state.checkedIds, selectedAnnotationId]);
+
   // Debounced style persistence — saves to API 500ms after last change
   const saveTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const stylesRef = useRef(state.styles);
