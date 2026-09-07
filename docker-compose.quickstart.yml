@@ -251,7 +251,7 @@ services:
       - no-new-privileges=true
 
   titiler:
-    image: ghcr.io/developmentseed/titiler:1.2.0
+    image: ghcr.io/developmentseed/titiler:2.2.1
     volumes:
       - user-data:/static
     environment:
@@ -259,12 +259,9 @@ services:
       - HOST=0.0.0.0
       - PORT=8888
       # Gunicorn / Uvicorn
-      # https://github.com/tiangolo/uvicorn-gunicorn-docker#web_concurrency
-      # - WEB_CONCURRENCY=1
-      - ACCESS_LOG=/var/log/titiler-access.log
-      - ERROR_LOG=/var/log/titiler-error.log
-      # https://github.com/tiangolo/uvicorn-gunicorn-docker#workers_per_core
-      - WORKERS_PER_CORE=1
+      # GDAL_CACHEMAX below applies per worker process. Change it to an absolute
+      # value in MB before raising the worker count.
+      - WEB_CONCURRENCY=1
       # GDAL config
       - CPL_TMPDIR=/tmp
       - GDAL_CACHEMAX=75%
@@ -278,6 +275,10 @@ services:
       - VSI_CACHE_SIZE=536870912
       - CPL_VSIL_CURL_ALLOWED_EXTENSIONS=.tif,.TIF,.tiff
       - CPL_VSIL_CURL_CACHE_SIZE=200000000
+      # Endpoints. Varnish only routes /cog to titiler.
+      - TITILER_API_DISABLE_STAC=True
+      - TITILER_API_DISABLE_MOSAIC=True
+      - TITILER_API_DISABLE_ZARR=True
       # telemetry config
       - TITILER_API_TELEMETRY_ENABLED=False
       # - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
@@ -286,6 +287,7 @@ services:
         [
           "CMD",
           "curl",
+          "-f",
           "-s",
           "-o",
           "/dev/null",

@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     SECRET_KEY: str = ""
     # Secret key used for signing pg_tileserv and titiler requests
     TILE_SIGNING_SECRET_KEY: str = ""
+    # Titiler service probed on startup to verify a supported version is running
+    TITILER_URL: str = "http://titiler:8888"
 
     @field_validator("SECRET_KEY", "TILE_SIGNING_SECRET_KEY", mode="before")
     def validate_secret_keys(cls, v: str | None, info: ValidationInfo) -> str:
