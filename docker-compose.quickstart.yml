@@ -258,28 +258,24 @@ services:
       # Application
       - HOST=0.0.0.0
       - PORT=8888
-      # Gunicorn / Uvicorn
-      # GDAL_CACHEMAX below applies per worker process. Change it to an absolute
-      # value in MB before raising the worker count.
-      - WEB_CONCURRENCY=1
-      # GDAL config
+      # Gunicorn. The image reads only HOST, PORT and WEB_CONCURRENCY; pass any
+      # other gunicorn option through GUNICORN_CMD_ARGS (e.g. add
+      # "--access-logfile -" to log every tile request).
+      - WEB_CONCURRENCY=2
+      - GUNICORN_CMD_ARGS=--keep-alive 75 --max-requests 5000 --max-requests-jitter 500
+      # GDAL. Rasters are read from the local /static mount, so the /vsicurl
+      # (HTTP range request) options from the TiTiler docs do not apply.
+      # GDAL_CACHEMAX is megabytes per worker process.
       - CPL_TMPDIR=/tmp
-      - GDAL_CACHEMAX=75%
-      - GDAL_INGESTED_BYTES_AT_OPEN=32768
+      - GDAL_CACHEMAX=512
       - GDAL_DISABLE_READDIR_ON_OPEN=EMPTY_DIR
-      - GDAL_HTTP_MERGE_CONSECUTIVE_RANGES=YES
-      - GDAL_HTTP_MULTIPLEX=YES
-      - GDAL_HTTP_VERSION=2
-      - PYTHONWARNINGS=ignore
       - VSI_CACHE=TRUE
-      - VSI_CACHE_SIZE=536870912
-      - CPL_VSIL_CURL_ALLOWED_EXTENSIONS=.tif,.TIF,.tiff
-      - CPL_VSIL_CURL_CACHE_SIZE=200000000
+      - PYTHONWARNINGS=ignore
       # Endpoints. Varnish only routes /cog to titiler.
       - TITILER_API_DISABLE_STAC=True
       - TITILER_API_DISABLE_MOSAIC=True
       - TITILER_API_DISABLE_ZARR=True
-      # telemetry config
+      # Telemetry. TITILER_API_DEBUG=True adds per-request logging and timing.
       - TITILER_API_TELEMETRY_ENABLED=False
       # - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
     healthcheck:
