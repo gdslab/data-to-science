@@ -1,3 +1,8 @@
+from typing import Dict, List, Optional
+from unittest.mock import AsyncMock, MagicMock, patch
+from urllib.parse import parse_qs, urlsplit
+
+import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -15,6 +20,8 @@ TEST_TIF_CENTER_LAT = 41.44403702360668
 # Point within UTM Zone 16N but well outside the raster footprint
 TEST_TIF_OUTSIDE_LON = -87.5
 TEST_TIF_OUTSIDE_LAT = 41.0
+
+PNG_BYTES = b"\x89PNG\r\n\x1a\n"
 
 
 def test_read_public_data_product_bounds(client: TestClient, db: Session):
@@ -204,3 +211,181 @@ def test_user_access_returns_liked_false_when_not_liked(
     )
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["liked"] is False
+
+
+def _make_data_product_public(db: Session, data_product: SampleDataProduct) -> None:
+    """Grant public access to a sample data product."""
+    file_permission = crud.file_permission.get_by_data_product(
+        db, file_id=data_product.obj.id
+    )
+    assert file_permission
+    crud.file_permission.update(
+        db, db_obj=file_permission, obj_in=FilePermissionUpdate(is_public=True)
+    )
+
+
+def _mock_tile_response(
+    status_code: int = 200, content: bytes = PNG_BYTES, text: str = ""
+) -> MagicMock:
+    """Create a mock titiler tile response."""
+    mock_response = MagicMock()
+    mock_response.status_code = status_code
+    mock_response.content = content
+    mock_response.text = text
+    return mock_response
+
+
+def _mock_titiler_client(
+    mock_async_client_cls: MagicMock, mock_response: Optional[MagicMock] = None
+) -> AsyncMock:
+    """Wire an AsyncMock httpx client onto a patched AsyncClient class."""
+    mock_client = AsyncMock()
+    mock_client.get = AsyncMock(return_value=mock_response or _mock_tile_response())
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=False)
+    mock_async_client_cls.return_value = mock_client
+    return mock_client
+
+
+def _requested_tile_query(mock_client: AsyncMock) -> Dict[str, List[str]]:
+    """Return the query parameters titiler was asked for."""
+    return parse_qs(urlsplit(mock_client.get.call_args.args[0]).query)
+
+
+@patch("app.api.api_v1.endpoints.public.httpx.AsyncClient")
+def test_read_map_tiles_requests_titiler_tilesize_url(
+    mock_async_client_cls: MagicMock, client: TestClient, db: Session
+) -> None:
+    """Tiles are requested with the tilesize parameter TiTiler 2.x expects."""
+    data_product = SampleDataProduct(db)
+    _make_data_product_public(db, data_product)
+    mock_client = _mock_titiler_client(mock_async_client_cls)
+
+    response = client.get(
+        f"{settings.API_V1_STR}/public/maptiles"
+        f"?z=12&x=1049&y=1533&data_product_id={data_product.obj.id}"
+        "&scale=2&bidx=1&rescale=0,255&colormap_name=viridis"
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.headers["content-type"] == "image/png"
+    assert response.content == PNG_BYTES
+    mock_client.get.assert_called_once()
+    assert mock_client.get.call_args.kwargs["timeout"] == 30.0
+
+    tile_url = urlsplit(mock_client.get.call_args.args[0])
+    assert tile_url.netloc == "varnish"
+    assert tile_url.path == "/cog/tiles/WebMercatorQuad/12/1049/1533"
+
+    query = parse_qs(tile_url.query)
+    assert query["tilesize"] == ["512"]
+    assert query["url"] == [data_product.obj.filepath]
+    assert query["bidx"] == ["1"]
+    assert query["rescale"] == ["0,255"]
+    assert query["colormap_name"] == ["viridis"]
+    assert query["dataProductId"] == [str(data_product.obj.id)]
+    assert "expires" in query
+    assert "secure" in query
+
+
+@patch("app.api.api_v1.endpoints.public.httpx.AsyncClient")
+def test_read_map_tiles_forwards_repeated_multiband_params(
+    mock_async_client_cls: MagicMock, client: TestClient, db: Session
+) -> None:
+    """Repeated bidx and rescale values survive query string encoding."""
+    data_product = SampleDataProduct(db)
+    _make_data_product_public(db, data_product)
+    mock_client = _mock_titiler_client(mock_async_client_cls)
+
+    response = client.get(
+        f"{settings.API_V1_STR}/public/maptiles"
+        f"?z=12&x=1049&y=1533&data_product_id={data_product.obj.id}&scale=2"
+        "&bidx=3&bidx=2&bidx=1"
+        "&rescale=0,255&rescale=10,200&rescale=20,180"
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    query = _requested_tile_query(mock_client)
+    assert query["bidx"] == ["3", "2", "1"]
+    assert query["rescale"] == ["0,255", "10,200", "20,180"]
+    assert "colormap_name" not in query
+
+
+@pytest.mark.parametrize(
+    "scale,tilesize", [(1, "256"), (2, "512"), (3, "768"), (4, "1024")]
+)
+@patch("app.api.api_v1.endpoints.public.httpx.AsyncClient")
+def test_read_map_tiles_scale_sets_tilesize(
+    mock_async_client_cls: MagicMock,
+    client: TestClient,
+    db: Session,
+    scale: int,
+    tilesize: str,
+) -> None:
+    """Each supported scale maps onto a multiple of the 256px tile matrix size."""
+    data_product = SampleDataProduct(db)
+    _make_data_product_public(db, data_product)
+    mock_client = _mock_titiler_client(mock_async_client_cls)
+
+    response = client.get(
+        f"{settings.API_V1_STR}/public/maptiles"
+        f"?z=12&x=1049&y=1533&data_product_id={data_product.obj.id}&scale={scale}"
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert _requested_tile_query(mock_client)["tilesize"] == [tilesize]
+
+
+@pytest.mark.parametrize("params", ["scale=0", "scale=5", "scale=2&x=1.5"])
+@patch("app.api.api_v1.endpoints.public.httpx.AsyncClient")
+def test_read_map_tiles_rejects_invalid_params(
+    mock_async_client_cls: MagicMock, client: TestClient, db: Session, params: str
+) -> None:
+    """Out of range scales and non-integer tile coordinates are rejected."""
+    data_product = SampleDataProduct(db)
+    _make_data_product_public(db, data_product)
+
+    response = client.get(
+        f"{settings.API_V1_STR}/public/maptiles"
+        f"?z=12&x=1049&y=1533&data_product_id={data_product.obj.id}&{params}"
+    )
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+    mock_async_client_cls.assert_not_called()
+
+
+@patch("app.api.api_v1.endpoints.public.httpx.AsyncClient")
+def test_read_map_tiles_not_found_without_access(
+    mock_async_client_cls: MagicMock, client: TestClient, db: Session
+) -> None:
+    """A data product without public access is never requested from titiler."""
+    data_product = SampleDataProduct(db)
+
+    response = client.get(
+        f"{settings.API_V1_STR}/public/maptiles"
+        f"?z=12&x=1049&y=1533&data_product_id={data_product.obj.id}&scale=2"
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    mock_async_client_cls.assert_not_called()
+
+
+@patch("app.api.api_v1.endpoints.public.httpx.AsyncClient")
+def test_read_map_tiles_propagates_titiler_error(
+    mock_async_client_cls: MagicMock, client: TestClient, db: Session
+) -> None:
+    """A titiler failure is surfaced with its status code."""
+    data_product = SampleDataProduct(db)
+    _make_data_product_public(db, data_product)
+    _mock_titiler_client(
+        mock_async_client_cls,
+        _mock_tile_response(status_code=500, content=b"", text="boom"),
+    )
+
+    response = client.get(
+        f"{settings.API_V1_STR}/public/maptiles"
+        f"?z=12&x=1049&y=1533&data_product_id={data_product.obj.id}&scale=2"
+    )
+
+    assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+    assert response.json()["detail"] == "Error: boom"

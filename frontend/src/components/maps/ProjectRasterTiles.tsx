@@ -12,8 +12,10 @@ import {
   getMultibandMinMax,
   getSingleBandMinMax,
   getTitilerQueryParams,
+  getTitilerTileSize,
   isPublicOnly,
   isSingleBand,
+  TITILER_TILE_SIZE,
 } from './utils';
 import { useMapLayerContext } from './MapLayersContext';
 import { useMapContext } from './MapContext';
@@ -32,13 +34,14 @@ function constructRasterTileUrl(
   const tms = 'WebMercatorQuad';
 
   // parts of path for fetching tiles
-  const resourcePath = `/cog/tiles/${tms}/{z}/{x}/{y}@${tileScale}x`;
+  const resourcePath = `/cog/tiles/${tms}/{z}/{x}/{y}`;
   const basePath = window.location.origin;
   const queryParams = getTitilerQueryParams(
     cogUrl,
     dataProduct,
     symbologySettings
   );
+  queryParams.append('tilesize', getTitilerTileSize(tileScale).toString());
   // add query params to base url
   const url = `${basePath}${resourcePath}?${queryParams.toString()}`;
 
@@ -151,7 +154,7 @@ export default function ProjectRasterTiles({
       tiles={tiles}
       maxzoom={24}
       minzoom={0}
-      tileSize={256}
+      tileSize={TITILER_TILE_SIZE}
       {...(boundingBox ? { bounds: boundingBox } : {})}
     >
       <Layer

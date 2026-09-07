@@ -512,6 +512,21 @@ function getLocalStorageProjects(): ProjectItem[] | null {
 }
 
 /**
+ * Tile size of the WebMercatorQuad tile matrix. Raster sources report this size
+ * to MapLibre while titiler renders a multiple of it for higher pixel density.
+ */
+const TITILER_TILE_SIZE = 256;
+
+/**
+ * Returns pixel dimensions requested from titiler for a tile scale.
+ * @param tileScale Multiplier for the base tile size.
+ * @returns Value for titiler's "tilesize" query parameter.
+ */
+function getTitilerTileSize(tileScale: number): number {
+  return tileScale * TITILER_TILE_SIZE;
+}
+
+/**
  * Returns query parameters for titiler /cog endpoint.
  * @param dataProduct Active data product.
  * @param symbology Symbology for active data product.
@@ -905,11 +920,13 @@ export {
   getMultibandMinMax,
   getSingleBandMinMax,
   getTitilerQueryParams,
+  getTitilerTileSize,
   isElevationDataProduct,
   isPublicOnly,
   isSingleBand,
   mapApiResponseToLayers,
   setLocalStorageProjects,
   setLocalStoragePublicProjects,
+  TITILER_TILE_SIZE,
   toSymbologyInputValue,
 };

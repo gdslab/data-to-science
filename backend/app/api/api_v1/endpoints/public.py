@@ -1,7 +1,7 @@
 import os
 import urllib.parse
 from io import BytesIO
-from typing import Annotated, Any, List, Optional, Sequence, Union
+from typing import Annotated, Any, List, Optional, Sequence, Tuple, Union
 from uuid import UUID
 
 import httpx
@@ -30,6 +30,12 @@ from app.core.limiter import limiter
 from app.models.constants import NON_RASTER_TYPES
 
 router = APIRouter()
+
+VARNISH_BASE_URL = "http://varnish"
+TITILER_TMS = "WebMercatorQuad"
+# Tile size of the WebMercatorQuad tile matrix. TiTiler 2.x takes the requested
+# pixel dimensions as a "tilesize" query parameter.
+TILE_MATRIX_TILE_SIZE = 256
 
 
 @router.get("", response_model=schemas.DataProduct)
@@ -117,11 +123,11 @@ async def get_vector_tiles_for_vector_layer(
 
 @router.get("/maptiles")
 async def get_map_tiles_for_data_product(
-    x: float,
-    y: float,
+    x: int,
+    y: int,
     z: int,
     data_product_id: UUID4,
-    scale: int,
+    scale: Annotated[int, Query(ge=1, le=4)],
     bidx: Annotated[Optional[List[int]], Query()] = None,
     rescale: Annotated[Optional[List[str]], Query()] = None,
     colormap_name: Annotated[Optional[str], Query()] = None,
@@ -147,28 +153,29 @@ async def get_map_tiles_for_data_product(
             status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
         )
 
-    # construct titiler query params
-    query_params = ""
-    if bidx and len(bidx) > 0:
-        for band_index in bidx:
-            query_params += f"&bidx={band_index}"
-    if rescale and len(rescale) > 0:
-        for rescale_range in rescale:
-            query_params += f"&rescale={rescale_range}"
-    if colormap_name:
-        query_params += f"&colormap_name={colormap_name}"
-
     # sign varnish request (required by varnish/default.vcl)
     signature, expiration = get_signature_for_data_product(data_product_id)
+
+    # construct titiler query params
+    query_params: List[Tuple[str, str]] = [("url", data_product.filepath)]
+    for band_index in bidx or []:
+        query_params.append(("bidx", str(band_index)))
+    if colormap_name:
+        query_params.append(("colormap_name", colormap_name))
+    for rescale_range in rescale or []:
+        query_params.append(("rescale", rescale_range))
+    query_params += [
+        ("dataProductId", str(data_product_id)),
+        ("expires", str(expiration)),
+        ("secure", signature),
+        ("tilesize", str(scale * TILE_MATRIX_TILE_SIZE)),
+    ]
 
     # request map tile from titiler
     async with httpx.AsyncClient() as client:
         tile_url = (
-            f"http://varnish/cog/tiles/WebMercatorQuad/{z}/{x}/{y}@{scale}x"
-            f"?url={data_product.filepath}"
-            f"&dataProductId={data_product_id}"
-            f"&expires={expiration}&secure={signature}"
-            f"{query_params}"
+            f"{VARNISH_BASE_URL}/cog/tiles/{TITILER_TMS}/{z}/{x}/{y}"
+            f"?{urllib.parse.urlencode(query_params)}"
         )
         # timeout request after 30 seconds
         response = await client.get(tile_url, timeout=30.0)

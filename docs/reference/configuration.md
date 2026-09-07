@@ -8,7 +8,7 @@ D2S uses environment files to configure its services. This document describes al
 |----------|-------------|
 | `EXTERNAL_STORAGE` | Location where raw image zips and metadata will be sent for image processing jobs. It could be a mapped network drive or any other directory on the host machine. This **should be left empty** unless you have set up an image processing backend that works with the D2S image processing Celery task. |
 | `TUSD_STORAGE` | Location of Docker managed volume or mapped host directory that stores user uploaded datasets. |
-| `TILE_SIGNING_SECRET` | Secret key used for creating a signed URL that the client can use to access raster tiles and MVT tiles. |
+| `TILE_SIGNING_SECRET_KEY` | Secret key used for creating a signed URL that the client can use to access raster tiles and MVT tiles. |
 
 ## `frontend.env`
 
@@ -62,6 +62,7 @@ You must provide a value for `SECRET_KEY` in your `backend.env` file. Use a cryp
 | `STAC_API_URL` | URL for a STAC API. |
 | `STAC_API_TEST_URL` | URL for a STAC API that can be used for testing. |
 | `STAC_BROWSER_URL` | URL for STAC Browser site connected to the STAC API. |
+| `TITILER_URL` | Base URL for the TiTiler service probed on startup to verify a supported version is running. Defaults to `http://titiler:8888`, matching the `titiler` service in the Docker Compose config. |
 | `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile secret key for bot protection on registration (optional). Leave empty to disable. |
 | `HTTP_COOKIE_SECURE` | Set to `1` to only send cookies over HTTPS, `0` to allow HTTP. |
 | `LIMIT_MAX_REQUESTS` | Maximum number of requests a worker will handle before being restarted. |

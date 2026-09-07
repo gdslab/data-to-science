@@ -1,4 +1,8 @@
+import asyncio
 import logging
+import os
+from contextlib import asynccontextmanager
+from typing import AsyncIterator
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,9 +16,27 @@ from app.core.limiter import limiter
 from app.core.logging import setup_logger
 from app.middleware import log_and_track_middleware
 from app.utils.ProtectedStaticFiles import ProtectedStaticFiles
+from app.utils.titiler import verify_titiler_version
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Probe TiTiler in the background without blocking startup."""
+    titiler_check = None
+    if os.environ.get("RUNNING_TESTS") != "1":
+        titiler_check = asyncio.create_task(
+            verify_titiler_version(settings.TITILER_URL)
+        )
+
+    yield
+
+    if titiler_check and not titiler_check.done():
+        titiler_check.cancel()
+
 
 app = FastAPI(
     docs_url="/developer/api",
+    lifespan=lifespan,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     redoc_url="/developer/docs",
     title=settings.API_PROJECT_NAME,
