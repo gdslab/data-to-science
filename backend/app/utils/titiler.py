@@ -44,16 +44,15 @@ def parse_titiler_version(payload: Any) -> Optional[str]:
     return version if isinstance(version, str) else None
 
 
-def parse_titiler_major_version(payload: Any) -> Optional[int]:
-    """Return the TiTiler major version reported by a /healthz payload.
+def parse_titiler_major_version(version: Optional[str]) -> Optional[int]:
+    """Return the major component of a TiTiler version string.
 
     Args:
-        payload (Any): Deserialized /healthz response body.
+        version (Optional[str]): Version string such as "2.2.1".
 
     Returns:
-        Optional[int]: Major version, or None if the payload cannot be read.
+        Optional[int]: Major version, or None if the string cannot be read.
     """
-    version = parse_titiler_version(payload)
     if version is None:
         return None
 
@@ -92,7 +91,7 @@ def _record_titiler_version(payload: Any) -> TitilerStatus:
         TitilerStatus: Updated status cache.
     """
     version = parse_titiler_version(payload)
-    major_version = parse_titiler_major_version(payload)
+    major_version = parse_titiler_major_version(version)
 
     if major_version is None:
         logger.warning("Could not read TiTiler version from /healthz response")

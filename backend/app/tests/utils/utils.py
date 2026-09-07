@@ -1,5 +1,6 @@
 import time
-from typing import Any, Dict, TypedDict
+from typing import Any, Dict, Optional, TypedDict
+from unittest.mock import AsyncMock, MagicMock
 
 from faker import Faker
 from geojson_pydantic import Feature, FeatureCollection, LineString, Point, Polygon
@@ -40,6 +41,29 @@ def random_team_description() -> str:
 def random_password() -> str:
     """Create random password."""
     return faker.password(length=12)
+
+
+def mock_async_http_client(
+    mock_async_client_cls: MagicMock,
+    response: Optional[MagicMock] = None,
+    side_effect: Optional[Exception] = None,
+) -> AsyncMock:
+    """Wire an AsyncMock httpx client onto a patched httpx.AsyncClient class.
+
+    Args:
+        mock_async_client_cls (MagicMock): Patched ``httpx.AsyncClient`` class.
+        response (Optional[MagicMock]): Response returned by ``client.get``.
+        side_effect (Optional[Exception]): Exception raised by ``client.get``.
+
+    Returns:
+        AsyncMock: Client yielded by ``async with httpx.AsyncClient()``.
+    """
+    mock_client = AsyncMock()
+    mock_client.get = AsyncMock(return_value=response, side_effect=side_effect)
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=False)
+    mock_async_client_cls.return_value = mock_client
+    return mock_client
 
 
 def build_sqlalchemy_uri(db_path: str) -> PostgresDsn:

@@ -1,11 +1,12 @@
 import asyncio
 import logging
 from typing import Any, Generator, Optional
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import httpx
 import pytest
 
+from app.tests.utils.utils import mock_async_http_client
 from app.utils import titiler as titiler_utils
 from app.utils.titiler import (
     parse_titiler_major_version,
@@ -37,20 +38,6 @@ def _mock_healthz_response(version: str, status_code: int = 200) -> MagicMock:
     return mock_response
 
 
-def _mock_titiler_client(
-    mock_async_client_cls: MagicMock,
-    response: Optional[MagicMock] = None,
-    side_effect: Optional[Exception] = None,
-) -> AsyncMock:
-    """Wire an AsyncMock httpx client onto a patched AsyncClient class."""
-    mock_client = AsyncMock()
-    mock_client.get = AsyncMock(return_value=response, side_effect=side_effect)
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=False)
-    mock_async_client_cls.return_value = mock_client
-    return mock_client
-
-
 @pytest.mark.parametrize(
     "payload,expected",
     [
@@ -68,26 +55,27 @@ def test_parse_titiler_version(payload: Any, expected: Optional[str]) -> None:
 
 
 @pytest.mark.parametrize(
-    "payload,expected",
+    "version,expected",
     [
-        ({"versions": {"titiler": "2.2.1"}}, 2),
-        ({"versions": {"titiler": "1.2.0"}}, 1),
-        ({"versions": {"titiler": "10.0.0"}}, 10),
-        ({"versions": {"titiler": "dev"}}, None),
-        ({"versions": {}}, None),
-        ({}, None),
+        ("2.2.1", 2),
+        ("1.2.0", 1),
+        ("10.0.0", 10),
+        ("dev", None),
+        ("", None),
         (None, None),
     ],
 )
-def test_parse_titiler_major_version(payload: Any, expected: Optional[int]) -> None:
-    assert parse_titiler_major_version(payload) == expected
+def test_parse_titiler_major_version(
+    version: Optional[str], expected: Optional[int]
+) -> None:
+    assert parse_titiler_major_version(version) == expected
 
 
 @patch("app.utils.titiler.httpx.AsyncClient")
 def test_verify_titiler_version_accepts_supported_version(
     mock_async_client_cls: MagicMock, caplog: pytest.LogCaptureFixture
 ) -> None:
-    mock_client = _mock_titiler_client(
+    mock_client = mock_async_http_client(
         mock_async_client_cls, response=_mock_healthz_response("2.2.1")
     )
 
@@ -104,7 +92,7 @@ def test_verify_titiler_version_accepts_supported_version(
 def test_verify_titiler_version_rejects_unsupported_version(
     mock_async_client_cls: MagicMock, caplog: pytest.LogCaptureFixture
 ) -> None:
-    _mock_titiler_client(
+    mock_async_http_client(
         mock_async_client_cls, response=_mock_healthz_response("1.2.0")
     )
 
@@ -125,7 +113,7 @@ def test_verify_titiler_version_handles_unreadable_payload(
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.json.return_value = {"detail": "unexpected"}
-    mock_client = _mock_titiler_client(mock_async_client_cls, response=mock_response)
+    mock_client = mock_async_http_client(mock_async_client_cls, response=mock_response)
 
     with caplog.at_level(logging.INFO, logger=TITILER_LOGGER):
         result = asyncio.run(verify_titiler_version(TITILER_URL, delay=0))
@@ -140,7 +128,7 @@ def test_verify_titiler_version_handles_unreadable_payload(
 def test_verify_titiler_version_retries_then_gives_up_when_unreachable(
     mock_async_client_cls: MagicMock, caplog: pytest.LogCaptureFixture
 ) -> None:
-    mock_client = _mock_titiler_client(
+    mock_client = mock_async_http_client(
         mock_async_client_cls, side_effect=httpx.ConnectError("connection refused")
     )
 
@@ -161,7 +149,7 @@ def test_verify_titiler_version_retries_then_gives_up_when_unreachable(
 def test_verify_titiler_version_retries_on_non_200(
     mock_async_client_cls: MagicMock,
 ) -> None:
-    mock_client = _mock_titiler_client(
+    mock_client = mock_async_http_client(
         mock_async_client_cls, response=_mock_healthz_response("2.2.1", status_code=503)
     )
 
@@ -175,7 +163,7 @@ def test_verify_titiler_version_retries_on_non_200(
 def test_verify_titiler_version_trims_trailing_slash(
     mock_async_client_cls: MagicMock,
 ) -> None:
-    mock_client = _mock_titiler_client(
+    mock_client = mock_async_http_client(
         mock_async_client_cls, response=_mock_healthz_response("2.2.1")
     )
 

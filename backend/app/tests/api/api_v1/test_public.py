@@ -13,6 +13,7 @@ from app.core.config import settings
 from app.schemas.file_permission import FilePermissionUpdate
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.data_product_like import create_data_product_like
+from app.tests.utils.utils import mock_async_http_client
 
 # Center of test.tif (EPSG:32616, WGS84 bounds approx -86.9445, 41.4440)
 TEST_TIF_CENTER_LON = -86.94447585281846
@@ -238,13 +239,10 @@ def _mock_tile_response(
 def _mock_titiler_client(
     mock_async_client_cls: MagicMock, mock_response: Optional[MagicMock] = None
 ) -> AsyncMock:
-    """Wire an AsyncMock httpx client onto a patched AsyncClient class."""
-    mock_client = AsyncMock()
-    mock_client.get = AsyncMock(return_value=mock_response or _mock_tile_response())
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=False)
-    mock_async_client_cls.return_value = mock_client
-    return mock_client
+    """Patch the titiler client to return a PNG tile unless given a response."""
+    return mock_async_http_client(
+        mock_async_client_cls, response=mock_response or _mock_tile_response()
+    )
 
 
 def _requested_tile_query(mock_client: AsyncMock) -> Dict[str, List[str]]:

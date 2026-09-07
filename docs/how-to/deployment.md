@@ -25,7 +25,7 @@ image builds on `gdslab/d2s-geo-base:latest`, whose tag is mutable, so without
 - Set `API_DOMAIN` to your production domain (e.g., `https://d2s.example.org`).
 - Use a strong, unique value for `SECRET_KEY`.
 - Configure SMTP settings (`MAIL_ENABLED=1`, `MAIL_SERVER`, etc.) for transactional email.
-- Set `TILE_SIGNING_SECRET` to a secure random string.
+- Set `TILE_SIGNING_SECRET_KEY` to a secure random string.
 - Adjust `UVICORN_WORKERS` and `LIMIT_MAX_REQUESTS` for your expected load.
 
 ## Upgrading
