@@ -154,7 +154,9 @@ async def get_map_tiles_for_data_product(
         )
 
     # sign varnish request (required by varnish/default.vcl)
-    signature, expiration = get_signature_for_data_product(data_product_id)
+    signature, expiration = get_signature_for_data_product(
+        data_product_id, data_product.filepath
+    )
 
     # construct titiler query params
     query_params: List[Tuple[str, str]] = [("url", data_product.filepath)]
