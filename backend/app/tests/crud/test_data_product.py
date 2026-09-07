@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timezone
+from urllib.parse import quote_plus
 
 import pytest
 from sqlalchemy import select
@@ -18,6 +19,7 @@ from app.tests.utils.flight import create_flight
 from app.tests.utils.job import create_job
 from app.tests.utils.raw_data import SampleRawData
 from app.tests.utils.user import create_user
+from app.tests.utils.utils import expected_tile_signature
 
 
 def test_create_data_product(db: Session) -> None:
@@ -78,8 +80,11 @@ def test_read_data_product(db: Session) -> None:
     # Signature is required for the map to request secure COG tiles; without it
     # the tile URL has an empty secure value and expires=0 (403 URL expired).
     assert hasattr(stored_data_product, "signature")
-    assert stored_data_product.signature["secure"]
     assert stored_data_product.signature["expires"]
+    assert stored_data_product.signature["secure"] == expected_tile_signature(
+        stored_data_product.signature["expires"],
+        f"{stored_data_product.id}{quote_plus(stored_data_product.filepath)}",
+    )
     assert stored_data_product.created_at is not None
     assert stored_data_product.updated_at is not None
 

@@ -835,7 +835,7 @@ def set_public_attr(data_product_obj: DataProduct, is_public: bool) -> None:
 
 def set_signature_attr(data_product_obj: DataProduct) -> None:
     signature, expiration_timestamp = get_signature_for_data_product(
-        data_product_obj.id
+        data_product_obj.id, data_product_obj.filepath
     )
     signature_prop = {"secure": signature, "expires": expiration_timestamp}
     setattr(data_product_obj, "signature", signature_prop)

@@ -65,3 +65,18 @@ upgrade. Roll out the backend, frontend, and titiler containers together.
 
 Expect a brief load increase on TiTiler right after the upgrade: the tile URLs
 changed, so Varnish starts with a cold cache and regenerates tiles on demand.
+
+### Tile signature format
+
+The raster tile signature covers the COG path in addition to the data product
+ID. The signing code in the backend and the verification rules in
+`varnish/default.vcl` have to agree, and the VCL is baked into the varnish
+image, so rebuild and restart the two together:
+
+```bash
+docker compose build varnish && docker compose up -d varnish backend
+```
+
+Quickstart deployments use the prebuilt `gdslab/d2s-varnish` image and need a
+release that includes the matching VCL. A backend paired with an older varnish
+returns HTTP 403 `Invalid signature` on every raster tile.

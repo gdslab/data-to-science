@@ -1,6 +1,7 @@
+import re
 from typing import Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock, patch
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, quote_plus, urlsplit
 
 import pytest
 from fastapi import status
@@ -13,7 +14,7 @@ from app.core.config import settings
 from app.schemas.file_permission import FilePermissionUpdate
 from app.tests.utils.data_product import SampleDataProduct
 from app.tests.utils.data_product_like import create_data_product_like
-from app.tests.utils.utils import mock_async_http_client
+from app.tests.utils.utils import expected_tile_signature, mock_async_http_client
 
 # Center of test.tif (EPSG:32616, WGS84 bounds approx -86.9445, 41.4440)
 TEST_TIF_CENTER_LON = -86.94447585281846
@@ -284,6 +285,38 @@ def test_read_map_tiles_requests_titiler_tilesize_url(
     assert query["dataProductId"] == [str(data_product.obj.id)]
     assert "expires" in query
     assert "secure" in query
+
+
+@patch("app.api.api_v1.endpoints.public.httpx.AsyncClient")
+def test_read_map_tiles_signature_covers_raster_path(
+    mock_async_client_cls: MagicMock, client: TestClient, db: Session
+) -> None:
+    """Signature covers the url param exactly as varnish reads it off the query."""
+    data_product = SampleDataProduct(db)
+    _make_data_product_public(db, data_product)
+    mock_client = _mock_titiler_client(mock_async_client_cls)
+
+    response = client.get(
+        f"{settings.API_V1_STR}/public/maptiles"
+        f"?z=12&x=1049&y=1533&data_product_id={data_product.obj.id}&scale=1"
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+
+    # Match on the raw query string. varnish never decodes, so a mismatch
+    # between the signed and emitted encoding must fail here.
+    raw_query = urlsplit(mock_client.get.call_args.args[0]).query
+    signed = {
+        name: re.search(rf"[?&]{name}=([^&]+)", f"?{raw_query}")
+        for name in ("url", "dataProductId", "expires", "secure")
+    }
+    assert all(match is not None for match in signed.values())
+    values = {name: match.group(1) for name, match in signed.items() if match}
+
+    assert values["url"] == quote_plus(data_product.obj.filepath)
+    assert values["secure"] == expected_tile_signature(
+        int(values["expires"]), values["dataProductId"] + values["url"]
+    )
 
 
 @patch("app.api.api_v1.endpoints.public.httpx.AsyncClient")

@@ -1,4 +1,5 @@
 import os
+from urllib.parse import quote_plus
 from uuid import UUID
 
 import geopandas as gpd
@@ -7,13 +8,14 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api.utils import (
     create_vector_layer_preview,
+    get_signature_for_data_product,
     get_static_dir,
     save_vector_layer_flatgeobuf,
     save_vector_layer_parquet,
 )
 from app.core.config import settings
 from app.tests.utils.project import create_project
-from app.tests.utils.utils import VectorLayerDict
+from app.tests.utils.utils import VectorLayerDict, expected_tile_signature
 from app.tests.utils.vector_layers import (
     get_geojson_feature_collection,
 )
@@ -445,3 +447,25 @@ def test_parse_vector_flatgeobuf_path_security() -> None:
     result = parse_vector_flatgeobuf_path(valid_path)
     assert result is not None, "Should accept valid layer_id"
     assert result[1] == valid_layer_id
+
+
+def test_get_signature_for_data_product_signs_encoded_filepath() -> None:
+    """Payload is the data product ID followed by the encoded raster path."""
+    data_product_id = UUID("6c1d4e6c-1f7a-4a4e-9b7a-2f0c9e1d8a3b")
+    filepath = "/static/projects/a/flights/b/data_products/c/d.tif"
+
+    signature, expires = get_signature_for_data_product(data_product_id, filepath)
+
+    assert signature == expected_tile_signature(
+        expires, f"{data_product_id}{quote_plus(filepath)}"
+    )
+
+
+def test_get_signature_for_data_product_differs_by_filepath() -> None:
+    """Same data product ID with a different raster path yields a new signature."""
+    data_product_id = UUID("6c1d4e6c-1f7a-4a4e-9b7a-2f0c9e1d8a3b")
+
+    first, _ = get_signature_for_data_product(data_product_id, "/static/a.tif")
+    second, _ = get_signature_for_data_product(data_product_id, "/static/b.tif")
+
+    assert first != second

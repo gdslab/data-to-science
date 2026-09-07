@@ -510,17 +510,23 @@ def get_tile_url_with_signed_payload(layer_id: str) -> str:
     return signed_url
 
 
-def get_signature_for_data_product(data_product_id: UUID4) -> Tuple[str, int]:
+def get_signature_for_data_product(
+    data_product_id: UUID4, filepath: str
+) -> Tuple[str, int]:
     """Return signed payload to be included in data product properties.
+
+    Signs the data product ID followed by the percent-encoded raster path. The
+    encoding matches the `url` query param verified by varnish/default.vcl.
 
     Args:
         data_product_id (UUID4): Unique ID for data product.
+        filepath (str): Path to raster passed to titiler in the `url` param.
 
     Returns:
         str: Signed payload.
     """
     # Create payload string
-    payload_str = str(data_product_id)
+    payload_str = str(data_product_id) + quote_plus(filepath)
 
     # Sign payload (expiration defaults to 10 minutes)
     signed_payload, expiration_timestamp = sign_map_tile_payload(payload_str)

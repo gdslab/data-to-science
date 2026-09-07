@@ -1,3 +1,6 @@
+import base64
+import hashlib
+import hmac
 import time
 from typing import Any, Dict, Optional, TypedDict
 from unittest.mock import AsyncMock, MagicMock
@@ -41,6 +44,27 @@ def random_team_description() -> str:
 def random_password() -> str:
     """Create random password."""
     return faker.password(length=12)
+
+
+def expected_tile_signature(expires: int, payload: str) -> str:
+    """Recreate the signature varnish computes for a tile request.
+
+    Mirrors the HMAC in varnish/default.vcl so tests fail if the payload the
+    backend signs stops matching the one varnish verifies.
+
+    Args:
+        expires (int): Expiration timestamp from the tile URL.
+        payload (str): Signed payload following the timestamp.
+
+    Returns:
+        str: Expected value of the `secure` query param.
+    """
+    digest = hmac.new(
+        base64.b64decode(settings.TILE_SIGNING_SECRET_KEY),
+        f"{expires}{payload}".encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+    return f"0x{digest}"
 
 
 def mock_async_http_client(
