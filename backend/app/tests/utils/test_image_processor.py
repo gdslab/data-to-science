@@ -1,5 +1,7 @@
+import shutil
 import subprocess
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -13,6 +15,7 @@ from app.utils.ImageProcessor import (
     get_info,
     get_utm_epsg_from_latlon,
     get_wgs84_info,
+    has_complete_pyramid,
     is_cog,
     resampling_for,
     run_gdal,
@@ -76,6 +79,55 @@ def band_metadata(info: dict) -> dict:
     return info["bands"][0].get("metadata", {}).get("", {})
 
 
+def coarsest_level(info: dict) -> list:
+    """Returns the size of the smallest overview, or the raster if it has none."""
+    overviews = [ov["size"] for ov in info["bands"][0].get("overviews", [])]
+    return min(overviews, key=max) if overviews else info["size"]
+
+
+def write_large_raster(path: Path, size: int = 1300) -> Path:
+    """Writes a single band uint8 raster bigger than a COG block."""
+    data = (np.arange(size * size, dtype="uint32") % 256).astype("uint8")
+    with rasterio.open(
+        path,
+        "w",
+        driver="GTiff",
+        height=size,
+        width=size,
+        count=1,
+        dtype="uint8",
+        crs="EPSG:32616",
+        transform=from_origin(0, size, 1, 1),
+        compress="deflate",
+    ) as dst:
+        dst.write(data.reshape(1, size, size))
+
+    return path
+
+
+def stage_cog(tmp_path: Path, overview_factors: list[int] | None = None) -> Path:
+    """Stages a 1300 px COG with the given overview levels, or none at all.
+
+    The COG driver copies whatever overviews the source has, so the pyramid is
+    built on the source first to control its depth.
+    """
+    source = write_large_raster(tmp_path / "source.tif")
+    if overview_factors:
+        factors = [str(factor) for factor in overview_factors]
+        run_gdal(["gdaladdo", "-q", "-r", "nearest", str(source), *factors])
+
+    in_dir = tmp_path / "input"
+    in_dir.mkdir(parents=True, exist_ok=True)
+    staged = in_dir / "large.tif"
+
+    command = ["gdal_translate", "-q", "-of", "COG"]
+    if not overview_factors:
+        command += ["-co", "OVERVIEWS=NONE"]
+    run_gdal(command + [str(source), str(staged)])
+
+    return staged
+
+
 def test_run_reprojects_a_wgs84_raster_to_utm(tmp_path: Path) -> None:
     in_raster = stage_input(tmp_path, to_wgs84=True)
 
@@ -100,13 +152,58 @@ def test_run_moves_a_cog_that_does_not_need_reprojecting(tmp_path: Path) -> None
     in_raster = stage_input(tmp_path, as_cog=True)
 
     processor = ImageProcessor(str(in_raster), project_to_utm=True)
-    out_raster = processor.run()
+    with patch.object(image_processor.shutil, "move", wraps=shutil.move) as move:
+        out_raster = processor.run()
 
+    move.assert_called_once()
     assert out_raster == tmp_path / in_raster.name
     assert out_raster.exists()
     assert not in_raster.parent.exists()
     assert is_cog(get_info(out_raster, with_stats=False))
     assert processor.stac_properties["raster"][0]["stats"]["minimum"] is not None
+
+
+def test_run_rewrites_a_large_cog_without_overviews(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(image_processor, "MAX_COARSEST_LEVEL_DIMENSION", 600)
+    in_raster = stage_cog(tmp_path)
+    assert is_cog(get_info(in_raster, with_stats=False))
+
+    with patch.object(image_processor.shutil, "move", wraps=shutil.move) as move:
+        out_raster = ImageProcessor(str(in_raster)).run()
+
+    move.assert_not_called()
+    assert not in_raster.parent.exists()
+    info = get_info(out_raster, with_stats=False)
+    assert is_cog(info)
+    assert has_complete_pyramid(info)
+    assert info["bands"][0]["overviews"]
+
+
+def test_run_rewrites_a_cog_with_a_shallow_pyramid(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(image_processor, "MAX_COARSEST_LEVEL_DIMENSION", 600)
+    in_raster = stage_cog(tmp_path, overview_factors=[2])
+    assert coarsest_level(get_info(in_raster, with_stats=False)) == [650, 650]
+
+    out_raster = ImageProcessor(str(in_raster)).run()
+
+    # OVERVIEWS=AUTO would have kept the single 650 px level
+    assert coarsest_level(get_info(out_raster, with_stats=False)) == [325, 325]
+
+
+def test_run_moves_a_large_cog_with_a_complete_pyramid(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(image_processor, "MAX_COARSEST_LEVEL_DIMENSION", 600)
+    in_raster = stage_cog(tmp_path, overview_factors=[2, 4])
+
+    with patch.object(image_processor.shutil, "move", wraps=shutil.move) as move:
+        ImageProcessor(str(in_raster)).run()
+
+    move.assert_called_once()
 
 
 def test_run_creates_a_preview_image(tmp_path: Path) -> None:
@@ -175,6 +272,43 @@ def test_build_cog_command_omits_warp_options_without_an_epsg_code() -> None:
 
     assert not any(arg.startswith("TARGET_SRS") for arg in command)
     assert not any(arg.startswith("WARP_RESAMPLING") for arg in command)
+
+
+def test_build_cog_command_ignores_existing_overviews() -> None:
+    command = build_cog_command(Path("in.tif"), Path("out.tif"))
+
+    assert "OVERVIEWS=IGNORE_EXISTING" in command
+
+
+def info_with_overviews(size: list, *band_overviews: list) -> dict:
+    """Builds the parts of a gdalinfo dict that has_complete_pyramid reads."""
+    bands = [
+        {"overviews": [{"size": level} for level in levels]} if levels else {}
+        for levels in band_overviews
+    ]
+    return {"size": size, "bands": bands}
+
+
+@pytest.mark.parametrize(
+    "info,expected",
+    [
+        (info_with_overviews([240, 203], []), True),
+        (info_with_overviews([5000, 4000], []), False),
+        (
+            info_with_overviews(
+                [5000, 4000], [[2500, 2000], [1250, 1000], [625, 500], [300, 200]]
+            ),
+            True,
+        ),
+        (info_with_overviews([12000, 8000], [[6000, 4000], [3000, 2000]]), False),
+        (info_with_overviews([5000, 4000], [[300, 200]], []), False),
+        ({"size": [5000, 4000]}, False),
+        ({"bands": [{}]}, False),
+        ({}, False),
+    ],
+)
+def test_has_complete_pyramid(info: dict, expected: bool) -> None:
+    assert has_complete_pyramid(info) is expected
 
 
 def test_build_cog_command_always_requests_at_least_one_thread(

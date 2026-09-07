@@ -39,10 +39,9 @@ RGB_BANDS = ("red", "green", "blue")
 EXPORT_TIMEOUT_SECONDS = 45.0
 # Reading a raster at full resolution runs at roughly 80 megapixels per second
 # for a compressed COG, so a raster past this size cannot finish inside the
-# budget above without overviews to read instead. Anything arriving through the
-# normal upload path has them, because convert_to_cog writes with -of COG, which
-# builds a pyramid. Reaching this limit means the file was already in COG layout
-# when it was uploaded and was moved into place without one.
+# budget above without overviews to read instead. Uploads are rewritten when
+# their pyramid is incomplete, so only files stored before that check existed
+# can reach this limit.
 MAX_PIXELS_WITHOUT_OVERVIEWS = 2_000_000_000
 
 
