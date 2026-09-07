@@ -52,8 +52,9 @@ sub vcl_recv {
     set req.http.expires = regsub(req.url, ".*[?&]expires=([^&]+).*", "\1");
     set req.http.secure = regsub(req.url, ".*[?&]secure=([^&]+).*", "\1");
 
-    # Ensure required parameters are present
-    if (req.http.expires == "" || req.http.secure == "") {
+    # Ensure required parameters are present. regsub returns the subject
+    # unchanged when it does not match, so test the URL rather than the result.
+    if (req.url !~ "[?&]expires=[^&]+" || req.url !~ "[?&]secure=[^&]+") {
         return (synth(400, "Missing required parameters"));
     }
 
@@ -64,19 +65,31 @@ sub vcl_recv {
 
     if (req.url ~ "^/cog/") {
         # TiTiler backend
-        set req.http.dataProductId = regsub(req.url, ".*[?&]dataProductId=([^&]+).*", "\1");
-        if (req.http.dataProductId == "") {
+        if (req.url !~ "[?&]dataProductId=[^&]+" || req.url !~ "[?&]url=[^&]+") {
             return (synth(400, "Missing required parameters"));
         }
-        set req.http.payload = req.http.expires + req.http.dataProductId;
+        # A repeated parameter would let the signed value differ from the one
+        # titiler reads
+        if (req.url ~ "[?&]dataProductId=.*[?&]dataProductId=" ||
+            req.url ~ "[?&]url=.*[?&]url=") {
+            return (synth(400, "Duplicate parameters"));
+        }
+        set req.http.dataProductId = regsub(req.url, ".*[?&]dataProductId=([^&]+).*", "\1");
+        set req.http.cogurl = regsub(req.url, ".*[?&]url=([^&]+).*", "\1");
+        # Only rasters on the static mount are ever signed. The value is still
+        # percent-encoded here, so "/" appears as "%2F".
+        if (req.http.cogurl !~ "(?i)^%2Fstatic%2F") {
+            return (synth(403, "Invalid raster path"));
+        }
+        set req.http.payload = req.http.expires + req.http.dataProductId + req.http.cogurl;
         set req.backend_hint = titiler;
     } else {
         # pg_tilserv backend
-        set req.http.filter = regsub(req.url, ".*[?&]filter=([^&]+).*", "\1");
-        set req.http.limit = regsub(req.url, ".*[?&]limit=([^&]+).*", "\1");
-        if (req.http.filter == "" || req.http.limit == "") {
+        if (req.url !~ "[?&]filter=[^&]+" || req.url !~ "[?&]limit=[^&]+") {
             return (synth(400, "Missing required parameters"));
         }
+        set req.http.filter = regsub(req.url, ".*[?&]filter=([^&]+).*", "\1");
+        set req.http.limit = regsub(req.url, ".*[?&]limit=([^&]+).*", "\1");
         set req.http.payload = req.http.expires + req.http.filter + req.http.limit;
         set req.backend_hint = pg_tileserv;
     }
@@ -108,6 +121,8 @@ sub vcl_recv {
     unset req.http.expires;
     unset req.http.payload;
     unset req.http.expected_signature;
+    unset req.http.dataProductId;
+    unset req.http.cogurl;
 
     # Unset user/browser-specific headers
     unset req.http.User-Agent;

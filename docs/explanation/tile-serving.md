@@ -38,11 +38,15 @@ All tile requests (raster and vector) are routed through [Varnish](https://varni
 
 Tiles are accessed via signed URLs that encode:
 
-- The resource being accessed (project, flight, data product)
+- The resource being accessed. For raster tiles this is the data product ID and the percent-encoded path of the COG that TiTiler opens; for vector tiles it is the layer filter and row limit.
 - An expiration timestamp
 - A cryptographic signature derived from `TILE_SIGNING_SECRET_KEY`
 
-Varnish validates the signature and expiration before serving the tile or forwarding the request to the upstream service. This ensures that only authorized users with valid, time-limited URLs can access tile data.
+Varnish validates the signature and expiration before serving the tile or forwarding the request to the upstream service. This ensures that only authorized users with valid, time-limited URLs can access tile data. Because the raster path is signed, a signature issued for one data product cannot be reused to read another file, and Varnish additionally rejects any raster path outside the shared `/static` mount.
+
+Rendering parameters such as `bidx`, `rescale`, `colormap_name`, and `tilesize` are not signed. They change how an already-authorized raster is drawn, so the frontend can adjust symbology without requesting a new signature.
+
+Signatures are stripped from the cache key, so users viewing the same data product with the same rendering parameters share one cached tile.
 
 ## Why this architecture?
 
