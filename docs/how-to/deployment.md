@@ -28,6 +28,22 @@ image builds on `gdslab/d2s-geo-base:latest`, whose tag is mutable, so without
 - Set `TILE_SIGNING_SECRET_KEY` to a secure random string.
 - Adjust `UVICORN_WORKERS` and `LIMIT_MAX_REQUESTS` for your expected load.
 
+## Sizing TiTiler
+
+TiTiler reads COGs straight from the shared `user-data` volume, so the HTTP
+range-request tuning in TiTiler's own documentation does not apply. The image
+honors only `HOST`, `PORT`, and `WEB_CONCURRENCY`; every other gunicorn option
+is passed through `GUNICORN_CMD_ARGS`.
+
+- Run one worker per CPU given to the container and set the `cpus` limit to
+  match. The example ships two workers on two CPUs.
+- `GDAL_CACHEMAX` is megabytes per worker process. Budget the container memory
+  limit at roughly `workers x (GDAL_CACHEMAX + 1 GB)`; the example's 4 GB limit
+  covers two workers at 512 MB.
+- Tile requests are not logged by default. Add `--access-logfile -` to
+  `GUNICORN_CMD_ARGS` to log each one, or set `TITILER_API_DEBUG=True` for
+  per-request logging with query parameters and a `Server-Timing` header.
+
 ## Upgrading
 
 `docker-compose.prod.yml` is not tracked in git, so image tags in your deployment

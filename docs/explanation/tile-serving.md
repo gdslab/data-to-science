@@ -14,7 +14,7 @@ Client → Varnish Cache → TiTiler (raster)
 
 ## Raster tiles (TiTiler)
 
-[TiTiler](https://developmentseed.org/titiler/) is a dynamic tile server that reads Cloud Optimized GeoTIFFs (COGs) and generates map tiles on demand. Because COGs use internal tiling and overviews, TiTiler can serve tiles at any zoom level by reading only the relevant bytes from the file via HTTP range requests.
+[TiTiler](https://developmentseed.org/titiler/) is a dynamic tile server that reads Cloud Optimized GeoTIFFs (COGs) and generates map tiles on demand. Because COGs use internal tiling and overviews, TiTiler can serve tiles at any zoom level by reading only the relevant bytes from the file via HTTP range requests. In D2S, TiTiler reads the COGs directly from the shared `user-data` volume rather than over HTTP.
 
 The frontend requests tiles using standard `{z}/{x}/{y}` URL patterns. TiTiler supports dynamic band selection, rescaling, and color map application — the frontend uses these capabilities for visualization controls like band combination selection and color ramp adjustments.
 
