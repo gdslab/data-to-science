@@ -30,7 +30,7 @@ Processing tasks run asynchronously via Celery workers. The specific processing 
 
 ### Raster data — DEM, Ortho, and Other (GeoTIFF)
 
-Uploaded GeoTIFFs are converted to Cloud Optimized GeoTIFFs (COGs). COGs use internal tiling and overviews to support efficient HTTP range requests, enabling clients to fetch only the tiles they need at the appropriate zoom level. DEM, Ortho, and Other types all follow this same conversion pipeline.
+Uploaded GeoTIFFs are converted to Cloud Optimized GeoTIFFs (COGs). COGs use internal tiling and overviews to support efficient HTTP range requests, enabling clients to fetch only the tiles they need at the appropriate zoom level. DEM, Ortho, and Other types all follow this same conversion pipeline. Uploads that already use the COG layout are kept as they are when their overview pyramid is complete; otherwise they are rewritten.
 
 ### Point cloud data (LAS/LAZ)
 

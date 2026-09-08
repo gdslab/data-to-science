@@ -25,6 +25,9 @@ logger = logging.getLogger(__name__)
 # that a consistent choice for continuous data is the better trade-off.
 MULTIBAND_RESAMPLING = "cubic"
 DEFAULT_RESAMPLING = "bilinear"
+# A low zoom tile reads the coarsest overview whole, so cap how large that level
+# may be before a COG layout upload is rewritten with a full pyramid.
+MAX_COARSEST_LEVEL_DIMENSION = 2048
 
 
 class ImageProcessor:
@@ -61,12 +64,16 @@ class ImageProcessor:
         logger.debug("Checking if raster is in COG layout")
         epsg_code: str | None = self.get_utm_epsg() if self.project_to_utm else None
 
-        # A COG still has to be rewritten when it needs reprojecting.
-        if is_cog(info) and not epsg_code:
+        # A COG still has to be rewritten when it needs reprojecting or when its
+        # overview pyramid is too shallow to serve low zoom tiles.
+        if is_cog(info) and has_complete_pyramid(info) and not epsg_code:
             logger.info("Raster is in COG layout, moving to output directory")
             shutil.move(self.in_raster, self.out_dir)
         else:
-            logger.info("Converting raster to COG layout")
+            if is_cog(info) and not epsg_code:
+                logger.info("COG has no usable overview pyramid, rewriting")
+            else:
+                logger.info("Converting raster to COG layout")
             convert_to_cog(self.in_raster, self.out_raster, self.resampling, epsg_code)
 
         logger.debug("Cleaning up temporary files")
@@ -263,6 +270,32 @@ def is_cog(info: dict) -> bool:
     return False
 
 
+def has_complete_pyramid(info: dict) -> bool:
+    """Return True if the coarsest level is small enough to serve tiles from.
+
+    The coarsest level is the smallest overview, or the full raster when it has
+    none. Missing size or band information counts as incomplete.
+
+    Args:
+        info (dict): gdalinfo -json output
+
+    Returns:
+        bool: True if every band's coarsest level fits the dimension limit
+    """
+    size = info.get("size") if info else None
+    bands = info.get("bands") if info else None
+    if not size or not bands:
+        return False
+
+    for band in bands:
+        levels = [ov["size"] for ov in band.get("overviews", []) if ov.get("size")]
+        coarsest = min(levels, key=max) if levels else size
+        if max(coarsest) > MAX_COARSEST_LEVEL_DIMENSION:
+            return False
+
+    return True
+
+
 def get_stac_properties(info: dict) -> STACProperties:
     """Return STAC raster:bands and eo:bands properties from gdalinfo.
 
@@ -322,6 +355,8 @@ def build_cog_command(
         "PREDICTOR=YES",
         "-co",
         f"OVERVIEW_RESAMPLING={resampling}",
+        "-co",
+        "OVERVIEWS=IGNORE_EXISTING",
         "-co",
         f"NUM_THREADS={num_threads}",
         "-co",
