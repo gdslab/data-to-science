@@ -9,6 +9,7 @@ from typing import Any, List, Optional, Tuple
 import rasterio
 
 from app.utils.ColorBar import get_cmap
+from app.utils.ImageProcessor import is_single_band
 from app.utils.stac.STACProperties import (
     STACProperties,
     STACRasterProperties,
@@ -192,12 +193,12 @@ def export_without_symbology(
     """
     bands = stac_properties["raster"]
 
-    if len(bands) > 2:
-        band_indexes = [1, 2, 3]
-        ranges = [get_stats_min_max(band) for band in bands[:3]]
-    else:
+    if is_single_band(len(bands)):
         band_indexes = [1]
         ranges = [get_stats_min_max(bands[0])]
+    else:
+        band_indexes = [1, 2, 3]
+        ranges = [get_stats_min_max(band) for band in bands[:3]]
 
     run_jpeg_translate(
         in_raster, out_jpeg, band_indexes, ranges, outsize_params, deadline

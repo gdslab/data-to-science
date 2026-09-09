@@ -14,6 +14,7 @@ import { DataProduct } from '../../pages/workspace/projects/Project';
 import { getDataProductName, getDataProductTitle } from '../../pages/workspace/projects/flights/DataProducts/DataProductsTable';
 import { useRasterSymbologyContext } from '../RasterSymbologyContext';
 import { NON_MAP_DATA_TYPES } from './utils';
+import { isSingleBand } from '../utils';
 import { PointCloudViewer } from '../Maps';
 import EngagementInline from '../../engagement/EngagementInline';
 import { useDataProductLike } from '../../engagement/useDataProductLike';
@@ -190,12 +191,11 @@ export default function DataProductCard({
                 </div>
               </fieldset>
             )}
-            {isRasterType &&
-              dataProduct.stac_properties.raster.length === 1 && (
-                <RasterStats
-                  stats={dataProduct.stac_properties.raster[0].stats}
-                />
-              )}
+            {isRasterType && isSingleBand(dataProduct) && (
+              <RasterStats
+                stats={dataProduct.stac_properties.raster[0].stats}
+              />
+            )}
           </div>
         )}
         {activeDataProduct &&

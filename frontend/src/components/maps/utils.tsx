@@ -284,16 +284,25 @@ function getHillshade(
   }
 }
 
+// Fewest bands that can make up an RGB composite.
+const MIN_RGB_BANDS = 3;
+
 /**
- * Returns true if data product has a single band.
+ * Returns true if data product is displayed as a single band.
+ *
+ * An RGB composite needs three bands, so a raster with fewer than that is
+ * displayed as band 1 with a color ramp. A two band raster carries its second
+ * band as an alpha channel, which titiler reads as the tile mask rather than as
+ * data, so band 1 is the only band worth displaying either way.
  * @param dataProduct Active data product.
  * @returns True if single band, otherwise False.
  */
 function isSingleBand(dataProduct: DataProduct): boolean {
-  return (
-    dataProduct.stac_properties &&
-    dataProduct.stac_properties.raster.length === 1
-  );
+  if (!dataProduct.stac_properties) return false;
+
+  const bandCount = dataProduct.stac_properties.raster.length;
+
+  return bandCount > 0 && bandCount < MIN_RGB_BANDS;
 }
 
 /**

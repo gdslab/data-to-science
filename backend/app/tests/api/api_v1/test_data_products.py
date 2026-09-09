@@ -181,6 +181,40 @@ def test_generate_data_product_colorbar_with_viewer_role(
     )
 
 
+def test_generate_data_product_colorbar_for_a_two_band_raster(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """A two band raster carries its second band as alpha and still gets a colorbar."""
+    current_user = get_current_user(db, normal_user_access_token)
+    data_product = SampleDataProduct(db, data_type="dsm", create_style=True)
+    band = data_product.obj.stac_properties["raster"][0]
+    crud.data_product.update(
+        db,
+        db_obj=data_product.obj,
+        obj_in=schemas.DataProductUpdate(
+            stac_properties={
+                "raster": [band, dict(band, unit=None)],
+                "eo": [
+                    {"name": "b1", "description": "Gray"},
+                    {"name": "b2", "description": "Alpha"},
+                ],
+            }
+        ),
+    )
+    create_project_member(
+        db,
+        member_id=current_user.id,
+        project_uuid=data_product.project.id,
+        role=Role.VIEWER,
+    )
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{data_product.project.id}"
+        f"/flights/{data_product.flight.id}/data_products/{data_product.obj.id}/utils/colorbar?cmin=100&cmax=200&cmap=terrain&refresh=false"
+    )
+    assert response.status_code == status.HTTP_200_OK
+    assert "colorbar_url" in response.json()
+
+
 def test_fetching_shortened_url_for_data_product(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:

@@ -4,6 +4,8 @@ import subprocess
 
 import rasterio
 
+from app.utils.ImageProcessor import is_single_band
+
 
 def run(in_raster: str, out_raster: str, params: dict = {}) -> str:
     """Create hillshade raster from input raster.
@@ -21,9 +23,9 @@ def run(in_raster: str, out_raster: str, params: dict = {}) -> str:
     Returns:
         str: Filepath for output raster.
     """
-    # Confirm this is a single band raster
+    # Confirm this is a single band raster, allowing an alpha band after band 1
     with rasterio.open(in_raster) as src:
-        if src.count != 1:
+        if not is_single_band(src.count):
             raise ValueError("Input raster must be a single band raster")
         if src.crs is None:
             raise ValueError("Input raster must have a CRS")
@@ -40,6 +42,8 @@ def run(in_raster: str, out_raster: str, params: dict = {}) -> str:
                 "hillshade",
                 in_raster,
                 out_raster,
+                "-b",
+                "1",
                 "-z",
                 str(z_factor),
                 "-compute_edges",

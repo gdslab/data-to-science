@@ -11,12 +11,13 @@ from app.api import deps
 from app.api.utils import get_data_product_dir
 from app.core.config import settings
 from app.utils.ColorBar import ColorBar
+from app.utils.ImageProcessor import is_single_band
 
 router = APIRouter()
 
 
-def is_singleband(data_product: models.DataProduct) -> bool:
-    """Return True if data product is a single band raster.
+def has_single_band_display(data_product: models.DataProduct) -> bool:
+    """Return True if data product is displayed as a single band raster.
 
     Args:
         data_product (models.DataProduct): DataProduct object representing raster.
@@ -24,12 +25,8 @@ def is_singleband(data_product: models.DataProduct) -> bool:
     Returns:
         bool: True if raster is singleband, False if not raster or multiband.
     """
-    if data_product.stac_properties and "raster" in data_product.stac_properties:
-        if len(data_product.stac_properties.get("raster", [])) == 1:
-            return True
-        else:
-            return False
-    return False
+    stac_properties = data_product.stac_properties or {}
+    return is_single_band(len(stac_properties.get("raster") or []))
 
 
 @router.get("/colorbar")
@@ -57,7 +54,7 @@ def get_colorbar_for_data_product_with_public_access(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
         )
-    if not is_singleband(data_product):
+    if not has_single_band_display(data_product):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Colorbars only available for single band data products",
@@ -115,7 +112,7 @@ def get_colorbar_for_data_product_with_user_access(
             status_code=status.HTTP_404_NOT_FOUND, detail="Data product not found"
         )
 
-    if not is_singleband(data_product):
+    if not has_single_band_display(data_product):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Colorbars only available for DSM data products",
