@@ -2,12 +2,18 @@ import base64
 import hashlib
 import hmac
 import time
+from pathlib import Path
 from typing import Any, Dict, Optional, TypedDict
 from unittest.mock import AsyncMock, MagicMock
 
+import numpy as np
+import rasterio
+from affine import Affine
 from faker import Faker
 from geojson_pydantic import Feature, FeatureCollection, LineString, Point, Polygon
 from pydantic import PostgresDsn
+from rasterio.enums import ColorInterp
+from rasterio.transform import from_origin
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
@@ -343,3 +349,65 @@ def get_geojson_feature_collection(
         }
     else:
         raise ValueError(f"Unknown geometry type provided: {geom_type}")
+
+
+def write_raster_without_stats(
+    path: Path,
+    count: int = 1,
+    crs: str | None = "EPSG:32616",
+    transform: Affine | None = None,
+    dtype: str = "uint16",
+) -> Path:
+    """Writes a small raster that has no precomputed statistics."""
+    data = np.arange(count * 64 * 64, dtype=dtype).reshape(count, 64, 64)
+    with rasterio.open(
+        path,
+        "w",
+        driver="GTiff",
+        height=64,
+        width=64,
+        count=count,
+        dtype=dtype,
+        crs=crs,
+        transform=transform or from_origin(0, 64, 1, 1),
+    ) as dst:
+        dst.write(data)
+
+    return path
+
+
+def write_gray_alpha_raster(
+    path: Path,
+    size: int = 64,
+    dtype: str = "float32",
+    crs: str = "EPSG:32616",
+    transform: Affine | None = None,
+) -> Path:
+    """Writes a two band raster, data plus alpha, with its top half transparent.
+
+    Integer alpha bands are opaque at the type's maximum, as GDAL writes them.
+    Floating point alpha bands are opaque at 255, as GDAL's warper writes them.
+    """
+    data = np.linspace(15.0, 45.0, size * size).astype(dtype).reshape(1, size, size)
+    opaque = np.iinfo(dtype).max if np.issubdtype(np.dtype(dtype), np.integer) else 255
+    alpha = np.full((1, size, size), opaque, dtype=dtype)
+    alpha[:, : size // 2, :] = 0
+
+    # GTiff records the alpha flag in its EXTRASAMPLES tag, which is fixed at
+    # creation, so assigning colorinterp to an open dataset alone does not stick.
+    with rasterio.open(
+        path,
+        "w",
+        driver="GTiff",
+        height=size,
+        width=size,
+        count=2,
+        dtype=dtype,
+        crs=crs,
+        transform=transform or from_origin(0, size, 1, 1),
+        alpha="YES",
+    ) as dst:
+        dst.write(np.concatenate([data, alpha]))
+        dst.colorinterp = [ColorInterp.gray, ColorInterp.alpha]
+
+    return path

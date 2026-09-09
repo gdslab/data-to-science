@@ -28,6 +28,11 @@ DEFAULT_RESAMPLING = "bilinear"
 # A low zoom tile reads the coarsest overview whole, so cap how large that level
 # may be before a COG layout upload is rewritten with a full pyramid.
 MAX_COARSEST_LEVEL_DIMENSION = 2048
+# Fewest bands that can make up an RGB composite.
+MIN_RGB_BANDS = 3
+# GDAL reads an alpha band as a mask only when it has one of these types. Any
+# other alpha band is written to the COG's mask band instead, which readers honor.
+MASK_ALPHA_TYPES = ("Byte", "UInt16")
 
 
 class ImageProcessor:
@@ -64,17 +69,43 @@ class ImageProcessor:
         logger.debug("Checking if raster is in COG layout")
         epsg_code: str | None = self.get_utm_epsg() if self.project_to_utm else None
 
-        # A COG still has to be rewritten when it needs reprojecting or when its
-        # overview pyramid is too shallow to serve low zoom tiles.
-        if is_cog(info) and has_complete_pyramid(info) and not epsg_code:
+        # The COG driver's warp adds an alpha band in the raster's own type and
+        # drops any mask band, so warp through a VRT when the result needs a mask.
+        source = self.in_raster
+        if epsg_code and needs_mask_after_warp(info):
+            logger.info(f"Projecting raster to {epsg_code}")
+            source = warp_to_vrt(self.in_raster, epsg_code, self.resampling)
+            info = get_info(source, with_stats=False)
+            epsg_code = None
+
+        mask_band = alpha_band_without_mask(info)
+
+        # A COG still has to be rewritten when it needs reprojecting, when its
+        # overview pyramid is too shallow to serve low zoom tiles, or when its
+        # alpha band has to move into the mask band.
+        if (
+            is_cog(info)
+            and has_complete_pyramid(info)
+            and not epsg_code
+            and mask_band is None
+        ):
             logger.info("Raster is in COG layout, moving to output directory")
             shutil.move(self.in_raster, self.out_dir)
         else:
-            if is_cog(info) and not epsg_code:
+            if mask_band is not None:
+                logger.info("Writing alpha band as the mask band")
+            elif is_cog(info) and not epsg_code:
                 logger.info("COG has no usable overview pyramid, rewriting")
             else:
                 logger.info("Converting raster to COG layout")
-            convert_to_cog(self.in_raster, self.out_raster, self.resampling, epsg_code)
+            convert_to_cog(
+                source,
+                self.out_raster,
+                self.resampling,
+                epsg_code,
+                mask_band=mask_band,
+                band_count=len(info.get("bands", [])),
+            )
 
         logger.debug("Cleaning up temporary files")
         if os.path.exists(self.in_raster.parent):
@@ -114,7 +145,7 @@ class ImageProcessor:
             len(self.stac_properties["raster"]) > 0
             and len(self.stac_properties["eo"]) > 0
         ):
-            if len(self.stac_properties["raster"]) == 1:
+            if is_single_band(len(self.stac_properties["raster"])):
                 stats: Optional[Stats] = self.stac_properties["raster"][0].get("stats")
                 if stats is None:
                     raise Exception("Unable to get raster stats")
@@ -132,7 +163,7 @@ class ImageProcessor:
                         }
                     }
                 )
-            elif len(self.stac_properties["raster"]) > 2:
+            else:
                 symbology: dict = {
                     "mode": "minMax",
                     "meanStdDev": 2,
@@ -152,12 +183,27 @@ class ImageProcessor:
                     }
 
                 return UserStyleCreate(**{"settings": symbology})
-            else:
-                raise Exception("Need at least three bands for ortho imagery")
         else:
             raise Exception(
                 "Cannot get default symbology settings before running processor"
             )
+
+
+def is_single_band(band_count: int) -> bool:
+    """Returns True if a raster is displayed as a single band.
+
+    An RGB composite needs three bands, so a raster with fewer than that is
+    displayed as band 1 with a color ramp. Two band rasters carry their second
+    band as an alpha channel, which titiler reads as the tile mask rather than as
+    data, so band 1 is the only band worth displaying either way.
+
+    Args:
+        band_count (int): Number of bands in the raster.
+
+    Returns:
+        bool: True when the raster has one or two bands.
+    """
+    return 0 < band_count < MIN_RGB_BANDS
 
 
 def resampling_for(band_count: int) -> str:
@@ -169,7 +215,7 @@ def resampling_for(band_count: int) -> str:
     Returns:
         str: GDAL resampling method name.
     """
-    return MULTIBAND_RESAMPLING if band_count >= 3 else DEFAULT_RESAMPLING
+    return MULTIBAND_RESAMPLING if band_count >= MIN_RGB_BANDS else DEFAULT_RESAMPLING
 
 
 def run_gdal(command: List[str]) -> subprocess.CompletedProcess:
@@ -321,12 +367,98 @@ def get_stac_properties(info: dict) -> STACProperties:
     return stac_properties
 
 
+def alpha_band_without_mask(info: dict) -> int | None:
+    """Returns the index of an alpha band that GDAL does not read as a mask.
+
+    Args:
+        info (dict): gdalinfo -json output
+
+    Returns:
+        int | None: One-based band index, or None when there is no such band.
+    """
+    bands = info.get("bands", []) if info else []
+    for band in bands:
+        if band.get("colorInterpretation") == "Alpha":
+            flags = bands[0].get("mask", {}).get("flags", [])
+            return None if "ALPHA" in flags else band["band"]
+    return None
+
+
+def needs_mask_after_warp(info: dict) -> bool:
+    """Returns True if reprojecting with the COG driver would leave an alpha band
+    that GDAL does not read as a mask.
+
+    The driver adds an alpha band in the raster's own type when the raster has no
+    nodata value, and drops any mask band the raster already has.
+
+    Args:
+        info (dict): gdalinfo -json output
+
+    Returns:
+        bool: True when the reprojected raster needs a mask band.
+    """
+    bands = info.get("bands", []) if info else []
+    if not bands:
+        return False
+    if alpha_band_without_mask(info) is not None:
+        return True
+    return (
+        bands[0].get("type") not in MASK_ALPHA_TYPES and "noDataValue" not in bands[0]
+    )
+
+
+def build_warp_command(
+    in_raster: Path, out_vrt: Path, resampling: str, epsg_code: str
+) -> List[str]:
+    """Returns the gdalwarp command used to reproject a raster to a VRT.
+
+    Args:
+        in_raster (Path): Path to input raster dataset.
+        out_vrt (Path): Path for the output VRT.
+        resampling (str): Resampling method for warping.
+        epsg_code (str): Target EPSG code.
+
+    Returns:
+        List[str]: Command and arguments for gdalwarp.
+    """
+    return [
+        "gdalwarp",
+        "-of",
+        "VRT",
+        "-t_srs",
+        epsg_code,
+        "-r",
+        resampling,
+        "-dstalpha",
+        str(in_raster),
+        str(out_vrt),
+    ]
+
+
+def warp_to_vrt(in_raster: Path, epsg_code: str, resampling: str) -> Path:
+    """Reprojects a raster to a VRT whose last band is an alpha band.
+
+    Args:
+        in_raster (Path): Path to input raster dataset.
+        epsg_code (str): Target EPSG code.
+        resampling (str): Resampling method for warping.
+
+    Returns:
+        Path: Path to the VRT, written next to the input raster.
+    """
+    out_vrt = in_raster.with_suffix(".vrt")
+    run_gdal(build_warp_command(in_raster, out_vrt, resampling, epsg_code))
+    return out_vrt
+
+
 def build_cog_command(
     in_raster: Path,
     out_raster: Path,
     resampling: str = DEFAULT_RESAMPLING,
     epsg_code: str | None = None,
     num_threads: int | None = None,
+    mask_band: int | None = None,
+    band_count: int = 0,
 ) -> List[str]:
     """Returns the gdal_translate command used to write a COG.
 
@@ -336,10 +468,19 @@ def build_cog_command(
         resampling (str): Resampling method for warping and overviews.
         epsg_code (str | None): Target EPSG code, or None to keep the source CRS.
         num_threads (int | None, optional): No. of CPUs to use. Defaults to None.
+        mask_band (int | None): Band written as the mask band instead of a data
+            band, or None to keep every band.
+        band_count (int): Number of bands in the input raster.
+
+    Raises:
+        ValueError: A mask band was requested together with reprojection.
 
     Returns:
         List[str]: Command and arguments for gdal_translate.
     """
+    if mask_band and epsg_code:
+        raise ValueError("The COG driver drops the mask band when it reprojects")
+
     if not num_threads:
         num_threads = max(1, multiprocessing.cpu_count() // 2)
 
@@ -365,6 +506,12 @@ def build_cog_command(
         "STATISTICS=YES",
     ]
 
+    if mask_band:
+        for band in range(1, band_count + 1):
+            if band != mask_band:
+                command.extend(["-b", str(band)])
+        command.extend(["-mask", str(mask_band)])
+
     # The COG driver warps on write; gdal_translate has no reprojection flags.
     if epsg_code:
         command.extend(
@@ -380,6 +527,8 @@ def convert_to_cog(
     resampling: str = DEFAULT_RESAMPLING,
     epsg_code: str | None = None,
     num_threads: int | None = None,
+    mask_band: int | None = None,
+    band_count: int = 0,
 ) -> None:
     """Runs gdal_translate to generate new raster in COG layout.
 
@@ -389,12 +538,23 @@ def convert_to_cog(
         resampling (str): Resampling method for warping and overviews.
         epsg_code (str | None): Target EPSG code, or None to keep the source CRS.
         num_threads (int | None, optional): No. of CPUs to use. Defaults to None.
+        mask_band (int | None): Band written as the mask band instead of a data
+            band, or None to keep every band.
+        band_count (int): Number of bands in the input raster.
     """
     if epsg_code:
         logger.info(f"Projecting raster to {epsg_code}")
 
     run_gdal(
-        build_cog_command(in_raster, out_raster, resampling, epsg_code, num_threads)
+        build_cog_command(
+            in_raster,
+            out_raster,
+            resampling,
+            epsg_code,
+            num_threads,
+            mask_band=mask_band,
+            band_count=band_count,
+        )
     )
 
 
@@ -412,38 +572,7 @@ def create_preview_image(
         stac_props (STACProperties): gdalinfo STAC output.
         resampling (str): Resampling method used to downsample the preview.
     """
-    band_count: int = len(stac_props["raster"])
-    if band_count > 2:
-        band_params: list = ["-b", "1", "-b", "2", "-b", "3"]
-        scale_params: list = [
-            "-scale_1",
-            str(stac_props["raster"][0]["stats"]["minimum"]),
-            str(stac_props["raster"][0]["stats"]["maximum"]),
-            "0",
-            "255",
-            "-scale_2",
-            str(stac_props["raster"][1]["stats"]["minimum"]),
-            str(stac_props["raster"][1]["stats"]["maximum"]),
-            "0",
-            "255",
-            "-scale_3",
-            str(stac_props["raster"][2]["stats"]["minimum"]),
-            str(stac_props["raster"][2]["stats"]["maximum"]),
-            "0",
-            "255",
-        ]
-    else:
-        band_params = ["-b", "1"]
-        scale_params = [
-            "-scale_1",
-            str(stac_props["raster"][0]["stats"]["minimum"]),
-            str(stac_props["raster"][0]["stats"]["maximum"]),
-            "0",
-            "255",
-        ]
-
-    outsize_params: list = ["-outsize", "320", "0"]
-    inout_params: list = [str(in_raster), str(preview_out_path)]
+    band_indexes = [1] if is_single_band(len(stac_props["raster"])) else [1, 2, 3]
 
     command = [
         "gdal_translate",
@@ -456,10 +585,26 @@ def create_preview_image(
         "-r",
         resampling,
     ]
-    command.extend(band_params)
-    command.extend(outsize_params)
-    command.extend(scale_params)
-    command.extend(inout_params)
+
+    for band_index in band_indexes:
+        command.extend(["-b", str(band_index)])
+
+    command.extend(["-outsize", "320", "0"])
+
+    # -scale_N refers to the output band position
+    for position, band_index in enumerate(band_indexes, start=1):
+        stats = stac_props["raster"][band_index - 1]["stats"]
+        command.extend(
+            [
+                f"-scale_{position}",
+                str(stats["minimum"]),
+                str(stats["maximum"]),
+                "0",
+                "255",
+            ]
+        )
+
+    command.extend([str(in_raster), str(preview_out_path)])
 
     run_gdal(command)
 
