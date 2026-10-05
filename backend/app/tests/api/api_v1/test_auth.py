@@ -418,21 +418,86 @@ def test_refresh_token_revokes_old_token(client: TestClient, db: Session) -> Non
     assert db_token_after.revoked_at is not None
 
 
+def _set_cookie_headers(response: Response) -> list[str]:
+    return [v.decode() for k, v in response.raw_headers if k == b"set-cookie"]
+
+
+def test_set_auth_cookies_secure_attributes(monkeypatch) -> None:
+    """Prod cookies are HttpOnly, Secure, SameSite=None and Partitioned (CHIPS)."""
+    monkeypatch.delenv("RUNNING_TESTS", raising=False)
+    monkeypatch.setenv("HTTP_COOKIE_SECURE", "1")
+
+    response = Response()
+    security.set_auth_cookies(response, "access", "refresh")
+
+    set_cookies = _set_cookie_headers(response)
+    assert len(set_cookies) == 2
+    assert any(h.startswith("access_token=") for h in set_cookies)
+    assert any(h.startswith("refresh_token=") for h in set_cookies)
+    for header in set_cookies:
+        lowered = header.lower()
+        assert "httponly" in lowered
+        assert "secure" in lowered
+        assert "samesite=none" in lowered
+        assert "partitioned" in lowered
+
+
+def test_set_auth_cookies_non_secure_attributes(monkeypatch) -> None:
+    """HTTP deployments get Lax cookies without Secure or Partitioned."""
+    monkeypatch.delenv("RUNNING_TESTS", raising=False)
+    monkeypatch.setenv("HTTP_COOKIE_SECURE", "0")
+
+    response = Response()
+    security.set_auth_cookies(response, "access", "refresh")
+
+    set_cookies = _set_cookie_headers(response)
+    assert len(set_cookies) == 2
+    for header in set_cookies:
+        lowered = header.lower()
+        assert "httponly" in lowered
+        assert "samesite=lax" in lowered
+        assert "secure" not in lowered
+        assert "partitioned" not in lowered
+
+
 def test_delete_auth_cookies_mirrors_secure_attributes(monkeypatch) -> None:
-    """delete_auth_cookies must mirror the prod Secure/SameSite=None attributes."""
+    """delete_auth_cookies must mirror the prod Secure/SameSite=None/Partitioned
+    attributes and expire the cookies."""
     monkeypatch.delenv("RUNNING_TESTS", raising=False)
     monkeypatch.setenv("HTTP_COOKIE_SECURE", "1")
 
     response = Response()
     security.delete_auth_cookies(response)
 
-    set_cookies = [v.decode() for k, v in response.raw_headers if k == b"set-cookie"]
+    set_cookies = _set_cookie_headers(response)
     assert len(set_cookies) == 2
     assert any(h.startswith("access_token=") for h in set_cookies)
     assert any(h.startswith("refresh_token=") for h in set_cookies)
     for header in set_cookies:
-        assert "Secure" in header
-        assert "samesite=none" in header.lower()
+        lowered = header.lower()
+        assert "max-age=0" in lowered
+        assert "httponly" in lowered
+        assert "secure" in lowered
+        assert "samesite=none" in lowered
+        assert "partitioned" in lowered
+
+
+def test_delete_auth_cookies_mirrors_non_secure_attributes(monkeypatch) -> None:
+    """On HTTP deployments the deletion carries neither Secure nor Partitioned."""
+    monkeypatch.delenv("RUNNING_TESTS", raising=False)
+    monkeypatch.setenv("HTTP_COOKIE_SECURE", "0")
+
+    response = Response()
+    security.delete_auth_cookies(response)
+
+    set_cookies = _set_cookie_headers(response)
+    assert len(set_cookies) == 2
+    for header in set_cookies:
+        lowered = header.lower()
+        assert "max-age=0" in lowered
+        assert "samesite=lax" in lowered
+        assert "secure" not in lowered
+        assert "partitioned" not in lowered
 
 
 def test_logout_revokes_expired_refresh_token(client: TestClient, db: Session) -> None:

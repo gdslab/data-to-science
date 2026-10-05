@@ -234,14 +234,14 @@ def get_user_from_token_payload(db: Session, payload: dict[str, Any]):
     return user
 
 
-def _resolve_cookie_security() -> tuple[bool, Literal["lax", "strict", "none"]]:
-    """Resolve the secure/samesite cookie attributes from the environment.
+def _resolve_cookie_security() -> tuple[bool, Literal["lax", "strict", "none"], bool]:
+    """Resolve the secure/samesite/partitioned cookie attributes from the environment.
 
-    Production (HTTPS) issues ``Secure``, ``SameSite=None`` cookies so they work
-    cross-origin. Tests and non-HTTPS/quickstart deployments fall back to
-    ``secure=False``, ``samesite="lax"``. Both setting and deleting auth cookies
-    must use these same attributes, otherwise browsers may refuse to apply the
-    deletion in a cross-site context and the cookie lingers.
+    Production (HTTPS) issues ``Secure``, ``SameSite=None``, ``Partitioned`` cookies
+    so they work cross-origin even when the browser blocks third-party cookies.
+    Tests and non-HTTPS deployments fall back to ``secure=False``, ``samesite="lax"``
+    and no ``Partitioned`` (it requires ``Secure``). Setting and deleting auth
+    cookies must use the same attributes.
     """
     # Import here to avoid circular imports
     from app.api.utils import str_to_bool
@@ -257,7 +257,35 @@ def _resolve_cookie_security() -> tuple[bool, Literal["lax", "strict", "none"]]:
     except ValueError:
         logger.exception("Defaulting to secure cookie")
 
-    return secure_cookie, samesite
+    return secure_cookie, samesite, secure_cookie
+
+
+def _set_auth_cookie(
+    response: Response,
+    key: str,
+    value: str = "",
+    max_age: int | None = None,
+    expires: int | None = None,
+) -> None:
+    """Set one auth cookie with the environment's security attributes.
+
+    Starlette only accepts ``partitioned=True`` on Python 3.14+, so the attribute
+    is appended to the emitted ``Set-Cookie`` header instead.
+    """
+    secure_cookie, samesite, partitioned = _resolve_cookie_security()
+    response.set_cookie(
+        key=key,
+        value=value,
+        max_age=max_age,
+        expires=expires,
+        path="/",
+        httponly=True,
+        secure=secure_cookie,
+        samesite=samesite,
+    )
+    if partitioned:
+        name, header = response.raw_headers[-1]
+        response.raw_headers[-1] = (name, header + b"; Partitioned")
 
 
 def set_auth_cookies(response: Response, access_token: str, refresh_token: str) -> None:
@@ -268,47 +296,26 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str) 
         access_token: JWT access token
         refresh_token: JWT refresh token
     """
-    secure_cookie, samesite = _resolve_cookie_security()
-
-    # Set access token cookie
-    response.set_cookie(
-        key="access_token",
-        value=f"Bearer {access_token}",
-        httponly=True,
-        secure=secure_cookie,
-        samesite=samesite,
-    )
-    # Set refresh token cookie. Unlike the access token, give the refresh cookie an
-    # explicit max_age so it persists across browser sessions for the full refresh
-    # token lifetime; otherwise it becomes a session cookie and is dropped when the
-    # browser session ends, forcing the user to log in again on their next visit.
-    response.set_cookie(
-        key="refresh_token",
-        value=f"Bearer {refresh_token}",
+    _set_auth_cookie(response, "access_token", f"Bearer {access_token}")
+    # Unlike the access token, give the refresh cookie an explicit max_age so it
+    # persists across browser sessions for the full refresh token lifetime;
+    # otherwise it becomes a session cookie and is dropped when the browser session
+    # ends, forcing the user to log in again on their next visit.
+    _set_auth_cookie(
+        response,
+        "refresh_token",
+        f"Bearer {refresh_token}",
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
-        httponly=True,
-        secure=secure_cookie,
-        samesite=samesite,
     )
 
 
 def delete_auth_cookies(response: Response) -> None:
     """Clear the auth cookies, mirroring the attributes used to set them.
 
-    The deletion ``Set-Cookie`` must carry the same ``secure``/``samesite``
-    attributes as ``set_auth_cookies``; otherwise a browser may reject clearing a
-    ``SameSite=None; Secure`` cookie from a cross-site context, leaving the user
-    effectively logged in.
+    Browsers only clear a cookie when the deletion carries the same attributes.
     """
-    secure_cookie, samesite = _resolve_cookie_security()
     for key in ("access_token", "refresh_token"):
-        response.delete_cookie(
-            key=key,
-            path="/",
-            httponly=True,
-            secure=secure_cookie,
-            samesite=samesite,
-        )
+        _set_auth_cookie(response, key, max_age=0, expires=0)
 
 
 async def validate_turnstile(
