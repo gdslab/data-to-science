@@ -266,13 +266,16 @@ def _set_auth_cookie(
     value: str = "",
     max_age: int | None = None,
     expires: int | None = None,
+    partitioned: bool | None = None,
 ) -> None:
     """Set one auth cookie with the environment's security attributes.
 
     Starlette only accepts ``partitioned=True`` on Python 3.14+, so the attribute
     is appended to the emitted ``Set-Cookie`` header instead.
     """
-    secure_cookie, samesite, partitioned = _resolve_cookie_security()
+    secure_cookie, samesite, env_partitioned = _resolve_cookie_security()
+    if partitioned is None:
+        partitioned = env_partitioned
     response.set_cookie(
         key=key,
         value=value,
@@ -296,6 +299,7 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str) 
         access_token: JWT access token
         refresh_token: JWT refresh token
     """
+    _expire_legacy_auth_cookies(response)
     _set_auth_cookie(response, "access_token", f"Bearer {access_token}")
     # Unlike the access token, give the refresh cookie an explicit max_age so it
     # persists across browser sessions for the full refresh token lifetime;
@@ -309,11 +313,25 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str) 
     )
 
 
+def _expire_legacy_auth_cookies(response: Response) -> None:
+    """Expire pre-Partitioned auth cookies so browsers don't send both variants.
+
+    A partitioned cookie does not replace an unpartitioned one of the same name, so
+    this must precede the real ``Set-Cookie`` for browsers that ignore the attribute.
+    """
+    _, _, partitioned = _resolve_cookie_security()
+    if not partitioned:
+        return
+    for key in ("access_token", "refresh_token"):
+        _set_auth_cookie(response, key, max_age=0, expires=0, partitioned=False)
+
+
 def delete_auth_cookies(response: Response) -> None:
     """Clear the auth cookies, mirroring the attributes used to set them.
 
     Browsers only clear a cookie when the deletion carries the same attributes.
     """
+    _expire_legacy_auth_cookies(response)
     for key in ("access_token", "refresh_token"):
         _set_auth_cookie(response, key, max_age=0, expires=0)
 

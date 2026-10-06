@@ -423,7 +423,10 @@ def _set_cookie_headers(response: Response) -> list[str]:
 
 
 def test_set_auth_cookies_secure_attributes(monkeypatch) -> None:
-    """Prod cookies are HttpOnly, Secure, SameSite=None and Partitioned (CHIPS)."""
+    """Prod cookies are HttpOnly, Secure, SameSite=None and Partitioned (CHIPS).
+
+    The legacy unpartitioned cookies are expired first so browsers that already
+    hold them do not send two access_token cookies after the upgrade."""
     monkeypatch.delenv("RUNNING_TESTS", raising=False)
     monkeypatch.setenv("HTTP_COOKIE_SECURE", "1")
 
@@ -431,14 +434,23 @@ def test_set_auth_cookies_secure_attributes(monkeypatch) -> None:
     security.set_auth_cookies(response, "access", "refresh")
 
     set_cookies = _set_cookie_headers(response)
-    assert len(set_cookies) == 2
-    assert any(h.startswith("access_token=") for h in set_cookies)
-    assert any(h.startswith("refresh_token=") for h in set_cookies)
+    assert len(set_cookies) == 4
+    legacy, current = set_cookies[:2], set_cookies[2:]
+    for headers in (legacy, current):
+        assert headers[0].startswith("access_token=")
+        assert headers[1].startswith("refresh_token=")
     for header in set_cookies:
         lowered = header.lower()
         assert "httponly" in lowered
         assert "secure" in lowered
         assert "samesite=none" in lowered
+    for header in legacy:
+        lowered = header.lower()
+        assert "max-age=0" in lowered
+        assert "partitioned" not in lowered
+    for header in current:
+        lowered = header.lower()
+        assert "max-age=0" not in lowered
         assert "partitioned" in lowered
 
 
@@ -470,16 +482,20 @@ def test_delete_auth_cookies_mirrors_secure_attributes(monkeypatch) -> None:
     security.delete_auth_cookies(response)
 
     set_cookies = _set_cookie_headers(response)
-    assert len(set_cookies) == 2
-    assert any(h.startswith("access_token=") for h in set_cookies)
-    assert any(h.startswith("refresh_token=") for h in set_cookies)
+    # both the legacy unpartitioned and the partitioned variant of each cookie
+    assert len(set_cookies) == 4
+    legacy, current = set_cookies[:2], set_cookies[2:]
+    for headers in (legacy, current):
+        assert headers[0].startswith("access_token=")
+        assert headers[1].startswith("refresh_token=")
     for header in set_cookies:
         lowered = header.lower()
         assert "max-age=0" in lowered
         assert "httponly" in lowered
         assert "secure" in lowered
         assert "samesite=none" in lowered
-        assert "partitioned" in lowered
+    assert all("partitioned" not in h.lower() for h in legacy)
+    assert all("partitioned" in h.lower() for h in current)
 
 
 def test_delete_auth_cookies_mirrors_non_secure_attributes(monkeypatch) -> None:

@@ -32,6 +32,10 @@ def _extract_access_token_from_cookie_headers(
     Parses the list of Cookie headers forwarded by tusd, finds the
     "access_token" entry, URL-decodes the value, removes optional
     surrounding quotes, and strips the leading "Bearer " prefix if present.
+    When the browser sends more than one "access_token" cookie (e.g. a stale
+    unpartitioned one alongside the current Partitioned one), the last
+    occurrence wins, matching Starlette's cookie parsing and the browser's
+    oldest-first ordering.
 
     Args:
         cookie_headers (list[str] | None): List of Cookie header strings
@@ -45,13 +49,10 @@ def _extract_access_token_from_cookie_headers(
         return None
     token_value: str | None = None
     for cookie_str in cookie_headers:
-        parts = [c.strip() for c in cookie_str.split(";")]
-        for part in parts:
+        for part in cookie_str.split(";"):
+            part = part.strip()
             if part.startswith("access_token="):
                 token_value = part.split("=", 1)[1]
-                break
-        if token_value:
-            break
     if not token_value:
         return None
     # URL-decode and sanitize
