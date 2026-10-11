@@ -1,0 +1,35 @@
+Input artifact: Data to Science (D2S) repository (commit 02230dd745efef089f1f6c30298f0761c17f530c).
+
+Primary inspected locations:
+
+Backend:
+- `backend/app/main.py`
+- `backend/app/api/deps.py`
+- `backend/app/api/api_v1/endpoints/users.py`
+- `backend/app/api/api_v1/endpoints/teams.py`
+- `backend/app/api/api_v1/endpoints/projects.py`
+- `backend/app/api/api_v1/endpoints/flights.py`
+- `backend/app/api/api_v1/endpoints/data_products.py`
+- `backend/app/api/api_v1/endpoints/raw_data.py`
+- `backend/app/api/api_v1/endpoints/tusd.py`
+- `backend/app/api/api_v1/endpoints/stac.py`
+- `backend/app/crud/base.py`
+- `backend/app/crud/crud_data_product.py`
+- `backend/app/crud/crud_project.py`
+- `backend/app/crud/crud_flight.py`
+- `backend/app/models/data_product.py`
+- `backend/app/models/project.py`
+- `backend/app/models/flight.py`
+- `backend/app/models/project_member.py`
+- `backend/app/models/file_permission.py`
+- `backend/app/utils/ProtectedStaticFiles.py`
+- `backend/app/tasks/raw_image_processing_tasks.py`
+- `backend/app/tasks/upload_tasks.py`
+- `backend/app/core/mail.py`
+
+Frontend:
+- `frontend/src/api.ts`
+- `frontend/src/AuthContext.tsx`
+- `frontend/src/router.tsx`
+
+Requested investigation areas: researcher management, dataset management, experiment management, metadata, dataset versioning, access control, workflow, and notifications.

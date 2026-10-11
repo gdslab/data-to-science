@@ -1,0 +1,43 @@
+sequenceDiagram
+    autonumber
+    actor Researcher as Researcher (React UI)
+    participant Nginx as Nginx Proxy
+    participant Tusd as tusd Upload Server
+    participant API as FastAPI Router
+    participant Auth as Auth & DB Dependencies
+    participant Repo as CRUD Repository
+    participant DB as PostgreSQL / PostGIS
+    participant Celery as Celery Queue (Redis)
+    participant Worker as Background Worker
+    participant RPC as RpcClient / External Engine
+    participant Proxy as ProtectedStaticFiles
+
+    %% Step 1: Upload
+    Researcher->>Nginx: Upload raw UAV zip via Tus protocol
+    Nginx->>Tusd: Stream binary chunks
+    Tusd-->>Nginx: Upload completed hook
+    Nginx->>API: POST /tusd/hooks (Upload finalized)
+    
+    %% Step 2: Ingestion & Task Dispatch
+    API->>Auth: Depends(get_current_approved_user), Depends(get_db)
+    Auth-->>API: Injected Session & User
+    API->>Repo: create_raw_data()
+    Repo->>DB: INSERT into raw_data, jobs
+    API->>Celery: transfer_raw_data_task.delay(backend="odm" | "metashape")
+    API-->>Researcher: 201 Created (Upload & Job ID)
+
+    %% Step 3: Strategy Execution & Processing
+    Celery->>Worker: Consume transfer task
+    Worker->>Worker: Evaluate Strategy (ODMQueryParams vs MetashapeQueryParams)
+    Worker->>RPC: async_transfer() & RPC dispatch to engine
+    RPC-->>Worker: Processing finished (Orthomosaic, DSM, Point Cloud)
+    Worker->>Repo: create_data_product(flight_id, raster_meta)
+    Repo->>DB: INSERT data_products, STAC properties
+
+    %% Step 4: Map Visualization & Protected Streaming
+    Researcher->>Nginx: GET /static/projects/{id}/.../ortho.tif (Map view)
+    Nginx->>Proxy: Intercept static request
+    Proxy->>Auth: verify_static_file_access(request)
+    Proxy->>DB: Check FilePermission / ProjectMember role
+    DB-->>Proxy: Access Granted
+    Proxy-->>Researcher: 206 Partial Content (Ranged GeoTIFF Tiles)

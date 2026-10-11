@@ -1,0 +1,50 @@
+flowchart LR
+    %% Actors
+    Researcher(["Researcher / Project Owner"])
+    Member(["Project Collaborator (Manager/Viewer)"])
+    Admin(["System Administrator"])
+    ExtCluster(["External Processing Worker"])
+
+    subgraph D2S_Platform ["Data to Science (D2S) Platform"]
+        %% Researcher Use Cases
+        UC1(["Create & Manage Projects"])
+        UC2(["Log Flight Sorties & Campaigns"])
+        UC3(["Upload Raw UAV Data (tusd)"])
+        UC4(["Select Processing Strategy (ODM/Metashape)"])
+        UC5(["Manage Project Access & Roles"])
+        UC6(["Annotate & Tag Spatial Layers"])
+        
+        %% Member Use Cases
+        UC7(["Explore & Visualize Maps (GeoTIFF/Point Cloud)"])
+        UC8(["Download Protected Data Products"])
+        
+        %% Admin Use Cases
+        UC9(["Approve Researcher Accounts"])
+        UC10(["Monitor Storage & Extension Usage"])
+        
+        %% System / Cluster Use Cases
+        UC11(["Extract Spatial Metadata & STAC Items"])
+        UC12(["Execute Photogrammetry Pipeline"])
+        UC13(["Generate Point Cloud Previews"])
+    end
+
+    Researcher --> UC1
+    Researcher --> UC2
+    Researcher --> UC3
+    Researcher --> UC4
+    Researcher --> UC5
+    Researcher --> UC6
+    Researcher --> UC7
+    Researcher --> UC8
+
+    Member --> UC7
+    Member --> UC8
+    Member --> UC6
+
+    Admin --> UC9
+    Admin --> UC10
+
+    UC3 -.->|triggers| UC11
+    UC4 -.->|dispatches to| ExtCluster
+    ExtCluster --> UC12
+    UC12 -.->|callback creates| UC13

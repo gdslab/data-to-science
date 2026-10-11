@@ -1,0 +1,133 @@
+# Part 1 — Pattern Discovery: Baseline Capabilities & Architectural Investigation
+
+## 1.1 Application Overview
+
+**Data to Science (D2S)** is an open-source, cloud-native scientific research platform developed to manage, analyze, and disseminate unmanned aerial vehicle (UAV), remote sensing, and environmental field data. The platform enables multi-institution research collaboration by facilitating data ingest, metadata extraction, geospatial visualization (GeoTIFFs, COPC point clouds), and reproducible research workflows.
+
+The system is architected as a distributed web application consisting of:
+1. **Backend**: FastAPI (Python 3.12) REST API with SQLAlchemy 2.0 ORM, Alembic migrations, PostgreSQL + PostGIS, and Celery asynchronous task workers backed by Redis and RabbitMQ.
+2. **Frontend**: Single Page Application built with React 18, TypeScript, Vite, and TailwindCSS/MUI, utilizing OpenLayers/MapLibre and Potree/PlayCanvas for geospatial and 3D point cloud exploration.
+3. **Storage & Processing Layer**: MinIO / S3 object storage, local filesystem storage with range-request streaming, external photogrammetry engines (Agisoft Metashape, OpenDroneMap), and SpatioTemporal Asset Catalog (STAC) indexing.
+
+```text
+data-to-science/
+├── backend/
+│   ├── app/
+│   │   ├── api/          # FastAPI routers, endpoints, and dependency injection
+│   │   ├── core/         # Security, authentication, config, email dispatch
+│   │   ├── crud/         # Generic Repository layer (CRUDBase) and model repositories
+│   │   ├── db/           # Session management and SQLAlchemy declarative base
+│   │   ├── models/       # ORM entities (DataProduct, Flight, Project, User, etc.)
+│   │   ├── schemas/      # Pydantic schemas for data validation and serialization
+│   │   ├── tasks/        # Celery asynchronous tasks (upload, preview, processing)
+│   │   └── utils/        # ProtectedStaticFiles, JobManager, RPC client
+│   └── celery/           # Worker entry points
+└── frontend/
+    └── src/
+        ├── api.ts        # Axios client with interceptors and refresh queues
+        ├── AuthContext.tsx# React context provider and route guards
+        ├── components/   # UI view components and layout containers
+        └── router.tsx    # Declarative routing and route protection
+```
+
+---
+
+## 1.2 Baseline Capabilities Investigation
+
+Based on direct source code analysis across the backend and frontend components, the eight requested domain areas are classified as follows:
+
+| Investigation Area | Current Baseline Status | Repository Evidence | Summary Evaluation |
+|---|---|---|---|
+| **Researcher Management** | 🟢 Present | `models/user.py`, `models/team.py`, `models/team_member.py`, `models/project_member.py`, `api/v1/endpoints/users.py`, `teams.py` | Full user account lifecycles, institutional affiliations, research teams, and project-level collaboration roles. |
+| **Dataset Management** | 🟢 Present | `models/data_product.py`, `models/raw_data.py`, `models/upload.py`, `api/v1/endpoints/data_products.py`, `tusd.py` | Rich raster/point-cloud/vector dataset management, chunked resumable tusd uploads, spatial indexing, and file serving. |
+| **Experiment Management** | 🟢 Present | `models/project.py`, `models/campaign.py`, `models/flight.py`, `models/indoor_project.py`, `api/v1/endpoints/flights.py` | Hierarchical research structure organizing field sorties, sensor flights, phenotyping trials, and multi-year field campaigns. |
+| **Metadata** | 🟢 Present | `models/data_product_metadata.py`, `models/annotation.py`, `tasks/stac_tasks.py`, `api/v1/endpoints/stac.py` | Spatial metadata (CRS, BBox, resolution), STAC catalog schemas, EXIF sensor properties, and spatial annotations. |
+| **Dataset Versioning** | 🔴 Absent | `models/data_product.py`, `crud/crud_data_product.py` | No snapshotting, semantic versioning, lineage graphs, or immutable revision histories. Mutating datasets overwrites the record. |
+| **Access Control** | 🟡 Partial | `models/file_permission.py`, `api/deps.py`, `utils/ProtectedStaticFiles.py` | Coarse project-level roles (Owner, Manager, Viewer) and public/private toggles exist, but no fine-grained, policy-based access control (ABAC). |
+| **Workflow** | 🟡 Partial | `tasks/raw_image_processing_tasks.py`, `tasks/upload_tasks.py`, `models/job.py` | Background Celery tasks and external RPC photogrammetry exist, but no automated experiment pipeline orchestration or DAG engine. |
+| **Notifications** | 🔴 Absent | `api/deps.py:send_email`, `core/mail.py` | Only transactional emails for account confirmation exist. In-app notification center, webhooks, and scientific event alerts are absent. |
+
+---
+
+## 1.3 Detailed Evaluation of Investigation Areas
+
+### 1. Researcher Management (🟢 Present)
+The platform models researchers as first-class citizens. The `User` model (`backend/app/models/user.py:25-96`) captures profile information, email confirmation, account approval status, and active API keys. Collaboration is supported through two complementary groupings:
+- **Teams** (`models/team.py`, `models/team_member.py`): Organizational units of researchers who share institutional affiliation.
+- **Project Members** (`models/project_member.py:18-70`): Scoped collaboration on specific research initiatives, with explicit assignment of roles (`OWNER`, `MANAGER`, `VIEWER`).
+Endpoints in `backend/app/api/api_v1/endpoints/users.py` and `project_members.py` expose endpoints for inviting collaborators, transferring ownership, and managing memberships.
+
+### 2. Dataset Management (🟢 Present)
+Scientific datasets comprise raw drone sensor captures, processed orthomosaics, digital surface models (DSM), and LiDAR point clouds.
+- Ingestion is handled via the Tus resumable upload protocol (`backend/app/api/api_v1/endpoints/tusd.py` and `models/upload.py`), handling multi-gigabyte imagery uploads reliably over unreliable network connections.
+- Dataset entities are represented by `DataProduct` (`models/data_product.py:25-109`) and `RawData` (`models/raw_data.py:18-75`), storing bounding boxes, Coordinate Reference Systems (CRS), native resolutions, and storage references.
+- File streaming is protected by `ProtectedStaticFiles` (`backend/app/utils/ProtectedStaticFiles.py:568-685`), which validates user permissions before serving spatial assets.
+
+### 3. Experiment Management (🟢 Present)
+Data acquisition in scientific drone research is organized hierarchically:
+- `Project` (`models/project.py:25-85`): Top-level research inquiry (e.g., agricultural field trial or forestry canopy study).
+- `Campaign` (`models/campaign.py:15-45`): Grouping of data collections over time (e.g., Growing Season 2026).
+- `Flight` (`models/flight.py:25-80`): An individual UAV sortie capturing specific sensor payloads (multispectral, RGB, thermal) at a recorded altitude and timestamp.
+- `IndoorProject` (`models/indoor_project.py:18-65`): Controlled-environment phenotyping trials.
+Endpoints in `api/v1/endpoints/flights.py` and `campaigns.py` provide full lifecycle management of these scientific experiments.
+
+### 4. Metadata (🟢 Present)
+Metadata management operates across several distinct dimensions:
+- **Spatial & Raster Metadata**: Automatically extracted via GDAL/Rasterio during ingestion (`crud/crud_data_product.py:960-990`) into cached JSONB fields (`bbox`, `crs`, `resolution`).
+- **Standardized Catalogs**: Native SpatioTemporal Asset Catalog (STAC) compliance implemented in `backend/app/tasks/stac_tasks.py` and `api/v1/endpoints/stac.py`.
+- **Arbitrary Key-Value Properties**: `DataProductMetadata` (`models/data_product_metadata.py:15-45`) allows researchers to attach flexible domain attributes.
+- **Spatial Annotations**: `Annotation` (`models/annotation.py`) and `Tag` (`models/tag.py`) models permit marking ground-truth features on geospatial layers.
+
+### 5. Dataset Versioning (🔴 Absent)
+The baseline platform treats each `DataProduct` as a mutable or unversioned singleton.
+- Inspecting `DataProduct` (`backend/app/models/data_product.py`) reveals only `is_active`, `created_at`, `updated_at`, and `deactivated_at`.
+- There is no semantic version tracking (e.g., `v1.0.0`), no parent/child lineage pointers, and no snapshot history mechanism. When an updated orthomosaic is generated or re-uploaded, the previous state is either overwritten or unceremoniously deactivated.
+- **Evolution Link**: This absence directly motivates **Evolution Scenario 1 (CH01): Add dataset versioning**.
+
+### 6. Access Control (🟡 Partial)
+Access control in the baseline is coarse-grained and binary:
+- A project is either public (`is_published = True`) or restricted (`is_published = False`).
+- Permissions are determined solely by static role membership (`Role.OWNER`, `Role.MANAGER`, `Role.VIEWER`) checked via helper dependencies in `backend/app/api/deps.py:200-350`.
+- Missing capabilities include: Attribute-Based Access Control (ABAC), embargo periods (time-delayed public release required by federal open science mandates), dataset-level licensing/confidentiality fences, and dynamic policy rule evaluation.
+- **Evolution Link**: This motivates **Evolution Scenario 2 (CH02): Add advanced access-control policies**.
+
+### 7. Workflow (🟡 Partial)
+The system executes individual background tasks using Celery (`backend/app/tasks/`):
+- Point cloud previews (`post_upload_tasks.py`), STAC catalog generation (`stac_tasks.py`), and raw imagery transfer to external photogrammetry clusters (`raw_image_processing_tasks.py`).
+- However, there is no end-to-end workflow orchestration engine. Pipelines cannot be declaratively sequenced into directed acyclic graphs (DAGs), multi-sensor data processing cannot be scheduled conditionally, and there is no automated experiment workflow triggering upon flight upload completion.
+- **Evolution Link**: This motivates **Evolution Scenario 3 (CH03): Add experiment workflow automation**.
+
+### 8. Notifications (🔴 Absent)
+Communication with researchers is strictly transactional:
+- The system only possesses a simple SMTP/FastAPI-Mail utility (`backend/app/core/mail.py`, `backend/app/api/deps.py:62-80`) used for account confirmation emails and password recovery.
+- There is no domain-level notification model, no notification inbox/feed in the UI, and no event-driven notification dispatch when long-running photogrammetry jobs finish, data products are ready, or project collaborators request access.
+
+---
+
+## 1.4 Identified Design Patterns
+
+Direct inspection of the baseline repository reveals six confirmed architectural and design patterns:
+
+1. **Repository Pattern (Generic Repository / DAO)**
+   - **Participants**: `CRUDBase[ModelType, CreateSchemaType, UpdateSchemaType]` (`backend/app/crud/base.py:16-82`), `CRUDDataProduct` (`backend/app/crud/crud_data_product.py:69-995`), `CRUDProject` (`backend/app/crud/crud_project.py:40-450`).
+   - **Intent**: Abstract and encapsulate all database access logic, isolating business services from raw SQLAlchemy queries.
+
+2. **Dependency Injection Pattern**
+   - **Participants**: FastAPI's `Depends` system, providers `get_db` (`backend/app/api/deps.py:37-60`), `get_current_approved_user` (`deps.py:111-118`), dependents in route definitions (`backend/app/api/api_v1/endpoints/projects.py:19-24`).
+   - **Intent**: Decouple route handlers from session management and authentication mechanics by injecting contextual dependencies at runtime.
+
+3. **Decorator / Proxy Pattern (Static Asset Authorization Proxy)**
+   - **Participants**: `ProtectedStaticFiles` (`backend/app/utils/ProtectedStaticFiles.py:568-685`), `verify_static_file_access` (`backend/app/utils/ProtectedStaticFiles.py:320-430`), target `RangedStaticFiles` (`backend/app/utils/staticfiles.py`).
+   - **Intent**: Intercept static file streaming requests, validate API keys / JWT session cookies, enforce project visibility rules, and dynamically generate requested vector Parquet/FlatGeobuf artifacts before delegating to the base file handler.
+
+4. **Strategy Pattern (Photogrammetry Engine Strategy)**
+   - **Participants**: Strategy selector `backend: Literal["metashape", "odm"]` (`backend/app/tasks/raw_image_processing_tasks.py:120-136`), concrete parameter strategies `MetashapeQueryParams` and `ODMQueryParams` (`backend/app/schemas/raw_data.py:76-105`), context `transfer_raw_data`.
+   - **Intent**: Enable interchangeable photogrammetry pipeline execution algorithms (proprietary Metashape vs open-source ODM) while shielding the dispatch pipeline from specific tool parameters.
+
+5. **Chain of Responsibility / Interceptor Pattern**
+   - **Participants**: Axios response interceptor pipeline (`frontend/src/api.ts:27-77`), request queue `processQueue` / `failedQueue` (`frontend/src/api.ts:18-24`), target API client.
+   - **Intent**: Intercept HTTP 401 responses across the frontend, queue simultaneous outbound API requests, execute a single token refresh round-trip, and transparently replay the queued requests.
+
+6. **Observer Pattern (React Context & Event Pub-Sub)**
+   - **Participants**: Observable provider `AuthContextProvider` (`frontend/src/AuthContext.tsx:51-162`), DOM event bus `window.dispatchEvent(new Event('auth:session-expired'))` (`frontend/src/api.ts:66`), observers `RequireAuth` (`AuthContext.tsx:164-180`) and `RequireAdmin`.
+   - **Intent**: Publish authentication and authorization state transitions reactively across the component hierarchy without manual prop propagation.

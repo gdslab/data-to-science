@@ -1,0 +1,25 @@
+flowchart TB
+    Client[Web Browser / QGIS / External Client] --> Frontend[React SPA / Frontend UI]
+    Frontend --> Nginx[NGINX Reverse Proxy]
+    Client -. Direct API / Tus .-> Nginx
+
+    Nginx --> FastAPI[FastAPI Backend Application]
+    
+    subgraph FastAPI Core & Middleware
+        FastAPI --> AuthMiddleware[CORS & Auth Cookie Inspection]
+        FastAPI --> DI[FastAPI Dependency Injection: get_db, get_current_user]
+    end
+
+    DI --> Endpoints[API Route Endpoints: projects, flights, data_products, tusd]
+    Endpoints --> Repositories[CRUD Generic Repositories: CRUDBase, CRUDDataProduct]
+    
+    Repositories --> DB[(PostgreSQL + PostGIS Database)]
+    
+    Endpoints --> TaskQueue[Celery Task Dispatcher: Redis/RabbitMQ]
+    TaskQueue --> Workers[Celery Background Workers]
+    
+    Workers --> GeoEngines[GDAL / Rasterio / PDAL Processing]
+    Workers --> RPC[RPC Client: External Photogrammetry Metashape / ODM]
+    
+    Endpoints --> StaticProxy[ProtectedStaticFiles: Authorization Proxy]
+    StaticProxy --> Storage[(File Storage / MinIO S3: GeoTIFFs, COPC.LAZ)]
