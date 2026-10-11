@@ -1,0 +1,3 @@
+OUTPUT: See Part3/code/python/observer.py.
+Evaluation: CORRECT.
+Verification: Ran with python3; all three events triggered, Notifier only printed on DONE.

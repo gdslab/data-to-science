@@ -1,0 +1,4 @@
+PROMPT (Part3 Strategy/js - Claude Sonnet 4.6, 2026-10-10):
+"Implement the Strategy pattern for a dataset access-control system in js.
+Use realistic domain names (PolicyStrategy, OwnerPolicy, RolePolicy,
+AccessController). Keep it 30-50 LOC. Show example usage with both policies."

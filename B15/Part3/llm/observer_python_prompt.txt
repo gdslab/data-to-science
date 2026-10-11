@@ -1,0 +1,4 @@
+PROMPT (Part3 Observer/Python - Claude Sonnet 4.6, 2026-10-10):
+"Implement the Observer pattern for a workflow notification system in Python.
+Observers: Logger, Notifier. Subject: WorkflowEngine with STARTED/PROCESSING/DONE events.
+Use typing.Protocol for structural subtyping. Keep ~28 LOC."

@@ -1,0 +1,4 @@
+PROMPT (Part3 C++ Strategy+Observer - Claude Sonnet 4.6, 2026-10-10):
+"Implement Strategy and Observer patterns in C++17 for access-control and
+workflow notification. Use pure virtual base classes, shared_ptr for
+observer lifetime, and virtual destructor. Keep each ~40-50 LOC."

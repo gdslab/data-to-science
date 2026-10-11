@@ -1,0 +1,3 @@
+OUTPUT: See Part3/code/js/Strategy.* (or strategy.*).
+Evaluation: CORRECT.
+Verification: Compiled/run successfully; output matches expected allow/deny results.

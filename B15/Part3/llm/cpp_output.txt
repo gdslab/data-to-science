@@ -1,0 +1,3 @@
+OUTPUT: See Part3/code/cpp/strategy.cpp and observer.cpp.
+Evaluation: CORRECT.
+Verification: Compiled with g++ -std=c++17; output matches Java/Python equivalents.

@@ -1,0 +1,9 @@
+Language,Pattern,LOC,Max_Cyclomatic_Complexity,Compiler_Runtime,Run_Command,Test_Result,Median_Process_Time_ms,Interfaces_Used,Inheritance_Used,Composition_Used,Notes
+Java,Strategy,45,2,javac (JDK 17),javac Strategy.java && java Strategy,PASS,12,1,0,1,Explicit interface; compile-time enforcement
+Java,Observer,38,2,javac (JDK 17),javac Observer.java && java Observer,PASS,11,1,0,1,List of observers; explicit interface
+Python,Strategy,30,2,CPython 3.11,python3 strategy.py,PASS,8,1,1,0,ABC abstractmethod; duck-typing fallback
+Python,Observer,28,2,CPython 3.11,python3 observer.py,PASS,7,1,0,1,Protocol structural subtyping
+JavaScript,Strategy,32,2,Node.js 20,node strategy.js,PASS,6,0,0,1,No explicit interface; duck-typing
+JavaScript,Observer,30,2,Node.js 20,node observer.js,PASS,5,0,0,1,forEach idiomatic; no formal contract
+C++,Strategy,48,2,g++ -std=c++17,./strategy,PASS,3,1,1,1,Pure virtual base; shared_ptr ownership
+C++,Observer,42,2,g++ -std=c++17,./observer,PASS,3,1,1,1,virtual destructor required; RAII
