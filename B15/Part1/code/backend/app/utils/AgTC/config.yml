@@ -1,0 +1,44 @@
+# You can use coments
+# This is single line comment
+# A commented block is skipped during execution
+
+TEMPLATE_INPUT:
+  Folder: ./input/
+  Input_template_file_name: base_template_example.csv
+  #Input_template_file_name : base_template_second_example.csv
+
+COLUMNS_TEMPLATE:
+  - Plot
+  - Genotype
+  - Repetition
+
+NEW_COLUMNS:
+  Experiment: ACRE-Biomass
+  Season: Summer 2022
+  Environment: Early planting date
+  Measurement: Plant height
+  Sampling_identifier: Sampling-5
+
+SAMPLES_PER_PLOT:
+  Sample_name:
+    - A
+    - B
+    - C
+    - D
+
+SAMPLE_IDENTIFIER:
+  id_observation:
+    - Plot
+    - Sample_name
+    - Experiment
+    - Environment
+    - Season
+    - Measurement
+    - Sampling_identifier
+
+TEMPLATE_OUTPUT:
+  - Measurement
+  - Sampling_identifier
+  - Experiment
+  - Environment
+  - Season

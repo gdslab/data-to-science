@@ -1,0 +1,478 @@
+import os
+from pathlib import Path
+from typing import List, Optional, Sequence, TypedDict
+from uuid import UUID
+
+from fastapi import status
+from fastapi.encoders import jsonable_encoder
+from sqlalchemy import and_, func, select, update
+from sqlalchemy.orm import Session, joinedload
+
+from app import crud
+from app.crud.base import CRUDBase
+from app.crud.crud_data_product import (
+    set_download_filename_attr,
+    set_like_attrs,
+    set_public_attr,
+    set_signature_attr,
+    set_spatial_metadata_attrs,
+    set_url_attr,
+    set_user_style_attr,
+    set_view_count_attr,
+)
+from app.crud.utils import raise_if_owning_project_published
+from app.models.constants import NON_RASTER_TYPES, PROCESSING_JOB_NAMES
+from app.models.data_product import DataProduct
+from app.models.data_product_like import DataProductLike
+from app.models.data_product_view import DataProductView
+from app.models.flight import Flight
+from app.models.job import Job
+from app.models.project import Project
+from app.models.raw_data import RawData
+from app.models.user_style import UserStyle
+from app.models.utils.utcnow import utcnow
+from app.models.vector_layer import VectorLayer
+from app.schemas.flight import FlightCreate, FlightUpdate
+from app.schemas.job import State, Status
+
+
+class ReadFlight(TypedDict):
+    response_code: int
+    message: str
+    result: Optional[Flight]
+
+
+def _load_like_view_counts(
+    session: Session,
+    data_product_ids: List[UUID],
+    user_id: Optional[UUID] = None,
+) -> tuple[dict[UUID, int], dict[UUID, int], set[UUID]]:
+    """Batch-load like/view counts and the caller's liked ids for data products.
+
+    Returns (like_counts, view_counts, liked_ids). ``liked_ids`` is empty when
+    ``user_id`` is None (e.g. anonymous/public reads). Done in bulk to avoid the
+    per-data-product subqueries used by the single-product read paths.
+    """
+    if not data_product_ids:
+        return {}, {}, set()
+
+    like_counts_stmt = (
+        select(DataProductLike.data_product_id, func.count(DataProductLike.id))
+        .where(DataProductLike.data_product_id.in_(data_product_ids))
+        .group_by(DataProductLike.data_product_id)
+    )
+    like_counts = {row[0]: row[1] for row in session.execute(like_counts_stmt).all()}
+
+    view_counts_stmt = (
+        select(DataProductView.data_product_id, func.count(DataProductView.id))
+        .where(DataProductView.data_product_id.in_(data_product_ids))
+        .group_by(DataProductView.data_product_id)
+    )
+    view_counts = {row[0]: row[1] for row in session.execute(view_counts_stmt).all()}
+
+    liked_ids: set[UUID] = set()
+    if user_id is not None:
+        liked_stmt = select(DataProductLike.data_product_id).where(
+            DataProductLike.data_product_id.in_(data_product_ids),
+            DataProductLike.user_id == user_id,
+        )
+        liked_ids = {row[0] for row in session.execute(liked_stmt).all()}
+
+    return like_counts, view_counts, liked_ids
+
+
+class CRUDFlight(CRUDBase[Flight, FlightCreate, FlightUpdate]):
+    def create_with_project(
+        self, db: Session, obj_in: FlightCreate, project_id: UUID
+    ) -> Flight:
+        obj_in_data = jsonable_encoder(obj_in)
+        db_obj = Flight(**obj_in_data, project_id=project_id)
+        with db as session:
+            session.add(db_obj)
+            session.commit()
+            session.refresh(db_obj)
+        return db_obj
+
+    def get_flight_by_id(
+        self, db: Session, project_id: UUID, flight_id: UUID
+    ) -> ReadFlight:
+        statement = (
+            select(Flight)
+            .where(
+                and_(
+                    Flight.project_id == project_id,
+                    Flight.id == flight_id,
+                    Flight.is_active,
+                )
+            )
+            .join(Flight.project.and_(Project.is_active))
+            .options(joinedload(Flight.data_products.and_(DataProduct.is_active)))
+        )
+        with db as session:
+            flight = session.scalar(statement)
+            if not flight:
+                return {
+                    "response_code": status.HTTP_404_NOT_FOUND,
+                    "message": "Flight not found",
+                    "result": None,
+                }
+            return {
+                "response_code": status.HTTP_200_OK,
+                "message": "Flight fetched successfully",
+                "result": flight,
+            }
+
+    def get_multi_by_project_id(
+        self, db: Session, project_id: UUID
+    ) -> Sequence[Flight]:
+        """Return all active flights for a project.
+
+        Args:
+            db (Session): Database session.
+            project_id (UUID): Project ID.
+
+        Returns:
+            Sequence[Flight]: List of active flights.
+        """
+        statement = select(Flight).where(
+            Flight.project_id == project_id, Flight.is_active
+        )
+
+        with db as session:
+            flights = session.scalars(statement).unique().all()
+            return flights
+
+    def get_multi_by_project(
+        self,
+        db: Session,
+        project_id: UUID,
+        upload_dir: str,
+        user_id: UUID,
+        include_all: bool = False,
+        has_raster: bool = False,
+    ) -> Sequence[Flight]:
+        statement = (
+            select(Flight)
+            .where(and_(Flight.project_id == project_id, Flight.is_active))
+            .join(Flight.project.and_(Project.is_active))
+            .options(joinedload(Flight.data_products.and_(DataProduct.is_active)))
+        )
+        with db as session:
+            flights_with_data = session.execute(statement).scalars().unique().all()
+
+            # Batch load all relevant jobs for all data products to avoid N+1 queries
+            all_data_product_ids = [
+                dp.id for flight in flights_with_data for dp in flight.data_products
+            ]
+
+            jobs_by_data_product_id = {}
+            if not include_all and all_data_product_ids:
+                jobs_query = select(Job).where(
+                    and_(
+                        Job.data_product_id.in_(all_data_product_ids),
+                        Job.name.in_(PROCESSING_JOB_NAMES),
+                        Job.state == State.COMPLETED,
+                        Job.status == Status.SUCCESS,
+                    )
+                )
+                jobs = session.execute(jobs_query).scalars().all()
+                for job in jobs:
+                    jobs_by_data_product_id[job.data_product_id] = job
+
+            # Batch load all user styles to avoid N+1 queries
+            user_styles_by_data_product_id = {}
+            if all_data_product_ids:
+                user_styles_query = (
+                    select(UserStyle)
+                    .where(UserStyle.data_product_id.in_(all_data_product_ids))
+                    .where(UserStyle.user_id == user_id)
+                )
+                user_styles = session.execute(user_styles_query).scalars().all()
+                for user_style in user_styles:
+                    user_styles_by_data_product_id[user_style.data_product_id] = (
+                        user_style
+                    )
+
+            # Batch load like/view counts and the caller's liked state
+            like_counts, view_counts, liked_ids = _load_like_view_counts(
+                session, all_data_product_ids, user_id=user_id
+            )
+
+            # Every flight here belongs to the same project, so the title the
+            # download filename needs is read once instead of walked from each
+            # data product's flight
+            project_title = session.execute(
+                select(Project.title).where(Project.id == project_id)
+            ).scalar_one_or_none()
+
+            # flights returned by crud
+            final_flights = []
+            for flight in flights_with_data:
+                # remove data product if its upload job status is FAILED
+                # or its state is not COMPLETED
+                if not include_all:
+                    keep_data_products: List[DataProduct] = []
+                    for data_product in flight.data_products:
+                        if data_product.id in jobs_by_data_product_id:
+                            keep_data_products.append(data_product)
+                    flight.data_products = keep_data_products
+
+                available_data_products = []
+                has_required_data_type = False
+                for data_product in flight.data_products:
+                    if data_product.filepath != "null":
+                        if data_product.data_type in NON_RASTER_TYPES or (
+                            data_product.data_type not in NON_RASTER_TYPES
+                            and data_product.stac_properties
+                        ):
+                            # do not include geotiffs without stac props
+                            available_data_products.append(data_product)
+                            set_spatial_metadata_attrs(data_product)
+                            set_public_attr(
+                                data_product, data_product.file_permission.is_public
+                            )
+                            set_signature_attr(data_product)
+                            set_url_attr(data_product, upload_dir)
+                            set_download_filename_attr(
+                                data_product, project_title, flight.acquisition_date
+                            )
+                            set_like_attrs(
+                                data_product,
+                                like_counts.get(data_product.id, 0),
+                                data_product.id in liked_ids,
+                            )
+                            set_view_count_attr(
+                                data_product, view_counts.get(data_product.id, 0)
+                            )
+                            # check for saved user style
+                            user_style = user_styles_by_data_product_id.get(
+                                data_product.id
+                            )
+                            if user_style:
+                                set_user_style_attr(data_product, user_style.settings)
+                            # Track if this flight has raster data when filtering by raster
+                            if (
+                                has_raster
+                                and data_product.data_type not in NON_RASTER_TYPES
+                            ):
+                                has_required_data_type = True
+                flight.data_products = available_data_products
+
+                if not has_raster or (has_raster and has_required_data_type):
+                    final_flights.append(flight)
+
+            return final_flights
+
+    def get_public_flights_by_project(
+        self,
+        db: Session,
+        project_id: UUID,
+        upload_dir: str,
+        has_raster: bool = False,
+    ) -> Sequence[Flight]:
+        statement = (
+            select(Flight)
+            .where(and_(Flight.project_id == project_id, Flight.is_active))
+            .join(Flight.project.and_(and_(Project.is_active, Project.is_published)))
+            .options(
+                joinedload(Flight.data_products.and_(DataProduct.is_active)).joinedload(
+                    DataProduct.file_permission
+                )
+            )
+        )
+        with db as session:
+            flights_with_data = session.execute(statement).scalars().unique().all()
+
+            # Batch load completed jobs for all data products
+            all_data_product_ids = [
+                dp.id for flight in flights_with_data for dp in flight.data_products
+            ]
+
+            jobs_by_data_product_id = {}
+            if all_data_product_ids:
+                jobs_query = select(Job).where(
+                    and_(
+                        Job.data_product_id.in_(all_data_product_ids),
+                        Job.name.in_(PROCESSING_JOB_NAMES),
+                        Job.state == State.COMPLETED,
+                        Job.status == Status.SUCCESS,
+                    )
+                )
+                jobs = session.execute(jobs_query).scalars().all()
+                for job in jobs:
+                    jobs_by_data_product_id[job.data_product_id] = job
+
+            # Batch load like/view counts (anonymous reads have no liked state)
+            like_counts, view_counts, _liked_ids = _load_like_view_counts(
+                session, all_data_product_ids
+            )
+
+            # Every flight here belongs to the same project, so the title the
+            # download filename needs is read once instead of walked from each
+            # data product's flight
+            project_title = session.execute(
+                select(Project.title).where(Project.id == project_id)
+            ).scalar_one_or_none()
+
+            final_flights = []
+            for flight in flights_with_data:
+                keep_data_products: List[DataProduct] = []
+                for data_product in flight.data_products:
+                    # Only include data products that have completed processing,
+                    # are publicly accessible, and have a valid filepath
+                    if (
+                        data_product.id in jobs_by_data_product_id
+                        and data_product.file_permission
+                        and data_product.file_permission.is_public
+                        and data_product.filepath != "null"
+                        and (
+                            data_product.data_type in NON_RASTER_TYPES
+                            or data_product.stac_properties
+                        )
+                    ):
+                        keep_data_products.append(data_product)
+                        set_spatial_metadata_attrs(data_product)
+                        set_public_attr(data_product, True)
+                        set_signature_attr(data_product)
+                        set_url_attr(data_product, upload_dir)
+                        set_download_filename_attr(
+                            data_product, project_title, flight.acquisition_date
+                        )
+                        set_like_attrs(
+                            data_product,
+                            like_counts.get(data_product.id, 0),
+                            False,
+                        )
+                        set_view_count_attr(
+                            data_product, view_counts.get(data_product.id, 0)
+                        )
+                flight.data_products = keep_data_products
+
+                has_required_data_type = any(
+                    dp.data_type not in NON_RASTER_TYPES for dp in flight.data_products
+                )
+                if not has_raster or has_required_data_type:
+                    final_flights.append(flight)
+
+            return final_flights
+
+    def change_flight_project(
+        self, db: Session, flight_id: UUID, dst_project_id: UUID
+    ) -> Optional[Flight]:
+        update_flight_statement = (
+            update(Flight)
+            .values(project_id=dst_project_id)
+            .where(Flight.id == flight_id)
+        )
+        with db as session:
+            session.execute(update_flight_statement)
+            session.commit()
+
+        # move any vector layer records associated with this flight
+        update_vector_layers_statement = (
+            update(VectorLayer)
+            .values(project_id=dst_project_id)
+            .where(VectorLayer.flight_id == flight_id)
+        )
+        with db as session:
+            session.execute(update_vector_layers_statement)
+            session.commit()
+
+        with db as session:
+            select_flight_statement = select(Flight).where(Flight.id == flight_id)
+            updated_flight = session.scalar(select_flight_statement)
+
+            # update filepath for any data products associated with flight
+            if updated_flight and len(updated_flight.data_products) > 0:
+                for data_product in updated_flight.data_products:
+                    if data_product.filepath:
+                        if os.environ.get("RUNNING_TESTS") == "1":
+                            project_uuid_index = 4
+                        else:
+                            project_uuid_index = 3
+                        # construct new filepath for data product
+                        parts = list(Path(data_product.filepath).parts)
+                        parts[project_uuid_index] = str(dst_project_id)
+                        new_filepath = str(Path(*parts))
+                        update_data_product_statement = (
+                            update(DataProduct)
+                            .values(filepath=new_filepath)
+                            .where(DataProduct.id == data_product.id)
+                        )
+                        session.execute(update_data_product_statement)
+                session.commit()
+                session.refresh(updated_flight)
+
+            # update filepath for any raw data associated with flight
+            if updated_flight and len(updated_flight.raw_data) > 0:
+                for raw_data in updated_flight.raw_data:
+                    if raw_data.filepath:
+                        if os.environ.get("RUNNING_TESTS") == "1":
+                            project_uuid_index = 4
+                        else:
+                            project_uuid_index = 3
+                        # construct new filepath for raw data
+                        parts = list(Path(raw_data.filepath).parts)
+                        parts[project_uuid_index] = str(dst_project_id)
+                        new_filepath = str(Path(*parts))
+                        update_raw_data_statement = (
+                            update(RawData)
+                            .values(filepath=new_filepath)
+                            .where(RawData.id == raw_data.id)
+                        )
+                        session.execute(update_raw_data_statement)
+                session.commit()
+                session.refresh(updated_flight)
+
+            return updated_flight
+
+    def deactivate(self, db: Session, flight_id: UUID) -> Flight | None:
+        """Deactivate flight and associated data products.
+
+        Raises:
+            PermissionDenied: If the project is published in a STAC catalog.
+        """
+        raise_if_owning_project_published(db, Flight, flight_id, "flight")
+
+        return self.deactivate_unguarded(db, flight_id=flight_id)
+
+    def deactivate_unguarded(self, db: Session, flight_id: UUID) -> Flight | None:
+        """Deactivate flight and associated data products without checking the
+        owning project.
+
+        Called by the project cascade, whose entry point already ran the
+        published project check for everything it deactivates.
+
+        Deactivating an already inactive flight leaves it untouched, so deleting
+        the project around it does not restart the retention window the cleanup
+        utilities measure from deactivated_at.
+        """
+        update_flight_sql = (
+            update(Flight)
+            .where(Flight.id == flight_id)
+            .where(Flight.is_active)
+            .values(is_active=False, deactivated_at=utcnow())
+        )
+        with db as session:
+            session.execute(update_flight_sql)
+            session.commit()
+
+        get_flight_sql = (
+            select(Flight)
+            .options(joinedload(Flight.data_products))
+            .where(Flight.id == flight_id)
+        )
+        with db as session:
+            deactivated_flight = session.execute(get_flight_sql).scalar()
+
+        if deactivated_flight and len(deactivated_flight.data_products) > 0:
+            for data_product in deactivated_flight.data_products:
+                with db as session:
+                    crud.data_product.deactivate_unguarded(
+                        db, data_product_id=data_product.id
+                    )
+
+        return deactivated_flight
+
+
+flight = CRUDFlight(Flight)

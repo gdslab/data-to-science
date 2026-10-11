@@ -1,0 +1,110 @@
+from datetime import datetime
+from typing import List, Literal, Optional
+
+from pydantic import UUID4, AnyHttpUrl, BaseModel, Field
+
+
+# shared properties
+class RawDataBase(BaseModel):
+    filepath: Optional[str] = None
+    original_filename: Optional[str] = None
+    file_size: Optional[int] = None
+    is_active: Optional[bool] = True
+    is_initial_processing_completed: bool = False
+
+
+# properties to receive via API on creation
+class RawDataCreate(RawDataBase):
+    filepath: str
+    original_filename: str
+
+
+# properties to receive via API on update
+class RawDataUpdate(RawDataBase):
+    pass
+
+
+# properties shared by models stored in DB
+class RawDataInDBBase(RawDataBase, from_attributes=True):
+    id: UUID4
+    filepath: str
+    flight_id: UUID4
+    original_filename: str
+    is_active: bool
+    is_initial_processing_completed: bool
+    deactivated_at: Optional[datetime] = None
+
+
+# additional properties to return via API
+class RawData(RawDataInDBBase):
+    has_active_job: bool = False
+    report: Optional[str] = None
+    status: Optional[str] = None
+    url: Optional[AnyHttpUrl] = None
+
+
+# additional properties stored in DB
+class RawDataInDB(RawDataInDBBase):
+    pass
+
+
+class Product(BaseModel):
+    data_type: str
+    filename: str
+    storage_path: str
+
+
+class Report(BaseModel):
+    filename: str
+    storage_path: str
+    raw_data_id: UUID4
+
+
+class Status(BaseModel):
+    code: int
+    message: str
+
+
+class RawDataMetadata(BaseModel):
+    token: str
+    job_id: UUID4
+    status: Status
+    products: List[Product]
+    report: Optional[Report]
+
+
+class MetashapeQueryParams(BaseModel):
+    alignQuality: Literal["low", "medium", "high"]
+    backend: Literal["metashape"]
+    blendingMode: Literal["average", "disabled", "min", "max", "mosaic"]
+    buildDepthFilterMode: Literal[
+        "no_filtering", "mild_filtering", "moderate_filtering", "aggressive_filtering"
+    ]
+    buildDepthQuality: Literal["low", "medium", "high"]
+    camera: Literal["single", "multi"]
+    cullFaces: bool
+    disclaimer: bool
+    exportDEM: bool
+    exportDEMResolution: float
+    exportOrtho: bool
+    exportOrthoResolution: float
+    exportPointCloud: bool
+    fillHoles: bool
+    ghostingFilter: bool
+    keyPoint: int
+    refineSeamlines: bool
+    resolution: float
+    tiePoint: int
+
+
+class ODMQueryParams(BaseModel):
+    backend: Literal["odm"]
+    disclaimer: bool
+    orthoResolution: float
+    pcQuality: Literal["lowest", "low", "medium", "high", "ultra"]
+
+
+class ProgressUpdate(BaseModel):
+    job_id: UUID4
+    progress: float
+    batch_id: Optional[str] = Field(default=None, max_length=128)

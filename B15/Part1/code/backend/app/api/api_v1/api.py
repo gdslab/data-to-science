@@ -1,0 +1,164 @@
+from fastapi import APIRouter
+
+from app.api.api_v1.endpoints import (
+    admin,
+    annotation_attachments,
+    annotations,
+    auth,
+    data_products,
+    file_permission,
+    flights,
+    health,
+    indoor_project_data,
+    indoor_projects,
+    locations,
+    project_members,
+    project_modules,
+    projects,
+    public,
+    raw_data,
+    style,
+    team_members,
+    teams,
+    tusd,
+    users,
+    utils,
+    vector_layers,
+)
+from app.core.config import settings
+
+# Conditionally import optional feature endpoints
+if settings.ENABLE_BREEDBASE:
+    from app.api.api_v1.endpoints import breedbase_connections
+
+if settings.ENABLE_CAMPAIGNS:
+    from app.api.api_v1.endpoints import campaigns
+
+if settings.MAIL_ENABLED:
+    from app.api.api_v1.endpoints import contact
+
+if settings.ENABLE_IFORESTER:
+    from app.api.api_v1.endpoints import iforester
+
+if settings.ENABLE_STAC:
+    from app.api.api_v1.endpoints import stac
+
+
+api_router = APIRouter()
+api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
+api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
+api_router.include_router(health.router, prefix="/health", tags=["health"])
+api_router.include_router(locations.router, prefix="/locations", tags=["locations"])
+api_router.include_router(public.router, prefix="/public", tags=["public"])
+api_router.include_router(
+    indoor_projects.router, prefix="/indoor_projects", tags=["indoor_projects"]
+)
+api_router.include_router(
+    indoor_project_data.router,
+    prefix="/indoor_projects/{indoor_project_id}/uploaded",
+    tags=["indoor_project_data"],
+)
+api_router.include_router(projects.router, prefix="/projects", tags=["projects"])
+api_router.include_router(
+    flights.router, prefix="/projects/{project_id}/flights", tags=["flights"]
+)
+api_router.include_router(
+    data_products.router,
+    prefix="/projects/{project_id}/flights/{flight_id}/data_products",
+    tags=["data_products"],
+)
+api_router.include_router(
+    annotations.router,
+    prefix="/projects/{project_id}/flights/{flight_id}/data_products/{data_product_id}/annotations",
+    tags=["annotations"],
+)
+api_router.include_router(
+    annotation_attachments.router,
+    prefix="/projects/{project_id}/flights/{flight_id}/data_products/{data_product_id}/annotations/{annotation_id}/attachments",
+    tags=["annotation_attachments"],
+)
+api_router.include_router(
+    raw_data.router,
+    prefix="/projects/{project_id}/flights/{flight_id}/raw_data",
+    tags=["raw_data"],
+)
+api_router.include_router(
+    file_permission.router,
+    prefix="/projects/{project_id}/flights/{flight_id}/data_products/{data_product_id}/file_permission",
+    tags=["file_permission"],
+)
+api_router.include_router(
+    project_modules.router,
+    prefix="/projects/{project_id}/modules",
+    tags=["project_modules"],
+)
+api_router.include_router(
+    style.router,
+    prefix="/projects/{project_id}/flights/{flight_id}/data_products/{data_product_id}/style",
+    tags=["style"],
+)
+api_router.include_router(
+    utils.router,
+    prefix="/projects/{project_id}/flights/{flight_id}/data_products/{data_product_id}/utils",
+    tags=["utils"],
+)
+api_router.include_router(
+    project_members.router,
+    prefix="/projects/{project_id}/members",
+    tags=["project_members"],
+)
+api_router.include_router(
+    project_members.indoor_router,
+    prefix="/indoor_projects/{indoor_project_id}/members",
+    tags=["project_members"],
+)
+api_router.include_router(
+    vector_layers.router,
+    prefix="/projects/{project_id}/vector_layers",
+    tags=["vector_layers"],
+)
+api_router.include_router(teams.router, prefix="/teams", tags=["teams"])
+api_router.include_router(
+    team_members.router, prefix="/teams/{team_id}/members", tags=["team_members"]
+)
+api_router.include_router(tusd.router, prefix="/tusd", tags=["tusd"])
+api_router.include_router(users.router, prefix="/users", tags=["users"])
+
+# Conditionally register optional feature endpoints
+if settings.ENABLE_BREEDBASE:
+    api_router.include_router(
+        breedbase_connections.router,
+        prefix="/projects/{project_id}/breedbase-connections",
+        tags=["breedbase_connections"],
+    )
+    api_router.include_router(
+        breedbase_connections.study_router,
+        prefix="/breedbase-connections/study",
+        tags=["breedbase_connections"],
+    )
+    api_router.include_router(
+        breedbase_connections.oauth_router,
+        prefix="/breedbase_connections/oauth",
+        tags=["breedbase_connections"],
+    )
+    api_router.include_router(
+        breedbase_connections.proxy_router,
+        prefix="/breedbase/brapi",
+        tags=["breedbase_connections"],
+    )
+
+if settings.ENABLE_CAMPAIGNS:
+    api_router.include_router(
+        campaigns.router, prefix="/projects/{project_id}/campaigns", tags=["campaigns"]
+    )
+
+if settings.MAIL_ENABLED:
+    api_router.include_router(contact.router, prefix="/contact", tags=["contact"])
+
+if settings.ENABLE_IFORESTER:
+    api_router.include_router(
+        iforester.router, prefix="/projects/{project_id}/iforester", tags=["iforester"]
+    )
+
+if settings.ENABLE_STAC:
+    api_router.include_router(stac.router, prefix="/projects", tags=["stac"])

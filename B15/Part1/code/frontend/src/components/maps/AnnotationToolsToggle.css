@@ -1,0 +1,36 @@
+.annotation-tools-container {
+    display: flex;
+    animation: annotationSlideInFromRight 0.3s ease-out;
+}
+
+.annotation-tools-container .maplibregl-ctrl-group {
+    display: flex;
+    border-radius: 4px;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+body.annotation-tools-closing .annotation-tools-container {
+    animation: annotationSlideOutToRight 0.2s ease-in forwards !important;
+}
+
+@keyframes annotationSlideInFromRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes annotationSlideOutToRight {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+}

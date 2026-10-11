@@ -1,0 +1,578 @@
+import base64
+import os
+import re
+import shutil
+import uuid
+from datetime import date
+from pathlib import Path
+from typing import List, Optional, Tuple
+from urllib.parse import quote_plus, urlencode
+
+import geopandas as gpd
+from geojson_pydantic import Feature
+from pydantic import UUID4
+from sqlalchemy.orm import Session
+
+from app import crud
+from app.core.config import settings
+from app.core.security import sign_map_tile_payload
+from app.utils.MapMaker import MapMaker
+from app.utils.text_utils import truncate_to_bytes
+
+
+def cleanup_temp(temp_path: str) -> None:
+    """Delete temp file or temp dir once no longer in use.
+
+    Args:
+        temp_path (str): Path to temporary file or directory.
+    """
+    if os.path.isfile(temp_path):
+        os.remove(temp_path)
+    elif os.path.isdir(temp_path):
+        shutil.rmtree(temp_path)
+
+
+def create_project_field_preview(project_id: uuid.UUID, features: List[Feature]) -> str:
+    """Create preview image of project field boundary.
+
+    Args:
+        project_id (uuid.UUID4): Project ID.
+        features (list[Feature]): GeoJSON features that represent field boundary.
+
+    Returns:
+        str: Path to generated preview image.
+    """
+    # Set output path for preview map
+    if os.environ.get("RUNNING_TESTS") == "1":
+        project_map_path = f"{settings.TEST_STATIC_DIR}/projects/{project_id}"
+    else:
+        project_map_path = f"{settings.STATIC_DIR}/projects/{project_id}"
+    # Create project directory if needed, remove any existing preview maps
+    if not os.path.exists(project_map_path):
+        os.makedirs(project_map_path)
+    if os.path.exists(os.path.join(project_map_path, "preview_map.png")):
+        os.remove(os.path.join(project_map_path, "preview_map.png"))
+    # Generate project map with provided coordinates
+    project_map = MapMaker(features=features, outpath=project_map_path)
+    project_map.save()
+    return project_map.preview_img
+
+
+def create_vector_layer_preview(
+    project_id: uuid.UUID, layer_id: str, features: List[Feature]
+) -> str:
+    """Create preview image of vector layer.
+
+    Args:
+        project_id (uuid.UUID4): Project ID.
+        layer_id (str): Unique layer ID for FeatureCollection.
+        features (list[Feature]): GeoJSON features that represent vector layer shapes.
+
+    Returns:
+        str: Path to generated preview image.
+    """
+    # Set output path for preview image
+    if os.environ.get("RUNNING_TESTS") == "1":
+        preview_path = (
+            f"{settings.TEST_STATIC_DIR}/projects/{project_id}/vector/{layer_id}"
+        )
+    else:
+        preview_path = f"{settings.STATIC_DIR}/projects/{project_id}/vector/{layer_id}"
+    # Create vector directory if needed, remove any existing preview for this layer
+    if not os.path.exists(preview_path):
+        os.makedirs(preview_path)
+    # Full path to preview image
+    preview_img = os.path.join(preview_path, "preview.png")
+    # Skip creating preview image if one already exists
+    if not os.path.exists(os.path.join(preview_path, "preview.png")):
+        # Generate preview with provided coordinates
+        vector_layer_preview = MapMaker(features=features, outpath=preview_path)
+        vector_layer_preview.save(outname="preview.png")
+
+    return preview_img
+
+
+def save_vector_layer_parquet(
+    project_id: uuid.UUID, layer_id: str, gdf: gpd.GeoDataFrame, static_dir: str
+) -> str:
+    """Generate and save GeoParquet file for a vector layer.
+
+    Args:
+        project_id (uuid.UUID): Project ID.
+        layer_id (str): Unique layer ID for FeatureCollection.
+        gdf (gpd.GeoDataFrame): GeoDataFrame containing vector layer features.
+        static_dir (str): Path to static directory (from get_static_dir()).
+
+    Returns:
+        str: Path to generated parquet file.
+    """
+    # Set output path for parquet file
+    parquet_dir = os.path.join(
+        static_dir, "projects", str(project_id), "vector", layer_id
+    )
+    # Create vector directory if needed
+    if not os.path.exists(parquet_dir):
+        os.makedirs(parquet_dir)
+    # Full path to parquet file
+    parquet_path = os.path.join(parquet_dir, f"{layer_id}.parquet")
+    # Save GeoDataFrame as GeoParquet with snappy compression
+    gdf.to_parquet(parquet_path, compression="snappy")
+
+    return parquet_path
+
+
+def save_vector_layer_flatgeobuf(
+    project_id: uuid.UUID, layer_id: str, gdf: gpd.GeoDataFrame, static_dir: str
+) -> str:
+    """Generate and save FlatGeobuf file for a vector layer.
+
+    Args:
+        project_id (uuid.UUID): Project ID.
+        layer_id (str): Unique layer ID for FeatureCollection.
+        gdf (gpd.GeoDataFrame): GeoDataFrame containing vector layer features.
+        static_dir (str): Path to static directory (from get_static_dir()).
+
+    Returns:
+        str: Path to generated FlatGeobuf file.
+    """
+    # Set output path for FlatGeobuf file
+    fgb_dir = os.path.join(static_dir, "projects", str(project_id), "vector", layer_id)
+    # Create vector directory if needed
+    if not os.path.exists(fgb_dir):
+        os.makedirs(fgb_dir)
+    # Full path to FlatGeobuf file
+    fgb_path = os.path.join(fgb_dir, f"{layer_id}.fgb")
+    # Save GeoDataFrame as FlatGeobuf
+    gdf.to_file(fgb_path, driver="FlatGeobuf")
+
+    return fgb_path
+
+
+def is_valid_uuid(id: str) -> bool:
+    """Checks if the provided ID is a version 4 UUID.
+
+    Args:
+        id (str): ID to check.
+
+    Returns:
+        bool: True if ID is valid ver. 4 UUID, False otherwise.
+    """
+    try:
+        uuid.UUID(id, version=4)
+        return True
+    except ValueError:
+        return False
+
+
+def is_valid_api_key(api_key: str) -> bool:
+    """Checks if API Key generated by secrets.token_urlsafe() is valid.
+
+    Args:
+        api_key (str): API key to check.
+
+    Returns:
+        bool: True if API key is valid, False otherwise.
+    """
+    if not re.fullmatch(r"^[A-Za-z0-9\-_]+$", api_key):
+        return False
+    try:
+        padding = "=" * (-len(api_key) % 4)
+        decoded_bytes = base64.urlsafe_b64decode(api_key + padding)
+        encoded_key = (
+            base64.urlsafe_b64encode(decoded_bytes).rstrip(b"=").decode("utf-8")
+        )
+        return api_key == encoded_key
+    except Exception:
+        return False
+
+
+def get_data_product_dir(project_id: str, flight_id: str, data_product_id: str) -> Path:
+    """Construct path to directory that will store uploaded data product.
+
+    Args:
+        project_id (str): Project ID associated with data product.
+        flight_id (str): Flight ID associated with data product.
+        data_product_id (str): ID for data product.
+
+    Returns:
+        Path: Full path to data product directory.
+    """
+    # get root static path
+    if os.environ.get("RUNNING_TESTS") == "1":
+        data_product_dir = Path(settings.TEST_STATIC_DIR)
+    else:
+        data_product_dir = Path(settings.STATIC_DIR)
+    # construct path to project/flight/dataproduct
+    data_product_dir = data_product_dir / "projects" / project_id
+    data_product_dir = data_product_dir / "flights" / flight_id
+    data_product_dir = data_product_dir / "data_products" / data_product_id
+    # create folder for data product
+    if not os.path.exists(data_product_dir):
+        os.makedirs(data_product_dir)
+
+    return data_product_dir
+
+
+def get_indoor_project_data_dir(
+    indoor_project_id: str, indoor_project_data_id: str
+) -> Path:
+    """Construct path to directory that will store uploaded indoor project data.
+
+    Args:
+        indoor_project_id (str): Indoor project ID associated with indoor project.
+        indoor_project_data_id (str): ID for indoor project data.
+
+    Returns:
+        Path: Full path to indoor project data directory.
+    """
+    # get root static path
+    if os.environ.get("RUNNING_TESTS") == "1":
+        indoor_project_data_dir = Path(settings.TEST_STATIC_DIR)
+    else:
+        indoor_project_data_dir = Path(settings.STATIC_DIR)
+    # construct path to indoor_project/indoor_project_data
+    indoor_project_data_dir = (
+        indoor_project_data_dir / "indoor_projects" / indoor_project_id
+    )
+    indoor_project_data_dir = (
+        indoor_project_data_dir / "uploaded" / indoor_project_data_id
+    )
+    # create folder for indoor project data
+    if not os.path.exists(indoor_project_data_dir):
+        os.makedirs(indoor_project_data_dir)
+
+    return indoor_project_data_dir
+
+
+def str_to_bool(value: str | bool) -> bool:
+    """Converts a boolean str into a boolean object.
+
+    Args:
+        value (str | bool): String value to convert to bool or bool value.
+
+    Raises:
+        ValueError: Raised if string value does not match a boolean value.
+
+    Returns:
+        bool: Returns True if string value matched one of the values in the "True" set.
+    """
+    # If already a bool object, return it
+    if isinstance(value, bool):
+        return value
+
+    if value.lower() in {"1", "true"}:
+        return True
+    elif value.lower() in {"0", "false"}:
+        return False
+    else:
+        raise ValueError(f"Invalid boolean string: {value}")
+
+
+def get_static_dir() -> str:
+    """Returns path to static directory.
+
+    Returns:
+        str: Static directory path.
+    """
+    if os.environ.get("RUNNING_TESTS") == "1":
+        return settings.TEST_STATIC_DIR
+    else:
+        return settings.STATIC_DIR
+
+
+def get_user_name_and_email(db: Session, user_id: uuid.UUID) -> str:
+    """Return name and email associated with user id.
+
+    Args:
+        db (Session): Database session.
+        user_id (UUID): User id.
+
+    Returns:
+        str: Name and email of user or 'Unknown.'
+    """
+    user = crud.user.get(db, id=user_id)
+    if user:
+        return f"{user.first_name} {user.last_name} <{user.email}>"
+    else:
+        return "Unknown"
+
+
+def sanitize_file_name(file_name: str) -> str:
+    """Strips unsafe characters and returns sanitized file name with original extension.
+    Args:
+        file_name (str): Original file name.
+
+    Returns:
+        str: Sanitized file name.
+    """
+    # Get the file name and extension
+    base_name, extension = os.path.splitext(file_name)
+
+    # Generate a sanitized base name: remove all non-alphanumeric characters
+    # except underscores and hyphens
+    sanitized_base_name = re.sub(r"[^\w\-_]", "_", base_name).strip("_")
+
+    # If the base name is empty, generate a random UUID
+    if not sanitized_base_name:
+        sanitized_base_name = str(uuid.uuid4())
+
+    # Sanitize the extension (ensure it starts with a dot and contains only
+    # alphanumeric characters)
+    sanitized_extension = f".{extension.lstrip('.').lower()}" if extension else ""
+
+    # Return the cleansed file name
+    return f"{sanitized_base_name}{sanitized_extension}"
+
+
+# Keep each part short enough that the joined name stays well inside the 255
+# byte file name limit common to most filesystems. Project titles and flight
+# names are both String(255) on their own. The budget is counted in bytes rather
+# than characters because \w is Unicode aware: a single character can encode to
+# four bytes in UTF-8, so a character based cap would let a title of such
+# characters push the joined name past the limit, and the export writes that name
+# to disk.
+MAX_FILENAME_PART_BYTES = 48
+
+
+def sanitize_file_name_part(part: str) -> str:
+    """Strips unsafe characters from a single component of a file name.
+
+    Uses the same whitelist as sanitize_file_name but without its extension
+    handling, so a dot inside the value (for example a project titled
+    "Trial v1.2") cannot survive and be read as a file extension.
+
+    Args:
+        part (str): One component of a file name.
+
+    Returns:
+        str: Sanitized component, which may be an empty string.
+    """
+    # \w already covers the underscore
+    sanitized = re.sub(r"[^\w\-]", "_", part)
+    # Collapse the runs left behind by stripped characters
+    sanitized = re.sub(r"_{2,}", "_", sanitized)
+
+    truncated = truncate_to_bytes(sanitized.strip("_"), MAX_FILENAME_PART_BYTES)
+
+    return truncated.strip("_")
+
+
+def get_file_extension(filename: Path) -> str:
+    """Get the file extension, handling compound extensions like .copc.laz.
+
+    Args:
+        filename (Path): The filename to check
+
+    Returns:
+        str: The full extension including compound extensions
+    """
+    name = filename.name.lower()
+    if name.endswith(".copc.laz"):
+        return ".copc.laz"
+    elif name.endswith(".laz"):
+        return ".laz"
+    elif name.endswith(".las"):
+        return ".las"
+    elif name.endswith(".tif"):
+        return ".tif"
+    return filename.suffix.lower()
+
+
+def get_data_product_download_name(
+    project_title: str,
+    acquisition_date: date,
+    data_type: str,
+    extension: str,
+) -> str:
+    """Builds the file name used when a data product is downloaded.
+
+    The name is composed from the project, flight date, and data type rather than
+    from the uploaded file's name, so nothing a user chose at upload time is
+    handed back to whoever downloads the file. Every component is sanitized,
+    because project titles and data types are both user-editable free text.
+
+    Args:
+        project_title (str): Title of the project the data product belongs to.
+        acquisition_date (date): Acquisition date of the data product's flight.
+        data_type (str): Data type of the data product.
+        extension (str): File extension, with or without a leading dot.
+
+    Returns:
+        str: Sanitized file name.
+    """
+    parts = [
+        sanitize_file_name_part(project_title),
+        acquisition_date.strftime("%Y%m%d"),
+        sanitize_file_name_part(data_type),
+    ]
+
+    stem = "_".join(part for part in parts if part)
+
+    # Only possible if the project title and data type both sanitize away and
+    # somehow leave no date, but a name is still owed to the caller
+    if not stem:
+        stem = str(uuid.uuid4())
+
+    # Sanitized per segment so compound extensions such as .copc.laz keep their
+    # separating dot instead of being flattened into one token
+    extension_parts = [
+        sanitize_file_name_part(part).lower()
+        for part in extension.lstrip(".").split(".")
+    ]
+    extension_parts = [part for part in extension_parts if part]
+    sanitized_extension = f".{'.'.join(extension_parts)}" if extension_parts else ""
+
+    return f"{stem}{sanitized_extension}"
+
+
+def is_geometry_match(expected_geometry: str, actual_geometry: str) -> bool:
+    """Return True if expected geometry and actual geometry match or if they match
+    when multi and non-multi types are considered matches.
+
+    Args:
+        expected_geometry (str): Expected geometry type.
+        actual_geometry (str): Actual geometry type.
+
+    Returns:
+        bool: True if expected and actual geometry match.
+    """
+    if expected_geometry.lower() == actual_geometry.lower():
+        return True
+
+    if (
+        expected_geometry.lower() == "point"
+        or expected_geometry.lower() == "multipoint"
+    ):
+        if (
+            actual_geometry.lower() == "point"
+            or actual_geometry.lower() == "multipoint"
+        ):
+            return True
+
+    if (
+        expected_geometry.lower() == "linestring"
+        or expected_geometry.lower() == "multilinestring"
+    ):
+        if (
+            actual_geometry.lower() == "linestring"
+            or actual_geometry.lower() == "multilinestring"
+        ):
+            return True
+
+    if (
+        expected_geometry.lower() == "polygon"
+        or expected_geometry.lower() == "multipolygon"
+    ):
+        if (
+            actual_geometry.lower() == "polygon"
+            or actual_geometry.lower() == "multipolygon"
+        ):
+            return True
+
+    return False
+
+
+def get_tile_url_with_signed_payload(layer_id: str) -> str:
+    """Returns pg_tileserv URL with signed payload.
+
+    Args:
+        layer_id (str): Unique ID for vector layer.
+
+    Returns:
+        str: Tile URL with signed payload.
+    """
+    # Include `filter` and `limit` query params in the payload
+    filter_param = f"layer_id='{layer_id}'"
+    limit_param = -1
+
+    # Encode query params before signing payload
+    encoded_filter = quote_plus(filter_param)
+    encoded_limit = quote_plus(str(limit_param))
+
+    # Create payload string
+    payload_str = encoded_filter + encoded_limit
+
+    # Sign payload (expiration defaults to 10 minutes)
+    signed_payload, expiration_timestamp = sign_map_tile_payload(payload_str)
+
+    # Build query params for tile request
+    query_params = {
+        "filter": filter_param,
+        "limit": limit_param,
+        "secure": signed_payload,
+        "expires": expiration_timestamp,
+    }
+
+    # Add payload to base tile URL
+    base_url = f"{settings.API_DOMAIN}/mvt/public.vector_layers/{{z}}/{{x}}/{{y}}.pbf"
+    signed_url = f"{base_url}?{urlencode(query_params)}"
+
+    return signed_url
+
+
+def get_signature_for_data_product(
+    data_product_id: UUID4, filepath: str
+) -> Tuple[str, int]:
+    """Return signed payload to be included in data product properties.
+
+    Signs the data product ID followed by the percent-encoded raster path. The
+    encoding matches the `url` query param verified by varnish/default.vcl.
+
+    Args:
+        data_product_id (UUID4): Unique ID for data product.
+        filepath (str): Path to raster passed to titiler in the `url` param.
+
+    Returns:
+        str: Signed payload.
+    """
+    # Create payload string
+    payload_str = str(data_product_id) + quote_plus(filepath)
+
+    # Sign payload (expiration defaults to 10 minutes)
+    signed_payload, expiration_timestamp = sign_map_tile_payload(payload_str)
+
+    return signed_payload, expiration_timestamp
+
+
+def normalize_sensor_value(sensor: str) -> str:
+    """
+    Normalize sensor value to match the expected ENUM case.
+    Returns the normalized value if it matches a valid sensor type (case-insensitive),
+    otherwise returns the original value.
+    """
+    sensor_mapping = {
+        "rgb": "RGB",
+        "multispectral": "Multispectral",
+        "lidar": "LiDAR",
+        "thermal": "Thermal",
+        "hyperspectral": "Hyperspectral",
+        "other": "Other",
+    }
+    return sensor_mapping.get(sensor.lower(), sensor)
+
+
+def get_copc_z_unit(crs) -> Optional[str]:
+    """
+    Determine the Z-axis unit from a CRS object.
+    Returns unit name (e.g., 'metre', 'foot', 'US survey foot') or None.
+    """
+    if crs is None:
+        return None
+
+    # Look for vertical axis explicitly defined
+    for axis in crs.axis_info:
+        if axis.direction.lower() == "up":
+            return axis.unit_name
+
+    # Check compound CRS
+    if crs.is_compound:
+        for sub in crs.sub_crs_list:
+            if sub.is_vertical:
+                return sub.axis_info[0].unit_name
+
+    # Fallback: assume Z uses the same unit as XY
+    # This is common in LAS/COPC when only a 2D CRS is defined
+    if len(crs.axis_info) >= 2:
+        return crs.axis_info[0].unit_name
+
+    return None

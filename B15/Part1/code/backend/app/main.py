@@ -1,0 +1,138 @@
+import asyncio
+import logging
+import os
+from contextlib import asynccontextmanager
+from typing import AsyncIterator
+
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
+
+from app.api.api_v1.api import api_router
+from app.api.extras import extra_router
+from app.core.config import settings
+from app.core.limiter import limiter
+from app.core.logging import setup_logger
+from app.middleware import log_and_track_middleware
+from app.utils.ProtectedStaticFiles import ProtectedStaticFiles
+from app.utils.titiler import verify_titiler_version
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Probe TiTiler in the background without blocking startup."""
+    titiler_check = None
+    if os.environ.get("RUNNING_TESTS") != "1":
+        titiler_check = asyncio.create_task(
+            verify_titiler_version(settings.TITILER_URL)
+        )
+
+    yield
+
+    if titiler_check and not titiler_check.done():
+        titiler_check.cancel()
+
+
+app = FastAPI(
+    docs_url="/developer/api",
+    lifespan=lifespan,
+    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    redoc_url="/developer/docs",
+    title=settings.API_PROJECT_NAME,
+)
+
+if settings.RATE_LIMIT_ENABLED:
+    try:
+        from slowapi import _rate_limit_exceeded_handler
+        from slowapi.errors import RateLimitExceeded
+        from slowapi.middleware import SlowAPIMiddleware
+
+        app.state.limiter = limiter
+        app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
+        app.add_middleware(SlowAPIMiddleware)
+    except Exception as e:
+        print(f"Error setting up rate limiting: {e}")
+
+if settings.ENABLE_OPENTELEMETRY:
+    try:
+        from opentelemetry.instrumentation.asgi import OpenTelemetryMiddleware
+        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
+        from app.telemetry import setup_tracing
+
+        setup_tracing(service_name="d2s-api")
+        FastAPIInstrumentor.instrument_app(app)  # route names, attrs
+        app.add_middleware(OpenTelemetryMiddleware)  # full ASGI coverage
+        print("OpenTelemetry tracing enabled")
+    except Exception as e:
+        print(f"Error setting up OpenTelemetry tracing: {e}")
+
+
+def configure_cors(app: FastAPI, allowed_origins: str) -> None:
+    """Configure CORS from a comma-separated origin allowlist.
+
+    When ``allowed_origins`` lists one or more origins, those origins may make
+    credentialed (cookie-bearing) cross-origin requests with any method. When it
+    is empty, the API falls back to allowing anonymous ``GET`` requests from any
+    origin (the historical default).
+    """
+    cors_origins = [
+        origin.strip() for origin in allowed_origins.split(",") if origin.strip()
+    ]
+
+    if cors_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=cors_origins,
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+            expose_headers=["*"],
+        )
+    else:
+        # Backward-compatible default: anonymous, browser GETs from any origin.
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_methods=["GET"],
+            allow_headers=["*"],
+        )
+
+
+configure_cors(app, settings.BACKEND_CORS_ORIGINS)
+
+setup_logger()
+logger = logging.getLogger(__name__)
+
+app.include_router(api_router, prefix=settings.API_V1_STR)
+app.include_router(extra_router, tags=["extras"])
+
+app.mount("/static", ProtectedStaticFiles(directory=settings.STATIC_DIR), name="static")
+app.mount("/potree", StaticFiles(directory=settings.POTREE_DIR), name="potree")
+app.mount(
+    "/pc-gltf-viewer",
+    StaticFiles(directory=settings.PC_GLTF_VIEWER_DIR, html=True),
+    name="pc-gltf-viewer",
+)
+
+
+@app.get("/pc-gltf-viewer")
+def pc_gltf_viewer_redirect():
+    return RedirectResponse(url="/pc-gltf-viewer/")
+
+
+@app.get("/pc-gltf-viewer/index.html")
+def pc_gltf_viewer_index_redirect():
+    return RedirectResponse(url="/pc-gltf-viewer/")
+
+
+@app.exception_handler(HTTPException)
+def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    logger.error("HTTPException", exc_info=exc)
+
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+
+# Register middleware
+app.middleware("http")(log_and_track_middleware)

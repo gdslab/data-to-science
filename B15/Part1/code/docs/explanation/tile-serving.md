@@ -1,0 +1,56 @@
+# Tile Serving
+
+This page explains how D2S serves geospatial data as map tiles to the frontend — covering raster tiles, vector tiles, point clouds, and the caching layer.
+
+## Overview
+
+D2S uses three specialized services to render different data types as tiles, all fronted by a Varnish caching layer:
+
+```
+Client → Varnish Cache → TiTiler (raster)
+                       → pg_tileserv (vector)
+                       → Direct HTTP (point cloud)
+```
+
+## Raster tiles (TiTiler)
+
+[TiTiler](https://developmentseed.org/titiler/) is a dynamic tile server that reads Cloud Optimized GeoTIFFs (COGs) and generates map tiles on demand. Because COGs use internal tiling and overviews, TiTiler can serve tiles at any zoom level by reading only the relevant bytes from the file via HTTP range requests. In D2S, TiTiler reads the COGs directly from the shared `user-data` volume rather than over HTTP.
+
+The frontend requests tiles using standard `{z}/{x}/{y}` URL patterns. TiTiler supports dynamic band selection, rescaling, and color map application — the frontend uses these capabilities for visualization controls like band combination selection and color ramp adjustments.
+
+D2S requires **TiTiler 2.0 or later**. Tile requests set the pixel dimensions with the `tilesize` query parameter, which replaced the `@{scale}x` path suffix removed in TiTiler 2.0. Tiles are rendered at 512x512 by default, or 1024x1024 when "Increase tile resolution" is enabled in the map tools. MapLibre places them on a 256 pixel tile grid either way, so a larger `tilesize` raises pixel density rather than changing which tiles are fetched.
+
+On startup the backend probes TiTiler's `/healthz` endpoint and logs the version it finds. An unsupported version is reported as an error in the backend logs, and `/api/v1/health` returns the detected version alongside a `compatible` flag. Set `TITILER_URL` in `backend.env` if TiTiler is not reachable at the default `http://titiler:8888`.
+
+## Vector tiles (pg_tileserv)
+
+[pg_tileserv](https://github.com/CrunchyData/pg_tileserv) connects directly to the PostgreSQL/PostGIS database and generates Mapbox Vector Tiles (MVT) from spatial tables. When a user uploads a shapefile or GeoJSON, the data is stored in PostGIS and immediately available as vector tiles.
+
+Vector tiles are rendered client-side by MapLibre GL JS, which allows dynamic styling and interaction without re-fetching data from the server.
+
+## Point cloud visualization (Potree)
+
+Point cloud data in COPC format is not served as traditional map tiles. Instead, the [Potree](https://potree.github.io/) WebGL viewer fetches point data directly via HTTP range requests against the COPC file. Potree handles level-of-detail rendering, loading more points as the user zooms in.
+
+## Caching with Varnish
+
+All tile requests (raster and vector) are routed through [Varnish](https://varnish-cache.org/), an HTTP caching layer. Varnish serves previously generated tiles from its cache, reducing the load on TiTiler and pg_tileserv.
+
+Tiles are accessed via signed URLs that encode:
+
+- The resource being accessed. For raster tiles this is the data product ID and the percent-encoded path of the COG that TiTiler opens; for vector tiles it is the layer filter and row limit.
+- An expiration timestamp
+- A cryptographic signature derived from `TILE_SIGNING_SECRET_KEY`
+
+Varnish validates the signature and expiration before serving the tile or forwarding the request to the upstream service. This ensures that only authorized users with valid, time-limited URLs can access tile data. Because the raster path is signed, a signature issued for one data product cannot be reused to read another file, and Varnish additionally rejects any raster path outside the shared `/static` mount.
+
+Rendering parameters such as `bidx`, `rescale`, `colormap_name`, and `tilesize` are not signed. They change how an already-authorized raster is drawn, so the frontend can adjust symbology without requesting a new signature.
+
+Signatures are stripped from the cache key, so users viewing the same data product with the same rendering parameters share one cached tile.
+
+## Why this architecture?
+
+- **Cloud-native formats** (COG, COPC) eliminate the need to pre-generate tile pyramids, reducing storage and processing overhead.
+- **Dynamic tile generation** allows the frontend to request custom visualizations (band combinations, color maps) without storing multiple versions of the same data.
+- **Caching** ensures that frequently accessed tiles are served quickly without regenerating them.
+- **Signed URLs** decouple tile access control from the main API authentication system, allowing tiles to be cached and served efficiently.

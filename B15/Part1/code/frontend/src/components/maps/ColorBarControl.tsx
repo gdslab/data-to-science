@@ -1,0 +1,101 @@
+import axios from 'axios';
+import clsx from 'clsx';
+import { useCallback, useEffect, useState } from 'react';
+
+import { DataProduct } from '../pages/workspace/projects/Project';
+import {
+  SingleBandSymbology,
+  useRasterSymbologyContext,
+} from './RasterSymbologyContext';
+
+import { useMapContext } from './MapContext';
+import { isPublicOnly } from './utils';
+import api from '../../api';
+
+export default function ColorBarControl({
+  dataProduct,
+  position = 'left',
+  projectId,
+}: {
+  dataProduct: DataProduct;
+  position?: 'left' | 'right';
+  projectId?: string;
+}) {
+  const [url, setURL] = useState('');
+
+  const { state } = useRasterSymbologyContext();
+  const { activeProject } = useMapContext();
+
+  const symbology = state[dataProduct.id]?.symbology;
+
+  const fetchColorBar = useCallback(
+    async (symbology: SingleBandSymbology) => {
+      const stats = dataProduct.stac_properties.raster[0].stats;
+
+      try {
+        let effectiveProjectId = projectId;
+        if (!effectiveProjectId) {
+          effectiveProjectId = dataProduct.filepath
+            .split('/projects/')[1]
+            .split('/flights/')[0];
+        }
+        const colorbarPath = `/projects/${effectiveProjectId}/flights/${dataProduct.flight_id}/data_products/${dataProduct.id}/utils/colorbar`;
+        const params = {
+          cmin:
+            symbology.mode === 'minMax'
+              ? symbology.min.toFixed(2)
+              : symbology.mode === 'userDefined'
+              ? symbology.userMin.toFixed(2)
+              : symbology.mode === 'meanStdDev'
+              ? (stats.mean - stats.stddev * symbology.meanStdDev).toFixed(2)
+              : symbology.min.toFixed(2),
+          cmax:
+            symbology.mode === 'minMax'
+              ? symbology.max.toFixed(2)
+              : symbology.mode === 'userDefined'
+              ? symbology.userMax.toFixed(2)
+              : symbology.mode === 'meanStdDev'
+              ? (stats.mean + stats.stddev * symbology.meanStdDev).toFixed(2)
+              : symbology.max.toFixed(2),
+          cmap: symbology.colorRamp,
+        };
+        // Use plain axios (no auth interceptor) for public-only projects so a
+        // redirect to the auth-required endpoint doesn't trigger a login redirect.
+        const response = isPublicOnly(activeProject)
+          ? await axios.get(
+              `${import.meta.env.VITE_API_V1_STR}${colorbarPath}`,
+              { params }
+            )
+          : await api.get(colorbarPath, { params });
+        if (response) {
+          axios
+            .get(response.data.colorbar_url)
+            .then(() => setURL(response.data.colorbar_url))
+            .catch(() => setURL(''));
+        }
+      } catch (err) {
+        throw err;
+      }
+    },
+    [dataProduct, projectId, activeProject]
+  );
+
+  useEffect(() => {
+    if (symbology) {
+      fetchColorBar(symbology as SingleBandSymbology);
+    }
+  }, [fetchColorBar, symbology]);
+
+  if (!symbology || !url) return null;
+
+  return (
+    <div
+      className={clsx(
+        'absolute bottom-8 max-md:bottom-20 bg-white/75 rounded-md shadow-md px-3 py-2 m-2.5 leading-3 text-slate-600 outline-hidden',
+        { 'start-0': position === 'left', 'end-0': position === 'right' }
+      )}
+    >
+      <img src={url} className="h-80 max-md:max-h-40" />
+    </div>
+  );
+}

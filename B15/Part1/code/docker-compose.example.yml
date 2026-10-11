@@ -1,0 +1,289 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: frontend.dockerfile
+    image: d2s-app:dev
+    pull_policy: build
+    platform: linux/x86_64
+    command: yarn run dev --host 0.0.0.0 --port 8080
+    volumes:
+      - ./frontend/:/app
+      - /app/node_modules
+    restart: always
+    depends_on:
+      - backend
+    environment:
+      - VITE_STAC_ENABLED=false
+    env_file:
+      - frontend.env
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: backend.dockerfile
+      args:
+        INSTALL_DEV: true
+    image: d2s-api:dev
+    pull_policy: build
+    platform: linux/x86_64
+    volumes:
+      - ./backend:/app
+      # - external-data:/srv/external-data
+      - log-data:/app/logs
+      - tusd-data:/srv/tusd-data/data
+      - user-data:/static
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
+      # - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel-collector:4318
+    env_file:
+      - backend.env
+      - db.env
+
+  db:
+    image: postgis/postgis:15-3.3
+    platform: linux/x86_64
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready --username=$$POSTGRES_USER --dbname=$$POSTGRES_DB",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      - POSTGRES_USER=d2s
+      - POSTGRES_DB=d2s
+      - PGTZ=Etc/UTC
+    env_file:
+      - db.env
+
+  pgadmin:
+    image: dpage/pgadmin4:9.12.0
+    platform: linux/x86_64
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=youremail@example.com
+      - PGADMIN_DEFAULT_PASSWORD=password
+
+  redis:
+    image: redis:8.6.0-alpine
+    platform: linux/x86_64
+    user: redis
+    read_only: true
+    tmpfs:
+      - /data:uid=999,gid=999,mode=0755
+    command: redis-server --save "" --appendonly no
+    restart: always
+    
+
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: backend.dockerfile
+      args:
+        INSTALL_DEV: true
+    image: d2s-api:dev
+    pull_policy: build
+    platform: linux/x86_64
+    command: /app/celery/worker-start.sh
+    volumes:
+      # - external-data:/srv/external-data
+      - tusd-data:/srv/tusd-data/data
+      - user-data:/static
+    restart: always
+    depends_on:
+      - redis
+      - db
+    environment:
+      - CELERY_WORKERS=4
+      - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
+    env_file:
+      - backend.env
+      - db.env
+
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: backend.dockerfile
+      args:
+        INSTALL_DEV: true
+    image: d2s-api:dev
+    pull_policy: build
+    platform: linux/x86_64
+    command: /app/celery/beat-start.sh
+    volumes:
+      - celery-data:/var/run/celery
+      - tusd-data:/srv/tusd-data/data
+      - user-data:/static
+    restart: always
+    depends_on:
+      - redis
+      - db
+    environment:
+      - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
+    env_file:
+      - backend.env
+      - db.env
+
+  flower:
+    build:
+      context: ./backend
+      dockerfile: backend.dockerfile
+      args:
+        INSTALL_DEV: true
+    image: d2s-api:dev
+    pull_policy: build
+    platform: linux/x86_64
+    command: /app/celery/flower-start.sh
+    volumes:
+      - user-data:/user-data
+    ports:
+      - 5555:5555
+    restart: always
+    depends_on:
+      - redis
+      - db
+    environment:
+      - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
+    env_file:
+      - backend.env
+      - db.env
+
+  proxy:
+    build:
+      context: ./nginx
+      dockerfile: nginx.dockerfile
+      args:
+        - DEFAULT_CONF=dev
+    image: d2s-proxy:dev
+    pull_policy: build
+    platform: linux/x86_64
+    tmpfs:
+      - /tmp
+    ports:
+      - "0.0.0.0:8000:80"
+    restart: always
+    depends_on:
+      - frontend
+
+  varnish:
+    build:
+      context: ./varnish
+      dockerfile: varnish.dockerfile
+    image: d2s-varnish:dev
+    pull_policy: build
+    tmpfs:
+      - /var/lib/varnish/varnishd:exec
+    command: "-p default_keep=300"
+    depends_on:
+      - pg_tileserv
+      - proxy
+      - titiler
+    environment:
+      - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
+      - VARNISH_SIZE=2G
+
+  pg_tileserv:
+    image: pramsey/pg_tileserv:20250131-amd64
+    platform: linux/x86_64
+    volumes:
+      - ./pg_tileserv.toml:/config/pg_tileserv.toml:ro
+    ports:
+      - 7800:7800
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - db.env
+
+  titiler:
+    image: ghcr.io/developmentseed/titiler:2.2.1
+    volumes:
+      - user-data:/static
+    environment:
+      # Application
+      - HOST=0.0.0.0
+      - PORT=8888
+      # Gunicorn. The image reads only HOST, PORT and WEB_CONCURRENCY; pass any
+      # other gunicorn option through GUNICORN_CMD_ARGS (e.g. add
+      # "--access-logfile -" to log every tile request).
+      - WEB_CONCURRENCY=2
+      - GUNICORN_CMD_ARGS=--keep-alive 75 --max-requests 5000 --max-requests-jitter 500
+      # GDAL. Rasters are read from the local /static mount, so the /vsicurl
+      # (HTTP range request) options from the TiTiler docs do not apply.
+      # GDAL_CACHEMAX is megabytes per worker process.
+      - CPL_TMPDIR=/tmp
+      - GDAL_CACHEMAX=512
+      - GDAL_DISABLE_READDIR_ON_OPEN=EMPTY_DIR
+      - VSI_CACHE=TRUE
+      - PYTHONWARNINGS=ignore
+      # Endpoints. Varnish only routes /cog to titiler.
+      - TITILER_API_DISABLE_STAC=True
+      - TITILER_API_DISABLE_MOSAIC=True
+      - TITILER_API_DISABLE_ZARR=True
+      # Telemetry. TITILER_API_DEBUG=True adds per-request logging and timing.
+      - TITILER_API_TELEMETRY_ENABLED=False
+      # - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+
+  tusd:
+    image: tusproject/tusd:sha-0e52ad6
+    command: -verbose -behind-proxy -hooks-http http://proxy/api/v1/tusd -hooks-http-forward-headers Cookie X-Project-ID X-Flight-ID X-Data-Type X-Annotation-ID X-Data-Product-ID
+    volumes:
+      - ./tusd/hooks:/srv/tusd-hooks
+      - tusd-data:/srv/tusd-data/data
+      - user-data:/static
+    restart: always
+    depends_on:
+      - frontend
+      - backend
+      - proxy
+
+  # otel-collector:
+  #   image: otel/opentelemetry-collector-contrib:latest
+  #   command: ["--config=/etc/otel-collector-config.yaml"]
+  #   volumes:
+  #     - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+  #   ports:
+  #     - "4318:4318" # OTLP HTTP receiver
+  #     - "13133:13133" # Health check extension
+  #   depends_on:
+  #     - jaeger
+
+  # jaeger:
+  #   image: jaegertracing/all-in-one:latest
+  #   ports:
+  #     - "16686:16686" # UI
+  #     - "14250:14250" # OTLP gRPC (Jaeger receiver)
+  #   environment:
+  #     - COLLECTOR_OTLP_ENABLED=true
+
+volumes:
+  celery-data:
+  db-data:
+  log-data:
+  user-data:
+  tusd-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${TUSD_STORAGE}
+      o: bind
+  # external-data:
+  #   driver: local
+  #   driver_opts:
+  #     type: none
+  #     device: ${EXTERNAL_STORAGE}
+  #     o: bind

@@ -1,0 +1,108 @@
+import uuid
+from datetime import datetime
+from typing import TYPE_CHECKING, List, Optional
+
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, String
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.db.base_class import Base
+from app.models.utils.utcnow import utcnow
+
+if TYPE_CHECKING:
+    from .annotation import Annotation
+    from .data_product_like import DataProductLike
+    from .data_product_metadata import DataProductMetadata
+    from .data_product_view import DataProductView
+    from .file_permission import FilePermission
+    from .flight import Flight
+    from .job import Job
+    from .raw_data import RawData
+    from .user_style import UserStyle
+    from .vector_layer import VectorLayer
+
+
+class DataProduct(Base):
+    __tablename__ = "data_products"
+    # columns
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    data_type: Mapped[str] = mapped_column(String(16), nullable=False)
+    filepath: Mapped[str] = mapped_column(String, nullable=False)
+    original_filename: Mapped[str] = mapped_column(String, nullable=False)
+    stac_properties: Mapped[dict] = mapped_column(JSONB, nullable=True)
+    # Spatial metadata (calculated once from raster, cached for performance)
+    # bbox: WGS84 bounding box [minx, miny, maxx, maxy]
+    # crs: {"epsg": int, "unit": str} - unit is the linear unit (e.g., "metre", "foot")
+    # resolution: {"x": float, "y": float, "unit": str} - pixel size in native CRS units
+    bbox: Mapped[dict] = mapped_column(JSONB, nullable=True)
+    crs: Mapped[dict] = mapped_column(JSONB, nullable=True)
+    resolution: Mapped[dict] = mapped_column(JSONB, nullable=True)
+    s3_url: Mapped[str] = mapped_column(String, nullable=True)
+    # On-disk size in bytes of the data product directory, captured at upload
+    # finalization so per-user data usage can be a fast SQL SUM.
+    file_size: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_initial_processing_completed: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=utcnow(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=utcnow(),
+        onupdate=utcnow(),
+        nullable=False,
+    )
+    deactivated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    # foreign keys
+    flight_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("flights.id"), nullable=False
+    )
+    # Source raw data upload this product was derived from by the external image
+    # processing service. Null for directly uploaded products. SET NULL on delete
+    # so cleanup jobs can hard-delete deactivated raw data without FK violations.
+    raw_data_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("raw_data.id", ondelete="SET NULL"), nullable=True
+    )
+    # relationships
+    annotations: Mapped[List["Annotation"]] = relationship(
+        back_populates="data_product",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    data_product_metadata: Mapped[List["DataProductMetadata"]] = relationship(
+        back_populates="data_product", cascade="all, delete"
+    )
+    file_permission: Mapped["FilePermission"] = relationship(
+        back_populates="file", cascade="all, delete"
+    )
+    flight: Mapped["Flight"] = relationship(back_populates="data_products")
+    raw_data: Mapped[Optional["RawData"]] = relationship(back_populates="data_products")
+    jobs: Mapped[List["Job"]] = relationship(
+        back_populates="data_product", cascade="all, delete"
+    )
+    style: Mapped["UserStyle"] = relationship(
+        back_populates="data_product", cascade="all, delete"
+    )
+    vector_layer: Mapped[List["VectorLayer"]] = relationship(
+        back_populates="data_product", cascade="all, delete"
+    )
+    likes: Mapped[List["DataProductLike"]] = relationship(
+        back_populates="data_product", cascade="all, delete"
+    )
+    views: Mapped[List["DataProductView"]] = relationship(
+        back_populates="data_product", cascade="all, delete"
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"DataProduct(id={self.id!r}, data_type={self.data_type!r}, "
+            f"filepath={self.filepath!r}, original_filename={self.original_filename}, "
+            f"stac_properties={self.stac_properties!r}, is_active={self.is_active!r}, "
+            f"deactivated_at={self.deactivated_at!r}, flight_id={self.flight_id!r})"
+        )

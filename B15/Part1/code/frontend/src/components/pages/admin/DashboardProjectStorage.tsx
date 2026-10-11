@@ -1,0 +1,63 @@
+import { AxiosResponse } from 'axios';
+import { Suspense } from 'react';
+import { Await, useLoaderData } from 'react-router';
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+
+import DashboardProjectStorageTable from './DashboardProjectStorageTable';
+import { ProjectStatistics } from './DashboardTypes';
+import DashboardProjectStorageTableSkeleton from './DashboardProjectStorageTableSkeleton';
+
+import api from '../../../api';
+
+export async function loader() {
+  const response: Promise<AxiosResponse<ProjectStatistics[]>> = api.get(
+    '/admin/project_statistics'
+  );
+  return { response };
+}
+
+function ErrorElement() {
+  return (
+    <div className="h-full w-full flex flex-col items-center justify-center">
+      <ExclamationTriangleIcon className="h-10 w-10 text-red-600" />
+      <span className="text-2xl font-semibold text-primary">
+        Error occurred. Unable to load user project statistics.
+      </span>
+    </div>
+  );
+}
+
+export default function DashboardProjectStorage() {
+  const projectStatisticsApiResponse = useLoaderData() as {
+    response: Promise<AxiosResponse<ProjectStatistics[]>>;
+  };
+
+  return (
+    <section className="w-full bg-white">
+      <div className="h-full px-4 py-12 sm:px-6 md:py-16 lg:px-8">
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
+            User Project Storage
+          </h2>
+          <p className="mt-4 text-gray-500 sm:text-xl">
+            Summary of disk usage by user based on active project ownership.
+          </p>
+        </div>
+        <div className="mx-auto max-w-3xl">
+          <Suspense fallback={<DashboardProjectStorageTableSkeleton />}>
+            <Await
+              resolve={projectStatisticsApiResponse.response}
+              errorElement={<ErrorElement />}
+            >
+              {(response) => (
+                <DashboardProjectStorageTable
+                  userProjectStats={response.data}
+                />
+              )}
+            </Await>
+          </Suspense>
+        </div>
+      </div>
+    </section>
+  );
+}

@@ -1,0 +1,226 @@
+import '@uppy/core/css/style.min.css';
+import '@uppy/dashboard/css/style.min.css';
+
+import { useEffect, useMemo, useState } from 'react';
+import Uppy from '@uppy/core';
+import Dashboard from '@uppy/react/dashboard';
+import Tus from '@uppy/tus';
+
+import { refreshTokenIfNeeded } from '../../../../../../api';
+import {
+  ErrorResponseBody,
+  ValidationError,
+} from '../../../../../../types/uppy';
+
+type DataProductInfo = {
+  dtype: string;
+  endpoint: string;
+  flightID: string;
+  projectID: string;
+};
+
+function createUppy(info: DataProductInfo) {
+  return new Uppy().use(Tus, {
+    endpoint: info.endpoint,
+    headers: {
+      'X-Project-ID': info.projectID,
+      'X-Flight-ID': info.flightID,
+      'X-Data-Type': info.dtype,
+    },
+    removeFingerprintOnSuccess: true,
+  });
+}
+
+type DataProductUpload = {
+  info: DataProductInfo;
+  fileType: string[];
+  uploadType: string;
+  updateSetDisabled: (param: boolean) => void;
+  updateUploadHistory?: (param: string) => void;
+};
+
+export default function DataProductUpload({
+  info,
+  fileType,
+  uploadType,
+  updateSetDisabled,
+  updateUploadHistory,
+}: DataProductUpload) {
+  const [uppy, updateUppy] = useState(createUppy(info));
+
+  useEffect(() => {
+    // updates custom headers when data type, project id, or flight id change
+    updateUppy(() => createUppy(info));
+  }, [info]);
+
+  const restrictions = useMemo(
+    () => ({
+      allowedFileTypes: fileType,
+      maxNumberOfFiles: 1,
+      minNumberOfFiles: 1,
+    }),
+    [fileType]
+  );
+
+  useEffect(() => {
+    uppy.setOptions({ restrictions });
+
+    const handleRestrictionFailed = () => {
+      uppy.info(
+        {
+          message: 'Unsupported file extension',
+          details: `Upload must be one of the following file types: ${restrictions.allowedFileTypes.join(
+            ', '
+          )}`,
+        },
+        'error',
+        5000
+      );
+    };
+
+    const handleUpload = async () => {
+      // disable data type inputs during upload
+      updateSetDisabled(true);
+
+      // Refresh token if needed before upload starts
+      const tokenRefreshed = await refreshTokenIfNeeded();
+      if (!tokenRefreshed) {
+        // Token refresh failed, cancel upload
+        uppy.cancelAll();
+        updateSetDisabled(false);
+        uppy.info(
+          {
+            message: 'Authentication required',
+            details: 'Please log in again to continue uploading.',
+          },
+          'error',
+          5000
+        );
+        return;
+      }
+    };
+
+    const handleUploadError = async (
+      _file: { id: string } | undefined,
+      _error: unknown,
+      response?: { status?: number; body?: unknown }
+    ) => {
+      // re-enable data type inputs
+      updateSetDisabled(false);
+
+      // Handle auth expiry propagated as 500 from tusd hook endpoint
+      if (
+        response &&
+        response.status === 500 &&
+        response.body &&
+        (response.body as ErrorResponseBody).detail
+      ) {
+        const bodyDetail = (response.body as ErrorResponseBody).detail;
+        const detail = typeof bodyDetail === 'string' ? bodyDetail : '';
+        if (
+          typeof detail === 'string' &&
+          detail.includes('Access token expired')
+        ) {
+          uppy.info(
+            {
+              message: 'Session expired',
+              details: 'Refreshing authentication and retrying upload...',
+            },
+            'info',
+            3000
+          );
+
+          const tokenRefreshed = await refreshTokenIfNeeded();
+          if (tokenRefreshed && _file) {
+            setTimeout(() => {
+              uppy.retryUpload(_file.id);
+            }, 1000);
+            return;
+          } else {
+            uppy.info(
+              {
+                message: 'Authentication failed',
+                details: 'Please log in again to continue uploading.',
+              },
+              'error',
+              5000
+            );
+            return;
+          }
+        }
+      }
+      if (response?.body) {
+        let errorDetails = '';
+        const body = response.body as ErrorResponseBody;
+
+        if (body.detail) {
+          if (typeof body.detail === 'string') {
+            errorDetails = body.detail;
+          } else if (response.status === 422 && Array.isArray(body.detail)) {
+            const validationErrors = body.detail as ValidationError[];
+            validationErrors.forEach((err, idx) => {
+              errorDetails = `${err.loc[1]}: ${err.msg}`;
+              errorDetails += idx < validationErrors.length - 1 ? '; ' : '';
+            });
+          } else {
+            errorDetails = 'Unexpected error occurred';
+          }
+        } else {
+          errorDetails = 'Upload failed';
+        }
+
+        uppy.info(
+          {
+            message: `Error ${response.status}`,
+            details: errorDetails,
+          },
+          'error',
+          10000
+        );
+      }
+    };
+
+    const handleUploadSuccess = (
+      _file: { id: string; meta: { name: string } } | undefined,
+      _response: unknown
+    ) => {
+      // re-enable data type inputs
+      updateSetDisabled(false);
+      if (_file && updateUploadHistory) updateUploadHistory(_file.meta.name);
+      // NOTE: Don't call uppy.removeFile() here - in newer Uppy versions, this
+      // triggers a DELETE request to the server, removing the file before backend
+      // processing completes. The modal closes anyway, creating a fresh Uppy instance.
+    };
+
+    // Register event listeners
+    uppy.on('restriction-failed', handleRestrictionFailed);
+    uppy.on('upload', handleUpload);
+    uppy.on('upload-error', handleUploadError);
+    uppy.on('upload-success', handleUploadSuccess);
+
+    // Cleanup function to remove listeners
+    return () => {
+      uppy.off('restriction-failed', handleRestrictionFailed);
+      uppy.off('upload', handleUpload);
+      uppy.off('upload-error', handleUploadError);
+      uppy.off('upload-success', handleUploadSuccess);
+    };
+  }, [uppy, restrictions, updateSetDisabled, updateUploadHistory]);
+
+  return (
+    <Dashboard
+      uppy={uppy}
+      height="240px"
+      locale={{
+        strings: {
+          dropPasteFiles:
+            uploadType === 'rawData'
+              ? 'Drop zipped raw data here or %{browseFiles}'
+              : 'Drop data product here or %{browseFiles}',
+        },
+      }}
+      proudlyDisplayPoweredByUppy={false}
+      disableThumbnailGenerator={uploadType !== 'img'}
+    />
+  );
+}

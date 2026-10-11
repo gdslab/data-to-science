@@ -1,0 +1,204 @@
+import os
+from datetime import datetime, timezone
+
+import pytest
+from sqlalchemy.orm import Session
+
+from app import crud
+from app.core.config import settings
+from app.core.exceptions import PermissionDenied
+from app.tests.utils.flight import create_flight
+from app.tests.utils.raw_data import SampleRawData
+from app.tests.utils.user import create_user
+
+
+def test_create_raw_data(db: Session) -> None:
+    raw_data = SampleRawData(db)
+    assert raw_data.obj
+    assert raw_data.obj.original_filename == "myrawdata.zip"
+    assert raw_data.obj.is_initial_processing_completed is True
+    assert os.path.exists(raw_data.obj.filepath)
+    assert raw_data.obj.created_at is not None
+    assert raw_data.obj.updated_at is not None
+    assert raw_data.obj.updated_at >= raw_data.obj.created_at
+
+
+def test_read_raw_data(db: Session) -> None:
+    raw_data = SampleRawData(db)
+    stored_raw_data = crud.raw_data.get_single_by_id(
+        db,
+        raw_data_id=raw_data.obj.id,
+        upload_dir=settings.TEST_STATIC_DIR,
+    )
+    assert stored_raw_data
+    assert stored_raw_data.id == raw_data.obj.id
+    assert stored_raw_data.flight_id == raw_data.flight.id
+    assert stored_raw_data.filepath == raw_data.obj.filepath
+    assert stored_raw_data.original_filename == raw_data.obj.original_filename
+    assert (
+        stored_raw_data.is_initial_processing_completed
+        == raw_data.obj.is_initial_processing_completed
+    )
+    assert stored_raw_data.created_at is not None
+    assert stored_raw_data.updated_at is not None
+
+
+def test_read_multi_raw_data(db: Session) -> None:
+    user = create_user(db)
+    flight = create_flight(db)
+    SampleRawData(db, flight=flight, user=user)
+    SampleRawData(db, flight=flight, user=user)
+    SampleRawData(db, flight=flight, user=user)
+    SampleRawData(db)
+    raw_data = crud.raw_data.get_multi_by_flight(
+        db, flight_id=flight.id, upload_dir=settings.TEST_STATIC_DIR
+    )
+    assert type(raw_data) is list
+    assert len(raw_data) == 3
+    for dataset in raw_data:
+        assert dataset.flight_id == flight.id
+
+
+def test_deactivate_raw_data(db: Session) -> None:
+    user = create_user(db)
+    raw_data = SampleRawData(db, user=user)
+    raw_data2 = crud.raw_data.deactivate(db, raw_data_id=raw_data.obj.id)
+    raw_data3 = crud.raw_data.get(db, id=raw_data.obj.id)
+    assert raw_data2 and raw_data3
+    assert raw_data3.id == raw_data.obj.id
+    assert raw_data3.is_active is False
+    assert isinstance(raw_data3.deactivated_at, datetime)
+    assert raw_data3.deactivated_at.replace(tzinfo=timezone.utc) < datetime.now(
+        timezone.utc
+    )
+
+
+def test_deactivate_raw_data_in_published_project_is_refused(db: Session) -> None:
+    """Raw data in a published project cannot be deactivated, whatever calls
+    the CRUD method. Published raw data often has no s3_url of its own, so the
+    cleanup utilities cannot be relied on to hold it back."""
+    user = create_user(db)
+    raw_data = SampleRawData(db, user=user)
+    crud.project.update_project_visibility(
+        db, project_id=raw_data.project.id, is_public=True
+    )
+
+    with pytest.raises(PermissionDenied):
+        crud.raw_data.deactivate(db, raw_data_id=raw_data.obj.id)
+
+    raw_data_in_db = crud.raw_data.get(db, id=raw_data.obj.id)
+    assert raw_data_in_db and raw_data_in_db.is_active is True
+
+
+def test_read_raw_data_url_attribute(db: Session) -> None:
+    """Test that url attribute is set on raw_data objects."""
+    raw_data = SampleRawData(db)
+    stored_raw_data = crud.raw_data.get_single_by_id(
+        db,
+        raw_data_id=raw_data.obj.id,
+        upload_dir=settings.TEST_STATIC_DIR,
+    )
+    assert stored_raw_data
+    # Verify url attribute exists and is set correctly
+    assert hasattr(stored_raw_data, "url")
+    assert stored_raw_data.url is not None
+    assert isinstance(stored_raw_data.url, str)
+    assert settings.STATIC_DIR in stored_raw_data.url
+
+
+def test_read_multi_raw_data_url_attribute(db: Session) -> None:
+    """Test that url attribute is set on all raw_data objects from get_multi_by_flight."""
+    user = create_user(db)
+    flight = create_flight(db)
+    SampleRawData(db, flight=flight, user=user)
+    SampleRawData(db, flight=flight, user=user)
+    raw_data_list = crud.raw_data.get_multi_by_flight(
+        db, flight_id=flight.id, upload_dir=settings.TEST_STATIC_DIR
+    )
+    assert len(raw_data_list) == 2
+    # Verify all objects have url attribute
+    for raw_data in raw_data_list:
+        assert hasattr(raw_data, "url")
+        assert raw_data.url is not None
+        assert isinstance(raw_data.url, str)
+        assert settings.STATIC_DIR in raw_data.url
+
+
+def test_read_raw_data_url_attribute_with_invalid_upload_dir(db: Session) -> None:
+    """Test that url attribute is set to None when upload_dir doesn't match filepath."""
+    raw_data = SampleRawData(db)
+    # Use an invalid upload_dir that doesn't match the filepath
+    invalid_upload_dir = "/invalid/path"
+    stored_raw_data = crud.raw_data.get_single_by_id(
+        db,
+        raw_data_id=raw_data.obj.id,
+        upload_dir=invalid_upload_dir,
+    )
+    assert stored_raw_data
+    # Verify url attribute exists but is None due to ValueError
+    assert hasattr(stored_raw_data, "url")
+    assert stored_raw_data.url is None
+
+
+def test_create_raw_data_creates_file_permission(db: Session) -> None:
+    """Test that creating RawData automatically creates FilePermission."""
+    raw_data = SampleRawData(db).obj
+
+    # Verify FilePermission was created
+    file_permission = crud.file_permission.get_by_raw_data(db, raw_data_id=raw_data.id)
+    assert file_permission
+    assert file_permission.raw_data_id == raw_data.id
+    assert file_permission.file_id is None
+    assert file_permission.is_public is False  # Should default to private
+
+
+def test_update_s3_url_sets_value(db: Session) -> None:
+    raw = SampleRawData(db)
+    assert raw.obj.s3_url is None
+
+    crud.raw_data.update_s3_url(
+        db,
+        raw_data_id=raw.obj.id,
+        s3_url="https://my-bucket.s3.us-east-1.amazonaws.com/d2s/host/raw.zip",
+    )
+
+    refreshed = crud.raw_data.get(db, id=raw.obj.id)
+    assert refreshed is not None
+    assert refreshed.s3_url == (
+        "https://my-bucket.s3.us-east-1.amazonaws.com/d2s/host/raw.zip"
+    )
+
+
+def test_clear_s3_urls_for_project_only_clears_matching_project(db: Session) -> None:
+    raw_a = SampleRawData(db)
+    raw_b = SampleRawData(db)
+
+    crud.raw_data.update_s3_url(db, raw_data_id=raw_a.obj.id, s3_url="https://a")
+    crud.raw_data.update_s3_url(db, raw_data_id=raw_b.obj.id, s3_url="https://b")
+
+    rowcount = crud.raw_data.clear_s3_urls_for_project(db, project_id=raw_a.project.id)
+
+    assert rowcount == 1
+    assert crud.raw_data.get(db, id=raw_a.obj.id).s3_url is None
+    assert crud.raw_data.get(db, id=raw_b.obj.id).s3_url == "https://b"
+
+
+def test_get_raw_data_with_s3_urls_for_project(db: Session) -> None:
+    raw_uploaded = SampleRawData(db)
+    raw_not_uploaded = SampleRawData(
+        db, project=raw_uploaded.project, flight=raw_uploaded.flight
+    )
+
+    crud.raw_data.update_s3_url(
+        db,
+        raw_data_id=raw_uploaded.obj.id,
+        s3_url="https://my-bucket.s3.us-east-1.amazonaws.com/key",
+    )
+
+    results = crud.raw_data.get_raw_data_with_s3_urls_for_project(
+        db, project_id=raw_uploaded.project.id
+    )
+
+    result_ids = {rd.id for rd in results}
+    assert raw_uploaded.obj.id in result_ids
+    assert raw_not_uploaded.obj.id not in result_ids

@@ -1,0 +1,482 @@
+from datetime import datetime, timezone
+from typing import List
+
+from fastapi import status
+from fastapi.encoders import jsonable_encoder
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
+from app import crud
+from app.api.deps import get_current_user
+from app.core.config import settings
+from app.schemas.data_product import DataProductUpdate
+from app.schemas.user import UserUpdate
+from app.tests.utils.data_product import SampleDataProduct
+from app.tests.utils.data_product_view import create_data_product_view
+from app.tests.utils.extension import (
+    create_extension,
+    create_team_extension,
+    create_user_extension,
+)
+from app.tests.utils.team import create_team
+from app.tests.utils.user import create_user, update_regular_user_to_superuser
+
+
+def test_read_admin_users(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Verify admin can retrieve all users with admin fields."""
+    # Create test users (approved and confirmed by default)
+    create_user(db)
+    create_user(db)
+    # Create unapproved user
+    create_user(db, is_approved=False)
+    # Create unconfirmed user
+    create_user(db, is_email_confirmed=False)
+
+    # Update to superuser
+    current_user = get_current_user(db, normal_user_access_token)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
+
+    response = client.get(f"{settings.API_V1_STR}/admin/users")
+    assert response.status_code == status.HTTP_200_OK
+    users = response.json()
+    assert isinstance(users, List)
+    # Should include all 5 users (4 created + current superuser)
+    assert len(users) == 5
+
+    # Define expected admin fields
+    expected_fields = {
+        "id",
+        "email",
+        "first_name",
+        "last_name",
+        "created_at",
+        "last_login_at",
+        "last_activity_at",
+        "profile_url",
+        "exts",
+        "is_approved",
+        "is_email_confirmed",
+    }
+
+    for user in users:
+        # Verify ONLY expected admin fields are present (no extra fields)
+        assert set(user.keys()) == expected_fields, (
+            f"Unexpected fields in admin response. "
+            f"Expected: {expected_fields}, Got: {set(user.keys())}"
+        )
+        # Verify is_superuser is NOT exposed
+        assert "is_superuser" not in user
+
+
+def test_read_admin_users_with_query(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Verify admin can search users with query parameter."""
+    create_user(db, first_name="Alice", last_name="Admin")
+    create_user(db, first_name="Bob", last_name="Builder")
+    create_user(db, first_name="Charlie", last_name="Admin")
+
+    # Update to superuser
+    current_user = get_current_user(db, normal_user_access_token)
+    superuser = update_regular_user_to_superuser(db, user_id=current_user.id)
+    # Ensure superuser doesn't match query
+    crud.user.update(
+        db,
+        db_obj=superuser,
+        obj_in=UserUpdate(first_name="Superuser", last_name="Test"),
+    )
+
+    response = client.get(f"{settings.API_V1_STR}/admin/users?q=admin")
+    assert response.status_code == status.HTTP_200_OK
+    users = response.json()
+    assert isinstance(users, List)
+    assert len(users) == 2
+    for user in users:
+        assert user["last_name"] == "Admin"
+
+
+def test_read_admin_users_non_superuser_forbidden(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Verify non-superuser cannot access admin users endpoint."""
+    response = client.get(f"{settings.API_V1_STR}/admin/users")
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_get_site_statistics_with_non_superuser(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    get_current_user(db, normal_user_access_token)
+    response = client.get(f"{settings.API_V1_STR}/admin/site_statistics")
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_get_project_statistics_with_non_superuser(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    get_current_user(db, normal_user_access_token)
+    response = client.get(f"{settings.API_V1_STR}/admin/project_statistics")
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_activity_endpoints_with_non_superuser(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Verify activity endpoints are forbidden for non-superusers."""
+    for path in (
+        "/admin/activity/summary",
+        "/admin/activity/trends",
+        "/admin/activity/leaderboard",
+    ):
+        response = client.get(f"{settings.API_V1_STR}{path}")
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_get_activity_summary_as_superuser(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    owner = create_user(db)
+    SampleDataProduct(db, user=owner)
+
+    current_user = get_current_user(db, normal_user_access_token)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
+
+    response = client.get(f"{settings.API_V1_STR}/admin/activity/summary")
+    assert response.status_code == status.HTTP_200_OK
+    body = response.json()
+    assert {"active_24h", "active_7d", "active_30d", "total_users", "funnel"} <= set(
+        body.keys()
+    )
+    assert set(body["funnel"].keys()) == {
+        "signed_up",
+        "email_confirmed",
+        "approved",
+        "joined_project",
+        "created_project",
+    }
+    assert body["funnel"]["created_project"] >= 1
+    assert body["funnel"]["joined_project"] >= body["funnel"]["created_project"]
+
+
+def test_get_activity_leaderboard_as_superuser(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    owner = create_user(db)
+    sample = SampleDataProduct(db, user=owner)
+    create_data_product_view(db, data_product_id=sample.obj.id)
+
+    current_user = get_current_user(db, normal_user_access_token)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
+
+    response = client.get(
+        f"{settings.API_V1_STR}/admin/activity/leaderboard?metric=views&limit=5"
+    )
+    assert response.status_code == status.HTTP_200_OK
+    leaderboard = response.json()
+    assert isinstance(leaderboard, List)
+    owner_rows = [row for row in leaderboard if row["user_id"] == str(owner.id)]
+    assert len(owner_rows) == 1
+    assert owner_rows[0]["data_product_count"] == 1
+    assert owner_rows[0]["total_views"] == 1
+
+
+def test_get_activity_leaderboard_storage_metric_as_superuser(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    owner = create_user(db)
+    sample = SampleDataProduct(db, user=owner)
+    crud.data_product.update(
+        db, db_obj=sample.obj, obj_in=DataProductUpdate(file_size=2048)
+    )
+
+    current_user = get_current_user(db, normal_user_access_token)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
+
+    response = client.get(
+        f"{settings.API_V1_STR}/admin/activity/leaderboard?metric=storage&limit=5"
+    )
+    assert response.status_code == status.HTTP_200_OK
+    leaderboard = response.json()
+    owner_rows = [row for row in leaderboard if row["user_id"] == str(owner.id)]
+    assert len(owner_rows) == 1
+    assert owner_rows[0]["total_storage"] == 2048
+
+
+def test_get_activity_leaderboard_rejects_invalid_metric(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    current_user = get_current_user(db, normal_user_access_token)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
+
+    response = client.get(
+        f"{settings.API_V1_STR}/admin/activity/leaderboard?metric=bogus"
+    )
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+
+
+def test_get_extensions(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # create extensions
+    extension1 = create_extension(db, name="ext1", description="Extension 1")
+    extension2 = create_extension(db, name="ext2", description="Extension 2")
+    extension3 = create_extension(db, name="ext3", description="Extension 3")
+    # update to superuser
+    current_user = get_current_user(db, normal_user_access_token)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
+    response = client.get(f"{settings.API_V1_STR}/admin/extensions")
+    assert response.status_code == status.HTTP_200_OK
+    extensions = response.json()
+    assert isinstance(extensions, List)
+    assert len(extensions) == 3
+    for extension in extensions:
+        assert extension["id"] in [
+            str(extension1.id),
+            str(extension2.id),
+            str(extension3.id),
+        ]
+
+
+def test_get_extensions_by_non_superuser(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    # create extensions
+    create_extension(db, name="ext1", description="Extension 1")
+    create_extension(db, name="ext2", description="Extension 2")
+    create_extension(db, name="ext3", description="Extension 3")
+    get_current_user(db, normal_user_access_token)
+    response = client.get(f"{settings.API_V1_STR}/admin/extensions")
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_update_team_extension(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    extension = create_extension(db, name="ext1", description="Extension 1")
+    team = create_team(db)
+    # update to superuser
+    current_user = get_current_user(db, normal_user_access_token)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
+    payload = {
+        "team_id": str(team.id),
+        "extension_id": str(extension.id),
+        "is_active": True,
+    }
+    response = client.put(
+        f"{settings.API_V1_STR}/admin/extensions/team", json=jsonable_encoder(payload)
+    )
+    assert response.status_code == status.HTTP_200_OK
+    team_extension = response.json()
+    assert team_extension
+    assert team_extension["extension_id"] == str(extension.id)
+    assert team_extension["team_id"] == str(team.id)
+
+
+def test_update_team_extension_with_non_superuser(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    extension = create_extension(db, name="ext1", description="Extension 1")
+    team = create_team(db)
+    payload = {
+        "team_id": str(team.id),
+        "extension_id": str(extension.id),
+        "is_active": True,
+    }
+    response = client.put(
+        f"{settings.API_V1_STR}/admin/extensions/team", json=jsonable_encoder(payload)
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_update_user_extension(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    extension = create_extension(db, name="ext1", description="Extension 1")
+    user = create_user(db)
+    # update to superuser
+    current_user = get_current_user(db, normal_user_access_token)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
+    payload = {
+        "user_id": str(user.id),
+        "extension_id": str(extension.id),
+        "is_active": True,
+    }
+    response = client.put(
+        f"{settings.API_V1_STR}/admin/extensions/user", json=jsonable_encoder(payload)
+    )
+    assert response.status_code == status.HTTP_200_OK
+    user_extension = response.json()
+    assert user_extension
+    assert user_extension["extension_id"] == str(extension.id)
+    assert user_extension["user_id"] == str(user.id)
+
+
+def test_update_user_extension_with_non_superuser(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    extension = create_extension(db, name="ext1", description="Extension 1")
+    user = create_user(db)
+    payload = {
+        "user_id": str(user.id),
+        "extension_id": str(extension.id),
+        "is_active": True,
+    }
+    response = client.put(
+        f"{settings.API_V1_STR}/admin/extensions/user", json=jsonable_encoder(payload)
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_deactivate_team_extension(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    extension = create_extension(db, name="ext1", description="Extension 1")
+    team = create_team(db)
+    create_team_extension(db, extension_id=extension.id, team_id=team.id)
+    # update to superuser
+    current_user = get_current_user(db, normal_user_access_token)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
+    payload = {
+        "team_id": str(team.id),
+        "extension_id": str(extension.id),
+        "is_active": False,
+    }
+    response = client.put(
+        f"{settings.API_V1_STR}/admin/extensions/team", json=jsonable_encoder(payload)
+    )
+    assert response.status_code == status.HTTP_200_OK
+    team_extension = response.json()
+    assert team_extension
+    assert team_extension["extension_id"] == str(extension.id)
+    assert team_extension["team_id"] == str(team.id)
+    deactivated_at = datetime.strptime(
+        team_extension["deactivated_at"], "%Y-%m-%dT%H:%M:%S.%fZ"
+    ).replace(tzinfo=timezone.utc)
+    assert isinstance(deactivated_at, datetime)
+    assert deactivated_at < datetime.now(tz=timezone.utc)
+
+
+def test_deactivate_user_extension(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    extension = create_extension(db, name="ext1", description="Extension 1")
+    user = create_user(db)
+    create_user_extension(db, extension_id=extension.id, user_id=user.id)
+    # update to superuser
+    current_user = get_current_user(db, normal_user_access_token)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
+    payload = {
+        "user_id": str(user.id),
+        "extension_id": str(extension.id),
+        "is_active": False,
+    }
+    response = client.put(
+        f"{settings.API_V1_STR}/admin/extensions/user", json=jsonable_encoder(payload)
+    )
+    assert response.status_code == status.HTTP_200_OK
+    user_extension = response.json()
+    assert user_extension
+    assert user_extension["extension_id"] == str(extension.id)
+    assert user_extension["user_id"] == str(user.id)
+    deactivated_at = datetime.strptime(
+        user_extension["deactivated_at"], "%Y-%m-%dT%H:%M:%S.%fZ"
+    ).replace(tzinfo=timezone.utc)
+    assert isinstance(deactivated_at, datetime)
+    assert deactivated_at < datetime.now(tz=timezone.utc)
+
+
+def test_update_user_approval_as_superuser(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Verify superuser can update user approval status."""
+    # Create unapproved user
+    user = create_user(db, is_approved=False)
+    assert user.is_approved is False
+
+    # Update to superuser
+    current_user = get_current_user(db, normal_user_access_token)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
+
+    # Approve the user
+    payload = {"is_approved": True}
+    response = client.patch(
+        f"{settings.API_V1_STR}/admin/users/{user.id}/approval",
+        json=jsonable_encoder(payload),
+    )
+    assert response.status_code == status.HTTP_200_OK
+    updated_user = response.json()
+    assert updated_user["id"] == str(user.id)
+    assert updated_user["is_approved"] is True
+
+    # Verify user is approved in database
+    db_user = crud.user.get(db, id=user.id)
+    assert db_user.is_approved is True
+
+
+def test_revoke_user_approval_as_superuser(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Verify superuser can revoke user approval status."""
+    # Create approved user
+    user = create_user(db, is_approved=True)
+    assert user.is_approved is True
+
+    # Update to superuser
+    current_user = get_current_user(db, normal_user_access_token)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
+
+    # Revoke approval
+    payload = {"is_approved": False}
+    response = client.patch(
+        f"{settings.API_V1_STR}/admin/users/{user.id}/approval",
+        json=jsonable_encoder(payload),
+    )
+    assert response.status_code == status.HTTP_200_OK
+    updated_user = response.json()
+    assert updated_user["id"] == str(user.id)
+    assert updated_user["is_approved"] is False
+
+    # Verify user approval is revoked in database
+    db_user = crud.user.get(db, id=user.id)
+    assert db_user.is_approved is False
+
+
+def test_update_user_approval_as_non_superuser(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Verify non-superuser cannot update user approval status."""
+    # Create unapproved user
+    user = create_user(db, is_approved=False)
+
+    # Try to approve as non-superuser
+    payload = {"is_approved": True}
+    response = client.patch(
+        f"{settings.API_V1_STR}/admin/users/{user.id}/approval",
+        json=jsonable_encoder(payload),
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    # Verify user is still unapproved
+    db_user = crud.user.get(db, id=user.id)
+    assert db_user.is_approved is False
+
+
+def test_update_user_approval_nonexistent_user(
+    client: TestClient, db: Session, normal_user_access_token: str
+) -> None:
+    """Verify 404 error when updating approval for nonexistent user."""
+    # Update to superuser
+    current_user = get_current_user(db, normal_user_access_token)
+    update_regular_user_to_superuser(db, user_id=current_user.id)
+
+    # Try to update nonexistent user
+    fake_uuid = "00000000-0000-0000-0000-000000000000"
+    payload = {"is_approved": True}
+    response = client.patch(
+        f"{settings.API_V1_STR}/admin/users/{fake_uuid}/approval",
+        json=jsonable_encoder(payload),
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == "User not found"

@@ -1,0 +1,119 @@
+from .activity import (
+    ActivationFunnel,
+    ActivitySummary,
+    ActivityTrendPoint,
+    EngagementLeaderRow,
+)
+from .admin import SiteStatistics, UserProjectStatistics
+from .annotation import Annotation, AnnotationCreate, AnnotationUpdate
+from .annotation_attachment import (
+    AnnotationAttachment,
+    AnnotationAttachmentCreate,
+    AnnotationAttachmentUpdate,
+)
+from .annotation_tag import AnnotationTag, AnnotationTagCreate, AnnotationTagUpdate
+from .api_key import APIKey, APIKeyCreate, APIKeyUpdate
+from .breedbase_connection import (
+    BreedbaseConnection,
+    BreedbaseConnectionCreate,
+    BreedbaseConnectionUpdate,
+)
+from .campaign import Campaign, CampaignCreate, CampaignTemplateCreate, CampaignUpdate
+from .data_product import (
+    DataProduct,
+    DataProductBands,
+    DataProductCreate,
+    DataProductPointValue,
+    DataProductUpdate,
+    DataProductUpdateDataType,
+    ProcessingRequest,
+    RasterExportRequest,
+)
+from .data_product_like import (
+    DataProductLike,
+    DataProductLikeCreate,
+    DataProductLikeUpdate,
+)
+from .data_product_metadata import (
+    DataProductMetadata,
+    DataProductMetadataCreate,
+    DataProductMetadataUpdate,
+)
+from .data_product_view import (
+    DataProductView,
+    DataProductViewCreate,
+    DataProductViewUpdate,
+)
+from .disk_usage_stats import DiskUsageStats, DiskUsageStatsCreate, DiskUsageStatsUpdate
+from .extension import Extension, ExtensionCreate, ExtensionUpdate
+from .file_permission import FilePermission, FilePermissionCreate, FilePermissionUpdate
+from .flight import Flight, FlightCreate, FlightUpdate
+from .iforester import IForester, IForesterCreate, IForesterPost, IForesterUpdate
+from .indoor_project import IndoorProject, IndoorProjectCreate, IndoorProjectUpdate
+from .indoor_project_data import (
+    IndoorProjectData,
+    IndoorProjectDataCreate,
+    IndoorProjectDataPlant,
+    IndoorProjectDataSpreadsheet,
+    IndoorProjectDataSpreadsheetPlantData,
+    IndoorProjectDataUpdate,
+    IndoorProjectDataVizScatterResponse,
+)
+from .job import Job, JobCreate, JobUpdate
+from .location import Location, LocationCreate, LocationUpdate
+from .profile_stats import (
+    ActivityCounts,
+    DataProductStatRow,
+    OwnerStats,
+    ProfileStats,
+    RecentActivityRow,
+    ViewsTrendPoint,
+)
+from .project import Project, ProjectCreate, ProjectUpdate
+from .project_like import ProjectLike, ProjectLikeCreate, ProjectLikeUpdate
+from .project_member import ProjectMember, ProjectMemberCreate, ProjectMemberUpdate
+from .project_module import ProjectModule, ProjectModuleCreate, ProjectModuleUpdate
+from .raw_data import (
+    ProgressUpdate,
+    RawData,
+    RawDataCreate,
+    RawDataMetadata,
+    RawDataUpdate,
+)
+from .refresh_token import RefreshToken, RefreshTokenCreate, RefreshTokenUpdate
+from .shortened_url import (
+    ShortenedUrl,
+    ShortenedUrlApiResponse,
+    ShortenedUrlCreate,
+    ShortenedUrlUpdate,
+)
+from .single_use_token import SingleUseToken, SingleUseTokenCreate
+from .stac import (
+    ItemStatus,
+    STACError,
+    STACMetadataRequest,
+    STACPreview,
+    STACReport,
+    STACResponse,
+)
+from .tag import Tag, TagCreate, TagUpdate
+from .team import Team, TeamCreate, TeamUpdate
+from .team_extension import TeamExtension, TeamExtensionCreate, TeamExtensionUpdate
+from .team_member import TeamMember, TeamMemberCreate, TeamMemberUpdate
+from .token import Token, TokenPayload
+from .tusd import TUSDHook
+from .upload import Upload, UploadCreate, UploadUpdate
+from .user import User, UserAdmin, UserCreate, UserInDB, UserPublic, UserUpdate
+from .user_extension import UserExtension, UserExtensionCreate, UserExtensionUpdate
+from .user_style import UserStyle, UserStyleCreate, UserStyleUpdate
+from .vector_layer import (
+    VectorLayer,
+    VectorLayerCreate,
+    VectorLayerFeatureCollection,
+    VectorLayerUpdate,
+)
+
+# Rebuild models with forward references after all schemas are imported
+# This resolves forward references like "User", "DataProduct", "Tag", etc.
+Annotation.model_rebuild()
+AnnotationTag.model_rebuild()

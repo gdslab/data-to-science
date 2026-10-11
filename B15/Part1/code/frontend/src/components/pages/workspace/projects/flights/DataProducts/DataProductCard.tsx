@@ -1,0 +1,284 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router';
+import {
+  CubeIcon,
+  ExclamationCircleIcon,
+  EyeIcon,
+  PhotoIcon,
+} from '@heroicons/react/24/outline';
+import { FaRegEye, FaRegThumbsUp, FaThumbsUp } from 'react-icons/fa6';
+
+import { useDataProductLike } from '../../../../../engagement/useDataProductLike';
+import { formatCount } from '../../../../../../utils/formatCount';
+
+import { Status } from '../../../../../Alert';
+import Card from '../../../../../Card';
+import { isGeoTIFF } from './DataProductsTable';
+import { resolveRawDataSource } from './rawDataSource';
+import DataProductDeleteModal from './DataProductDeleteModal';
+import DataProductDownloadMenu from './DataProductDownloadMenu';
+import DataProductMetadataModal from './DataProductMetadataModal';
+import EditableDataType from './EditableDataType';
+import ToolboxModal from './ToolboxModal';
+import XmlMetadataAttachment from './XmlMetadata/XmlMetadataAttachment';
+import { useProjectContext } from '../../ProjectContext';
+import DataProductShareModal from './DataProductShareModal';
+
+import { DataProduct } from '../../Project';
+
+function ProgressBar() {
+  return (
+    <div className="w-full">
+      <div className="h-1.5 w-full bg-green-100 rounded-b-lg overflow-hidden">
+        <div className="animate-progress w-full h-full bg-green-500 origin-left-right"></div>
+      </div>
+    </div>
+  );
+}
+
+export default function DataProductCard({
+  dataProduct,
+  otherDataProducts,
+  rawDataFilenames,
+  setStatus,
+}: {
+  dataProduct: DataProduct;
+  otherDataProducts: DataProduct[];
+  rawDataFilenames: Map<string, string>;
+  setStatus: React.Dispatch<React.SetStateAction<Status | null>>;
+}) {
+  const rawDataSource = resolveRawDataSource(dataProduct, rawDataFilenames);
+  const [invalidPreviews, setInvalidPreviews] = useState<string[]>([]);
+  const [isCopied, setIsCopied] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const { project, projectRole } = useProjectContext();
+  const navigate = useNavigate();
+  const { engagement, toggleLike } = useDataProductLike(
+    dataProduct,
+    project?.id,
+    dataProduct.flight_id
+  );
+
+  return (
+    <div className="flex items-center justify-center min-h-80">
+      <div className="relative w-80 overflow-hidden">
+        <Card rounded={true}>
+          <div className="grid grid-flow-row auto-rows-max gap-2 relative">
+            {/* preview image */}
+            <div className="relative flex items-center justify-center bg-accent3/20">
+              {/* engagement overlay */}
+              <span className="absolute top-2.5 left-2.5 z-10 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900/60 backdrop-blur-sm text-white text-xs">
+                <FaRegEye size={14} />
+                {formatCount(engagement.viewCount)} views
+              </span>
+              <button
+                type="button"
+                onClick={toggleLike}
+                aria-pressed={engagement.likedByMe}
+                aria-label={
+                  engagement.likedByMe
+                    ? 'Unlike this data product'
+                    : 'Like this data product'
+                }
+                className={`absolute top-2.5 right-2.5 z-10 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-white text-xs ${
+                  engagement.likedByMe
+                    ? 'bg-accent2'
+                    : 'bg-slate-900/60 backdrop-blur-sm'
+                }`}
+              >
+                {engagement.likedByMe ? (
+                  <FaThumbsUp size={14} />
+                ) : (
+                  <FaRegThumbsUp size={14} />
+                )}
+                {formatCount(engagement.likeCount)}
+              </button>
+              {dataProduct.status === 'SUCCESS' &&
+              isGeoTIFF(dataProduct.data_type) &&
+              dataProduct.url ? (
+                <div className="flex items-center justify-center w-full h-48">
+                  <img
+                    className="object-scale-down h-full"
+                    src={dataProduct.url.replace('tif', 'jpg')}
+                    alt="Preview of data product"
+                  />
+                  <div
+                    className="absolute bottom-0 w-full text-center text-white p-1 bg-accent3/80 cursor-pointer"
+                    onClick={() => {
+                      navigator.clipboard.writeText(dataProduct.url);
+                      setIsCopied(true);
+                      setTimeout(() => {
+                        setIsCopied(false);
+                      }, 3000);
+                    }}
+                  >
+                    {isCopied ? 'Copied to clipboard' : 'Click to Copy URL'}
+                  </div>
+                </div>
+              ) : dataProduct.data_type === 'panoramic' && dataProduct.url ? (
+                <div className="flex items-center justify-center w-full h-48">
+                  <img
+                    className="object-scale-down h-full"
+                    src={dataProduct.url}
+                    alt="Preview of data product"
+                  />
+                  <div
+                    className="absolute bottom-0 w-full text-center text-white p-1 bg-accent3/80 cursor-pointer"
+                    onClick={() => {
+                      navigator.clipboard.writeText(dataProduct.url);
+                      setIsCopied(true);
+                      setTimeout(() => {
+                        setIsCopied(false);
+                      }, 3000);
+                    }}
+                  >
+                    {isCopied ? 'Copied to clipboard' : 'Click to Copy URL'}
+                  </div>
+                </div>
+              ) : dataProduct.data_type === '3dgs' && dataProduct.url ? (
+                <div className="flex items-center justify-center w-full h-48">
+                  <div className="flex items-center gap-2 rounded-full bg-white/80 backdrop-blur-sm px-3 py-1.5 shadow-sm ring-1 ring-slate-300/60">
+                    <CubeIcon className="w-6 h-6 text-slate-600" />
+                    <span className="text-lg font-semibold tracking-wide text-slate-700">
+                      {dataProduct.url.toLowerCase().endsWith('.lcc')
+                        ? 'LCC'
+                        : '3DGS'}
+                    </span>
+                  </div>
+                </div>
+              ) : dataProduct.status === 'SUCCESS' &&
+                dataProduct.data_type === 'point_cloud' ? (
+                <div className="flex items-center justify-center w-full h-48">
+                  {invalidPreviews.indexOf(dataProduct.id) < 0 ? (
+                    <img
+                      className="object-scale-down h-full"
+                      src={dataProduct.url.replace('copc.laz', 'png')}
+                      alt="Preview of data product"
+                      onError={() => {
+                        setInvalidPreviews([
+                          ...invalidPreviews,
+                          dataProduct.id,
+                        ]);
+                      }}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <span>Generating preview...</span>
+                      <PhotoIcon className="h-1/2" />
+                    </div>
+                  )}
+                  <div
+                    className="absolute bottom-0 w-full text-center text-white p-1 bg-accent3/80 cursor-pointer"
+                    onClick={() => {
+                      navigator.clipboard.writeText(dataProduct.url);
+                      setIsCopied(true);
+                      setTimeout(() => {
+                        setIsCopied(false);
+                      }, 3000);
+                    }}
+                  >
+                    {isCopied ? 'Copied to clipboard' : 'Click to Copy URL'}
+                  </div>
+                </div>
+              ) : dataProduct.status === 'FAILED' ? (
+                <div className="flex items-center justify-center w-full h-48">
+                  <span className="sr-only">Process failed</span>
+                  <ExclamationCircleIcon className="h-full text-accent2" />
+                  <span>
+                    An error occurred while processing the uploaded data product
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center w-full h-48 bg-white">
+                  <span className="sr-only">Preview not available</span>
+                  <PhotoIcon className="h-full" />
+                </div>
+              )}
+            </div>
+            {/* data product details */}
+            <div className="h-10 flex items-center justify-between gap-2 text-lg">
+              <EditableDataType
+                dataProduct={dataProduct}
+                isEditing={isEditing}
+                menuPlacement="top"
+                setIsEditing={setIsEditing}
+                setStatus={setStatus}
+              />
+              {!isEditing && (
+                <div className="flex shrink-0 flex-row gap-3">
+                  <DataProductMetadataModal dataProduct={dataProduct} />
+                  <XmlMetadataAttachment
+                    dataProduct={dataProduct}
+                    variant="icon"
+                  />
+                  <DataProductDownloadMenu
+                    dataProduct={dataProduct}
+                    projectId={project?.id}
+                    setStatus={setStatus}
+                  />
+                  {projectRole === 'owner' && (
+                    <>
+                      <DataProductShareModal dataProduct={dataProduct} />
+                      <DataProductDeleteModal dataProduct={dataProduct} />
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+            {/* raw data source: always render the row (empty when absent) so
+                cards with and without a source stay the same height; min-w-0 lets
+                truncate clip long filenames instead of overflowing the card */}
+            <div className="h-4 min-w-0 truncate text-xs leading-4 text-slate-500">
+              {rawDataSource.kind === 'named' ? (
+                <span title={`Generated from ${rawDataSource.filename}`}>
+                  Generated from {rawDataSource.filename}
+                </span>
+              ) : rawDataSource.kind === 'unavailable' ? (
+                <span
+                  className="italic"
+                  title="Generated from raw data (no longer available)"
+                >
+                  Generated from raw data (no longer available)
+                </span>
+              ) : null}
+            </div>
+            {/* action buttons */}
+            <div className="flex items-center justify-around gap-4 relative">
+              <div
+                className="flex items-center gap-2 text-sky-600 cursor-pointer"
+                onClick={() => {
+                  navigate('/home', {
+                    state: {
+                      project: project,
+                      dataProduct: dataProduct,
+                      navContext: 'dataProductCard',
+                    },
+                  });
+                }}
+              >
+                <EyeIcon className="h-6 w-6" />
+                <span>View</span>
+              </div>
+              {dataProduct.data_type !== 'panoramic' &&
+                (projectRole === 'manager' || projectRole === 'owner') && (
+                  <>
+                    <span className="text-slate-300">|</span>
+                    <ToolboxModal
+                      dataProduct={dataProduct}
+                      otherDataProducts={otherDataProducts}
+                    />
+                  </>
+                )}
+            </div>
+          </div>
+        </Card>
+        {dataProduct.status === 'INPROGRESS' ||
+        dataProduct.status === 'WAITING' ? (
+          <div className="w-full absolute bottom-0 left-0">
+            <ProgressBar />
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}

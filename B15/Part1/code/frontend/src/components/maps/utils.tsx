@@ -1,0 +1,941 @@
+import {
+  Feature,
+  FeatureCollection,
+  Geometry,
+  GeoJsonProperties,
+  Point,
+  Polygon,
+} from 'geojson';
+import maplibregl, { Map } from 'maplibre-gl';
+
+import {
+  DataProduct,
+  Flight,
+  MapLayer,
+  ProjectFeatureCollection,
+  ProjectItem,
+  STACProperties,
+} from '../pages/workspace/projects/Project';
+import {
+  SingleBandSymbology,
+  MultibandSymbology,
+} from './RasterSymbologyContext';
+
+import api from '../../api';
+
+type Bounds = [number, number, number, number];
+
+/**
+ * Validates if bounds are within valid geographic coordinate ranges.
+ * @param bounds Bounding box array [minLng, minLat, maxLng, maxLat].
+ * @returns True if bounds are valid, false otherwise.
+ */
+function isValidGeographicBounds(bounds: Bounds): boolean {
+  const [minLng, minLat, maxLng, maxLat] = bounds;
+
+  // Check latitude bounds (-90 to 90)
+  if (minLat < -90 || minLat > 90 || maxLat < -90 || maxLat > 90) {
+    return false;
+  }
+
+  // Check longitude bounds (-180 to 180)
+  if (minLng < -180 || minLng > 180 || maxLng < -180 || maxLng > 180) {
+    return false;
+  }
+
+  // Check that min values are less than or equal to max values
+  if (minLat > maxLat || minLng > maxLng) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Validates if a coordinate pair is within valid geographic ranges.
+ * @param lng Longitude value.
+ * @param lat Latitude value.
+ * @returns True if coordinates are valid, false otherwise.
+ */
+function isValidCoordinate(lng: number, lat: number): boolean {
+  return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+}
+
+/**
+ * Filters projects to remove those with invalid centroid coordinates.
+ * @param projects Array of projects to filter.
+ * @returns Filtered array with only projects having valid geographic coordinates.
+ */
+function filterValidProjects(projects: ProjectItem[]): ProjectItem[] {
+  return projects.filter((project) => {
+    if (!project.centroid) {
+      console.warn(
+        `Project ${project.id} missing centroid, excluding from map`
+      );
+      return false;
+    }
+
+    const isValid = isValidCoordinate(project.centroid.x, project.centroid.y);
+    if (!isValid) {
+      console.warn(
+        `Project ${project.id} has invalid coordinates (${project.centroid.x}, ${project.centroid.y}), excluding from map`
+      );
+    }
+
+    return isValid;
+  });
+}
+
+/**
+ * Filters GeoJSON features to remove those with invalid geographic coordinates.
+ * @param geojsonData Feature Collection to filter.
+ * @returns Filtered Feature Collection with only valid coordinates.
+ */
+function filterValidGeoJSONFeatures<
+  T extends ProjectFeatureCollection | FeatureCollection<Point | Polygon>
+>(geojsonData: T): T {
+  const validFeatures = geojsonData.features.filter((feature) => {
+    if (feature.geometry.type === 'Point') {
+      const [lng, lat] = feature.geometry.coordinates;
+      return isValidCoordinate(lng, lat);
+    } else if (feature.geometry.type === 'Polygon') {
+      // Check all coordinates in the polygon
+      const coordinates = feature.geometry.coordinates.flat(
+        Infinity
+      ) as number[];
+      for (let i = 0; i < coordinates.length; i += 2) {
+        const lng = coordinates[i];
+        const lat = coordinates[i + 1];
+        if (!isValidCoordinate(lng, lat)) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
+  });
+
+  return {
+    ...geojsonData,
+    features: validFeatures,
+  } as T;
+}
+
+/**
+ * Calculates bounding box for features in GeoJSON Feature Collection. Supports
+ * Point or Polygon geometry types.
+ * @param geojsonData Feature Collection of Point or Polygon Feautres.
+ * @returns Bounding box array if valid coordinates are found, null if no valid bounds.
+ */
+function calculateBoundsFromGeoJSON(
+  geojsonData: ProjectFeatureCollection | FeatureCollection<Point | Polygon>
+): Bounds | null {
+  const bounds: Bounds = geojsonData.features.reduce(
+    (bounds, feature) => {
+      const [minLng, minLat, maxLng, maxLat] = bounds;
+
+      if (feature.geometry.type === 'Polygon') {
+        // Flatten the coordinates array into single array of coordinates
+        const coordinates = feature.geometry.coordinates.flat(
+          Infinity
+        ) as number[];
+
+        for (let i = 0; i < coordinates.length; i += 2) {
+          const lng = coordinates[i];
+          const lat = coordinates[i + 1];
+
+          // Validate individual coordinates before using them
+          if (isValidCoordinate(lng, lat)) {
+            bounds[0] = Math.min(bounds[0], lng);
+            bounds[1] = Math.min(bounds[1], lat);
+            bounds[2] = Math.max(bounds[2], lng);
+            bounds[3] = Math.max(bounds[3], lat);
+          }
+        }
+
+        return bounds;
+      } else if (feature.geometry.type === 'Point') {
+        const [lng, lat] = feature.geometry.coordinates;
+
+        // Validate individual coordinates before using them
+        if (isValidCoordinate(lng, lat)) {
+          return [
+            Math.min(minLng, lng),
+            Math.min(minLat, lat),
+            Math.max(maxLng, lng),
+            Math.max(maxLat, lat),
+          ];
+        }
+
+        return bounds;
+      } else {
+        throw new Error('Unable to calculate bounds for GeoJSON data');
+      }
+    },
+    [Infinity, Infinity, -Infinity, -Infinity]
+  );
+
+  // Check if we found any valid coordinates (bounds would still be infinite if no valid coords)
+  if (
+    bounds[0] === Infinity ||
+    bounds[1] === Infinity ||
+    bounds[2] === -Infinity ||
+    bounds[3] === -Infinity
+  ) {
+    return null;
+  }
+
+  // Final validation of calculated bounds
+  if (!isValidGeographicBounds(bounds)) {
+    return null;
+  }
+
+  return bounds;
+}
+
+/**
+ * Map API response with project vector layers to MapLayer[].
+ * @param layers Vector layers returned from API response.
+ * @returns Mapped vector layers.
+ */
+const mapApiResponseToLayers = (layers: MapLayer[]) =>
+  layers.map((layer) => {
+    const isPolygon = layer.geom_type.toLowerCase().includes('polygon');
+    return {
+      id: layer.layer_id,
+      name: layer.layer_name,
+      checked: false,
+      type: layer.geom_type,
+      color: isPolygon ? '#FFFFFF' : '#ffde21',
+      fill: isPolygon ? '#ffde21' : undefined,
+      opacity: 100,
+      signedUrl: layer.signed_url,
+    };
+  });
+
+function getDefaultStyle(
+  dataProduct: DataProduct
+): SingleBandSymbology | MultibandSymbology {
+  if (isSingleBand(dataProduct)) {
+    const stats = dataProduct.stac_properties.raster[0].stats;
+    return {
+      colorRamp: 'rainbow',
+      max: stats.maximum,
+      meanStdDev: 2,
+      min: stats.minimum,
+      mode: 'minMax',
+      userMin: stats.minimum,
+      userMax: stats.maximum,
+      opacity: 100,
+    };
+  } else {
+    const raster = dataProduct.stac_properties.raster;
+    return {
+      mode: 'minMax',
+      meanStdDev: 2,
+      red: {
+        idx: 1,
+        min: raster[0].stats.minimum,
+        max: raster[0].stats.maximum,
+        userMin: raster[0].stats.minimum,
+        userMax: raster[0].stats.maximum,
+      },
+      green: {
+        idx: 2,
+        min: raster[1].stats.minimum,
+        max: raster[1].stats.maximum,
+        userMin: raster[1].stats.minimum,
+        userMax: raster[1].stats.maximum,
+      },
+      blue: {
+        idx: 3,
+        min: raster[2].stats.minimum,
+        max: raster[2].stats.maximum,
+        userMin: raster[2].stats.minimum,
+        userMax: raster[2].stats.maximum,
+      },
+      opacity: 100,
+    };
+  }
+}
+
+function getHillshade(
+  activeDataProduct: DataProduct,
+  flights: Flight[]
+): DataProduct | null {
+  const dataProductName = activeDataProduct.data_type.toLowerCase();
+  const filteredFlights = flights.filter(
+    ({ id }) => id === activeDataProduct.flight_id
+  );
+  if (
+    filteredFlights.length > 0 &&
+    filteredFlights[0].data_products.length > 1
+  ) {
+    const dataProducts = filteredFlights[0].data_products;
+    const dataProductHillshade = dataProducts.filter(
+      (dataProduct) =>
+        dataProduct.data_type.toLowerCase().split(' hs')[0] ===
+          dataProductName &&
+        dataProduct.data_type.toLowerCase().split(' hs').length > 1
+    );
+    return dataProductHillshade.length > 0 ? dataProductHillshade[0] : null;
+  } else {
+    return null;
+  }
+}
+
+// Fewest bands that can make up an RGB composite.
+const MIN_RGB_BANDS = 3;
+
+/**
+ * Returns true if data product is displayed as a single band.
+ *
+ * An RGB composite needs three bands, so a raster with fewer than that is
+ * displayed as band 1 with a color ramp. A two band raster carries its second
+ * band as an alpha channel, which titiler reads as the tile mask rather than as
+ * data, so band 1 is the only band worth displaying either way.
+ * @param dataProduct Active data product.
+ * @returns True if single band, otherwise False.
+ */
+function isSingleBand(dataProduct: DataProduct): boolean {
+  if (!dataProduct.stac_properties) return false;
+
+  const bandCount = dataProduct.stac_properties.raster.length;
+
+  return bandCount > 0 && bandCount < MIN_RGB_BANDS;
+}
+
+/**
+ * Returns object with default symbology properties for a single-band data product.
+ * @param stacProperties Data product band statistics.
+ * @returns Default symbology.
+ */
+const createDefaultSingleBandSymbology = (
+  stacProperties: STACProperties
+): SingleBandSymbology => ({
+  colorRamp: 'rainbow',
+  meanStdDev: 2,
+  mode: 'minMax',
+  nodata: null,
+  opacity: 100,
+  min: stacProperties.raster[0].stats.minimum,
+  max: stacProperties.raster[0].stats.maximum,
+  userMin: stacProperties.raster[0].stats.minimum,
+  userMax: stacProperties.raster[0].stats.maximum,
+});
+
+/**
+ * Returns object with default symbology properties for a 3-band data product.
+ * @param stacProperties Data product band statistics.
+ * @returns Default symbology.
+ */
+const createDefaultMultibandSymbology = (
+  stacProperties: STACProperties
+): MultibandSymbology => {
+  const createColorChannel = (idx: number) => ({
+    idx,
+    min: stacProperties.raster[idx - 1].stats.minimum,
+    max: stacProperties.raster[idx - 1].stats.maximum,
+    userMin: stacProperties.raster[idx - 1].stats.minimum,
+    userMax: stacProperties.raster[idx - 1].stats.maximum,
+  });
+
+  return {
+    meanStdDev: 2,
+    mode: 'minMax',
+    opacity: 100,
+    red: createColorChannel(1),
+    green: createColorChannel(2),
+    blue: createColorChannel(3),
+  };
+};
+
+/**
+ * Converts a symbology value into a string for a controlled number input.
+ * Non-finite values, including a null persisted by an older saved style,
+ * become an empty string.
+ * @param value Current symbology value.
+ * @returns String representation of the value.
+ */
+const toSymbologyInputValue = (value: number): string =>
+  Number.isFinite(value) ? String(value) : '';
+
+/**
+ * Returns default min/max values for single band raster.
+ * @param stacProps STAC metadata for raster band.
+ * @param symbology Current symbology settings.
+ * @returns Min/max values for single band.
+ */
+const getSingleBandMinMax = (
+  stacProps: STACProperties,
+  symbology: SingleBandSymbology
+): [number, number] => {
+  const defaultMinMax: [number, number] = [0, 255];
+
+  switch (symbology.mode) {
+    case 'minMax':
+      if (!Number.isFinite(symbology.min) || !Number.isFinite(symbology.max)) {
+        console.warn(
+          'Min and max raster props missing or invalid, falling back to default min/max.'
+        );
+        return defaultMinMax;
+      }
+      return [symbology.min, symbology.max];
+
+    case 'userDefined':
+      if (
+        !Number.isFinite(symbology.userMin) ||
+        !Number.isFinite(symbology.userMax)
+      ) {
+        console.warn(
+          'User defined min and max props missing or invalid, falling back to default min/max.'
+        );
+        return defaultMinMax;
+      }
+      return [symbology.userMin, symbology.userMax];
+
+    case 'meanStdDev': {
+      const stats = stacProps.raster?.[0]?.stats;
+      if (!stats || stats.mean === undefined || stats.stddev === undefined) {
+        console.warn('Stats missing, falling back to default min/max.');
+        return defaultMinMax;
+      }
+      const deviation = stats.stddev * symbology.meanStdDev;
+      return [stats.mean - deviation, stats.mean + deviation];
+    }
+    default:
+      console.warn(`Unexpected symbology mode: ${symbology.mode}`);
+      return defaultMinMax;
+  }
+};
+
+/**
+ * Returns default min/max values for multiband raster.
+ * @param stacProps STAC metadata for raster bands.
+ * @param symbology Current symbology settings.
+ * @returns Min/max values for each band.
+ */
+const getMultibandMinMax = (
+  stacProps: STACProperties,
+  symbology: MultibandSymbology
+): [[number, number], [number, number], [number, number]] => {
+  const defaultMinMax: [[number, number], [number, number], [number, number]] =
+    [
+      [0, 255],
+      [0, 255],
+      [0, 255],
+    ];
+
+  const validateBands = (key: 'min' | 'max' | 'userMin' | 'userMax') =>
+    ['red', 'green', 'blue'].every((band) =>
+      Number.isFinite(symbology[band]?.[key])
+    );
+
+  const getStats = (index: number) => stacProps.raster?.[index - 1]?.stats;
+
+  switch (symbology.mode) {
+    case 'minMax':
+      if (!validateBands('min') || !validateBands('max')) {
+        console.warn(
+          'Min and max raster props missing for at least one band, falling back to default min/max.'
+        );
+        return defaultMinMax;
+      } else {
+        return [
+          [symbology.red.min, symbology.red.max],
+          [symbology.green.min, symbology.green.max],
+          [symbology.blue.min, symbology.blue.max],
+        ];
+      }
+
+    case 'userDefined':
+      if (!validateBands('userMin') || !validateBands('userMax')) {
+        console.warn(
+          'User defined min and max props missing for at least one band, falling back to default min/max.'
+        );
+        return defaultMinMax;
+      } else {
+        return [
+          [symbology.red.userMin, symbology.red.userMax],
+          [symbology.green.userMin, symbology.green.userMax],
+          [symbology.blue.userMin, symbology.blue.userMax],
+        ];
+      }
+
+    case 'meanStdDev':
+      // verify we have a band index for RGB
+      if (
+        !['red', 'green', 'blue'].every(
+          (band) => symbology[band]?.idx !== undefined
+        )
+      ) {
+        console.warn(
+          'Missing index for at least one band, falling back to default min/max.'
+        );
+        return defaultMinMax;
+      } else {
+        const stats = ['red', 'green', 'blue'].map((band) =>
+          getStats(symbology[band].idx)
+        );
+
+        // verify we have a mean, std. dev. for each band and a meanStdDev mult factor
+        if (
+          stats.some(
+            (s) => !s || s.mean === undefined || s.stddev === undefined
+          ) ||
+          symbology.meanStdDev === undefined
+        ) {
+          console.warn(
+            'Stats missing for at least one band, falling back to default min/max.'
+          );
+          return defaultMinMax;
+        }
+
+        return stats.map((stat) => {
+          const deviation = stat.stddev * symbology.meanStdDev;
+          return [stat.mean - deviation, stat.mean + deviation];
+        }) as [[number, number], [number, number], [number, number]];
+      }
+
+    default:
+      return defaultMinMax;
+  }
+};
+
+/**
+ * Checks local storage for previously stored projects.
+ * @returns Array of projects retrieved from local storage.
+ */
+function getLocalStorageProjects(): ProjectItem[] | null {
+  if ('projects' in localStorage) {
+    const lsProjectsString = localStorage.getItem('projects');
+    if (lsProjectsString) {
+      const lsProjects: ProjectItem[] = JSON.parse(lsProjectsString);
+      if (lsProjects && lsProjects.length > 0) {
+        return lsProjects;
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Tile size of the WebMercatorQuad tile matrix. Raster sources report this size
+ * to MapLibre while titiler renders a multiple of it for higher pixel density.
+ */
+const TITILER_TILE_SIZE = 256;
+
+/**
+ * Returns pixel dimensions requested from titiler for a tile scale.
+ * @param tileScale Multiplier for the base tile size.
+ * @returns Value for titiler's "tilesize" query parameter.
+ */
+function getTitilerTileSize(tileScale: number): number {
+  return tileScale * TITILER_TILE_SIZE;
+}
+
+/**
+ * Returns query parameters for titiler /cog endpoint.
+ * @param dataProduct Active data product.
+ * @param symbology Symbology for active data product.
+ * @param queryParams Current query parameters.
+ * @returns Query parameters updated with symbology.
+ */
+function getTitilerQueryParams(
+  cogUrl: string,
+  dataProduct: DataProduct,
+  symbology: SingleBandSymbology | MultibandSymbology
+): URLSearchParams {
+  const queryParams = new URLSearchParams();
+  queryParams.append('url', cogUrl);
+
+  if (isSingleBand(dataProduct)) {
+    const s = symbology as SingleBandSymbology;
+
+    queryParams.append('bidx', '1');
+    queryParams.append('colormap_name', s.colorRamp);
+    queryParams.append(
+      'rescale',
+      getSingleBandMinMax(dataProduct.stac_properties, s).flat().join(',')
+    );
+    if (s.nodata != null) {
+      queryParams.append('nodata', s.nodata.toString());
+    }
+  } else {
+    const s = symbology as MultibandSymbology;
+    queryParams.append('bidx', s.red.idx.toString());
+    queryParams.append('bidx', s.green.idx.toString());
+    queryParams.append('bidx', s.blue.idx.toString());
+    getMultibandMinMax(dataProduct.stac_properties, s).forEach((rescale) => {
+      queryParams.append('rescale', `${rescale}`);
+    });
+  }
+
+  // add data product id and add signature
+  queryParams.append('dataProductId', dataProduct.id);
+  queryParams.append(
+    'expires',
+    (dataProduct.signature?.expires || 0).toString()
+  );
+  queryParams.append('secure', dataProduct.signature?.secure || '');
+
+  return queryParams;
+}
+
+/**
+ * Sort projects by unique UUID string.
+ * @param projects Array of projects with unique `id` strings.
+ * @returns Array of sorted projects.
+ */
+function sortProjects(projects: ProjectItem[]): ProjectItem[] {
+  return projects.slice().sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/**
+ * Compare projects currently stored in local storage with new projects returned
+ * from API request.
+ * @param oldProjects Array of projects currently in local storage.
+ * @param newProjects Array of projects returned from API request.
+ * @returns True if both arrays match, otherwise false.
+ */
+function areProjectsEqual(
+  oldProjects: ProjectItem[],
+  newProjects: ProjectItem[]
+): boolean {
+  const sortedOld = sortProjects(oldProjects);
+  const sortedNew = sortProjects(newProjects);
+  return JSON.stringify(sortedOld) === JSON.stringify(sortedNew);
+}
+
+/**
+ * Sets projects returned from API in local storage. If projects already exist
+ * in local storage, they will only be replaced if the projects returned from
+ * the API differ.
+ * @param projects Projects returned from API.
+ */
+function setLocalStorageProjects(projects: ProjectItem[]): void {
+  const projectsString = JSON.stringify(projects);
+  const storedProjects = getLocalStorageProjects();
+
+  if (storedProjects) {
+    // Compare stored data with the new projects
+    if (!areProjectsEqual(storedProjects, projects)) {
+      localStorage.setItem('projects', projectsString);
+    }
+  } else {
+    // If nothing is stored, set the projects
+    localStorage.setItem('projects', projectsString);
+  }
+}
+
+/**
+ * Checks local storage for previously stored public projects.
+ * @returns Array of public projects retrieved from local storage.
+ */
+function getLocalStoragePublicProjects(): ProjectItem[] | null {
+  const lsString = localStorage.getItem('publicProjects');
+  if (lsString) {
+    const parsed: ProjectItem[] = JSON.parse(lsString);
+    if (parsed && parsed.length > 0) {
+      return parsed;
+    }
+  }
+  return null;
+}
+
+/**
+ * Stores public projects in local storage under a separate key.
+ * @param projects Public projects to cache.
+ */
+function setLocalStoragePublicProjects(projects: ProjectItem[]): void {
+  localStorage.setItem('publicProjects', JSON.stringify(projects));
+}
+
+/**
+ * Returns true when a project was fetched via the public endpoint and the
+ * current user has no membership role on it.  Used to branch between auth-
+ * required and public API paths throughout the map components.
+ * @param project Active project (may be null).
+ */
+function isPublicOnly(project: ProjectItem | null | undefined): boolean {
+  return !!project?.is_public && !project?.role;
+}
+
+/**
+ * Returns the category of a value based on predefined thresholds for flights or data products.
+ * @param count Value to be categorized.
+ * @param type Type of count ('flight' or 'data_product').
+ * @returns Category of the value.
+ */
+function getCategory(
+  count: number,
+  type: 'flight' | 'data_product'
+): 'low' | 'medium' | 'high' {
+  if (type === 'flight') {
+    if (count >= 0 && count < 3) return 'low';
+    else if (count >= 3 && count < 5) return 'medium';
+    else return 'high';
+  } else {
+    // data_product type
+    if (count >= 0 && count < 5) return 'low';
+    else if (count >= 5 && count < 10) return 'medium';
+    else return 'high';
+  }
+}
+
+/**
+ * Returns true if data product is an elevation data product.
+ * @param dataProduct Data product to check.
+ * @returns True if data product is an elevation data product, otherwise false.
+ */
+const isElevationDataProduct = (dataProduct: DataProduct): boolean => {
+  const dataType = dataProduct.data_type.toLowerCase();
+  return (
+    (dataType.includes('dem') ||
+      dataType.includes('dtm') ||
+      dataType.includes('dsm')) &&
+    isSingleBand(dataProduct)
+  );
+};
+
+/**
+ * Fit a MapLibre map view to the bounds of a GeoJSON Feature or Geometry.
+ *
+ * @param map - The MapLibre GL map instance
+ * @param geo - A GeoJSON Feature or Geometry object
+ * @param padding - Optional padding in pixels (default: 40)
+ * @param duration - Optional animation duration in ms (default: 500)
+ */
+const fitMapToGeoJSON = (
+  map: Map,
+  geo: Geometry | Feature<Geometry, GeoJsonProperties> | FeatureCollection,
+  padding = 40,
+  duration = 500
+) => {
+  const bounds = new maplibregl.LngLatBounds();
+
+  const pushCoord = (c: number[]) => {
+    if (Array.isArray(c) && c.length >= 2) {
+      bounds.extend([c[0], c[1]]);
+    }
+  };
+
+  const extendFromGeometry = (geometry: Geometry) => {
+    switch (geometry.type) {
+      case 'Point':
+        pushCoord(geometry.coordinates as number[]);
+        break;
+      case 'MultiPoint':
+      case 'LineString':
+        (geometry.coordinates as number[][]).forEach(pushCoord);
+        break;
+      case 'MultiLineString':
+      case 'Polygon':
+        (geometry.coordinates as number[][][]).forEach((ring) =>
+          ring.forEach(pushCoord)
+        );
+        break;
+      case 'MultiPolygon':
+        (geometry.coordinates as number[][][][]).forEach((poly) =>
+          poly.forEach((ring) => ring.forEach(pushCoord))
+        );
+        break;
+      default:
+        console.warn('Unsupported geometry type:', geometry.type);
+    }
+  };
+
+  if ('type' in geo) {
+    if (geo.type === 'Feature') {
+      extendFromGeometry(geo.geometry);
+    } else if (geo.type === 'FeatureCollection') {
+      geo.features.forEach((f) => extendFromGeometry(f.geometry));
+    } else {
+      extendFromGeometry(geo as Geometry);
+    }
+  }
+
+  if (!bounds.isEmpty()) {
+    map.fitBounds(bounds, { padding, duration });
+  }
+};
+
+/**
+ * Format a single number for display: integers as integers, floats up to 2 d.p.
+ * @param v Numeric value.
+ * @returns Formatted string.
+ */
+function formatNum(v: number): string {
+  return Number.isInteger(v) ? v.toString() : parseFloat(v.toFixed(2)).toString();
+}
+
+/**
+ * Build a human-readable label string for raster cell value(s).
+ * - Single-band: "{value} {unit}" (unit omitted if empty).
+ * - Multiband: "R: {r}  G: {g}  B: {b}" using the displayed symbology's band indices.
+ * - All-nodata or no values: "No data".
+ * @param values  Per-band values from /public/point (null = nodata/out-of-range).
+ * @param dataProduct  Active data product.
+ * @param symbologyState  Current raster symbology state keyed by data product id.
+ */
+function buildLabel(
+  values: (number | null)[] | null | undefined,
+  dataProduct: DataProduct | null | undefined,
+  symbologyState: Record<
+    string,
+    { symbology: SingleBandSymbology | MultibandSymbology | null } | undefined
+  >
+): string {
+  if (!values || !dataProduct) return '';
+
+  const allNodata = values.every((v) => v === null);
+  if (allNodata) return 'No data';
+
+  if (isSingleBand(dataProduct)) {
+    const v = values[0];
+    if (v == null) return 'No data';
+    const unit = dataProduct.stac_properties?.raster?.[0]?.unit;
+    return unit ? `${formatNum(v)} ${unit}` : formatNum(v);
+  }
+
+  // multiband — label channels using the displayed symbology if available
+  const sym = symbologyState[dataProduct.id]?.symbology;
+  if (sym && 'red' in sym) {
+    const mb = sym as MultibandSymbology;
+    const fmt = (v: number | null | undefined) =>
+      v == null ? 'n/a' : formatNum(v);
+    const r = values[mb.red.idx - 1];
+    const g = values[mb.green.idx - 1];
+    const b = values[mb.blue.idx - 1];
+    return `R: ${fmt(r)}  G: ${fmt(g)}  B: ${fmt(b)}`;
+  }
+
+  // fallback: enumerate all bands
+  return values
+    .map((v, i) => `B${i + 1}: ${v == null ? 'n/a' : formatNum(v)}`)
+    .join('  ');
+}
+
+/**
+ * Reads the file name a response's Content-Disposition header asks for.
+ * Returns an empty string when the header is absent or carries no name. That
+ * includes the cross-origin case, where the browser hides the header from
+ * JavaScript unless the server lists it in Access-Control-Expose-Headers.
+ * @param contentDisposition Raw Content-Disposition header value.
+ */
+function getFilenameFromContentDisposition(contentDisposition: unknown): string {
+  if (typeof contentDisposition !== 'string') return '';
+
+  // The RFC 5987 form is checked first because it is the one the server uses
+  // whenever the name needs escaping
+  const encoded = contentDisposition.match(/filename\*=\s*utf-8''([^;]+)/i);
+  let filename = '';
+  if (encoded) {
+    try {
+      filename = decodeURIComponent(encoded[1].trim());
+    } catch {
+      // malformed encoding, fall through to the plain form
+    }
+  }
+
+  if (!filename) {
+    const plain = contentDisposition.match(/filename="?([^";]+)"?/i);
+    filename = plain ? plain[1].trim() : '';
+  }
+
+  // The server already sanitizes this name, but it arrives as a header, so any
+  // path separator is neutralized before it becomes a download name
+  return filename.replace(/[\\/]/g, '_');
+}
+
+/**
+ * Removes symbology fields the export does not use.
+ * The map hangs a whole background data product off single band symbology. The
+ * export ignores it and the backend drops it, so it is not worth uploading with
+ * every request.
+ * @param symbology Current symbology settings.
+ */
+function toExportSettings(
+  symbology: SingleBandSymbology | MultibandSymbology
+): Record<string, unknown> {
+  const { background: _background, ...settings } =
+    symbology as SingleBandSymbology;
+  return settings;
+}
+
+/**
+ * Requests a JPG export of a raster data product and saves it to the user's device.
+ * When symbology settings are provided, the color ramp, band rescaling, and band
+ * composition applied on the map are included in the exported image. Without them,
+ * the raster is converted as-is.
+ * @param dataProduct Data product to export.
+ * @param projectId Project the data product belongs to.
+ * @param symbology Current symbology settings, if any.
+ */
+async function exportDataProductToJpeg(
+  dataProduct: DataProduct,
+  projectId: string,
+  symbology?: SingleBandSymbology | MultibandSymbology
+): Promise<void> {
+  const response = await api.post(
+    `/projects/${projectId}/flights/${dataProduct.flight_id}` +
+      `/data_products/${dataProduct.id}/export/jpeg`,
+    { settings: symbology ? toExportSettings(symbology) : null },
+    { responseType: 'blob' }
+  );
+
+  // The server names the file it just built, so its name is preferred over
+  // anything reassembled here. download_filename is the fallback, and the data
+  // product id after that, which is what the raw download link uses. Neither
+  // fallback is ever derived from original_filename: the uploaded name is
+  // untrusted and must not be handed to whoever downloads the export.
+  const filename =
+    getFilenameFromContentDisposition(
+      response.headers['content-disposition']
+    ) ||
+    (dataProduct.download_filename
+      ? `${dataProduct.download_filename.replace(/\.[^/.]+$/, '')}.jpg`
+      : `${dataProduct.id}.jpg`);
+
+  const url = URL.createObjectURL(response.data);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  // Released on a later tick: Safari has cancelled downloads when the object URL
+  // is revoked in the same tick as the click that started them
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+export {
+  areProjectsEqual,
+  buildLabel,
+  calculateBoundsFromGeoJSON,
+  createDefaultSingleBandSymbology,
+  createDefaultMultibandSymbology,
+  exportDataProductToJpeg,
+  filterValidGeoJSONFeatures,
+  filterValidProjects,
+  fitMapToGeoJSON,
+  formatNum,
+  getCategory,
+  getDefaultStyle,
+  getHillshade,
+  getLocalStorageProjects,
+  getLocalStoragePublicProjects,
+  getMultibandMinMax,
+  getSingleBandMinMax,
+  getTitilerQueryParams,
+  getTitilerTileSize,
+  isElevationDataProduct,
+  isPublicOnly,
+  isSingleBand,
+  mapApiResponseToLayers,
+  setLocalStorageProjects,
+  setLocalStoragePublicProjects,
+  TITILER_TILE_SIZE,
+  toSymbologyInputValue,
+};

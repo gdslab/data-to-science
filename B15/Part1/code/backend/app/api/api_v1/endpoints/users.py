@@ -1,0 +1,285 @@
+import logging
+import os
+import shutil
+from secrets import token_urlsafe
+from typing import Annotated, Any
+from uuid import UUID, uuid4
+
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Body,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+    status,
+)
+from pydantic.networks import EmailStr
+from sqlalchemy.orm import Session
+
+from app import crud, models, schemas
+from app.api import deps, mail
+from app.core import security
+from app.core.config import settings
+from app.core.limiter import limiter
+from app.models.utils.user import validate_password
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter()
+
+
+@router.post("", response_model=schemas.User, status_code=status.HTTP_201_CREATED)
+@limiter.limit("5/hour")
+async def create_user(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(deps.get_db),
+    password: str = Body(title="Password", min_length=12, max_length=128),
+    email: EmailStr = Body(title="Email", max_length=254),
+    first_name: str = Body(title="First name", min_length=2, max_length=64),
+    last_name: str = Body(title="Last name", min_length=2, max_length=64),
+    turnstile_token: str | None = Body(None, title="Turnstile token"),
+    registration_intent: str | None = Body(
+        None, title="Registration intent", min_length=20, max_length=500
+    ),
+) -> Any:
+    """Create new user with unique email."""
+    # Validate Turnstile token if configured
+    if settings.TURNSTILE_SECRET_KEY and turnstile_token:
+        # Extract client IP for additional validation
+        client_ip = (
+            request.headers.get("CF-Connecting-IP")
+            or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+            or request.headers.get("X-Real-IP")
+            or (request.client.host if request.client else None)
+        )
+
+        validation_result = await security.validate_turnstile(
+            token=turnstile_token,
+            secret=settings.TURNSTILE_SECRET_KEY,
+            remoteip=client_ip,
+        )
+
+        if not validation_result.get("success"):
+            error_codes = validation_result.get("error-codes", [])
+            # Log technical details for debugging
+            logger.warning(f"Turnstile validation failed with codes: {error_codes}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Bot verification failed. Please refresh the page and try again.",
+            )
+    elif settings.TURNSTILE_SECRET_KEY and not turnstile_token:
+        # Turnstile is configured but no token provided
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Turnstile verification required",
+        )
+
+    existing_user = crud.user.get_by_email(db, email=email)
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Email address already in use"
+        )
+    # verify password meets minimum requirements
+    validate_password(password)
+    user_in = schemas.UserCreate(
+        password=password,
+        email=email,
+        first_name=first_name,
+        last_name=last_name,
+        registration_intent=registration_intent,
+    )
+    user = crud.user.create(db, obj_in=user_in)
+    if settings.MAIL_ENABLED:
+        # create email confirmation token
+        confirmation_token = token_urlsafe()
+        approve_token = token_urlsafe()
+        confirmation_token_in_db = crud.user.create_single_use_token(
+            db,
+            obj_in=schemas.SingleUseTokenCreate(
+                token=security.get_token_hash(confirmation_token, salt="confirm")
+            ),
+            user_id=user.id,
+        )
+        approve_token_in_db = crud.user.create_single_use_token(
+            db,
+            obj_in=schemas.SingleUseTokenCreate(
+                token=security.get_token_hash(approve_token, salt="approve")
+            ),
+            user_id=user.id,
+        )
+        if confirmation_token_in_db and approve_token_in_db:
+            mail.send_email_confirmation(
+                background_tasks=background_tasks,
+                first_name=user.first_name,
+                email=user.email,
+                confirmation_token=confirmation_token,
+            )
+            mail.send_admins_new_registree_notification(
+                background_tasks=background_tasks,
+                email=user.email,
+                first_name=user.first_name,
+                last_name=user.last_name,
+                registration_intent=user.registration_intent,
+                approve_token=approve_token,
+            )
+    else:
+        # mail disabled - enable account without email / admin confirmation
+        crud.user.update(
+            db,
+            db_obj=user,
+            obj_in=schemas.UserUpdate(is_approved=True, is_email_confirmed=True),
+        )
+
+    return user
+
+
+@router.get("", response_model=list[schemas.UserPublic])
+def read_users(
+    q: Annotated[str | None, Query(max_length=50)] = None,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Retrieve public list of users filtered by optional search query."""
+    users = crud.user.get_multi_by_query(db, q=q)
+    return users
+
+
+@router.put("/{user_id}", response_model=schemas.User)
+def update_current_user(
+    user_id: UUID,
+    password: str = Body(None),
+    first_name: str = Body(None),
+    last_name: str = Body(None),
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Update user by id."""
+    user = crud.user.get(db, id=user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+    if user.id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Permission denied"
+        )
+    if user.is_demo:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Demo user cannot update profile",
+        )
+    user_in = schemas.UserUpdate(**user.__dict__)
+    if password is not None:
+        user_in.password = password
+    if first_name is not None:
+        user_in.first_name = first_name
+    if last_name is not None:
+        user_in.last_name = last_name
+    user = crud.user.update(db, db_obj=user, obj_in=user_in)
+    return user
+
+
+@router.get("/current", response_model=schemas.User)
+def read_current_user(
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Retrieve current user."""
+    return current_user
+
+
+@router.post("/profile", status_code=status.HTTP_200_OK)
+def upload_user_profile(
+    request: Request,
+    files: UploadFile,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    if current_user.is_demo:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Demo user cannot change profile image",
+        )
+    if os.environ.get("RUNNING_TESTS") == "1":
+        upload_dir = f"{settings.TEST_STATIC_DIR}/users/{current_user.id}"
+    else:
+        upload_dir = f"{settings.STATIC_DIR}/users/{current_user.id}"
+    if os.path.exists(upload_dir):
+        shutil.rmtree(upload_dir)
+    os.makedirs(upload_dir)
+
+    if files.content_type == "image/jpeg":
+        out_path = os.path.join(upload_dir, str(uuid4()) + ".jpg")
+    elif files.content_type == "image/png":
+        out_path = os.path.join(upload_dir, str(uuid4()) + ".png")
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Must be png or jpeg format"
+        )
+
+    with open(out_path, "wb") as buffer:
+        shutil.copyfileobj(files.file, buffer)
+
+    return {"upload-status": "success"}
+
+
+@router.delete("/profile", status_code=status.HTTP_202_ACCEPTED)
+def delete_user_profile(
+    request: Request,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    if os.environ.get("RUNNING_TESTS") == "1":
+        upload_dir = f"{settings.TEST_STATIC_DIR}/users/{current_user.id}"
+    else:
+        upload_dir = f"{settings.STATIC_DIR}/users/{current_user.id}"
+    if os.path.exists(upload_dir):
+        shutil.rmtree(upload_dir)
+
+
+@router.get("/extensions", status_code=status.HTTP_200_OK)
+def get_user_extensions(
+    request: Request,
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    user_extensions = crud.extension.get_user_extensions_list(
+        db, user_id=current_user.id
+    )
+    return user_extensions
+
+
+@router.get("/current/stats", response_model=schemas.ProfileStats)
+def get_current_user_stats(
+    current_user: models.User = Depends(deps.get_current_approved_user),
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    """Bundled engagement stats for the Profile page Activity tab.
+
+    Single round trip covering both segments: owner totals/trend/top lists for
+    data the user owns, and the user's own view/like activity.
+    """
+    owner_stats = crud.data_product.get_owner_stats(db, user_id=current_user.id)
+    owner_stats["views_trend"] = crud.data_product.get_owner_views_trend(
+        db, user_id=current_user.id
+    )
+    owner_stats["top_viewed"] = crud.data_product.get_owner_top(
+        db, user_id=current_user.id, metric="views"
+    )
+    owner_stats["top_liked"] = crud.data_product.get_owner_top(
+        db, user_id=current_user.id, metric="likes"
+    )
+
+    activity_counts = crud.data_product.get_activity_counts(db, user_id=current_user.id)
+    activity_counts["recently_viewed"] = crud.data_product.get_recent_activity(
+        db, user_id=current_user.id, action="viewed"
+    )
+    activity_counts["recently_liked"] = crud.data_product.get_recent_activity(
+        db, user_id=current_user.id, action="liked"
+    )
+
+    return {"received": owner_stats, "activity": activity_counts}
