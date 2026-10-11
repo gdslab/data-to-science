@@ -1,0 +1,13 @@
+Part,Snapshot,Pattern,Count,Change
+Part1,Baseline,Repository,8,baseline
+Part1,Baseline,Decorator,5,baseline
+Part1,Baseline,Factory Method,3,baseline
+Part1,Baseline,Strategy,2,baseline
+Part1,Baseline,Chain of Responsibility,1,baseline
+Part1,Baseline,Observer,1,baseline
+Part1,Baseline,Template Method,1,baseline
+Part2,After CH01,Repository,9,+1 extended
+Part2,After CH02,Strategy,4,+2 newly introduced
+Part2,After CH02,Chain of Responsibility,2,+1 newly introduced
+Part2,After CH03,Observer,2,+1 newly introduced
+Part2,After CH03,Template Method,2,+1 newly introduced

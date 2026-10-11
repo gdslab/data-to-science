@@ -1,0 +1,14 @@
+Pattern_ID,Pattern_Name,Category,Part,File,Instance,Status,Verified_By
+P01,Repository,Architectural,Part1,backend/app/crud/,DataProductRepository,Confirmed,Manual
+P02,Repository,Architectural,Part1,backend/app/crud/,UserRepository,Confirmed,Manual
+P03,Decorator,Structural,Part1,backend/app/core/security.py,requires_permission,Confirmed,Manual
+P04,Factory Method,Creational,Part1,backend/app/schemas/,DataProductSchema,Confirmed,Manual
+P05,Strategy,Behavioural,Part1,backend/app/core/policy_engine.py,OwnerPolicy,Confirmed,Manual
+P06,Chain of Responsibility,Behavioural,Part1,backend/app/core/policy_engine.py,PolicyChain,Confirmed,Manual
+P07,Observer,Behavioural,Part1,backend/app/workflow/,WorkflowStatusObserver,Confirmed,Manual
+P08,Template Method,Behavioural,Part1,backend/app/workflow/,ExperimentRunner,Confirmed,Manual
+P09,Repository,Architectural,Part2-CH01,backend/app/crud/,VersionedDataProductRepository,Extended,Manual
+P10,Strategy,Behavioural,Part2-CH02,backend/app/core/policy_engine.py,RolePolicy,Newly Introduced,Manual
+P11,Chain of Responsibility,Behavioural,Part2-CH02,backend/app/core/policy_engine.py,PolicyChain,Newly Introduced,Manual
+P12,Observer,Behavioural,Part2-CH03,backend/app/workflow/,WorkflowStatusObserver,Newly Introduced,Manual
+P13,Template Method,Behavioural,Part2-CH03,backend/app/workflow/,ExperimentRunner,Newly Introduced,Manual

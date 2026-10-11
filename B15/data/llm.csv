@@ -1,0 +1,6 @@
+LLM_ID,Part,Task,Model,Access_Tier,Date,Prompt_Path,Output_Path,Claim,Evaluation,Reviewer,Notes
+L01,Part1,Pattern discovery in D2S codebase,Claude Sonnet 4.6,Free,2026-10-10,Part1/llm/part1_pattern_analysis/prompt.txt,Part1/llm/part1_pattern_analysis/input.txt,Identified 7 design patterns,Correct,Harikrishna T P,Cross-checked with manual code reading
+L02,Part2,Generate policy_engine.py skeleton,Claude Sonnet 4.6,Free,2026-10-10,Part2/llm/ch02_prompt.txt,Part2/llm/ch02_output.txt,ABAC with Strategy + Chain of Responsibility,Correct,Harikrishna T P,Code compiled and tests passed
+L03,Part3,Implement Strategy in Java,Claude Sonnet 4.6,Free,2026-10-10,Part3/llm/strategy_java_prompt.txt,Part3/llm/strategy_java_output.txt,Correct Strategy implementation,Correct,Harikrishna T P,Manually compiled with javac
+L04,Part3,Implement Observer in Python,Claude Sonnet 4.6,Free,2026-10-10,Part3/llm/observer_python_prompt.txt,Part3/llm/observer_python_output.txt,Correct Observer using Protocol,Correct,Harikrishna T P,Ran with python3; output verified
+L05,Part3,Implement Strategy+Observer in C++,Claude Sonnet 4.6,Free,2026-10-10,Part3/llm/cpp_prompt.txt,Part3/llm/cpp_output.txt,Correct virtual base class usage,Correct,Harikrishna T P,Compiled with g++ -std=c++17
