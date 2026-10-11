@@ -1,0 +1,6 @@
+PROMPT (Part2 CH02 - Claude Sonnet 4.6, 2026-10-10):
+"Implement an ABAC policy engine in Python for the D2S platform.
+The engine should use the Strategy pattern for pluggable policies
+and Chain of Responsibility for chained evaluation. Policies should
+be expressed as JSON rules. Include an AccessContext dataclass and
+AccessDecision enum."
