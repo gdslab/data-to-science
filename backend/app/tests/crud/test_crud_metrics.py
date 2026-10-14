@@ -230,3 +230,63 @@ def test_leaderboard_excludes_engagement_on_deactivated_content(db: Session) -> 
     assert owner_row.data_product_count == 1
     assert owner_row.total_views == 1
     assert owner_row.total_likes == 1
+
+
+def test_leaderboard_credits_co_owners(db: Session) -> None:
+    """A member promoted to OWNER gets the same full totals as the creator,
+    matching the profile "On your data" stats."""
+    sample = SampleDataProduct(db)
+    co_owner = create_user(db)
+    create_project_member(
+        db, role=Role.OWNER, member_id=co_owner.id, project_uuid=sample.project.id
+    )
+    create_data_product_view(db, data_product_id=sample.obj.id)
+    create_data_product_like(db, data_product_id=sample.obj.id)
+    crud.data_product.update(
+        db, db_obj=sample.obj, obj_in=DataProductUpdate(file_size=1000)
+    )
+
+    rows = crud.metrics.get_engagement_leaderboard(db, metric="views", limit=100)
+    creator_row = next(row for row in rows if row.user_id == sample.user.id)
+    co_owner_row = next(row for row in rows if row.user_id == co_owner.id)
+
+    for field in (
+        "project_count",
+        "flight_count",
+        "data_product_count",
+        "total_views",
+        "total_likes",
+        "total_storage",
+    ):
+        assert getattr(co_owner_row, field) == getattr(creator_row, field)
+    assert co_owner_row.project_count == 1
+    assert co_owner_row.data_product_count == 1
+    assert co_owner_row.total_views == 1
+    assert co_owner_row.total_likes == 1
+    assert co_owner_row.total_storage == 1000
+
+
+def test_leaderboard_ignores_non_owner_members(db: Session) -> None:
+    sample = SampleDataProduct(db)
+    viewer = create_user(db)
+    create_project_member(
+        db, role=Role.VIEWER, member_id=viewer.id, project_uuid=sample.project.id
+    )
+    create_data_product_view(db, data_product_id=sample.obj.id)
+
+    rows = crud.metrics.get_engagement_leaderboard(db, metric="views", limit=100)
+
+    assert next((row for row in rows if row.user_id == viewer.id), None) is None
+
+
+def test_leaderboard_excludes_owner_self_views(db: Session) -> None:
+    owner = create_user(db)
+    sample = SampleDataProduct(db, user=owner)
+    create_data_product_view(db, data_product_id=sample.obj.id, user_id=owner.id)
+    create_data_product_view(db, data_product_id=sample.obj.id)
+    create_data_product_view(db, data_product_id=sample.obj.id, session_id="anon")
+
+    rows = crud.metrics.get_engagement_leaderboard(db, metric="views", limit=100)
+    owner_row = next(row for row in rows if row.user_id == owner.id)
+
+    assert owner_row.total_views == 2

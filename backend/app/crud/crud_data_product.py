@@ -9,7 +9,7 @@ import rasterio
 from fastapi.encoders import jsonable_encoder
 from rasterio.errors import CRSError
 from rasterio.warp import transform_bounds
-from sqlalchemy import and_, func, select, update
+from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.orm import Session, joinedload
 
 from app import crud
@@ -509,6 +509,12 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             )
         )
 
+    def _not_self_view(self, user_id: UUID):
+        """Views by anyone other than user_id; anonymous session views count."""
+        return or_(
+            DataProductView.user_id.is_(None), DataProductView.user_id != user_id
+        )
+
     def _owned_data_product_ids_subquery(self, user_id: UUID):
         """Active data products belonging to projects owned by user_id."""
         return (
@@ -535,7 +541,10 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             ).scalar_one()
             total_views = session.execute(
                 select(func.count(DataProductView.id)).where(
-                    DataProductView.data_product_id.in_(owned_ids)
+                    and_(
+                        DataProductView.data_product_id.in_(owned_ids),
+                        self._not_self_view(user_id),
+                    )
                 )
             ).scalar_one()
             total_likes = session.execute(
@@ -575,16 +584,23 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
         week_start_col = func.date_trunc("week", DataProductView.viewed_at).label(
             "week_start"
         )
+        today = datetime.now(timezone.utc).date()
+        current_week_start = today - timedelta(days=today.weekday())
+        window_start = current_week_start - timedelta(weeks=weeks - 1)
         with db as session:
             rows = session.execute(
                 select(week_start_col, func.count(DataProductView.id).label("views"))
-                .where(DataProductView.data_product_id.in_(select(owned_subq.c.id)))
+                .where(
+                    and_(
+                        DataProductView.data_product_id.in_(select(owned_subq.c.id)),
+                        DataProductView.viewed_at >= window_start,
+                        self._not_self_view(user_id),
+                    )
+                )
                 .group_by(week_start_col)
             ).all()
 
         views_by_week = {row.week_start.date(): row.views for row in rows}
-        today = datetime.now(timezone.utc).date()
-        current_week_start = today - timedelta(days=today.weekday())
         points = []
         for i in range(weeks - 1, -1, -1):
             week_start = current_week_start - timedelta(weeks=i)
@@ -606,7 +622,12 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
         """Top owned data products ranked by view or like count."""
         view_count_sq = (
             select(func.count(DataProductView.id))
-            .where(DataProductView.data_product_id == DataProduct.id)
+            .where(
+                and_(
+                    DataProductView.data_product_id == DataProduct.id,
+                    self._not_self_view(user_id),
+                )
+            )
             .scalar_subquery()
         )
         like_count_sq = (
