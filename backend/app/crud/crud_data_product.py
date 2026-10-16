@@ -9,7 +9,7 @@ import rasterio
 from fastapi.encoders import jsonable_encoder
 from rasterio.errors import CRSError
 from rasterio.warp import transform_bounds
-from sqlalchemy import and_, func, or_, select, update
+from sqlalchemy import and_, func, select, update
 from sqlalchemy.orm import Session, joinedload
 
 from app import crud
@@ -22,19 +22,21 @@ from app.api.utils import (
 from app.core.config import settings
 from app.crud.base import CRUDBase
 from app.crud.crud_admin import get_static_directory_size
-from app.crud.utils import raise_if_owning_project_published
+from app.crud.utils import (
+    not_self_view,
+    owned_project_ids,
+    raise_if_owning_project_published,
+)
 from app.db.session import SessionLocal
 from app.models.constants import NON_RASTER_TYPES, PROCESSING_JOB_NAMES
 from app.models.data_product import DataProduct
 from app.models.data_product_like import DataProductLike
 from app.models.data_product_metadata import DataProductMetadata
 from app.models.data_product_view import DataProductView
-from app.models.enums.project_type import ProjectType
 from app.models.file_permission import FilePermission
 from app.models.flight import Flight
 from app.models.job import Job
 from app.models.project import Project
-from app.models.project_member import ProjectMember
 from app.models.user import User
 from app.models.user_style import UserStyle
 from app.models.utils.utcnow import utcnow
@@ -43,7 +45,6 @@ from app.schemas.data_product import (
     DataProductUpdate,
 )
 from app.schemas.job import Status
-from app.schemas.project_member import Role
 
 logger = logging.getLogger("__name__")
 
@@ -494,27 +495,6 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
         with db as session:
             return session.execute(stmt).scalars().all()
 
-    def _owned_project_ids_subquery(self, user_id: UUID):
-        """Project IDs where user_id holds the OWNER role.
-
-        Ownership is role-based, not the single Project.owner_id creator: the
-        creator is added as a ProjectMember with role=OWNER, and other members
-        can be promoted to OWNER. This captures all of them.
-        """
-        return select(ProjectMember.project_uuid).where(
-            and_(
-                ProjectMember.member_id == user_id,
-                ProjectMember.role == Role.OWNER,
-                ProjectMember.project_type == ProjectType.PROJECT,
-            )
-        )
-
-    def _not_self_view(self, user_id: UUID):
-        """Views by anyone other than user_id; anonymous session views count."""
-        return or_(
-            DataProductView.user_id.is_(None), DataProductView.user_id != user_id
-        )
-
     def _owned_data_product_ids_subquery(self, user_id: UUID):
         """Active data products belonging to projects owned by user_id."""
         return (
@@ -523,7 +503,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             .join(Project, Project.id == Flight.project_id)
             .where(
                 and_(
-                    Project.id.in_(self._owned_project_ids_subquery(user_id)),
+                    Project.id.in_(owned_project_ids(user_id)),
                     Project.is_active,
                     Flight.is_active,
                     DataProduct.is_active,
@@ -543,7 +523,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                 select(func.count(DataProductView.id)).where(
                     and_(
                         DataProductView.data_product_id.in_(owned_ids),
-                        self._not_self_view(user_id),
+                        not_self_view(user_id),
                     )
                 )
             ).scalar_one()
@@ -563,7 +543,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             project_count = session.execute(
                 select(func.count(func.distinct(Project.id))).where(
                     and_(
-                        Project.id.in_(self._owned_project_ids_subquery(user_id)),
+                        Project.id.in_(owned_project_ids(user_id)),
                         Project.is_active,
                     )
                 )
@@ -594,7 +574,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
                     and_(
                         DataProductView.data_product_id.in_(select(owned_subq.c.id)),
                         DataProductView.viewed_at >= window_start,
-                        self._not_self_view(user_id),
+                        not_self_view(user_id),
                     )
                 )
                 .group_by(week_start_col)
@@ -625,7 +605,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             .where(
                 and_(
                     DataProductView.data_product_id == DataProduct.id,
-                    self._not_self_view(user_id),
+                    not_self_view(user_id),
                 )
             )
             .scalar_subquery()
@@ -651,7 +631,7 @@ class CRUDDataProduct(CRUDBase[DataProduct, DataProductCreate, DataProductUpdate
             .join(Project, Project.id == Flight.project_id)
             .where(
                 and_(
-                    Project.id.in_(self._owned_project_ids_subquery(user_id)),
+                    Project.id.in_(owned_project_ids(user_id)),
                     Project.is_active,
                     Flight.is_active,
                     DataProduct.is_active,

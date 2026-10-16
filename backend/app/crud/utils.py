@@ -1,14 +1,18 @@
-"""Checks shared by more than one CRUD module."""
+"""Checks and query fragments shared by more than one CRUD module."""
 
 from typing import Any, Optional
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import ColumnElement, and_, or_, select
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import PermissionDenied
+from app.models.data_product_view import DataProductView
+from app.models.enums.project_type import ProjectType
 from app.models.flight import Flight
 from app.models.project import Project
+from app.models.project_member import ProjectMember
+from app.schemas.project_member import Role
 
 # Deactivating anything inside a published project would leave the STAC catalog
 # pointing at data the cleanup utilities are then free to remove for good, so
@@ -88,3 +92,37 @@ def raise_if_owning_project_published(
 
     if is_published:
         raise PermissionDenied(PUBLISHED_CONTENT_DETAIL.format(item_type=item_type))
+
+
+def owner_membership_filter() -> ColumnElement[bool]:
+    """ProjectMember rows that grant the OWNER role on a project.
+
+    Ownership is role-based, not the single Project.owner_id creator: the
+    creator is added as a ProjectMember with role=OWNER, and other members can
+    be promoted to OWNER. Every owner-credited metric uses this same rule.
+    """
+    return and_(
+        ProjectMember.role == Role.OWNER,
+        ProjectMember.project_type == ProjectType.PROJECT,
+    )
+
+
+def owned_project_ids(user_id: UUID):
+    """Project IDs where user_id holds the OWNER role."""
+    return select(ProjectMember.project_uuid).where(
+        ProjectMember.member_id == user_id, owner_membership_filter()
+    )
+
+
+def project_owners_subquery():
+    """(member_id, project_uuid) for every owner of every project."""
+    return (
+        select(ProjectMember.member_id, ProjectMember.project_uuid)
+        .where(owner_membership_filter())
+        .subquery()
+    )
+
+
+def not_self_view(owner_id: UUID | ColumnElement[Any]) -> ColumnElement[bool]:
+    """Views by anyone other than owner_id; anonymous session views always count."""
+    return or_(DataProductView.user_id.is_(None), DataProductView.user_id != owner_id)
