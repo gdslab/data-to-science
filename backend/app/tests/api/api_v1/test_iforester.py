@@ -1,6 +1,7 @@
 import os
 from typing import List
 
+import pytest
 from fastapi import status
 from fastapi.encoders import jsonable_encoder
 from fastapi.testclient import TestClient
@@ -24,15 +25,17 @@ from app.tests.utils.project_member import create_project_member
 from app.tests.utils.user import create_user
 
 
+def scope_error(scope: APIKeyScope) -> str:
+    return f"API key does not have the '{scope.value}' scope"
+
+
 @pytest_requires_iforester
 def test_create_iforester_record_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
     current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db, owner_id=current_user.id)
-    payload = EXAMPLE_DATA
-    payload["image"] = EXAMPLE_IMAGE
-    payload["png"] = EXAMPLE_PNG
+    payload = {**EXAMPLE_DATA, "image": EXAMPLE_IMAGE, "png": EXAMPLE_PNG}
     response = client.post(
         f"{settings.API_V1_STR}/projects/{project.id}/iforester", json=payload
     )
@@ -59,9 +62,7 @@ def test_create_iforester_record_with_project_owner_role_and_api_key(
     current_user = crud.user.get_by_api_key(db, api_key=normal_user_api_key)
     assert current_user
     project = create_project(db, owner_id=current_user.id)
-    payload = EXAMPLE_DATA
-    payload["image"] = EXAMPLE_IMAGE
-    payload["png"] = EXAMPLE_PNG
+    payload = {**EXAMPLE_DATA, "image": EXAMPLE_IMAGE, "png": EXAMPLE_PNG}
     response = client.post(
         f"{settings.API_V1_STR}/projects/{project.id}/iforester",
         json=payload,
@@ -89,12 +90,123 @@ def test_create_iforester_record_with_create_only_api_key(
         headers={"X-API-KEY": api_key},
     )
     assert response.status_code == status.HTTP_201_CREATED
+    assert len(crud.iforester.get_multi_iforester_by_project_id(db, project.id)) == 1
     response = client.get(
         f"{settings.API_V1_STR}/projects/{project.id}",
         headers={"X-API-KEY": api_key},
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
-    assert response.json()["detail"] == "API key does not have the 'read' scope"
+    assert response.json()["detail"] == scope_error(APIKeyScope.READ)
+
+
+@pytest_requires_iforester
+@pytest.mark.parametrize(
+    "scopes", [[APIKeyScope.READ], [APIKeyScope.UPDATE], [APIKeyScope.DELETE]]
+)
+def test_create_iforester_requires_create_scope(
+    client: TestClient, db: Session, scopes: List[APIKeyScope]
+) -> None:
+    user = create_user(db)
+    api_key = crud.api_key.create_with_user(db, user_id=user.id, scopes=scopes).api_key
+    project = create_project(db, owner_id=user.id)
+    payload = {**EXAMPLE_DATA, "image": EXAMPLE_IMAGE, "png": EXAMPLE_PNG}
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/iforester",
+        json=payload,
+        headers={"X-API-KEY": api_key},
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.json()["detail"] == scope_error(APIKeyScope.CREATE)
+    assert crud.iforester.get_multi_iforester_by_project_id(db, project.id) == []
+
+
+@pytest_requires_iforester
+def test_read_iforester_rejects_api_key(
+    client: TestClient, db: Session, normal_user_api_key: str
+) -> None:
+    # key has every scope and its owner owns the project; the auth method is rejected
+    current_user = crud.user.get_by_api_key(db, api_key=normal_user_api_key)
+    assert current_user
+    project = create_project(db, owner_id=current_user.id)
+    iforester = create_iforester(db, project_id=project.id)
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{project.id}/iforester/{iforester.id}",
+        headers={"X-API-KEY": normal_user_api_key},
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+@pytest_requires_iforester
+def test_read_multi_iforester_rejects_api_key(
+    client: TestClient, db: Session, normal_user_api_key: str
+) -> None:
+    current_user = crud.user.get_by_api_key(db, api_key=normal_user_api_key)
+    assert current_user
+    project = create_project(db, owner_id=current_user.id)
+    create_iforester(db, project_id=project.id)
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{project.id}/iforester",
+        headers={"X-API-KEY": normal_user_api_key},
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+@pytest_requires_iforester
+def test_read_multi_iforester_rejects_create_only_api_key(
+    client: TestClient, db: Session
+) -> None:
+    # a leaked mobile app key cannot be used to read the records it created
+    user = create_user(db)
+    api_key = crud.api_key.create_with_user(
+        db, user_id=user.id, scopes=[APIKeyScope.CREATE]
+    ).api_key
+    project = create_project(db, owner_id=user.id)
+    create_iforester(db, project_id=project.id)
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{project.id}/iforester",
+        headers={"X-API-KEY": api_key},
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+@pytest_requires_iforester
+def test_update_iforester_rejects_api_key(
+    client: TestClient, db: Session, normal_user_api_key: str
+) -> None:
+    current_user = crud.user.get_by_api_key(db, api_key=normal_user_api_key)
+    assert current_user
+    project = create_project(db, owner_id=current_user.id)
+    iforester = create_iforester(db, project_id=project.id)
+    original_species = iforester.species
+    response = client.put(
+        f"{settings.API_V1_STR}/projects/{project.id}/iforester/{iforester.id}",
+        json=jsonable_encoder(IForesterUpdate(species="Oak")),
+        headers={"X-API-KEY": normal_user_api_key},
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    iforester_in_db = crud.iforester.get_iforester_by_id(
+        db, iforester_id=iforester.id, project_id=project.id
+    )
+    assert iforester_in_db
+    assert iforester_in_db.species == original_species
+
+
+@pytest_requires_iforester
+def test_delete_iforester_rejects_api_key(
+    client: TestClient, db: Session, normal_user_api_key: str
+) -> None:
+    current_user = crud.user.get_by_api_key(db, api_key=normal_user_api_key)
+    assert current_user
+    project = create_project(db, owner_id=current_user.id)
+    iforester = create_iforester(db, project_id=project.id)
+    response = client.delete(
+        f"{settings.API_V1_STR}/projects/{project.id}/iforester/{iforester.id}",
+        headers={"X-API-KEY": normal_user_api_key},
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert crud.iforester.get_iforester_by_id(
+        db, iforester_id=iforester.id, project_id=project.id
+    )
 
 
 @pytest_requires_iforester

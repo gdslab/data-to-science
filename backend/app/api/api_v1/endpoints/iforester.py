@@ -2,13 +2,14 @@ import base64
 import os
 from typing import Any, List
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Security, status
 from pydantic import UUID4
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
 from app.core.config import settings
+from app.models.enums.api_key_scope import APIKeyScope
 
 router = APIRouter()
 
@@ -42,7 +43,12 @@ def get_iforester_static_dir(project_id: UUID4, iforester_id: UUID4):
 @router.post("", response_model=schemas.IForester, status_code=status.HTTP_201_CREATED)
 def create_iforester(
     iforester_in: schemas.IForesterPost,
-    project: models.Project = Depends(deps.can_read_write_project_with_jwt_or_api_key),
+    # the mobile app's api key may only create records; the scope is pinned here so
+    # it does not depend on the http method default in deps.METHOD_SCOPES
+    project: models.Project = Security(
+        deps.can_read_write_project_with_jwt_or_api_key,
+        scopes=[APIKeyScope.CREATE.value],
+    ),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     iforester_dict = iforester_in.model_dump()
@@ -83,6 +89,8 @@ def create_iforester(
     return iforester
 
 
+# the read, update, and delete routes below are used by the web app with a signed in
+# session and intentionally do not accept api keys
 @router.get("/{iforester_id}", response_model=schemas.IForester)
 def read_iforester(
     iforester_id: UUID4,
