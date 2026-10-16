@@ -318,7 +318,7 @@ Some endpoints support authentication via API key in addition to JWT tokens. Eac
 | Public map tiles, bounds, and point values | GET | `read` |
 | Share Potree viewer | GET | `read` |
 | Record data product view | POST | `create` |
-| Create iForester record | POST | `create` |
+| Create iForester record | POST | `create` (explicit; issue the iForester mobile app key with only this scope) |
 | List, get BreedBase connections and study | GET | `read` |
 | Create BreedBase connection | POST | `create` |
 | Update BreedBase connection | PUT | `update` |
@@ -326,6 +326,8 @@ Some endpoints support authentication via API key in addition to JWT tokens. Eac
 | BrAPI proxy | POST | `read` (override: forwards to an external server and does not change D2S data) |
 
 The project role checks below still apply on top of the scope check.
+
+The iForester read, update, and delete routes are used by the web app with a signed in session and do not accept API keys. A key with only the `create` scope can add iForester records but cannot read, change, or remove them.
 
 ---
 
