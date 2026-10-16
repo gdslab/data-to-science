@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.core import security
 from app.core.config import settings
+from app.models.enums.api_key_scope import ALL_API_KEY_SCOPES, APIKeyScope
 from app.models.user import User
 from app.schemas.single_use_token import SingleUseTokenCreate
 from app.schemas.user import UserCreate, UserUpdate
@@ -159,7 +160,11 @@ def authentication_token_from_email(
 
 
 def authentication_api_key_from_email(
-    *, client: TestClient, email: str, db: Session
+    *,
+    client: TestClient,
+    email: str,
+    db: Session,
+    scopes: list[APIKeyScope] = ALL_API_KEY_SCOPES,
 ) -> str:
     """
     Return a valid token for the user with given email.
@@ -174,5 +179,5 @@ def authentication_api_key_from_email(
     user_in_update = UserUpdate(is_approved=True)
     user = crud.user.update(db, db_obj=user, obj_in=user_in_update)
     # create api key for user
-    api_key = crud.api_key.create_with_user(db, user_id=user.id)
+    api_key = crud.api_key.create_with_user(db, user_id=user.id, scopes=scopes)
     return api_key.api_key

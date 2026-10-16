@@ -148,6 +148,16 @@ def test_get_users_normal_current_user(
     current_user = response.json()
     assert current_user
     assert settings.EMAIL_TEST_USER == current_user["email"]
+    # d2spy reads this key directly, so it must be present even when null
+    assert "api_access_token" in current_user
+
+
+def test_api_access_token_marked_deprecated_in_openapi(client: TestClient) -> None:
+    """Verify the api_access_token field is flagged deprecated in the API schema."""
+    response = client.get(f"{settings.API_V1_STR}/openapi.json")
+    assert response.status_code == status.HTTP_200_OK
+    user_schema = response.json()["components"]["schemas"]["User"]
+    assert user_schema["properties"]["api_access_token"]["deprecated"] is True
 
 
 def test_read_users_without_query(

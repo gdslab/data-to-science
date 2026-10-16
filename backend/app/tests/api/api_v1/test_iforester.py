@@ -6,11 +6,10 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app.api.deps import (
-    get_current_approved_user_by_jwt_or_api_key,
-    get_current_user,
-)
+from app import crud
+from app.api.deps import get_current_user
 from app.core.config import settings
+from app.models.enums.api_key_scope import APIKeyScope
 from app.schemas.iforester import IForesterUpdate
 from app.schemas.role import Role
 from app.tests.conftest import pytest_requires_iforester
@@ -29,9 +28,7 @@ from app.tests.utils.user import create_user
 def test_create_iforester_record_with_project_owner_role(
     client: TestClient, db: Session, normal_user_access_token: str
 ) -> None:
-    current_user = get_current_approved_user_by_jwt_or_api_key(
-        db, token=normal_user_access_token
-    )
+    current_user = get_current_user(db, normal_user_access_token)
     project = create_project(db, owner_id=current_user.id)
     payload = EXAMPLE_DATA
     payload["image"] = EXAMPLE_IMAGE
@@ -59,9 +56,8 @@ def test_create_iforester_record_with_project_owner_role(
 def test_create_iforester_record_with_project_owner_role_and_api_key(
     client: TestClient, db: Session, normal_user_api_key: str
 ) -> None:
-    current_user = get_current_approved_user_by_jwt_or_api_key(
-        db, api_key=normal_user_api_key
-    )
+    current_user = crud.user.get_by_api_key(db, api_key=normal_user_api_key)
+    assert current_user
     project = create_project(db, owner_id=current_user.id)
     payload = EXAMPLE_DATA
     payload["image"] = EXAMPLE_IMAGE
@@ -74,6 +70,31 @@ def test_create_iforester_record_with_project_owner_role_and_api_key(
     assert response.status_code == status.HTTP_201_CREATED
     response_data = response.json()
     assert response_data
+
+
+@pytest_requires_iforester
+def test_create_iforester_record_with_create_only_api_key(
+    client: TestClient, db: Session
+) -> None:
+    # a key embedded in a mobile app can add records but cannot read project data
+    user = create_user(db)
+    api_key = crud.api_key.create_with_user(
+        db, user_id=user.id, scopes=[APIKeyScope.CREATE]
+    ).api_key
+    project = create_project(db, owner_id=user.id)
+    payload = {**EXAMPLE_DATA, "image": EXAMPLE_IMAGE, "png": EXAMPLE_PNG}
+    response = client.post(
+        f"{settings.API_V1_STR}/projects/{project.id}/iforester",
+        json=payload,
+        headers={"X-API-KEY": api_key},
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    response = client.get(
+        f"{settings.API_V1_STR}/projects/{project.id}",
+        headers={"X-API-KEY": api_key},
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.json()["detail"] == "API key does not have the 'read' scope"
 
 
 @pytest_requires_iforester

@@ -12,7 +12,13 @@ from .annotation_attachment import (
     AnnotationAttachmentUpdate,
 )
 from .annotation_tag import AnnotationTag, AnnotationTagCreate, AnnotationTagUpdate
-from .api_key import APIKey, APIKeyCreate, APIKeyUpdate
+from .api_key import (
+    APIKey,
+    APIKeyCreate,
+    APIKeyRequest,
+    APIKeyUpdate,
+    APIKeyUpdateRequest,
+)
 from .breedbase_connection import (
     BreedbaseConnection,
     BreedbaseConnectionCreate,

@@ -12,6 +12,7 @@ from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.crud.base import CRUDBase
 from app.models.api_key import APIKey
+from app.models.enums.api_key_scope import APIKeyScope
 from app.models.single_use_token import SingleUseToken
 from app.models.user import User
 from app.schemas.single_use_token import SingleUseTokenCreate
@@ -50,7 +51,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
     def get_by_api_key(self, db: Session, api_key: str) -> Optional[User]:
         user_query = (
             select(User)
-            .join(User.api_key)
+            .join(User.api_keys)
             .where(and_(APIKey.api_key == api_key, APIKey.is_active))
         )
         with db as session:
@@ -225,11 +226,11 @@ def find_profile_img(user_id: str) -> Optional[str]:
 
 
 def set_api_key_attr(db: Session, user: User) -> None:
-    api_key_obj = crud.api_key.get_by_user(db, user_id=user.id)
-    if api_key_obj:
-        api_key = api_key_obj.api_key
-    else:
-        api_key = None
+    # deprecated: only expose a key when the user's choice is unambiguous
+    api_keys = crud.api_key.get_multi_by_user(db, user_id=user.id)
+    api_key = None
+    if len(api_keys) == 1 and api_keys[0].has_scope(APIKeyScope.READ):
+        api_key = api_keys[0].api_key
     setattr(user, "api_access_token", api_key)
 
 
