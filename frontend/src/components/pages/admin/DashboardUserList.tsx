@@ -110,7 +110,6 @@ export default function DashboardUserList({
 
   const keysToSkip = [
     'id',
-    'api_access_token',
     'exts',
     'is_approved',
     'is_email_confirmed',

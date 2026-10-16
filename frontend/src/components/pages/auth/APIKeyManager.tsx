@@ -402,66 +402,72 @@ export default function APIKeyManager({
         <span className="text-sm">Loading API keys...</span>
       ) : loadError ? (
         <Alert alertType="error">{loadError}</Alert>
-      ) : apiKeys.length > 0 ? (
-        <ul className="flex flex-col gap-2">
-          {apiKeys.map((apiKey) => (
-            <APIKeyRow
-              key={apiKey.id}
-              apiKey={apiKey}
-              isExpanded={expandedKeyId === apiKey.id}
-              onToggle={() =>
-                setExpandedKeyId((id) => (id === apiKey.id ? null : apiKey.id))
-              }
-              onRevoke={revokeAPIKey}
-              onUpdate={updateAPIKey}
-            />
-          ))}
-        </ul>
       ) : (
-        <span className="text-sm">You do not have any API keys.</span>
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-row items-center justify-between">
+            <span className="font-semibold">Your API keys</span>
+            <HintText>
+              {apiKeys.length} of {MAX_ACTIVE_API_KEYS} keys
+            </HintText>
+          </div>
+          {apiKeys.length > 0 ? (
+            <ul className="flex flex-col gap-2">
+              {apiKeys.map((apiKey) => (
+                <APIKeyRow
+                  key={apiKey.id}
+                  apiKey={apiKey}
+                  isExpanded={expandedKeyId === apiKey.id}
+                  onToggle={() =>
+                    setExpandedKeyId((id) =>
+                      id === apiKey.id ? null : apiKey.id,
+                    )
+                  }
+                  onRevoke={revokeAPIKey}
+                  onUpdate={updateAPIKey}
+                />
+              ))}
+            </ul>
+          ) : (
+            <span className="text-sm">You do not have any API keys.</span>
+          )}
+        </div>
       )}
 
-      <div className="flex flex-col gap-2 p-3 border border-gray-200 rounded-md">
-        <div className="flex flex-row items-center justify-between">
+      {atLimit ? (
+        <Alert alertType="info">
+          You have reached the maximum of {MAX_ACTIVE_API_KEYS} API keys. Revoke
+          a key to create a new one.
+        </Alert>
+      ) : (
+        <div className="flex flex-col gap-2 p-3 border border-gray-200 rounded-md">
           <span className="font-semibold">Create API key</span>
-          <HintText>
-            {apiKeys.length} of {MAX_ACTIVE_API_KEYS} keys
-          </HintText>
+          <label className={styles.label} htmlFor="new-api-key-name">
+            Name (optional)
+          </label>
+          <input
+            id="new-api-key-name"
+            className={styles.inputText}
+            type="text"
+            maxLength={64}
+            placeholder="e.g. QGIS"
+            value={newKeyName}
+            onChange={(e) => setNewKeyName(e.target.value)}
+          />
+          <ScopeCheckboxes
+            idPrefix="new-api-key"
+            scopes={newKeyScopes}
+            onChange={setNewKeyScopes}
+          />
+          <Button
+            type="button"
+            size="sm"
+            disabled={isCreating || newKeyScopes.length === 0}
+            onClick={createAPIKey}
+          >
+            {isCreating ? 'Creating...' : 'Create API Key'}
+          </Button>
         </div>
-        <label className={styles.label} htmlFor="new-api-key-name">
-          Name (optional)
-        </label>
-        <input
-          id="new-api-key-name"
-          className={styles.inputText}
-          type="text"
-          maxLength={64}
-          placeholder="e.g. QGIS"
-          value={newKeyName}
-          onChange={(e) => setNewKeyName(e.target.value)}
-          disabled={atLimit}
-        />
-        <ScopeCheckboxes
-          idPrefix="new-api-key"
-          scopes={newKeyScopes}
-          onChange={setNewKeyScopes}
-          disabled={atLimit}
-        />
-        <Button
-          type="button"
-          size="sm"
-          disabled={atLimit || isCreating || newKeyScopes.length === 0}
-          onClick={createAPIKey}
-        >
-          {isCreating ? 'Creating...' : 'Create API Key'}
-        </Button>
-        {atLimit && (
-          <HintText>
-            You have reached the maximum number of API keys. Revoke a key to
-            create a new one.
-          </HintText>
-        )}
-      </div>
+      )}
 
       <div className="flex flex-col gap-1.5">
         <span className="italic text-sm">
