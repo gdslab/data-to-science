@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Literal
 
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
+from app.crud.utils import not_self_view, project_owners_subquery
 from app.models import (
     ActivitySnapshot,
     DataProduct,
@@ -22,7 +23,6 @@ from app.schemas.activity import (
     ActivityTrendPoint,
     EngagementLeaderRow,
 )
-from app.schemas.project_member import Role
 
 LeaderboardMetric = Literal[
     "projects", "flights", "data_products", "views", "likes", "storage"
@@ -119,25 +119,18 @@ def get_engagement_leaderboard(
     """Top users ranked by content created or engagement received.
 
     Everything is attributed to every member holding the OWNER role on the
-    project (the creator plus anyone promoted to owner), matching the profile
-    stats in ``crud.data_product.get_owner_stats``. Co-owners each receive full
-    credit for a shared project rather than splitting it. Views exclude the
+    project (the creator plus anyone promoted to owner). Co-owners each receive
+    full credit for a shared project rather than splitting it. Views exclude the
     credited owner's own views; anonymous session views cannot be attributed and
-    always count. Every metric counts fully live content only: the data product,
-    its flight, and its project must all be active. Counts are gathered with
-    separate GROUP BY queries (rather than one wide join) so that, e.g., a
-    project with many flights and many views does not multiply either total.
+    always count. The owner and self-view rules are the shared helpers in
+    ``app.crud.utils``, so this stays in step with the profile stats in
+    ``crud.data_product.get_owner_stats``. Every metric counts fully live
+    content only: the data product, its flight, and its project must all be
+    active. Counts are gathered with separate GROUP BY queries (rather than one
+    wide join) so that, e.g., a project with many flights and many views does
+    not multiply either total.
     """
-    owners = (
-        select(ProjectMember.member_id, ProjectMember.project_uuid)
-        .where(
-            and_(
-                ProjectMember.role == Role.OWNER,
-                ProjectMember.project_type == ProjectType.PROJECT,
-            )
-        )
-        .subquery()
-    )
+    owners = project_owners_subquery()
     project_counts = dict(
         db.execute(
             select(owners.c.member_id, func.count(Project.id))
@@ -181,10 +174,7 @@ def get_engagement_leaderboard(
                     DataProduct.is_active,
                     Flight.is_active,
                     Project.is_active,
-                    or_(
-                        DataProductView.user_id.is_(None),
-                        DataProductView.user_id != owners.c.member_id,
-                    ),
+                    not_self_view(owners.c.member_id),
                 )
             )
             .group_by(owners.c.member_id)
