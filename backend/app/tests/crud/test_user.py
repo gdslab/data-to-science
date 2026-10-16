@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app import crud
 from app.core.security import verify_password
+from app.models.enums.api_key_scope import ALL_API_KEY_SCOPES, APIKeyScope
 from app.schemas.user import UserUpdate
 from app.tests.utils.user import create_user, create_user_in
 from app.tests.utils.utils import random_email, random_full_name, random_password
@@ -67,7 +68,9 @@ def test_get_user_by_email(db: Session) -> None:
 def test_get_user_by_api_key(db: Session) -> None:
     """Verify retrieving user by api key."""
     user = create_user(db)
-    api_key = crud.api_key.create_with_user(db, user_id=user.id)
+    api_key = crud.api_key.create_with_user(
+        db, user_id=user.id, scopes=ALL_API_KEY_SCOPES
+    )
     retrieved_user = crud.user.get_by_api_key(db, api_key=api_key.api_key)
     assert retrieved_user
     assert retrieved_user.id == user.id
@@ -76,13 +79,72 @@ def test_get_user_by_api_key(db: Session) -> None:
 def test_get_user_by_invalid_api_key(db: Session) -> None:
     """Verify retrieving user by invalid api key fails."""
     user = create_user(db)
-    api_key = crud.api_key.create_with_user(db, user_id=user.id)
+    api_key = crud.api_key.create_with_user(
+        db, user_id=user.id, scopes=ALL_API_KEY_SCOPES
+    )
     invalid_api_key1 = api_key.api_key[:-4]  # drop last four characters
     invalid_api_key2 = token_urlsafe()  # valid format, but not associated with user
     retrieved_user1 = crud.user.get_by_api_key(db, api_key=invalid_api_key1)
     retrieved_user2 = crud.user.get_by_api_key(db, api_key=invalid_api_key2)
     assert retrieved_user1 is None
     assert retrieved_user2 is None
+
+
+def test_get_user_api_access_token_without_api_keys(db: Session) -> None:
+    """Verify deprecated api_access_token is None when user has no api keys."""
+    user = create_user(db)
+    retrieved_user = crud.user.get_by_id(db, user_id=user.id)
+    assert retrieved_user
+    assert getattr(retrieved_user, "api_access_token") is None
+
+
+def test_get_user_api_access_token_with_single_read_api_key(db: Session) -> None:
+    """Verify deprecated api_access_token is the key when it is the only read key."""
+    user = create_user(db)
+    api_key = crud.api_key.create_with_user(
+        db, user_id=user.id, scopes=[APIKeyScope.READ]
+    )
+    retrieved_user_by_id = crud.user.get_by_id(db, user_id=user.id)
+    retrieved_user_by_email = crud.user.get_by_email(db, email=user.email)
+    assert retrieved_user_by_id and retrieved_user_by_email
+    assert getattr(retrieved_user_by_id, "api_access_token") == api_key.api_key
+    assert getattr(retrieved_user_by_email, "api_access_token") == api_key.api_key
+
+
+def test_get_user_api_access_token_with_single_non_read_api_key(
+    db: Session,
+) -> None:
+    """Verify deprecated api_access_token is None when the only key lacks read."""
+    user = create_user(db)
+    crud.api_key.create_with_user(db, user_id=user.id, scopes=[APIKeyScope.CREATE])
+    retrieved_user = crud.user.get_by_id(db, user_id=user.id)
+    assert retrieved_user
+    assert getattr(retrieved_user, "api_access_token") is None
+
+
+def test_get_user_api_access_token_with_multiple_api_keys(db: Session) -> None:
+    """Verify deprecated api_access_token is None when there is more than one key."""
+    user = create_user(db)
+    crud.api_key.create_with_user(db, user_id=user.id, scopes=[APIKeyScope.READ])
+    crud.api_key.create_with_user(db, user_id=user.id, scopes=ALL_API_KEY_SCOPES)
+    retrieved_user = crud.user.get_by_id(db, user_id=user.id)
+    assert retrieved_user
+    assert getattr(retrieved_user, "api_access_token") is None
+
+
+def test_get_user_api_access_token_ignores_revoked_api_keys(db: Session) -> None:
+    """Verify deprecated api_access_token is the remaining key after a revoke."""
+    user = create_user(db)
+    revoked_api_key = crud.api_key.create_with_user(
+        db, user_id=user.id, scopes=ALL_API_KEY_SCOPES
+    )
+    api_key = crud.api_key.create_with_user(
+        db, user_id=user.id, scopes=[APIKeyScope.READ]
+    )
+    crud.api_key.deactivate(db, api_key_id=revoked_api_key.id, user_id=user.id)
+    retrieved_user = crud.user.get_by_id(db, user_id=user.id)
+    assert retrieved_user
+    assert getattr(retrieved_user, "api_access_token") == api_key.api_key
 
 
 def test_get_users(db: Session) -> None:

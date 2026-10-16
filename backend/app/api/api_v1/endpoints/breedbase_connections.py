@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 from uuid import UUID
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Security, status
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, HttpUrl
 from sqlalchemy.orm import Session
@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from app import crud, models, schemas
 from app.api import deps
 from app.core.config import settings
+from app.models.enums.api_key_scope import APIKeyScope
 
 router = APIRouter()
 study_router = APIRouter()
@@ -212,8 +213,10 @@ def _validate_proxy_url(url: str) -> None:
 @proxy_router.post("/proxy")
 async def brapi_proxy(
     request: BrAPIProxyRequest,
-    current_user: models.User = Depends(
-        deps.get_current_approved_user_by_jwt_or_api_key
+    # proxied request does not modify d2s data, so only the read scope is required
+    current_user: models.User = Security(
+        deps.get_current_approved_user_by_jwt_or_api_key,
+        scopes=[APIKeyScope.READ.value],
     ),
 ) -> JSONResponse:
     """Proxy a BrAPI request to an external BreedBase server."""

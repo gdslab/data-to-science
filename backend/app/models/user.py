@@ -65,7 +65,7 @@ class User(Base):
     annotations: Mapped[List["Annotation"]] = relationship(
         back_populates="created_by", passive_deletes=True
     )
-    api_key: Mapped["APIKey"] = relationship(
+    api_keys: Mapped[List["APIKey"]] = relationship(
         back_populates="owner", cascade="all, delete"
     )
     campaigns: Mapped[List["Campaign"]] = relationship(

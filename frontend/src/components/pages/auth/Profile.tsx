@@ -1,16 +1,16 @@
-import { AxiosResponse, isAxiosError } from 'axios';
+import { isAxiosError } from 'axios';
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
-import { Fragment, useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import seedrandom from 'seedrandom';
 import {
   ChevronDownIcon,
-  DocumentDuplicateIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline';
 import { yupResolver } from '@hookform/resolvers/yup';
 
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 
+import APIKeyManager from './APIKeyManager';
 import ChangeEmailForm from './ChangeEmailForm';
 import ProfileActivity from './activity/ProfileActivity';
 import ProfilePictureUpload from './ProfilePictureUpload';
@@ -305,120 +305,6 @@ function EditProfilePicture({ setStatus, updateProfile }: EditProfilePicture) {
   );
 }
 
-interface APIAccessForm extends Profile {
-  updateProfile: () => Promise<void>;
-  user: User;
-}
-
-function APIAccessForm({ setStatus, updateProfile, user }: APIAccessForm) {
-  const [isSending, setIsSending] = useState(false);
-
-  async function revokeAPIKey() {
-    setIsSending(true);
-    try {
-      const response: AxiosResponse<User> = await api.get(
-        '/auth/revoke-api-key'
-      );
-      if (response) {
-        // display API key with COPY API Key button
-        if (response) {
-          setIsSending(false);
-          updateProfile();
-        } else {
-          setIsSending(false);
-          setStatus({ type: 'error', msg: 'Unable to revoke API key' });
-        }
-      } else {
-        setIsSending(false);
-        setStatus({ type: 'error', msg: 'Unable to revoke API key' });
-      }
-    } catch {
-      setIsSending(false);
-      setStatus({ type: 'error', msg: 'Unable to revoke API key' });
-    }
-  }
-
-  async function requestAPIKey() {
-    setIsSending(true);
-    try {
-      const response: AxiosResponse<User> = await api.get(
-        '/auth/request-api-key'
-      );
-      if (response) {
-        if (response) {
-          setIsSending(false);
-          updateProfile();
-        } else {
-          setIsSending(false);
-          setStatus({ type: 'error', msg: 'Unable to get API key' });
-        }
-      } else {
-        setIsSending(false);
-        setStatus({ type: 'error', msg: 'Unable to get API key' });
-      }
-    } catch {
-      setIsSending(false);
-      setStatus({ type: 'error', msg: 'Unable to get API key' });
-    }
-  }
-
-  const exampleURL = `${
-    window.location.origin
-  }/static/projects/1/flights/1/data_products/1/mygeotiff.tif?API_KEY=${
-    user.api_access_token ? user.api_access_token : 'MYKEY'
-  }`;
-
-  return (
-    <div className="flex flex-col gap-4">
-      <span className="text-xl font-semibold">API Key Access</span>
-
-      <div className="flex flex-col gap-4">
-        <div>
-          <p className="text-sm">
-            Your API key is a sensitive credential that can be used to access
-            your data stored on {import.meta.env.VITE_BRAND_SHORT}. Please keep
-            it secure and do not share it with anyone. If you suspect
-            unauthorized access using your API key, you may revoke the key using
-            this form and request a new one.
-          </p>
-          {user.api_access_token ? (
-            <Fragment>
-              <span className="text-sm">API Key:</span>
-              <div className="flex flex-row items-center justify-between gap-2 px-2 bg-gray-200">
-                <span className="font-semibold">{user.api_access_token}</span>
-                <DocumentDuplicateIcon
-                  className="w-4 h-4 cursor-pointer"
-                  onClick={() =>
-                    navigator.clipboard.writeText(
-                      user.api_access_token ? user.api_access_token : ''
-                    )
-                  }
-                />
-              </div>
-            </Fragment>
-          ) : null}
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <span className="italic text-sm">Example usage:</span>
-          <div className="p-4 text-sm bg-gray-200 overflow-x-auto">
-            <span>{exampleURL}</span>
-          </div>
-        </div>
-      </div>
-
-      {!user.api_access_token ? (
-        <Button type="button" size="sm" onClick={() => requestAPIKey()}>
-          {!isSending ? 'Request API Key' : 'Requesting...'}
-        </Button>
-      ) : (
-        <Button type="button" size="sm" onClick={() => revokeAPIKey()}>
-          {!isSending ? 'Revoke API Key' : 'Revoking...'}
-        </Button>
-      )}
-    </div>
-  );
-}
-
 export default function Profile() {
   const { updateProfile, user } = useContext(AuthContext);
   const [showChangeEmailForm, setShowChangeEmailForm] = useState(false);
@@ -427,20 +313,32 @@ export default function Profile() {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   return (
-    <div className="min-h-full flex flex-row justify-center bg-linear-to-b from-primary from-20% to-slate-200 to-10% px-4 py-4">
+    // scroll inside a stable gutter so the centered card does not shift when
+    // a taller tab adds a scrollbar
+    <div className="h-full overflow-y-auto [scrollbar-gutter:stable]">
+    <div className="min-h-full flex flex-row justify-center bg-[linear-gradient(to_bottom,var(--color-primary)_12rem,var(--color-slate-200)_12rem)] px-4 py-4">
       <div className="mt-16 mb-4 w-full md:w-1/2 max-w-xl">
         <h1 className="text-white">Edit Profile</h1>
         <Card>
           {!user ? (
             <span>Unable to load user profile</span>
           ) : (
-            <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
+            <TabGroup
+              selectedIndex={selectedIndex}
+              onChange={(index) => {
+                setSelectedIndex(index);
+                setStatus(null);
+              }}
+            >
               <TabList className="mb-6 flex gap-4 border-b border-gray-200">
                 <Tab className="-mb-px border-b-[3px] border-transparent px-1 py-2 font-medium text-gray-500 focus:outline-none data-selected:border-accent2 data-selected:text-accent3">
                   Profile
                 </Tab>
                 <Tab className="-mb-px border-b-[3px] border-transparent px-1 py-2 font-medium text-gray-500 focus:outline-none data-selected:border-accent2 data-selected:text-accent3">
                   Activity & stats
+                </Tab>
+                <Tab className="-mb-px border-b-[3px] border-transparent px-1 py-2 font-medium text-gray-500 focus:outline-none data-selected:border-accent2 data-selected:text-accent3">
+                  API keys
                 </Tab>
               </TabList>
               <TabPanels>
@@ -478,11 +376,6 @@ export default function Profile() {
               {/* form column */}
               <div className="flex flex-col gap-4">
                 <ProfileForm
-                  setStatus={setStatus}
-                  updateProfile={updateProfile}
-                  user={user}
-                />
-                <APIAccessForm
                   setStatus={setStatus}
                   updateProfile={updateProfile}
                   user={user}
@@ -548,11 +441,20 @@ export default function Profile() {
                 <TabPanel unmount={false}>
                   <ProfileActivity active={selectedIndex === 1} />
                 </TabPanel>
+                <TabPanel unmount={false}>
+                  <div className="flex flex-col gap-4">
+                    <APIKeyManager setStatus={setStatus} />
+                    {status && status.type && status.msg ? (
+                      <Alert alertType={status.type}>{status.msg}</Alert>
+                    ) : null}
+                  </div>
+                </TabPanel>
               </TabPanels>
             </TabGroup>
           )}
         </Card>
       </div>
+    </div>
     </div>
   );
 }

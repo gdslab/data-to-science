@@ -1,7 +1,6 @@
 import logging
 import os
 import re
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional, Tuple
 from uuid import UUID
@@ -22,8 +21,8 @@ from app.api.utils import (
 from app.core import security
 from app.db.session import SessionLocal
 from app.models.data_product import DataProduct
+from app.models.enums.api_key_scope import APIKeyScope
 from app.models.raw_data import RawData
-from app.schemas.api_key import APIKeyUpdate
 from app.utils.staticfiles import RangedStaticFiles
 
 logger = logging.getLogger(__name__)
@@ -197,7 +196,8 @@ def verify_api_key_static_file_access(
     # get api key db obj
     api_key_obj = crud.api_key.get_by_api_key(db, api_key)
 
-    if api_key_obj:
+    # static file access requires the read scope
+    if api_key_obj and api_key_obj.has_scope(APIKeyScope.READ):
         # user associated with api key
         user = api_key_obj.owner
         # flight associated with data product
@@ -207,11 +207,7 @@ def verify_api_key_static_file_access(
             db=db, project_id=flight.project_id, current_user=user
         ):
             # update last accessed date and total requests
-            api_key_in = APIKeyUpdate(
-                last_used_at=datetime.now(timezone.utc),
-                total_requests=api_key_obj.total_requests + 1,
-            )
-            crud.api_key.update(db, db_obj=api_key_obj, obj_in=api_key_in)
+            crud.api_key.record_use(db, api_key_obj)
             return True
 
     return False
@@ -242,7 +238,8 @@ def verify_api_key_raw_data_access(
     # get api key db obj
     api_key_obj = crud.api_key.get_by_api_key(db, api_key)
 
-    if api_key_obj:
+    # static file access requires the read scope
+    if api_key_obj and api_key_obj.has_scope(APIKeyScope.READ):
         # user associated with api key
         user = api_key_obj.owner
         # flight associated with raw data
@@ -252,11 +249,7 @@ def verify_api_key_raw_data_access(
             db=db, project_id=flight.project_id, current_user=user
         ):
             # update last accessed date and total requests
-            api_key_in = APIKeyUpdate(
-                last_used_at=datetime.now(timezone.utc),
-                total_requests=api_key_obj.total_requests + 1,
-            )
-            crud.api_key.update(db, db_obj=api_key_obj, obj_in=api_key_in)
+            crud.api_key.record_use(db, api_key_obj)
             return True
 
     return False
@@ -437,7 +430,8 @@ async def verify_static_file_access(request: Request) -> None:
             db = SessionLocal()
             try:
                 api_key_obj = crud.api_key.get_by_api_key(db, api_key)
-                if api_key_obj:
+                # static file access requires the read scope
+                if api_key_obj and api_key_obj.has_scope(APIKeyScope.READ):
                     user_from_api_key = api_key_obj.owner
                     if can_read_project(
                         db=db,
@@ -445,11 +439,7 @@ async def verify_static_file_access(request: Request) -> None:
                         current_user=user_from_api_key,
                     ):
                         # Update API key usage stats
-                        api_key_in = APIKeyUpdate(
-                            last_used_at=datetime.now(timezone.utc),
-                            total_requests=api_key_obj.total_requests + 1,
-                        )
-                        crud.api_key.update(db, db_obj=api_key_obj, obj_in=api_key_in)
+                        crud.api_key.record_use(db, api_key_obj)
                         return  # Authorized via API key
             finally:
                 db.close()

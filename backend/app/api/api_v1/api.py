@@ -4,6 +4,7 @@ from app.api.api_v1.endpoints import (
     admin,
     annotation_attachments,
     annotations,
+    api_keys,
     auth,
     data_products,
     file_permission,
@@ -46,6 +47,7 @@ if settings.ENABLE_STAC:
 
 api_router = APIRouter()
 api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
+api_router.include_router(api_keys.router, prefix="/api-keys", tags=["api_keys"])
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
 api_router.include_router(health.router, prefix="/health", tags=["health"])
 api_router.include_router(locations.router, prefix="/locations", tags=["locations"])

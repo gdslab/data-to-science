@@ -53,7 +53,11 @@ class UserInDBBase(UserBase):
 
 # additional properties to return via API
 class User(UserInDBBase):
-    api_access_token: Optional[str] = None
+    api_access_token: Optional[str] = Field(
+        None,
+        deprecated="Set only when the user has a single active key with the read "
+        "scope. Use /api/v1/api-keys instead.",
+    )
     exts: List[str] = []
     is_superuser: bool
     pending_email: Optional[str] = None
