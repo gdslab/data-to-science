@@ -105,6 +105,41 @@ def test_get_owner_stats_includes_anonymous_views(db: Session) -> None:
     assert stats["total_views"] == 2
 
 
+def test_get_owner_stats_excludes_self_views(db: Session) -> None:
+    owner = create_user(db)
+    sample = SampleDataProduct(db, user=owner)
+    create_data_product_view(db, data_product_id=sample.obj.id, user_id=owner.id)
+    create_data_product_view(
+        db, data_product_id=sample.obj.id, user_id=create_user(db).id
+    )
+    create_data_product_view(db, data_product_id=sample.obj.id, session_id="anon")
+
+    stats = crud.data_product.get_owner_stats(db, user_id=owner.id)
+    trend = crud.data_product.get_owner_views_trend(db, user_id=owner.id)
+    top = crud.data_product.get_owner_top(db, user_id=owner.id, metric="views")
+
+    assert stats["total_views"] == 2
+    assert trend[-1]["views"] == 2
+    assert top[0]["views"] == 2
+
+
+def test_get_owner_stats_ignores_deactivated_content(db: Session) -> None:
+    owner = create_user(db)
+    live = SampleDataProduct(db, user=owner)
+    removed = SampleDataProduct(
+        db, user=owner, project=live.project, flight=live.flight
+    )
+    create_data_product_view(db, data_product_id=live.obj.id, session_id="anon-1")
+    create_data_product_view(db, data_product_id=removed.obj.id, session_id="anon-2")
+
+    crud.data_product.deactivate(db, data_product_id=removed.obj.id)
+
+    stats = crud.data_product.get_owner_stats(db, user_id=owner.id)
+
+    assert stats["data_product_count"] == 1
+    assert stats["total_views"] == 1
+
+
 def test_get_owner_stats_public_count_reflects_visibility(db: Session) -> None:
     sample = SampleDataProduct(db)
 

@@ -138,9 +138,11 @@ const SECTION_INFO: Record<InfoKey, { title: string; body: React.ReactNode }> =
             buttons to change the metric.
           </p>
           <p>
-            All totals are credited to the project owner. Data usage sums stored
-            data product and raw data file sizes; vector layers are not
-            included.
+            All totals are credited to every project owner, including members
+            promoted to the owner role, so co-owners each receive full credit
+            for a shared project. Views exclude an owner's own views of their
+            data products. Data usage sums stored data product and raw data
+            file sizes; vector layers are not included.
           </p>
         </>
       ),

@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Literal
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.models import (
@@ -22,6 +22,7 @@ from app.schemas.activity import (
     ActivityTrendPoint,
     EngagementLeaderRow,
 )
+from app.schemas.project_member import Role
 
 LeaderboardMetric = Literal[
     "projects", "flights", "data_products", "views", "likes", "storage"
@@ -117,60 +118,88 @@ def get_engagement_leaderboard(
 ) -> List[EngagementLeaderRow]:
     """Top users ranked by content created or engagement received.
 
-    Everything is attributed to the project owner (``Project.owner_id``),
-    consistent with the existing ``/admin/project_statistics`` convention:
-    projects, their flights and data products, and the views/likes/storage those
-    accrue. Every metric counts fully live content only: the data product, its
-    flight, and its project must all be active. Counts are gathered with separate
-    GROUP BY queries (rather than one wide join) so that, e.g., a project with
-    many flights and many views does not multiply either total.
+    Everything is attributed to every member holding the OWNER role on the
+    project (the creator plus anyone promoted to owner), matching the profile
+    stats in ``crud.data_product.get_owner_stats``. Co-owners each receive full
+    credit for a shared project rather than splitting it. Views exclude the
+    credited owner's own views; anonymous session views cannot be attributed and
+    always count. Every metric counts fully live content only: the data product,
+    its flight, and its project must all be active. Counts are gathered with
+    separate GROUP BY queries (rather than one wide join) so that, e.g., a
+    project with many flights and many views does not multiply either total.
     """
+    owners = (
+        select(ProjectMember.member_id, ProjectMember.project_uuid)
+        .where(
+            and_(
+                ProjectMember.role == Role.OWNER,
+                ProjectMember.project_type == ProjectType.PROJECT,
+            )
+        )
+        .subquery()
+    )
     project_counts = dict(
         db.execute(
-            select(Project.owner_id, func.count(Project.id))
+            select(owners.c.member_id, func.count(Project.id))
+            .select_from(Project)
+            .join(owners, owners.c.project_uuid == Project.id)
             .where(Project.is_active)
-            .group_by(Project.owner_id)
+            .group_by(owners.c.member_id)
         ).all()
     )
     flight_counts = dict(
         db.execute(
-            select(Project.owner_id, func.count(Flight.id))
+            select(owners.c.member_id, func.count(Flight.id))
             .select_from(Flight)
             .join(Project, Project.id == Flight.project_id)
+            .join(owners, owners.c.project_uuid == Project.id)
             .where(and_(Flight.is_active, Project.is_active))
-            .group_by(Project.owner_id)
+            .group_by(owners.c.member_id)
         ).all()
     )
     data_product_counts = dict(
         db.execute(
-            select(Project.owner_id, func.count(DataProduct.id))
+            select(owners.c.member_id, func.count(DataProduct.id))
             .select_from(DataProduct)
             .join(Flight, Flight.id == DataProduct.flight_id)
             .join(Project, Project.id == Flight.project_id)
+            .join(owners, owners.c.project_uuid == Project.id)
             .where(and_(DataProduct.is_active, Flight.is_active, Project.is_active))
-            .group_by(Project.owner_id)
+            .group_by(owners.c.member_id)
         ).all()
     )
     view_counts = dict(
         db.execute(
-            select(Project.owner_id, func.count(DataProductView.id))
+            select(owners.c.member_id, func.count(DataProductView.id))
             .select_from(DataProductView)
             .join(DataProduct, DataProduct.id == DataProductView.data_product_id)
             .join(Flight, Flight.id == DataProduct.flight_id)
             .join(Project, Project.id == Flight.project_id)
-            .where(and_(DataProduct.is_active, Flight.is_active, Project.is_active))
-            .group_by(Project.owner_id)
+            .join(owners, owners.c.project_uuid == Project.id)
+            .where(
+                and_(
+                    DataProduct.is_active,
+                    Flight.is_active,
+                    Project.is_active,
+                    or_(
+                        DataProductView.user_id.is_(None),
+                        DataProductView.user_id != owners.c.member_id,
+                    ),
+                )
+            )
+            .group_by(owners.c.member_id)
         ).all()
     )
     like_counts = dict(
         db.execute(
-            select(Project.owner_id, func.count(DataProductLike.id))
+            select(owners.c.member_id, func.count(DataProductLike.id))
             .select_from(DataProductLike)
             .join(DataProduct, DataProduct.id == DataProductLike.data_product_id)
             .join(Flight, Flight.id == DataProduct.flight_id)
             .join(Project, Project.id == Flight.project_id)
+            .join(owners, owners.c.project_uuid == Project.id)
             .where(and_(DataProduct.is_active, Flight.is_active, Project.is_active))
-            .group_by(Project.owner_id)
+            .group_by(owners.c.member_id)
         ).all()
     )
     # Data usage = stored data product + raw data byte sizes (NULL treated as 0),
@@ -178,27 +207,29 @@ def get_engagement_leaderboard(
     data_product_storage = dict(
         db.execute(
             select(
-                Project.owner_id,
+                owners.c.member_id,
                 func.coalesce(func.sum(DataProduct.file_size), 0),
             )
             .select_from(DataProduct)
             .join(Flight, Flight.id == DataProduct.flight_id)
             .join(Project, Project.id == Flight.project_id)
+            .join(owners, owners.c.project_uuid == Project.id)
             .where(and_(DataProduct.is_active, Flight.is_active, Project.is_active))
-            .group_by(Project.owner_id)
+            .group_by(owners.c.member_id)
         ).all()
     )
     raw_data_storage = dict(
         db.execute(
             select(
-                Project.owner_id,
+                owners.c.member_id,
                 func.coalesce(func.sum(RawData.file_size), 0),
             )
             .select_from(RawData)
             .join(Flight, Flight.id == RawData.flight_id)
             .join(Project, Project.id == Flight.project_id)
+            .join(owners, owners.c.project_uuid == Project.id)
             .where(and_(RawData.is_active, Flight.is_active, Project.is_active))
-            .group_by(Project.owner_id)
+            .group_by(owners.c.member_id)
         ).all()
     )
 
