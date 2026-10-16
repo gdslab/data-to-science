@@ -306,14 +306,26 @@ Demo users have special restrictions that prevent modifications:
 
 ## API key authentication
 
-Some endpoints support authentication via API key in addition to JWT tokens:
+Some endpoints support authentication via API key in addition to JWT tokens. Each API key carries any combination of `read`, `create`, `update`, and `delete` scopes. By default the required scope follows the HTTP method: `GET`, `HEAD`, and `OPTIONS` need `read`, `POST` needs `create`, `PUT` and `PATCH` need `update`, and `DELETE` needs `delete`. An endpoint can override this with `Security(..., scopes=[...])`. A key without the required scope receives `403 Forbidden`. Scopes never apply to JWT sessions.
 
-| Endpoint | JWT | API Key |
-|----------|:---:|:-------:|
-| Read project | Yes | Yes |
-| List flights | Yes | Yes |
-| List vector layers | Yes | Yes |
-| Download vector layer | Yes | Yes |
+| Endpoint | Method | Required scope |
+|----------|:------:|:--------------:|
+| Read project | GET | `read` |
+| List flights | GET | `read` |
+| List vector layers | GET | `read` |
+| Download vector layer | GET | `read` |
+| Static files (data products, raw data, project files) | GET | `read` |
+| Public map tiles, bounds, and point values | GET | `read` |
+| Share Potree viewer | GET | `read` |
+| Record data product view | POST | `create` |
+| Create iForester record | POST | `create` |
+| List, get BreedBase connections and study | GET | `read` |
+| Create BreedBase connection | POST | `create` |
+| Update BreedBase connection | PUT | `update` |
+| Delete BreedBase connection | DELETE | `delete` |
+| BrAPI proxy | POST | `read` (override: forwards to an external server and does not change D2S data) |
+
+The project role checks below still apply on top of the scope check.
 
 ---
 
@@ -336,7 +348,7 @@ The following dependency functions control access in the API:
 - `get_current_user` — Validates JWT token
 - `get_current_approved_user` — User must be approved and email confirmed
 - `get_current_admin_user` — User must be superuser
-- `get_current_approved_user_by_jwt_or_api_key` — Accepts JWT or API key
+- `get_current_approved_user_by_jwt_or_api_key` — Accepts JWT or API key; enforces API key scopes
 - `get_optional_current_user` — Returns None if auth fails (no error)
 
 ### Team permissions

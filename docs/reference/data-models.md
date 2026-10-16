@@ -29,7 +29,7 @@ User
 | Model | Table | Description |
 |-------|-------|-------------|
 | `User` | `user` | User accounts with profile information and approval status |
-| `ApiKey` | `api_key` | API keys for programmatic access |
+| `ApiKey` | `api_key` | Named API keys for programmatic access, with `read`/`create`/`update`/`delete` scopes (up to five active per user) |
 | `RefreshToken` | `refresh_token` | JWT refresh tokens |
 | `SingleUseToken` | `single_use_token` | One-time-use tokens for email verification and password reset |
 

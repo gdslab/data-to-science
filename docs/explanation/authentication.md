@@ -19,7 +19,18 @@ By default the API answers cross-origin requests with `Access-Control-Allow-Orig
 
 ### API keys
 
-For programmatic access, users can generate API keys. These are passed via the `X-API-Key` header and currently support a limited set of read-only endpoints (project details, flight listings, vector layer access).
+For programmatic access, users can create up to five API keys from their profile page. Each key has an optional name and any combination of four scopes:
+
+| Scope | Allows |
+|-------|--------|
+| `read` | `GET`, `HEAD`, and `OPTIONS` requests, including static file downloads |
+| `create` | `POST` requests |
+| `update` | `PUT` and `PATCH` requests |
+| `delete` | `DELETE` requests |
+
+The scopes are independent: no scope implies another. This lets a key that cannot be kept secret, such as one built into a mobile app, be limited to `create` alone. Anyone who extracts it can add records but cannot read other data, change existing records, or delete anything. A request made with a key that lacks the required scope is rejected with `403 Forbidden`. Scopes can be changed at any time without changing the key itself. Keys created before scopes were introduced were given all four scopes.
+
+Keys are passed via the `X-API-Key` header, or the `API_KEY` query parameter for static files (useful for QGIS). They work only on the endpoints listed in [API key authentication](../reference/roles-permissions.md#api-key-authentication), and the key holder's project role still applies. Keys are managed through the `/api/v1/api-keys` endpoints, which require a logged-in session and cannot be called with an API key.
 
 ### Single-use tokens
 
