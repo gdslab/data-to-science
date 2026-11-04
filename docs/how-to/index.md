@@ -12,3 +12,5 @@ How-to guides are **task-oriented** recipes that help you accomplish a specific 
 | [Work with Celery Tasks](celery-tasks.md) | Add or modify asynchronous background tasks |
 | [Generate Vector Format Files](generate-vector-formats.md) | Backfill GeoParquet and FlatGeobuf exports for vector layers |
 | [Backfill File Sizes](backfill-file-sizes.md) | Populate `file_size` for existing data products and raw data |
+
+To contribute to D2S itself, see [CONTRIBUTING.md](https://github.com/gdslab/data-to-science/blob/main/CONTRIBUTING.md) for the commit convention, the AI use policy, and the checks to run before opening a pull request.
