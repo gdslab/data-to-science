@@ -177,3 +177,5 @@ tusd-data/
 # Docker compose
 docker-compose.yml
 docker-compose.prod.yml
+# Agent scratch files (see AGENTS.md, Shell and file access)
+.scratch/

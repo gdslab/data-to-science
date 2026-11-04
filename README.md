@@ -188,7 +188,7 @@ If you use D2S in your research, please cite the following paper:
 ```bibtex
 @article{Jung2026,
   title = {Data-to-Science (D2S): An open-source ecosystem for collaborative geospatial data science research},
-  author = {Jung, Jinha and others},
+  author = {Jung, Minyoung and Hancock, Benjamin G. and Qian, Zhenyu C. and Zhuo, Na and Gong, Ziqian and Doucette, Jarrod S. and Jung, Jinha},
   journal = {Journal of Open Source Software},
   year = {2026},
   volume = {11},

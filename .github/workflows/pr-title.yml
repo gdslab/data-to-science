@@ -1,0 +1,61 @@
+name: PR title
+
+# Checks that the pull request title follows Conventional Commits, the format
+# CONTRIBUTING.md and AGENTS.md Section 4 require for every commit and for the
+# title. Pull requests merge with a merge commit, so the title never becomes a
+# commit message itself; the check keeps the type and scope vocabulary
+# consistent where reviewers first read it. The types and scopes below are the
+# lists from AGENTS.md Section 4 and must move with them.
+#
+# pull_request_target rather than pull_request, on the action's own advice:
+# with pull_request the token is unavailable to a fork's run and the check
+# errors, and every outside contribution is a fork. The event is safe here
+# because nothing checks out or runs pull request code; the only step reads
+# the title through the API. It also means the configuration on main is what
+# runs, so a change to this file takes effect for the pull requests after the
+# one that merges it.
+#
+# No paths filter, for the reason backend.yml gives: a required check that a
+# filter skips is never reported, and the pull request waits on it forever.
+# The job id is load-bearing for the same reason if this check is added to the
+# ruleset on main.
+#
+# `edited` is in the trigger list so correcting the title re-runs the check
+# without a new push.
+
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  pr-title:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Pinned to the commit behind the tag, not the tag: this job runs under
+      # pull_request_target with a token, and a tag can be moved to other code.
+      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            chore
+            docs
+            test
+            refactor
+            ci
+          scopes: |
+            api
+            web
+            db
+            admin
+            infra
+            ci
+            docs
+            deps
+          requireScope: false

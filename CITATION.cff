@@ -1,0 +1,75 @@
+# Citation metadata for GitHub's "Cite this repository" button and for citation
+# tools. The preferred citation is the JOSS paper; it is the same reference as
+# the BibTeX block in README.md, and the author list and ORCIDs come from the
+# front matter of docs/paper.md. Keep the three in step.
+cff-version: 1.2.0
+message: "If you use D2S in your research, please cite the JOSS paper below."
+type: software
+title: "Data to Science (D2S)"
+abstract: "An open-source web platform for managing, visualizing, and sharing geospatial data, particularly uncrewed aerial system (UAS) data, with a Python client (d2spy) and a QGIS plugin (D2S Browser)."
+license: MIT
+repository-code: "https://github.com/gdslab/data-to-science"
+url: "https://d2s.org"
+keywords:
+  - geospatial data management
+  - uncrewed aerial system
+  - UAV
+  - remote sensing
+  - open science
+authors:
+  - family-names: Jung
+    given-names: Minyoung
+    orcid: "https://orcid.org/0000-0002-6419-5236"
+    affiliation: "Lyles School of Civil and Construction Engineering, Purdue University"
+  - family-names: Hancock
+    given-names: Benjamin G.
+    orcid: "https://orcid.org/0009-0005-9457-3479"
+    affiliation: "Lyles School of Civil and Construction Engineering, Purdue University"
+  - family-names: Qian
+    given-names: Zhenyu C.
+    orcid: "https://orcid.org/0000-0002-7310-8608"
+    affiliation: "Rueff School of Design, Art, and Performance, Purdue University"
+  - family-names: Zhuo
+    given-names: Na
+    affiliation: "Rueff School of Design, Art, and Performance, Purdue University"
+  - family-names: Gong
+    given-names: Ziqian
+    affiliation: "Rueff School of Design, Art, and Performance, Purdue University"
+  - family-names: Doucette
+    given-names: Jarrod S.
+    orcid: "https://orcid.org/0000-0003-4027-2417"
+    affiliation: "College of Agriculture Research Services, Purdue University"
+  - family-names: Jung
+    given-names: Jinha
+    orcid: "https://orcid.org/0000-0003-1176-3540"
+    affiliation: "Lyles School of Civil and Construction Engineering, Purdue University"
+preferred-citation:
+  type: article
+  title: "Data-to-Science (D2S): An open-source ecosystem for collaborative geospatial data science research"
+  journal: "Journal of Open Source Software"
+  year: 2026
+  volume: 11
+  issue: 119
+  start: 9497
+  doi: 10.21105/joss.09497
+  url: "https://doi.org/10.21105/joss.09497"
+  authors:
+    - family-names: Jung
+      given-names: Minyoung
+      orcid: "https://orcid.org/0000-0002-6419-5236"
+    - family-names: Hancock
+      given-names: Benjamin G.
+      orcid: "https://orcid.org/0009-0005-9457-3479"
+    - family-names: Qian
+      given-names: Zhenyu C.
+      orcid: "https://orcid.org/0000-0002-7310-8608"
+    - family-names: Zhuo
+      given-names: Na
+    - family-names: Gong
+      given-names: Ziqian
+    - family-names: Doucette
+      given-names: Jarrod S.
+      orcid: "https://orcid.org/0000-0003-4027-2417"
+    - family-names: Jung
+      given-names: Jinha
+      orcid: "https://orcid.org/0000-0003-1176-3540"
