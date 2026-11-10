@@ -1,5 +1,5 @@
 import os
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, urlsplit
 from uuid import UUID
 
 import geopandas as gpd
@@ -10,6 +10,7 @@ from app.api.utils import (
     create_vector_layer_preview,
     get_signature_for_data_product,
     get_static_dir,
+    get_tile_url_with_signed_payload,
     save_vector_layer_flatgeobuf,
     save_vector_layer_parquet,
 )
@@ -469,3 +470,22 @@ def test_get_signature_for_data_product_differs_by_filepath() -> None:
     second, _ = get_signature_for_data_product(data_product_id, "/static/b.tif")
 
     assert first != second
+
+
+def test_get_tile_url_with_signed_payload_matches_varnish_checks() -> None:
+    """Vector tile URL has only the path and params varnish accepts, each once."""
+    layer_id = "57WI-EOF_P4"
+
+    tile_url = urlsplit(
+        get_tile_url_with_signed_payload(layer_id).removeprefix(settings.API_DOMAIN)
+    )
+
+    assert tile_url.path == "/mvt/public.vector_layers/{z}/{x}/{y}.pbf"
+    # varnish verifies the raw, still-encoded values
+    pairs = [pair.split("=", 1) for pair in tile_url.query.split("&")]
+    assert sorted(name for name, _ in pairs) == ["expires", "filter", "limit", "secure"]
+    values = dict(pairs)
+    assert values["filter"] == quote_plus(f"layer_id='{layer_id}'")
+    assert values["secure"] == expected_tile_signature(
+        int(values["expires"]), values["filter"] + values["limit"]
+    )
