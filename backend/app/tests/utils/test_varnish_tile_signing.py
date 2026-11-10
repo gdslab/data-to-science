@@ -85,6 +85,7 @@ def test_varnish_drops_unverified_query_params() -> None:
     """A filter under an encoded name does not reach the tile server."""
     path, values = signed_tile_request()
     expected = get_tile(path, values)
+    assert expected.is_success
 
     # pg_tileserv decodes the name and would read this invalid filter first
     response = get_tile(path, {"fil%74er": "%28", **values})
@@ -97,6 +98,7 @@ def test_varnish_ignores_repeated_filter() -> None:
     """An unsigned filter placed ahead of the signed one is not executed."""
     path, values = signed_tile_request()
     expected = get_tile(path, values)
+    assert expected.is_success
 
     # pg_tileserv reads the first filter; this one is invalid, so it would fail
     response = get_tile(path, values, prefix="filter=%28&limit=-1&")
