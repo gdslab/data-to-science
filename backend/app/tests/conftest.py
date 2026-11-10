@@ -18,6 +18,7 @@ os.environ["TEST_STATIC_DIR"] = f"/tmp/static_{worker_id}"
 
 import logging
 import shutil
+import socket
 from typing import Generator
 
 import pytest
@@ -74,6 +75,21 @@ pytest_requires_iforester = pytest.mark.skipif(
 
 pytest_requires_stac = pytest.mark.skipif(
     not settings.ENABLE_STAC, reason="STAC feature disabled (ENABLE_STAC=false)"
+)
+
+
+def _varnish_reachable() -> bool:
+    """Report whether the varnish service resolves on the compose network."""
+    try:
+        socket.gethostbyname("varnish")
+    except OSError:
+        return False
+    return True
+
+
+# CI runs the suite in a standalone container with no varnish service
+pytest_requires_varnish = pytest.mark.skipif(
+    not _varnish_reachable(), reason="varnish service not reachable"
 )
 
 

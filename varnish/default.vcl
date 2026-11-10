@@ -74,8 +74,17 @@ sub vcl_recv {
             req.url ~ "[?&]url=.*[?&]url=") {
             return (synth(400, "Duplicate parameters"));
         }
+        # titiler decodes parameter names; the duplicate check does not
+        if (req.url ~ "[?&][^=&]*%[^=&]*=") {
+            return (synth(400, "Invalid parameters"));
+        }
         set req.http.dataProductId = regsub(req.url, ".*[?&]dataProductId=([^&]+).*", "\1");
         set req.http.cogurl = regsub(req.url, ".*[?&]url=([^&]+).*", "\1");
+        # The payload has no delimiters; a fixed-length ID keeps its digits
+        # from moving into expires
+        if (req.http.dataProductId !~ "(?i)^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$") {
+            return (synth(400, "Invalid parameters"));
+        }
         # Only rasters on the static mount are ever signed. The value is still
         # percent-encoded here, so "/" appears as "%2F".
         if (req.http.cogurl !~ "(?i)^%2Fstatic%2F") {
@@ -85,11 +94,21 @@ sub vcl_recv {
         set req.backend_hint = titiler;
     } else {
         # pg_tilserv backend
+        # The path is not signed
+        if (req.url !~ "^/public\.vector_layers/[0-9]+/[0-9]+/[0-9]+\.pbf\?") {
+            return (synth(403, "Invalid tile path"));
+        }
         if (req.url !~ "[?&]filter=[^&]+" || req.url !~ "[?&]limit=[^&]+") {
             return (synth(400, "Missing required parameters"));
         }
         set req.http.filter = regsub(req.url, ".*[?&]filter=([^&]+).*", "\1");
         set req.http.limit = regsub(req.url, ".*[?&]limit=([^&]+).*", "\1");
+        # The payload has no delimiters; fixed shapes keep bytes from moving
+        # between values
+        if (req.http.filter !~ "^layer_id%3D%27[A-Za-z0-9_-]+%27$" ||
+            req.http.limit !~ "^-?[0-9]+$") {
+            return (synth(400, "Invalid parameters"));
+        }
         set req.http.payload = req.http.expires + req.http.filter + req.http.limit;
         set req.backend_hint = pg_tileserv;
     }
@@ -103,6 +122,12 @@ sub vcl_recv {
     # Compare signatures
     if (req.http.secure != req.http.expected_signature) {
         return (synth(403, "Invalid signature"));
+    }
+
+    # pg_tileserv parses a query string differently than the checks above, so
+    # it is sent only the verified values
+    if (req.url !~ "^/cog/") {
+        set req.url = regsub(req.url, "\?.*", "") + "?filter=" + req.http.filter + "&limit=" + req.http.limit;
     }
 
     # Normalize query parameters for caching
@@ -123,6 +148,8 @@ sub vcl_recv {
     unset req.http.expected_signature;
     unset req.http.dataProductId;
     unset req.http.cogurl;
+    unset req.http.filter;
+    unset req.http.limit;
 
     # Unset user/browser-specific headers
     unset req.http.User-Agent;
