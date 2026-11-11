@@ -2,6 +2,9 @@ import os
 import shutil
 import subprocess
 import sys
+import re
+import secrets
+from pathlib import Path
 
 COMPOSE_FILE = "docker-compose.quickstart.yml"
 
@@ -34,6 +37,26 @@ def _check_docker():
         sys.exit(1)
 
 
+def _fill_secrets(target_path):
+    """Replace placeholder secrets in a freshly created env file with random values."""
+    text = Path(target_path).read_text()
+
+    # backend.env: real random app secret
+    text = re.sub(
+        r"(?m)^SECRET_KEY=.*$",
+        f"SECRET_KEY={secrets.token_urlsafe(48)}",
+        text,
+    )
+
+    # db.env: one password, used in both POSTGRES_PASSWORD and DATABASE_URL
+    if re.search(r"(?m)^POSTGRES_PASSWORD=", text):
+        pw = secrets.token_urlsafe(24)
+        text = re.sub(r"(?m)^POSTGRES_PASSWORD=.*$", f"POSTGRES_PASSWORD={pw}", text)
+        text = re.sub(r"(DATABASE_URL=postgres://d2s:)[^@]*(@)", rf"\g<1>{pw}\g<2>", text)
+
+    Path(target_path).write_text(text)
+
+
 def init(args):
     repo_root = _get_repo_root()
 
@@ -46,6 +69,7 @@ def init(args):
             print(f"  Warning: {src_name} not found, skipping")
         else:
             shutil.copy2(src, dst)
+            _fill_secrets(dst)
             print(f"  Created: {dst_name}")
 
     tusd_dir = os.path.join(repo_root, "tusd-data")
