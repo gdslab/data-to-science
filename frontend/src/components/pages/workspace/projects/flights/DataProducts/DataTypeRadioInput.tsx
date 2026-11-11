@@ -2,7 +2,7 @@ import clsx from 'clsx';
 
 export function getAllowedFileTypes(dtype: string): string[] {
   if (dtype === 'dem' || dtype === 'ortho' || dtype === 'other') {
-    return ['.tif'];
+    return ['.tif', '.tiff'];
   } else if (dtype === '3dgs') {
     return ['.ply', '.zip'];
   } else if (dtype === 'panoramic') {
@@ -10,7 +10,7 @@ export function getAllowedFileTypes(dtype: string): string[] {
   } else if (dtype === 'point_cloud') {
     return ['.las', '.laz'];
   } else {
-    return ['.tif'];
+    return ['.tif', '.tiff'];
   }
 }
 
