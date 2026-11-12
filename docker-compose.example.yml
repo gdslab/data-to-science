@@ -1,3 +1,7 @@
+# WARNING: This compose file is for LOCAL DEVELOPMENT ONLY.
+# It exposes developer tools (Flower, pgAdmin) and must never be run on a
+# shared or internet-facing server. Use docker-compose.prod.example.yml for deployments.
+
 services:
   frontend:
     build:
@@ -75,7 +79,7 @@ services:
         condition: service_healthy
     environment:
       - PGADMIN_DEFAULT_EMAIL=youremail@example.com
-      - PGADMIN_DEFAULT_PASSWORD=password
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD:-admin}
 
   redis:
     image: redis:8.6.0-alpine
@@ -150,13 +154,14 @@ services:
     volumes:
       - user-data:/user-data
     ports:
-      - 5555:5555
+      - "127.0.0.1:5555:5555"
     restart: always
     depends_on:
       - redis
       - db
     environment:
       - TILE_SIGNING_SECRET_KEY=${TILE_SIGNING_SECRET_KEY}
+      - FLOWER_BASIC_AUTH=${FLOWER_BASIC_AUTH:-}
     env_file:
       - backend.env
       - db.env
@@ -173,7 +178,7 @@ services:
     tmpfs:
       - /tmp
     ports:
-      - "0.0.0.0:8000:80"
+      - "127.0.0.1:8000:80"
     restart: always
     depends_on:
       - frontend
