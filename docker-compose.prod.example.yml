@@ -268,8 +268,6 @@ services:
     platform: linux/x86_64
     volumes:
       - ./pg_tileserv.toml:/config/pg_tileserv.toml:ro
-    ports:
-      - 7800:7800
     depends_on:
       db:
         condition: service_healthy
