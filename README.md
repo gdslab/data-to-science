@@ -132,15 +132,19 @@ If you prefer to set up manually instead of using `d2s_admin`:
    cp db.example.env db.env
    cp frontend.example.env frontend.env
    ```
-2. Create the upload directory:
+2. Replace the `CHANGEME` placeholder for `SECRET_KEY` in `backend.env` with a random value of at least 32 characters. The backend will not start with the placeholder. To generate one:
+   ```
+   openssl rand -hex 32
+   ```
+3. Create the upload directory:
    ```
    mkdir tusd-data
    ```
-3. Start the containers:
+4. Start the containers:
    ```
    docker compose -f docker-compose.quickstart.yml up -d
    ```
-4. Stop the containers:
+5. Stop the containers:
    ```
    docker compose -f docker-compose.quickstart.yml stop
    ```

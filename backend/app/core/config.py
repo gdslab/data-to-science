@@ -36,6 +36,10 @@ class Settings(BaseSettings):
             raise ValueError(
                 f"{field_name} environment variable must be set and cannot be empty"
             )
+        if v.strip().upper().startswith("CHANGEME"):
+            raise ValueError(
+                f"{field_name} is still set to a placeholder value; set a real secret before starting."
+            )
         if len(v) < 32:
             raise ValueError(f"{field_name} must be at least 32 characters long")
         return v
