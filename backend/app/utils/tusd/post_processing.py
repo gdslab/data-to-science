@@ -33,6 +33,7 @@ from app.tasks.upload_tasks import (
 logger = logging.getLogger("__name__")
 
 SUPPORTED_EXTENSIONS = {
+    # get_file_extension reports .tiff as .tif
     ".tif",
     ".las",
     ".laz",
@@ -59,9 +60,9 @@ def process_data_product_uploaded_to_tusd(
     raw_data_id: Optional[UUID] = None,
 ) -> Dict:
     """Post-processing method for data product uploaded to tus file server. Creates job
-    for converting GeoTIFF (.tif) to Cloud Optimized GeoTIFF or converting point cloud
-    (.las) to Cloud Optimized Point Cloud. Returns "processing" status if the job is
-    successfully started.
+    for converting GeoTIFF (.tif, .tiff) to Cloud Optimized GeoTIFF or converting point
+    cloud (.las) to Cloud Optimized Point Cloud. Returns "processing" status if the job
+    is successfully started.
 
     Args:
         db (Session): Database session.

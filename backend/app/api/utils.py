@@ -358,7 +358,8 @@ def sanitize_file_name_part(part: str) -> str:
 
 
 def get_file_extension(filename: Path) -> str:
-    """Get the file extension, handling compound extensions like .copc.laz.
+    """Get the canonical, lowercase file extension, handling compound extensions
+    like .copc.laz. A .tiff extension is reported as .tif.
 
     Args:
         filename (Path): The filename to check
@@ -373,7 +374,7 @@ def get_file_extension(filename: Path) -> str:
         return ".laz"
     elif name.endswith(".las"):
         return ".las"
-    elif name.endswith(".tif"):
+    elif name.endswith(".tif") or name.endswith(".tiff"):
         return ".tif"
     return filename.suffix.lower()
 

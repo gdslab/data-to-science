@@ -17,12 +17,12 @@ D2S supports the following data product types when uploading to a flight:
 
 | Type | Accepted formats | Description |
 |------|-----------------|-------------|
-| **DEM** | `.tif` | Digital elevation models |
-| **Ortho** | `.tif` | Orthomosaic imagery |
+| **DEM** | `.tif`, `.tiff` | Digital elevation models |
+| **Ortho** | `.tif`, `.tiff` | Orthomosaic imagery |
 | **Point Cloud** | `.las`, `.laz` | 3D point cloud data |
 | **Panoramic** | `.jpg`, `.jpeg`, `.png`, `.webp`, `.avif` | Panoramic imagery |
 | **3DGS** | `.ply`, `.zip` | 3D Gaussian Splatting models (`.zip` for LCC format) |
-| **Other** | `.tif` | User-defined raster type with a custom label |
+| **Other** | `.tif`, `.tiff` | User-defined raster type with a custom label |
 
 ## Processing
 
@@ -30,7 +30,7 @@ Processing tasks run asynchronously via Celery workers. The specific processing 
 
 ### Raster data — DEM, Ortho, and Other (GeoTIFF)
 
-Uploaded GeoTIFFs are converted to Cloud Optimized GeoTIFFs (COGs). COGs use internal tiling and overviews to support efficient HTTP range requests, enabling clients to fetch only the tiles they need at the appropriate zoom level. DEM, Ortho, and Other types all follow this same conversion pipeline. Uploads that already use the COG layout are kept as they are when their overview pyramid is complete; otherwise they are rewritten.
+Uploaded GeoTIFFs are converted to Cloud Optimized GeoTIFFs (COGs). COGs use internal tiling and overviews to support efficient HTTP range requests, enabling clients to fetch only the tiles they need at the appropriate zoom level. DEM, Ortho, and Other types all follow this same conversion pipeline. Uploads that already use the COG layout are kept as they are when their overview pyramid is complete; otherwise they are rewritten. Uploads with a `.tiff` extension are stored with the `.tif` extension, and the original filename is kept on the data product record.
 
 ### Point cloud data (LAS/LAZ)
 
