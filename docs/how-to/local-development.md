@@ -35,6 +35,17 @@ cp frontend/.env.example frontend/.env
 cp frontend/example.env.development frontend/.env.development
 ```
 
+Two of these files hold `CHANGEME` placeholder secrets, and the backend and celery containers will not start until you replace them:
+
+- `SECRET_KEY` in `backend.env`
+- `TILE_SIGNING_SECRET_KEY` in `.env`
+
+Each value must be at least 32 characters. To generate one:
+
+```bash
+openssl rand -hex 32
+```
+
 For details on each variable, see the [Configuration](../reference/configuration.md) reference.
 
 ## Build Docker images

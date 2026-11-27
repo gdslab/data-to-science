@@ -65,6 +65,11 @@ cp frontend.example.env frontend.env
 cp frontend/.env.example frontend/.env
 cp frontend/example.env.development frontend/.env.development
 cp docker-compose.example.yml docker-compose.yml
+```
+
+Before starting the stack, replace the `CHANGEME` placeholders for `SECRET_KEY` in `backend.env` and `TILE_SIGNING_SECRET_KEY` in `.env` with random values of at least 32 characters (for example, the output of `openssl rand -hex 32`). The backend and celery containers will not start with the placeholders. Then build and start:
+
+```bash
 docker pull gdslab/d2s-geo-base:latest
 docker compose build
 docker compose up -d
